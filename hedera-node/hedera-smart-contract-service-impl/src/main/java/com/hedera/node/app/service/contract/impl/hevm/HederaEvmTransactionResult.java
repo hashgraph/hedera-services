@@ -25,10 +25,12 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pb
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.streams.ContractStateChanges;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.service.contract.impl.state.RootProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
@@ -44,6 +46,7 @@ import org.hyperledger.besu.evm.log.Log;
 public record HederaEvmTransactionResult(
         long gasUsed,
         long gasPrice,
+        @NonNull AccountID senderId,
         @Nullable ContractID recipientId,
         @Nullable ContractID recipientEvmAddress,
         @NonNull Bytes output,
@@ -52,6 +55,7 @@ public record HederaEvmTransactionResult(
         @NonNull List<Log> logs,
         @Nullable ContractStateChanges stateChanges) {
     public HederaEvmTransactionResult {
+        requireNonNull(senderId);
         requireNonNull(output);
         requireNonNull(logs);
     }
@@ -64,12 +68,25 @@ public record HederaEvmTransactionResult(
      * @return the result
      */
     public ContractFunctionResult asProtoResultOf(@NonNull final RootProxyWorldUpdater updater) {
+        return asProtoResultOf(null, updater);
+    }
+
+    /**
+     * Converts this result to a {@link ContractFunctionResult} for a transaction based on the given
+     * {@link RootProxyWorldUpdater} and maybe {@link EthTxData}.
+     *
+     * @param ethTxData the Ethereum transaction data if relevant
+     * @param updater   the world updater
+     * @return the result
+     */
+    public ContractFunctionResult asProtoResultOf(
+            @Nullable final EthTxData ethTxData, @NonNull final RootProxyWorldUpdater updater) {
         if (haltReason != null) {
             throw new AssertionError("Not implemented");
         } else if (revertReason != null) {
             throw new AssertionError("Not implemented");
         } else {
-            return asSuccessResultForCommitted(updater);
+            return withMaybeEthFields(asSuccessResultForCommitted(updater), ethTxData);
         }
     }
 
@@ -96,6 +113,7 @@ public record HederaEvmTransactionResult(
      */
     public static HederaEvmTransactionResult successFrom(
             final long gasUsed,
+            @NonNull final AccountID senderId,
             @NonNull final ContractID recipientId,
             @NonNull final ContractID recipientEvmAddress,
             @NonNull final MessageFrame frame) {
@@ -103,6 +121,7 @@ public record HederaEvmTransactionResult(
         return successFrom(
                 gasUsed,
                 frame.getGasPrice(),
+                senderId,
                 recipientId,
                 recipientEvmAddress,
                 frame.getOutputData(),
@@ -113,6 +132,7 @@ public record HederaEvmTransactionResult(
     public static HederaEvmTransactionResult successFrom(
             final long gasUsed,
             @NonNull final Wei gasPrice,
+            @NonNull final AccountID senderId,
             @NonNull final ContractID recipientId,
             @NonNull final ContractID recipientEvmAddress,
             @NonNull final org.apache.tuweni.bytes.Bytes output,
@@ -121,6 +141,7 @@ public record HederaEvmTransactionResult(
         return new HederaEvmTransactionResult(
                 gasUsed,
                 requireNonNull(gasPrice).toLong(),
+                requireNonNull(senderId),
                 requireNonNull(recipientId),
                 requireNonNull(recipientEvmAddress),
                 tuweniToPbjBytes(requireNonNull(output)),
@@ -136,11 +157,13 @@ public record HederaEvmTransactionResult(
      * @param gasUsed the gas used by the transaction
      * @return the result
      */
-    public static HederaEvmTransactionResult failureFrom(final long gasUsed, @NonNull final MessageFrame frame) {
+    public static HederaEvmTransactionResult failureFrom(
+            final long gasUsed, @NonNull final AccountID senderId, @NonNull final MessageFrame frame) {
         requireNonNull(frame);
         return new HederaEvmTransactionResult(
                 gasUsed,
                 frame.getGasPrice().toLong(),
+                requireNonNull(senderId),
                 null,
                 null,
                 Bytes.EMPTY,
@@ -153,17 +176,21 @@ public record HederaEvmTransactionResult(
     /**
      * Create a result for a transaction that failed due to resource exhaustion.
      *
-     * @param gasUsed the gas used by the transaction
+     * @param gasUsed  the gas used by the transaction
      * @param gasPrice the gas price of the transaction
-     * @param reason the reason for the failure
+     * @param reason   the reason for the failure
      * @return the result
      */
     public static HederaEvmTransactionResult resourceExhaustionFrom(
-            final long gasUsed, final long gasPrice, @NonNull final ResponseCodeEnum reason) {
+            @NonNull final AccountID senderId,
+            final long gasUsed,
+            final long gasPrice,
+            @NonNull final ResponseCodeEnum reason) {
         requireNonNull(reason);
         return new HederaEvmTransactionResult(
                 gasUsed,
                 gasPrice,
+                requireNonNull(senderId),
                 null,
                 null,
                 Bytes.EMPTY,
@@ -173,7 +200,18 @@ public record HederaEvmTransactionResult(
                 null);
     }
 
-    private ContractFunctionResult asSuccessResultForCommitted(@NonNull final RootProxyWorldUpdater updater) {
+    private ContractFunctionResult withMaybeEthFields(
+            @NonNull final ContractFunctionResult.Builder builder, @Nullable final EthTxData ethTxData) {
+        if (ethTxData != null) {
+            builder.gas(ethTxData.gasLimit())
+                    .amount(ethTxData.getAmount())
+                    .senderId(senderId)
+                    .functionParameters(Bytes.wrap(ethTxData.callData()));
+        }
+        return builder.build();
+    }
+
+    private ContractFunctionResult.Builder asSuccessResultForCommitted(@NonNull final RootProxyWorldUpdater updater) {
         final var createdIds = updater.getCreatedContractIds();
         return ContractFunctionResult.newBuilder()
                 .gasUsed(gasUsed)
@@ -184,8 +222,7 @@ public record HederaEvmTransactionResult(
                 .logInfo(pbjLogsFrom(logs))
                 .evmAddress(recipientEvmAddressIfCreatedIn(createdIds))
                 .contractNonces(updater.getUpdatedContractNonces())
-                .errorMessage(null)
-                .build();
+                .errorMessage(null);
     }
 
     private @Nullable Bytes recipientEvmAddressIfCreatedIn(@NonNull final List<ContractID> contractIds) {

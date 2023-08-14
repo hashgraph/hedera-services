@@ -29,7 +29,6 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -73,13 +72,13 @@ import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
-import com.hedera.node.app.workflows.handle.stack.Savepoint;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.handle.verifier.HandleContextVerifier;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import java.lang.reflect.InvocationTargetException;
+import java.sql.Savepoint;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
@@ -102,6 +101,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @SuppressWarnings("JUnitMalformedDeclaration")
 @ExtendWith(MockitoExtension.class)
 class HandleContextImplTest extends StateTestBase implements Scenarios {
+
+    private static final Configuration DEFAULT_CONFIGURATION = HederaTestConfigBuilder.createConfig();
 
     @Mock
     private SingleTransactionRecordBuilderImpl recordBuilder;
@@ -168,6 +169,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                 TransactionCategory.USER,
                 recordBuilder,
                 stack,
+                DEFAULT_CONFIGURATION,
                 verifier,
                 recordListBuilder,
                 checker,
@@ -196,6 +198,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             TransactionCategory.USER,
             recordBuilder,
             stack,
+            DEFAULT_CONFIGURATION,
             verifier,
             recordListBuilder,
             checker,
@@ -233,10 +236,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         private HandleContext handleContext;
 
         @BeforeEach
-        void setUp(@Mock(strictness = LENIENT) Savepoint savepoint) {
-            final var configuration = HederaTestConfigBuilder.createConfig();
-            when(savepoint.configuration()).thenReturn(configuration);
-            when(stack.peek()).thenReturn(savepoint);
+        void setUp() {
             final var payer = ALICE.accountID();
             final var payerKey = ALICE.account().keyOrThrow();
             when(writableStates.<EntityNumber>getSingleton(anyString())).thenReturn(entityNumberState);
@@ -260,6 +260,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     TransactionCategory.USER,
                     recordBuilder,
                     stack,
+                    DEFAULT_CONFIGURATION,
                     verifier,
                     recordListBuilder,
                     checker,
@@ -328,10 +329,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
     @DisplayName("Handling of transaction data")
     final class TransactionDataTest {
         @BeforeEach
-        void setUp(@Mock(strictness = LENIENT) Savepoint savepoint) {
-            final var configuration = HederaTestConfigBuilder.createConfig();
-            when(savepoint.configuration()).thenReturn(configuration);
-            when(stack.peek()).thenReturn(savepoint);
+        void setUp() {
             when(stack.createWritableStates(TokenService.NAME))
                     .thenReturn(MapWritableStates.builder()
                             .state(MapWritableKVState.builder("ACCOUNTS").build())
@@ -365,9 +363,6 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
 
         @BeforeEach
         void setUp() {
-            final var configuration = HederaTestConfigBuilder.createConfig();
-            when(savepoint1.configuration()).thenReturn(configuration);
-            when(stack.peek()).thenReturn(savepoint1);
             when(stack.createWritableStates(TokenService.NAME))
                     .thenReturn(MapWritableStates.builder()
                             .state(MapWritableKVState.builder("ACCOUNTS").build())
@@ -385,26 +380,6 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
 
             // then
             assertThat(actual).isEqualTo(stack);
-        }
-
-        @Test
-        void testAccessConfig() {
-            // given
-            final var configuration1 = HederaTestConfigBuilder.createConfig();
-            final var configuration2 = HederaTestConfigBuilder.createConfig();
-            when(savepoint1.configuration()).thenReturn(configuration1);
-            when(savepoint2.configuration()).thenReturn(configuration2);
-            when(stack.peek()).thenReturn(savepoint1);
-            final var context = createContext(defaultTransactionBody());
-
-            // when
-            final var actual1 = context.configuration();
-            when(stack.peek()).thenReturn(savepoint2);
-            final var actual2 = context.configuration();
-
-            // then
-            assertThat(actual1).isSameAs(configuration1);
-            assertThat(actual2).isSameAs(configuration2);
         }
 
         @Test
@@ -451,10 +426,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
     @DisplayName("Handling of verification data")
     final class VerificationDataTest {
         @BeforeEach
-        void setUp(@Mock(strictness = LENIENT) Savepoint savepoint) {
-            final var configuration = HederaTestConfigBuilder.createConfig();
-            when(savepoint.configuration()).thenReturn(configuration);
-            when(stack.peek()).thenReturn(savepoint);
+        void setUp() {
             when(stack.createWritableStates(TokenService.NAME))
                     .thenReturn(MapWritableStates.builder()
                             .state(MapWritableKVState.builder("ACCOUNTS").build())
@@ -507,10 +479,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         private HandleContext context;
 
         @BeforeEach
-        void setup(@Mock(strictness = LENIENT) Savepoint savepoint) {
-            final var configuration = HederaTestConfigBuilder.createConfig();
-            when(savepoint.configuration()).thenReturn(configuration);
-            when(stack.peek()).thenReturn(savepoint);
+        void setup() {
             when(stack.createReadableStates(TokenService.NAME)).thenReturn(defaultTokenReadableStates());
             when(stack.createWritableStates(TokenService.NAME))
                     .thenReturn(MapWritableStates.builder()
@@ -588,10 +557,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         private HandleContext context;
 
         @BeforeEach
-        void setup(@Mock(strictness = LENIENT) Savepoint savepoint) {
-            final var configuration = HederaTestConfigBuilder.createConfig();
-            when(savepoint.configuration()).thenReturn(configuration);
-            when(stack.peek()).thenReturn(savepoint);
+        void setup() {
             when(stack.createReadableStates(TokenService.NAME)).thenReturn(defaultTokenReadableStates());
             when(stack.createWritableStates(TokenService.NAME))
                     .thenReturn(MapWritableStates.builder()
@@ -616,10 +582,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         private HandleContext context;
 
         @BeforeEach
-        void setup(@Mock(strictness = LENIENT) Savepoint savepoint) {
-            final var configuration = HederaTestConfigBuilder.createConfig();
-            when(savepoint.configuration()).thenReturn(configuration);
-            when(stack.peek()).thenReturn(savepoint);
+        void setup() {
             when(stack.createReadableStates(TokenService.NAME)).thenReturn(defaultTokenReadableStates());
             when(stack.createWritableStates(TokenService.NAME))
                     .thenReturn(MapWritableStates.builder()
@@ -642,10 +605,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
     final class RecordBuilderTest {
 
         @BeforeEach
-        void setup(@Mock Savepoint savepoint) {
-            final var configuration = HederaTestConfigBuilder.createConfig();
-            lenient().when(savepoint.configuration()).thenReturn(configuration);
-            lenient().when(stack.peek()).thenReturn(savepoint);
+        void setup() {
             when(stack.createWritableStates(TokenService.NAME))
                     .thenReturn(MapWritableStates.builder()
                             .state(MapWritableKVState.builder("ACCOUNTS").build())
@@ -723,8 +683,6 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                 E_KEY, EGGPLANT,
                 F_KEY, FIG,
                 G_KEY, GRAPE);
-        private static final Configuration CONFIG_1 = HederaTestConfigBuilder.createConfig();
-        private static final Configuration CONFIG_2 = HederaTestConfigBuilder.createConfig();
 
         @Mock(strictness = LENIENT)
         private HederaState baseState;
@@ -747,11 +705,9 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                         final var childStack = (SavepointStackImpl) childContext.savepointStack();
                         childStack
                                 .peek()
-                                .state()
                                 .createWritableStates(FOOD_SERVICE)
                                 .get(FRUIT_STATE_KEY)
                                 .put(A_KEY, ACAI);
-                        childStack.configuration(CONFIG_2);
                         return null;
                     })
                     .when(dispatcher)
@@ -762,7 +718,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             when(recordListBuilder.addChild(any())).thenReturn(childRecordBuilder);
             when(recordListBuilder.addRemovableChild(any())).thenReturn(childRecordBuilder);
 
-            stack = new SavepointStackImpl(baseState, CONFIG_1);
+            stack = new SavepointStackImpl(baseState);
         }
 
         private HandleContextImpl createContext(TransactionBody txBody, TransactionCategory category) {
@@ -783,6 +739,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     category,
                     recordBuilder,
                     stack,
+                    DEFAULT_CONFIGURATION,
                     verifier,
                     recordListBuilder,
                     checker,
@@ -844,7 +801,6 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                             .get(FRUIT_STATE_KEY)
                             .get(A_KEY))
                     .isEqualTo(ACAI);
-            assertThat(context.configuration()).isEqualTo(CONFIG_2);
             verify(childRecordBuilder, never()).status(any());
             // TODO: Check that record was added to recordListBuilder
         }
@@ -871,7 +827,6 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                             .get(FRUIT_STATE_KEY)
                             .get(A_KEY))
                     .isEqualTo(APPLE);
-            assertThat(context.configuration()).isEqualTo(CONFIG_1);
             // TODO: Check that record was added to recordListBuilder
         }
 
@@ -896,7 +851,6 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                             .get(FRUIT_STATE_KEY)
                             .get(A_KEY))
                     .isEqualTo(APPLE);
-            assertThat(context.configuration()).isEqualTo(CONFIG_1);
             // TODO: Check that record was added to recordListBuilder
         }
 
@@ -917,7 +871,6 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                                 .get(FRUIT_STATE_KEY)
                                 .get(A_KEY))
                         .isEqualTo(APPLE);
-                assertThat(context.configuration()).isEqualTo(CONFIG_1);
             }
         }
 
@@ -937,18 +890,13 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                             .get(FRUIT_STATE_KEY)
                             .get(A_KEY))
                     .isEqualTo(APPLE);
-            assertThat(context.configuration()).isEqualTo(CONFIG_1);
         }
 
         @Test
         void testDispatchPrecedingWithChangedDataFails() {
             // given
             final var context = createContext(defaultTransactionBody(), TransactionCategory.USER);
-            stack.peek()
-                    .state()
-                    .createWritableStates(FOOD_SERVICE)
-                    .get(FRUIT_STATE_KEY)
-                    .put(B_KEY, BLUEBERRY);
+            stack.peek().createWritableStates(FOOD_SERVICE).get(FRUIT_STATE_KEY).put(B_KEY, BLUEBERRY);
 
             // then
             assertThatThrownBy(() -> context.dispatchPrecedingTransaction(
@@ -960,7 +908,6 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                             .get(FRUIT_STATE_KEY)
                             .get(A_KEY))
                     .isEqualTo(APPLE);
-            assertThat(context.configuration()).isEqualTo(CONFIG_1);
         }
 
         @Test
@@ -978,7 +925,6 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                             .get(FRUIT_STATE_KEY)
                             .get(A_KEY))
                     .isEqualTo(APPLE);
-            assertThat(context.configuration()).isEqualTo(CONFIG_1);
         }
 
         @Test
@@ -996,7 +942,6 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                             .get(FRUIT_STATE_KEY)
                             .get(A_KEY))
                     .isEqualTo(APPLE);
-            assertThat(context.configuration()).isEqualTo(CONFIG_1);
         }
     }
 }

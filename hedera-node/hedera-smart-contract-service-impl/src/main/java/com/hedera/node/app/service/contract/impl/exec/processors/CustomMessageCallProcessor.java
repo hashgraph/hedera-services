@@ -151,7 +151,7 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
             maybeReasonToHalt.ifPresent(reason -> doHaltOnFailedLazyCreation(frame, reason, operationTracer));
         }
         if (!alreadyHalted(frame)) {
-            final var maybeReasonToHalt = proxyWorldUpdater.tryTransferFromContract(
+            final var maybeReasonToHalt = proxyWorldUpdater.tryTransfer(
                     frame.getSenderAddress(),
                     frame.getRecipientAddress(),
                     frame.getValue().toLong(),

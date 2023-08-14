@@ -43,7 +43,7 @@ public interface ContractCallRecordBuilder {
      * @return this builder
      */
     @NonNull
-    ContractCallRecordBuilder contractID(@Nullable final ContractID contractId);
+    ContractCallRecordBuilder contractID(@Nullable ContractID contractId);
 
     /**
      * Tracks the result of a top-level contract call.
@@ -52,5 +52,5 @@ public interface ContractCallRecordBuilder {
      * @return this builder
      */
     @NonNull
-    ContractCallRecordBuilder contractCallResult(@Nullable final ContractFunctionResult result);
+    ContractCallRecordBuilder contractCallResult(@Nullable ContractFunctionResult result);
 }

@@ -28,6 +28,7 @@ import com.hedera.node.app.service.contract.impl.exec.operations.CustomSLoadOper
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import com.hedera.node.app.service.contract.impl.infra.StorageAccessTracker;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
+import java.util.Deque;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -59,6 +60,9 @@ class CustomSLoadOperationTest {
 
     @Mock
     private MessageFrame frame;
+
+    @Mock
+    private Deque<MessageFrame> stack;
 
     @Mock
     private GasCalculator gasCalculator;
@@ -115,6 +119,8 @@ class CustomSLoadOperationTest {
         given(proxyWorldUpdater.getHederaContractId(EIP_1014_ADDRESS)).willReturn(CALLED_CONTRACT_ID);
         given(delegate.execute(frame, evm)).willReturn(successResult);
         given(frame.getRecipientAddress()).willReturn(EIP_1014_ADDRESS);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.isEmpty()).willReturn(true);
 
         final var result = subject.execute(frame, evm);
 
@@ -133,6 +139,8 @@ class CustomSLoadOperationTest {
         given(featureFlags.isSidecarEnabled(frame, CONTRACT_STATE_CHANGE)).willReturn(true);
         given(frame.getStackItem(0)).willReturn(A_STORAGE_KEY).willReturn(A_STORAGE_VALUE);
         given(delegate.execute(frame, evm)).willReturn(successResult);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.isEmpty()).willReturn(true);
 
         final var result = subject.execute(frame, evm);
 
