@@ -152,6 +152,5 @@ module com.swirlds.platform.core {
     requires org.apache.logging.log4j.core;
     requires org.bouncycastle.pkix;
     requires org.bouncycastle.provider;
-    requires portmapper;
     requires static com.github.spotbugs.annotations;
 }

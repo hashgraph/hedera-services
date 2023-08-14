@@ -30,7 +30,6 @@ dependencies {
         testImplementation(project(":swirlds-common-testing"))
         testImplementation(project(":swirlds-platform-core"))
         testImplementation(project(":swirlds-test-framework"))
-        testImplementation(gav("org.apache.commons.io"))
         testImplementation(gav("org.assertj.core"))
         testImplementation(gav("awaitility"))
         testImplementation(gav("org.junit.jupiter.api"))
