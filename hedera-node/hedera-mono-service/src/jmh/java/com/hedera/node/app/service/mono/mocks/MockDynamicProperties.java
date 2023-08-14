@@ -40,7 +40,7 @@ public class MockDynamicProperties extends GlobalDynamicProperties {
 
     @Override
     public long maxDailyStakeRewardThPerH() {
-        return 17_808L;
+        return 6_849L;
     }
 
     @Override
