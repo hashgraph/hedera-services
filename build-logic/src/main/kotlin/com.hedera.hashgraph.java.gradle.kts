@@ -113,7 +113,7 @@ testing {
             // Gradle's test suite API does not yet allow to add additional targets there (although it's planned).
             // Thus, we need to go directly via 'tasks.register' and then set 'testClassesDirs' and 'sources' to
             // the information we get from the 'source set' (sources) of this 'test suite'.
-            tasks.register<Test>("hammerTest") {
+            val hammerTest = tasks.register<Test>("hammerTest") {
                 testClassesDirs = sources.output.classesDirs
                 classpath = sources.runtimeClasspath
 
@@ -126,7 +126,7 @@ testing {
                 jvmArgs("-XX:ActiveProcessorCount=16")
             }
 
-            tasks.register<Test>("performanceTest") {
+            val performanceTest = tasks.register<Test>("performanceTest") {
                 testClassesDirs = sources.output.classesDirs
                 classpath = sources.runtimeClasspath
 
@@ -141,6 +141,10 @@ testing {
                 maxHeapSize = "16g"
                 jvmArgs("-XX:ActiveProcessorCount=16", "-XX:+UseZGC")
             }
+
+            tasks.check {
+                dependsOn(hammerTest, performanceTest)
+            }
         }
     }
 }
@@ -153,6 +157,9 @@ tasks.jacocoTestReport {
         html.required.set(true)
     }
 
+    val testData = tasks.named("test").map {
+        it.extensions.getByType<JacocoTaskExtension>().destinationFile!!
+    }
     val hammerData = tasks.named("hammerTest").map {
         it.extensions.getByType<JacocoTaskExtension>().destinationFile!!
     }
@@ -160,10 +167,7 @@ tasks.jacocoTestReport {
         it.extensions.getByType<JacocoTaskExtension>().destinationFile!!
     }
 
-    executionData.from(hammerData, performanceData)
-
-    mustRunAfter(tasks.named("hammerTest"))
-    mustRunAfter(tasks.named("performanceTest"))
+    executionData.from(testData, hammerData, performanceData)
 }
 
 tasks.assemble {
