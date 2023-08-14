@@ -31,12 +31,15 @@ import com.hedera.node.app.hapi.fees.calc.OverflowCheckingCalc;
 import com.hedera.node.app.hapi.fees.usage.BaseTransactionMeta;
 import com.hedera.node.app.hapi.fees.usage.SigUsage;
 import com.hedera.node.app.hapi.fees.usage.state.UsageAccumulator;
+import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
+import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.workflows.TransactionInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
+import java.util.function.Function;
 
 /**
  * Implements a {@link FeeCalculator} based on the "hapi-fees" and "hapi-utils". Since those modules have not been
@@ -52,6 +55,8 @@ public class FeeCalculatorImpl implements FeeCalculator {
     private final com.hederahashgraph.api.proto.java.FeeData feeData;
     /** The current Google Protobuf representation of the current exchange rate */
     private final com.hederahashgraph.api.proto.java.ExchangeRate currentRate;
+    /** The basic info from parsing the transaction */
+    private final SigUsage sigUsage;
 
     /**
      * Create a new instance. One is created per transaction.
@@ -86,7 +91,7 @@ public class FeeCalculatorImpl implements FeeCalculator {
 
         // Create the "SigUsage" object, used by the "hapi-fees" module.
         final var txBody = txInfo.txBody();
-        final var sigUsage = new SigUsage(
+        sigUsage = new SigUsage(
                 numVerifications,
                 SignatureMap.PROTOBUF.measureRecord(txInfo.signatureMap()),
                 countOfCryptographicKeys(payerKey));
@@ -121,6 +126,22 @@ public class FeeCalculatorImpl implements FeeCalculator {
     public FeeCalculator addBytesPerTransaction(long bytes) {
         usage.addBpt(bytes);
         return this;
+    }
+
+    @NonNull
+    @Override
+    public FeeCalculator addNetworkRamByteSeconds(long amount) {
+        usage.addRbs(amount);
+        return this;
+    }
+
+    @NonNull
+    @Override
+    public Fees legacyCalculate(@NonNull Function<SigValueObj, com.hederahashgraph.api.proto.java.FeeData> callback) {
+        final var sigValueObject = new SigValueObj(sigUsage.numSigs(), sigUsage.numPayerKeys(), sigUsage.sigsSize());
+        final var matrix = callback.apply(sigValueObject);
+        final var feeObject = FeeBuilder.getFeeObject(feeData, matrix, currentRate, 1);
+        return new Fees(feeObject.nodeFee(), feeObject.networkFee(), feeObject.serviceFee());
     }
 
     @Override
