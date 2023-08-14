@@ -112,6 +112,7 @@ tasks.withType<Test> {
 
 // Add all the libs dependencies into the jar manifest!
 tasks.jar {
+    inputs.files(configurations.runtimeClasspath)
     manifest {
         attributes(
             "Main-Class" to "com.hedera.node.app.ServicesMain",
@@ -198,7 +199,7 @@ var updateDockerEnvTask =
             "Creates the .env file in the docker folder that contains environment variables for docker"
         group = "docker"
 
-        workingDir("${rootProject.projectDir}/hedera-node/docker")
+        workingDir(rootProject.layout.projectDirectory.dir("docker"))
         commandLine("./update-env.sh", project.version)
     }
 
@@ -207,7 +208,7 @@ tasks.register<Exec>("createDockerImage") {
     group = "docker"
 
     dependsOn(updateDockerEnvTask, tasks.assemble)
-    workingDir("${rootProject.projectDir}/hedera-node/docker")
+    workingDir(rootProject.layout.projectDirectory.dir("docker"))
     commandLine("./docker-build.sh", project.version, rootProject.projectDir)
 }
 
@@ -216,7 +217,7 @@ tasks.register<Exec>("startDockerContainers") {
     group = "docker"
 
     dependsOn(updateDockerEnvTask)
-    workingDir("${rootProject.projectDir}/hedera-node/docker")
+    workingDir(rootProject.layout.projectDirectory.dir("docker"))
     commandLine("docker-compose", "up")
 }
 
@@ -225,6 +226,6 @@ tasks.register<Exec>("stopDockerContainers") {
     group = "docker"
 
     dependsOn(updateDockerEnvTask)
-    workingDir("${rootProject.projectDir}/hedera-node/docker")
+    workingDir(rootProject.layout.projectDirectory.dir("docker"))
     commandLine("docker-compose", "stop")
 }
