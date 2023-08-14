@@ -26,7 +26,16 @@ import static com.swirlds.platform.gui.internal.BrowserWindowManager.getStateHie
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.moveBrowserWindowToFront;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.setStateHierarchy;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.showBrowserWindow;
-import static com.swirlds.platform.util.BootstrapUtils.*;
+import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
+import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
+import static com.swirlds.platform.util.BootstrapUtils.getInitialState;
+import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
+import static com.swirlds.platform.util.BootstrapUtils.loadPathsConfig;
+import static com.swirlds.platform.util.BootstrapUtils.loadSwirldMains;
+import static com.swirlds.platform.util.BootstrapUtils.setupBrowserWindow;
+import static com.swirlds.platform.util.BootstrapUtils.startJVMPauseDetectorThread;
+import static com.swirlds.platform.util.BootstrapUtils.startThreadDumpGenerator;
+import static com.swirlds.platform.util.BootstrapUtils.writeSettingsUsed;
 
 import com.swirlds.common.StartupTime;
 import com.swirlds.common.config.BasicConfig;
@@ -101,6 +110,10 @@ public class Browser {
     // [*] Two members are considered to be on the same LAN if their listed external addresses are the same.
 
     private static Logger logger = LogManager.getLogger(Browser.class);
+
+    /**
+     * True if the browser has been launched
+     */
     private static final AtomicBoolean STARTED = new AtomicBoolean(false);
 
     // @formatter:off
@@ -111,12 +124,18 @@ public class Browser {
             //////////////////////""";
     // @formatter:on
 
+    /**
+     * Main method for starting the browser
+     *
+     * @param args command line arguments
+     */
     public static void main(final String[] args) {
         parseCommandLineArgsAndLaunch(args);
     }
 
     /**
-     * Main method for starting the browser
+     * Parse the command line arguments and launch the browser
+     *
      * @param args command line arguments
      */
     public static void parseCommandLineArgsAndLaunch(@NonNull final String... args) {
@@ -127,6 +146,7 @@ public class Browser {
 
     /**
      * Launch the browser with the command line arguments already parsed
+     *
      * @param commandLineArgs the parsed command line arguments
      */
     public static void launch(@NonNull final CommandLineArgs commandLineArgs) {
@@ -139,7 +159,7 @@ public class Browser {
         logger = LogManager.getLogger(Browser.class);
         try {
             launchUnhandled(commandLineArgs);
-        } catch (Exception e) {
+        } catch (final Exception e) {
             logger.error(EXCEPTION.getMarker(), "Unable to start Browser", e);
             throw new RuntimeException("Unable to start Browser", e);
         }
@@ -147,11 +167,12 @@ public class Browser {
 
     /**
      * Launch the browser but do not handle any exceptions
+     *
      * @param commandLineArgs the parsed command line arguments
      */
     private static void launchUnhandled(@NonNull final CommandLineArgs commandLineArgs) throws Exception {
         StartupTime.markStartupTime();
-        Objects.requireNonNull(commandLineArgs, "localNodesToStart must not be null");
+        Objects.requireNonNull(commandLineArgs);
         logger.info(STARTUP.getMarker(), "\n\n" + STARTUP_MESSAGE + "\n");
         logger.debug(STARTUP.getMarker(), () -> new NodeStartPayload().toString());
 
@@ -167,7 +188,7 @@ public class Browser {
         // Load all SwirldMain instances for locally run nodes.
         final Map<NodeId, SwirldMain> appMains = loadSwirldMains(appDefinition, nodesToRun);
         ParameterProvider.getInstance().setParameters(appDefinition.getAppParameters());
-        Configuration configuration = BootstrapUtils.loadConfig(pathsConfig, appMains);
+        final Configuration configuration = BootstrapUtils.loadConfig(pathsConfig, appMains);
         PlatformConfigUtils.checkConfiguration(configuration);
 
         ConfigurationHolder.getInstance().setConfiguration(configuration);
@@ -180,9 +201,6 @@ public class Browser {
         writeSettingsUsed(configuration);
         // find all the apps in data/apps and stored states in data/states
         setStateHierarchy(new StateHierarchy(null));
-
-        // instantiate all Platform objects, which each instantiates a Statistics object
-        logger.debug(STARTUP.getMarker(), "About to run startPlatforms()");
 
         final AddressBook configAddressBook = appDefinition.getConfigAddressBook();
 
@@ -208,8 +226,6 @@ public class Browser {
 
         final InfoApp infoApp = getStateHierarchy().getInfoApp(appDefinition.getApplicationName());
         final InfoSwirld infoSwirld = new InfoSwirld(infoApp, appDefinition.getSwirldId());
-
-        logger.debug(STARTUP.getMarker(), "Starting platforms");
 
         // Setup metrics system
         final DefaultMetricsProvider metricsProvider = new DefaultMetricsProvider(configuration);
@@ -240,7 +256,7 @@ public class Browser {
         }
 
         // build app threads
-        List<Thread> appRunThreads = new ArrayList<>();
+        final List<Thread> appRunThreads = new ArrayList<>();
         for (final NodeId nodeId : nodesToRun) {
             final Thread appThread = new ThreadConfiguration(getStaticThreadManager())
                     .setNodeId(nodeId)
@@ -256,6 +272,8 @@ public class Browser {
 
         // Write all metrics information to file
         MetricsDocUtils.writeMetricsDocumentToFile(globalMetrics, getPlatforms(), configuration);
+
+        logger.debug(STARTUP.getMarker(), "Starting platforms");
 
         platforms.values().forEach(SwirldsPlatform::start);
         appRunThreads.forEach(Thread::start);
@@ -286,26 +304,37 @@ public class Browser {
 
     /**
      * Build a single instance of a platform
-     * @param nodeId the node id of the platform
-     * @param appDefinition the application definition
+     *
+     * @param nodeId            the node id of the platform
+     * @param appDefinition     the application definition
      * @param configAddressBook the address book loaded from the config.txt file
-     * @param appMain the swirld main for the platform
-     * @param metricsProvider the metrics provider
-     * @param configuration the configuration
-     * @param infoSwirld the info swirld
-     * @param crypto the crypto instance for this platform
+     * @param appMain           the swirld main for the platform
+     * @param metricsProvider   the metrics provider
+     * @param configuration     the configuration
+     * @param infoSwirld        the info swirld
+     * @param crypto            the crypto instance for this platform
      * @return the built platform
      */
     private static SwirldsPlatform buildPlatform(
-            final NodeId nodeId,
-            final ApplicationDefinition appDefinition,
-            final AddressBook configAddressBook,
-            final SwirldMain appMain,
-            final MetricsProvider metricsProvider,
-            final Configuration configuration,
-            final InfoSwirld infoSwirld,
-            final Crypto crypto)
+            @NonNull final NodeId nodeId,
+            @NonNull final ApplicationDefinition appDefinition,
+            @NonNull final AddressBook configAddressBook,
+            @NonNull final SwirldMain appMain,
+            @NonNull final MetricsProvider metricsProvider,
+            @NonNull final Configuration configuration,
+            @NonNull final InfoSwirld infoSwirld,
+            @NonNull final Crypto crypto)
             throws IOException {
+
+        Objects.requireNonNull(nodeId);
+        Objects.requireNonNull(appDefinition);
+        Objects.requireNonNull(configAddressBook);
+        Objects.requireNonNull(appMain);
+        Objects.requireNonNull(metricsProvider);
+        Objects.requireNonNull(configuration);
+        Objects.requireNonNull(infoSwirld);
+        Objects.requireNonNull(crypto);
+
         final Address address = configAddressBook.getAddress(nodeId);
         final int instanceNumber = configAddressBook.getIndexOfNodeId(nodeId);
 

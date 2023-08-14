@@ -39,10 +39,9 @@ public final class Log4jSetup {
     private Log4jSetup() {}
 
     /**
-     * Initialize the log4j2 configuration and logging subsystem if log4j config file is present in the path specified
+     * Initialize the log4j configuration and logging subsystem if log4j config file is present in the path specified
      *
-     * @param configPath
-     * 		the path to the log4j configuration file. If path does not exist then this method is a no-op.
+     * @param configPath the path to the log4j configuration file. If path does not exist then this method is a no-op.
      */
     public static void startLoggingFramework(@Nullable final Path configPath) {
         if (configPath == null) {
@@ -53,18 +52,18 @@ public final class Log4jSetup {
                 final LoggerContext context = (LoggerContext) LogManager.getContext(false);
                 context.setConfigLocation(configPath.toUri());
             }
-            Logger logger = LogManager.getLogger(Log4jSetup.class);
+            final Logger logger = LogManager.getLogger(Log4jSetup.class);
 
             if (Thread.getDefaultUncaughtExceptionHandler() == null) {
-                Thread.setDefaultUncaughtExceptionHandler((final Thread t, final Throwable e) ->
-                        logger.error(EXCEPTION.getMarker(), "exception on thread {}", t.getName(), e));
+                Thread.setDefaultUncaughtExceptionHandler((final Thread thread, final Throwable e) ->
+                        logger.error(EXCEPTION.getMarker(), "exception on thread {}", thread.getName(), e));
             }
 
             final LoggerContextFactory factory = LogManager.getFactory();
             if (factory instanceof final Log4jContextFactory contextFactory) {
-                // Do not allow log4j to use its own shutdown hook. Use our own shutdown
-                // hook to stop log4j. This allows us to write a final log message before
-                // the logger is shut down.
+                // Do not allow log4j to use its own shutdown hook.
+                // Use our own shutdown hook to stop log4j.
+                // This allows us to write a final log message before the logger is shut down.
                 ((DefaultShutdownCallbackRegistry) contextFactory.getShutdownCallbackRegistry()).stop();
                 Runtime.getRuntime()
                         .addShutdownHook(new ThreadConfiguration(getStaticThreadManager())

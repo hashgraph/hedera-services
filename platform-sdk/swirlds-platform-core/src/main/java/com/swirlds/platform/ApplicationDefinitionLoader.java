@@ -40,8 +40,8 @@ import org.apache.logging.log4j.Logger;
  * This class only contains one method that was extracted from the {@link Browser} class.
  *
  * @deprecated will be replaced by the {@link com.swirlds.config.api.Configuration} API in near future once the
- * 		config.txt has been migrated to the regular config API. If you need to use this class please try to do as less
- * 		static access as possible.
+ * config.txt has been migrated to the regular config API. If you need to use this class please try to do as less
+ * static access as possible.
  */
 @Deprecated(forRemoval = true)
 public final class ApplicationDefinitionLoader {
@@ -50,18 +50,23 @@ public final class ApplicationDefinitionLoader {
 
     private ApplicationDefinitionLoader() {}
 
+    /**
+     * Creates an {@link ApplicationDefinition}, using the config file at the given path.
+     *
+     * @param configPath the path to the config file
+     * @return an {@link ApplicationDefinition} specifying the application to be loaded and all related configuration
+     * @throws ConfigurationException if the configuration cannot be loaded
+     */
     public static @NonNull ApplicationDefinition loadDefault(@NonNull final Path configPath)
             throws ConfigurationException {
         return load(LegacyConfigPropertiesLoader.loadConfigFile(configPath));
     }
 
     /**
-     * Parses the configuration file specified by the {@link PathsConfig#getConfigPath()} setting, configures all
-     * appropriate system settings, and returns a generic {@link ApplicationDefinition}.
+     * Creates a {@link ApplicationDefinition} from a given {@link LegacyConfigProperties}
      *
      * @return an {@link ApplicationDefinition} specifying the application to be loaded and all related configuration
-     * @throws ConfigurationException
-     * 		if the configuration file specified by {@link PathsConfig#getConfigPath()} does not exist
+     * @throws ConfigurationException if the configuration cannot be loaded
      */
     public static @NonNull ApplicationDefinition load(@NonNull final LegacyConfigProperties configurationProperties)
             throws ConfigurationException {

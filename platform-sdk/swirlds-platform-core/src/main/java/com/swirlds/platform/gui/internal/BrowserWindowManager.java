@@ -18,11 +18,12 @@ package com.swirlds.platform.gui.internal;
 
 import com.swirlds.gui.components.ScrollableJPanel;
 import com.swirlds.platform.SwirldsPlatform;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.awt.Frame;
-import java.awt.GraphicsEnvironment;
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Objects;
 
 /**
  * Manages static variables for the browser GUI window.
@@ -82,9 +83,13 @@ public final class BrowserWindowManager {
     }
 
     /**
-     * Add a platform to the list of platforms running on this machine.
+     * Add a collection of platforms to the list of platforms running on this machine.
+     *
+     * @param toAdd the platforms to add
      */
-    public static void addPlatforms(final Collection<SwirldsPlatform> toAdd) {
+    public static void addPlatforms(@NonNull final Collection<SwirldsPlatform> toAdd) {
+        Objects.requireNonNull(toAdd);
+
         synchronized (platforms) {
             platforms.addAll(toAdd);
         }
@@ -113,9 +118,9 @@ public final class BrowserWindowManager {
      * Move the browser window to the front of the screen.
      */
     public static void moveBrowserWindowToFront() {
-        for (final Frame f : Frame.getFrames()) {
-            if (!f.equals(getBrowserWindow())) {
-                f.toFront();
+        for (final Frame frame : Frame.getFrames()) {
+            if (!frame.equals(getBrowserWindow())) {
+                frame.toFront();
             }
         }
     }

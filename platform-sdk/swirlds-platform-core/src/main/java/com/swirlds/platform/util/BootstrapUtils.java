@@ -101,8 +101,7 @@ import com.swirlds.platform.uptime.UptimeConfig;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.awt.Dimension;
-import java.awt.GraphicsEnvironment;
+import java.awt.*;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -118,9 +117,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import javax.swing.JFrame;
-import javax.swing.UIManager;
-import javax.swing.UnsupportedLookAndFeelException;
+import javax.swing.*;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -130,13 +127,16 @@ import org.apache.logging.log4j.Logger;
  */
 public final class BootstrapUtils {
 
-    /** The logger for this class */
+    /**
+     * The logger for this class
+     */
     private static final Logger logger = LogManager.getLogger(BootstrapUtils.class);
 
     private BootstrapUtils() {}
 
     /**
      * Load the config for paths
+     *
      * @return the paths configuration files
      */
     public static @NonNull PathsConfig loadPathsConfig() {
@@ -154,9 +154,11 @@ public final class BootstrapUtils {
 
     /**
      * Load the configuration for the platform and the app.
-     * Note: at some point the app configuration should be separated from the platform configuration
+     * <p>
+     * Future work: at some point the app configuration should be separated from the platform configuration
+     *
      * @param pathsConfig the paths of configuration files
-     * @param appMains the app main instances
+     * @param appMains    the app main instances
      * @return a new configuration instance
      * @throws IOException if there is a problem reading the configuration files
      */
@@ -225,6 +227,7 @@ public final class BootstrapUtils {
 
     /**
      * Perform health all health checks
+     *
      * @param configuration the configuration
      */
     public static void performHealthChecks(@NonNull final Configuration configuration) {
@@ -270,6 +273,8 @@ public final class BootstrapUtils {
 
     /**
      * Load the SwirldMain for the app.
+     *
+     * @param appMainName the name of the app main class
      */
     public static @NonNull SwirldMain loadAppMain(@NonNull final String appMainName) {
         Objects.requireNonNull(appMainName);
@@ -341,6 +346,8 @@ public final class BootstrapUtils {
 
     /**
      * Instantiate and start the thread dump generator.
+     *
+     * @param configuration the configuration object
      */
     public static void startThreadDumpGenerator(@NonNull final Configuration configuration) {
         Objects.requireNonNull(configuration);
@@ -359,10 +366,13 @@ public final class BootstrapUtils {
     /**
      * Instantiate and start the JVMPauseDetectorThread, if enabled via the
      * {@link BasicConfig#jvmPauseDetectorSleepMs()} setting.
+     *
+     * @param configuration the configuration object
      */
     public static void startJVMPauseDetectorThread(@NonNull final Configuration configuration) {
         Objects.requireNonNull(configuration);
-        final BasicConfig basicConfig = Objects.requireNonNull(configuration).getConfigData(BasicConfig.class);
+
+        final BasicConfig basicConfig = configuration.getConfigData(BasicConfig.class);
         if (basicConfig.jvmPauseDetectorSleepMs() > 0) {
             final JVMPauseDetectorThread jvmPauseDetectorThread = new JVMPauseDetectorThread(
                     (pauseTimeMs, allocTimeMs) -> {
@@ -458,7 +468,8 @@ public final class BootstrapUtils {
 
     /**
      * Determine which nodes should be run locally
-     * @param addressBook the address book
+     *
+     * @param addressBook       the address book
      * @param localNodesToStart local nodes specified to start by the user
      * @return the nodes to run locally
      */
@@ -468,18 +479,19 @@ public final class BootstrapUtils {
         Objects.requireNonNull(localNodesToStart);
         final List<NodeId> nodesToRun = new ArrayList<>();
         for (final Address address : addressBook) {
-            if (AddressBookNetworkUtils.isLocal(address)) {
-                // if the local nodes to start are not specified, start all local nodes. Otherwise, start specified.
-                if (localNodesToStart.isEmpty() || localNodesToStart.contains(address.getNodeId())) {
-                    nodesToRun.add(address.getNodeId());
-                }
+            // if the local nodes to start are not specified, start all local nodes. Otherwise, start specified.
+            if (AddressBookNetworkUtils.isLocal(address)
+                    && (localNodesToStart.isEmpty() || localNodesToStart.contains(address.getNodeId()))) {
+                nodesToRun.add(address.getNodeId());
             }
         }
+
         return nodesToRun;
     }
 
     /**
      * Checks the nodes to run and exits if there are no nodes to run
+     *
      * @param nodesToRun the nodes to run
      */
     public static void checkNodesToRun(@NonNull final Collection<NodeId> nodesToRun) {
@@ -501,8 +513,8 @@ public final class BootstrapUtils {
      * ways.  One is through the set of local nodes to start.  The other is through {@link Address ::isOwnHost} being
      * true.
      *
-     * @param appDefinition     the application definition
-     * @param nodesToRun        the locally run nodeIds
+     * @param appDefinition the application definition
+     * @param nodesToRun    the locally run nodeIds
      * @return a map from nodeIds to {@link SwirldMain} instances
      */
     @NonNull
@@ -544,6 +556,7 @@ public final class BootstrapUtils {
     /**
      * Load the signed state from the disk if it is present.
      *
+     * @param platformContext          the platform context
      * @param mainClassName            the name of the app's SwirldMain class.
      * @param swirldName               the name of the swirld to load the state for.
      * @param selfId                   the ID of the node to load the state for.
