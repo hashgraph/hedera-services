@@ -38,6 +38,11 @@ public class StopWatch {
         this(Time.getCurrent());
     }
 
+    /**
+     * Creates a new StopWatch.
+     *
+     * @param time the time to use to be able to mock time
+     */
     public StopWatch(@NonNull final Time time) {
         this.time = Objects.requireNonNull(time);
         this.running = false;

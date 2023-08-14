@@ -135,4 +135,26 @@ class StopWatchTest {
         long elapsedTime = stopWatch.getTime(TimeUnit.MILLISECONDS);
         assertTrue(elapsedTime >= 0); // Confirming we can get time after resuming
     }
+
+    @Test
+    void isStoppedTrue() throws InterruptedException {
+        StopWatch stopWatch = new StopWatch();
+
+        stopWatch.start();
+        Thread.sleep(100);
+        stopWatch.stop();
+
+        assertTrue(stopWatch.isStopped());
+    }
+
+    @Test
+    void isStoppedFalseIfSuspended() throws InterruptedException {
+        StopWatch stopWatch = new StopWatch();
+
+        stopWatch.start();
+        Thread.sleep(100);
+        stopWatch.suspend();
+
+        assertFalse(stopWatch.isStopped());
+    }
 }
