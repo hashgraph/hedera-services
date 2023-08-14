@@ -62,11 +62,7 @@ public final class JrsTestReportGenerator {
     private static void generateHyperlink(
             @NonNull final StringBuilder sb, @NonNull final String text, @NonNull final String url) {
 
-        sb.append("<a target=\"_blank\" href=\"")
-                .append(url)
-                .append("\">")
-                .append(text)
-                .append("</a>");
+        sb.append("<a target=\"_blank\" href=\"%s\">%s</a>".formatted(url, text));
     }
 
     private static void generateColoredHyperlink(
@@ -75,13 +71,8 @@ public final class JrsTestReportGenerator {
             @NonNull final String url,
             @NonNull final String color) {
 
-        sb.append("<a target=\"_blank\" style=\"color: ")
-                .append(color)
-                .append("\", href=\"")
-                .append(url)
-                .append("\">")
-                .append(text)
-                .append("</a>");
+        sb.append("<a target=\"_blank\" style=\"color: %s\" href=\"%s\">%s</a>"
+                .formatted(color, url, text));
     }
 
     private static void generateTitle(@NonNull final StringBuilder sb, @NonNull final Instant now) {
@@ -89,23 +80,57 @@ public final class JrsTestReportGenerator {
     }
 
     private static void generatePageStyle(@NonNull final StringBuilder sb) {
-        sb.append("<style>\n");
-        //        sb.append("table { border: 5px solid black; }\n");
-        sb.append("th { border: 1px solid black; background-color: #96D4D4; "
-                + "position: sticky; top: 0; padding: 5px; }\n");
-        sb.append("td { border: 1px solid black; padding: 10px; }\n");
-        sb.append("tr:nth-child(even) { background-color: lightgray; }\n");
-        sb.append(".button {color: black; background-color: transparent; border: 2px solid transparent; }\n");
-        sb.append(".button:hover {color: black; background-color: transparent; border: 2px solid black; }\n");
-        sb.append(".button:active {color: white; background-color: black; border: 2px solid black; }\n");
-
         final LocalDate currentDate = LocalDate.now();
         final boolean april2 = currentDate.getMonth().equals(Month.APRIL) && currentDate.getDayOfMonth() == 2;
+        final String april2Style; // TODO test with today's date
         if (april2) {
-            sb.append("html * { font-family: Snell Roundhand, cursive; }\n");
+            april2Style = """
+                    /* you have activated my trap card */
+                    html * {
+                        font-family: Snell Roundhand, cursive;
+                    }""";
+        } else {
+            april2Style = "";
         }
 
-        sb.append("</style>\n");
+        sb.append("""
+                <style>
+                    th {
+                        border: 1px solid black;
+                        background-color: #96D4D4;
+                        position: sticky;
+                        top: 0;
+                        padding: 5px;
+                    }
+                    td {
+                        border: 1px solid black;
+                        padding: 10px;
+                    }
+                    tr:nth-child(even) {
+                        background-color: lightgray;
+                    }
+                    .button {
+                        color: black;
+                        background-color: transparent;
+                        border: 2px solid transparent;
+                    }
+                    .button:hover {
+                        color: black;
+                        background-color: transparent;
+                        border: 2px solid black;
+                    }
+                    .button:active {
+                        color: white;
+                        background-color: black;
+                        border: 2px solid black;
+                    }
+                    .sidePanel {
+                        position: sticky;
+                        top: 0;
+                    }
+                    %s
+                </style>
+                """.formatted(april2Style));
     }
 
     /**
@@ -279,7 +304,6 @@ public final class JrsTestReportGenerator {
 
         sb.append(
                 """
-                        <center>
                         <table id="%s" style="display: %s">
                             <tr>
                                 <th>Panel</th>
@@ -300,7 +324,7 @@ public final class JrsTestReportGenerator {
             generateTableRow(sb, row, now, bucketPrefix, bucketPrefixReplacement);
         }
 
-        sb.append("</table>\n</center>\n");
+        sb.append("</table>\n");
     }
 
     /**
@@ -378,13 +402,16 @@ public final class JrsTestReportGenerator {
         return a.getMostRecentTest().id().compareTo(b.getMostRecentTest().id());
     }
 
-    private static void generateBody(
+    private static void generateDataTable(
             @NonNull final StringBuilder sb,
             @NonNull final List<JrsTestReportRow> rows,
             @NonNull final Instant now,
             @NonNull final String bucketPrefix,
             @NonNull final String bucketPrefixReplacement) {
 
+        // Only one table will be visible at a time, the others will be hidden.
+        // I'm too lazy to write javascript to sort these, so I just sort them in java
+        // and have the page display the table with the desired sort order.
         generateTable(
                 sb,
                 "table_sortedByName",
@@ -412,6 +439,39 @@ public final class JrsTestReportGenerator {
                 bucketPrefixReplacement,
                 JrsTestReportGenerator::statusComparator,
                 true);
+    }
+
+    private static void generateSidePanel(@NonNull final StringBuilder sb) {
+        sb.append("<div id=\"sidePanel\">\n");
+        sb.append("<p> hello world </p>\n");
+        sb.append("</div>\n");
+    }
+
+    private static void generateBody(
+            @NonNull final StringBuilder sb,
+            @NonNull final List<JrsTestReportRow> rows,
+            @NonNull final Instant now,
+            @NonNull final String bucketPrefix,
+            @NonNull final String bucketPrefixReplacement) {
+
+        sb.append("""
+                <center>
+                <table>
+                <tr>
+                <td style="vertical-align: top;">
+                """);
+        generateDataTable(sb, rows, now, bucketPrefix, bucketPrefixReplacement);
+        sb.append("""
+                </td>
+                <td style="vertical-align: top;">
+                """);
+        generateSidePanel(sb);
+        sb.append("""
+                </td>
+                </tr>
+                </table>
+                </center>
+                """);
     }
 
     private static void generatePage(
