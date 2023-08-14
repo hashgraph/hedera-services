@@ -17,7 +17,6 @@
 plugins {
     id("com.hedera.hashgraph.sdk.conventions")
     id("com.hedera.hashgraph.maven-publish")
-    id("org.gradle.java-test-fixtures")
 }
 
 dependencies {
