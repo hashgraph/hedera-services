@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.networkadmin.impl;
 
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.hapi.node.state.primitive.ProtoBytes;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.node.app.service.networkadmin.FreezeService;
 import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
