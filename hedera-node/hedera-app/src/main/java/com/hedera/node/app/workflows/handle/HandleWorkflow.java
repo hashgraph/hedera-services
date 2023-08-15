@@ -230,8 +230,8 @@ public class HandleWorkflow {
         final var stack = new SavepointStackImpl(state);
         final var feeAccumulator = createFeeAccumulator(stack, configuration, recordBuilder);
 
-        // Now that we have a created handle context object and a consensus timestamp, run the appropriate {@code
-        // ConsensusTimeHook} event handlers
+        // If this is the first user transaction after midnight, then handle staking updates prior to handling the
+        // transaction itself.
         final var tokenServiceContext = new TokenServiceContextImpl(configuration, stack, recordListBuilder);
         stakingPeriodTimeHook.process(tokenServiceContext);
         // @future('7836'): update the exchange rate and call from here
