@@ -1,6 +1,7 @@
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 
 module com.hedera.node.app.service.file.impl {
+    requires com.hedera.node.app.hapi.utils;
     requires com.fasterxml.jackson.databind;
     requires com.swirlds.common;
     requires com.swirlds.config.api;

@@ -1,4 +1,5 @@
 module com.hedera.node.app {
+    requires transitive com.hedera.node.app.hapi.utils;
     requires transitive com.hedera.node.app.service.consensus.impl;
     requires transitive com.hedera.node.app.service.contract.impl;
     requires transitive com.hedera.node.app.service.file.impl;
@@ -22,7 +23,6 @@ module com.hedera.node.app {
     requires transitive grpc.stub;
     requires transitive javax.inject;
     requires com.hedera.node.app.hapi.fees;
-    requires com.hedera.node.app.hapi.utils;
     requires com.hedera.node.app.service.consensus;
     requires com.hedera.node.app.service.contract;
     requires com.hedera.node.app.service.evm;
