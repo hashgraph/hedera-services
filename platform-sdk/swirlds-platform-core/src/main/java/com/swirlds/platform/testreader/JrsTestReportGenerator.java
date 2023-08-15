@@ -132,11 +132,7 @@ public final class JrsTestReportGenerator {
                         .formatted(april2Style));
     }
 
-    /**
-     * Generate javascript functions to sort the table. In reality there exist a bunch of pre-sorted tables, and these
-     * methods just change which table is visible.
-     */
-    private static void generateSortingFunctions(@NonNull final StringBuilder sb) {
+    private static void generateJavascript(@NonNull final StringBuilder sb) {
         sb.append(
                 """
                         <script>
@@ -155,6 +151,17 @@ public final class JrsTestReportGenerator {
                                 document.getElementById('table_sortedByAge').style.display = "none";
                                 document.getElementById('table_sortedByStatus').style.display = "block";
                             }
+                            function showOverviewForOwner(owner) {
+                                var overviews = document.getElementsByClassName('overview');
+                                var desiredOverview = "overview_" + owner;
+                                for (var i = 0; i < overviews.length; i++) {
+                                    if (overviews[i].id == desiredOverview) {
+                                        overviews[i].style.display = "block";
+                                    } else {
+                                        overviews[i].style.display = "none";
+                                    }
+                                }
+                            }
                             function showInTableIfOwnedBy(owner, tableId) {
                                 var table = document.getElementById(tableId);
                                 for (var i = 1, row; row = table.rows[i]; i++) {
@@ -171,7 +178,6 @@ public final class JrsTestReportGenerator {
                                 showInTableIfOwnedBy(owner, 'table_sortedByName');
                                 showInTableIfOwnedBy(owner, 'table_sortedByAge');
                                 showInTableIfOwnedBy(owner, 'table_sortedByStatus');
-                                colorAllTableRows();
                             }
                             function showAllRowsInTable(tableId) {
                                 var table = document.getElementById(tableId);
@@ -183,6 +189,18 @@ public final class JrsTestReportGenerator {
                                 showAllRowsInTable('table_sortedByName');
                                 showAllRowsInTable('table_sortedByAge');
                                 showAllRowsInTable('table_sortedByStatus');
+                            }
+                            function switchToOwnerView(owner) {
+                                if (owner == "all") {
+                                    showAllRows();
+                                    showOverviewForOwner("all");
+                                } else if (owner == "") {
+                                    showIfOwnedBy("");
+                                    showOverviewForOwner("unassigned");
+                                } else {
+                                    showIfOwnedBy(owner);
+                                    showOverviewForOwner(owner);
+                                }
                                 colorAllTableRows();
                             }
                             function colorTableRows(tableId) {
@@ -213,7 +231,7 @@ public final class JrsTestReportGenerator {
         sb.append("<head>\n");
         generateTitle(sb, now);
         generatePageStyle(sb);
-        generateSortingFunctions(sb);
+        generateJavascript(sb);
         sb.append("</head>\n");
     }
 
@@ -493,15 +511,28 @@ public final class JrsTestReportGenerator {
                 true);
     }
 
-    private record TestCount(int uniqueTests, int passingTests, int failingTests, int unknownTests) {}
+    private record TestCount(int uniqueTests, int passingTests, int failingTests, int unknownTests) {
+    }
 
     @NonNull
-    private static TestCount countTests(@NonNull final List<JrsTestResult> results) {
+    private static TestCount countTestsForOwner(
+            @NonNull final List<JrsTestResult> results,
+            @NonNull final Map<JrsTestIdentifier, JrsTestMetadata> metadata,
+            @NonNull final String owner) {
 
-        // Sort tests by unique type.
+        // Sort tests by unique type and discard tests without the proper owner.
         final Map<JrsTestIdentifier, List<JrsTestResult>> resultsByTestType = new HashMap<>();
         for (final JrsTestResult result : results) {
             final JrsTestIdentifier id = result.id();
+
+            if (!owner.equals("all")) {
+                final JrsTestMetadata testMetadata = metadata.get(id);
+                final String ownerFromMetadata = testMetadata == null ? "" : testMetadata.owner();
+                if (!owner.equals(ownerFromMetadata)) {
+                    continue;
+                }
+            }
+
             final List<JrsTestResult> resultsForType = resultsByTestType.computeIfAbsent(id, k -> new ArrayList<>());
             resultsForType.add(result);
         }
@@ -530,6 +561,28 @@ public final class JrsTestReportGenerator {
         return new TestCount(uniqueTests, passingTests, failingTests, unknownTests);
     }
 
+    private static Map<String, TestCount> countTests(
+            @NonNull final List<JrsTestResult> results,
+            @NonNull final Map<JrsTestIdentifier, JrsTestMetadata> metadata,
+            @NonNull final List<String> owners) {
+
+        final Map<String, TestCount> testCountMap = new HashMap<>();
+
+        for (final String owner : owners) {
+            testCountMap.put(owner, countTestsForOwner(results, metadata, owner));
+        }
+
+        if (!testCountMap.containsKey("")) {
+            testCountMap.put("", new TestCount(0, 0, 0, 0));
+        }
+
+        if (!testCountMap.containsKey("all")) {
+            testCountMap.put("all", countTestsForOwner(results, metadata, "all"));
+        }
+
+        return testCountMap;
+    }
+
     @NonNull
     private static String generateEmotion(final int passPercentage) {
         if (passPercentage == 100) {
@@ -537,9 +590,9 @@ public final class JrsTestReportGenerator {
         } else if (passPercentage >= 95) {
             return "(⌐■_■)";
         } else if (passPercentage >= 90) {
-            return "ಠ⌣ಠ";
+            return "(ಠ⌣ಠ)";
         } else if (passPercentage >= 80) {
-            return "ಠ_ಠ";
+            return "(ಠ_ಠ)";
         } else if (passPercentage >= 70) {
             return "(ಥ_ಥ)";
         } else if (passPercentage >= 60) {
@@ -547,17 +600,26 @@ public final class JrsTestReportGenerator {
         } else if (passPercentage >= 50) {
             return "ლ(ಠ益ಠლ)";
         } else if (passPercentage >= 40) {
-            return "(╯°□°）╯︵ ┻━┻";
+            return "(つ◉益◉)つ";
         } else if (passPercentage >= 30) {
-            return "(ノಠ益ಠ)ノ彡┻━┻";
+            return "(╯°□°）╯︵ ┻━┻";
         } else if (passPercentage >= 20) {
+            return "(ノಠ益ಠ)ノ彡┻━┻";
+        } else if (passPercentage >= 10) {
             return "┻━┻ ︵ヽ(`Д´)ﾉ︵ ┻━┻";
-        } else {
+        } else if (passPercentage >= 0) {
             return "(︺︹︺)";
+        } else {
+            return "¯\\_(ツ)_/¯";
         }
     }
 
-    private static void generateSummary(@NonNull final StringBuilder sb, @NonNull final JrsReportData data) {
+    private static void generateOverview(
+            @NonNull final StringBuilder sb,
+            @NonNull final JrsReportData data,
+            @NonNull final String owner,
+            @NonNull final TestCount testCount,
+            final boolean hidden) {
 
         final LocalDate localDate =
                 data.reportTime().atZone(ZoneId.systemDefault()).toLocalDate();
@@ -569,12 +631,16 @@ public final class JrsTestReportGenerator {
                 DateTimeFormatter.ofLocalizedDateTime(FormatStyle.FULL).format(zonedDateTime);
         final String[] dateParts = date.split(" at ");
 
-        final TestCount testCount = countTests(data.testResults());
-        final int percentPassing = (int) (100.0 * testCount.passingTests() / testCount.uniqueTests());
+        final int percentPassing;
+        if (testCount.uniqueTests() == 0) {
+            percentPassing = -1;
+        } else {
+            percentPassing = (int) (100.0 * testCount.passingTests() / testCount.uniqueTests());
+        }
 
         sb.append(
                 """
-                        <table class="summaryTable">
+                        <table id="overview_%s" style="display: %s" class="overview">
                             <tr>
                                 <td><b>Directory</b></td>
                                 <td>%s</td>
@@ -614,16 +680,31 @@ public final class JrsTestReportGenerator {
                         </table>
                         """
                         .formatted(
+                                owner,
+                                hidden ? "none" : "block",
                                 data.directory(),
                                 dateParts[0],
                                 dateParts[1],
                                 data.reportSpan(),
-                                percentPassing,
+                                percentPassing == -1 ? "--" : percentPassing,
                                 generateEmotion(percentPassing),
                                 testCount.uniqueTests(),
                                 testCount.passingTests(),
                                 testCount.failingTests(),
                                 testCount.unknownTests()));
+    }
+
+    private static void generateOverviews(
+            @NonNull final StringBuilder sb,
+            @NonNull final JrsReportData data,
+            @NonNull final List<String> owners,
+            @NonNull final Map<String, TestCount> testCountMap) {
+
+        generateOverview(sb, data, "all", testCountMap.get("all"), false);
+        generateOverview(sb, data, "unassigned", testCountMap.get(""), true);
+        for (final String owner : owners) {
+            generateOverview(sb, data, owner, testCountMap.get(owner), true);
+        }
     }
 
     private static void generateOrderControls(@NonNull final StringBuilder sb) {
@@ -638,38 +719,60 @@ public final class JrsTestReportGenerator {
                         """);
     }
 
-    private static void generateOwnerControls(@NonNull final StringBuilder sb) {
-        sb.append("<center><h1><b>Owner</b></h1></center><br>\n");
-        sb.append("<p>Note: this feature is a WIP and is not currently functional.</p>\n");
+    private static void generateOwnerControls(
+            @NonNull final StringBuilder sb,
+            @NonNull final List<String> owners,
+            @NonNull final Map<String, TestCount> testCountMap) {
+
         sb.append("""
+                <center><h1><b>Owner</b></h1></center><br>
                 <form autocomplete="off">
-                """);
-        sb.append(
-                """
-                <input type="radio" name="order" value="name" onclick="showAllRows()" checked> all (163)<br>
-                """);
-        sb.append(
-                """
-                <input type="radio" name="order" value="age" onclick="showIfOwnedBy('')"> unassigned (0)<br>
-                """);
-        sb.append(
-                """
-                <input type="radio" name="order" value="status" onclick="showIfOwnedBy('platform')"> platform (50)<br>
-                """);
-        sb.append(
-                """
-                <input type="radio" name="order" value="status" onclick="showIfOwnedBy('services')"> services (113)<br>
-                """);
+                <input type="radio" name="order" value="name" onclick="switchToOwnerView('all')" checked> all (%s)<br>
+                <input type="radio" name="order" value="age" onclick="switchToOwnerView('')"> unassigned (%s)<br>
+                """.formatted(testCountMap.get("all").uniqueTests(), testCountMap.get("").uniqueTests()));
+
+        for (final String owner : owners) {
+            sb.append(
+                    """
+                            <input type="radio" name="order" value="status" onclick="switchToOwnerView('%s')"> %s (%s)<br>
+                            """.formatted(owner, owner, testCountMap.get(owner).uniqueTests()));
+        }
         sb.append("</form>\n");
     }
 
-    private static void generateSidePanel(@NonNull final StringBuilder sb, @NonNull final JrsReportData data) {
+    @NonNull
+    private static List<String> findOwners(
+            @NonNull final JrsReportData data,
+            @NonNull final Map<JrsTestIdentifier, JrsTestMetadata> metadata) {
+
+        final Set<String> owners = new HashSet<>();
+
+        for (final JrsTestResult result : data.testResults()) {
+            final JrsTestMetadata testMetadata = metadata.get(result.id());
+            if (testMetadata != null && !testMetadata.owner().isBlank()) {
+                owners.add(testMetadata.owner());
+            }
+        }
+
+        final List<String> ownerList = new ArrayList<>(owners);
+        ownerList.sort(String::compareTo);
+        return ownerList;
+    }
+
+    private static void generateSidePanel(
+            @NonNull final StringBuilder sb,
+            @NonNull final JrsReportData data,
+            @NonNull final Map<JrsTestIdentifier, JrsTestMetadata> metadata) {
+
+        final List<String> owners = findOwners(data, metadata);
+        final Map<String, TestCount> testCountMap = countTests(data.testResults(), metadata, owners);
+
         sb.append("<div class=\"sidePanel\">\n");
-        generateSummary(sb, data);
+        generateOverviews(sb, data, owners, testCountMap);
         sb.append("<hr>");
         generateOrderControls(sb);
         sb.append("<hr>");
-        generateOwnerControls(sb);
+        generateOwnerControls(sb, owners, testCountMap);
         sb.append("</div>\n");
     }
 
@@ -693,7 +796,7 @@ public final class JrsTestReportGenerator {
                 </td>
                 <td style="vertical-align: top;">
                 """);
-        generateSidePanel(sb, data);
+        generateSidePanel(sb, data, metadata);
         sb.append(
                 """
                         </td>
@@ -710,9 +813,13 @@ public final class JrsTestReportGenerator {
             @NonNull final Instant now,
             @NonNull final String bucketPrefix,
             @NonNull final String bucketPrefixReplacement) {
+
         sb.append("<!DOCTYPE html>\n");
         sb.append("<html>\n");
         generateHeader(sb, now);
+        sb.append("""
+                <body onload="colorAllTableRows()">
+                """);
         generateBody(sb, data, metadata, now, bucketPrefix, bucketPrefixReplacement);
         sb.append("</body>\n");
         sb.append("</html>\n");
