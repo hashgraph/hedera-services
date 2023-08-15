@@ -17,7 +17,6 @@
 package com.swirlds.platform.state.signed;
 
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.state.PlatformState;
@@ -62,16 +61,21 @@ public record SignedStateValidationData(
      * @see PlatformData#getInfoString()
      */
     public String getInfoString() {
-        final TextTable infoTable = new TextTable();
-        infoTable.addRow("Round", round);
-        infoTable.addRow("Number of consensus events", numberOfConsensusEvents);
-        infoTable.addRow(
-                "Consensus events running hash",
-                consensusEventsRunningHash == null ? "null" : consensusEventsRunningHash.toMnemonic());
-        infoTable.addRow("Consensus timestamp", consensusTimestamp);
-        infoTable.addRow("Last timestamp", lastTransactionTimestamp);
-        infoTable.addRow("Epoch hash", epochHash == null ? "null" : epochHash.toMnemonic());
-
-        return infoTable.toString();
+        return new StringBuilder()
+                .append("Round = ")
+                .append(round)
+                .append(", number of consensus events = ")
+                .append(numberOfConsensusEvents)
+                .append(", consensus timestamp = ")
+                .append(consensusTimestamp)
+                .append(", last timestamp = ")
+                .append(lastTransactionTimestamp)
+                .append(", consensus Events running hash = ")
+                .append(consensusEventsRunningHash)
+                .append(", address book hash = ")
+                .append(addressBookHash != null ? addressBookHash : "not provided")
+                .append(", epoch hash = ")
+                .append(epochHash)
+                .toString();
     }
 }

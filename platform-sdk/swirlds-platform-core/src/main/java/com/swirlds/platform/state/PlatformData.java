@@ -529,20 +529,18 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
      * @see PlatformState#getInfoString()
      */
     public String getInfoString() {
-        final TextTable infoTable = new TextTable();
-        infoTable.addRow("Round", round);
-        infoTable.addRow("Number of consensus events", numEventsCons);
-        infoTable.addRow(
-                "Consensus events running hash", hashEventsCons == null ? "null" : hashEventsCons.toMnemonic());
-        infoTable.addRow("Consensus timestamp", consensusTimestamp);
-        infoTable.addRow("Last timestamp", lastTransactionTimestamp);
-        infoTable.addRow("Rounds non-ancient", roundsNonAncient);
-        infoTable.addRow("Creation software version", creationSoftwareVersion);
-        infoTable.addRow("Epoch hash", epochHash == null ? "null" : epochHash.toMnemonic());
-        infoTable.addRow("Min gen info hash code", minGenInfo == null ? "null" : minGenInfo.hashCode());
-        infoTable.addRow("Events hash code", Arrays.hashCode(events));
-
-        return infoTable.toString();
+        return new TextTable()
+                .addRow("Round", round)
+                .addRow("Number of consensus events", numEventsCons)
+                .addRow("Consensus events running hash", hashEventsCons == null ? "null" : hashEventsCons.toMnemonic())
+                .addRow("Consensus timestamp", consensusTimestamp)
+                .addRow("Last timestamp", lastTransactionTimestamp)
+                .addRow("Rounds non-ancient", roundsNonAncient)
+                .addRow("Creation software version", creationSoftwareVersion)
+                .addRow("Epoch hash", epochHash == null ? "null" : epochHash.toMnemonic())
+                .addRow("Min gen info hash code", minGenInfo == null ? "null" : minGenInfo.hashCode())
+                .addRow("Events hash code", Arrays.hashCode(events))
+                .render();
     }
 
     /**
