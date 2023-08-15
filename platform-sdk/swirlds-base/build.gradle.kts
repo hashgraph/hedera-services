@@ -20,9 +20,4 @@ plugins {
     id("java-test-fixtures")
 }
 
-dependencies {
-    javaModuleDependencies {
-        testImplementation(project(":swirlds-base"))
-        testImplementation(gav("org.junit.jupiter.api"))
-    }
-}
+dependencies { javaModuleDependencies { testImplementation(gav("org.junit.jupiter.api")) } }

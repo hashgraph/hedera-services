@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import com.autonomousapps.AbstractExtension
+import com.autonomousapps.DependencyAnalysisSubExtension
 
 plugins {
     id("java")
@@ -168,4 +170,14 @@ tasks.jacocoTestReport {
 tasks.assemble {
     // 'assemble' compiles all sources, including all test sources
     dependsOn(tasks.testClasses)
+}
+
+// Do not report dependencies from one source set to another as 'required'.
+// In particular, in case of test fixtures, the analysis would suggest to
+// add as testModuleInfo { require(...) } to the main module. This is
+// conceptually wrong, because in whitebox testing the 'main' and 'test'
+// module are conceptually considered one module (main module extended with tests)
+val dependencyAnalysis = extensions.findByType<AbstractExtension>()
+if (dependencyAnalysis is DependencyAnalysisSubExtension) {
+    dependencyAnalysis.issues { onAny { exclude(project.path) } }
 }

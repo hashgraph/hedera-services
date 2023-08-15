@@ -25,7 +25,6 @@ dependencies {
         runtimeOnly(gav("resource.loader"))
         runtimeOnly(gav("com.sun.jna"))
 
-        testImplementation(project(":swirlds-common"))
         testImplementation(project(":swirlds-common-testing"))
         testImplementation(project(":swirlds-test-framework"))
         testImplementation(testFixtures(project(":swirlds-base")))
