@@ -51,13 +51,27 @@ public class KeyUtils {
             return true;
         }
         if (pbjKey.hasKeyList()) {
-            return !((KeyList) key.value()).hasKeys()
-                    || (((KeyList) key.value()).hasKeys()
-                            && ((KeyList) key.value()).keys().isEmpty());
+            final var keyList = (KeyList) key.value();
+            if (!keyList.hasKeys() || keyList.keys().size() == 0) {
+                return true;
+            }
+            for (final var k : keyList.keys()) {
+                if (isEmpty(k)) {
+                    return true;
+                }
+            }
+            return false;
         } else if (pbjKey.hasThresholdKey()) {
-            return !((ThresholdKey) key.value()).hasKeys()
-                    || (((ThresholdKey) key.value()).hasKeys()
-                            && ((ThresholdKey) key.value()).keys().keys().isEmpty());
+            final var thresholdKey = (ThresholdKey) key.value();
+            if ((!thresholdKey.hasKeys() || thresholdKey.keys().keys().size() == 0)) {
+                return true;
+            }
+            for (final var k : thresholdKey.keys().keys()) {
+                if (isEmpty(k)) {
+                    return true;
+                }
+            }
+            return false;
         } else if (pbjKey.hasEd25519()) {
             return ((Bytes) key.value()).length() == 0;
         } else if (pbjKey.hasEcdsaSecp256k1()) {

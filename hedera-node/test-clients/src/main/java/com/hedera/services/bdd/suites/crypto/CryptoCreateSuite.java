@@ -690,7 +690,6 @@ public class CryptoCreateSuite extends HapiSuite {
                 .then();
     }
 
-    @HapiTest
     private HapiSpec createAnAccountWithEVMAddressAliasFromDifferentKey() {
         return defaultHapiSpec("createAnAccountWithEVMAddressAliasFromDifferentKey")
                 .given(

@@ -17,11 +17,13 @@
 package com.hedera.node.app.service.token.impl.validators;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ALIAS_ALREADY_ASSIGNED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_REQUIRED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl.isMirror;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
+import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
@@ -65,7 +67,7 @@ public class CryptoCreateValidator {
             @NonNull final CryptoCreateWithAliasConfig config,
             @NonNull final ReadableAccountStore readableAccountStore) {
         if (op.hasKey() && op.alias().equals(Bytes.EMPTY)) {
-            attributeValidator.validateKey(op.keyOrThrow());
+            validateKey(op, attributeValidator);
         } else if (!op.hasKey() && !op.alias().equals(Bytes.EMPTY)) {
             final var responseCode = config.enabled() ? INVALID_ALIAS_KEY : NOT_SUPPORTED;
             throw new HandleException(responseCode);
@@ -77,6 +79,18 @@ public class CryptoCreateValidator {
         }
     }
 
+    private void validateKey(
+            @NonNull final CryptoCreateTransactionBody op, @NonNull final AttributeValidator attributeValidator) {
+        final var key = op.key();
+        if (isEmpty(key)) {
+            throw new HandleException(KEY_REQUIRED);
+        }
+        if (isValid(op.key())) {
+            throw new HandleException(INVALID_ADMIN_KEY);
+        }
+        attributeValidator.validateKey(op.keyOrThrow());
+    }
+
     private void validateKeyAndAliasProvidedCase(
             @NonNull final CryptoCreateTransactionBody op,
             @NonNull final AttributeValidator attributeValidator,
@@ -84,9 +98,7 @@ public class CryptoCreateValidator {
             @NonNull final ReadableAccountStore readableAccountStore) {
         validateTrue(config.enabled(), NOT_SUPPORTED);
         // TODO - to match the mono-service synthetic hollow account creation, we need an empty key list here
-        if (!isEmpty(op.keyOrThrow())) {
-            attributeValidator.validateKey(op.keyOrThrow());
-        }
+        validateKey(op, attributeValidator);
         validateTrue(op.alias().length() == EVM_ADDRESS_SIZE, INVALID_ALIAS_KEY);
         validateFalse(isMirror(op.alias()), INVALID_ALIAS_KEY);
         validateTrue(readableAccountStore.getAccountIDByAlias(op.alias()) == null, ALIAS_ALREADY_ASSIGNED);
