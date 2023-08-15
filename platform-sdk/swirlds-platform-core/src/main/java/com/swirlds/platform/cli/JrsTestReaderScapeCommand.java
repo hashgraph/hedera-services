@@ -25,9 +25,12 @@ import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.platform.testreader.JrsReportData;
 import com.swirlds.platform.util.VirtualTerminal;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.concurrent.Executors;
 import picocli.CommandLine;
 
@@ -67,7 +70,7 @@ public class JrsTestReaderScapeCommand extends AbstractCommand {
             names = {"-o", "--output"},
             description = "Specify the path to the output csv file. Defaults to 'testData.csv'.")
     private void setOutput(@NonNull final Path output) {
-        this.output = pathMustNotExist(getAbsolutePath(output));
+        this.output = Objects.requireNonNull(getAbsolutePath(output));
     }
 
     @CommandLine.Option(
@@ -81,6 +84,14 @@ public class JrsTestReaderScapeCommand extends AbstractCommand {
     public Integer call() {
         final VirtualTerminal terminal =
                 new VirtualTerminal().setProgressIndicatorEnabled(true).setThrowOnError(true);
+
+        if (Files.exists(output)) {
+            try {
+                Files.delete(output);
+            } catch (final IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
 
         final Instant now = Instant.now();
 

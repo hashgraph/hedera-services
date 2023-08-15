@@ -117,7 +117,7 @@ public final class JrsTestReportGenerator {
                             }
                             .sidePanel {
                                 position: sticky;
-                                top: 0;
+                                top: 12px;
                             }
                             .topLevelTable > tbody > tr > td {
                                 border: none;
@@ -143,19 +143,47 @@ public final class JrsTestReportGenerator {
                 """
                         <script>
                             function sortByName() {
-                                document.getElementById('table_sortedByName').style.display = "block"
-                                document.getElementById('table_sortedByAge').style.display = "none"
-                                document.getElementById('table_sortedByStatus').style.display = "none"
+                                document.getElementById('table_sortedByName').style.display = "block";
+                                document.getElementById('table_sortedByAge').style.display = "none";
+                                document.getElementById('table_sortedByStatus').style.display = "none";
                             }
                             function sortByAge() {
-                                document.getElementById('table_sortedByName').style.display = "none"
-                                document.getElementById('table_sortedByAge').style.display = "block"
-                                document.getElementById('table_sortedByStatus').style.display = "none"
+                                document.getElementById('table_sortedByName').style.display = "none";
+                                document.getElementById('table_sortedByAge').style.display = "block";
+                                document.getElementById('table_sortedByStatus').style.display = "none";
                             }
                             function sortByStatus() {
-                                document.getElementById('table_sortedByName').style.display = "none"
-                                document.getElementById('table_sortedByAge').style.display = "none"
-                                document.getElementById('table_sortedByStatus').style.display = "block"
+                                document.getElementById('table_sortedByName').style.display = "none";
+                                document.getElementById('table_sortedByAge').style.display = "none";
+                                document.getElementById('table_sortedByStatus').style.display = "block";
+                            }
+                            function showInTableIfOwnedBy(owner, tableId) {
+                                var table = document.getElementById(tableId);
+                                for (var i = 1, row; row = table.rows[i]; i++) {
+                                    // owner is in column 2
+                                    var rowOwner = row.cells[2].innerHTML;
+                                    if (rowOwner == owner) {
+                                        row.style.display = "table-row";
+                                    } else {
+                                        row.style.display = "none";
+                                    }
+                                }
+                            }
+                            function showIfOwnedBy(owner) {
+                                showInTableIfOwnedBy(owner, 'table_sortedByName');
+                                showInTableIfOwnedBy(owner, 'table_sortedByAge');
+                                showInTableIfOwnedBy(owner, 'table_sortedByStatus')
+                            }
+                            function showAllRowsInTable(tableId) {
+                                var table = document.getElementById(tableId);
+                                for (var i = 1, row; row = table.rows[i]; i++) {
+                                    row.style.display = "table-row";
+                                }
+                            }
+                            function showAllRows() {
+                                showAllRowsInTable('table_sortedByName');
+                                showAllRowsInTable('table_sortedByAge');
+                                showAllRowsInTable('table_sortedByStatus');
                             }
                         </script>
                         """);
@@ -581,23 +609,37 @@ public final class JrsTestReportGenerator {
     private static void generateOrderControls(@NonNull final StringBuilder sb) {
         sb.append(
                 """
-                <center><h1><b>Ordering</b></h1></center><br>
-                <form>
-                    <input type="radio" name="order" onclick="sortByName()" checked> name<br>
-                    <input type="radio" name="order" onclick="sortByAge()"> age<br>
-                    <input type="radio" name="order" onclick="sortByStatus()"> status<br>
-                </form>
-                """);
+                        <center><h1><b>Ordering</b></h1></center><br>
+                        <form autocomplete="off">
+                            <input type="radio" name="order" onclick="sortByName()" checked> name<br>
+                            <input type="radio" name="order" onclick="sortByAge()"> age<br>
+                            <input type="radio" name="order" onclick="sortByStatus()"> status<br>
+                        </form>
+                        """);
     }
 
     private static void generateOwnerControls(@NonNull final StringBuilder sb) {
         sb.append("<center><h1><b>Owner</b></h1></center><br>\n");
         sb.append("<p>Note: this feature is a WIP and is not currently functional.</p>\n");
-        sb.append("<form>\n");
-        sb.append("<input type=\"radio\" name=\"order\" value=\"name\" checked> all (163)<br>\n");
-        sb.append("<input type=\"radio\" name=\"order\" value=\"age\"> unassigned (0)<br>\n");
-        sb.append("<input type=\"radio\" name=\"order\" value=\"status\"> platform (50)<br>\n");
-        sb.append("<input type=\"radio\" name=\"order\" value=\"status\"> services (113)<br> \n");
+        sb.append("""
+                <form autocomplete="off">
+                """);
+        sb.append(
+                """
+                <input type="radio" name="order" value="name" onclick="showAllRows()" checked> all (163)<br>
+                """);
+        sb.append(
+                """
+                <input type="radio" name="order" value="age" onclick="showIfOwnedBy('')"> unassigned (0)<br>
+                """);
+        sb.append(
+                """
+                <input type="radio" name="order" value="status" onclick="showIfOwnedBy('platform')"> platform (50)<br>
+                """);
+        sb.append(
+                """
+                <input type="radio" name="order" value="status" onclick="showIfOwnedBy('services')"> services (113)<br>
+                """);
         sb.append("</form>\n");
     }
 

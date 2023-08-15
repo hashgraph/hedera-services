@@ -27,11 +27,13 @@ import com.swirlds.platform.testreader.JrsReportData;
 import com.swirlds.platform.testreader.JrsTestIdentifier;
 import com.swirlds.platform.testreader.JrsTestMetadata;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import picocli.CommandLine;
 
 @CommandLine.Command(
@@ -39,7 +41,7 @@ import picocli.CommandLine;
         mixinStandardHelpOptions = true,
         description = "Render test data into an HTML report.")
 @SubcommandOf(JrsTestReaderCommand.class)
-public class JrsTestReaderRender extends AbstractCommand {
+public class JrsTestReaderRenderCommand extends AbstractCommand {
 
     private Path testData;
     private String bucketPrefix;
@@ -47,7 +49,7 @@ public class JrsTestReaderRender extends AbstractCommand {
     private Path metadataFile;
     private Path output = Path.of("report.html");
 
-    private JrsTestReaderRender() {}
+    private JrsTestReaderRenderCommand() {}
 
     @CommandLine.Parameters(description = "The csv file where test data can be found.", index = "0")
     private void setTestData(@NonNull final Path testData) {
@@ -72,7 +74,7 @@ public class JrsTestReaderRender extends AbstractCommand {
             names = {"-o", "--output"},
             description = "Specify the path to the output html file. Defaults to 'report.html'.")
     private void setOutput(@NonNull final Path output) {
-        this.output = pathMustNotExist(getAbsolutePath(output));
+        this.output = Objects.requireNonNull(getAbsolutePath(output));
     }
 
     @CommandLine.Option(
@@ -84,6 +86,14 @@ public class JrsTestReaderRender extends AbstractCommand {
 
     @Override
     public Integer call() {
+        if (Files.exists(output)) {
+            try {
+                Files.delete(output);
+            } catch (final IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
         final JrsReportData data = loadTestResults(testData);
 
         final Map<JrsTestIdentifier, JrsTestMetadata> metadata;
