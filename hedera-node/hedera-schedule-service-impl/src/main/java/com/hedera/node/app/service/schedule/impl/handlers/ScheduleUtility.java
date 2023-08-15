@@ -122,11 +122,11 @@ public final class ScheduleUtility {
     static Schedule markExecuted(@NonNull final Schedule schedule, @NonNull final Instant consensusTime) {
         final Timestamp consensusTimestamp = new Timestamp(consensusTime.getEpochSecond(), consensusTime.getNano());
         return new Schedule(
+                schedule.scheduleId(),
                 schedule.deleted(),
                 true,
                 schedule.waitForExpiry(),
                 schedule.memo(),
-                schedule.scheduleId(),
                 schedule.schedulerAccountId(),
                 schedule.payerAccountId(),
                 schedule.adminKey(),
@@ -142,11 +142,11 @@ public final class ScheduleUtility {
     @NonNull
     static Schedule replaceSignatories(@NonNull final Schedule schedule, @NonNull final Set<Key> newSignatories) {
         return new Schedule(
+                schedule.scheduleId(),
                 schedule.deleted(),
                 schedule.executed(),
                 schedule.waitForExpiry(),
                 schedule.memo(),
-                schedule.scheduleId(),
                 schedule.schedulerAccountId(),
                 schedule.payerAccountId(),
                 schedule.adminKey(),
@@ -166,11 +166,11 @@ public final class ScheduleUtility {
             @NonNull final Instant consensusTime) {
         final Timestamp consensusTimestamp = new Timestamp(consensusTime.getEpochSecond(), consensusTime.getNano());
         return new Schedule(
+                schedule.scheduleId(),
                 schedule.deleted(),
                 true,
                 schedule.waitForExpiry(),
                 schedule.memo(),
-                schedule.scheduleId(),
                 schedule.schedulerAccountId(),
                 schedule.payerAccountId(),
                 schedule.adminKey(),
@@ -313,7 +313,8 @@ public final class ScheduleUtility {
             addToHash(hasher, scheduleToHash.scheduledTransaction());
         }
         if (scheduleToHash.providedExpirationSeconds() != Schedule.DEFAULT.providedExpirationSeconds()) {
-            addToHash(hasher, scheduleToHash.providedExpirationSeconds());
+            hasher.putLong(scheduleToHash.providedExpirationSeconds());
+            //            addToHash(hasher, scheduleToHash.providedExpirationSeconds());
         }
         hasher.putBoolean(scheduleToHash.waitForExpiry());
         return hasher.hash().toString();

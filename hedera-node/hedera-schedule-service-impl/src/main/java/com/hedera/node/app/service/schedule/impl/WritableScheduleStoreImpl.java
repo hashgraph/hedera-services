@@ -124,11 +124,11 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
     private Schedule markDeleted(final Schedule schedule, final Instant consensusTime) {
         final Timestamp consensusTimestamp = new Timestamp(consensusTime.getEpochSecond(), consensusTime.getNano());
         return new Schedule(
+                schedule.scheduleId(),
                 true,
                 schedule.executed(),
                 schedule.waitForExpiry(),
                 schedule.memo(),
-                schedule.scheduleId(),
                 schedule.schedulerAccountId(),
                 schedule.payerAccountId(),
                 schedule.adminKey(),
