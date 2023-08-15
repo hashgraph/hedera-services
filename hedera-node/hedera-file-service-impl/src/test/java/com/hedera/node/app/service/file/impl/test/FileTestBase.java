@@ -32,7 +32,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.file.File;
-import com.hedera.hapi.node.state.primitive.ProtoBytes;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.ReadableUpgradeFileStoreImpl;
 import com.hedera.node.app.service.file.impl.WritableFileStore;

@@ -14,14 +14,22 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.portforwarding;
+package com.swirlds.cli.utility;
 
-public interface PortMappingListener {
-    public void noForwardingDeviceFound();
-
-    public void foundExternalIp(String ip);
-
-    public void mappingAdded(PortMapping mapping);
-
-    public void mappingFailed(PortMapping mapping, Exception e);
+/**
+ * Format types that logs can be in
+ */
+public enum LogOutputFormat {
+    /**
+     * Plain text formatting
+     */
+    PLAINTEXT,
+    /**
+     * Formatting for ANSI terminals
+     */
+    ANSI,
+    /**
+     * HTML formatting
+     */
+    HTML
 }
