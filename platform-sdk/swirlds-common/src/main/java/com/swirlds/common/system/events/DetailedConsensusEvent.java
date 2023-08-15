@@ -25,8 +25,8 @@ import com.swirlds.common.io.OptionalSelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.IOException;
+import java.util.Objects;
 import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
@@ -158,11 +158,7 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable
      */
     @Override
     public int hashCode() {
-        return new HashCodeBuilder()
-                .append(baseEventHashedData.hashCode())
-                .append(baseEventUnhashedData.hashCode())
-                .append(consensusData.hashCode())
-                .build();
+        return Objects.hash(baseEventHashedData, baseEventUnhashedData, consensusData);
     }
 
     /**

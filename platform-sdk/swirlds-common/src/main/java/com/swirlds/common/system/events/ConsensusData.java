@@ -24,7 +24,6 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Objects;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
@@ -94,9 +93,13 @@ public class ConsensusData implements SelfSerializable {
 
     @Override
     public boolean equals(final Object o) {
-        if (this == o) return true;
+        if (this == o) {
+            return true;
+        }
 
-        if (o == null || getClass() != o.getClass()) return false;
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
 
         final ConsensusData that = (ConsensusData) o;
 
@@ -110,14 +113,7 @@ public class ConsensusData implements SelfSerializable {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder(17, 37)
-                .append(generation)
-                .append(roundCreated)
-                .append(stale)
-                .append(roundReceived)
-                .append(consensusOrder)
-                .append(consensusTimestamp)
-                .toHashCode();
+        return Objects.hash(generation, roundCreated, stale, consensusTimestamp, roundReceived, consensusOrder);
     }
 
     @Override
