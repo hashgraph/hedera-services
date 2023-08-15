@@ -111,7 +111,7 @@ public abstract class AbstractContractXTest {
         for (final var txn : txns) {
             final var context = scaffoldingComponent.contextFactory().apply(txn);
             handler.handle(context);
-            ((SavepointStackImpl) context.savepointStack()).commit();
+            ((SavepointStackImpl) context.savepointStack()).commitFullStack();
         }
     }
 

@@ -21,7 +21,6 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.network.Network;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.net.InetAddress;
-import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.Objects;
 
@@ -43,7 +42,7 @@ public final class AddressBookNetworkUtils {
         Objects.requireNonNull(address, "The address must not be null.");
         try {
             return Network.isOwn(InetAddress.getByName(address.getHostnameInternal()));
-        } catch (final SocketException | UnknownHostException e) {
+        } catch (final UnknownHostException e) {
             throw new IllegalStateException(
                     "Not able to determine locality of address [%s] for node [%s]"
                             .formatted(address.getHostnameInternal(), address.getNodeId()),

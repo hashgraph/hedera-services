@@ -36,6 +36,7 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnF
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.NodeStake;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
@@ -297,18 +298,46 @@ public class EndOfStakingPeriodCalculator {
     long rewardRateForEndingPeriod(final long stakedToReward) {
         // The balance left in 0.0.800 (in tinybars), after paying all rewards earned so far
         final var unreservedBalance = rewardsBalance() - networkCtx.get().pendingRewards();
-
         final var thresholdBalance = dynamicProperties.stakingRewardBalanceThreshold();
         // A number proportional to the unreserved balance, from 0 for empty, up to 1 at the threshold
-        final var balanceRatio = thresholdBalance > 0L
+        final var balanceRatio = ratioOf(unreservedBalance, thresholdBalance);
+
+        return rewardRateForEndingPeriod(balanceRatio, stakedToReward, dynamicProperties.stakingRewardRate());
+    }
+
+    /**
+     * Given the {@code 0.0.800} unreserved balance and its threshold setting, returns the ratio of the balance to the
+     * threshold, from 0 for empty, up to 1 at the threshold.
+     *
+     * @param unreservedBalance the balance in {@code 0.0.800} minus the pending rewards
+     * @param thresholdBalance the threshold balance setting
+     * @return the ratio of the balance to the threshold, from 0 for empty, up to 1 at the threshold
+     */
+    @VisibleForTesting
+    BigDecimal ratioOf(final long unreservedBalance, final long thresholdBalance) {
+        return thresholdBalance > 0L
                 ? BigDecimal.valueOf(Math.min(unreservedBalance, thresholdBalance))
                         .divide(BigDecimal.valueOf(thresholdBalance), MATH_CONTEXT)
                 : BigDecimal.ONE;
+    }
 
+    /**
+     * Given the {@code 0.0.800} balance ratio relative to the threshold, the amount that was staked to reward at the
+     * start of the period that is now ending, and the maximum amount of tinybars to pay as staking rewards in the
+     * period, returns the effective per-hbar reward rate for the period.
+     *
+     * @param balanceRatio the ratio of the {@code 0.0.800} balance to the threshold
+     * @param stakedToReward the amount of hbars staked to reward at the start of the ending period
+     * @param maxTinybarsToPayInPeriod the maximum amount of tinybars to pay as staking rewards in the period
+     * @return the effective per-hbar reward rate for the period
+     */
+    @VisibleForTesting
+    long rewardRateForEndingPeriod(
+            @NonNull final BigDecimal balanceRatio, final long stakedToReward, final long maxTinybarsToPayInPeriod) {
         // When 0.0.800 has a high balance, and less than maxStakeRewarded is staked for reward, then
         // effectiveRewardRate == rewardRate. But as the balance drops or the staking increases, then
         // it can be the case that effectiveRewardRate < rewardRate
-        return BigDecimal.valueOf(dynamicProperties.stakingRewardRate())
+        return BigDecimal.valueOf(maxTinybarsToPayInPeriod)
                 .multiply(balanceRatio.multiply(BigDecimal.valueOf(2).subtract(balanceRatio)))
                 .multiply(
                         dynamicProperties.maxStakeRewarded() >= stakedToReward
