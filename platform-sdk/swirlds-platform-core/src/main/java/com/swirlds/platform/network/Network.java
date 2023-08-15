@@ -141,7 +141,7 @@ public class Network {
             for (final Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
                     interfaces.hasMoreElements(); ) {
                 for (final Enumeration<InetAddress> addresses =
-                        interfaces.nextElement().getInetAddresses();
+                                interfaces.nextElement().getInetAddresses();
                         addresses.hasMoreElements(); ) {
                     InetAddress addr = addresses.nextElement();
                     result.add(addr);
@@ -173,17 +173,17 @@ public class Network {
 
             // @formatter:off
             return
-                // Check for 10.x.x.x
-                firstBlock == 10
-                ||
-                // Check for 172.16.x.x - 172.31.x.x
-                (firstBlock == 172 && secondBlock >= 16 && secondBlock <= 31)
-                ||
-                // Check for 192.168.x.x
-                (firstBlock == 192 && secondBlock == 168)
-                ||
-                // Check for localhost (starts with 127)
-                (firstBlock == 127);
+            // Check for 10.x.x.x
+            firstBlock == 10
+                    ||
+                    // Check for 172.16.x.x - 172.31.x.x
+                    (firstBlock == 172 && secondBlock >= 16 && secondBlock <= 31)
+                    ||
+                    // Check for 192.168.x.x
+                    (firstBlock == 192 && secondBlock == 168)
+                    ||
+                    // Check for localhost (starts with 127)
+                    (firstBlock == 127);
             // @formatter:on
         }
 
