@@ -80,39 +80,48 @@ public final class JrsTestReportGenerator {
     }
 
     private static void generateTitle(@NonNull final StringBuilder sb, @NonNull final Instant now) {
-        sb.append("<title>").append("JRS Test Report: ").append(now).append("</title>\n"); // TODO date formatting
+        sb.append("<title>").append("JRS Test Report: ").append(now).append("</title>\n");
     }
 
     private static void generatePageStyle(@NonNull final StringBuilder sb) {
         final LocalDate currentDate = LocalDate.now();
         final boolean april2 = currentDate.getMonth().equals(Month.APRIL) && currentDate.getDayOfMonth() == 2;
-        final String april2Style; // TODO test with today's date
+        final String font;
         if (april2) {
-            april2Style =
-                    """
-                            /* you have activated my trap card */
-                            html * {
-                                font-family: Snell Roundhand, cursive;
-                            }""";
+            font = "Snell Roundhand, cursive";
         } else {
-            april2Style = "";
+            font = "Jetbrains Mono, monospace";
         }
 
         sb.append(
                 """
                         <style>
+                            body {
+                                font-family: %s;
+                                font-size: 14px;
+                                color: #bdbfc4;
+                                background-color: #1e1e23;
+                            }
                             .testDataTable > tbody > tr > th {
-                                border: 1px solid black;
-                                background-color: #96D4D4;
                                 position: sticky;
                                 top: 0;
-                                padding: 5px;
+                                border: 2px #AAAAAA solid;
+                                padding: 3px;
+                                background-color: #1e1e23;
+                                font-size: 16px;
+                                color: #DDDDDD;
                             }
                             .testDataTable > tbody > tr > td {
-                                border: 1px solid black;
+                                border: 1px #555555 solid;
                                 padding: 10px;
                             }
-
+                            .testDataTable > tbody > tr:hover td {
+                                border: 3px solid gray;
+                                padding: 8px;
+                            }
+                            .testDataTable > tbody > tr > td:hover {
+                                border-color: red;
+                            }
                             .sidePanel {
                                 position: sticky;
                                 top: 12px;
@@ -121,15 +130,63 @@ public final class JrsTestReportGenerator {
                                 border: none;
                             }
                             .summaryTable > tbody > tr > td {
-                                    border: none;
-                                    padding-left: 5px;
-                                    padding-right: 5px;
-                                    vertical-align: top;
-                                }
-                            %s
+                                border: none;
+                                padding-left: 5px;
+                                padding-right: 5px;
+                                vertical-align: top;
+                            }
+                            .statusCell {
+                                color: black;
+                            }
+                            .important {
+                                color: #aea85d;
+                            }
+                            a:link {
+                                color: #538af7;
+                            }
+                            a:visited {
+                                color: #a64dff;
+                            }
+                            a:hover {
+                                color: yellow;
+                            }
+                            a:link.passLink {
+                                color: #3cb371;
+                            }
+                            a:visited.passLink {
+                                color: #267349;
+                            }
+                            a:hover.passLink {
+                                color: yellow;
+                            }
+                            a:link.failLink {
+                                color: #f0524f;
+                            }
+                            a:visited.failLink {
+                                color: #d31612;
+                            }
+                            a:hover.failLink {
+                                color: yellow;
+                            }
+                            a:link.unknownLink {
+                                color: slateBlue;
+                            }
+                            a:hover.unknownLink {
+                                color: slateBlue;
+                            }
+                            .leftColumn {
+                                vertical-align: top;
+                                horizontal-align: right;
+                                width: 75%%
+                            }
+                            .rightColumn {
+                                vertical-align: top;
+                                horizontal-align: left;
+                                width: 25%%
+                            }
                         </style>
                         """
-                        .formatted(april2Style));
+                        .formatted(font));
     }
 
     private static void generateJavascript(@NonNull final StringBuilder sb) {
@@ -205,17 +262,17 @@ public final class JrsTestReportGenerator {
                             }
                             function colorTableRows(tableId) {
                                 var table = document.getElementById(tableId);
-                                var white = true;
+                                var light = true;
                                 for (var i = 1, row; row = table.rows[i]; i++) {
                                     if (row.style.display == "none") {
                                         continue;
                                     }
-                                    if (white) {
-                                        row.style.backgroundColor = "white";
+                                    if (light) {
+                                        row.style.backgroundColor = "#2f2f37";
                                     } else {
-                                        row.style.backgroundColor = "lightgray";
+                                        row.style.backgroundColor = "#1e1e23";
                                     }
-                                    white = !white;
+                                    light = !light;
                                 }
                             }
                             function colorAllTableRows() {
@@ -240,7 +297,9 @@ public final class JrsTestReportGenerator {
     }
 
     private static void generateNameCell(@NonNull final StringBuilder sb, @NonNull final String testName) {
-        sb.append("<td><b>").append(testName).append("</b></td>\n");
+        sb.append("""
+                <td class="important">%s</td>
+                """.formatted(testName));
     }
 
     private static void generateOwnerCell(@NonNull final StringBuilder sb, @NonNull final String owner) {
@@ -252,27 +311,28 @@ public final class JrsTestReportGenerator {
 
         final Duration testAge = Duration.between(testTime, now);
         final String ageString = new UnitFormatter(testAge.toMillis(), UNIT_MILLISECONDS)
-                .setAbbreviate(false)
+                .setShowSpaceInBetween(false)
+                .setAbbreviate(true)
                 .render();
 
-        sb.append("<td>").append(ageString).append(" ago</td>\n");
+        sb.append("<td>").append(ageString).append("</td>\n");
     }
 
     private static void generateStatusCell(@NonNull final StringBuilder sb, @NonNull final TestStatus status) {
+        // TODO move this to the CSS
         final String statusColor;
         if (status == TestStatus.PASS) {
-            statusColor = "mediumSeaGreen";
+            statusColor = "#3cb371";
         } else if (status == TestStatus.FAIL) {
-            statusColor = "tomato";
+            statusColor = "#f0524f";
         } else {
             statusColor = "slateBlue";
         }
 
-        sb.append("<td bgcolor=\"")
-                .append(statusColor)
-                .append("\"><center>")
-                .append(status.name())
-                .append("</center></td>\n");
+        sb.append("""
+                <td class="statusCell" bgcolor="%s"><center>%s</center></td>
+                """
+                .formatted(statusColor, status.name()));
     }
 
     private static void generateHistoryCell(
@@ -290,18 +350,22 @@ public final class JrsTestReportGenerator {
 
             final String testUrl = generateWebBrowserUrl(result.testDirectory(), bucketPrefix, bucketPrefixReplacement);
             final String resultString;
-            final String color;
-            if (result.status() == PASS) {
+
+            final String linkClass;
+            if (result.status() == TestStatus.PASS) {
                 resultString = "P";
-                color = "mediumSeaGreen";
-            } else if (result.status() == FAIL) {
+                linkClass = "passLink";
+            } else if (result.status() == TestStatus.FAIL) {
                 resultString = "F";
-                color = "tomato";
+                linkClass = "failLink";
             } else {
                 resultString = "?";
-                color = "slateBlue";
+                linkClass = "unknownLink";
             }
-            generateColoredHyperlink(sb, resultString, testUrl, color);
+
+            sb.append("""
+                    <a class="%s" href="%s" target="_blank">%s</a>"""
+                    .formatted(linkClass, testUrl, resultString));
         }
 
         sb.append("</td>\n");
@@ -371,7 +435,7 @@ public final class JrsTestReportGenerator {
 
         sb.append(
                 """
-                        <table id="%s" style="display: %s" class="testDataTable">
+                        <table id="%s" style="display: %s" class="testDataTable" align="right">
                             <tr>
                                 <th>Panel</th>
                                 <th>Test Name</th>
@@ -511,8 +575,7 @@ public final class JrsTestReportGenerator {
                 true);
     }
 
-    private record TestCount(int uniqueTests, int passingTests, int failingTests, int unknownTests) {
-    }
+    private record TestCount(int uniqueTests, int passingTests, int failingTests, int unknownTests) {}
 
     @NonNull
     private static TestCount countTestsForOwner(
@@ -583,37 +646,6 @@ public final class JrsTestReportGenerator {
         return testCountMap;
     }
 
-    @NonNull
-    private static String generateEmotion(final int passPercentage) {
-        if (passPercentage == 100) {
-            return "ᕙ(⇀‸↼‶)ᕗ";
-        } else if (passPercentage >= 95) {
-            return "(⌐■_■)";
-        } else if (passPercentage >= 90) {
-            return "(ಠ⌣ಠ)";
-        } else if (passPercentage >= 80) {
-            return "(ಠ_ಠ)";
-        } else if (passPercentage >= 70) {
-            return "(ಥ_ಥ)";
-        } else if (passPercentage >= 60) {
-            return "(ಥ﹏ಥ)";
-        } else if (passPercentage >= 50) {
-            return "ლ(ಠ益ಠლ)";
-        } else if (passPercentage >= 40) {
-            return "(つ◉益◉)つ";
-        } else if (passPercentage >= 30) {
-            return "(╯°□°）╯︵ ┻━┻";
-        } else if (passPercentage >= 20) {
-            return "(ノಠ益ಠ)ノ彡┻━┻";
-        } else if (passPercentage >= 10) {
-            return "┻━┻ ︵ヽ(`Д´)ﾉ︵ ┻━┻";
-        } else if (passPercentage >= 0) {
-            return "(︺︹︺)";
-        } else {
-            return "¯\\_(ツ)_/¯";
-        }
-    }
-
     private static void generateOverview(
             @NonNull final StringBuilder sb,
             @NonNull final JrsReportData data,
@@ -642,39 +674,39 @@ public final class JrsTestReportGenerator {
                 """
                         <table id="overview_%s" style="display: %s" class="overview">
                             <tr>
-                                <td><b>Directory</b></td>
+                                <td class="important">Directory</td>
                                 <td>%s</td>
                             </tr>
                             <tr>
-                                <td><b>Date</b></td>
+                                <td class="important">Date</td>
                                 <td>%s</td>
                             </tr>
                             <tr>
-                                <td><b>Time</b></td>
+                                <td class="important">Time</td>
                                 <td>%s</td>
                             </tr>
                             <tr>
-                                <td><b>Span</b></td>
+                                <td class="important">Span</td>
                                 <td>%s days</td>
                             </tr>
                             <tr>
-                                <td><b>Pass Rate</b></td>
-                                <td>%s%% %s</td>
+                                <td class="important">Pass Rate</td>
+                                <td>%s%%</td>
                             </tr>
                             <tr>
-                                <td><b>Total</b></td>
+                                <td class="important">Total</td>
                                 <td>%s</td>
                             </tr>
                             <tr>
-                                <td><b>Passing</b></td>
+                                <td class="important">Passing</td>
                                 <td>%s</td>
                             </tr>
                             <tr>
-                                <td><b>Failing</b></td>
+                                <td class="important">Failing</td>
                                 <td>%s</td>
                             </tr>
                             <tr>
-                                <td><b>Unknown</b></td>
+                                <td class="important">Unknown</td>
                                 <td>%s</td>
                             </tr>
                         </table>
@@ -687,7 +719,6 @@ public final class JrsTestReportGenerator {
                                 dateParts[1],
                                 data.reportSpan(),
                                 percentPassing == -1 ? "--" : percentPassing,
-                                generateEmotion(percentPassing),
                                 testCount.uniqueTests(),
                                 testCount.passingTests(),
                                 testCount.failingTests(),
@@ -712,9 +743,9 @@ public final class JrsTestReportGenerator {
                 """
                         <center><h1><b>Ordering</b></h1></center><br>
                         <form autocomplete="off">
-                            <input type="radio" name="order" onclick="sortByName()" checked> name<br>
-                            <input type="radio" name="order" onclick="sortByAge()"> age<br>
-                            <input type="radio" name="order" onclick="sortByStatus()"> status<br>
+                            <input type="radio" name="order" onclick="sortByName()" checked> <span class="important">name</span><br>
+                            <input type="radio" name="order" onclick="sortByAge()"> <span class="important">age</span><br>
+                            <input type="radio" name="order" onclick="sortByStatus()"> <span class="important">status</span><br>
                         </form>
                         """);
     }
@@ -724,26 +755,30 @@ public final class JrsTestReportGenerator {
             @NonNull final List<String> owners,
             @NonNull final Map<String, TestCount> testCountMap) {
 
-        sb.append("""
-                <center><h1><b>Owner</b></h1></center><br>
-                <form autocomplete="off">
-                <input type="radio" name="order" value="name" onclick="switchToOwnerView('all')" checked> all (%s)<br>
-                <input type="radio" name="order" value="age" onclick="switchToOwnerView('')"> unassigned (%s)<br>
-                """.formatted(testCountMap.get("all").uniqueTests(), testCountMap.get("").uniqueTests()));
+        sb.append(
+                """
+                        <center><h1><b>Owner</b></h1></center><br>
+                        <form autocomplete="off">
+                        <input type="radio" name="order" value="name" onclick="switchToOwnerView('all')" checked> <span class="important">all</span> (%s)<br>
+                        <input type="radio" name="order" value="age" onclick="switchToOwnerView('')"> <span class="important">unassigned</span> (%s)<br>
+                        """
+                        .formatted(
+                                testCountMap.get("all").uniqueTests(),
+                                testCountMap.get("").uniqueTests()));
 
         for (final String owner : owners) {
             sb.append(
                     """
-                            <input type="radio" name="order" value="status" onclick="switchToOwnerView('%s')"> %s (%s)<br>
-                            """.formatted(owner, owner, testCountMap.get(owner).uniqueTests()));
+                            <input type="radio" name="order" value="status" onclick="switchToOwnerView('%s')"> <span class="important">%s</span> (%s)<br>
+                            """
+                            .formatted(owner, owner, testCountMap.get(owner).uniqueTests()));
         }
         sb.append("</form>\n");
     }
 
     @NonNull
     private static List<String> findOwners(
-            @NonNull final JrsReportData data,
-            @NonNull final Map<JrsTestIdentifier, JrsTestMetadata> metadata) {
+            @NonNull final JrsReportData data, @NonNull final Map<JrsTestIdentifier, JrsTestMetadata> metadata) {
 
         final Set<String> owners = new HashSet<>();
 
@@ -789,12 +824,12 @@ public final class JrsTestReportGenerator {
                         <center>
                         <table class="topLevelTable">
                         <tr>
-                        <td style="vertical-align: top;">
+                        <td class="leftColumn">
                         """);
         generateDataTable(sb, data, metadata, now, bucketPrefix, bucketPrefixReplacement);
         sb.append("""
                 </td>
-                <td style="vertical-align: top;">
+                <td class="rightColumn">
                 """);
         generateSidePanel(sb, data, metadata);
         sb.append(
