@@ -110,7 +110,7 @@ public class KeyUtils {
             final int threshold = ((ThresholdKey) key.value()).threshold();
             boolean isKeyListValid = true;
             for (Key keys : ((ThresholdKey) key.value()).keys().keys()) {
-                if (isValid(keys)) {
+                if (!isValid(keys)) {
                     isKeyListValid = false;
                     break;
                 }

@@ -410,7 +410,6 @@ public class CryptoCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    // createAnAccountInvalidNestedThresholdKey
     private HapiSpec createAnAccountInvalidNestedThresholdKey() {
         KeyShape goodShape = threshOf(2, 3);
         KeyShape thresholdShape0 = threshOf(0, SIMPLE, SIMPLE, SIMPLE);
@@ -690,6 +689,7 @@ public class CryptoCreateSuite extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
     private HapiSpec createAnAccountWithEVMAddressAliasFromDifferentKey() {
         return defaultHapiSpec("createAnAccountWithEVMAddressAliasFromDifferentKey")
                 .given(

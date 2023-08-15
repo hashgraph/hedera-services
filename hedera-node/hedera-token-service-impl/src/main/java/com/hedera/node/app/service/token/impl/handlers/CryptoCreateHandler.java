@@ -25,6 +25,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SEND_RECORD_THRESHOLD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
+import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
@@ -54,6 +55,7 @@ import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.data.TokensConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -82,7 +84,20 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         requireNonNull(context);
         final var op = context.body().cryptoCreateAccountOrThrow();
         pureChecks(context.body());
+
         if (op.hasKey()) {
+            final var key = op.key();
+            if (op.alias() != null && !op.alias().equals(Bytes.EMPTY)) {
+                final var alias = op.alias();
+                // add evm address key to req keys only if it is derived from a key, diff than the admin key
+                final var isAliasDerivedFromDiffKey = !key.hasEcdsaSecp256k1()
+                        || !Arrays.equals(
+                                recoverAddressFromPubKey(key.ecdsaSecp256k1().toByteArray()), alias.toByteArray());
+                if (isAliasDerivedFromDiffKey) {
+                    // TODO : Need to decide what to do about JWildcardECDSAKey
+                }
+            }
+
             final var receiverSigReq = op.receiverSigRequired();
             if (receiverSigReq) {
                 context.requireKey(op.keyOrThrow());
