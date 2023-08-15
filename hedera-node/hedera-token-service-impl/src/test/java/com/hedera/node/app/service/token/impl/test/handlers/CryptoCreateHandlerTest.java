@@ -54,6 +54,7 @@ import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -609,9 +610,9 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         setupConfig();
         setupExpiryValidator();
         final var writableAliases = emptyWritableAliasStateBuilder()
-                .value(Bytes.wrap(evmAddress), asAccount(accountNum))
+                .value(new ProtoBytes(Bytes.wrap(evmAddress)), asAccount(accountNum))
                 .build();
-        given(writableStates.<Bytes, AccountID>get(ALIASES)).willReturn(writableAliases);
+        given(writableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(writableAliases);
         writableStore = new WritableAccountStore(writableStates);
         when(handleContext.writableStore(WritableAccountStore.class)).thenReturn(writableStore);
 

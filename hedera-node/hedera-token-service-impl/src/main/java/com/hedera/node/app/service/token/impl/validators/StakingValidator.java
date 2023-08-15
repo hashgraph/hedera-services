@@ -41,6 +41,17 @@ public class StakingValidator {
         // Dagger2
     }
 
+    /**
+     * Validates staked id if present for update transactions. It will error if stakedId is set to
+     * the sentinel values for creation.
+     *
+     * @param isStakingEnabled       if staking is enabled
+     * @param hasDeclineRewardChange if the transaction body has decline reward field to be updated
+     * @param stakedIdKind           staked id kind (account or node)
+     * @param stakedAccountIdInOp    staked account id
+     * @param stakedNodeIdInOp       staked node id
+     * @param accountStore           readable account store
+     */
     public void validateStakedIdForCreation(
             final boolean isStakingEnabled,
             final boolean hasDeclineRewardChange,
@@ -50,17 +61,30 @@ public class StakingValidator {
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final NetworkInfo networkInfo) {
         final var hasStakingId = stakedAccountIdInOp != null || stakedNodeIdInOp != null;
+        if (!hasStakingId) {
+            return;
+        }
         // If staking is not enabled, then can't update staked id
-        validateFalse(!isStakingEnabled && (hasStakingId || hasDeclineRewardChange), STAKING_NOT_ENABLED);
+        validateFalse(!isStakingEnabled && hasDeclineRewardChange, STAKING_NOT_ENABLED);
 
         // sentinel values on -1 for stakedNodeId and 0.0.0 for stakedAccountId are used to reset
         // staking on an account
         // On creation it is not valid to have sentinel staking id
-        validateTrue(isValidStakingIdForCreation(stakedIdKind, stakedAccountIdInOp, stakedNodeIdInOp),
-                INVALID_STAKING_ID);
-        validateStakedId(isStakingEnabled, hasDeclineRewardChange, stakedIdKind, stakedAccountIdInOp,
-                stakedNodeIdInOp, accountStore, networkInfo);
+        validateTrue(
+                isValidStakingIdForCreation(stakedIdKind, stakedAccountIdInOp, stakedNodeIdInOp), INVALID_STAKING_ID);
+        validateStakedId(stakedIdKind, stakedAccountIdInOp, stakedNodeIdInOp, accountStore, networkInfo);
     }
+    /**
+     * Validates staked id if present for update transactions. It is possible for stakedId to be set to
+     * the sentinel values for update.
+     *
+     * @param isStakingEnabled       if staking is enabled
+     * @param hasDeclineRewardChange if the transaction body has decline reward field to be updated
+     * @param stakedIdKind           staked id kind (account or node)
+     * @param stakedAccountIdInOp    staked account id
+     * @param stakedNodeIdInOp       staked node id
+     * @param accountStore           readable account store
+     */
     public void validateStakedIdForUpdate(
             final boolean isStakingEnabled,
             final boolean hasDeclineRewardChange,
@@ -70,8 +94,11 @@ public class StakingValidator {
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final NetworkInfo networkInfo) {
         final var hasStakingId = stakedAccountIdInOp != null || stakedNodeIdInOp != null;
+        if (!hasStakingId) {
+            return;
+        }
         // If staking is not enabled, then can't update staked id
-        validateFalse(!isStakingEnabled && (hasStakingId || hasDeclineRewardChange), STAKING_NOT_ENABLED);
+        validateFalse(!isStakingEnabled && hasDeclineRewardChange, STAKING_NOT_ENABLED);
 
         // sentinel values on -1 for stakedNodeId and 0.0.0 for stakedAccountId are used to reset
         // staking on an account
@@ -79,23 +106,18 @@ public class StakingValidator {
         if (isValidStakingSentinel(stakedIdKind, stakedAccountIdInOp, stakedNodeIdInOp)) {
             return;
         }
-        validateStakedId(isStakingEnabled, hasDeclineRewardChange, stakedIdKind, stakedAccountIdInOp,
-                stakedNodeIdInOp, accountStore, networkInfo);
+        validateStakedId(stakedIdKind, stakedAccountIdInOp, stakedNodeIdInOp, accountStore, networkInfo);
     }
 
     /**
      * Validates staked id if present
      *
-     * @param isStakingEnabled       if staking is enabled
-     * @param hasDeclineRewardChange if the transaction body has decline reward field to be updated
      * @param stakedIdKind           staked id kind (account or node)
      * @param stakedAccountIdInOp    staked account id
      * @param stakedNodeIdInOp       staked node id
      * @param accountStore           readable account store
      */
     private void validateStakedId(
-            final boolean isStakingEnabled,
-            final boolean hasDeclineRewardChange,
             @NonNull final String stakedIdKind,
             @Nullable final AccountID stakedAccountIdInOp,
             @Nullable final Long stakedNodeIdInOp,
@@ -130,9 +152,8 @@ public class StakingValidator {
         }
     }
 
-    private boolean isValidStakingIdForCreation(final String stakedIdKind,
-                                                final AccountID stakedAccountId,
-                                                final Long stakedNodeId) {
+    private boolean isValidStakingIdForCreation(
+            final String stakedIdKind, final AccountID stakedAccountId, final Long stakedNodeId) {
         if (stakedIdKind.equals("STAKED_ACCOUNT_ID")) {
             // current checking only account num since shard and realm are 0.0
             return requireNonNull(stakedAccountId).accountNum() > 0;
@@ -142,5 +163,4 @@ public class StakingValidator {
             return false;
         }
     }
-
 }

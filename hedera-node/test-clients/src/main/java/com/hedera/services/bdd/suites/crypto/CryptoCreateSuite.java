@@ -197,6 +197,7 @@ public class CryptoCreateSuite extends HapiSuite {
                                 .via(creation)),
                         sourcing(() -> getTxnRecord(creation).logged()));
     }
+
     @HapiTest
     /* Prior to 0.13.0, a "canonical" CryptoCreate (one sig, 3 month auto-renew) cost 1¢. */
     private HapiSpec usdFeeAsExpected() {
@@ -258,6 +259,7 @@ public class CryptoCreateSuite extends HapiSuite {
                         validateChargedUsd(oneAutoAssocSlot, v13PriceUsdOneAutoAssociation),
                         validateChargedUsd(tenAutoAssocSlots, v13PriceUsdTenAutoAssociations));
     }
+
     @HapiTest
     public HapiSpec syntaxChecksAreAsExpected() {
         return defaultHapiSpec("SyntaxChecksAreAsExpected")
@@ -267,6 +269,7 @@ public class CryptoCreateSuite extends HapiSuite {
                         cryptoCreate("broken").autoRenewSecs(1L).hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE),
                         cryptoCreate("alsoBroken").entityMemo(ZERO_BYTE_MEMO).hasPrecheck(INVALID_ZERO_BYTE_IN_STRING));
     }
+
     @HapiTest
     private HapiSpec createAnAccountEmptyThresholdKey() {
         KeyShape shape = threshOf(0, 0);
@@ -281,6 +284,7 @@ public class CryptoCreateSuite extends HapiSuite {
                         .logged()
                         .hasPrecheck(KEY_REQUIRED));
     }
+
     @HapiTest
     private HapiSpec createAnAccountEmptyKeyList() {
         KeyShape shape = listOf(0);
@@ -295,6 +299,7 @@ public class CryptoCreateSuite extends HapiSuite {
                         .logged()
                         .hasPrecheck(KEY_REQUIRED));
     }
+
     @HapiTest
     private HapiSpec createAnAccountEmptyNestedKey() {
         KeyShape emptyThresholdShape = threshOf(0, 0);
@@ -312,6 +317,7 @@ public class CryptoCreateSuite extends HapiSuite {
                         .hasPrecheck(KEY_REQUIRED));
     }
 
+    @HapiTest
     // One of element in key list is not valid
     private HapiSpec createAnAccountInvalidKeyList() {
         KeyShape emptyThresholdShape = threshOf(0, 0);
@@ -327,6 +333,7 @@ public class CryptoCreateSuite extends HapiSuite {
                         .logged()
                         .hasPrecheck(INVALID_ADMIN_KEY));
     }
+
     @HapiTest
     // One of element in nested key list is not valid
     private HapiSpec createAnAccountInvalidNestedKeyList() {
@@ -343,6 +350,7 @@ public class CryptoCreateSuite extends HapiSuite {
                         .logged()
                         .hasPrecheck(INVALID_ADMIN_KEY));
     }
+
     @HapiTest
     // One of element in threshold key is not valid
     private HapiSpec createAnAccountInvalidThresholdKey() {
@@ -400,6 +408,7 @@ public class CryptoCreateSuite extends HapiSuite {
                                 .signedBy(GENESIS)
                                 .hasPrecheck(INVALID_ADMIN_KEY));
     }
+
     @HapiTest
     // createAnAccountInvalidNestedThresholdKey
     private HapiSpec createAnAccountInvalidNestedThresholdKey() {
@@ -429,6 +438,7 @@ public class CryptoCreateSuite extends HapiSuite {
                                 .logged()
                                 .hasPrecheck(INVALID_ADMIN_KEY));
     }
+
     @HapiTest
     private HapiSpec createAnAccountThresholdKeyWithInvalidThreshold() {
         KeyShape thresholdShape0 = threshOf(0, SIMPLE, SIMPLE, SIMPLE);
@@ -451,6 +461,7 @@ public class CryptoCreateSuite extends HapiSuite {
                                 .logged()
                                 .hasPrecheck(INVALID_ADMIN_KEY));
     }
+
     @HapiTest
     private HapiSpec createAnAccountInvalidED25519() {
         long initialBalance = 10_000L;
@@ -478,6 +489,7 @@ public class CryptoCreateSuite extends HapiSuite {
                                 .logged()
                                 .hasPrecheck(BAD_ENCODING));
     }
+
     @HapiTest
     private HapiSpec createAnAccountWithECDSAAlias() {
         return defaultHapiSpec("CreateAnAccountWithECDSAAlias")
@@ -493,6 +505,7 @@ public class CryptoCreateSuite extends HapiSuite {
                 }))
                 .then();
     }
+
     @HapiTest
     private HapiSpec createAnAccountWithED25519Alias() {
         return defaultHapiSpec("CreateAnAccountWithED25519Alias")
@@ -508,6 +521,7 @@ public class CryptoCreateSuite extends HapiSuite {
                 }))
                 .then();
     }
+
     @HapiTest
     private HapiSpec createAnAccountWithECKeyAndNoAlias() {
         return defaultHapiSpec("CreateAnAccountWithECKeyAndNoAlias")
@@ -552,6 +566,7 @@ public class CryptoCreateSuite extends HapiSuite {
                 }))
                 .then();
     }
+
     @HapiTest
     private HapiSpec createAnAccountWithEDKeyAndNoAlias() {
         return defaultHapiSpec("CreateAnAccountWithEDKeyAndNoAlias")
@@ -560,6 +575,7 @@ public class CryptoCreateSuite extends HapiSuite {
                 .then(getAccountInfo(ACCOUNT)
                         .has(accountWith().key(ED_25519_KEY).noAlias()));
     }
+
     @HapiTest
     private HapiSpec createAnAccountWithED25519KeyAndED25519Alias() {
         return defaultHapiSpec("CreateAnAccountWithED25519KeyAndED25519Alias")
@@ -576,6 +592,7 @@ public class CryptoCreateSuite extends HapiSuite {
                 }))
                 .then();
     }
+
     @HapiTest
     private HapiSpec createAnAccountWithECKeyAndECKeyAlias() {
         return defaultHapiSpec("CreateAnAccountWithECKeyAndECKeyAlias")
@@ -611,6 +628,7 @@ public class CryptoCreateSuite extends HapiSuite {
                 }))
                 .then();
     }
+
     @HapiTest
     private HapiSpec createAnAccountWithECDSAKeyAliasDifferentThanAdminKeyShouldFail() {
         return defaultHapiSpec("createAnAccountWithECDSAKeyAliasDifferentThanAdminKeyShouldFail")
@@ -630,6 +648,7 @@ public class CryptoCreateSuite extends HapiSuite {
                 }))
                 .then();
     }
+
     @HapiTest
     private HapiSpec createAnAccountWithEVMAddressAliasFromSameKey() {
         final var edKey = "edKey";
@@ -670,6 +689,7 @@ public class CryptoCreateSuite extends HapiSuite {
                 }))
                 .then();
     }
+
     @HapiTest
     private HapiSpec createAnAccountWithEVMAddressAliasFromDifferentKey() {
         return defaultHapiSpec("createAnAccountWithEVMAddressAliasFromDifferentKey")
@@ -709,6 +729,7 @@ public class CryptoCreateSuite extends HapiSuite {
                 }))
                 .then();
     }
+
     @HapiTest
     private HapiSpec createAnAccountWithEDKeyAliasDifferentThanAdminKeyShouldFail() {
         return defaultHapiSpec("createAnAccountWithEDKeyAliasDifferentThanAdminKeyShouldFail")

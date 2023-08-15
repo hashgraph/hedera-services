@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase;
@@ -45,7 +46,7 @@ class ReadableAccountStoreImplTest extends CryptoHandlerTestBase {
         readableAccounts = emptyReadableAccountStateBuilder().value(id, account).build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
         readableAliases = readableAliasState();
-        given(readableStates.<Bytes, AccountID>get(ALIASES)).willReturn(readableAliases);
+        given(readableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(readableAliases);
         subject = new ReadableAccountStoreImpl(readableStates);
     }
 

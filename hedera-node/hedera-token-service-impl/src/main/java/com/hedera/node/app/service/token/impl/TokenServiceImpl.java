@@ -16,6 +16,11 @@
 
 package com.hedera.node.app.service.token.impl;
 
+import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
+import static com.hedera.node.app.spi.HapiUtils.EMPTY_KEY_LIST;
+import static com.hedera.node.app.spi.HapiUtils.FUNDING_ACCOUNT_EXPIRY;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftID;
@@ -23,7 +28,7 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.common.EntityNumber;
-import com.hedera.hapi.node.state.primitives.ProtoString;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
 import com.hedera.hapi.node.state.token.Nft;
@@ -42,15 +47,8 @@ import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.Arrays;
-import java.util.List;
 import java.util.Set;
-
-import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
-import static com.hedera.node.app.spi.HapiUtils.EMPTY_KEY_LIST;
-import static com.hedera.node.app.spi.HapiUtils.FUNDING_ACCOUNT_EXPIRY;
-import static java.util.Objects.requireNonNull;
 
 /** An implementation of the {@link TokenService} interface. */
 public class TokenServiceImpl implements TokenService {
@@ -64,7 +62,6 @@ public class TokenServiceImpl implements TokenService {
     public static final String ALIASES_KEY = "ALIASES";
     public static final String ACCOUNTS_KEY = "ACCOUNTS";
     public static final String TOKEN_RELS_KEY = "TOKEN_RELS";
-    public static final String PAYER_RECORDS_KEY = "PAYER_RECORDS";
     public static final String STAKING_INFO_KEY = "STAKING_INFOS";
     public static final String STAKING_NETWORK_REWARDS_KEY = "STAKING_NETWORK_REWARDS";
 
@@ -83,7 +80,7 @@ public class TokenServiceImpl implements TokenService {
                 return Set.of(
                         StateDefinition.inMemory(TOKENS_KEY, TokenID.PROTOBUF, Token.PROTOBUF),
                         StateDefinition.onDisk(ACCOUNTS_KEY, AccountID.PROTOBUF, Account.PROTOBUF, MAX_ACCOUNTS),
-                        StateDefinition.onDisk(ALIASES_KEY, ProtoString.PROTOBUF, AccountID.PROTOBUF, MAX_ACCOUNTS),
+                        StateDefinition.onDisk(ALIASES_KEY, ProtoBytes.PROTOBUF, AccountID.PROTOBUF, MAX_ACCOUNTS),
                         StateDefinition.onDisk(NFTS_KEY, NftID.PROTOBUF, Nft.PROTOBUF, MAX_MINTABLE_NFTS),
                         StateDefinition.onDisk(
                                 TOKEN_RELS_KEY, EntityIDPair.PROTOBUF, TokenRelation.PROTOBUF, MAX_TOKEN_RELS),

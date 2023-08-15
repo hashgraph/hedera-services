@@ -23,6 +23,7 @@ import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.evm.contracts.execution.StaticProperties;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
@@ -50,7 +51,7 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
     /** The underlying data storage class that holds the account data. */
     private final ReadableKVState<AccountID, Account> accountState;
     /** The underlying data storage class that holds the aliases data built from the state. */
-    private final ReadableKVState<Bytes, AccountID> aliases;
+    private final ReadableKVState<ProtoBytes, AccountID> aliases;
 
     /**
      * Create a new {@link ReadableAccountStoreImpl} instance.
@@ -66,7 +67,7 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
         return (T) accountState;
     }
 
-    protected <T extends ReadableKVState<Bytes, AccountID>> T aliases() {
+    protected <T extends ReadableKVState<ProtoBytes, AccountID>> T aliases() {
         return (T) aliases;
     }
 
@@ -91,7 +92,7 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
     @Override
     @Nullable
     public AccountID getAccountIDByAlias(@NonNull final Bytes alias) {
-        return aliases.get(alias);
+        return aliases.get(new ProtoBytes(alias));
     }
 
     /* Helper methods */
@@ -115,7 +116,7 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
                         if (isOfEvmAddressSize(alias) && isMirror(alias)) {
                             yield fromMirror(alias);
                         } else {
-                            final var entityNum = aliases.get(alias);
+                            final var entityNum = aliases.get(new ProtoBytes(alias));
                             yield entityNum == null ? 0L : entityNum.accountNum();
                         }
                     }
@@ -150,7 +151,7 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
                         }
 
                         // The evm address is some kind of alias.
-                        var entityNum = aliases.get(evmAddress);
+                        var entityNum = aliases.get(new ProtoBytes(evmAddress));
 
                         // If we didn't find an alias, we will want to auto-create this account. But
                         // we don't want to auto-create an account if there is already another
@@ -160,7 +161,7 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
                             // address from it and look it up
                             final var evmKeyAliasAddress = keyAliasToEVMAddress(evmAddress);
                             if (evmKeyAliasAddress != null) {
-                                entityNum = aliases.get(Bytes.wrap(evmKeyAliasAddress));
+                                entityNum = aliases.get(new ProtoBytes(Bytes.wrap(evmKeyAliasAddress)));
                             }
                         }
                         yield entityNum == null ? 0L : entityNum.accountNum();

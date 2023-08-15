@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.token.impl.handlers.transfer;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.Map;
@@ -63,7 +64,7 @@ public interface TransferContext {
      * Returns the resolved accounts with alias and its account ID
      * @return the resolved accounts with alias and its account ID
      */
-    Map<Bytes, AccountID> resolutions();
+    Map<ProtoBytes, AccountID> resolutions();
 
     // Throw if the fee cannot be charged for whatever reason
     void chargeExtraFeeToHapiPayer(long amount);

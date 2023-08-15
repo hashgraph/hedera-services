@@ -22,6 +22,7 @@ import static com.hedera.node.app.service.token.impl.handlers.transfer.AliasUtil
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.AutoCreationConfig;
@@ -40,7 +41,7 @@ public class TransferContextImpl implements TransferContext {
     private final HandleContext context;
     private int numAutoCreations;
     private int numLazyCreations;
-    private final Map<Bytes, AccountID> resolutions = new HashMap<>();
+    private final Map<ProtoBytes, AccountID> resolutions = new HashMap<>();
     private final AutoCreationConfig autoCreationConfig;
     private final LazyCreationConfig lazyCreationConfig;
     private final TokensConfig tokensConfig;
@@ -60,7 +61,7 @@ public class TransferContextImpl implements TransferContext {
 
         if (account != null) {
             final var id = account.accountId();
-            resolutions.put(aliasedId.alias(), id);
+            resolutions.put(new ProtoBytes(aliasedId.alias()), id);
             return id;
         }
         return null;
@@ -83,7 +84,7 @@ public class TransferContextImpl implements TransferContext {
         }
         // Keep the created account in the resolutions map
         final var createdAccount = autoAccountCreator.create(alias, isFromTokenTransfer);
-        resolutions.put(alias, createdAccount);
+        resolutions.put(new ProtoBytes(alias), createdAccount);
     }
 
     @Override
@@ -101,7 +102,7 @@ public class TransferContextImpl implements TransferContext {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
-    public Map<Bytes, AccountID> resolutions() {
+    public Map<ProtoBytes, AccountID> resolutions() {
         return resolutions;
     }
 
