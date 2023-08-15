@@ -24,8 +24,8 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.utility.ValueReference;
+import com.swirlds.platform.EventImpl;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamSequencer;
-import com.swirlds.platform.internal.EventImpl;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

@@ -17,7 +17,7 @@
 package com.swirlds.platform.test.event;
 
 import com.swirlds.common.constructable.ConstructableIgnored;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.EventImpl;
 import java.time.Instant;
 
 @ConstructableIgnored

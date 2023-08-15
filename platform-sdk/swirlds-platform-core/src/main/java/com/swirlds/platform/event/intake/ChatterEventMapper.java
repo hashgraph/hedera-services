@@ -18,8 +18,8 @@ package com.swirlds.platform.event.intake;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.utility.Clearable;
+import com.swirlds.platform.EventImpl;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.EventAddedObserver;
 import com.swirlds.platform.state.signed.LoadableFromSignedState;
 import com.swirlds.platform.state.signed.SignedState;

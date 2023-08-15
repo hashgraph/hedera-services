@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.recovery.internal;
+package com.swirlds.platform.recovery.events;
 
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.events.ConsensusEvent;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Iterator;

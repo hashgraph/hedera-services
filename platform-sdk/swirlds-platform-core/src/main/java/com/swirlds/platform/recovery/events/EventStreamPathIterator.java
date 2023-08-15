@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.recovery.internal;
-
-import static com.swirlds.platform.recovery.internal.EventStreamLowerBound.UNBOUNDED;
+package com.swirlds.platform.recovery.events;
 
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.system.events.DetailedConsensusEvent;
@@ -73,7 +71,7 @@ public class EventStreamPathIterator implements Iterator<Path> {
         }
 
         final DetailedConsensusEvent firstEvent = getFirstEventInEventStreamFile(eventStreamFiles.get(0));
-        if (bound == UNBOUNDED || bound.compareTo(firstEvent) == 0) {
+        if (bound == EventStreamLowerBound.UNBOUNDED || bound.compareTo(firstEvent) == 0) {
             // We are attempting to get events from the beginning of the event stream.
             iterator = eventStreamFiles.iterator();
         } else {
