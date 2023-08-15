@@ -21,11 +21,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -46,13 +44,13 @@ import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.SignatureExpander;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.signature.SignatureVerifier;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.state.HederaRecordCache;
-import com.hedera.node.app.workflows.StakingPeriodTimeHook;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionScenarioBuilder;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
@@ -63,17 +61,16 @@ import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Round;
+import com.swirlds.common.system.events.ConsensusEvent;
+import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
-import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
-import java.time.InstantSource;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
-import java.util.function.BiConsumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -115,7 +112,7 @@ class HandleWorkflowTest extends AppTestBase {
                 CONFIG_VERSION);
     }
 
-    @Mock
+    @Mock(strictness = LENIENT)
     private NetworkInfo networkInfo;
 
     @Mock(strictness = LENIENT)
@@ -145,8 +142,8 @@ class HandleWorkflowTest extends AppTestBase {
     @Mock(strictness = LENIENT)
     private Round round;
 
-    @Mock
-    private EventImpl event;
+    @Mock(strictness = LENIENT)
+    private ConsensusEvent event;
 
     @Mock(strictness = LENIENT)
     private SwirldTransaction platformTxn;
@@ -160,7 +157,7 @@ class HandleWorkflowTest extends AppTestBase {
     @Mock
     private FeeManager feeManager;
 
-    @Mock
+    @Mock(strictness = LENIENT)
     private ExchangeRateManager exchangeRateManager;
 
     @Mock
@@ -172,21 +169,14 @@ class HandleWorkflowTest extends AppTestBase {
     private HandleWorkflow workflow;
 
     @BeforeEach
-    void setup(@Mock InstantSource instantSource) {
+    void setup() {
         setupStandardStates();
 
+        when(round.iterator()).thenReturn(List.of(event).iterator());
+        when(event.consensusTransactionIterator()).thenReturn(List.<ConsensusTransaction>of(platformTxn).iterator());
+        when(event.getCreatorId()).thenReturn(nodeSelfId);
         when(platformTxn.getConsensusTimestamp()).thenReturn(CONSENSUS_NOW);
         when(platformTxn.getMetadata()).thenReturn(OK_RESULT);
-        lenient().when(exchangeRateManager.exchangeRates()).thenReturn(ExchangeRateSet.DEFAULT);
-
-        doAnswer(invocation -> {
-                    final var consumer = invocation.getArgument(0, BiConsumer.class);
-                    //noinspection unchecked
-                    consumer.accept(event, platformTxn);
-                    return null;
-                })
-                .when(round)
-                .forEachEventTransaction(any());
 
         when(serviceLookup.getServiceName(any())).thenReturn(TokenService.NAME);
 
@@ -202,7 +192,9 @@ class HandleWorkflowTest extends AppTestBase {
                 .when(dispatcher)
                 .dispatchHandle(any());
 
-        lenient().when(exchangeRateManager.exchangeRates()).thenReturn(ExchangeRateSet.DEFAULT);
+        when(dispatcher.dispatchComputeFees(any())).thenReturn(Fees.FREE);
+        when(networkInfo.nodeInfo(nodeSelfId.id())).thenReturn(selfNodeInfo);
+        when(exchangeRateManager.exchangeRates()).thenReturn(ExchangeRateSet.DEFAULT);
 
         workflow = new HandleWorkflow(
                 networkInfo,
@@ -214,7 +206,6 @@ class HandleWorkflowTest extends AppTestBase {
                 checker,
                 serviceLookup,
                 configProvider,
-                instantSource,
                 recordCache,
                 stakingPeriodTimeHook,
                 feeManager,
@@ -226,7 +217,6 @@ class HandleWorkflowTest extends AppTestBase {
     @SuppressWarnings("ConstantConditions")
     @Test
     void testContructorWithInvalidArguments() {
-        final var instantSource = InstantSource.system();
         assertThatThrownBy(() -> new HandleWorkflow(
                         null,
                         preHandleWorkflow,
@@ -237,7 +227,6 @@ class HandleWorkflowTest extends AppTestBase {
                         checker,
                         serviceLookup,
                         configProvider,
-                        instantSource,
                         recordCache,
                         stakingPeriodTimeHook,
                         feeManager,
@@ -255,7 +244,6 @@ class HandleWorkflowTest extends AppTestBase {
                         checker,
                         serviceLookup,
                         configProvider,
-                        instantSource,
                         recordCache,
                         stakingPeriodTimeHook,
                         feeManager,
@@ -273,7 +261,6 @@ class HandleWorkflowTest extends AppTestBase {
                         checker,
                         serviceLookup,
                         configProvider,
-                        instantSource,
                         recordCache,
                         stakingPeriodTimeHook,
                         feeManager,
@@ -291,7 +278,6 @@ class HandleWorkflowTest extends AppTestBase {
                         checker,
                         serviceLookup,
                         configProvider,
-                        instantSource,
                         recordCache,
                         stakingPeriodTimeHook,
                         feeManager,
@@ -309,7 +295,6 @@ class HandleWorkflowTest extends AppTestBase {
                         checker,
                         serviceLookup,
                         configProvider,
-                        instantSource,
                         recordCache,
                         stakingPeriodTimeHook,
                         feeManager,
@@ -327,7 +312,6 @@ class HandleWorkflowTest extends AppTestBase {
                         checker,
                         serviceLookup,
                         configProvider,
-                        instantSource,
                         recordCache,
                         stakingPeriodTimeHook,
                         feeManager,
@@ -345,7 +329,6 @@ class HandleWorkflowTest extends AppTestBase {
                         null,
                         serviceLookup,
                         configProvider,
-                        instantSource,
                         recordCache,
                         stakingPeriodTimeHook,
                         feeManager,
@@ -363,7 +346,6 @@ class HandleWorkflowTest extends AppTestBase {
                         checker,
                         null,
                         configProvider,
-                        instantSource,
                         recordCache,
                         stakingPeriodTimeHook,
                         feeManager,
@@ -381,7 +363,6 @@ class HandleWorkflowTest extends AppTestBase {
                         checker,
                         serviceLookup,
                         null,
-                        instantSource,
                         recordCache,
                         stakingPeriodTimeHook,
                         feeManager,
@@ -400,7 +381,6 @@ class HandleWorkflowTest extends AppTestBase {
                         serviceLookup,
                         configProvider,
                         null,
-                        recordCache,
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
@@ -417,25 +397,6 @@ class HandleWorkflowTest extends AppTestBase {
                         checker,
                         serviceLookup,
                         configProvider,
-                        instantSource,
-                        null,
-                        stakingPeriodTimeHook,
-                        feeManager,
-                        exchangeRateManager,
-                        finalizer,
-                        systemFileUpdateFacility))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new HandleWorkflow(
-                        networkInfo,
-                        preHandleWorkflow,
-                        dispatcher,
-                        blockRecordManager,
-                        signatureExpander,
-                        signatureVerifier,
-                        checker,
-                        serviceLookup,
-                        configProvider,
-                        instantSource,
                         recordCache,
                         null,
                         feeManager,
@@ -453,7 +414,6 @@ class HandleWorkflowTest extends AppTestBase {
                         checker,
                         serviceLookup,
                         configProvider,
-                        instantSource,
                         recordCache,
                         stakingPeriodTimeHook,
                         null,
@@ -471,7 +431,6 @@ class HandleWorkflowTest extends AppTestBase {
                         checker,
                         serviceLookup,
                         configProvider,
-                        instantSource,
                         recordCache,
                         stakingPeriodTimeHook,
                         feeManager,
@@ -489,7 +448,6 @@ class HandleWorkflowTest extends AppTestBase {
                         checker,
                         serviceLookup,
                         configProvider,
-                        instantSource,
                         recordCache,
                         stakingPeriodTimeHook,
                         feeManager,
@@ -507,7 +465,6 @@ class HandleWorkflowTest extends AppTestBase {
                         checker,
                         serviceLookup,
                         configProvider,
-                        instantSource,
                         recordCache,
                         stakingPeriodTimeHook,
                         feeManager,
@@ -543,7 +500,6 @@ class HandleWorkflowTest extends AppTestBase {
 
         // then
         final var alice = aliasesState.get(Bytes.wrap(ALICE_ALIAS));
-        assertThat(alice).isNotNull();
         assertThat(alice).isEqualTo(ALICE.account().accountId());
         // TODO: Check that record was created
         verify(systemFileUpdateFacility).handleTxBody(eq(state), any());
@@ -564,7 +520,6 @@ class HandleWorkflowTest extends AppTestBase {
         void testPreHandleNotExecuted() {
             // given
             when(platformTxn.getMetadata()).thenReturn(null);
-            when(event.getCreatorId()).thenReturn(new NodeId(0));
 
             // when
             workflow.handleRound(state, round);
@@ -578,7 +533,6 @@ class HandleWorkflowTest extends AppTestBase {
         void testPreHandleFailure() {
             // given
             when(platformTxn.getMetadata()).thenReturn(PRE_HANDLE_FAILURE_RESULT);
-            when(event.getCreatorId()).thenReturn(new NodeId(0));
 
             // when
             workflow.handleRound(state, round);
@@ -592,7 +546,6 @@ class HandleWorkflowTest extends AppTestBase {
         void testUnknownFailure() {
             // given
             when(platformTxn.getMetadata()).thenReturn(PreHandleResult.unknownFailure());
-            when(event.getCreatorId()).thenReturn(new NodeId(0));
 
             // when
             workflow.handleRound(state, round);
@@ -617,7 +570,6 @@ class HandleWorkflowTest extends AppTestBase {
                     null,
                     CONFIG_VERSION - 1L);
             when(platformTxn.getMetadata()).thenReturn(preHandleResult);
-            when(event.getCreatorId()).thenReturn(new NodeId(0));
 
             // when
             workflow.handleRound(state, round);
@@ -631,7 +583,6 @@ class HandleWorkflowTest extends AppTestBase {
         void testPreHandleSuccess() {
             // given
             when(platformTxn.getMetadata()).thenReturn(null);
-            when(event.getCreatorId()).thenReturn(new NodeId(0));
             when(exchangeRateManager.exchangeRates()).thenReturn(EXCHANGE_RATE_SET);
 
             // when
@@ -1220,6 +1171,6 @@ class HandleWorkflowTest extends AppTestBase {
     @Test
     void testConsensusTimeHookCalled() {
         workflow.handleRound(state, round);
-        verify(stakingPeriodTimeHook).process(eq(CONSENSUS_NOW), notNull());
+        verify(stakingPeriodTimeHook).process(any());
     }
 }

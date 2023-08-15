@@ -294,6 +294,10 @@ public interface Scenarios extends TransactionFactory {
     final TestUser STAKING_REWARD_ACCOUNT =
             new TestUser(account800, Account.newBuilder().accountId(account800).build(), null);
 
+    final AccountID account098 = AccountID.newBuilder().accountNum(98L).build();
+    final TestUser FUNDING_ACCOUNT =
+            new TestUser(account098, Account.newBuilder().accountId(account098).build(), null);
+
     final AccountID account1002 = AccountID.newBuilder().accountNum(1002L).build();
     final TestUser ALICE = new TestUser(
             account1002,

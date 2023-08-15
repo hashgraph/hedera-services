@@ -5,16 +5,17 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *        http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-package com.hedera.node.app.workflows;
+package com.hedera.node.app.workflows.handle;
 
 import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakePeriodManager.DEFAULT_STAKING_PERIOD_MINS;
 import static com.hedera.node.app.service.mono.utils.Units.MINUTES_TO_MILLISECONDS;
@@ -24,7 +25,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater;
-import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.service.token.records.StakingContext;
 import com.hedera.node.config.data.StakingConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -60,13 +61,15 @@ public class StakingPeriodTimeHook implements ConsensusTimeHook {
      * to catch up on updates and distributions when first coming online.
      */
     @Override
-    public void process(@NonNull Instant consensusTime, @NonNull final HandleContext context) {
+    public void process(@NonNull final StakingContext context) {
+        requireNonNull(context, "context must not be null");
+        final var consensusTime = context.consensusTime();
         if (consensusTimeOfLastHandledTxn == null
                 || consensusTime.getEpochSecond() > consensusTimeOfLastHandledTxn.getEpochSecond()
                         && isNextStakingPeriod(consensusTime, consensusTimeOfLastHandledTxn, context)) {
             // Handle the daily staking distributions and updates
             try {
-                stakingCalculator.updateNodes(consensusTime, context);
+                stakingCalculator.updateNodes(context);
             } catch (final Exception e) {
                 logger.error("CATASTROPHIC failure updating end-of-day stakes", e);
             }
@@ -85,9 +88,9 @@ public class StakingPeriodTimeHook implements ConsensusTimeHook {
     static boolean isNextStakingPeriod(
             @NonNull final Instant currentConsensusTime,
             @NonNull final Instant previousConsensusTime,
-            @NonNull final HandleContext handleContext) {
+            @NonNull final StakingContext stakingContext) {
         final var stakingPeriod =
-                handleContext.configuration().getConfigData(StakingConfig.class).periodMins();
+                stakingContext.configuration().getConfigData(StakingConfig.class).periodMins();
         if (stakingPeriod == DEFAULT_STAKING_PERIOD_MINS) {
             return isLaterUtcDay(currentConsensusTime, previousConsensusTime);
         } else {

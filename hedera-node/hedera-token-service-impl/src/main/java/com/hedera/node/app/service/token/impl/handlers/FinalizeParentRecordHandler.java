@@ -22,12 +22,12 @@ import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRew
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
-import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.service.token.impl.RecordFinalizerBase;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHandler;
+import com.hedera.node.app.service.token.records.ChildRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.service.token.records.ParentRecordFinalizer;
@@ -53,8 +53,8 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
 
     @Override
     public void finalizeParentRecord(
-            @NonNull final FinalizeContext context, @NonNull final List<TransactionRecord> childRecords) {
-        final var recordBuilder = context.recordBuilder(CryptoTransferRecordBuilder.class);
+            @NonNull final AccountID payer, @NonNull final FinalizeContext context) {
+        final var recordBuilder = context.mainRecordBuilder(CryptoTransferRecordBuilder.class);
 
         // This handler won't ask the context for its transaction, but instead will determine the net hbar transfers and
         // token transfers based on the original value from writable state, and based on changes made during this
@@ -79,7 +79,7 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
         /* ------------------------- Hbar changes from transaction including staking rewards ------------------------- */
         final var hbarChanges = hbarChangesFrom(writableAccountStore);
         // any hbar changes listed in child records should not be recorded again in parent record, so deduct them.
-        deductChangesFromChildRecords(hbarChanges, childRecords);
+        deductChangesFromChildRecords(hbarChanges, context);
         if (!hbarChanges.isEmpty()) {
             // Save the modified hbar amounts so records can be written
             recordBuilder.transferList(TransferList.newBuilder()
@@ -112,17 +112,19 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
         }
     }
 
-    private void deductChangesFromChildRecords(
-            final Map<AccountID, Long> hbarChanges, final List<TransactionRecord> childRecords) {
-        for (final var childRecord : childRecords) {
-            final var childHbarChangesFromRecord = childRecord.transferList();
-            for (final var childChange : childHbarChangesFromRecord.accountAmountsOrElse(List.of())) {
-                final var childHbarChangeAccountId = childChange.accountID();
-                final var childHbarChangeAmount = childChange.amount();
-                if (hbarChanges.containsKey(childHbarChangeAccountId)) {
-                    hbarChanges.merge(childHbarChangeAccountId, -childHbarChangeAmount, Long::sum);
+    private void deductChangesFromChildRecords(final Map<AccountID, Long> hbarChanges, final FinalizeContext context) {
+        context.forEachChildRecord(
+                ChildRecordBuilder.class,
+                childRecord -> {
+                    final var childHbarChangesFromRecord = childRecord.transferList();
+                    for (final var childChange : childHbarChangesFromRecord.accountAmountsOrElse(List.of())) {
+                        final var childHbarChangeAccountId = childChange.accountID();
+                        final var childHbarChangeAmount = childChange.amount();
+                        if (hbarChanges.containsKey(childHbarChangeAccountId)) {
+                            hbarChanges.merge(childHbarChangeAccountId, -childHbarChangeAmount, Long::sum);
+                        }
+                    }
                 }
-            }
-        }
+        );
     }
 }

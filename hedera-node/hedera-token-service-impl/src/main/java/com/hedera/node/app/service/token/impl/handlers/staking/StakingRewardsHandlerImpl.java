@@ -69,11 +69,11 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
         final var stakingInfoStore = context.writableStore(WritableStakingInfoStore.class);
         final var accountsConfig = context.configuration().getConfigData(AccountsConfig.class);
         final var stakingRewardAccountId = asAccount(accountsConfig.stakingRewardAccount());
-        final var consensusNow = context.consensusNow();
+        final var consensusNow = context.consensusTime();
 
         // TODO: confirm if the getDeletedAccountBeneficiaries should be in
         //  SingleTransactionRecordBuilder interface instead
-        final var recordBuilder = context.recordBuilder(CryptoDeleteRecordBuilder.class);
+        final var recordBuilder = context.mainRecordBuilder(CryptoDeleteRecordBuilder.class);
 
         // Apply all changes related to stakedId changes, and adjust stakedToMe
         // for all accounts staking to an account

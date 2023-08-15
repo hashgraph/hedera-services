@@ -678,7 +678,7 @@ class FinalizeChildRecordHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     private FinalizeContext mockContext() {
-        given(context.recordBuilder(CryptoTransferRecordBuilder.class)).willReturn(recordBuilder);
+        given(context.mainRecordBuilder(CryptoTransferRecordBuilder.class)).willReturn(recordBuilder);
 
         given(context.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
         given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
