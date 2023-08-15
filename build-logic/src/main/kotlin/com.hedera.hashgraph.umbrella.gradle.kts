@@ -21,6 +21,14 @@ plugins {
     id("lifecycle-base")
 }
 
+// This is for configuring the umbrella build - i.e. the root of the repository, which can
+// be used to build everything.
+// Because builds are kept as independent as possible, even if they includeBuild each other,
+// you can not do things like './gradlew assemble' to run assemble on all projects.
+// You have to explicitly make lifecycle tasks available and link them (via dependsOn) to the
+// corresponding lifecycle tasks in the other builds.
+// https://docs.gradle.org/current/userguide/structuring_software_products_details.html#using_an_umbrella_build
+
 tasks.register("spotlessCheck")
 tasks.register("spotlessApply")
 tasks.register("checkAllModuleInfo")

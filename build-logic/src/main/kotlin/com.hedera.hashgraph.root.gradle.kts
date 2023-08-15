@@ -23,6 +23,11 @@ plugins {
     id("com.hedera.hashgraph.spotless-kotlin-conventions")
 }
 
+// Lifecycle task configuration:
+// Link the lifecycle tasks in the root project to the corresponding lifecycle tasks in the subprojects.
+// This is needed to complete the umbrella build lifecycle task setup.
+// See setup in: com.hedera.hashgraph.umbrella.gradle.kts
+
 tasks.register("checkAllModuleInfo")
 
 configureLifecycleTask("assemble")
