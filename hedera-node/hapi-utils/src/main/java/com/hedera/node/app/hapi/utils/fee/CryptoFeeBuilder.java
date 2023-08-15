@@ -46,7 +46,7 @@ public final class CryptoFeeBuilder extends FeeBuilder {
      * @return fee data
      * @throws InvalidTxBodyException when transaction body is invalid
      */
-    public FeeData getCryptoCreateTxFeeMatrices(final TransactionBody txBody, final SigValueObj sigValObj)
+    public static FeeData getCryptoCreateTxFeeMatrices(final TransactionBody txBody, final SigValueObj sigValObj)
             throws InvalidTxBodyException {
         if (txBody == null || !txBody.hasCryptoCreateAccount()) {
             throw new InvalidTxBodyException("CryptoCreate Tx Body not available for Fee Calculation");
@@ -118,7 +118,7 @@ public final class CryptoFeeBuilder extends FeeBuilder {
      * @param crCreateSize the size of the crypto create transaction body
      * @return the total RAM Bytes for the given crypto create transaction body
      */
-    private long getCryptoRBS(final CryptoCreateTransactionBody cryptoCreate, final int crCreateSize) {
+    private static long getCryptoRBS(final CryptoCreateTransactionBody cryptoCreate, final int crCreateSize) {
         final var seconds = cryptoCreate.hasAutoRenewPeriod()
                 ? cryptoCreate.getAutoRenewPeriod().getSeconds()
                 : 0L;
@@ -131,7 +131,7 @@ public final class CryptoFeeBuilder extends FeeBuilder {
      * @param cryptoCreate the crypto create transaction body
      * @return the total bytes in the given crypto create transaction body
      */
-    private int getCryptoCreateAccountBodyTxSize(final CryptoCreateTransactionBody cryptoCreate) {
+    private static int getCryptoCreateAccountBodyTxSize(final CryptoCreateTransactionBody cryptoCreate) {
         final var keySize = getAccountKeyStorageSize(cryptoCreate.getKey());
         final var newRealmAdminKeySize =
                 cryptoCreate.hasNewRealmAdminKey() ? getAccountKeyStorageSize(cryptoCreate.getNewRealmAdminKey()) : 0;

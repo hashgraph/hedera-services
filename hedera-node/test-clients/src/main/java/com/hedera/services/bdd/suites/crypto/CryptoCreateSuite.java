@@ -260,7 +260,6 @@ public class CryptoCreateSuite extends HapiSuite {
                         validateChargedUsd(tenAutoAssocSlots, v13PriceUsdTenAutoAssociations));
     }
 
-    @HapiTest
     public HapiSpec syntaxChecksAreAsExpected() {
         return defaultHapiSpec("SyntaxChecksAreAsExpected")
                 .given()
@@ -460,7 +459,6 @@ public class CryptoCreateSuite extends HapiSuite {
                                 .logged()
                                 .hasPrecheck(INVALID_ADMIN_KEY));
     }
-
     @HapiTest
     private HapiSpec createAnAccountInvalidED25519() {
         long initialBalance = 10_000L;
@@ -689,7 +687,6 @@ public class CryptoCreateSuite extends HapiSuite {
                 .then();
     }
 
-    @HapiTest
     private HapiSpec createAnAccountWithEVMAddressAliasFromDifferentKey() {
         return defaultHapiSpec("createAnAccountWithEVMAddressAliasFromDifferentKey")
                 .given(
