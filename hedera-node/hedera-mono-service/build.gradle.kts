@@ -17,7 +17,7 @@
 plugins {
     id("com.hedera.hashgraph.conventions")
     id("com.hedera.hashgraph.benchmark-conventions")
-    `java-test-fixtures`
+    id("java-test-fixtures")
 }
 
 description = "Hedera Application - MONO Service Implementation"

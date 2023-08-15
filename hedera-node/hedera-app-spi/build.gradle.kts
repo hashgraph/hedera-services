@@ -16,7 +16,7 @@
 
 plugins {
     id("com.hedera.hashgraph.conventions")
-    `java-test-fixtures`
+    id("java-test-fixtures")
 }
 
 description = "Hedera Application - SPI"

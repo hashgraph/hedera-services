@@ -17,7 +17,7 @@
 plugins {
     id("com.hedera.hashgraph.hapi")
     @Suppress("DSL_SCOPE_VIOLATION") alias(libs.plugins.pbj)
-    `java-test-fixtures`
+    id("java-test-fixtures")
 }
 
 description = "Hedera API"
