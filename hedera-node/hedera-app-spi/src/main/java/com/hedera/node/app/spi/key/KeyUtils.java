@@ -56,22 +56,22 @@ public class KeyUtils {
                 return true;
             }
             for (final var k : keyList.keys()) {
-                if (isEmpty(k)) {
-                    return true;
+                if (!isEmpty(k)) {
+                    return false;
                 }
             }
-            return false;
+            return true;
         } else if (pbjKey.hasThresholdKey()) {
             final var thresholdKey = (ThresholdKey) key.value();
             if ((!thresholdKey.hasKeys() || thresholdKey.keys().keys().size() == 0)) {
                 return true;
             }
             for (final var k : thresholdKey.keys().keys()) {
-                if (isEmpty(k)) {
-                    return true;
+                if (!isEmpty(k)) {
+                    return false;
                 }
             }
-            return false;
+            return true;
         } else if (pbjKey.hasEd25519()) {
             return ((Bytes) key.value()).length() == 0;
         } else if (pbjKey.hasEcdsaSecp256k1()) {
@@ -110,7 +110,7 @@ public class KeyUtils {
             final int threshold = ((ThresholdKey) key.value()).threshold();
             boolean isKeyListValid = true;
             for (Key keys : ((ThresholdKey) key.value()).keys().keys()) {
-                if (!isValid(keys)) {
+                if (isValid(keys)) {
                     isKeyListValid = false;
                     break;
                 }

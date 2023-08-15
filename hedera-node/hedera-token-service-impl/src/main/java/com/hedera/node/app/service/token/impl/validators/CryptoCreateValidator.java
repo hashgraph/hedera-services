@@ -85,7 +85,7 @@ public class CryptoCreateValidator {
         if (isEmpty(key)) {
             throw new HandleException(KEY_REQUIRED);
         }
-        if (isValid(op.key())) {
+        if (!isValid(key)) {
             throw new HandleException(INVALID_ADMIN_KEY);
         }
         attributeValidator.validateKey(op.keyOrThrow());
