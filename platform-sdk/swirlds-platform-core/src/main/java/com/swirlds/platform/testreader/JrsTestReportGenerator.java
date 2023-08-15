@@ -129,7 +129,7 @@ public final class JrsTestReportGenerator {
                             .topLevelTable > tbody > tr > td {
                                 border: none;
                             }
-                            .summaryTable > tbody > tr > td {
+                            .overview > tbody > tr > td {
                                 border: none;
                                 padding-left: 5px;
                                 padding-right: 5px;
@@ -731,6 +731,8 @@ public final class JrsTestReportGenerator {
             @NonNull final List<String> owners,
             @NonNull final Map<String, TestCount> testCountMap) {
 
+        sb.append("<center><h1>Overview</h1></center>");
+
         generateOverview(sb, data, "all", testCountMap.get("all"), false);
         generateOverview(sb, data, "unassigned", testCountMap.get(""), true);
         for (final String owner : owners) {
@@ -741,7 +743,7 @@ public final class JrsTestReportGenerator {
     private static void generateOrderControls(@NonNull final StringBuilder sb) {
         sb.append(
                 """
-                        <center><h1><b>Ordering</b></h1></center><br>
+                        <center><h1><b>Ordering</b></h1></center>
                         <form autocomplete="off">
                             <input type="radio" name="order" onclick="sortByName()" checked> <span class="important">name</span><br>
                             <input type="radio" name="order" onclick="sortByAge()"> <span class="important">age</span><br>
@@ -757,7 +759,7 @@ public final class JrsTestReportGenerator {
 
         sb.append(
                 """
-                        <center><h1><b>Owner</b></h1></center><br>
+                        <center><h1><b>Owner</b></h1></center>
                         <form autocomplete="off">
                         <input type="radio" name="order" value="name" onclick="switchToOwnerView('all')" checked> <span class="important">all</span> (%s)<br>
                         <input type="radio" name="order" value="age" onclick="switchToOwnerView('')"> <span class="important">unassigned</span> (%s)<br>
@@ -804,9 +806,9 @@ public final class JrsTestReportGenerator {
 
         sb.append("<div class=\"sidePanel\">\n");
         generateOverviews(sb, data, owners, testCountMap);
-        sb.append("<hr>");
+        sb.append("<br><hr>");
         generateOrderControls(sb);
-        sb.append("<hr>");
+        sb.append("<br><hr>");
         generateOwnerControls(sb, owners, testCountMap);
         sb.append("</div>\n");
     }
