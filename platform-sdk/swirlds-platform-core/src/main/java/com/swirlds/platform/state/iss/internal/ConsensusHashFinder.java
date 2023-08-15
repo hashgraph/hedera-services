@@ -234,8 +234,8 @@ public class ConsensusHashFinder {
                 .append("/")
                 .append(totalWeight)
                 .append(" (")
-                .append((float) hashReportedWeight / totalWeight)
-                .append(") of total weight have reported a hash for round ")
+                .append((float) hashReportedWeight / totalWeight * 100)
+                .append("%) of total weight have reported a hash for round ")
                 .append(round)
                 .append(".\n");
         if (consensusHash != null) {
@@ -274,8 +274,8 @@ public class ConsensusHashFinder {
             sb.append("  partition weight: ")
                     .append(partitionWeight)
                     .append(" (")
-                    .append((float) partitionWeight / totalWeight)
-                    .append(" of total weight)\n");
+                    .append((float) partitionWeight / totalWeight * 100)
+                    .append("% of total weight)\n");
             sb.append("  partition hash: ")
                     .append(partition.getHash().toMnemonic())
                     .append("\n");
