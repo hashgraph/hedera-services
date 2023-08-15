@@ -112,9 +112,7 @@ public final class JrsTestReportGenerator {
                                 border: 1px solid black;
                                 padding: 10px;
                             }
-                            .testDataTable > tbody > tr:nth-child(even) {
-                                background-color: lightgray;
-                            }
+
                             .sidePanel {
                                 position: sticky;
                                 top: 12px;
@@ -172,7 +170,8 @@ public final class JrsTestReportGenerator {
                             function showIfOwnedBy(owner) {
                                 showInTableIfOwnedBy(owner, 'table_sortedByName');
                                 showInTableIfOwnedBy(owner, 'table_sortedByAge');
-                                showInTableIfOwnedBy(owner, 'table_sortedByStatus')
+                                showInTableIfOwnedBy(owner, 'table_sortedByStatus');
+                                colorAllTableRows();
                             }
                             function showAllRowsInTable(tableId) {
                                 var table = document.getElementById(tableId);
@@ -184,6 +183,27 @@ public final class JrsTestReportGenerator {
                                 showAllRowsInTable('table_sortedByName');
                                 showAllRowsInTable('table_sortedByAge');
                                 showAllRowsInTable('table_sortedByStatus');
+                                colorAllTableRows();
+                            }
+                            function colorTableRows(tableId) {
+                                var table = document.getElementById(tableId);
+                                var white = true;
+                                for (var i = 1, row; row = table.rows[i]; i++) {
+                                    if (row.style.display == "none") {
+                                        continue;
+                                    }
+                                    if (white) {
+                                        row.style.backgroundColor = "white";
+                                    } else {
+                                        row.style.backgroundColor = "lightgray";
+                                    }
+                                    white = !white;
+                                }
+                            }
+                            function colorAllTableRows() {
+                                colorTableRows('table_sortedByName');
+                                colorTableRows('table_sortedByAge');
+                                colorTableRows('table_sortedByStatus');
                             }
                         </script>
                         """);
