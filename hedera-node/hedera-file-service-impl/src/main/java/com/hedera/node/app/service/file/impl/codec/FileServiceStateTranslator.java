@@ -67,7 +67,7 @@ public class FileServiceStateTranslator {
                 .fileNum(fileID.getFileNum())
                 .realmNum(fileID.getRealmNum())
                 .shardNum(fileID.getShardNum()));
-        fileBuilder.expirationSeconds(metadata.getExpiry());
+        fileBuilder.expirationSecond(metadata.getExpiry());
         if (metadata.getWacl() != null) {
             fileBuilder.keys(PbjConverter.asPbjKey(metadata.getWacl()).keyList());
         }
@@ -108,7 +108,7 @@ public class FileServiceStateTranslator {
                         Key.newBuilder().keyList(file.keys()).build(), 1)
                 : null;
         com.hedera.node.app.service.mono.files.HFileMeta hFileMeta =
-                new HFileMeta(file.deleted(), keys, file.expirationSeconds(), file.memo());
+                new HFileMeta(file.deleted(), keys, file.expirationSecond(), file.memo());
         final byte[] data = (file.contents() == null) ? null : file.contents().toByteArray();
         return new FileMetadataAndContent(data, hFileMeta);
     }

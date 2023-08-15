@@ -139,7 +139,7 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
             info.runningHash(meta.runningHash());
             info.sequenceNumber(meta.sequenceNumber());
             info.expirationTime(
-                    Timestamp.newBuilder().seconds(meta.expirationSeconds()).build());
+                    Timestamp.newBuilder().seconds(meta.expirationSecond()).build());
             if (!isEmpty(meta.adminKey())) info.adminKey(meta.adminKey());
             if (!isEmpty(meta.submitKey())) info.submitKey(meta.submitKey());
             info.autoRenewPeriod(Duration.newBuilder().seconds(meta.autoRenewPeriod()));

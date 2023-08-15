@@ -276,7 +276,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         assertEquals(memo, actualTopic.memo());
         assertEquals(adminKey, actualTopic.adminKey());
         assertEquals(submitKey, actualTopic.submitKey());
-        assertEquals(1234667, actualTopic.expirationSeconds());
+        assertEquals(1234667, actualTopic.expirationSecond());
         assertEquals(op.autoRenewPeriod().seconds(), actualTopic.autoRenewPeriod());
         assertEquals(autoRenewId, actualTopic.autoRenewAccountId());
         final var topicID = TopicID.newBuilder().topicNum(1_234L).build();
@@ -312,7 +312,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         assertEquals(memo, actualTopic.memo());
         assertNull(actualTopic.adminKey());
         assertNull(actualTopic.submitKey());
-        assertEquals(1_234_567L + op.autoRenewPeriod().seconds(), actualTopic.expirationSeconds());
+        assertEquals(1_234_567L + op.autoRenewPeriod().seconds(), actualTopic.expirationSecond());
         assertEquals(op.autoRenewPeriod().seconds(), actualTopic.autoRenewPeriod());
         assertEquals(autoRenewId, actualTopic.autoRenewAccountId());
         final var topicID = TopicID.newBuilder().topicNum(1_234L).build();

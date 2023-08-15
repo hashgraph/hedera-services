@@ -132,7 +132,7 @@ public class FileUpdateHandler implements TransactionHandler {
                         .build())
                 .contents(fileUpdate.contents())
                 .deleted(false)
-                .expirationSeconds(fileUpdate.expirationTimeOrElse(EXPIRE_NEVER).seconds())
+                .expirationSecond(fileUpdate.expirationTimeOrElse(EXPIRE_NEVER).seconds())
                 .memo(fileUpdate.memo())
                 .build();
         fileStore.add(file);
@@ -164,10 +164,10 @@ public class FileUpdateHandler implements TransactionHandler {
             builder.memo(file.memo());
         }
 
-        if (op.hasExpirationTime() && op.expirationTime().seconds() > file.expirationSeconds()) {
-            builder.expirationSeconds(op.expirationTime().seconds());
+        if (op.hasExpirationTime() && op.expirationTime().seconds() > file.expirationSecond()) {
+            builder.expirationSecond(op.expirationTime().seconds());
         } else {
-            builder.expirationSeconds(file.expirationSeconds());
+            builder.expirationSecond(file.expirationSecond());
         }
     }
 

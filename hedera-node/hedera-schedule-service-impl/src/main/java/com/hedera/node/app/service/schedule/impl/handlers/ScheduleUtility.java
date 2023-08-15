@@ -131,8 +131,8 @@ public final class ScheduleUtility {
                 schedule.payerAccountId(),
                 schedule.adminKey(),
                 schedule.scheduleValidStart(),
-                schedule.providedExpirationSeconds(),
-                schedule.calculatedExpirationSeconds(),
+                schedule.providedExpirationSecond(),
+                schedule.calculatedExpirationSecond(),
                 consensusTimestamp,
                 schedule.scheduledTransaction(),
                 schedule.originalCreateTransaction(),
@@ -151,8 +151,8 @@ public final class ScheduleUtility {
                 schedule.payerAccountId(),
                 schedule.adminKey(),
                 schedule.scheduleValidStart(),
-                schedule.providedExpirationSeconds(),
-                schedule.calculatedExpirationSeconds(),
+                schedule.providedExpirationSecond(),
+                schedule.calculatedExpirationSecond(),
                 schedule.resolutionTime(),
                 schedule.scheduledTransaction(),
                 schedule.originalCreateTransaction(),
@@ -175,8 +175,8 @@ public final class ScheduleUtility {
                 schedule.payerAccountId(),
                 schedule.adminKey(),
                 schedule.scheduleValidStart(),
-                schedule.providedExpirationSeconds(),
-                schedule.calculatedExpirationSeconds(),
+                schedule.providedExpirationSecond(),
+                schedule.calculatedExpirationSecond(),
                 consensusTimestamp,
                 schedule.scheduledTransaction(),
                 schedule.originalCreateTransaction(),
@@ -226,7 +226,7 @@ public final class ScheduleUtility {
         builder.payerAccountId(createTransaction.payerAccountIDOrElse(schedulerAccount));
         builder.schedulerAccountId(schedulerAccount);
         builder.scheduleValidStart(parentTransactionId.transactionValidStart());
-        builder.calculatedExpirationSeconds(calculatedExpirationTime.seconds());
+        builder.calculatedExpirationSecond(calculatedExpirationTime.seconds());
         builder.originalCreateTransaction(currentTransaction);
         builder.memo(createTransaction.memo());
         builder.scheduledTransaction(createTransaction.scheduledTransactionBody());
@@ -250,7 +250,7 @@ public final class ScheduleUtility {
         build.payerAccountId(provisionalSchedule.payerAccountId());
         build.schedulerAccountId(provisionalSchedule.schedulerAccountId());
         build.scheduleValidStart(provisionalSchedule.scheduleValidStart());
-        build.calculatedExpirationSeconds(provisionalSchedule.calculatedExpirationSeconds());
+        build.calculatedExpirationSecond(provisionalSchedule.calculatedExpirationSecond());
         build.originalCreateTransaction(provisionalSchedule.originalCreateTransaction());
         build.memo(provisionalSchedule.memo());
         build.scheduledTransaction(provisionalSchedule.scheduledTransaction());
@@ -312,9 +312,10 @@ public final class ScheduleUtility {
         if (scheduleToHash.scheduledTransaction() != null) {
             addToHash(hasher, scheduleToHash.scheduledTransaction());
         }
-        if (scheduleToHash.providedExpirationSeconds() != Schedule.DEFAULT.providedExpirationSeconds()) {
-            hasher.putLong(scheduleToHash.providedExpirationSeconds());
-            //            addToHash(hasher, scheduleToHash.providedExpirationSeconds());
+        if (scheduleToHash.providedExpirationSecond() != Schedule.DEFAULT.providedExpirationSecond()) {
+            // @todo('7905') fix to not use Proto serialization
+            //            hasher.putLong(scheduleToHash.providedExpirationSecond());
+            addToHash(hasher, scheduleToHash.providedExpirationSecond());
         }
         hasher.putBoolean(scheduleToHash.waitForExpiry());
         return hasher.hash().toString();

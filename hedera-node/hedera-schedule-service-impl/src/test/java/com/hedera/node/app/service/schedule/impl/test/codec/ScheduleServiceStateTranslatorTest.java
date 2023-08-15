@@ -191,8 +191,8 @@ class ScheduleServiceStateTranslatorTest {
         Assertions.assertEquals(expected.payerAccountId(), schedule.payerAccountId());
         Assertions.assertEquals(expected.schedulerAccountId(), schedule.schedulerAccountId());
         Assertions.assertEquals(expected.scheduleValidStart(), schedule.scheduleValidStart());
-        Assertions.assertEquals(expected.providedExpirationSeconds(), schedule.providedExpirationSeconds());
-        Assertions.assertEquals(expected.calculatedExpirationSeconds(), schedule.calculatedExpirationSeconds());
+        Assertions.assertEquals(expected.providedExpirationSecond(), schedule.providedExpirationSecond());
+        Assertions.assertEquals(expected.calculatedExpirationSecond(), schedule.calculatedExpirationSecond());
         Assertions.assertEquals(expected.resolutionTime(), schedule.resolutionTime());
         Assertions.assertEquals(expected.originalCreateTransaction(), schedule.originalCreateTransaction());
         Assertions.assertNotNull(expected.scheduledTransaction());
@@ -315,8 +315,8 @@ class ScheduleServiceStateTranslatorTest {
                 .payerAccountId(payer)
                 .adminKey(adminKey)
                 .scheduleValidStart(testValidStart)
-                .providedExpirationSeconds(expirationTime.seconds())
-                .calculatedExpirationSeconds(calculatedExpirationTime.seconds())
+                .providedExpirationSecond(expirationTime.seconds())
+                .calculatedExpirationSecond(calculatedExpirationTime.seconds())
                 .scheduledTransaction(scheduled)
                 .originalCreateTransaction(originalCreateTransaction)
                 .signatories(keyList)

@@ -99,12 +99,12 @@ public final class ScheduleServiceStateTranslator {
 
         final RichInstant expirationTime = virtualValue.expirationTimeProvided();
         if (expirationTime != null) {
-            scheduleBuilder.providedExpirationSeconds(expirationTime.getSeconds());
+            scheduleBuilder.providedExpirationSecond(expirationTime.getSeconds());
         }
 
         final RichInstant calculatedExpirationTime = virtualValue.calculatedExpirationTime();
         if (calculatedExpirationTime != null) {
-            scheduleBuilder.calculatedExpirationSeconds(calculatedExpirationTime.getSeconds());
+            scheduleBuilder.calculatedExpirationSecond(calculatedExpirationTime.getSeconds());
         }
 
         final Timestamp resolutionTime = getResolutionTime(virtualValue);
@@ -206,9 +206,8 @@ public final class ScheduleServiceStateTranslator {
         com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue scheduleVirtualValue =
                 new com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue();
 
-        if (body.length > 0
-                && schedule.calculatedExpirationSeconds() != Schedule.DEFAULT.calculatedExpirationSeconds()) {
-            scheduleVirtualValue = ScheduleVirtualValue.from(body, schedule.calculatedExpirationSeconds());
+        if (body.length > 0 && schedule.calculatedExpirationSecond() != Schedule.DEFAULT.calculatedExpirationSecond()) {
+            scheduleVirtualValue = ScheduleVirtualValue.from(body, schedule.calculatedExpirationSecond());
         }
 
         if (schedule.resolutionTime() != null) {

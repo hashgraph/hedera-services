@@ -91,7 +91,7 @@ public class FileDeleteHandler implements TransactionHandler {
         /* Copy part of the fields from existing, delete the file content and set the deleted flag  */
         final var fileBuilder = new File.Builder()
                 .fileId(file.fileId())
-                .expirationSeconds(file.expirationSeconds())
+                .expirationSecond(file.expirationSecond())
                 .keys(file.keys())
                 .contents(null)
                 .memo(file.memo())

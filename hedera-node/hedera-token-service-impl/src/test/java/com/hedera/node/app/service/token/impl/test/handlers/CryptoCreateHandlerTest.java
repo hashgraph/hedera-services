@@ -284,7 +284,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         assertEquals(1000L, createdAccount.accountId().accountNum());
         assertEquals(Bytes.EMPTY, createdAccount.alias());
         assertEquals(otherKey, createdAccount.key());
-        assertEquals(consensusTimestamp.seconds() + defaultAutoRenewPeriod, createdAccount.expirationSeconds());
+        assertEquals(consensusTimestamp.seconds() + defaultAutoRenewPeriod, createdAccount.expirationSecond());
         assertEquals(defaultInitialBalance, createdAccount.tinybarBalance());
         assertEquals("Create Account", createdAccount.memo());
         assertFalse(createdAccount.deleted());
@@ -306,7 +306,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         assertEquals(0L, createdAccount.ethereumNonce());
         assertEquals(0L, createdAccount.stakeAtStartOfLastRewardedPeriod());
         assertNull(createdAccount.autoRenewAccountId());
-        assertEquals(defaultAutoRenewPeriod, createdAccount.autoRenewSecs());
+        assertEquals(defaultAutoRenewPeriod, createdAccount.autoRenewSeconds());
         assertEquals(0, createdAccount.contractKvPairsNumber());
         assertTrue(createdAccount.cryptoAllowances().isEmpty());
         assertTrue(createdAccount.approveForAllNftAllowances().isEmpty());
@@ -354,7 +354,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         assertEquals(1000L, createdAccount.accountId().accountNum());
         assertEquals(Bytes.EMPTY, createdAccount.alias());
         assertEquals(otherKey, createdAccount.key());
-        assertEquals(consensusTimestamp.seconds() + defaultAutoRenewPeriod, createdAccount.expirationSeconds());
+        assertEquals(consensusTimestamp.seconds() + defaultAutoRenewPeriod, createdAccount.expirationSecond());
         assertEquals(defaultInitialBalance, createdAccount.tinybarBalance());
         assertEquals("Create Account", createdAccount.memo());
         assertFalse(createdAccount.deleted());
@@ -376,7 +376,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         assertEquals(0L, createdAccount.ethereumNonce());
         assertEquals(0L, createdAccount.stakeAtStartOfLastRewardedPeriod());
         assertNull(createdAccount.autoRenewAccountId());
-        assertEquals(defaultAutoRenewPeriod, createdAccount.autoRenewSecs());
+        assertEquals(defaultAutoRenewPeriod, createdAccount.autoRenewSeconds());
         assertEquals(0, createdAccount.contractKvPairsNumber());
         assertTrue(createdAccount.cryptoAllowances().isEmpty());
         assertTrue(createdAccount.approveForAllNftAllowances().isEmpty());

@@ -212,9 +212,9 @@ abstract class AbstractScheduleHandler {
             if (scheduleToValidate.hasScheduledTransaction()) {
                 if (!scheduleToValidate.executed()) {
                     if (!scheduleToValidate.deleted()) {
-                        long expiration = scheduleToValidate.calculatedExpirationSeconds();
+                        long expiration = scheduleToValidate.calculatedExpirationSecond();
                         final Instant calculatedExpiration =
-                                (expiration == Schedule.DEFAULT.calculatedExpirationSeconds()
+                                (expiration == Schedule.DEFAULT.calculatedExpirationSecond()
                                         ? Instant.ofEpochSecond(expiration)
                                         : Instant.MAX);
                         if (effectiveConsensusTime.isBefore(calculatedExpiration)) {

@@ -110,7 +110,7 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
         byEquality.add(scheduleToAdd);
         schedulesByEqualityMutable.put(newHash, new ScheduleList(byEquality));
         // calculated expiration time is never null...
-        final ProtoLong expirationSecond = new ProtoLong(scheduleToAdd.calculatedExpirationSeconds());
+        final ProtoLong expirationSecond = new ProtoLong(scheduleToAdd.calculatedExpirationSecond());
         final ScheduleList inStateExpiration = schedulesByExpirationMutable.get(expirationSecond);
         List<Schedule> byExpiration = inStateExpiration != null ? inStateExpiration.schedules() : null;
         if (byExpiration == null) {
@@ -133,8 +133,8 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
                 schedule.payerAccountId(),
                 schedule.adminKey(),
                 schedule.scheduleValidStart(),
-                schedule.providedExpirationSeconds(),
-                schedule.calculatedExpirationSeconds(),
+                schedule.providedExpirationSecond(),
+                schedule.calculatedExpirationSecond(),
                 consensusTimestamp,
                 schedule.scheduledTransaction(),
                 schedule.originalCreateTransaction(),

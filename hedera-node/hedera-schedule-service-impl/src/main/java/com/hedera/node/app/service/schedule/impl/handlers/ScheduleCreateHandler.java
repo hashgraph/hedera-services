@@ -172,7 +172,7 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
     @SuppressWarnings("DataFlowIssue")
     private boolean compareForDuplicates(final @NonNull Schedule candidate, final @NonNull Schedule requested) {
         return candidate.waitForExpiry() == requested.waitForExpiry()
-                && Objects.equals(candidate.providedExpirationSeconds(), requested.providedExpirationSeconds())
+                && Objects.equals(candidate.providedExpirationSecond(), requested.providedExpirationSecond())
                 && Objects.equals(candidate.memo(), requested.memo())
                 && Objects.equals(candidate.adminKey(), requested.adminKey())
                 && candidate.scheduledTransaction().equals(requested.scheduledTransaction());

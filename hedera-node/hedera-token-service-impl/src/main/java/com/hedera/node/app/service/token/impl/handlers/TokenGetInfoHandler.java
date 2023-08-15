@@ -152,7 +152,7 @@ public class TokenGetInfoHandler extends PaidQueryHandler {
             info.totalSupply(token.totalSupply());
             info.maxSupply(token.maxSupply());
             info.decimals(token.decimals());
-            info.expiry(Timestamp.newBuilder().seconds(token.expirationSeconds()));
+            info.expiry(Timestamp.newBuilder().seconds(token.expirationSecond()));
             if (!isEmpty(token.adminKey())) info.adminKey(token.adminKey());
             if (!isEmpty(token.supplyKey())) {
                 info.supplyKey(token.supplyKey());
@@ -166,7 +166,7 @@ public class TokenGetInfoHandler extends PaidQueryHandler {
 
             if (token.autoRenewAccountId() != null) {
                 info.autoRenewAccount(token.autoRenewAccountId());
-                info.autoRenewPeriod(Duration.newBuilder().seconds(token.autoRenewSecs()));
+                info.autoRenewPeriod(Duration.newBuilder().seconds(token.autoRenewSeconds()));
             }
 
             if (!isEmpty(token.freezeKey())) {

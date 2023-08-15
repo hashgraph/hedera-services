@@ -60,7 +60,7 @@ class SynthTxnUtilsTest {
                 .autoRenewAccountId(NON_SYSTEM_ACCOUNT_ID)
                 .stakedNodeId(3)
                 .declineReward(true)
-                .autoRenewSecs(666L)
+                .autoRenewSeconds(666L)
                 .maxAutoAssociations(321)
                 .memo("Something")
                 .build();
@@ -68,7 +68,8 @@ class SynthTxnUtilsTest {
         assertEquals(parent.maxAutoAssociations(), matchingCreation.maxAutomaticTokenAssociations());
         assertEquals(parent.declineReward(), matchingCreation.declineReward());
         assertEquals(parent.memo(), matchingCreation.memo());
-        assertEquals(parent.autoRenewSecs(), matchingCreation.autoRenewPeriod().seconds());
+        assertEquals(
+                parent.autoRenewSeconds(), matchingCreation.autoRenewPeriod().seconds());
         assertEquals(parent.autoRenewAccountId(), matchingCreation.autoRenewAccountId());
         assertEquals(Key.newBuilder().contractID(CALLED_CONTRACT_ID).build(), matchingCreation.adminKey());
     }
@@ -79,7 +80,7 @@ class SynthTxnUtilsTest {
                 .key(AN_ED25519_KEY)
                 .stakedAccountId(A_NEW_ACCOUNT_ID)
                 .declineReward(true)
-                .autoRenewSecs(666L)
+                .autoRenewSeconds(666L)
                 .maxAutoAssociations(321)
                 .memo("Something")
                 .build();
@@ -87,7 +88,8 @@ class SynthTxnUtilsTest {
         assertEquals(parent.maxAutoAssociations(), matchingCreation.maxAutomaticTokenAssociations());
         assertEquals(parent.declineReward(), matchingCreation.declineReward());
         assertEquals(parent.memo(), matchingCreation.memo());
-        assertEquals(parent.autoRenewSecs(), matchingCreation.autoRenewPeriod().seconds());
+        assertEquals(
+                parent.autoRenewSeconds(), matchingCreation.autoRenewPeriod().seconds());
         assertEquals(parent.autoRenewAccountId(), matchingCreation.autoRenewAccountId());
         assertEquals(parent.key(), matchingCreation.adminKey());
     }

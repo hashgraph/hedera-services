@@ -322,10 +322,10 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
     private void updateExpiryFields(
             final TokenUpdateTransactionBody op, final ExpiryMeta resolvedExpiry, final Token.Builder builder) {
         if (op.hasExpiry()) {
-            builder.expirationSeconds(resolvedExpiry.expiry());
+            builder.expirationSecond(resolvedExpiry.expiry());
         }
         if (op.hasAutoRenewPeriod()) {
-            builder.autoRenewSecs(resolvedExpiry.autoRenewPeriod());
+            builder.autoRenewSeconds(resolvedExpiry.autoRenewPeriod());
         }
         if (op.hasAutoRenewAccount()) {
             builder.autoRenewAccountId(resolvedExpiry.autoRenewAccountId());

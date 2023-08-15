@@ -174,7 +174,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
             builder.memo(topic.memo());
         }
         final var resolvedExpiryMeta = resolvedUpdateMetaFrom(handleContext.expiryValidator(), op, topic);
-        builder.expirationSeconds(resolvedExpiryMeta.expiry());
+        builder.expirationSecond(resolvedExpiryMeta.expiry());
         builder.autoRenewPeriod(resolvedExpiryMeta.autoRenewPeriod());
         builder.autoRenewAccountId(resolvedExpiryMeta.autoRenewAccountId());
     }
@@ -201,7 +201,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
             @NonNull final ConsensusUpdateTopicTransactionBody op,
             @NonNull final Topic topic) {
         final var currentMeta =
-                new ExpiryMeta(topic.expirationSeconds(), topic.autoRenewPeriod(), topic.autoRenewAccountId());
+                new ExpiryMeta(topic.expirationSecond(), topic.autoRenewPeriod(), topic.autoRenewAccountId());
         if (updatesExpiryMeta(op)) {
             final var updateMeta = new ExpiryMeta(effExpiryOf(op), effAutoRenewPeriodOf(op), op.autoRenewAccount());
             return expiryValidator.resolveUpdateAttempt(currentMeta, updateMeta);

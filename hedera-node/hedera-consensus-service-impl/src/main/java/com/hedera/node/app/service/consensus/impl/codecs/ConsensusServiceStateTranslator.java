@@ -63,7 +63,7 @@ public class ConsensusServiceStateTranslator {
         topicBuilder.autoRenewPeriod(monoTopic.getAutoRenewDurationSeconds());
         final var autoRenewAccountId = monoTopic.getAutoRenewAccountId();
         topicBuilder.autoRenewAccountId(autoRenewAccountId.toPbjAccountId());
-        topicBuilder.expirationSeconds(monoTopic.getExpirationTimestamp().getSeconds());
+        topicBuilder.expirationSecond(monoTopic.getExpirationTimestamp().getSeconds());
         topicBuilder.runningHash(Bytes.wrap(monoTopic.getRunningHash()));
         topicBuilder.sequenceNumber(monoTopic.getSequenceNumber());
         topicBuilder.deleted(monoTopic.isDeleted());
@@ -104,7 +104,7 @@ public class ConsensusServiceStateTranslator {
                         topic.autoRenewPeriod(),
                         com.hedera.node.app.service.mono.state.submerkle.EntityId.fromPbjAccountId(
                                 topic.autoRenewAccountId()),
-                        new com.hedera.node.app.service.mono.state.submerkle.RichInstant(topic.expirationSeconds(), 0));
+                        new com.hedera.node.app.service.mono.state.submerkle.RichInstant(topic.expirationSecond(), 0));
         monoTopic.setRunningHash(PbjConverter.asBytes(topic.runningHash()));
         monoTopic.setSequenceNumber(topic.sequenceNumber());
         monoTopic.setDeleted(topic.deleted());

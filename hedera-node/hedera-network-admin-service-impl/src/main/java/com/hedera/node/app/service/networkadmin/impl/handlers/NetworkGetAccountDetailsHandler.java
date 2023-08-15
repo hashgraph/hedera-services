@@ -158,9 +158,9 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
             info.balance(account.tinybarBalance());
             info.receiverSigRequired(account.receiverSigRequired());
             info.expirationTime(
-                    Timestamp.newBuilder().seconds(account.expirationSeconds()).build());
+                    Timestamp.newBuilder().seconds(account.expirationSecond()).build());
             info.autoRenewPeriod(
-                    Duration.newBuilder().seconds(account.autoRenewSecs()).build());
+                    Duration.newBuilder().seconds(account.autoRenewSeconds()).build());
             info.memo(account.memo());
             info.ownedNfts(account.numberOwnedNfts());
             info.maxAutomaticTokenAssociations(account.maxAutoAssociations());

@@ -56,7 +56,7 @@ class ReadableAccountStoreImplTest extends CryptoHandlerTestBase {
         given(account.accountId()).willReturn(id);
         given(account.memo()).willReturn("");
         given(account.key()).willReturn(accountKey);
-        given(account.expirationSeconds()).willReturn(5L);
+        given(account.expirationSecond()).willReturn(5L);
         given(account.tinybarBalance()).willReturn(7L * HBARS_TO_TINYBARS);
         given(account.memo()).willReturn("Hello World");
         given(account.deleted()).willReturn(true);
@@ -75,7 +75,7 @@ class ReadableAccountStoreImplTest extends CryptoHandlerTestBase {
         given(account.declineReward()).willReturn(true);
         given(account.autoRenewAccountId())
                 .willReturn(AccountID.newBuilder().accountNum(53L).build());
-        given(account.autoRenewSecs()).willReturn(59L);
+        given(account.autoRenewSeconds()).willReturn(59L);
         given(account.alias()).willReturn(Bytes.wrap(new byte[] {1, 2, 3}));
         given(account.smartContract()).willReturn(true);
 
@@ -85,7 +85,7 @@ class ReadableAccountStoreImplTest extends CryptoHandlerTestBase {
         // then
         assertThat(mappedAccount).isNotNull();
         assertThat(mappedAccount.key()).isEqualTo(accountKey);
-        assertThat(mappedAccount.expirationSeconds()).isEqualTo(5L);
+        assertThat(mappedAccount.expirationSecond()).isEqualTo(5L);
         assertThat(mappedAccount.tinybarBalance()).isEqualTo(7L * HBARS_TO_TINYBARS);
         assertThat(mappedAccount.memo()).isEqualTo("Hello World");
         assertThat(mappedAccount.deleted()).isTrue();
@@ -103,7 +103,7 @@ class ReadableAccountStoreImplTest extends CryptoHandlerTestBase {
         assertThat(mappedAccount.declineReward()).isTrue();
         assertThat(mappedAccount.stakeAtStartOfLastRewardedPeriod()).isEqualTo(37L);
         assertThat(mappedAccount.autoRenewAccountId().accountNum()).isEqualTo(53L);
-        assertThat(mappedAccount.autoRenewSecs()).isEqualTo(59L);
+        assertThat(mappedAccount.autoRenewSeconds()).isEqualTo(59L);
         assertThat(mappedAccount.accountId()).isEqualTo(id);
         assertThat(mappedAccount.alias()).isEqualTo(Bytes.wrap(new byte[] {1, 2, 3}));
         assertThat(mappedAccount.smartContract()).isTrue();
@@ -123,7 +123,7 @@ class ReadableAccountStoreImplTest extends CryptoHandlerTestBase {
         // then
         assertThat(mappedAccount).isNotNull();
         assertThat(mappedAccount.key()).isEqualTo(accountKey);
-        assertThat(mappedAccount.expirationSeconds()).isZero();
+        assertThat(mappedAccount.expirationSecond()).isZero();
         assertThat(mappedAccount.tinybarBalance()).isZero();
         assertThat(mappedAccount.tinybarBalance()).isZero();
         assertThat(mappedAccount.memo()).isEmpty();
@@ -141,7 +141,7 @@ class ReadableAccountStoreImplTest extends CryptoHandlerTestBase {
         assertThat(mappedAccount.declineReward()).isFalse();
         assertThat(mappedAccount.stakeAtStartOfLastRewardedPeriod()).isZero();
         assertThat(mappedAccount.autoRenewAccountId()).isNull();
-        assertThat(mappedAccount.autoRenewSecs()).isZero();
+        assertThat(mappedAccount.autoRenewSeconds()).isZero();
         assertThat(mappedAccount.accountId()).isEqualTo(id);
         assertThat(mappedAccount.alias()).isNull();
         assertThat(mappedAccount.smartContract()).isFalse();
