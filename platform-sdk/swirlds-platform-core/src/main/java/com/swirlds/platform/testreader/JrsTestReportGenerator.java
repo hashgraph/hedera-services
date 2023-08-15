@@ -731,8 +731,6 @@ public final class JrsTestReportGenerator {
             @NonNull final List<String> owners,
             @NonNull final Map<String, TestCount> testCountMap) {
 
-        sb.append("<center><h1>Overview</h1></center>");
-
         generateOverview(sb, data, "all", testCountMap.get("all"), false);
         generateOverview(sb, data, "unassigned", testCountMap.get(""), true);
         for (final String owner : owners) {
