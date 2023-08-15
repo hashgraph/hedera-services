@@ -5,14 +5,13 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package com.hedera.node.app.workflows.handle;
@@ -37,7 +36,6 @@ public class TokenServiceContextImpl implements StakingContext, FinalizeContext 
     private final ReadableStoreFactory readableStoreFactory;
     private final WritableStoreFactory writableStoreFactory;
     private final RecordListBuilder recordListBuilder;
-
 
     public TokenServiceContextImpl(
             @NonNull final Configuration configuration,
@@ -106,5 +104,4 @@ public class TokenServiceContextImpl implements StakingContext, FinalizeContext 
         }
         return recordBuilderClass.cast(recordBuilder);
     }
-
 }

@@ -5,14 +5,13 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package com.hedera.node.app.workflows.handle;
@@ -89,8 +88,10 @@ public class StakingPeriodTimeHook implements ConsensusTimeHook {
             @NonNull final Instant currentConsensusTime,
             @NonNull final Instant previousConsensusTime,
             @NonNull final StakingContext stakingContext) {
-        final var stakingPeriod =
-                stakingContext.configuration().getConfigData(StakingConfig.class).periodMins();
+        final var stakingPeriod = stakingContext
+                .configuration()
+                .getConfigData(StakingConfig.class)
+                .periodMins();
         if (stakingPeriod == DEFAULT_STAKING_PERIOD_MINS) {
             return isLaterUtcDay(currentConsensusTime, previousConsensusTime);
         } else {

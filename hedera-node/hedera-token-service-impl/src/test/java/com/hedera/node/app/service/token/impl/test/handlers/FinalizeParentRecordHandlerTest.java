@@ -249,10 +249,12 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
                                         .build())
                         .build());
         doAnswer(invocation -> {
-            final var consumer = invocation.getArgument(1, Consumer.class);
-            consumer.accept(childRecord);
-            return null;
-        }).when(context).forEachChildRecord(any(), any());
+                    final var consumer = invocation.getArgument(1, Consumer.class);
+                    consumer.accept(childRecord);
+                    return null;
+                })
+                .when(context)
+                .forEachChildRecord(any(), any());
 
         subject.finalizeParentRecord(ACCOUNT_1212_ID, context);
 

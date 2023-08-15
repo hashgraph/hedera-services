@@ -52,8 +52,7 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
     }
 
     @Override
-    public void finalizeParentRecord(
-            @NonNull final AccountID payer, @NonNull final FinalizeContext context) {
+    public void finalizeParentRecord(@NonNull final AccountID payer, @NonNull final FinalizeContext context) {
         final var recordBuilder = context.mainRecordBuilder(CryptoTransferRecordBuilder.class);
 
         // This handler won't ask the context for its transaction, but instead will determine the net hbar transfers and
@@ -113,18 +112,15 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
     }
 
     private void deductChangesFromChildRecords(final Map<AccountID, Long> hbarChanges, final FinalizeContext context) {
-        context.forEachChildRecord(
-                ChildRecordBuilder.class,
-                childRecord -> {
-                    final var childHbarChangesFromRecord = childRecord.transferList();
-                    for (final var childChange : childHbarChangesFromRecord.accountAmountsOrElse(List.of())) {
-                        final var childHbarChangeAccountId = childChange.accountID();
-                        final var childHbarChangeAmount = childChange.amount();
-                        if (hbarChanges.containsKey(childHbarChangeAccountId)) {
-                            hbarChanges.merge(childHbarChangeAccountId, -childHbarChangeAmount, Long::sum);
-                        }
-                    }
+        context.forEachChildRecord(ChildRecordBuilder.class, childRecord -> {
+            final var childHbarChangesFromRecord = childRecord.transferList();
+            for (final var childChange : childHbarChangesFromRecord.accountAmountsOrElse(List.of())) {
+                final var childHbarChangeAccountId = childChange.accountID();
+                final var childHbarChangeAmount = childChange.amount();
+                if (hbarChanges.containsKey(childHbarChangeAccountId)) {
+                    hbarChanges.merge(childHbarChangeAccountId, -childHbarChangeAmount, Long::sum);
                 }
-        );
+            }
+        });
     }
 }

@@ -73,7 +73,8 @@ public class UtilPrngHandler implements TransactionHandler {
         // (one integer), otherwise we don't charge for any additional bytes. Standard transaction usage has already
         // been determined and loaded into the calculator.
         final var range = feeContext.body().utilPrngOrThrow().range();
-        return feeContext.feeCalculator(SubType.DEFAULT)
+        return feeContext
+                .feeCalculator(SubType.DEFAULT)
                 .addBytesPerTransaction(range > 0 ? Integer.BYTES : 0)
                 .calculate();
     }

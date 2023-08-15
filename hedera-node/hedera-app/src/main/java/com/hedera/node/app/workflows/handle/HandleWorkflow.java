@@ -237,7 +237,8 @@ public class HandleWorkflow {
         AccountID payer = null;
         Fees fees = null;
         try {
-            final var preHandleResult = getCurrentPreHandleResult(state, platformEvent, creator, platformTxn, configuration);
+            final var preHandleResult =
+                    getCurrentPreHandleResult(state, platformEvent, creator, platformTxn, configuration);
 
             final var transactionInfo = preHandleResult.txInfo();
 
@@ -331,11 +332,7 @@ public class HandleWorkflow {
 
         // store all records at once
         final var recordListResult = recordListBuilder.build();
-        recordCache.add(
-                creator.nodeId(),
-                payer,
-                recordListResult.mainRecord().record(),
-                consensusNow);
+        recordCache.add(creator.nodeId(), payer, recordListResult.mainRecord().record(), consensusNow);
         blockRecordManager.endUserTransaction(recordListResult.recordStream(), state);
 
         return txBody;
