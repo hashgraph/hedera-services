@@ -17,7 +17,6 @@
 package com.swirlds.platform;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
 import static com.swirlds.platform.crypto.CryptoSetup.initNodeSecurity;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.addPlatforms;
@@ -154,14 +153,11 @@ public class Browser {
         if (STARTED.getAndSet(true)) {
             return;
         }
-        final Path log4jPath =
-                ConfigurationHolder.getConfigData(PathsConfig.class).getLogPath();
-        Log4jSetup.startLoggingFramework(log4jPath);
-        logger = LogManager.getLogger(Browser.class);
+
         try {
             launchUnhandled(commandLineArgs);
         } catch (final Exception e) {
-            logger.error(EXCEPTION.getMarker(), "Unable to start Browser", e);
+            CommonUtils.tellUserConsole("Unable to start Browser: " + e);
             throw new RuntimeException("Unable to start Browser", e);
         }
     }
@@ -174,23 +170,29 @@ public class Browser {
     private static void launchUnhandled(@NonNull final CommandLineArgs commandLineArgs) throws Exception {
         StartupTime.markStartupTime();
         Objects.requireNonNull(commandLineArgs);
-        logger.info(STARTUP.getMarker(), "\n\n" + STARTUP_MESSAGE + "\n");
-        logger.debug(STARTUP.getMarker(), () -> new NodeStartPayload().toString());
 
-        final PathsConfig pathsConfig = loadPathsConfig();
+        // This is the default value from PathsConfig, since the path must be known before it can be read in
+        final Path configPath = loadPathsConfig().getConfigPath();
 
         // Load config.txt file, parse application jar file name, main class name, address book, and parameters
-        final ApplicationDefinition appDefinition =
-                ApplicationDefinitionLoader.loadDefault(pathsConfig.getConfigPath());
+        final ApplicationDefinition appDefinition = ApplicationDefinitionLoader.loadDefault(configPath);
+
         // Determine which nodes to run locally
         final List<NodeId> nodesToRun =
                 getNodesToRun(appDefinition.getConfigAddressBook(), commandLineArgs.localNodesToStart());
         checkNodesToRun(nodesToRun);
+
         // Load all SwirldMain instances for locally run nodes.
         final Map<NodeId, SwirldMain> appMains = loadSwirldMains(appDefinition, nodesToRun);
         ParameterProvider.getInstance().setParameters(appDefinition.getAppParameters());
-        final Configuration configuration = BootstrapUtils.loadConfig(pathsConfig, appMains);
+        final Configuration configuration = BootstrapUtils.loadConfig(configPath, appMains);
         PlatformConfigUtils.checkConfiguration(configuration);
+
+        final Path log4jPath = configuration.getConfigData(PathsConfig.class).getLogPath();
+        Log4jSetup.startLoggingFramework(log4jPath);
+        logger = LogManager.getLogger(Browser.class);
+        logger.info(STARTUP.getMarker(), "\n\n" + STARTUP_MESSAGE + "\n");
+        logger.debug(STARTUP.getMarker(), () -> new NodeStartPayload().toString());
 
         ConfigurationHolder.getInstance().setConfiguration(configuration);
         CryptographyHolder.reset();

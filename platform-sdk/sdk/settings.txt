@@ -49,3 +49,4 @@ state.saveStatePeriod,                    60
                                           #############################
 
 loadKeysFromPfxFiles,                     false
+paths.logPath,                            log4j2-stdout.xml
