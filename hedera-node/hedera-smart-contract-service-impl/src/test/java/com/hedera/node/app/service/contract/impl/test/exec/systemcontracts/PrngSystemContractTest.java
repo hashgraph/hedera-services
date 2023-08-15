@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.PrngSystemContract;
+import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.BlockValues;
@@ -51,6 +52,9 @@ class PrngSystemContractTest {
 
     @Mock
     ProxyWorldUpdater proxyWorldUpdater;
+
+    @Mock
+    ContractCallRecordBuilder contractCallRecordBuilder;
 
     private PrngSystemContract subject;
 
@@ -131,9 +135,7 @@ class PrngSystemContractTest {
 
     private void givenCommon() {
         givenCommonBlockValues();
-        // TODO: uncomment out the following once there is a way to create child records
-        // given(contractCallRecordBuilder.contractID(any())).willReturn(contractCallRecordBuilder);
-        // given(contractCallRecordBuilder.status(any())).willReturn(contractCallRecordBuilder);
+        given(messageFrame.getWorldUpdater()).willReturn(proxyWorldUpdater);
     }
 
     private void assertEqualContractResult(PrecompileContractResult expected, PrecompileContractResult actual) {

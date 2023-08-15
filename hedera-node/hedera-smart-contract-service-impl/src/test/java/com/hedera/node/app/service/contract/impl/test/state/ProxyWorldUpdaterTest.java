@@ -46,6 +46,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
+import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameState;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
 import com.hedera.node.app.service.contract.impl.state.PendingCreation;
@@ -53,6 +54,7 @@ import com.hedera.node.app.service.contract.impl.state.ProxyEvmAccount;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.StorageAccess;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
+import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils;
 import java.util.List;
 import java.util.Optional;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -99,6 +101,9 @@ class ProxyWorldUpdaterTest {
     private HederaOperations hederaOperations;
 
     @Mock
+    private SystemContractOperations systemContractOperations;
+
+    @Mock
     private WorldUpdater parent;
 
     @Mock
@@ -111,7 +116,7 @@ class ProxyWorldUpdaterTest {
 
     @BeforeEach
     void setUp() {
-        subject = new ProxyWorldUpdater(hederaOperations, () -> evmFrameState, null);
+        subject = new ProxyWorldUpdater(hederaOperations, systemContractOperations, () -> evmFrameState, null);
     }
 
     @Test
@@ -356,7 +361,7 @@ class ProxyWorldUpdaterTest {
 
     @Test
     void hasGivenParentIfNonNull() {
-        subject = new ProxyWorldUpdater(hederaOperations, evmFrameStateFactory, parent);
+        subject = new ProxyWorldUpdater(hederaOperations, systemContractOperations, evmFrameStateFactory, parent);
         assertTrue(subject.parentUpdater().isPresent());
         assertSame(parent, subject.parentUpdater().get());
     }
@@ -454,5 +459,14 @@ class ProxyWorldUpdaterTest {
     void delegatesEntropy() {
         given(hederaOperations.entropy()).willReturn(OUTPUT_DATA);
         assertEquals(pbjToTuweniBytes(OUTPUT_DATA), subject.entropy());
+    }
+
+    @Test
+    void externalizeSystemContractResultTest() {
+        var contractFunctionResult = SystemContractUtils.contractFunctionResultSuccessFor(
+                0, org.apache.tuweni.bytes.Bytes.EMPTY, ContractID.DEFAULT);
+
+        subject.externalizeSystemContractResults(contractFunctionResult, false);
+        verify(systemContractOperations).externalizeResult(contractFunctionResult, false);
     }
 }

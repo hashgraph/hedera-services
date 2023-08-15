@@ -29,8 +29,10 @@ import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
+import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
+import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -83,6 +85,11 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
     protected final HederaOperations hederaOperations;
 
     /**
+     * Operations which are needed by system contracts.
+     */
+    protected final SystemContractOperations systemContractOperations;
+
+    /**
      * If our {@code CreateOperation}s used the addresses prescribed by the {@code CREATE} and
      * {@code CREATE2} specs, they would not need Hedera state and thus not need to call into
      * their frame's {@link ProxyWorldUpdater}. Similarly, if a {@link ProxyWorldUpdater}
@@ -106,10 +113,12 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
 
     public ProxyWorldUpdater(
             @NonNull final HederaOperations hederaOperations,
+            @NonNull final SystemContractOperations systemContractOperations,
             @NonNull final EvmFrameStateFactory evmFrameStateFactory,
             @Nullable final WorldUpdater parent) {
         this.parent = parent;
         this.hederaOperations = requireNonNull(hederaOperations);
+        this.systemContractOperations = requireNonNull(systemContractOperations);
         this.evmFrameStateFactory = requireNonNull(evmFrameStateFactory);
         this.evmFrameState = evmFrameStateFactory.get();
     }
@@ -362,7 +371,8 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      */
     @Override
     public @NonNull ProxyWorldUpdater updater() {
-        final var child = new ProxyWorldUpdater(hederaOperations.begin(), evmFrameStateFactory, this);
+        final var child =
+                new ProxyWorldUpdater(hederaOperations.begin(), systemContractOperations, evmFrameStateFactory, this);
         // Hand off any pending creation to the child updater; this a bit of a hack, but
         // lets the TransactionProcessor client code "flow" as naturally as possible,
         // without need to defer setting up creation until the initial frame is built
@@ -403,6 +413,14 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
     @Override
     public @NonNull Collection<Address> getDeletedAccountAddresses() {
         throw new UnsupportedOperationException();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void externalizeSystemContractResults(@NonNull final ContractFunctionResult result, boolean isError) {
+        systemContractOperations.externalizeResult(result, isError);
     }
 
     private long getValidatedCreationNumber(

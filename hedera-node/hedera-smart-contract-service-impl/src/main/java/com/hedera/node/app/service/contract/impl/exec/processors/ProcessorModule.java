@@ -18,9 +18,7 @@ package com.hedera.node.app.service.contract.impl.exec.processors;
 
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.PrngSystemContract.PRNG_PRECOMPILE_ADDRESS;
 
-import com.hedera.node.app.service.contract.impl.exec.scope.HandleSystemContractOperations;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.PrngSystemContract;
-import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.IntoSet;
@@ -52,11 +50,6 @@ public interface ProcessorModule {
     static ContractValidationRule providePrefixCodeRule() {
         return PrefixCodeRule.of();
     }
-
-    @Binds
-    @Singleton
-    HandleSystemContractOperations bindSystemContractOperations(
-            HandleSystemContractOperations handleSystemContractOperations);
 
     @Provides
     @Singleton

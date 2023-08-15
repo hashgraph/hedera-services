@@ -19,6 +19,8 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations.ZERO_ENTROPY;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmContractId;
+import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultFailedFor;
+import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultSuccessFor;
 import static java.util.Objects.requireNonNull;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INVALID_OPERATION;
 
@@ -79,39 +81,35 @@ public class PrngSystemContract extends AbstractPrecompiledContract {
 
             // create a child record if we are not in a static call
             if (!frame.isStatic()) {
-                createSuccessfulRecord(randomNum, contractID);
+                createSuccessfulRecord(frame, randomNum, contractID);
             }
 
             return result;
         } catch (Exception e) {
             // create a failed record and returned a halt result
-            createFailedRecord(FAIL_INVALID.toString(), contractID);
+            createFailedRecord(frame, FAIL_INVALID.toString(), contractID);
             return PrecompiledContract.PrecompileContractResult.halt(Bytes.EMPTY, Optional.of(INVALID_OPERATION));
         }
     }
 
-    void createSuccessfulRecord(@NonNull final Bytes randomNum, @NonNull final ContractID contractID) {
+    void createSuccessfulRecord(
+            @NonNull MessageFrame frame, @NonNull final Bytes randomNum, @NonNull final ContractID contractID) {
+        requireNonNull(frame);
         requireNonNull(randomNum);
         requireNonNull(contractID);
-        // TODO: finish after api for creating child record is implemented
-        //        final var childRecord =
-        // handleSystemContractOperations.createChildRecord(ContractCallRecordBuilder.class);
-        //        childRecord
-        //                .contractID(contractID)
-        //                .status(SUCCESS)
-        //                .contractCallResult(contractFunctionResultSuccessFor(gasRequirement, randomNum, contractID));
+        var updater = (ProxyWorldUpdater) frame.getWorldUpdater();
+        updater.externalizeSystemContractResults(
+                contractFunctionResultSuccessFor(gasRequirement, randomNum, contractID), false);
     }
 
-    void createFailedRecord(@NonNull final String errorMsg, @NonNull final ContractID contractID) {
-        requireNonNull(errorMsg);
+    void createFailedRecord(
+            @NonNull MessageFrame frame, @NonNull final String errorMsg, @NonNull final ContractID contractID) {
+        requireNonNull(frame);
         requireNonNull(contractID);
-        // TODO: finish after api for creating child record is implemented
-        //        final var childRecord =
-        // handleSystemContractOperations.createChildRecord(ContractCallRecordBuilder.class);
-        //        childRecord
-        //                .contractID(contractID)
-        //                .status(FAIL_INVALID)
-        //                .contractCallResult(contractFunctionResultFailedFor(gasRequirement, errorMsg, contractID));
+        contractFunctionResultFailedFor(gasRequirement, errorMsg, contractID);
+        var updater = (ProxyWorldUpdater) frame.getWorldUpdater();
+        updater.externalizeSystemContractResults(
+                contractFunctionResultFailedFor(gasRequirement, errorMsg, contractID), true);
     }
 
     Bytes generatePseudoRandomData(@NonNull final Bytes input, @NonNull final MessageFrame frame) {
