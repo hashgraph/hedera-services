@@ -19,7 +19,6 @@ plugins {
 
 jmh {
     jmhVersion.set("1.36")
-    includes.add(".*")
 }
 
 tasks.jmh {
@@ -27,10 +26,6 @@ tasks.jmh {
 }
 
 tasks.jmhJar {
-    isReproducibleFileOrder = true
-    isPreserveFileTimestamps = false
-    fileMode = 664
-    dirMode = 775
     manifest {
         attributes(mapOf("Multi-Release" to true))
     }
