@@ -149,25 +149,20 @@ testing {
     }
 }
 
-// Configure Jacoco so it outputs XML reports (needed by SonarCloud), and so that it combines the code
-// coverage from both unit and integration tests into a single report from `jacocoTestReport`
 tasks.jacocoTestReport {
+    // Configure Jacoco so it outputs XML reports (needed by SonarCloud), and so that it combines the code
+    // coverage from both unit and integration tests into a single report from `jacocoTestReport`
     reports {
         xml.required.set(true)
         html.required.set(true)
     }
 
-    val testData = tasks.named("test").map {
-        it.extensions.getByType<JacocoTaskExtension>().destinationFile!!
-    }
-    val hammerData = tasks.named("hammerTest").map {
-        it.extensions.getByType<JacocoTaskExtension>().destinationFile!!
-    }
-    val performanceData = tasks.named("performanceTest").map {
-        it.extensions.getByType<JacocoTaskExtension>().destinationFile!!
-    }
-
-    executionData.from(testData, hammerData, performanceData)
+    // Pick up results that have been produced by any of the 'Test' tasks - in this or previous build runs
+    val allTestTasks = tasks.withType<Test>()
+    executionData.from(allTestTasks.map {
+        it.extensions.getByType<JacocoTaskExtension>().destinationFile
+    })
+    shouldRunAfter(allTestTasks)
 }
 
 tasks.assemble {
