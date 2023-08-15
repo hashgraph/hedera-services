@@ -34,7 +34,43 @@
     "sequential": [
       {
         "type": "TYPE_VIRTUAL_MERKLE_CREATE",
-        "amount": 20000
+        "amount": 30000
+      },
+      {
+        "type": "TYPE_VIRTUAL_MERKLE_DELETE",
+        "amount": 15000
+      },
+      {
+        "type": "TYPE_VIRTUAL_MERKLE_UPDATE",
+        "amount": 15000
+      },
+      {
+        "type": "TYPE_VIRTUAL_MERKLE_CREATE",
+        "amount": 15000
+      },
+      {
+        "type": "TYPE_VIRTUAL_MERKLE_DELETE",
+        "amount": 15000
+      },
+      {
+        "type": "TYPE_VIRTUAL_MERKLE_UPDATE",
+        "amount": 15000
+      },
+      {
+        "type": "TYPE_VIRTUAL_MERKLE_CREATE",
+        "amount": 15000
+      },
+      {
+        "type": "TYPE_VIRTUAL_MERKLE_DELETE",
+        "amount": 15000
+      },
+      {
+        "type": "TYPE_VIRTUAL_MERKLE_UPDATE",
+        "amount": 15000
+      },
+      {
+        "type": "TYPE_VIRTUAL_MERKLE_CREATE",
+        "amount": 15000
       },
       {
         "type": "TYPE_VIRTUAL_MERKLE_DELETE",
@@ -58,43 +94,7 @@
       },
       {
         "type": "TYPE_VIRTUAL_MERKLE_CREATE",
-        "amount": 9000
-      },
-      {
-        "type": "TYPE_VIRTUAL_MERKLE_DELETE",
-        "amount": 9000
-      },
-      {
-        "type": "TYPE_VIRTUAL_MERKLE_UPDATE",
-        "amount": 9000
-      },
-      {
-        "type": "TYPE_VIRTUAL_MERKLE_CREATE",
-        "amount": 9000
-      },
-      {
-        "type": "TYPE_VIRTUAL_MERKLE_DELETE",
-        "amount": 9000
-      },
-      {
-        "type": "TYPE_VIRTUAL_MERKLE_UPDATE",
-        "amount": 9000
-      },
-      {
-        "type": "TYPE_VIRTUAL_MERKLE_CREATE",
-        "amount": 9000
-      },
-      {
-        "type": "TYPE_VIRTUAL_MERKLE_DELETE",
-        "amount": 9000
-      },
-      {
-        "type": "TYPE_VIRTUAL_MERKLE_UPDATE",
-        "amount": 9000
-      },
-      {
-        "type": "TYPE_VIRTUAL_MERKLE_CREATE",
-        "amount": 9000
+        "amount": 15000
       }
     ]
   },
