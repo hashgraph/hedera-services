@@ -41,6 +41,7 @@ import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -114,29 +115,32 @@ public final class IngestChecker {
         final var txBody = txInfo.txBody();
         final var functionality = txInfo.functionality();
 
+        // 2. Check the time box of the transaction using wall clock time as an approximation
+        transactionChecker.checkTimeBox(txBody, Instant.now());
+
         // This should never happen, because HapiUtils#checkFunctionality() will throw
         // UnknownHederaFunctionality if it cannot map to a proper value, and WorkflowOnset
         // will convert that to INVALID_TRANSACTION_BODY.
         assert functionality != HederaFunctionality.NONE;
 
-        // 2. Deduplicate
+        // 3. Deduplicate
         // TODO: Integrate solution from preHandle workflow once it is merged
 
-        // 3. Check throttles
+        // 4. Check throttles
         if (throttleAccumulator.shouldThrottle(txInfo.txBody())) {
             throw new PreCheckException(BUSY);
         }
 
-        // 4. Get payer account
+        // 5. Get payer account
         final AccountID payerId =
                 txBody.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT);
 
         solvencyPreCheck.checkPayerAccountStatus(state, payerId);
 
-        // 5. Check account balance
+        // 6. Check account balance
         solvencyPreCheck.checkSolvencyOfVerifiedPayer(state, tx);
 
-        // 6. Verify payer's signatures
+        // 7. Verify payer's signatures
         verifyPayerSignature(state, txInfo, payerId);
 
         return txInfo;

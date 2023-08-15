@@ -71,7 +71,7 @@ public class TreasuryClonerTest {
                 .given(accounts)
                 .getImmutableRef(any());
 
-        subject.ensureTreasuryClonesExist();
+        subject.ensureTreasuryClonesExist(true);
         final var created = subject.getClonesCreated();
 
         for (long i = 200; i <= 750L; i++) {
@@ -81,6 +81,27 @@ public class TreasuryClonerTest {
         }
         assertEquals(500, created.size());
         verifyNoMoreInteractions(accounts);
+
+        subject.forgetCreatedClones();
+        assertTrue(subject.getClonesCreated().isEmpty());
+    }
+
+    @Test
+    void prepsSyntheticRecordsAsExpected() {
+        willAnswer(invocationOnMock -> {
+                    final var id = (AccountID) invocationOnMock.getArgument(0);
+                    if (id.getAccountNum() == 2L || id.getAccountNum() == 666L) {
+                        return accountWith(pretendExpiry, pretendTreasuryKey);
+                    }
+                    return null;
+                })
+                .given(accounts)
+                .getImmutableRef(any());
+
+        subject.ensureTreasuryClonesExist(false);
+        final var created = subject.getClonesCreated();
+
+        assertEquals(501, created.size());
 
         subject.forgetCreatedClones();
         assertTrue(subject.getClonesCreated().isEmpty());

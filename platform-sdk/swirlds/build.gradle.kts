@@ -17,16 +17,16 @@
 plugins { id("com.swirlds.platform.conventions") }
 
 dependencies {
-  // Individual Dependencies
-  implementation(project(":swirlds-platform-core"))
+    // Individual Dependencies
+    implementation(project(":swirlds-platform-core"))
 }
 
 val copyApp =
     tasks.register<Copy>("copyApp") {
-      from(tasks.jar)
-      into(File(rootProject.projectDir, "sdk"))
-      rename { "${project.name}.jar" }
-      shouldRunAfter(tasks.assemble)
+        from(tasks.jar)
+        into(File(rootProject.projectDir, "sdk"))
+        rename { "${project.name}.jar" }
+        shouldRunAfter(tasks.assemble)
     }
 
 tasks.assemble { dependsOn(copyApp) }
@@ -34,19 +34,25 @@ tasks.assemble { dependsOn(copyApp) }
 extraJavaModuleInfo { failOnMissingModuleInfo.set(false) }
 
 dependencies {
-  runtimeOnly(project(":swirlds-merkle"))
-  runtimeOnly(project(":swirlds-unit-tests:structures:swirlds-merkle-test"))
-  runtimeOnly(libs.protobuf)
+    runtimeOnly(project(":swirlds-merkle"))
+    runtimeOnly(project(":swirlds-unit-tests:structures:swirlds-merkle-test"))
+    runtimeOnly(libs.protobuf)
 }
 
-// Add all the libs dependencies into the jar manifest!
-tasks.withType<Jar>() {
-  manifest {
-    attributes(
-        "Main-Class" to "com.swirlds.platform.Browser",
-        "Class-Path" to
-            configurations.getByName("runtimeClasspath").sorted().joinToString(separator = " ") {
-              "data/lib/" + it.name
-            })
-  }
+tasks.jar {
+    // Gradle fails to track 'configurations.runtimeClasspath' as an input to the task if it is
+    // only used in the 'mainfest.attributes'. Hence, we explicitly add it as input.
+    inputs.files(configurations.runtimeClasspath)
+    manifest {
+        attributes(
+            "Main-Class" to "com.swirlds.platform.Browser",
+            "Class-Path" to
+                configurations.runtimeClasspath.get().elements.map { entry ->
+                    entry
+                        .map { "data/lib/" + it.asFile.name }
+                        .sorted()
+                        .joinToString(separator = " ")
+                }
+        )
+    }
 }

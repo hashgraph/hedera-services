@@ -16,14 +16,20 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.scope;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.node.app.service.contract.impl.exec.processors.ProcessorModule.INITIAL_CONTRACT_NONCE;
 import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_ACCOUNT_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CANONICAL_ALIAS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_ACCOUNT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
+import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthHollowAccountCreation;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -32,13 +38,14 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
+import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -52,6 +59,9 @@ class HandleHederaNativeOperationsTest {
 
     @Mock
     private ReadableTokenStore tokenStore;
+
+    @Mock
+    private CryptoCreateRecordBuilder cryptoCreateRecordBuilder;
 
     @Mock
     private ReadableAccountStore accountStore;
@@ -95,23 +105,41 @@ class HandleHederaNativeOperationsTest {
     }
 
     @Test
-    void createHollowAccountNotImplemented() {
-        assertThrows(AssertionError.class, () -> subject.createHollowAccount(Bytes.EMPTY));
+    void createsHollowAccountByDispatching() {
+        final var synthTxn = TransactionBody.newBuilder()
+                .cryptoCreateAccount(synthHollowAccountCreation(CANONICAL_ALIAS))
+                .build();
+        given(context.dispatchChildTransaction(synthTxn, CryptoCreateRecordBuilder.class))
+                .willReturn(cryptoCreateRecordBuilder);
+        given(cryptoCreateRecordBuilder.status()).willReturn(OK);
+
+        final var status = subject.createHollowAccount(CANONICAL_ALIAS);
+
+        assertEquals(OK, status);
     }
 
     @Test
-    void finalizeHollowAccountAsContractNotImplemented() {
-        assertThrows(AssertionError.class, () -> subject.finalizeHollowAccountAsContract(Bytes.EMPTY));
+    void createsHollowAccountByDispatchingDoesNotCatchErrors() {
+        final var synthTxn = TransactionBody.newBuilder()
+                .cryptoCreateAccount(synthHollowAccountCreation(CANONICAL_ALIAS))
+                .build();
+        given(context.dispatchChildTransaction(synthTxn, CryptoCreateRecordBuilder.class))
+                .willReturn(cryptoCreateRecordBuilder);
+        given(cryptoCreateRecordBuilder.status()).willReturn(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
+
+        assertThrows(AssertionError.class, () -> subject.createHollowAccount(CANONICAL_ALIAS));
     }
 
     @Test
-    void collectFeeNotImplemented() {
-        assertThrows(AssertionError.class, () -> subject.collectFee(1L, 2L));
-    }
+    void finalizeHollowAccountAsContractUsesApiAndStore() {
+        given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
+        given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+        given(accountStore.getAccountIDByAlias(CANONICAL_ALIAS)).willReturn(A_NEW_ACCOUNT_ID);
 
-    @Test
-    void refundFeeNotImplemented() {
-        assertThrows(AssertionError.class, () -> subject.refundFee(1L, 2L));
+        subject.finalizeHollowAccountAsContract(CANONICAL_ALIAS);
+
+        verify(tokenServiceApi).finalizeHollowAccountAsContract(A_NEW_ACCOUNT_ID, INITIAL_CONTRACT_NONCE);
+        verify(context).newEntityNum();
     }
 
     @Test
@@ -131,8 +159,8 @@ class HandleHederaNativeOperationsTest {
     }
 
     @Test
-    void trackDeletionNotImplemented() {
-        assertThrows(AssertionError.class, () -> subject.trackDeletion(1L, 2L));
+    void trackDeletionIsTodo() {
+        assertDoesNotThrow(() -> subject.trackDeletion(1L, 2L));
     }
 
     @Test

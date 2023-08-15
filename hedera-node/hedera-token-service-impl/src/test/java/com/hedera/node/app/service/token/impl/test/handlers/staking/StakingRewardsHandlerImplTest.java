@@ -25,6 +25,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
@@ -67,8 +68,8 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
     private StakeInfoHelper stakeInfoHelper;
     private StakeRewardCalculatorImpl stakeRewardCalculator;
     private StakingRewardsHelper stakingRewardHelper;
-    private final Long node0Id = 0L;
-    private final Long node1Id = 1L;
+    protected final EntityNumber node0Id = EntityNumber.newBuilder().number(0L).build();
+    protected final EntityNumber node1Id = EntityNumber.newBuilder().number(1L).build();
     private final long stakingRewardAccountNum = 800L;
 
     @BeforeEach
@@ -180,7 +181,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                 .withAccount(account)
                 .withBalance(newBalance)
                 .withStakeAtStartOfLastRewardPeriod(newBalance / 5)
-                .withStakedNodeId(node1Id)
+                .withStakedNodeId(node1Id.number())
                 .withStakedToMe(0)
                 .withStakePeriodStart(stakePeriodStart)
                 .withDeclineReward(false)
@@ -358,7 +359,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                 .withStakePeriodStart(stakePeriodStart)
                 .withStakedToMe(0L)
                 .withDeclineReward(false)
-                .withStakedNodeId(node1Id)
+                .withStakedNodeId(node1Id.number())
                 .withDeleted(false)
                 .build();
         final var ownerAccountBefore = new AccountCustomizer()
@@ -556,7 +557,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                 .withStakePeriodStart(stakePeriodStart)
                 .withDeclineReward(false)
                 .withStakedToMe(0L)
-                .withStakedNodeId(node1Id)
+                .withStakedNodeId(node1Id.number())
                 .withDeleted(false)
                 .build();
         addToState(Map.of(payerId, payerAccountBefore));
@@ -822,7 +823,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                 .withStakePeriodStart(stakePeriodStart - 2)
                 .withDeclineReward(false)
                 .withDeleted(false)
-                .withStakedNodeId(node0Id)
+                .withStakedNodeId(node0Id.number())
                 .withStakedToMe(accountBalance)
                 .build();
         addToState(Map.of(payerId, payerAccountBefore, ownerId, ownerAccountBefore));
@@ -857,7 +858,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         assertThat(modifiedPayer.stakedToMe()).isEqualTo(originalPayer.stakedToMe());
         assertThat(modifiedPayer.stakePeriodStart()).isEqualTo(stakePeriodStart);
 
-        final var node0InfoAfter = writableStakingInfoStore.get(node0Id);
+        final var node0InfoAfter = writableStakingInfoStore.get(node0Id.number());
         assertThat(node0InfoAfter.stakeToReward()).isEqualTo(node0InfoBefore.stakeToReward() - HBARS_TO_TINYBARS);
         assertThat(node0InfoAfter.unclaimedStakeRewardStart()).isZero();
     }
@@ -883,7 +884,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                 .withStakePeriodStart(stakePeriodStart - 2)
                 .withDeclineReward(false)
                 .withDeleted(false)
-                .withStakedNodeId(node0Id)
+                .withStakedNodeId(node0Id.number())
                 .withStakedToMe(accountBalance)
                 .build();
         addToState(Map.of(payerId, payerAccountBefore, ownerId, ownerAccountBefore));
@@ -947,7 +948,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                 .withStakePeriodStart(stakePeriodStart - 2)
                 .withDeclineReward(false)
                 .withDeleted(false)
-                .withStakedNodeId(node0Id)
+                .withStakedNodeId(node0Id.number())
                 .withStakedToMe(accountBalance)
                 .build();
         addToState(Map.of(payerId, payerAccountBefore, ownerId, ownerAccountBefore));

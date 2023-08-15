@@ -281,7 +281,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
      * {@inheritDoc}
      */
     @Override
-    public Address getAddress(final long number) {
+    public @Nullable Address getAddress(final long number) {
         final var account = validatedAccount(number);
         if (account.deleted()) {
             return null;

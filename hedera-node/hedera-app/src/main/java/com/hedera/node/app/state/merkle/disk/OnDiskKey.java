@@ -100,16 +100,19 @@ public final class OnDiskKey<K> implements VirtualKey {
         output.skip(4);
         codec.write(key, output);
         final var pos = output.position();
-        output.position(0);
         output.writeInt((int) pos - 4);
         output.position(pos);
     }
 
     @Override
     public void deserialize(@NonNull final ByteBuffer byteBuffer, int ignored) throws IOException {
-        final var buf = BufferedData.wrap(byteBuffer);
-        buf.skip(4);
-        key = codec.parse(buf);
+        final var buff = BufferedData.wrap(byteBuffer);
+        final var len = buff.readInt();
+        final var pos = buff.position();
+        final var oldLimit = buff.limit();
+        buff.limit(pos + len);
+        key = codec.parse(buff);
+        buff.limit(oldLimit);
     }
 
     @Override

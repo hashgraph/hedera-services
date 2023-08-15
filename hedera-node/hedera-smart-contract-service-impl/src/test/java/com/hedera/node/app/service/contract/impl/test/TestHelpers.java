@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.nu
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniBytes;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INVALID_OPERATION;
+import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -42,6 +43,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.streams.CallOperationType;
 import com.hedera.hapi.streams.ContractAction;
 import com.hedera.hapi.streams.ContractActionType;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.service.contract.impl.exec.failure.ResourceExhaustedException;
 import com.hedera.node.app.service.contract.impl.exec.gas.GasCharges;
 import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy;
@@ -79,6 +81,16 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract.PrecompileContractResult;
 
 public class TestHelpers {
+
+    public static final Bytes ETH_WITH_CALL_DATA = Bytes.fromHex(
+            "f864012f83018000947e3a9eaf9bcc39e2ffa38eb30bf7a93feacbc18180827653820277a0f9fbff985d374be4a55f296915002eec11ac96f1ce2df183adf992baa9390b2fa00c1e867cc960d9c74ec2e6a662b7908ec4c8cc9f3091e886bcefbeb2290fb792");
+    public static final Bytes ETH_WITH_TO_ADDRESS = Bytes.fromHex(
+            "02f8ad82012a80a000000000000000000000000000000000000000000000000000000000000003e8a0000000000000000000000000000000000000000000000000000000746a528800831e848094fee687d5088faff48013a6767505c027e2742536880de0b6b3a764000080c080a0f5ddf2394311e634e2147bf38583a017af45f4326bdf5746cac3a1110f973e4fa025bad52d9a9f8b32eb983c9fb8959655258bd75e2826b2c6a48d4c26ec30d112");
+    public static final EthTxData ETH_DATA_WITH_TO_ADDRESS =
+            requireNonNull(EthTxData.populateEthTxData(ETH_WITH_TO_ADDRESS.toByteArray()));
+    public static final EthTxData ETH_DATA_WITH_CALL_DATA =
+            requireNonNull(EthTxData.populateEthTxData(ETH_WITH_CALL_DATA.toByteArray()));
+    public static final EthTxData ETH_DATA_WITHOUT_TO_ADDRESS = ETH_DATA_WITH_TO_ADDRESS.replaceTo(new byte[0]);
     public static final Configuration DEFAULT_CONFIG = HederaTestConfigBuilder.createConfig();
     public static final LedgerConfig DEFAULT_LEDGER_CONFIG = DEFAULT_CONFIG.getConfigData(LedgerConfig.class);
     public static final StakingConfig DEFAULT_STAKING_CONFIG = DEFAULT_CONFIG.getConfigData(StakingConfig.class);
@@ -86,10 +98,15 @@ public class TestHelpers {
     public static final Configuration AUTO_ASSOCIATING_CONFIG = HederaTestConfigBuilder.create()
             .withValue("contracts.allowAutoAssociations", true)
             .getOrCreateConfig();
+
+    public static final Configuration DEV_CHAIN_ID_CONFIG =
+            HederaTestConfigBuilder.create().withValue("contracts.chainId", 298).getOrCreateConfig();
     public static final LedgerConfig AUTO_ASSOCIATING_LEDGER_CONFIG =
             AUTO_ASSOCIATING_CONFIG.getConfigData(LedgerConfig.class);
     public static final ContractsConfig AUTO_ASSOCIATING_CONTRACTS_CONFIG =
             AUTO_ASSOCIATING_CONFIG.getConfigData(ContractsConfig.class);
+    public static final ContractsConfig DEV_CHAIN_ID_CONTRACTS_CONFIG =
+            DEV_CHAIN_ID_CONFIG.getConfigData(ContractsConfig.class);
     public static final int HEDERA_MAX_REFUND_PERCENTAGE = 20;
     public static final Instant ETERNAL_NOW = Instant.ofEpochSecond(1_234_567L, 890);
     public static final Key AN_ED25519_KEY = Key.newBuilder()
@@ -134,6 +151,9 @@ public class TestHelpers {
             AccountID.newBuilder().accountNum(666).build();
     public static final ContractID INVALID_CONTRACT_ADDRESS =
             ContractID.newBuilder().evmAddress(Bytes.wrap("abcdefg")).build();
+    public static final ContractID VALID_CONTRACT_ADDRESS = ContractID.newBuilder()
+            .evmAddress(Bytes.fromHex("1234123412341234123412341234123412341234"))
+            .build();
     public static final Address SYSTEM_ADDRESS =
             Address.fromHexString(BigInteger.valueOf(750).toString(16));
     public static final Address HTS_SYSTEM_CONTRACT_ADDRESS = Address.fromHexString("0x167");
@@ -141,6 +161,8 @@ public class TestHelpers {
     public static final Address NON_SYSTEM_LONG_ZERO_ADDRESS = Address.fromHexString("0x1234576890");
     public static final FileID INITCODE_FILE_ID =
             FileID.newBuilder().fileNum(6789L).build();
+    public static final FileID ETH_CALLDATA_FILE_ID =
+            FileID.newBuilder().fileNum(7890L).build();
     public static final TokenID FUNGIBLE_TOKEN_ID =
             TokenID.newBuilder().tokenNum(9876L).build();
     public static final Token FUNGIBLE_TOKEN =
@@ -206,6 +228,7 @@ public class TestHelpers {
     public static final HederaEvmTransactionResult SUCCESS_RESULT = HederaEvmTransactionResult.successFrom(
             GAS_LIMIT / 2,
             Wei.of(NETWORK_GAS_PRICE),
+            SENDER_ID,
             CALLED_CONTRACT_ID,
             CALLED_CONTRACT_EVM_ADDRESS,
             pbjToTuweniBytes(CALL_DATA),
@@ -215,6 +238,7 @@ public class TestHelpers {
     public static final HederaEvmTransactionResult HALT_RESULT = new HederaEvmTransactionResult(
             GAS_LIMIT / 2,
             NETWORK_GAS_PRICE,
+            SENDER_ID,
             null,
             null,
             Bytes.EMPTY,
@@ -269,9 +293,6 @@ public class TestHelpers {
     private static final ContractCallTransactionBody MOCK_CALL_BODY = ContractCallTransactionBody.newBuilder()
             .contractID(CALLED_CONTRACT_ID)
             .build();
-    public static final TransactionBody MOCK_CALL =
-            TransactionBody.newBuilder().contractCall(MOCK_CALL_BODY).build();
-
     private static final EthereumTransactionBody MOCK_ETH_BODY =
             EthereumTransactionBody.newBuilder().ethereumData(Bytes.EMPTY).build();
     public static final TransactionBody MOCK_ETH =
