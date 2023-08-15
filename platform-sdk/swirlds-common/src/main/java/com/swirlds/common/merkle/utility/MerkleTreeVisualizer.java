@@ -42,8 +42,8 @@ public class MerkleTreeVisualizer {
 
     private final MerkleNode root;
     private boolean useColors = false;
-    private boolean useMnemonics = false;
-    private boolean useHashes = true;
+    private boolean useMnemonics = true;
+    private boolean useHashes = false;
     private boolean useFullRoute = true;
     private int hashLength = -1;
     private int depth = 10;
