@@ -35,3 +35,8 @@ tasks.jmhJar {
         attributes(mapOf("Multi-Release" to true))
     }
 }
+
+tasks.assemble {
+    // 'assemble' compiles all sources, including 'jmh'
+    dependsOn(tasks.named("jmhClasses"))
+}

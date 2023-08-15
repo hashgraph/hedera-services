@@ -171,8 +171,6 @@ tasks.jacocoTestReport {
 }
 
 tasks.assemble {
+    // 'assemble' compiles all sources, including all test sources
     dependsOn(tasks.testClasses)
-    if (tasks.names.contains("jmhClasses")) {
-        dependsOn(tasks.named("jmhClasses"))
-    }
 }
