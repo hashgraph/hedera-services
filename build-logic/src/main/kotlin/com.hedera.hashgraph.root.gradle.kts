@@ -18,11 +18,10 @@
 plugins {
     id("com.hedera.hashgraph.aggregate-reports")
     id("com.hedera.hashgraph.dependency-analysis")
+    id("com.hedera.hashgraph.repositories")
     id("com.hedera.hashgraph.spotless-conventions")
     id("com.hedera.hashgraph.spotless-kotlin-conventions")
 }
-
-repositories { mavenCentral() }
 
 tasks.register("checkAllModuleInfo")
 
