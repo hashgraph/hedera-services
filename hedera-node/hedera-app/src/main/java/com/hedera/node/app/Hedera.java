@@ -262,6 +262,7 @@ public final class Hedera implements SwirldMain {
      * Invoked by the platform when the state should be initialized. This happens <b>BEFORE</b>
      * {@link #init(Platform, NodeId)} and after {@link #newState()}.
      */
+    @SuppressWarnings("java:S1181") // catching Throwable instead of Exception when we do a direct System.exit()
     private void onStateInitialized(
             @NonNull final MerkleHederaState state,
             @NonNull final Platform platform,
@@ -308,8 +309,8 @@ public final class Hedera implements SwirldMain {
                     // We exited from this method early if we were recovering from an event stream.
                 case EVENT_STREAM_RECOVERY -> throw new RuntimeException("Should never be reached");
             }
-        } catch (final Exception e) {
-            logger.fatal("Critical failure during initialization", e);
+        } catch (final Throwable th) {
+            logger.fatal("Critical failure during initialization", th);
             System.exit(CRITICAL_FAILURE_EXIT_CODE);
         }
 
@@ -364,6 +365,7 @@ public final class Hedera implements SwirldMain {
      * {@link #newState()} or an instance of {@link MerkleHederaState} created by the platform and loaded from the saved
      * state).
      */
+    @SuppressWarnings("java:S1181") // catching Throwable instead of Exception when we do a direct System.exit()
     @Override
     public void init(@NonNull final Platform platform, @NonNull final NodeId nodeId) {
         if (this.platform != platform) {
@@ -448,8 +450,8 @@ public final class Hedera implements SwirldMain {
             // com.hedera.node.app.service.mono.state.forensics.ServicesIssListener
             // This is something that MUST be implemented by the Hedera app module. We use this to respond to detected
             // ISS events, logging, restarting, etc.
-        } catch (final Exception e) {
-            logger.error("Fatal precondition violation in HederaNode#{}", daggerApp.nodeId(), e);
+        } catch (final Throwable th) {
+            logger.error("Fatal precondition violation in HederaNode#{}", daggerApp.nodeId(), th);
             daggerApp.systemExits().fail(1); // TBD: Better exit code?
         }
     }
@@ -475,6 +477,7 @@ public final class Hedera implements SwirldMain {
     }
 
     /** Verifies some aspects of the ledger state */
+    @SuppressWarnings("java:S1181") // catching Throwable instead of Exception when we do a direct System.exit()
     private void validateLedgerState(@NonNull final HederaState state) {
         // For a non-zero stake node, validates presence of a self-account in the address book.
         final var selfNodeInfo = daggerApp.networkInfo().selfNodeInfo();
@@ -488,8 +491,8 @@ public final class Hedera implements SwirldMain {
         // we start loading massive amounts of state from disk.
         try {
             daggerApp.ledgerValidator().validate(state);
-        } catch (Exception e) {
-            logger.fatal("Ledger validation failed", e);
+        } catch (Throwable th) {
+            logger.fatal("Ledger validation failed", th);
             daggerApp.systemExits().fail(1); // TBD What code to use?
         }
     }
