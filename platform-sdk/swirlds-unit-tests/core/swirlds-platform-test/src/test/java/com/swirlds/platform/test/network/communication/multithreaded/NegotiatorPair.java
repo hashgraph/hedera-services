@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.test.network.communication.multithreaded;
 
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.test.network.communication.TestProtocol;
@@ -23,7 +24,6 @@ import com.swirlds.platform.test.sync.ConnectionFactory;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.Callable;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Assertions;
 
 /**
@@ -34,8 +34,8 @@ class NegotiatorPair {
     private final TestNegotiator n2;
 
     public NegotiatorPair(final TestProtocol protocol, final Pair<Connection, Connection> connections) {
-        n1 = new TestNegotiator(connections.getLeft(), protocol.copy());
-        n2 = new TestNegotiator(connections.getRight(), protocol.copy());
+        n1 = new TestNegotiator(connections.left(), protocol.copy());
+        n2 = new TestNegotiator(connections.right(), protocol.copy());
     }
 
     public NegotiatorPair(final TestProtocol protocol) throws IOException {
