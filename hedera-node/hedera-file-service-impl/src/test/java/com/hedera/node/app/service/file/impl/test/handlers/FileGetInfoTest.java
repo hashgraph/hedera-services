@@ -177,6 +177,22 @@ class FileGetInfoTest extends FileTestBase {
     }
 
     @Test
+    void getsResponseIfInvalidFileID() {
+        givenValidFile();
+        final var responseHeader = ResponseHeader.newBuilder()
+                .nodeTransactionPrecheckCode(ResponseCodeEnum.OK)
+                .build();
+
+        final var query = createGetFileInfoQuery(fileIdNotExist.fileNum());
+        when(context.query()).thenReturn(query);
+        when(context.createStore(ReadableFileStore.class)).thenReturn(readableStore);
+
+        final var response = subject.findResponse(context, responseHeader);
+        final var fileInfoResponse = response.fileGetInfoOrThrow();
+        assertEquals(INVALID_FILE_ID, fileInfoResponse.header().nodeTransactionPrecheckCode());
+    }
+
+    @Test
     void getsResponseIfOkResponseUpgradeFile() {
         givenValidUpgradeFile(false, true);
         refreshStoresWithCurrentFileInBothReadableAndWritable();

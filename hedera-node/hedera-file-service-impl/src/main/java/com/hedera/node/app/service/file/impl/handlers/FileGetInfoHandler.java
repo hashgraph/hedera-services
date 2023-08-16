@@ -108,7 +108,7 @@ public class FileGetInfoHandler extends FileQueryBase {
                         .nodeTransactionPrecheckCode(INVALID_FILE_ID)
                         .build());
             } else {
-                optionalInfo.ifPresent(responseBuilder::fileInfo);
+                responseBuilder.fileInfo(optionalInfo.get());
             }
         }
 

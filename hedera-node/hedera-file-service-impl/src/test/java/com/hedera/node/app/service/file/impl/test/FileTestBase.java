@@ -84,6 +84,9 @@ public class FileTestBase {
     protected final FileID WELL_KNOWN_SYSTEM_FILE_ID =
             FileID.newBuilder().fileNum(122L).shardNum(0L).realmNum(0L).build();
     protected final FileID fileId = WELL_KNOWN_FILE_ID;
+    protected final FileID fileIdNotExist = FileID.newBuilder().fileNum(6_789L).build();
+    ;
+    ;
     protected final FileID fileSystemFileId = WELL_KNOWN_SYSTEM_FILE_ID;
     protected final FileID fileUpgradeFileId = WELL_KNOWN_UPGRADE_FILE_ID;
     protected final com.hederahashgraph.api.proto.java.FileID monoFileID =

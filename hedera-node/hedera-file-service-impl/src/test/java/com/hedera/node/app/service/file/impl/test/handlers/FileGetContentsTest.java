@@ -166,6 +166,23 @@ class FileGetContentsTest extends FileTestBase {
         assertEquals(expectedContent, fileContentResponse.fileContents());
     }
 
+    @Test
+    void getsResponseIfInvalidFileID() {
+        givenValidFile();
+        final var responseHeader = ResponseHeader.newBuilder()
+                .nodeTransactionPrecheckCode(ResponseCodeEnum.OK)
+                .build();
+
+        final var query = createGetFileContentQuery(fileIdNotExist.fileNum());
+        when(context.query()).thenReturn(query);
+        when(context.createStore(ReadableFileStore.class)).thenReturn(readableStore);
+
+        final var response = subject.findResponse(context, responseHeader);
+        final var fileContentResponse = response.fileGetContentsOrThrow();
+        assertEquals(
+                ResponseCodeEnum.INVALID_FILE_ID, fileContentResponse.header().nodeTransactionPrecheckCode());
+    }
+
     private FileContents getExpectedContent() {
         return FileContents.newBuilder()
                 .contents(Bytes.wrap(contents))
