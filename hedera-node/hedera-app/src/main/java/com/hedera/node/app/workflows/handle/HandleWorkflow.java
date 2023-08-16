@@ -154,7 +154,7 @@ public class HandleWorkflow {
                     userTransactionsHandled.set(true);
                     handlePlatformTransaction(state, event, platformTxn);
                 }
-            } catch (final Throwable e) {
+            } catch (final Exception e) {
                 logger.fatal(
                         "A fatal unhandled exception occurred during transaction handling. "
                                 + "While this node may not die right away, it is in a bad way, most likely fatally.",
@@ -285,7 +285,7 @@ public class HandleWorkflow {
             recordFailedTransaction(e.responseCode(), recordBuilder, recordListBuilder);
         } catch (final HandleException e) {
             recordFailedTransaction(e.getStatus(), recordBuilder, recordListBuilder);
-        } catch (final Throwable e) {
+        } catch (final Exception e) {
             logger.error("An unexpected exception was thrown during handle", e);
             recordBuilder.status(ResponseCodeEnum.UNKNOWN);
         }
@@ -302,7 +302,7 @@ public class HandleWorkflow {
             // FUTURE: This needs to be replaced by a proper implementation, as can be found in PR
             // https://github.com/hashgraph/hedera-services/pull/7473
             recordCache.add(
-                    0, preHandleResult.payer(), recordListResult.mainRecord().record(), consensusNow);
+                    0, preHandleResult.payer(), recordListResult.mainRecord().transactionRecord(), consensusNow);
         } else {
             throw new IllegalStateException("pre handle result was null!");
         }

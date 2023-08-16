@@ -63,9 +63,7 @@ jobs:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}
       hedera-tests-enabled: true
-      slack-results-channel: hedera-regression
-      slack-summary-channel: hedera-regression-summary
-      use-branch-for-slack-channel: false
+      use-branch-for-slack-channel: true
       panel-config: "configs/services/suites/daily/GCP-Daily-Services-MinStake-4N.json"
     secrets:
       access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
@@ -84,9 +82,7 @@ jobs:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}
       hedera-tests-enabled: true
-      slack-results-channel: hedera-regression
-      slack-summary-channel: hedera-regression-summary
-      use-branch-for-slack-channel: false
+      use-branch-for-slack-channel: true
       panel-config: "configs/services/suites/daily/GCP-Daily-Services-SimilarStake-4N.json"
     secrets:
       access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
@@ -107,9 +103,7 @@ jobs:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}
       hedera-tests-enabled: true
-      slack-results-channel: hedera-regression
-      slack-summary-channel: hedera-regression-summary
-      use-branch-for-slack-channel: false
+      use-branch-for-slack-channel: true
       panel-config: "configs/services/suites/daily/GCP-Daily-Services-UnevenStake-4N.json"
     secrets:
       access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
@@ -130,9 +124,7 @@ jobs:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}
       hedera-tests-enabled: true
-      slack-results-channel: hedera-regression
-      slack-summary-channel: hedera-regression-summary
-      use-branch-for-slack-channel: false
+      use-branch-for-slack-channel: true
       panel-config: "configs/services/suites/daily/GCP-Daily-Services-ZeroStake-4N.json"
     secrets:
       access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
@@ -153,9 +145,7 @@ jobs:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}
       hedera-tests-enabled: true
-      slack-results-channel: hedera-regression
-      slack-summary-channel: hedera-regression-summary
-      use-branch-for-slack-channel: false
+      use-branch-for-slack-channel: true
       panel-config: "configs/services/suites/daily/GCP-Daily-Services-RestartWithNewNodes-MinStake-5N.json"
     secrets:
       access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
@@ -174,9 +164,7 @@ jobs:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}
       hedera-tests-enabled: true
-      slack-results-channel: hedera-regression
-      slack-summary-channel: hedera-regression-summary
-      use-branch-for-slack-channel: false
+      use-branch-for-slack-channel: true
       panel-config: "configs/services/suites/daily/GCP-Daily-Services-RestartWithNewNodes-SimilarStake-5N.json"
     secrets:
       access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
@@ -197,9 +185,7 @@ jobs:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}
       hedera-tests-enabled: true
-      slack-results-channel: hedera-regression
-      slack-summary-channel: hedera-regression-summary
-      use-branch-for-slack-channel: false
+      use-branch-for-slack-channel: true
       panel-config: "configs/services/suites/daily/GCP-Daily-Services-RestartWithNewNodes-UnevenStake-5N.json"
     secrets:
       access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
@@ -220,9 +206,7 @@ jobs:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}
       hedera-tests-enabled: true
-      slack-results-channel: hedera-regression
-      slack-summary-channel: hedera-regression-summary
-      use-branch-for-slack-channel: false
+      use-branch-for-slack-channel: true
       panel-config: "configs/services/suites/daily/GCP-Daily-Services-RestartWithNewNodes-ZeroStake-5N.json"
     secrets:
       access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}

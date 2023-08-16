@@ -26,7 +26,6 @@ import java.util.regex.Pattern;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.CompareToBuilder;
 import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /**
  * A standard representation of a semantic version number.
@@ -147,7 +146,9 @@ public final class SemanticVersion implements Comparable<SemanticVersion>, SelfS
     @Override
     @SuppressWarnings("NullableProblems")
     public int compareTo(final SemanticVersion that) {
-        if (this == that) return 0;
+        if (this == that) {
+            return 0;
+        }
 
         return new CompareToBuilder()
                 .append(major, that.major)
@@ -163,9 +164,13 @@ public final class SemanticVersion implements Comparable<SemanticVersion>, SelfS
      */
     @Override
     public boolean equals(final Object o) {
-        if (this == o) return true;
+        if (this == o) {
+            return true;
+        }
 
-        if (!(o instanceof final SemanticVersion that)) return false;
+        if (!(o instanceof final SemanticVersion that)) {
+            return false;
+        }
 
         return new EqualsBuilder()
                 .append(major, that.major)
@@ -181,13 +186,7 @@ public final class SemanticVersion implements Comparable<SemanticVersion>, SelfS
      */
     @Override
     public int hashCode() {
-        return new HashCodeBuilder(17, 37)
-                .append(major)
-                .append(minor)
-                .append(patch)
-                .append(prerelease)
-                .append(build)
-                .toHashCode();
+        return Objects.hash(major, minor, patch, prerelease, build);
     }
 
     /**
