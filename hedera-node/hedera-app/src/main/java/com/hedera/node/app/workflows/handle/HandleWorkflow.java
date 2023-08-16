@@ -230,10 +230,15 @@ public class HandleWorkflow {
         final var stack = new SavepointStackImpl(state);
         final var feeAccumulator = createFeeAccumulator(stack, configuration, recordBuilder);
 
-        // If this is the first user transaction after midnight, then handle staking updates prior to handling the
-        // transaction itself.
         final var tokenServiceContext = new TokenServiceContextImpl(configuration, stack, recordListBuilder);
-        stakingPeriodTimeHook.process(tokenServiceContext);
+        try {
+            // If this is the first user transaction after midnight, then handle staking updates prior to handling the
+            // transaction itself.
+            stakingPeriodTimeHook.process(tokenServiceContext);
+        } catch (Exception e) {
+            // If anything goes wrong, we log the error and continue
+            logger.error("Failed to process staking period time hook", e);
+        }
         // @future('7836'): update the exchange rate and call from here
 
         TransactionBody txBody = null;
