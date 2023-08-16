@@ -128,7 +128,7 @@ class WritableNftStoreTest extends CryptoTokenHandlerTestBase {
         writableNftState = emptyWritableNftStateBuilder()
                 .value(
                         nftToRemove,
-                        Nft.newBuilder().id(nftToRemove).ownerId(ownerId).build())
+                        Nft.newBuilder().nftId(nftToRemove).ownerId(ownerId).build())
                 .build();
         assertTrue(writableNftState.contains(nftToRemove));
         given(writableStates.<NftID, Nft>get(NFTS)).willReturn(writableNftState);
@@ -151,7 +151,7 @@ class WritableNftStoreTest extends CryptoTokenHandlerTestBase {
         writableNftState = emptyWritableNftStateBuilder()
                 .value(
                         nftToRemove,
-                        Nft.newBuilder().id(nftToRemove).ownerId(ownerId).build())
+                        Nft.newBuilder().nftId(nftToRemove).ownerId(ownerId).build())
                 .build();
         assertTrue(writableNftState.contains(nftToRemove));
         given(writableStates.<NftID, Nft>get(NFTS)).willReturn(writableNftState);

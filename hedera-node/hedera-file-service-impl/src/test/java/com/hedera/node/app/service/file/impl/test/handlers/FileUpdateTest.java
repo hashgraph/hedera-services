@@ -372,7 +372,7 @@ class FileUpdateTest extends FileTestBase {
         subject.handle(handleContext);
 
         final var newFile = writableFileState.get(fileId);
-        assertEquals(1_234_568L, newFile.expirationTime());
+        assertEquals(1_234_568L, newFile.expirationSecond());
     }
 
     @Test
@@ -389,7 +389,7 @@ class FileUpdateTest extends FileTestBase {
         subject.handle(handleContext);
 
         final var newFile = writableFileState.get(fileId);
-        assertEquals(1_234_567L, newFile.expirationTime());
+        assertEquals(1_234_567L, newFile.expirationSecond());
     }
 
     @Test

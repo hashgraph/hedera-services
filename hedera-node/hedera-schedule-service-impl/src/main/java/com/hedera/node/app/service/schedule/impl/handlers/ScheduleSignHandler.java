@@ -82,7 +82,7 @@ public class ScheduleSignHandler extends AbstractScheduleHandler implements Tran
         if (scheduleSignTransaction.scheduleID() != null) {
             final Schedule scheduleData =
                     preValidate(scheduleStore, isLongTermEnabled, scheduleSignTransaction.scheduleID());
-            final AccountID payerAccount = scheduleData.payerAccount();
+            final AccountID payerAccount = scheduleData.payerAccountId();
             // Note, payer should never be null, but we have to check anyway, because Sonar doesn't know better.
             if (payerAccount != null) {
                 final ReadableAccountStore accountStore = context.createStore(ReadableAccountStore.class);

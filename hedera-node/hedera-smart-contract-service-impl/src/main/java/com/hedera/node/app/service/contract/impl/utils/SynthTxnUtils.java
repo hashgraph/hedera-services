@@ -101,7 +101,7 @@ public class SynthTxnUtils {
                 .maxAutomaticTokenAssociations(parent.maxAutoAssociations())
                 .declineReward(parent.declineReward())
                 .memo(parent.memo())
-                .autoRenewPeriod(Duration.newBuilder().seconds(parent.autoRenewSecs()));
+                .autoRenewPeriod(Duration.newBuilder().seconds(parent.autoRenewSeconds()));
         if (parent.hasAutoRenewAccountId()) {
             builder.autoRenewAccountId(parent.autoRenewAccountIdOrThrow());
         }

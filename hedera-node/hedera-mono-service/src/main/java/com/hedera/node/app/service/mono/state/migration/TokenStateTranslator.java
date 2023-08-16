@@ -66,8 +66,8 @@ public final class TokenStateTranslator {
                         token.autoRenewAccount() != null
                                 ? asAccount(token.autoRenewAccount().num())
                                 : null)
-                .autoRenewSecs(token.autoRenewPeriod())
-                .expiry(token.expiry())
+                .autoRenewSeconds(token.autoRenewPeriod())
+                .expirationSecond(token.expiry())
                 .memo(token.memo())
                 .maxSupply(token.maxSupply())
                 .paused(token.isPaused())
@@ -166,8 +166,8 @@ public final class TokenStateTranslator {
                                 token.autoRenewAccountId().realmNum(),
                                 token.autoRenewAccountId().accountNum())
                         : null);
-        merkleToken.setAutoRenewPeriod(token.autoRenewSecs());
-        merkleToken.setExpiry(token.expiry());
+        merkleToken.setAutoRenewPeriod(token.autoRenewSeconds());
+        merkleToken.setExpiry(token.expirationSecond());
         merkleToken.setMemo(token.memo());
         merkleToken.setMaxSupply(token.maxSupply());
         merkleToken.setPaused(token.paused());
