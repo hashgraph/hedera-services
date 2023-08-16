@@ -155,7 +155,7 @@ public class AsyncTipsetEventCreationManager implements Lifecycle {
      *
      * @param pauseRequest describes the desired pause status
      */
-    private void handlePauseStatusChange(final PauseRequest pauseRequest) {
+    private void handlePauseStatusChange(@NonNull final PauseRequest pauseRequest) {
         if (pauseRequest.shouldBePaused()) {
             eventCreator.pauseEventCreation();
         } else {
