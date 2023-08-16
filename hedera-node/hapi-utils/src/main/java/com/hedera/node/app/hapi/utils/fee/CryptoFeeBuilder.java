@@ -156,7 +156,7 @@ public final class CryptoFeeBuilder extends FeeBuilder {
      * @param responseType response type
      * @return fee data
      */
-    public static FeeData getTransactionRecordQueryFeeMatrices(
+    public FeeData getTransactionRecordQueryFeeMatrices(
             final TransactionRecord transRecord, final ResponseType responseType) {
         if (transRecord == null) {
             return FeeData.getDefaultInstance();
@@ -186,7 +186,7 @@ public final class CryptoFeeBuilder extends FeeBuilder {
      * @param responseType response type
      * @return fee data
      */
-    public static FeeData getCryptoAccountRecordsQueryFeeMatrices(
+    public FeeData getCryptoAccountRecordsQueryFeeMatrices(
             final List<TransactionRecord> transRecords, final ResponseType responseType) {
         final var bpt = BASIC_QUERY_HEADER + BASIC_TX_ID_SIZE;
 

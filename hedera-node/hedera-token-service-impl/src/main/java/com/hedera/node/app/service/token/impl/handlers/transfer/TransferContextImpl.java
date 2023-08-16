@@ -41,7 +41,7 @@ public class TransferContextImpl implements TransferContext {
     private final HandleContext context;
     private int numAutoCreations;
     private int numLazyCreations;
-    private final Map<ProtoBytes, AccountID> resolutions = new HashMap<>();
+    private final Map<Bytes, AccountID> resolutions = new HashMap<>();
     private final AutoCreationConfig autoCreationConfig;
     private final LazyCreationConfig lazyCreationConfig;
     private final TokensConfig tokensConfig;
@@ -61,7 +61,7 @@ public class TransferContextImpl implements TransferContext {
 
         if (account != null) {
             final var id = account.accountId();
-            resolutions.put(new ProtoBytes(aliasedId.alias()), id);
+            resolutions.put(aliasedId.alias(), id);
             return id;
         }
         return null;
@@ -84,7 +84,7 @@ public class TransferContextImpl implements TransferContext {
         }
         // Keep the created account in the resolutions map
         final var createdAccount = autoAccountCreator.create(alias, isFromTokenTransfer);
-        resolutions.put(new ProtoBytes(alias), createdAccount);
+        resolutions.put(alias, createdAccount);
     }
 
     @Override
@@ -102,7 +102,7 @@ public class TransferContextImpl implements TransferContext {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
-    public Map<ProtoBytes, AccountID> resolutions() {
+    public Map<Bytes, AccountID> resolutions() {
         return resolutions;
     }
 

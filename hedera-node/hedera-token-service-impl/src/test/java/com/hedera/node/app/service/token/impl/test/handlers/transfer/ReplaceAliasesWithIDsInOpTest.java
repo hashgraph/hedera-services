@@ -94,8 +94,8 @@ class ReplaceAliasesWithIDsInOpTest extends StepsBase {
 
         assertThat(transferContext.numOfAutoCreations()).isEqualTo(2);
         assertThat(transferContext.numOfLazyCreations()).isZero();
-        assertThat(transferContext.resolutions()).containsKey(edKeyAlias);
-        assertThat(transferContext.resolutions()).containsKey(ecKeyAlias);
+        assertThat(transferContext.resolutions()).containsKey(edKeyAlias.value());
+        assertThat(transferContext.resolutions()).containsKey(ecKeyAlias.value());
     }
 
     @Test
@@ -169,9 +169,9 @@ class ReplaceAliasesWithIDsInOpTest extends StepsBase {
 
         assertThat(transferContext.numOfAutoCreations()).isZero();
         assertThat(transferContext.numOfLazyCreations()).isEqualTo(3);
-        assertThat(transferContext.resolutions()).containsKey(evmAddressAlias1);
-        assertThat(transferContext.resolutions()).containsKey(evmAddressAlias2);
-        assertThat(transferContext.resolutions()).containsKey(evmAddressAlias3);
+        assertThat(transferContext.resolutions()).containsKey(evmAddressAlias1.value());
+        assertThat(transferContext.resolutions()).containsKey(evmAddressAlias2.value());
+        assertThat(transferContext.resolutions()).containsKey(evmAddressAlias3.value());
     }
 
     @Test
@@ -192,8 +192,8 @@ class ReplaceAliasesWithIDsInOpTest extends StepsBase {
 
         assertThat(transferContext.numOfAutoCreations()).isZero();
         assertThat(transferContext.numOfLazyCreations()).isZero();
-        assertThat(transferContext.resolutions()).containsKey(edKeyAlias);
-        assertThat(transferContext.resolutions()).containsKey(ecKeyAlias);
+        assertThat(transferContext.resolutions()).containsKey(edKeyAlias.value());
+        assertThat(transferContext.resolutions()).containsKey(ecKeyAlias.value());
     }
 
     @Test
@@ -298,7 +298,7 @@ class ReplaceAliasesWithIDsInOpTest extends StepsBase {
 
         ensureAliasesStep.doIn(transferContext);
 
-        assertThat(transferContext.resolutions()).containsEntry(mirrorAlias, payerId);
+        assertThat(transferContext.resolutions()).containsEntry(mirrorAlias.value(), payerId);
         assertThat(transferContext.numOfLazyCreations()).isZero();
     }
 
@@ -323,7 +323,7 @@ class ReplaceAliasesWithIDsInOpTest extends StepsBase {
 
         ensureAliasesStep.doIn(transferContext);
 
-        assertThat(transferContext.resolutions()).containsEntry(mirrorAlias, payerId);
+        assertThat(transferContext.resolutions()).containsEntry(mirrorAlias.value(), payerId);
         assertThat(transferContext.numOfLazyCreations()).isZero();
     }
 
