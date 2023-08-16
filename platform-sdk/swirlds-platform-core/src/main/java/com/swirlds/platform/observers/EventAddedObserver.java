@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.observers;
 
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.EventImpl;
 
 /**
  * An observer that is notified when an event is added to the hashgraph.

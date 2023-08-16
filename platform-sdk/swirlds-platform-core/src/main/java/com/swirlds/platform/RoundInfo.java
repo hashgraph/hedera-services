@@ -19,7 +19,6 @@ package com.swirlds.platform;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.crypto.CryptoConstants;
 import com.swirlds.platform.event.EventConstants;
-import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Collections;

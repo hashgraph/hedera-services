@@ -19,14 +19,13 @@ package com.swirlds.platform;
 import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
 import static com.swirlds.logging.LogMarker.ADD_EVENT;
 import static com.swirlds.logging.LogMarker.STARTUP;
-import static com.swirlds.platform.internal.EventImpl.MIN_TRANS_TIMESTAMP_INCR_NANOS;
+import static com.swirlds.platform.EventImpl.MIN_TRANS_TIMESTAMP_INCR_NANOS;
 
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.event.EventUtils;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusMetrics;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.Nullable;

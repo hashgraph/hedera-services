@@ -24,7 +24,7 @@ import com.swirlds.common.threading.framework.MultiQueueThread;
 import com.swirlds.common.threading.framework.config.MultiQueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.Objects;

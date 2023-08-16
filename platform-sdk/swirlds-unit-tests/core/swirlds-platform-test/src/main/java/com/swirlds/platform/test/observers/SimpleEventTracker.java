@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.observers;
 
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.EventImpl;
 import com.swirlds.platform.test.event.SimpleEvent;
 import java.util.HashMap;
 import java.util.HashSet;

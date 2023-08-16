@@ -24,8 +24,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.platform.EventImpl;
 import com.swirlds.platform.components.EventMapper;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.event.EventMocks;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
