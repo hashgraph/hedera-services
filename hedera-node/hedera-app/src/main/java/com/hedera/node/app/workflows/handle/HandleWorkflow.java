@@ -51,6 +51,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
@@ -103,6 +104,7 @@ public class HandleWorkflow {
     private final ExchangeRateManager exchangeRateManager;
     private final ParentRecordFinalizer transactionFinalizer;
     private final SystemFileUpdateFacility systemFileUpdateFacility;
+    private final NetworkUtilizationManager networkUtilizationManager;
 
     @Inject
     public HandleWorkflow(
@@ -120,7 +122,8 @@ public class HandleWorkflow {
             @NonNull final FeeManager feeManager,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final ParentRecordFinalizer transactionFinalizer,
-            @NonNull final SystemFileUpdateFacility systemFileUpdateFacility) {
+            @NonNull final SystemFileUpdateFacility systemFileUpdateFacility,
+            @NonNull final NetworkUtilizationManager networkUtilizationManager) {
         this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow, "preHandleWorkflow must not be null");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
@@ -137,6 +140,8 @@ public class HandleWorkflow {
         this.transactionFinalizer = requireNonNull(transactionFinalizer, "transactionFinalizer must not be null");
         this.systemFileUpdateFacility =
                 requireNonNull(systemFileUpdateFacility, "systemFileUpdateFacility must not be null");
+        this.networkUtilizationManager =
+                requireNonNull(networkUtilizationManager, "networkUtilizationManager must not be null");
     }
 
     /**
@@ -306,6 +311,9 @@ public class HandleWorkflow {
 
             // Run all pre-checks
             final var preCheckResult = runPreChecks(consensusNow, verifier, preHandleResult);
+            // TODO: apply throttles after successfull signatures verification
+            networkUtilizationManager.trackTxn(transactionInfo, consensusNow, state);
+            // if (networkUtilization.screenForAvailableCapacity()) { ...
             if (preCheckResult.status() != SO_FAR_SO_GOOD) {
                 if (preHandleResult.status() == NODE_DUE_DILIGENCE_FAILURE) {
                     payer = creator.accountId();

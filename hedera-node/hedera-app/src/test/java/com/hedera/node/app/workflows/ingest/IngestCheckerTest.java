@@ -34,6 +34,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -61,6 +62,7 @@ import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.swirlds.common.system.status.PlatformStatus;
+import java.time.Instant;
 import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -228,7 +230,8 @@ class IngestCheckerTest extends AppTestBase {
         @DisplayName("When the transaction is throttled, the transaction should be rejected")
         void testThrottleFails() {
             // Given a throttle on CONSENSUS_CREATE_TOPIC transactions (i.e. it is time to throttle)
-            when(throttleAccumulator.shouldThrottle(txBody)).thenReturn(true);
+            when(throttleAccumulator.shouldThrottle(eq(txBody), any(Instant.class)))
+                    .thenReturn(true);
 
             // When the transaction is submitted
             assertThatThrownBy(() -> subject.runAllChecks(state, tx))
@@ -240,7 +243,7 @@ class IngestCheckerTest extends AppTestBase {
         @DisplayName("If some random exception is thrown from ThrottleAccumulator, the exception is bubbled up")
         void randomException() {
             // Given a ThrottleAccumulator that will throw a RuntimeException
-            when(throttleAccumulator.shouldThrottle(txBody))
+            when(throttleAccumulator.shouldThrottle(eq(txBody), any(Instant.class)))
                     .thenThrow(new RuntimeException("shouldThrottle exception"));
 
             // When the transaction is submitted, then the exception is bubbled up

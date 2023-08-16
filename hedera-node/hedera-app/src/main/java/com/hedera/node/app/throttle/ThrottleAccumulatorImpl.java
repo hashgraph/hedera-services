@@ -20,6 +20,7 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -35,7 +36,7 @@ public class ThrottleAccumulatorImpl implements ThrottleAccumulator {
     }
 
     @Override
-    public boolean shouldThrottle(@NonNull TransactionBody txn) {
+    public boolean shouldThrottle(@NonNull TransactionBody txn, Instant t) {
         return false;
     }
 

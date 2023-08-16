@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,9 +21,8 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
-import com.hedera.node.app.service.mono.throttling.FunctionalityThrottling;
-import com.hedera.node.app.service.mono.throttling.annotations.HapiThrottle;
+import com.hedera.node.app.service.mono.throttling.TimedFunctionalityThrottling;
+import com.hedera.node.app.service.mono.throttling.annotations.HandleThrottle;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
@@ -33,21 +32,17 @@ import java.time.Instant;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-/**
- * A {@link ThrottleAccumulator} that delegates to a {@link FunctionalityThrottling} instance to
- * support query throttling only.
- */
 @Singleton
-public class MonoThrottleAccumulator implements ThrottleAccumulator {
-    private final FunctionalityThrottling hapiThrottling;
+public class HandleThrottleAccumulator implements ThrottleAccumulator {
+    private final TimedFunctionalityThrottling handleThrottling;
 
     @Inject
-    public MonoThrottleAccumulator(@HapiThrottle final FunctionalityThrottling hapiThrottling) {
-        this.hapiThrottling = hapiThrottling;
+    public HandleThrottleAccumulator(@HandleThrottle final TimedFunctionalityThrottling handleThrottling) {
+        this.handleThrottling = handleThrottling;
     }
 
     @Override
-    public boolean shouldThrottle(@NonNull final TransactionBody txn, Instant t) {
+    public boolean shouldThrottle(@NonNull TransactionBody txn, Instant t) {
         try {
             // This is wildly inefficient. We need to rework the fee system, so we are not
             // creating temporary objects like this and doing so much protobuf serialization
@@ -67,16 +62,14 @@ public class MonoThrottleAccumulator implements ThrottleAccumulator {
                     .signedTransactionBytes(Bytes.wrap(out.toByteArray()))
                     .build());
 
-            return hapiThrottling.shouldThrottleTxn(adapter);
+            return handleThrottling.shouldThrottleTxn(adapter, t);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
     @Override
-    public boolean shouldThrottleQuery(final @NonNull HederaFunctionality functionality, final @NonNull Query query) {
-        final var monoFunctionality = PbjConverter.fromPbj(functionality);
-        final var monoQuery = PbjConverter.fromPbj(query);
-        return hapiThrottling.shouldThrottleQuery(monoFunctionality, monoQuery);
+    public boolean shouldThrottleQuery(@NonNull HederaFunctionality functionality, @NonNull Query query) {
+        return false;
     }
 }

@@ -127,7 +127,7 @@ public final class IngestChecker {
         // TODO: Integrate solution from preHandle workflow once it is merged
 
         // 4. Check throttles
-        if (throttleAccumulator.shouldThrottle(txInfo.txBody())) {
+        if (throttleAccumulator.shouldThrottle(txInfo.txBody(), Instant.now())) {
             throw new PreCheckException(BUSY);
         }
 
