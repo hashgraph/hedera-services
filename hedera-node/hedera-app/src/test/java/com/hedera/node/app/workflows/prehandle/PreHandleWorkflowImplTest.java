@@ -242,7 +242,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
         @DisplayName("Unknown failure due to random exception during handling leads to \"unknown\" failure response")
         void timeoutExceptionDueToRandomErrorLeadsToUnknownFailureResponseTest() throws PreCheckException {
             doAnswer(invocation -> {
-                        throw new AssertionError("Random error!");
+                        throw new Exception("Random error!");
                     })
                     .when(dispatcher)
                     .dispatchPreHandle(any());
@@ -304,7 +304,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
         void preHandleFailedSyntacticCheckWithUnknownException() throws PreCheckException {
             // Given a transaction that fails due-diligence checks for some random throwable
             final Transaction platformTx = new SwirldTransaction(randomByteArray(123));
-            when(transactionChecker.parseAndCheck(any(Bytes.class))).thenThrow(new AssertionError("Random"));
+            when(transactionChecker.parseAndCheck(any(Bytes.class))).thenThrow(new RuntimeException("Random"));
 
             // When we pre-handle the transaction
             workflow.preHandle(storeFactory, NODE_1.nodeAccountID(), Stream.of(platformTx));

@@ -18,7 +18,6 @@ package com.hedera.node.app.service.mono.stream;
 
 import static com.hedera.node.app.service.mono.ServicesState.EMPTY_HASH;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.mono.state.virtual.annotations.StateSetter;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
@@ -217,12 +216,10 @@ public class RecordsRunningHashLeaf extends PartialMerkleLeaf implements MerkleL
         nMinus3RunningHash = alreadyCompleted ? new RunningHash(EMPTY_HASH) : new RunningHash();
     }
 
-    @VisibleForTesting
     public RunningHash getNMinus2RunningHash() {
         return nMinus2RunningHash;
     }
 
-    @VisibleForTesting
     public RunningHash getNMinus1RunningHash() {
         return nMinus1RunningHash;
     }
