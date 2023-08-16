@@ -22,7 +22,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
-import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
@@ -116,21 +115,15 @@ public class SignedStateEventStorage {
     }
 
     @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
+    public boolean equals(final Object other) {
+        if (this == other) {
             return true;
         }
-
-        if (o == null || getClass() != o.getClass()) {
+        if (other == null || getClass() != other.getClass()) {
             return false;
         }
-
-        final SignedStateEventStorage that = (SignedStateEventStorage) o;
-
-        return new EqualsBuilder()
-                .append(latestRoundReceived, that.latestRoundReceived)
-                .append(queue, that.queue)
-                .isEquals();
+        final SignedStateEventStorage that = (SignedStateEventStorage) other;
+        return latestRoundReceived == that.latestRoundReceived && Objects.equals(queue, that.queue);
     }
 
     @Override

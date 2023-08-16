@@ -35,7 +35,7 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.NoSuchElementException;
-import org.apache.commons.lang3.builder.EqualsBuilder;
+import java.util.Objects;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
@@ -550,27 +550,22 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
      * {@inheritDoc}
      */
     @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
+    public boolean equals(final Object other) {
+        if (this == other) {
             return true;
         }
-
-        if (o == null || getClass() != o.getClass()) {
+        if (other == null || getClass() != other.getClass()) {
             return false;
         }
-
-        final PlatformData that = (PlatformData) o;
-
-        return new EqualsBuilder()
-                .append(round, that.round)
-                .append(numEventsCons, that.numEventsCons)
-                .append(hashEventsCons, that.hashEventsCons)
-                .append(events, that.events)
-                .append(consensusTimestamp, that.consensusTimestamp)
-                .append(minGenInfo, that.minGenInfo)
-                .append(epochHash, that.epochHash)
-                .append(roundsNonAncient, that.roundsNonAncient)
-                .isEquals();
+        final PlatformData that = (PlatformData) other;
+        return round == that.round
+                && numEventsCons == that.numEventsCons
+                && Objects.equals(hashEventsCons, that.hashEventsCons)
+                && Arrays.equals(events, that.events)
+                && Objects.equals(consensusTimestamp, that.consensusTimestamp)
+                && Objects.equals(minGenInfo, that.minGenInfo)
+                && Objects.equals(epochHash, that.epochHash)
+                && Objects.equals(roundsNonAncient, that.roundsNonAncient);
     }
 
     /**

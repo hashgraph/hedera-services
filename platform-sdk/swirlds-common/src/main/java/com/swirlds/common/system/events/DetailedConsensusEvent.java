@@ -26,7 +26,6 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.IOException;
 import java.util.Objects;
-import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
@@ -165,19 +164,17 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable
      * {@inheritDoc}
      */
     @Override
-    public boolean equals(final Object obj) {
-        if (obj == null || obj.getClass() != getClass()) {
-            return false;
-        }
-        if (this == obj) {
+    public boolean equals(final Object other) {
+        if (this == other) {
             return true;
         }
-        final DetailedConsensusEvent that = (DetailedConsensusEvent) obj;
-        return new EqualsBuilder()
-                .append(this.baseEventHashedData, that.baseEventHashedData)
-                .append(this.baseEventUnhashedData, that.baseEventUnhashedData)
-                .append(this.consensusData, that.consensusData)
-                .isEquals();
+        if (other == null || getClass() != other.getClass()) {
+            return false;
+        }
+        final DetailedConsensusEvent that = (DetailedConsensusEvent) other;
+        return Objects.equals(baseEventHashedData, that.baseEventHashedData)
+                && Objects.equals(baseEventUnhashedData, that.baseEventUnhashedData)
+                && Objects.equals(consensusData, that.consensusData);
     }
 
     /**

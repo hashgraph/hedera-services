@@ -27,7 +27,6 @@ import com.swirlds.common.utility.RuntimeObjectRegistry;
 import com.swirlds.platform.internal.EventImpl;
 import java.util.HashMap;
 import java.util.Objects;
-import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
@@ -239,22 +238,17 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
      * {@inheritDoc}
      */
     @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
+    public boolean equals(final Object other) {
+        if (this == other) {
             return true;
         }
-
-        if (o == null || getClass() != o.getClass()) {
+        if (other == null || getClass() != other.getClass()) {
             return false;
         }
-
-        final State that = (State) o;
-
-        return new EqualsBuilder()
-                .append(getPlatformState(), that.getPlatformState())
-                .append(getSwirldState(), that.getSwirldState())
-                .append(getPlatformDualState(), that.getPlatformDualState())
-                .isEquals();
+        final State state = (State) other;
+        return Objects.equals(getPlatformState(), state.getPlatformState())
+                && Objects.equals(getSwirldState(), state.getSwirldState())
+                && Objects.equals(getPlatformDualState(), state.getPlatformDualState());
     }
 
     /**

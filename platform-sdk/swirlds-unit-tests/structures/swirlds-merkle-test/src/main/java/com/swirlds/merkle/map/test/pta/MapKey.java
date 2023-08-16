@@ -24,7 +24,6 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.Objects;
-import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
@@ -72,19 +71,15 @@ public class MapKey implements SelfSerializable, Comparable<MapKey>, FastCopyabl
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) {
+    public boolean equals(final Object other) {
+        if (this == other) {
             return true;
         }
-        if (o == null || getClass() != o.getClass()) {
+        if (other == null || getClass() != other.getClass()) {
             return false;
         }
-        MapKey mapKey = (MapKey) o;
-        return new EqualsBuilder()
-                .append(shardId, mapKey.shardId)
-                .append(realmId, mapKey.realmId)
-                .append(accountId, mapKey.accountId)
-                .isEquals();
+        final MapKey mapKey = (MapKey) other;
+        return shardId == mapKey.shardId && realmId == mapKey.realmId && accountId == mapKey.accountId;
     }
 
     @Override

@@ -22,7 +22,6 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.IOException;
 import java.util.Objects;
-import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
@@ -113,21 +112,15 @@ public class NftId implements SelfSerializable {
      * {@inheritDoc}
      */
     @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
+    public boolean equals(final Object other) {
+        if (this == other) {
             return true;
         }
-
-        if (!(o instanceof NftId)) {
+        if (other == null || getClass() != other.getClass()) {
             return false;
         }
-
-        final NftId tokenId = (NftId) o;
-        return new EqualsBuilder()
-                .append(shardNum, tokenId.shardNum)
-                .append(realmNum, tokenId.realmNum)
-                .append(tokenNum, tokenId.tokenNum)
-                .isEquals();
+        final NftId nftId = (NftId) other;
+        return shardNum == nftId.shardNum && realmNum == nftId.realmNum && tokenNum == nftId.tokenNum;
     }
 
     /**
