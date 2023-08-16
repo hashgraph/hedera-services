@@ -58,6 +58,11 @@ on:
         type: string
         required: false
         default: "Artifact"
+      generate-artifacts:
+        description: "Generate Artifacts:"
+        type: boolean
+        required: false
+        default: true
 
     secrets:
       access-token:
@@ -97,6 +102,7 @@ jobs:
           echo "::endgroup::"
 
       - name: Install Deterministic Zip Tooling
+        if: ${{ inputs.generate-artifacts == true }}
         run: |
           echo "::group::Download Binary"
           sudo curl -L -o /usr/local/bin/deterministic-zip https://github.com/timo-reymann/deterministic-zip/releases/download/1.2.0/deterministic-zip_linux-amd64
@@ -138,6 +144,7 @@ jobs:
 
       - name: Verify Workflow Parameters
         id: parameters
+        if: ${{ inputs.generate-artifacts == true }}
         run: |
           BRANCH_NAME="${{ github.head_ref || github.ref_name }}"
           BRANCH_NAME="${BRANCH_NAME##origin/}"
@@ -165,6 +172,7 @@ jobs:
           fi
 
       - name: Checkout Code
+        if: ${{ inputs.generate-artifacts == true }}
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # pin@v3
 
       - name: Authenticate to Google Cloud
@@ -180,12 +188,14 @@ jobs:
 
       - name: Setup Java
         uses: actions/setup-java@1df8dbefe2a8cbc99770194893dd902763bee34b # pin@v3
+        if: ${{ inputs.generate-artifacts == true }}
         with:
           distribution: ${{ inputs.java-distribution }}
           java-version: ${{ inputs.java-version }}
 
       - name: Setup Gradle
         uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
+        if: ${{ inputs.generate-artifacts == true }}
         with:
           gradle-version: ${{ inputs.gradle-version }}
           gradle-home-cache-includes: |
@@ -195,42 +205,46 @@ jobs:
 
       - name: Gradle Update Version (As Specified)
         uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
-        if: ${{ inputs.version-policy == 'specified' && !cancelled() && !failure() }}
+        if: ${{ inputs.version-policy == 'specified' && !cancelled() && !failure() && inputs.generate-artifacts == true }}
         with:
           arguments: versionAsSpecified -PnewVersion=${{ inputs.new-version }} --scan
 
       - name: Gradle Update Version (Branch Commit)
         uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
-        if: ${{ inputs.version-policy != 'specified' && !cancelled() && !failure() }}
+        if: ${{ inputs.version-policy != 'specified' && !cancelled() && !failure() && inputs.generate-artifacts == true }}
         with:
           arguments: versionAsPrefixedCommit -PcommitPrefix=${{ steps.parameters.outputs.commit-prefix }} --scan
 
       - name: Gradle Version Summary
         uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
+        if: ${{ inputs.generate-artifacts == true }}
         with:
           arguments: githubVersionSummary --scan
 
       - name: Gradle Assemble
         id: gradle-build
         uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
+        if: ${{ inputs.generate-artifacts == true }}
         with:
           arguments: assemble --scan
 
       - name: Compute Final Effective Version
         id: effective-version
+        if: ${{ inputs.generate-artifacts == true }}
         run: |
           EFF_VERSION="$(./gradlew showVersion --quiet | tr -d '[:space:]')"
           echo "number=${EFF_VERSION}" >>"${GITHUB_OUTPUT}"
 
       - name: Cache Build Artifacts
         uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # pin@v3
-        if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
+        if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() && inputs.generate-artifacts == true }}
         with:
           path: ${{ env.HOME }}/artifact-build
           key: node-build-artifacts-${{ steps.effective-version.outputs.number }}-${{ github.sha }}
 
       - name: Stage Artifact Build Folder
         id: artifact-staging
+        if: ${{ inputs.generate-artifacts == true }}
         run: |
           BUILD_BASE_DIR="${HOME}/artifact-build"
           mkdir -p "${BUILD_BASE_DIR}/data/lib"
@@ -244,6 +258,7 @@ jobs:
           echo "folder=${BUILD_BASE_DIR}" >>"${GITHUB_OUTPUT}"
 
       - name: Write Artifact Version Descriptor
+        if: ${{ inputs.generate-artifacts == true }}
         working-directory: ${{ steps.artifact-staging.outputs.folder }}
         run: |
           printf "VERSION=%s\nCOMMIT=%s\nDATE=%s" "${{ steps.effective-version.outputs.number }}" "${{ steps.parameters.outputs.commit-id-short }}" "$(date -u)" \
@@ -251,6 +266,7 @@ jobs:
 
       - name: Create Artifact Archive
         id: artifact-release
+        if: ${{ inputs.generate-artifacts == true }}
         working-directory: ${{ steps.artifact-staging.outputs.folder }}
         run: |
           POLICY="${{ inputs.version-policy }}"
@@ -271,6 +287,7 @@ jobs:
           echo "file=${ARTIFACT_FILE}" >>"${GITHUB_OUTPUT}"
 
       - name: Compute SHA Hash
+        if: ${{ inputs.generate-artifacts == true }}
         working-directory: ${{ steps.artifact-release.outputs.folder }}
         run: |
           ARTIFACT_NAME="${{ steps.artifact-release.outputs.name }}"
@@ -278,11 +295,18 @@ jobs:
 
       - name: Upload Artifacts (DevOps GCP Bucket)
         uses: google-github-actions/upload-cloud-storage@a5b77a3bf84da1791719585d327e5f90ae5cb53c # pin@v1
-        if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
+        if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() && inputs.generate-artifacts == true }}
         with:
           path: ${{ steps.artifact-release.outputs.folder }}
           destination: ${{ secrets.bucket-name }}
           parent: false
+
+      - name: Validate Release Artifact Exist
+        if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() && inputs.generate-artifacts == false }}
+        run: |
+          ARTIFACT_NAME="build-v${{ inputs.new-version }}"
+          echo "ARTIFACT_NAME=${ARTIFACT_NAME}"
+          gsutil ls "gs://${{ secrets.bucket-name }}/${ARTIFACT_NAME}.zip"
 
       - name: Notify Jenkins of Release (Integration)
         id: jenkins-integration
@@ -292,13 +316,19 @@ jobs:
           url: ${{ secrets.jenkins-integration-url }}
           data: ${{ toJSON(github.event) }}
 
+      - name: Prepare Jenkins Notification Request
+        id: jenkins-preview-request
+        env:
+          PRE_JSON_REQUEST: ${{ toJSON(github.event) }}
+        run: echo "request=$(jq --compact-output '.ref = "v${{ inputs.new-version }}"' <<<"${PRE_JSON_REQUEST}")" >>"${GITHUB_OUTPUT}"
+
       - name: Notify Jenkins of Release (Preview)
         id: jenkins-preview
         uses: fjogeleit/http-request-action@86014825e97036cd3e0903bbc72b3c5fff7474c4 # pin@v1
         if: ${{ inputs.dry-run-enabled != true && inputs.trigger-env-deploy == 'preview' && !cancelled() && !failure() }}
         with:
           url: ${{ secrets.jenkins-preview-url }}
-          data: ${{ toJSON(github.event) }}
+          data: ${{ steps.jenkins-preview-request.outputs.request }}
 
       - name: Display Jenkins Payload
         env:
@@ -343,7 +373,7 @@ jobs:
     runs-on: [ self-hosted, Linux, large, ephemeral ]
     needs:
       - Artifact
-    if: ${{ inputs.dry-run-enabled != true && inputs.version-policy == 'specified' && !cancelled() && !failure() }}
+    if: ${{ inputs.dry-run-enabled != true && inputs.version-policy == 'specified' && !cancelled() && !failure() && inputs.generate-artifacts == true }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # pin@v3

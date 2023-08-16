@@ -109,7 +109,7 @@ jobs:
     with:
       version-policy: specified
       new-version: ${{ needs.prepare-tag-release.outputs.version }}
-      trigger-env-deploy: preview
+      trigger-env-deploy: none
     secrets:
       access-token: ${{ secrets.GITHUB_TOKEN }}
       bucket-name: ${{ secrets.RELEASE_ARTIFACT_BUCKET_NAME }}
