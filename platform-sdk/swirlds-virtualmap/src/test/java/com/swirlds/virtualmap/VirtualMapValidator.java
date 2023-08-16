@@ -19,11 +19,11 @@ package com.swirlds.virtualmap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import com.swirlds.base.utility.Pair;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * Proxy for a {@link VirtualMap} that maintains a separate map to track changes and validate data consistency.
@@ -127,7 +127,7 @@ public class VirtualMapValidator<K extends VirtualKey, V extends VirtualValue> {
     public void validate() {
         int round = 0;
         for (final Pair<VirtualMap<K, V>, Map<K, V>> pair : snapshots) {
-            verifyMatch(round, pair.getLeft(), pair.getRight());
+            verifyMatch(round, pair.left(), pair.right());
             round++;
         }
     }

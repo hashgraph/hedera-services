@@ -18,12 +18,12 @@ package com.swirlds.platform.test.network.communication.multithreaded;
 
 import static org.awaitility.Awaitility.await;
 
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.test.network.communication.TestProtocol;
 import com.swirlds.platform.test.sync.ConnectionFactory;
 import java.util.concurrent.TimeUnit;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -50,9 +50,7 @@ class NegotiatorMultithreadedTest {
                 ConnectionFactory.createLocalConnections(new NodeId(0L), new NodeId(1));
         final NegotiatorPair pair = new NegotiatorPair(
                 new TestProtocol().setShouldInitiate(false),
-                Pair.of(
-                        new ExpiringConnection(connections.getLeft(), 1),
-                        new ExpiringConnection(connections.getRight(), 1)));
+                Pair.of(new ExpiringConnection(connections.left(), 1), new ExpiringConnection(connections.right(), 1)));
         pair.start();
         await().atMost(5, TimeUnit.SECONDS).until(pair.threadsDone());
         pair.assertTimesRan(0);

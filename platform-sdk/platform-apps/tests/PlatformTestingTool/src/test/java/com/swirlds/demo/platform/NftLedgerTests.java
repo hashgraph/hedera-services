@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -37,7 +38,6 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -98,7 +98,7 @@ class NftLedgerTests {
     private void makeCopy(final List<Pair<ReferenceNftLedger, NftLedger>> copies) {
         assertFalse(copies.isEmpty(), "there must be at least one copy");
         final Pair<ReferenceNftLedger, NftLedger> latest = copies.get(copies.size() - 1);
-        copies.add(Pair.of(latest.getLeft().copy(), latest.getRight().copy()));
+        copies.add(Pair.of(latest.left().copy(), latest.right().copy()));
     }
 
     /**
@@ -109,7 +109,7 @@ class NftLedgerTests {
         assertTrue(copies.size() > indexToDelete, "index must be within bounds");
 
         final Pair<ReferenceNftLedger, NftLedger> pair = copies.get(indexToDelete);
-        pair.getRight().release();
+        pair.right().release();
 
         copies.remove(indexToDelete);
     }
@@ -124,8 +124,8 @@ class NftLedgerTests {
             final long ownerId) {
 
         final Pair<ReferenceNftLedger, NftLedger> pair = copies.get(copies.size() - 1);
-        final ReferenceNftLedger referenceLedger = pair.getLeft();
-        final NftLedger ledger = pair.getRight();
+        final ReferenceNftLedger referenceLedger = pair.left();
+        final NftLedger ledger = pair.right();
 
         if (referenceLedger.getTokenMap().containsKey(nftId(tokenId))) {
             // NftLedger doesn't like having tokens with the same ID minted more than once
@@ -150,8 +150,8 @@ class NftLedgerTests {
     private void burn(final List<Pair<ReferenceNftLedger, NftLedger>> copies, final long tokenId) {
 
         final Pair<ReferenceNftLedger, NftLedger> pair = copies.get(copies.size() - 1);
-        final ReferenceNftLedger referenceLedger = pair.getLeft();
-        final NftLedger ledger = pair.getRight();
+        final ReferenceNftLedger referenceLedger = pair.left();
+        final NftLedger ledger = pair.right();
 
         referenceLedger.burnToken(nftId(tokenId));
         ledger.burnToken(nftId(tokenId));
@@ -164,8 +164,8 @@ class NftLedgerTests {
             final List<Pair<ReferenceNftLedger, NftLedger>> copies, final long tokenId, final long newOwnerId) {
 
         final Pair<ReferenceNftLedger, NftLedger> pair = copies.get(copies.size() - 1);
-        final ReferenceNftLedger referenceLedger = pair.getLeft();
-        final NftLedger ledger = pair.getRight();
+        final ReferenceNftLedger referenceLedger = pair.left();
+        final NftLedger ledger = pair.right();
 
         referenceLedger.transferToken(nftId(tokenId), mapKey(newOwnerId));
         ledger.transferToken(nftId(tokenId), mapKey(newOwnerId));
@@ -175,8 +175,8 @@ class NftLedgerTests {
      * Validate that the data in the reference ledger matches the data in the FC ledger.
      */
     private void validate(final Pair<ReferenceNftLedger, NftLedger> copy) {
-        final ReferenceNftLedger referenceLedger = copy.getLeft();
-        final NftLedger ledger = copy.getRight();
+        final ReferenceNftLedger referenceLedger = copy.left();
+        final NftLedger ledger = copy.right();
 
         // Validate the token map
         assertEquals(
@@ -209,18 +209,18 @@ class NftLedgerTests {
      */
     private void validate(final List<Pair<ReferenceNftLedger, NftLedger>> copies) {
         for (final Pair<ReferenceNftLedger, NftLedger> copy : copies) {
-            if (copy.getLeft().getFractionToTrack() == 1) {
+            if (copy.left().getFractionToTrack() == 1) {
                 // There is a lot of overlap between this validate and the token validation,
                 // but it is sometimes nice to have different implementations of validation
                 // to reduce the probability of programmer mistakes.
                 validate(copy);
             }
-            copy.getLeft().assertValidity(copy.getRight());
+            copy.left().assertValidity(copy.right());
         }
 
         if (!copies.isEmpty()) {
             final Pair<ReferenceNftLedger, NftLedger> mutablePair = copies.get(copies.size() - 1);
-            final NftLedger ledger = mutablePair.getRight();
+            final NftLedger ledger = mutablePair.right();
 
             // Make sure data structure contains mutable data
             assertTrue(MerkleTestUtils.isTreeMutable(ledger), "all nodes should be mutable");
@@ -276,7 +276,7 @@ class NftLedgerTests {
             // Ensure that changing the tracking fraction works. Once per test modify it slightly.
             if (i > 0 && i % (iterations / 2) == 0 && tokenTrackingFraction > 0) {
                 final Pair<ReferenceNftLedger, NftLedger> pair = copies.get(copies.size() - 1);
-                pair.getLeft().setFractionToTrack(pair.getRight(), tokenTrackingFraction - 0.01);
+                pair.left().setFractionToTrack(pair.right(), tokenTrackingFraction - 0.01);
             }
         }
         validate(copies);

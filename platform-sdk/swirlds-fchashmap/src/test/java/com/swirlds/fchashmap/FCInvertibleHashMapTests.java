@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.base.utility.Pair;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -32,7 +33,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -68,8 +68,8 @@ class FCInvertibleHashMapTests {
 
         for (final Pair<Map<Integer, Integer>, FCInvertibleHashMap<Integer, Integer>> pair : mapPairs) {
 
-            final Map<Integer, Integer> referenceMap = pair.getLeft();
-            final FCInvertibleHashMap<Integer, Integer> map = pair.getRight();
+            final Map<Integer, Integer> referenceMap = pair.left();
+            final FCInvertibleHashMap<Integer, Integer> map = pair.right();
 
             assertEquals(referenceMap.keySet(), map.keySet(), "maps should have the same keys");
 
@@ -126,9 +126,8 @@ class FCInvertibleHashMapTests {
         final Pair<Map<Integer, Integer>, FCInvertibleHashMap<Integer, Integer>> lastPair =
                 mapPairs.get(mapPairs.size() - 1);
 
-        final Map<Integer, Integer> referenceMapCopy = new HashMap<>(lastPair.getLeft());
-        final FCInvertibleHashMap<Integer, Integer> mapCopy =
-                lastPair.getRight().copy();
+        final Map<Integer, Integer> referenceMapCopy = new HashMap<>(lastPair.left());
+        final FCInvertibleHashMap<Integer, Integer> mapCopy = lastPair.right().copy();
 
         mapPairs.add(Pair.of(referenceMapCopy, mapCopy));
     }
@@ -143,7 +142,7 @@ class FCInvertibleHashMapTests {
 
         final Pair<Map<Integer, Integer>, FCInvertibleHashMap<Integer, Integer>> pair = mapPairs.get(copyToDelete);
 
-        pair.getRight().release();
+        pair.right().release();
 
         mapPairs.remove(copyToDelete);
     }
@@ -182,8 +181,8 @@ class FCInvertibleHashMapTests {
             final Pair<Map<Integer, Integer>, FCInvertibleHashMap<Integer, Integer>> lastPair =
                     mapPairs.get(mapPairs.size() - 1);
 
-            final Map<Integer, Integer> referenceMap = lastPair.getLeft();
-            final FCInvertibleHashMap<Integer, Integer> map = lastPair.getRight();
+            final Map<Integer, Integer> referenceMap = lastPair.left();
+            final FCInvertibleHashMap<Integer, Integer> map = lastPair.right();
 
             put(referenceMap, map, random.nextInt(), random.nextInt(maxValue));
             checkValidity(mapPairs);
@@ -212,8 +211,8 @@ class FCInvertibleHashMapTests {
         final Pair<Map<Integer, Integer>, FCInvertibleHashMap<Integer, Integer>> lastPair =
                 mapPairs.get(mapPairs.size() - 1);
 
-        final Map<Integer, Integer> referenceMap = lastPair.getLeft();
-        final FCInvertibleHashMap<Integer, Integer> map = lastPair.getRight();
+        final Map<Integer, Integer> referenceMap = lastPair.left();
+        final FCInvertibleHashMap<Integer, Integer> map = lastPair.right();
         for (final Integer key : new ArrayList<>(referenceMap.keySet())) {
             remove(referenceMap, map, key);
             checkValidity(mapPairs);
@@ -271,7 +270,7 @@ class FCInvertibleHashMapTests {
                     mapPairs.get(mapPairs.size() - 1);
 
             for (int modificationNumber = 0; modificationNumber < modificationsPerCopy; modificationNumber++) {
-                put(lastPair.getLeft(), lastPair.getRight(), random.nextInt(10), random.nextInt());
+                put(lastPair.left(), lastPair.right(), random.nextInt(10), random.nextInt());
             }
         }
 
