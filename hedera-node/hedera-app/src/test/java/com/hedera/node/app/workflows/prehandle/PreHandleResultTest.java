@@ -28,8 +28,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.spi.fixtures.Scenarios;
 import com.hedera.node.app.workflows.TransactionInfo;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
@@ -43,6 +45,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 final class PreHandleResultTest implements Scenarios {
 
     private static final long DEFAULT_CONFIG_VERSION = 1L;
+    private static final Set<Key> DEFAULT_REQUIRED_KEYS = Collections.emptySet();
+    private static final Map<Key, SignatureVerificationFuture> DEFAULT_VERIFICATION_RESULTS = Collections.emptyMap();
 
     /**
      * Tests to verify the creation of the object. Simple null checks, and verifying that the different static
@@ -64,8 +68,8 @@ final class PreHandleResultTest implements Scenarios {
                             null,
                             OK,
                             txInfo,
-                            Set.of(),
-                            Map.of(),
+                            DEFAULT_REQUIRED_KEYS,
+                            DEFAULT_VERIFICATION_RESULTS,
                             innerResult,
                             DEFAULT_CONFIG_VERSION))
                     .isInstanceOf(NullPointerException.class);
@@ -83,8 +87,8 @@ final class PreHandleResultTest implements Scenarios {
                             SO_FAR_SO_GOOD,
                             null,
                             txInfo,
-                            Set.of(),
-                            Map.of(),
+                            DEFAULT_REQUIRED_KEYS,
+                            DEFAULT_VERIFICATION_RESULTS,
                             innerResult,
                             DEFAULT_CONFIG_VERSION))
                     .isInstanceOf(NullPointerException.class);

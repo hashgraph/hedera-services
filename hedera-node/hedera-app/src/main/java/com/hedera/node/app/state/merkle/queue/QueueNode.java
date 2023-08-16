@@ -43,7 +43,9 @@ public class QueueNode<E> extends PartialBinaryMerkleInternal implements Labeled
     /** The state metadata, needed for adding new elements */
     private final StateMetadata<?, E> md;
 
-    // Only exists for constructable registry as it works today. Remove ASAP!
+    /**
+     * @deprecated Only exists for constructable registry as it works today. Remove ASAP!
+     */
     @Deprecated(forRemoval = true)
     public QueueNode() {
         setLeft(new StringLeaf());

@@ -21,8 +21,8 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualLongKey;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /**
  * This class holds the key to find the bytecode for a smart contract.
@@ -148,7 +148,7 @@ public final class SmartContractByteCodeMapKey implements VirtualLongKey {
      */
     @Override
     public int hashCode() {
-        return new HashCodeBuilder(17, 37).append(contractId).toHashCode();
+        return Objects.hash(contractId);
     }
 
     /**

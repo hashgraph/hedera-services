@@ -38,9 +38,13 @@ public class QueryFeeCheckImpl implements QueryFeeCheck {
 
     @Override
     public void validateQueryPaymentTransfers(@NonNull TransactionBody txBody, long queryFee)
-            throws InsufficientBalanceException {}
+            throws InsufficientBalanceException {
+        // TBD
+    }
 
     @Override
     public void nodePaymentValidity(@NonNull List<AccountAmount> transfers, long queryFee, @NonNull AccountID node)
-            throws InsufficientBalanceException {}
+            throws InsufficientBalanceException {
+        // TBD
+    }
 }

@@ -123,7 +123,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             if (tx.isSystem()) return;
             try {
                 tx.setMetadata(preHandleTransaction(creator, readableStoreFactory, accountStore, tx));
-            } catch (final Throwable unexpectedException) {
+            } catch (final Exception unexpectedException) {
                 // If some random exception happened, then we should not charge the node for it. Instead,
                 // we will just record the exception and try again during handle. Then if we fail again
                 // at handle, then we will throw away the transaction (hopefully, deterministically!)
