@@ -104,7 +104,7 @@ public class ToStringBuilder {
      * @return this builder
      */
     @NonNull
-    public ToStringBuilder append(@Nullable Object value) {
+    public ToStringBuilder append(@Nullable final Object value) {
         final String formattedValue = value == null ? NULL_STRING : value.toString();
         builder.append(formattedValue).append(",");
         return this;
