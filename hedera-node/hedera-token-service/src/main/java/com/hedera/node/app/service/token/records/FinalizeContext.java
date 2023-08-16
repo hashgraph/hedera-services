@@ -78,7 +78,7 @@ public interface FinalizeContext {
      * @throws IllegalArgumentException if the record builder type is unknown to the app
      */
     @NonNull
-    <T> T mainRecordBuilder(@NonNull Class<T> recordBuilderClass);
+    <T> T userTransactionRecordBuilder(@NonNull Class<T> recordBuilderClass);
 
     /**
      * This method can be used to iterate over all child records.

@@ -53,7 +53,7 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
 
     @Override
     public void finalizeParentRecord(@NonNull final AccountID payer, @NonNull final FinalizeContext context) {
-        final var recordBuilder = context.mainRecordBuilder(CryptoTransferRecordBuilder.class);
+        final var recordBuilder = context.userTransactionRecordBuilder(CryptoTransferRecordBuilder.class);
 
         // This handler won't ask the context for its transaction, but instead will determine the net hbar transfers and
         // token transfers based on the original value from writable state, and based on changes made during this

@@ -73,7 +73,7 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
 
         // TODO: confirm if the getDeletedAccountBeneficiaries should be in
         //  SingleTransactionRecordBuilder interface instead
-        final var recordBuilder = context.mainRecordBuilder(CryptoDeleteRecordBuilder.class);
+        final var recordBuilder = context.userTransactionRecordBuilder(CryptoDeleteRecordBuilder.class);
 
         // Apply all changes related to stakedId changes, and adjust stakedToMe
         // for all accounts staking to an account

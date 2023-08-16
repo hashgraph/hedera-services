@@ -452,7 +452,8 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                         .atStartOfDay(ZoneOffset.UTC)
                         .toInstant());
         given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-        given(context.mainRecordBuilder(CryptoDeleteRecordBuilder.class)).willReturn(recordBuilder);
+        given(context.userTransactionRecordBuilder(CryptoDeleteRecordBuilder.class))
+                .willReturn(recordBuilder);
         given(recordBuilder.getNumberOfDeletedAccounts()).willReturn(1);
         given(recordBuilder.getDeletedAccountBeneficiaryFor(payerId)).willReturn(ownerId);
 
@@ -690,7 +691,8 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                         .atStartOfDay(ZoneOffset.UTC)
                         .toInstant());
         given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-        given(context.mainRecordBuilder(CryptoDeleteRecordBuilder.class)).willReturn(recordBuilder);
+        given(context.userTransactionRecordBuilder(CryptoDeleteRecordBuilder.class))
+                .willReturn(recordBuilder);
         given(recordBuilder.getNumberOfDeletedAccounts()).willReturn(1);
         given(recordBuilder.getDeletedAccountBeneficiaryFor(payerId)).willReturn(ownerId);
 
@@ -738,7 +740,8 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                         .atStartOfDay(ZoneOffset.UTC)
                         .toInstant());
         given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-        given(context.mainRecordBuilder(CryptoDeleteRecordBuilder.class)).willReturn(recordBuilder);
+        given(context.userTransactionRecordBuilder(CryptoDeleteRecordBuilder.class))
+                .willReturn(recordBuilder);
         given(recordBuilder.getNumberOfDeletedAccounts()).willReturn(1);
         given(recordBuilder.getDeletedAccountBeneficiaryFor(payerId)).willReturn(ownerId);
 
@@ -793,7 +796,8 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                         .atStartOfDay(ZoneOffset.UTC)
                         .toInstant());
         given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-        given(context.mainRecordBuilder(CryptoDeleteRecordBuilder.class)).willReturn(recordBuilder);
+        given(context.userTransactionRecordBuilder(CryptoDeleteRecordBuilder.class))
+                .willReturn(recordBuilder);
 
         given(recordBuilder.getNumberOfDeletedAccounts()).willReturn(2);
         given(recordBuilder.getDeletedAccountBeneficiaryFor(payerId)).willReturn(ownerId);

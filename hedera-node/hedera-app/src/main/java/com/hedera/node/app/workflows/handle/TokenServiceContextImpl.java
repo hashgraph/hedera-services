@@ -52,7 +52,7 @@ public class TokenServiceContextImpl implements StakingContext, FinalizeContext 
     @NonNull
     @Override
     public Instant consensusTime() {
-        return recordListBuilder.mainRecordBuilder().consensusNow();
+        return recordListBuilder.userTransactionRecordBuilder().consensusNow();
     }
 
     @NonNull
@@ -77,9 +77,9 @@ public class TokenServiceContextImpl implements StakingContext, FinalizeContext 
 
     @NonNull
     @Override
-    public <T> T mainRecordBuilder(@NonNull Class<T> recordBuilderClass) {
+    public <T> T userTransactionRecordBuilder(@NonNull Class<T> recordBuilderClass) {
         requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
-        return castRecordBuilder(recordListBuilder.mainRecordBuilder(), recordBuilderClass);
+        return castRecordBuilder(recordListBuilder.userTransactionRecordBuilder(), recordBuilderClass);
     }
 
     @Override

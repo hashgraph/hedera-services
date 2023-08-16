@@ -61,7 +61,7 @@ public class RecordListBuilder {
      *
      * @return the main record builder
      */
-    public SingleTransactionRecordBuilderImpl mainRecordBuilder() {
+    public SingleTransactionRecordBuilderImpl userTransactionRecordBuilder() {
         return childRecordBuilders().get(0);
     }
 

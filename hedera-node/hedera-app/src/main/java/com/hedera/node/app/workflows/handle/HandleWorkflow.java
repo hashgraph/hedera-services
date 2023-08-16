@@ -392,9 +392,9 @@ public class HandleWorkflow {
             @NonNull final SavepointStackImpl stack,
             @NonNull final RecordListBuilder recordListBuilder) {
         stack.rollbackFullStack();
-        final var mainRecordBuilder = recordListBuilder.mainRecordBuilder();
-        mainRecordBuilder.status(status);
-        recordListBuilder.revertChildRecordBuilders(mainRecordBuilder);
+        final var userTransactionRecordBuilder = recordListBuilder.userTransactionRecordBuilder();
+        userTransactionRecordBuilder.status(status);
+        recordListBuilder.revertChildRecordBuilders(userTransactionRecordBuilder);
     }
 
     /*
@@ -421,7 +421,7 @@ public class HandleWorkflow {
 
             // In case of due diligence error, we prepare a CryptoTransfer to charge the node and return immediately.
             if (preHandleResult.status() == NODE_DUE_DILIGENCE_FAILURE) {
-                return createPenaltyPayment();
+                return preHandleResult;
             }
 
             // If pre-handle was successful, we need to add signatures that were not known at the time of pre-handle.
@@ -435,12 +435,6 @@ public class HandleWorkflow {
         final var storeFactory = new ReadableStoreFactory(state);
         final var accountStore = storeFactory.getStore(ReadableAccountStore.class);
         return preHandleWorkflow.preHandleTransaction(creator.accountId(), storeFactory, accountStore, platformTxn);
-    }
-
-    @NonNull
-    private PreHandleResult createPenaltyPayment() {
-        // TODO: Implement createPenaltyPayment() - https://github.com/hashgraph/hedera-services/issues/6811
-        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     private boolean preHandleStillValid(
