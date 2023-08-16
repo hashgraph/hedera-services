@@ -19,6 +19,7 @@ package com.swirlds.demo.platform;
 import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
 import static com.swirlds.common.units.UnitConstants.SECONDS_TO_MILLISECONDS;
 
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.utility.throttle.MultiThrottle;
@@ -27,7 +28,6 @@ import com.swirlds.demo.platform.actions.QuorumTriggeredAction;
 import com.swirlds.demo.platform.fs.stresstest.proto.ControlType;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
@@ -250,14 +250,14 @@ public class TransactionSubmitter {
         if (canSubmitMore(platform)) {
 
             if (submitConfig.isEnableThrottling()) {
-                PAYLOAD_TYPE type = data.getValue();
+                PAYLOAD_TYPE type = data.value();
                 if (type != null) {
                     if (!handleThrottles(type)) {
                         return false;
                     }
                 }
             }
-            if (!platform.createTransaction(data.getKey())) {
+            if (!platform.createTransaction(data.key())) {
                 logger.info(
                         LOGM_SUBMIT_DETAIL,
                         "Submitter will not submit this transaction because platform failed to createTransaction");
@@ -267,7 +267,7 @@ public class TransactionSubmitter {
                     cycleStartMS = System.currentTimeMillis();
                 }
                 accumulatedTrans++;
-                accumulatedBytes += data.getKey().length;
+                accumulatedBytes += data.key().length;
 
                 if (pauseAfter > 0 && accumulatedTrans == pauseAfter && !waitPauseFinished) {
                     waitPauseFinished = true;
