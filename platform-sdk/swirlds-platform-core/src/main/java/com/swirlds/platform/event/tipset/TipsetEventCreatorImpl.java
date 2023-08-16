@@ -72,11 +72,11 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
     private final int networkSize;
 
     /**
-     * The bully score is divided by this number to get the probability of creating an event that reduces the bully
-     * score. The higher this number is, the lower the probability is that an event will be created that reduces the
-     * bully score.
+     * The selfishness score is divided by this number to get the probability of creating an event that reduces the
+     * selfishness score. The higher this number is, the lower the probability is that an event will be created that
+     * reduces the selfishness score.
      */
-    private final double antiBullyingFactor;
+    private final double antiSelfishnessFactor;
 
     private final TipsetMetrics tipsetMetrics;
 
@@ -133,7 +133,7 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
                 platformContext.getConfiguration().getConfigData(EventCreationConfig.class);
 
         cryptography = platformContext.getCryptography();
-        antiBullyingFactor = Math.max(1.0, eventCreationConfig.antiBullyingFactor());
+        antiSelfishnessFactor = Math.max(1.0, eventCreationConfig.antiSelfishnessFactor());
         tipsetMetrics = new TipsetMetrics(platformContext, addressBook);
         tipsetTracker = new TipsetTracker(time, addressBook);
         childlessOtherEventTracker = new ChildlessEventTracker();
@@ -207,15 +207,15 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
             return createEventForSizeOneNetwork();
         }
 
-        final long bullyScore = tipsetWeightCalculator.getMaxBullyScore();
-        tipsetMetrics.getBullyScoreMetric().update(bullyScore);
+        final long selfishness = tipsetWeightCalculator.getMaxSelfishnessScore();
+        tipsetMetrics.getSelfishnessMetric().update(selfishness);
 
-        // Never bother with anti-bullying techniques if we have a bully score of 1. We are pretty much guaranteed
-        // to bully ~1/3 of other nodes by a score of 1.
-        final double beNiceToNerdChance = (bullyScore - 1) / antiBullyingFactor;
+        // Never bother with anti-selfishness techniques if we have a selfishness score of 1.
+        // We are pretty much guaranteed to be selfish to ~1/3 of other nodes by a score of 1.
+        final double beNiceChance = (selfishness - 1) / antiSelfishnessFactor;
 
-        if (beNiceToNerdChance > 0 && random.nextDouble() < beNiceToNerdChance) {
-            return createEventToReduceBullyScore();
+        if (beNiceChance > 0 && random.nextDouble() < beNiceChance) {
+            return createEventToReduceSelfishness();
         } else {
             return createEventByOptimizingAdvancementWeight();
         }
@@ -277,25 +277,25 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
     }
 
     /**
-     * Create an event that reduces the bully score.
+     * Create an event that reduces the selfishness score.
      *
      * @return the new event, or null if it is not legal to create a new event
      */
     @Nullable
-    private GossipEvent createEventToReduceBullyScore() {
+    private GossipEvent createEventToReduceSelfishness() {
         final List<EventDescriptor> possibleOtherParents = childlessOtherEventTracker.getChildlessEvents();
-        final List<EventDescriptor> nerds = new ArrayList<>(possibleOtherParents.size());
+        final List<EventDescriptor> ignoredNodes = new ArrayList<>(possibleOtherParents.size());
 
-        // Choose a random nerd, weighted by how much it is currently being bullied.
+        // Choose a random ignored node, weighted by how much it is currently being ignored.
 
-        // First, figure out who is a nerd and sum up all bully scores.
-        int bullyScoreSum = 0;
-        final List<Integer> bullyScores = new ArrayList<>(possibleOtherParents.size());
-        for (final EventDescriptor possibleNerd : possibleOtherParents) {
-            final int bullyScore = tipsetWeightCalculator.getBullyScoreForNode(possibleNerd.getCreator());
+        // First, figure out who is an ignored node and sum up all selfishness scores.
+        int selfishnessSum = 0;
+        final List<Integer> selfishnessScores = new ArrayList<>(possibleOtherParents.size());
+        for (final EventDescriptor possibleIgnoredNode : possibleOtherParents) {
+            final int selfishness = tipsetWeightCalculator.getSelfishnessScoreForNode(possibleIgnoredNode.getCreator());
 
             final List<EventDescriptor> theoreticalParents = new ArrayList<>(2);
-            theoreticalParents.add(possibleNerd);
+            theoreticalParents.add(possibleIgnoredNode);
             if (lastSelfEvent == null) {
                 throw new IllegalStateException("lastSelfEvent is null");
             }
@@ -304,43 +304,44 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
             final TipsetAdvancementWeight advancementWeight =
                     tipsetWeightCalculator.getTheoreticalAdvancementWeight(theoreticalParents);
 
-            if (bullyScore > 1) {
+            if (selfishness > 1) {
                 if (advancementWeight.isNonZero()) {
-                    nerds.add(possibleNerd);
-                    bullyScores.add(bullyScore);
-                    bullyScoreSum += bullyScore;
+                    ignoredNodes.add(possibleIgnoredNode);
+                    selfishnessScores.add(selfishness);
+                    selfishnessSum += selfishness;
                 } else {
-                    // Note: if bully score is greater than 1, it is mathematically not possible
+                    // Note: if selfishness score is greater than 1, it is mathematically not possible
                     // for the advancement score to be zero. But in the interest in extreme caution,
                     // we check anyway, since it is very important never to create events with
                     // an advancement score of zero.
                     zeroAdvancementWeightLogger.error(
                             EXCEPTION.getMarker(),
-                            "bully score is {} but advancement score is zero for {}.\n{}",
-                            bullyScore,
-                            possibleNerd,
+                            "selfishness score is {} but advancement score is zero for {}.\n{}",
+                            selfishness,
+                            possibleIgnoredNode,
                             this);
                 }
             }
         }
 
-        if (nerds.isEmpty()) {
+        if (ignoredNodes.isEmpty()) {
             // Note: this should be impossible, since we will not enter this method in the first
-            // place if there are no nerds. But better to be safe than sorry, and returning null
+            // place if there are no ignored nodes. But better to be safe than sorry, and returning null
             // is an acceptable way of saying "I can't create an event right now".
-            noParentFoundLogger.error(EXCEPTION.getMarker(), "failed to locate eligible nerd to use as a parent");
+            noParentFoundLogger.error(
+                    EXCEPTION.getMarker(), "failed to locate eligible ignored node to use as a parent");
             return null;
         }
 
-        // Choose a random nerd.
-        final int choice = random.nextInt(bullyScoreSum);
+        // Choose a random ignored node.
+        final int choice = random.nextInt(selfishnessSum);
         int runningSum = 0;
-        for (int i = 0; i < nerds.size(); i++) {
-            runningSum += bullyScores.get(i);
+        for (int i = 0; i < ignoredNodes.size(); i++) {
+            runningSum += selfishnessScores.get(i);
             if (choice < runningSum) {
-                final EventDescriptor nerd = nerds.get(i);
-                tipsetMetrics.getPityParentMetric(nerd.getCreator()).cycle();
-                return buildAndProcessEvent(nerd);
+                final EventDescriptor ignoredNode = ignoredNodes.get(i);
+                tipsetMetrics.getPityParentMetric(ignoredNode.getCreator()).cycle();
+                return buildAndProcessEvent(ignoredNode);
             }
         }
 

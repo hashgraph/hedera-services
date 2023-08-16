@@ -503,9 +503,9 @@ class FinalizeChildRecordHandlerTest extends CryptoTokenHandlerTestBase {
         final var nftId111 =
                 NftID.newBuilder().tokenId(TOKEN_321).serialNumber(111).build();
         final var nft111 =
-                Nft.newBuilder().id(nftId111).ownerId(ACCOUNT_1212_ID).build();
+                Nft.newBuilder().nftId(nftId111).ownerId(ACCOUNT_1212_ID).build();
         final var nft112 = nft111.copyBuilder()
-                .id(nftId111.copyBuilder().serialNumber(112).build())
+                .nftId(nftId111.copyBuilder().serialNumber(112).build())
                 .build();
         final var acct1212tokenRel1 = givenNonFungibleTokenRelation()
                 .copyBuilder()
@@ -521,9 +521,9 @@ class FinalizeChildRecordHandlerTest extends CryptoTokenHandlerTestBase {
         final var nftId222 =
                 NftID.newBuilder().tokenId(token246Id).serialNumber(222).build();
         final var nft222 =
-                nft111.copyBuilder().id(nftId222).ownerId(ACCOUNT_3434_ID).build();
+                nft111.copyBuilder().nftId(nftId222).ownerId(ACCOUNT_3434_ID).build();
         final var nft223 = nft222.copyBuilder()
-                .id(nftId222.copyBuilder().serialNumber(223).build())
+                .nftId(nftId222.copyBuilder().serialNumber(223).build())
                 .build();
         final var acct1212tokenRel2 = givenNonFungibleTokenRelation()
                 .copyBuilder()

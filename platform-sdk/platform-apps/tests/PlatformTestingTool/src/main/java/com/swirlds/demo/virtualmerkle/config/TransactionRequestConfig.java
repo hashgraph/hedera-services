@@ -18,8 +18,8 @@ package com.swirlds.demo.virtualmerkle.config;
 
 import com.swirlds.demo.platform.HotspotConfiguration;
 import com.swirlds.demo.platform.PAYLOAD_TYPE;
+import java.util.Objects;
 import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /**
  * This class has the responsibility to hold the {@code type} of a transaction and how many times
@@ -123,7 +123,7 @@ public final class TransactionRequestConfig {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder(17, 37).append(type).append(amount).toHashCode();
+        return Objects.hash(type, amount);
     }
 
     @Override

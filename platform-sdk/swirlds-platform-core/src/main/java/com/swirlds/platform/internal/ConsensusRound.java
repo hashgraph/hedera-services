@@ -30,7 +30,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
@@ -205,7 +204,7 @@ public class ConsensusRound implements Round {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder(17, 37).append(consensusEvents).toHashCode();
+        return Objects.hash(consensusEvents);
     }
 
     @Override
