@@ -26,7 +26,6 @@ import java.time.Instant;
 import java.util.Objects;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 
-
 public class ControlAction implements SelfSerializable {
     private static final long CLASS_ID = 0x9d36e40b51de36fdL;
 

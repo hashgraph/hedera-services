@@ -38,7 +38,6 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Objects;
 
-
 /**
  * A class used to store base event data that is used to create the hash of that event.
  * <p>
