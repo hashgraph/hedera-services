@@ -45,7 +45,6 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Stream;
 
 /**
  * Generates an HTML log page
@@ -95,6 +94,49 @@ public class HtmlGenerator {
     public static final String LOG_BODY_LABEL = "log-body";
     public static final String FILTERS_DIV_LABEL = "filters";
     public static final String FILTER_COLUMN_DIV_LABEL = "filter-column";
+
+    public static final String HIDER_JS =
+            """
+            // the checkboxes that have the ability to hide things
+            var hiders = document.getElementsByClassName("hider");
+
+            // add a listener to each checkbox
+            for (var i = 0; i < hiders.length; i++) {
+                hiders[i].addEventListener("click", function() {
+                    // the classes that exist on the checkbox that is clicked
+                    var checkboxClasses = this.classList;
+
+                    // the name of the class that should be hidden
+                    // each checkbox has 2 classes, "hider", and the name of the class to be hidden
+                    var toggleClass;
+                    for (j = 0; j < checkboxClasses.length; j++) {
+                        if (checkboxClasses[j] == "hider") {
+                            continue;
+                        }
+
+                        toggleClass = checkboxClasses[j];
+                        break;
+                    }
+
+                    // these are the objects on the page which match the class to toggle (discluding the input boxes)
+                    var matchingObjects = $("." + toggleClass).not("input");
+
+                    // go through each of the matching objects, and modify the hide count according to the value of the checkbox
+                    for (j = 0; j < matchingObjects.length; j++) {
+                        var currentHideCount = parseInt($(matchingObjects[j]).attr('data-hide')) || 0;
+
+                        var newHideCount;
+                        if ($(this).is(":checked")) {
+                            newHideCount = currentHideCount + 1;
+                        } else {
+                            newHideCount = currentHideCount - 1;
+                        }
+
+                        $(matchingObjects[j]).attr('data-hide', newHideCount);
+                    }
+                });
+            }
+            """;
 
     /**
      * Hidden constructor.
@@ -192,8 +234,6 @@ public class HtmlGenerator {
                         new CssDeclaration(TEXT_COLOR_PROPERTY, getHtmlColor(PlatformStatusLog.STATUS_COLOR)))
                 .generateCss());
 
-        // TODO make css rule set construction less of a hassle
-
         // create color rules for each log level
         final List<String> existingLogLevels =
                 logLines.stream().map(LogLine::getLogLevel).distinct().toList();
@@ -207,7 +247,104 @@ public class HtmlGenerator {
         return cssRules;
     }
 
+    /**
+     * Generate the head of the HTML page
+     *
+     * @param logLines the log lines
+     * @return the head of the HTML page
+     */
+    private static String generateHead(@NonNull final List<LogLine> logLines) {
+        final List<String> cssRules = generateCssRules(logLines);
+        final String cssCombinedRules = String.join("\n", cssRules);
+        final String cssTag = new HtmlTagFactory(HTML_STYLE_TAG, cssCombinedRules, false).generateTag();
+
+        final String minJsSourceTag = new HtmlTagFactory(HTML_SCRIPT_TAG, "", false)
+                .addAttribute(HTML_SOURCE_ATTRIBUTE, MIN_JS_SOURCE)
+                .generateTag();
+
+        return new HtmlTagFactory(HTML_HEAD_TAG, "\n" + cssTag + "\n" + minJsSourceTag + "\n", false).generateTag();
+    }
+
+    private static String createFilterDiv(@NonNull final String filterName, @NonNull final List<String> filterValues) {
+        final String filterHeading = new HtmlTagFactory(HTML_H3_TAG, "Filter by " + filterName, false)
+                .addClass(SECTION_HEADING)
+                .generateTag();
+        final List<String> filterCheckboxes =
+                filterValues.stream().map(HtmlGenerator::createHiderCheckbox).toList();
+
+        return new HtmlTagFactory(
+                        HTML_DIV_TAG, "\n" + filterHeading + "\n" + String.join("\n", filterCheckboxes), false)
+                .addClass(FILTER_COLUMN_DIV_LABEL)
+                .generateTag();
+    }
+
+    private static String generateFiltersDiv(@NonNull final List<LogLine> logLines) {
+        final List<String> filterDivs = new ArrayList<>();
+
+        filterDivs.add(createFilterDiv(
+                "Column",
+                List.of(
+                        NODE_ID_COLUMN_LABEL,
+                        ELAPSED_TIME_COLUMN_LABEL,
+                        TIMESTAMP_COLUMN_LABEL,
+                        LOG_NUMBER_COLUMN_LABEL,
+                        LOG_LEVEL_COLUMN_LABEL,
+                        MARKER_COLUMN_LABEL,
+                        THREAD_NAME_COLUMN_LABEL,
+                        CLASS_NAME_COLUMN_LABEL,
+                        REMAINDER_OF_LINE_COLUMN_LABEL)));
+
+        filterDivs.add(createFilterDiv(
+                "Log Level",
+                logLines.stream().map(LogLine::getLogLevel).distinct().toList()));
+        filterDivs.add(createFilterDiv(
+                "Log Marker",
+                logLines.stream().map(LogLine::getMarker).distinct().toList()));
+
+        final String filterDivsCombined = "\n" + String.join("\n", filterDivs) + "\n";
+
+        return new HtmlTagFactory(HTML_DIV_TAG, filterDivsCombined, false)
+                .addClass(FILTERS_DIV_LABEL)
+                .generateTag();
+    }
+
+    private static String generateLogTable(@NonNull final List<LogLine> logLines) {
+        final List<String> formattedLogLines =
+                logLines.stream().map(LogLine::generateHtmlString).toList();
+        final String combinedLogLines = "\n" + String.join("\n", formattedLogLines) + "\n";
+
+        return new HtmlTagFactory(HTML_TABLE_TAG, combinedLogLines, false).generateTag();
+    }
+
+    /**
+     * Generate the body of the HTML page
+     *
+     * @param logLines the log lines
+     * @return the body of the HTML page
+     */
+    private static String generateBody(@NonNull final List<LogLine> logLines) {
+        final List<String> bodyElements = new ArrayList<>();
+
+        bodyElements.add(generateFiltersDiv(logLines));
+        bodyElements.add(generateLogTable(logLines));
+
+        final String scriptTag = new HtmlTagFactory(HTML_SCRIPT_TAG, HIDER_JS, false).generateTag();
+        bodyElements.add(scriptTag);
+
+        return new HtmlTagFactory(HTML_BODY_TAG, String.join("\n", bodyElements), false)
+                .addClass(LOG_BODY_LABEL)
+                .generateTag();
+    }
+
+    /**
+     * Generate an HTML page from a list of log line strings
+     *
+     * @param logLineStrings the log line strings
+     * @return the HTML page
+     */
     public static String generateHtmlPage(@NonNull final List<String> logLineStrings) {
+        Objects.requireNonNull(logLineStrings);
+
         final List<LogLine> logLines = logLineStrings.stream()
                 .map(string -> {
                     try {
@@ -220,146 +357,9 @@ public class HtmlGenerator {
                 .filter(Objects::nonNull)
                 .toList();
 
-        final List<String> formattedLogLines =
-                logLines.stream().map(LogLine::generateHtmlString).toList();
+        final List<String> pageElements = List.of(generateHead(logLines), generateBody(logLines));
+        final String pageElementsCombined = "\n" + String.join("\n", pageElements) + "\n";
 
-        final String cssTag =
-                new HtmlTagFactory(HTML_STYLE_TAG, String.join("\n", generateCssRules(logLines)), false).generateTag();
-
-        final String minJsSourceTag = new HtmlTagFactory(HTML_SCRIPT_TAG, "", false)
-                .addAttribute(HTML_SOURCE_ATTRIBUTE, MIN_JS_SOURCE)
-                .generateTag();
-
-        final String headTag =
-                new HtmlTagFactory(HTML_HEAD_TAG, "\n" + cssTag + "\n" + minJsSourceTag + "\n", false).generateTag();
-
-        final String logTableTag = new HtmlTagFactory(
-                        HTML_TABLE_TAG, "\n" + String.join("\n", formattedLogLines) + "\n", false)
-                .generateTag();
-
-        // TODO read this from file instead??
-        final String TEMP_hiderJs =
-                """
-                        // the checkboxes that have the ability to hide things
-                        var hiders = document.getElementsByClassName("hider");
-
-                        // add a listener to each checkbox
-                        for (var i = 0; i < hiders.length; i++) {
-                            hiders[i].addEventListener("click", function() {
-                                // the classes that exist on the checkbox that is clicked
-                                var checkboxClasses = this.classList;
-
-                                // the name of the class that should be hidden
-                                // each checkbox has 2 classes, "hider", and the name of the class to be hidden
-                                var toggleClass;
-                                for (j = 0; j < checkboxClasses.length; j++) {
-                                    if (checkboxClasses[j] == "hider") {
-                                        continue;
-                                    }
-
-                                    toggleClass = checkboxClasses[j];
-                                    break;
-                                }
-
-                                // these are the objects on the page which match the class to toggle (discluding the input boxes)
-                                var matchingObjects = $("." + toggleClass).not("input");
-
-                                // go through each of the matching objects, and modify the hide count according to the value of the checkbox
-                                for (j = 0; j < matchingObjects.length; j++) {
-                                    var currentHideCount = parseInt($(matchingObjects[j]).attr('data-hide')) || 0;
-
-                                    var newHideCount;
-                                    if ($(this).is(":checked")) {
-                                        newHideCount = currentHideCount + 1;
-                                    } else {
-                                        newHideCount = currentHideCount - 1;
-                                    }
-
-                                    $(matchingObjects[j]).attr('data-hide', newHideCount);
-                                }
-                            });
-                        }
-                        """;
-
-        final String scriptTag = new HtmlTagFactory(HTML_SCRIPT_TAG, TEMP_hiderJs, false).generateTag();
-
-        final String filterColumnsHeading = new HtmlTagFactory(HTML_H3_TAG, "Filter by Column", false)
-                .addClass(SECTION_HEADING)
-                .generateTag();
-        final List<String> columnFilterCheckboxes = Stream.of(
-                        NODE_ID_COLUMN_LABEL,
-                        ELAPSED_TIME_COLUMN_LABEL,
-                        TIMESTAMP_COLUMN_LABEL,
-                        LOG_NUMBER_COLUMN_LABEL,
-                        LOG_LEVEL_COLUMN_LABEL,
-                        MARKER_COLUMN_LABEL,
-                        THREAD_NAME_COLUMN_LABEL,
-                        CLASS_NAME_COLUMN_LABEL,
-                        REMAINDER_OF_LINE_COLUMN_LABEL)
-                .map(HtmlGenerator::createHiderCheckbox)
-                .toList();
-
-        final String filterLogLevelHeading = new HtmlTagFactory(HTML_H3_TAG, "Filter by Log Level", false)
-                .addClass(SECTION_HEADING)
-                .generateTag();
-        final List<String> existingLogLevels =
-                logLines.stream().map(LogLine::getLogLevel).distinct().toList();
-        final List<String> logLevelFilterCheckboxes = existingLogLevels.stream()
-                .map(HtmlGenerator::createHiderCheckbox)
-                .toList();
-
-        final String filterMarkerHeading = new HtmlTagFactory(HTML_H3_TAG, "Filter by Log Marker", false)
-                .addClass(SECTION_HEADING)
-                .generateTag();
-        final List<String> existingMarkers =
-                logLines.stream().map(LogLine::getMarker).distinct().toList();
-        final List<String> logMarkerFilterCheckboxes =
-                existingMarkers.stream().map(HtmlGenerator::createHiderCheckbox).toList();
-
-        final String filterColumnsDiv = new HtmlTagFactory(
-                        HTML_DIV_TAG,
-                        "\n" + filterColumnsHeading + "\n" + String.join("\n", columnFilterCheckboxes),
-                        false)
-                .addClass(FILTER_COLUMN_DIV_LABEL)
-                .generateTag();
-
-        final String filterLogLevelDiv = new HtmlTagFactory(
-                        HTML_DIV_TAG,
-                        "\n" + filterLogLevelHeading + "\n" + String.join("\n", logLevelFilterCheckboxes),
-                        false)
-                .addClass(FILTER_COLUMN_DIV_LABEL)
-                .generateTag();
-
-        final String filterMarkerDiv = new HtmlTagFactory(
-                        HTML_DIV_TAG,
-                        "\n" + filterMarkerHeading + "\n" + String.join("\n", logMarkerFilterCheckboxes),
-                        false)
-                .addClass(FILTER_COLUMN_DIV_LABEL)
-                .generateTag();
-
-        final String filtersDiv = new HtmlTagFactory(
-                        HTML_DIV_TAG,
-                        "\n" + filterColumnsDiv + "\n" + filterLogLevelDiv + "\n" + filterMarkerDiv + "\n",
-                        false)
-                .addClass(FILTERS_DIV_LABEL)
-                .generateTag();
-
-        final String logsHeading = new HtmlTagFactory(HTML_H3_TAG, "Logs", false)
-                .addClass(SECTION_HEADING)
-                .generateTag();
-
-        final List<String> bodyElements = new ArrayList<>();
-        bodyElements.add(filtersDiv);
-        bodyElements.add(logsHeading);
-        bodyElements.add(logTableTag);
-        bodyElements.add(scriptTag);
-
-        final String bodyTag = new HtmlTagFactory(HTML_BODY_TAG, String.join("\n", bodyElements), false)
-                .addClass(LOG_BODY_LABEL)
-                .generateTag();
-
-        final List<String> pageElements = List.of(headTag, bodyTag);
-
-        return new HtmlTagFactory(HTML_HTML_TAG, "\n" + String.join("\n", pageElements) + "\n", false).generateTag();
+        return new HtmlTagFactory(HTML_HTML_TAG, pageElementsCombined, false).generateTag();
     }
 }
