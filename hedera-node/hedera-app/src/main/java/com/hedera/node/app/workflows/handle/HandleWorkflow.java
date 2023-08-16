@@ -340,7 +340,11 @@ public class HandleWorkflow {
 
         // store all records at once
         final var recordListResult = recordListBuilder.build();
-        recordCache.add(creator.nodeId(), payer, recordListResult.mainRecord().transactionRecord(), consensusNow);
+        recordCache.add(
+                creator.nodeId(),
+                payer,
+                recordListResult.userTransactionRecord().transactionRecord(),
+                consensusNow);
         blockRecordManager.endUserTransaction(recordListResult.recordStream(), state);
 
         return txBody;

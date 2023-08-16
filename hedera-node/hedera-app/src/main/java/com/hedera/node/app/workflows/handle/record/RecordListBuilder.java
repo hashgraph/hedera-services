@@ -224,5 +224,6 @@ public class RecordListBuilder {
     }
 
     public record Result(
-            @NonNull SingleTransactionRecord mainRecord, @NonNull Stream<SingleTransactionRecord> recordStream) {}
+            @NonNull SingleTransactionRecord userTransactionRecord,
+            @NonNull Stream<SingleTransactionRecord> recordStream) {}
 }
