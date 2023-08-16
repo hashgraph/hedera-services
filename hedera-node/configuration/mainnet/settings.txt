@@ -5,8 +5,6 @@
 numConnections,                                1000
 socket.doUpnp,                                 false
 socket.useLoopbackIp,                          false
-sync.maxOutgoingSyncs,                         8
-sync.syncAsProtocolEnabled,                    true
 sync.syncProtocolPermitCount,                  17
 
                                           #############################
