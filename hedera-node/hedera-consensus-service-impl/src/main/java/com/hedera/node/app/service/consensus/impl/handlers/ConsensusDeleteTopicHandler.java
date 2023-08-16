@@ -105,12 +105,12 @@ public class ConsensusDeleteTopicHandler implements TransactionHandler {
 
         /* Copy all the fields from existing topic and change deleted flag */
         final var topicBuilder = new Topic.Builder()
-                .id(topic.id())
+                .topicId(topic.topicId())
                 .adminKey(topic.adminKey())
                 .submitKey(topic.submitKey())
                 .autoRenewAccountId(topic.autoRenewAccountId())
                 .autoRenewPeriod(topic.autoRenewPeriod())
-                .expiry(topic.expiry())
+                .expirationSecond(topic.expirationSecond())
                 .memo(topic.memo())
                 .runningHash(topic.runningHash())
                 .sequenceNumber(topic.sequenceNumber());

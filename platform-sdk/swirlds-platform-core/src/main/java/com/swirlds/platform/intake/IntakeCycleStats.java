@@ -17,12 +17,12 @@
 package com.swirlds.platform.intake;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.platform.stats.cycle.AccumulatedCycleMetrics;
 import com.swirlds.platform.stats.cycle.CycleDefinition;
 import com.swirlds.platform.stats.cycle.CycleTracker;
 import java.util.List;
-import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * Statistics that track time spent in various phases of event intake
