@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.network;
 
+import java.util.Objects;
 import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /**
  * External Ip Address found by {@link Network#getExternalIpAddress()}
@@ -87,6 +87,6 @@ public class ExternalIpAddress {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder().append(status).append(ipAddress).hashCode();
+        return Objects.hash(status, ipAddress);
     }
 }
