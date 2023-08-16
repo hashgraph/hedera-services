@@ -29,7 +29,12 @@ import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.StartUpEventFrozenManager;
 import com.swirlds.platform.event.EventIntakeTask;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.tipset.rules.AggregateTipsetEventCreationRules;
+import com.swirlds.platform.event.tipset.rules.ReconnectStateSavedRule;
+import com.swirlds.platform.event.tipset.rules.TipsetBackpressureRule;
+import com.swirlds.platform.event.tipset.rules.TipsetEventCreationRule;
+import com.swirlds.platform.event.tipset.rules.TipsetMaximumRateRule;
+import com.swirlds.platform.event.tipset.rules.TipsetPlatformStatusRule;
 import com.swirlds.platform.eventhandling.EventTransactionPool;
 import com.swirlds.platform.observers.ConsensusRoundObserver;
 import com.swirlds.platform.observers.EventObserverDispatcher;
@@ -38,11 +43,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 import java.util.Random;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
- * A factory for creating {@link TipsetEventCreationManager} instances.
+ * A factory for creating {@link AsyncTipsetEventCreationManager} instances.
  */
 public final class TipsetEventCreationManagerFactory {
 
@@ -68,7 +72,7 @@ public final class TipsetEventCreationManagerFactory {
      * @return a new tipset event creation manager, or null if tipset event creation is disabled
      */
     @Nullable
-    public static TipsetEventCreationManager buildTipsetEventCreationManager(
+    public static AsyncTipsetEventCreationManager buildTipsetEventCreationManager(
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
             @NonNull final Time time,
@@ -108,25 +112,27 @@ public final class TipsetEventCreationManagerFactory {
             return null;
         }
 
-        final Consumer<GossipEvent> newEventHandler =
-                event -> abortAndThrowIfInterrupted(eventIntakeQueue::put, event, "intakeQueue.put() interrupted");
-
-        final TipsetEventCreationManager manager = new TipsetEventCreationManager(
+        final TipsetEventCreator eventCreator = new TipsetEventCreatorImpl(
                 platformContext,
-                threadManager,
                 time,
                 new Random() /* does not need to be cryptographically secure */,
                 signer,
                 addressBook,
                 selfId,
                 appVersion,
-                transactionPool,
-                newEventHandler,
-                eventIntakeQueue::size,
-                platformStatusSupplier,
-                startUpEventFrozenManager,
-                latestReconnectRound,
-                latestSavedStateRound);
+                transactionPool);
+
+        final TipsetEventCreationRule eventCreationRules = AggregateTipsetEventCreationRules.of(
+                new TipsetMaximumRateRule(platformContext, time),
+                new TipsetBackpressureRule(platformContext, eventIntakeQueue::size),
+                new TipsetPlatformStatusRule(platformStatusSupplier, transactionPool, startUpEventFrozenManager),
+                new ReconnectStateSavedRule(latestReconnectRound, latestSavedStateRound));
+
+        final SyncTipsetEventCreationManager syncEventCreationManager =
+                new SyncTipsetEventCreationManager(eventCreator, eventCreationRules, eventIntakeQueue::offer);
+
+        final AsyncTipsetEventCreationManager manager =
+                new AsyncTipsetEventCreationManager(platformContext, threadManager, syncEventCreationManager);
 
         eventObserverDispatcher.addObserver((PreConsensusEventObserver) event -> abortAndThrowIfInterrupted(
                 manager::registerEvent,
