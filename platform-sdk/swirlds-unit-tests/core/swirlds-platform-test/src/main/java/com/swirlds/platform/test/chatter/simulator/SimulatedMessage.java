@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.test.chatter.simulator;
 
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -27,7 +28,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Instant;
 import java.util.Objects;
-import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * Represents a message sent from one node to another.
@@ -51,8 +51,8 @@ public class SimulatedMessage {
         this.destination = Objects.requireNonNull(destination, "destination must not be null");
 
         final Pair<Integer, SelfSerializable> pair = copyBySerialization(payload);
-        this.size = pair.getKey();
-        this.payload = pair.getValue();
+        this.size = pair.key();
+        this.payload = pair.value();
 
         bytesToSend = size;
         bytesToReceive = size;
