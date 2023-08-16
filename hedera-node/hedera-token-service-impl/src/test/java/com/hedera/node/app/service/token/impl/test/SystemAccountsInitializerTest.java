@@ -107,8 +107,8 @@ class SystemAccountsInitializerTest {
                     } else {
                         Assertions.assertThat(account.tinybarBalance()).isZero();
                     }
-                    Assertions.assertThat(account.expiry()).isEqualTo(EXPECTED_ENTITY_EXPIRY);
-                    Assertions.assertThat(account.autoRenewSecs()).isEqualTo(EXPECTED_ENTITY_EXPIRY);
+                    Assertions.assertThat(account.expirationSecond()).isEqualTo(EXPECTED_ENTITY_EXPIRY);
+                    Assertions.assertThat(account.autoRenewSeconds()).isEqualTo(EXPECTED_ENTITY_EXPIRY);
                     Assertions.assertThat(account.key()).isNotNull();
 
                     verifyCryptoCreateBuilder(account, builder);
@@ -129,7 +129,7 @@ class SystemAccountsInitializerTest {
             Assertions.assertThat(account.key()).isEqualTo(EMPTY_KEY_LIST);
             Assertions.assertThat(account.tinybarBalance()).isZero();
             Assertions.assertThat(account.maxAutoAssociations()).isZero();
-            Assertions.assertThat(account.expiry()).isEqualTo(EXPECTED_ENTITY_EXPIRY);
+            Assertions.assertThat(account.expirationSecond()).isEqualTo(EXPECTED_ENTITY_EXPIRY);
 
             verifyCryptoCreateBuilder(account, builder);
         });
@@ -151,7 +151,7 @@ class SystemAccountsInitializerTest {
 
             Assertions.assertThat(account.key()).isNotNull();
             Assertions.assertThat(account.tinybarBalance()).isZero();
-            Assertions.assertThat(account.expiry()).isEqualTo(EXPECTED_ENTITY_EXPIRY);
+            Assertions.assertThat(account.expirationSecond()).isEqualTo(EXPECTED_ENTITY_EXPIRY);
 
             verifyCryptoCreateBuilder(account, builder);
         });
@@ -168,8 +168,8 @@ class SystemAccountsInitializerTest {
 
             Assertions.assertThat(account.key()).isNotNull();
             Assertions.assertThat(account.tinybarBalance()).isZero();
-            Assertions.assertThat(account.expiry()).isEqualTo(EXPECTED_ENTITY_EXPIRY);
-            Assertions.assertThat(account.autoRenewSecs()).isEqualTo(EXPECTED_ENTITY_EXPIRY);
+            Assertions.assertThat(account.expirationSecond()).isEqualTo(EXPECTED_ENTITY_EXPIRY);
+            Assertions.assertThat(account.autoRenewSeconds()).isEqualTo(EXPECTED_ENTITY_EXPIRY);
 
             verifyCryptoCreateBuilder(account, builder);
         });
@@ -256,7 +256,7 @@ class SystemAccountsInitializerTest {
                         .receiverSigRequired(acctResult.receiverSigRequired())
                         .initialBalance(acctResult.tinybarBalance())
                         .autoRenewPeriod(Duration.newBuilder()
-                                .seconds(acctResult.autoRenewSecs())
+                                .seconds(acctResult.autoRenewSeconds())
                                 .build())
                         .build());
     }

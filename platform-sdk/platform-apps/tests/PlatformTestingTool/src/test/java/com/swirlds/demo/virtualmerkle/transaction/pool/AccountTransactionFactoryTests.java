@@ -18,6 +18,7 @@ package com.swirlds.demo.virtualmerkle.transaction.pool;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.base.utility.Pair;
 import com.swirlds.demo.merkle.map.internal.DummyExpectedFCMFamily;
 import com.swirlds.demo.merkle.map.internal.ExpectedFCMFamily;
 import com.swirlds.demo.platform.HotspotConfiguration;
@@ -26,7 +27,6 @@ import com.swirlds.demo.virtualmerkle.random.PTTRandom;
 import com.swirlds.merkle.map.test.pta.MapKey;
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 
 class AccountTransactionFactoryTests {
@@ -58,7 +58,7 @@ class AccountTransactionFactoryTests {
 
         for (int index = 0; index < 10_000; index++) {
             final Pair<MapKey, VirtualMerkleTransaction.Builder> pair = factory.buildUpdateAccountTransaction(hotspot);
-            final MapKey key = pair.getKey();
+            final MapKey key = pair.key();
             assertTrue(key.getAccountId() < 20, "Only first 20 accounts are considered but got " + key.getAccountId());
         }
     }
@@ -92,7 +92,7 @@ class AccountTransactionFactoryTests {
         final List<Long> accounts = new ArrayList<>();
         for (int index = 0; index < 10_000; index++) {
             final Pair<MapKey, VirtualMerkleTransaction.Builder> pair = factory.buildUpdateAccountTransaction(hotspot);
-            final MapKey key = pair.getKey();
+            final MapKey key = pair.key();
             if (key.getAccountId() > 20) {
                 accounts.add(key.getAccountId());
             }

@@ -20,6 +20,7 @@ import static com.swirlds.common.stream.internal.TimestampStreamFileWriter.OBJEC
 import static com.swirlds.common.units.UnitConstants.MILLISECONDS_TO_NANOSECONDS;
 import static com.swirlds.common.units.UnitConstants.SECONDS_TO_NANOSECONDS;
 
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.HashingOutputStream;
@@ -40,7 +41,6 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Iterator;
-import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * Utilities methods for: parsing stream files and stream signature files; generating fileName from Instant; calculating
@@ -354,9 +354,9 @@ public final class LinkedObjectStreamUtilities {
             // startRunningHash and endRunningHash
             Pair<Hash, Hash> hashPair = readHashesFromStreamFile(file, streamType);
             // digest startRunningHash
-            outputStream.writeSerializable(hashPair.getLeft(), true);
+            outputStream.writeSerializable(hashPair.left(), true);
             // digest endRunningHash
-            outputStream.writeSerializable(hashPair.getRight(), true);
+            outputStream.writeSerializable(hashPair.right(), true);
         }
         return new Hash(md.digest());
     }

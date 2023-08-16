@@ -94,8 +94,8 @@ public class SystemAccountsInitializer {
             final var account = newBaseSystemAccount()
                     .accountId(id)
                     .key(superUserKey)
-                    .expiry(expiry)
-                    .autoRenewSecs(expiry)
+                    .expirationSecond(expiry)
+                    .autoRenewSeconds(expiry)
                     .tinybarBalance(accountTinyBars)
                     .build();
             systemAccts.put(account, newCryptoCreate(account));
@@ -115,7 +115,7 @@ public class SystemAccountsInitializer {
                 final var stakingFundAccount = newBaseSystemAccount()
                         .accountId(id)
                         .key(EMPTY_KEY_LIST)
-                        .expiry(expiry)
+                        .expirationSecond(expiry)
                         .tinybarBalance(0)
                         .maxAutoAssociations(0)
                         .build();
@@ -136,7 +136,7 @@ public class SystemAccountsInitializer {
                         .accountId(id)
                         .key(superUserKey)
                         .tinybarBalance(ZERO_BALANCE)
-                        .expiry(expiry)
+                        .expirationSecond(expiry)
                         .build();
                 multiAccts.put(account, newCryptoCreate(account));
                 accounts.put(id, account);
@@ -159,9 +159,9 @@ public class SystemAccountsInitializer {
             final var nextClone = newBaseSystemAccount()
                     .accountId(nextCloneId)
                     .declineReward(treasury.declineReward())
-                    .expiry(treasury.expiry())
+                    .expirationSecond(treasury.expirationSecond())
                     .key(treasury.key())
-                    .autoRenewSecs(treasury.autoRenewSecs())
+                    .autoRenewSeconds(treasury.autoRenewSeconds())
                     .build();
             treasuryClones.put(nextClone, newCryptoCreate(nextClone));
             accounts.put(nextCloneId, nextClone);
@@ -195,7 +195,7 @@ public class SystemAccountsInitializer {
                 .declineReward(account.declineReward())
                 .receiverSigRequired(account.receiverSigRequired())
                 .autoRenewPeriod(
-                        Duration.newBuilder().seconds(account.autoRenewSecs()).build())
+                        Duration.newBuilder().seconds(account.autoRenewSeconds()).build())
                 .initialBalance(account.tinybarBalance());
     }
 

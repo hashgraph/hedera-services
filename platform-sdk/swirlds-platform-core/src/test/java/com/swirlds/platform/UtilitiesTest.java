@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.platform.internal.Deserializer;
@@ -32,7 +33,6 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import javax.net.ssl.SSLException;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 
 class UtilitiesTest {
@@ -49,8 +49,8 @@ class UtilitiesTest {
         w3.add(Pair.of(3L, 4L));
 
         Serializer<Pair<Long, Long>> ser = (pair, stream) -> {
-            stream.writeLong(pair.getKey());
-            stream.writeLong(pair.getValue());
+            stream.writeLong(pair.key());
+            stream.writeLong(pair.value());
         };
 
         Utilities.writeList(w1, fcOut, ser);
