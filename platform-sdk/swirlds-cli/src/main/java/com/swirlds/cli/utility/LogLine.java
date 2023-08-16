@@ -28,6 +28,7 @@ import static com.swirlds.cli.utility.HtmlGenerator.NODE_ID_COLUMN_LABEL;
 import static com.swirlds.cli.utility.HtmlGenerator.REMAINDER_OF_LINE_COLUMN_LABEL;
 import static com.swirlds.cli.utility.HtmlGenerator.THREAD_NAME_COLUMN_LABEL;
 import static com.swirlds.cli.utility.HtmlGenerator.TIMESTAMP_COLUMN_LABEL;
+import static com.swirlds.cli.utility.LogProcessingUtils.getLogLevelColor;
 import static com.swirlds.cli.utility.LogProcessingUtils.parseTimestamp;
 import static com.swirlds.common.units.TimeUnit.UNIT_MILLISECONDS;
 import static org.apache.commons.lang3.StringEscapeUtils.escapeHtml4;
@@ -71,7 +72,6 @@ public class LogLine implements FormattableString {
     public static final TextEffect LOG_MARKER_COLOR = TextEffect.BRIGHT_BLUE;
     public static final TextEffect THREAD_NAME_COLOR = TextEffect.BRIGHT_WHITE;
     public static final TextEffect CLASS_NAME_COLOR = TextEffect.BRIGHT_CYAN;
-
     public static final TextEffect HARMLESS_LOG_LEVEL_COLOR = TextEffect.BRIGHT_GREEN;
     public static final TextEffect WARN_LOG_LEVEL_COLOR = TextEffect.BRIGHT_YELLOW;
     public static final TextEffect ERROR_LOG_LEVEL_COLOR = TextEffect.BRIGHT_RED;
@@ -279,22 +279,6 @@ public class LogLine implements FormattableString {
     @NonNull
     public FormattableString getRemainderOfLine() {
         return remainderOfLine;
-    }
-
-    /**
-     * Get the correct color for a given log level.
-     *
-     * @param logLevel the log level
-     * @return the color
-     */
-    @NonNull
-    public static TextEffect getLogLevelColor(@NonNull final String logLevel) {
-        return switch (logLevel) {
-            case "TRACE", "DEBUG", "INFO" -> HARMLESS_LOG_LEVEL_COLOR;
-            case "WARN" -> WARN_LOG_LEVEL_COLOR;
-                // all other log levels are critical
-            default -> ERROR_LOG_LEVEL_COLOR;
-        };
     }
 
     /**

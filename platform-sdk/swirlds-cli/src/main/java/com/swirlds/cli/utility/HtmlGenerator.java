@@ -37,7 +37,7 @@ import static com.swirlds.cli.utility.LogLine.LOG_MARKER_COLOR;
 import static com.swirlds.cli.utility.LogLine.LOG_NUMBER_COLOR;
 import static com.swirlds.cli.utility.LogLine.THREAD_NAME_COLOR;
 import static com.swirlds.cli.utility.LogLine.TIMESTAMP_COLOR;
-import static com.swirlds.cli.utility.LogLine.getLogLevelColor;
+import static com.swirlds.cli.utility.LogProcessingUtils.getLogLevelColor;
 import static com.swirlds.cli.utility.PlatformStatusLog.STATUS_HTML_CLASS;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -97,52 +97,58 @@ public class HtmlGenerator {
 
     public static final String HIDER_JS =
             """
-            // the checkboxes that have the ability to hide things
-            var hiders = document.getElementsByClassName("hider");
+                    // the checkboxes that have the ability to hide things
+                    var hiders = document.getElementsByClassName("hider");
 
-            // add a listener to each checkbox
-            for (var i = 0; i < hiders.length; i++) {
-                hiders[i].addEventListener("click", function() {
-                    // the classes that exist on the checkbox that is clicked
-                    var checkboxClasses = this.classList;
+                    // add a listener to each checkbox
+                    for (var i = 0; i < hiders.length; i++) {
+                        hiders[i].addEventListener("click", function() {
+                            // the classes that exist on the checkbox that is clicked
+                            var checkboxClasses = this.classList;
 
-                    // the name of the class that should be hidden
-                    // each checkbox has 2 classes, "hider", and the name of the class to be hidden
-                    var toggleClass;
-                    for (j = 0; j < checkboxClasses.length; j++) {
-                        if (checkboxClasses[j] == "hider") {
-                            continue;
-                        }
+                            // the name of the class that should be hidden
+                            // each checkbox has 2 classes, "hider", and the name of the class to be hidden
+                            var toggleClass;
+                            for (j = 0; j < checkboxClasses.length; j++) {
+                                if (checkboxClasses[j] == "hider") {
+                                    continue;
+                                }
 
-                        toggleClass = checkboxClasses[j];
-                        break;
+                                toggleClass = checkboxClasses[j];
+                                break;
+                            }
+
+                            // these are the objects on the page which match the class to toggle (discluding the input boxes)
+                            var matchingObjects = $("." + toggleClass).not("input");
+
+                            // go through each of the matching objects, and modify the hide count according to the value of the checkbox
+                            for (j = 0; j < matchingObjects.length; j++) {
+                                var currentHideCount = parseInt($(matchingObjects[j]).attr('data-hide')) || 0;
+
+                                var newHideCount;
+                                if ($(this).is(":checked")) {
+                                    newHideCount = currentHideCount + 1;
+                                } else {
+                                    newHideCount = currentHideCount - 1;
+                                }
+
+                                $(matchingObjects[j]).attr('data-hide', newHideCount);
+                            }
+                        });
                     }
-
-                    // these are the objects on the page which match the class to toggle (discluding the input boxes)
-                    var matchingObjects = $("." + toggleClass).not("input");
-
-                    // go through each of the matching objects, and modify the hide count according to the value of the checkbox
-                    for (j = 0; j < matchingObjects.length; j++) {
-                        var currentHideCount = parseInt($(matchingObjects[j]).attr('data-hide')) || 0;
-
-                        var newHideCount;
-                        if ($(this).is(":checked")) {
-                            newHideCount = currentHideCount + 1;
-                        } else {
-                            newHideCount = currentHideCount - 1;
-                        }
-
-                        $(matchingObjects[j]).attr('data-hide', newHideCount);
-                    }
-                });
-            }
-            """;
+                    """;
 
     /**
      * Hidden constructor.
      */
     private HtmlGenerator() {}
 
+    /**
+     * Create a checkbox that can hide elements with the given name
+     *
+     * @param elementName the name of the element to hide
+     * @return the checkbox
+     */
     private static String createHiderCheckbox(@NonNull final String elementName) {
         final String inputTag = new HtmlTagFactory(HTML_INPUT_TAG, null, true)
                 .addClasses(List.of(HIDER_LABEL, elementName))
@@ -158,6 +164,34 @@ public class HtmlGenerator {
         return inputTag + "\n" + labelTag + "\n" + breakTag + "\n";
     }
 
+    /**
+     * Create a filter div for the given filter name and values
+     * <p>
+     * The filter div has a heading, and a series of checkboxes that can hide elements with the given names
+     *
+     * @param filterName   the filter name
+     * @param filterValues the filter values
+     * @return the filter div
+     */
+    private static String createFilterDiv(@NonNull final String filterName, @NonNull final List<String> filterValues) {
+        final String filterHeading = new HtmlTagFactory(HTML_H3_TAG, "Filter by " + filterName, false)
+                .addClass(SECTION_HEADING)
+                .generateTag();
+        final List<String> filterCheckboxes =
+                filterValues.stream().map(HtmlGenerator::createHiderCheckbox).toList();
+
+        return new HtmlTagFactory(
+                        HTML_DIV_TAG, "\n" + filterHeading + "\n" + String.join("\n", filterCheckboxes), false)
+                .addClass(FILTER_COLUMN_DIV_LABEL)
+                .generateTag();
+    }
+
+    /**
+     * Generate the CSS rules for the HTML page
+     *
+     * @param logLines the log lines
+     * @return the CSS rules
+     */
     private static List<String> generateCssRules(@NonNull final List<LogLine> logLines) {
         final List<String> cssRules = new ArrayList<>();
 
@@ -265,19 +299,12 @@ public class HtmlGenerator {
         return new HtmlTagFactory(HTML_HEAD_TAG, "\n" + cssTag + "\n" + minJsSourceTag + "\n", false).generateTag();
     }
 
-    private static String createFilterDiv(@NonNull final String filterName, @NonNull final List<String> filterValues) {
-        final String filterHeading = new HtmlTagFactory(HTML_H3_TAG, "Filter by " + filterName, false)
-                .addClass(SECTION_HEADING)
-                .generateTag();
-        final List<String> filterCheckboxes =
-                filterValues.stream().map(HtmlGenerator::createHiderCheckbox).toList();
-
-        return new HtmlTagFactory(
-                        HTML_DIV_TAG, "\n" + filterHeading + "\n" + String.join("\n", filterCheckboxes), false)
-                .addClass(FILTER_COLUMN_DIV_LABEL)
-                .generateTag();
-    }
-
+    /**
+     * Generate the generate filters div for the html page
+     *
+     * @param logLines the log lines
+     * @return the generate filters div for the html page
+     */
     private static String generateFiltersDiv(@NonNull final List<LogLine> logLines) {
         final List<String> filterDivs = new ArrayList<>();
 
@@ -308,6 +335,12 @@ public class HtmlGenerator {
                 .generateTag();
     }
 
+    /**
+     * Generate the log table for the HTML page
+     *
+     * @param logLines the log lines
+     * @return the log table for the HTML page
+     */
     private static String generateLogTable(@NonNull final List<LogLine> logLines) {
         final List<String> formattedLogLines =
                 logLines.stream().map(LogLine::generateHtmlString).toList();

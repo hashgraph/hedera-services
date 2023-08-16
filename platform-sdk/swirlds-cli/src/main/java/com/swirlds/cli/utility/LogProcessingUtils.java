@@ -16,6 +16,11 @@
 
 package com.swirlds.cli.utility;
 
+import static com.swirlds.cli.utility.LogLine.ERROR_LOG_LEVEL_COLOR;
+import static com.swirlds.cli.utility.LogLine.HARMLESS_LOG_LEVEL_COLOR;
+import static com.swirlds.cli.utility.LogLine.WARN_LOG_LEVEL_COLOR;
+
+import com.swirlds.common.formatting.TextEffect;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -30,6 +35,22 @@ public class LogProcessingUtils {
      * Hidden constructor.
      */
     private LogProcessingUtils() {}
+
+    /**
+     * Get the correct color for a given log level.
+     *
+     * @param logLevel the log level
+     * @return the color
+     */
+    @NonNull
+    public static TextEffect getLogLevelColor(@NonNull final String logLevel) {
+        return switch (logLevel) {
+            case "TRACE", "DEBUG", "INFO" -> HARMLESS_LOG_LEVEL_COLOR;
+            case "WARN" -> WARN_LOG_LEVEL_COLOR;
+                // all other log levels are critical
+            default -> ERROR_LOG_LEVEL_COLOR;
+        };
+    }
 
     /**
      * Parse a log timestamp string into an Instant.

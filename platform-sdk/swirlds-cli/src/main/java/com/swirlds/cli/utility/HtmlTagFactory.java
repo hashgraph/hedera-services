@@ -55,7 +55,7 @@ public class HtmlTagFactory {
     /**
      * If true then the tag is a void tag
      */
-    boolean isVoidTag = false;
+    private final boolean isVoidTag;
 
     /**
      * Construct a new HtmlTagFactory.
