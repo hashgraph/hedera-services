@@ -32,6 +32,7 @@ import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Transfer;
 import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Update;
 
 import com.google.protobuf.ByteString;
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.FastCopyable;
 import com.swirlds.common.system.Platform;
 import com.swirlds.demo.merkle.map.internal.ExpectedFCMFamily;
@@ -73,7 +74,6 @@ import java.util.ArrayList;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -239,14 +239,14 @@ public class FCMTransactionPool implements FastCopyable {
         }
 
         PAYLOAD_TYPE payloadType = PAYLOAD_TYPE.BodyCase_TO_PAYLOAD_TYPE.get(
-                transactionMapKeyPair.getKey().getBodyCase());
+                transactionMapKeyPair.key().getBodyCase());
         Triple<byte[], PAYLOAD_TYPE, MapKey> rval = Triple.of(
                 TestTransaction.newBuilder()
-                        .setFcmTransaction(transactionMapKeyPair.getKey())
+                        .setFcmTransaction(transactionMapKeyPair.key())
                         .build()
                         .toByteArray(),
                 payloadType,
-                transactionMapKeyPair.getValue());
+                transactionMapKeyPair.value());
 
         return rval;
     }
@@ -456,12 +456,12 @@ public class FCMTransactionPool implements FastCopyable {
             return null;
         }
         FCMTransaction fcmTransaction = builderMapKeyPair
-                .getKey()
+                .key()
                 .setInvalidSig(invalidSig)
                 .setOriginNode(myID)
                 .build();
 
-        return Pair.of(fcmTransaction, builderMapKeyPair.getValue());
+        return Pair.of(fcmTransaction, builderMapKeyPair.value());
     }
 
     private Pair<FCMTransaction.Builder, MapKey> generateFCMDeleteFCQ() {
