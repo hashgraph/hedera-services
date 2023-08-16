@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.observers;
 
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.EventImpl;
 
 /**
  * An observer that is notified before an event reaches consensus.

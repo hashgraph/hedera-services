@@ -23,7 +23,7 @@ import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.threading.framework.Stoppable;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.EventImpl;
 import com.swirlds.platform.test.event.emitter.EventEmitter;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicBoolean;

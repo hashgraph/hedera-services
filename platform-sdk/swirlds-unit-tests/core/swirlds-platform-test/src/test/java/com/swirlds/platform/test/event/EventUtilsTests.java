@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.EventImpl;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;

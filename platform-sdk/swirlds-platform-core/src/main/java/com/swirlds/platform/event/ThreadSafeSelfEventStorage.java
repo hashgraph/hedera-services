@@ -17,7 +17,7 @@
 package com.swirlds.platform.event;
 
 import com.swirlds.common.utility.Clearable;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.EventImpl;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**

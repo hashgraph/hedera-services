@@ -27,7 +27,7 @@ import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.common.system.events.ConsensusData;
 import com.swirlds.common.system.events.DetailedConsensusEvent;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.EventImpl;
 import java.io.IOException;
 import java.util.Random;
 import org.junit.jupiter.api.BeforeAll;

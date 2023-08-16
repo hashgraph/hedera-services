@@ -17,8 +17,8 @@
 package com.swirlds.platform.gossip.shadowgraph;
 
 import com.swirlds.common.system.NodeId;
+import com.swirlds.platform.EventImpl;
 import com.swirlds.platform.consensus.GraphGenerations;
-import com.swirlds.platform.internal.EventImpl;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
