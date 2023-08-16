@@ -32,8 +32,8 @@ import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Transfer;
 import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Update;
 
 import com.google.protobuf.ByteString;
-import com.swirlds.base.utility.Triple;
 import com.swirlds.base.utility.Pair;
+import com.swirlds.base.utility.Triple;
 import com.swirlds.common.FastCopyable;
 import com.swirlds.common.system.Platform;
 import com.swirlds.demo.merkle.map.internal.ExpectedFCMFamily;
