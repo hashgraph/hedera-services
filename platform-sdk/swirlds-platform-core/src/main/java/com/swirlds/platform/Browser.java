@@ -86,7 +86,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
@@ -157,7 +156,8 @@ public class Browser {
         }
 
         try {
-            final Path log4jPath = ConfigurationHolder.getConfigData(PathsConfig.class).getLogPath();
+            final Path log4jPath =
+                    ConfigurationHolder.getConfigData(PathsConfig.class).getLogPath();
             Log4jSetup.startLoggingFramework(log4jPath).await();
 
             logger = LogManager.getLogger(Browser.class);
@@ -185,7 +185,8 @@ public class Browser {
         final PathsConfig pathsConfig = loadPathsConfig();
 
         // Load config.txt file, parse application jar file name, main class name, address book, and parameters
-        final ApplicationDefinition appDefinition = ApplicationDefinitionLoader.loadDefault(pathsConfig.getConfigPath());
+        final ApplicationDefinition appDefinition =
+                ApplicationDefinitionLoader.loadDefault(pathsConfig.getConfigPath());
 
         // Determine which nodes to run locally
         final List<NodeId> nodesToRun =
