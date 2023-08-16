@@ -107,7 +107,10 @@ public class HtmlTagFactory {
         if (attributeMap.containsKey(attributeName)) {
             attributeMap.get(attributeName).add(value);
         } else {
-            attributeMap.put(attributeName, List.of(value));
+            final ArrayList<String> attributeList = new ArrayList<>();
+            attributeList.add(value);
+
+            attributeMap.put(attributeName, attributeList);
         }
 
         return this;

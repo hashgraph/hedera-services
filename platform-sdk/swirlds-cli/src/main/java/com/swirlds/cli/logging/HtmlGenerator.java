@@ -20,6 +20,7 @@ import static com.swirlds.cli.logging.CssRuleSetFactory.BACKGROUND_COLOR_PROPERT
 import static com.swirlds.cli.logging.CssRuleSetFactory.BREAK_WORD_VALUE;
 import static com.swirlds.cli.logging.CssRuleSetFactory.DISPLAY_PROPERTY;
 import static com.swirlds.cli.logging.CssRuleSetFactory.FONT_PROPERTY;
+import static com.swirlds.cli.logging.CssRuleSetFactory.HEIGHT_PROPERTY;
 import static com.swirlds.cli.logging.CssRuleSetFactory.MAX_WIDTH_PROPERTY;
 import static com.swirlds.cli.logging.CssRuleSetFactory.NORMAL_VALUE;
 import static com.swirlds.cli.logging.CssRuleSetFactory.NO_WRAP_VALUE;
@@ -72,6 +73,7 @@ public class HtmlGenerator {
     public static final String MIN_JS_SOURCE = "https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js";
 
     public static final String HTML_HTML_TAG = "html";
+    public static final String HTML_H2_TAG = "h2";
     public static final String HTML_H3_TAG = "h3";
     public static final String HTML_SCRIPT_TAG = "script";
     public static final String HTML_LABEL_TAG = "label";
@@ -108,7 +110,7 @@ public class HtmlGenerator {
     public static final String MARKER_COLUMN_LABEL = "marker";
     public static final String THREAD_NAME_COLUMN_LABEL = "thread-name";
     public static final String CLASS_NAME_COLUMN_LABEL = "class-name";
-    public static final String REMAINDER_OF_LINE_COLUMN_LABEL = "remainder-of-line";
+    public static final String REMAINDER_OF_LINE_COLUMN_LABEL = "remainder";
 
     /**
      * This label is used so that the filter checkboxes aren't themselves hidden. They have the same label as the
@@ -116,8 +118,15 @@ public class HtmlGenerator {
      */
     public static final String FILTER_CHECKBOX_LABEL = "filter-checkbox";
 
-    public static final String FILTERS_DIV_LABEL = "filters";
-    public static final String FILTER_COLUMN_DIV_LABEL = "filter-column";
+    /**
+     * This label is used to make the filter column and log table full height, side by side
+     */
+    public static final String DOUBLE_COLUMNS_DIV_LABEL = "double-columns";
+
+    /**
+     * This label is used to make the filter column and log table scroll independently
+     */
+    public static final String INDEPENDENT_SCROLL_LABEL = "independent-scroll";
 
     /**
      * The javascript that is used to hide/show elements when the filter checkboxes are clicked
@@ -183,8 +192,7 @@ public class HtmlGenerator {
                 .addAttribute(HTML_TYPE_ATTRIBUTE, HTML_CHECKBOX_TYPE)
                 .generateTag();
 
-        final String labelTag = new HtmlTagFactory(HTML_LABEL_TAG, "Hide " + elementName, false).generateTag();
-
+        final String labelTag = new HtmlTagFactory(HTML_LABEL_TAG, elementName, false).generateTag();
         final String breakTag = new HtmlTagFactory(HTML_BREAK_TAG, null, true).generateTag();
 
         return inputTag + "\n" + labelTag + "\n" + breakTag + "\n";
@@ -200,13 +208,12 @@ public class HtmlGenerator {
      * @return the filter div
      */
     private static String createFilterDiv(@NonNull final String filterName, @NonNull final List<String> filterValues) {
-        final String filterHeading = new HtmlTagFactory(HTML_H3_TAG, "Filter by " + filterName, false).generateTag();
+        final String filterHeading = new HtmlTagFactory(HTML_H3_TAG, filterName, false).generateTag();
         final List<String> filterCheckboxes =
                 filterValues.stream().map(HtmlGenerator::createFilterCheckbox).toList();
 
         return new HtmlTagFactory(
                         HTML_DIV_TAG, "\n" + filterHeading + "\n" + String.join("\n", filterCheckboxes), false)
-                .addClass(FILTER_COLUMN_DIV_LABEL)
                 .generateTag();
     }
 
@@ -225,13 +232,19 @@ public class HtmlGenerator {
                                 .formatted(DATA_HIDE_LABEL, DATA_HIDE_LABEL, DATA_HIDE_LABEL),
                         new CssDeclaration(DISPLAY_PROPERTY, "none"))
                 .generateCss());
-        // display the filter checkboxes horizontally
-        cssRules.add(new CssRuleSetFactory("." + FILTERS_DIV_LABEL, new CssDeclaration(DISPLAY_PROPERTY, "flex"))
+
+        // display the filter columns and the log table side by side, at full height
+        cssRules.add(new CssRuleSetFactory(
+                        "." + DOUBLE_COLUMNS_DIV_LABEL,
+                        List.of(
+                                new CssDeclaration(DISPLAY_PROPERTY, "flex"),
+                                new CssDeclaration(HEIGHT_PROPERTY, "100%")))
                 .generateCss());
-        // add padding between columns of filter checkboxes
-        cssRules.add(
-                new CssRuleSetFactory("." + FILTER_COLUMN_DIV_LABEL, new CssDeclaration(PADDING_LEFT_PROPERTY, "2em"))
-                        .generateCss());
+
+        // make the filter columns and the log table scroll independently
+        cssRules.add(new CssRuleSetFactory("." + INDEPENDENT_SCROLL_LABEL, new CssDeclaration("overflow", "auto"))
+                .generateCss());
+
         // set page defaults
         cssRules.add(new CssRuleSetFactory(
                         "html *",
@@ -354,9 +367,13 @@ public class HtmlGenerator {
 
         final String filterDivsCombined = "\n" + String.join("\n", filterDivs) + "\n";
 
-        return new HtmlTagFactory(HTML_DIV_TAG, filterDivsCombined, false)
-                .addClass(FILTERS_DIV_LABEL)
+        final String filtersHeading = new HtmlTagFactory(HTML_H2_TAG, "Filters", false).generateTag();
+
+        final String scrollableFilterColumn = new HtmlTagFactory(HTML_DIV_TAG, filterDivsCombined, false)
+                .addClass(INDEPENDENT_SCROLL_LABEL)
                 .generateTag();
+
+        return new HtmlTagFactory(HTML_DIV_TAG, filtersHeading + "\n" + scrollableFilterColumn, false).generateTag();
     }
 
     /**
@@ -380,15 +397,20 @@ public class HtmlGenerator {
      * @return the body of the HTML page
      */
     private static String generateBody(@NonNull final List<LogLine> logLines) {
-        final List<String> bodyElements = new ArrayList<>();
+        final String filtersDiv = generateFiltersDiv(logLines);
+        final String tableDiv = new HtmlTagFactory(HTML_DIV_TAG, generateLogTable(logLines), false)
+                .addClass(INDEPENDENT_SCROLL_LABEL)
+                .generateTag();
 
-        bodyElements.add(generateFiltersDiv(logLines));
-        bodyElements.add(generateLogTable(logLines));
+        // this is a div surrounding the filters and the log table
+        // its purpose is so that there can be 2 independently scrollable columns
+        final String doubleColumnDiv = new HtmlTagFactory(HTML_DIV_TAG, filtersDiv + "\n" + tableDiv, false)
+                .addClass(DOUBLE_COLUMNS_DIV_LABEL)
+                .generateTag();
 
         final String scriptTag = new HtmlTagFactory(HTML_SCRIPT_TAG, FILTER_JS, false).generateTag();
-        bodyElements.add(scriptTag);
 
-        return new HtmlTagFactory(HTML_BODY_TAG, String.join("\n", bodyElements), false).generateTag();
+        return new HtmlTagFactory(HTML_BODY_TAG, doubleColumnDiv + "\n" + scriptTag, false).generateTag();
     }
 
     /**
