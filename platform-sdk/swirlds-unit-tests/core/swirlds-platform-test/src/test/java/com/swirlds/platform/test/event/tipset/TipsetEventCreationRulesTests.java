@@ -47,7 +47,6 @@ import com.swirlds.platform.eventhandling.EventTransactionPool;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.time.Duration;
-import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -62,7 +61,7 @@ class TipsetEventCreationRulesTests {
     @Test
     @DisplayName("Empty Aggregate Test")
     void emptyAggregateTest() {
-        final TipsetEventCreationRule rule = AggregateTipsetEventCreationRules.of(List.of());
+        final TipsetEventCreationRule rule = AggregateTipsetEventCreationRules.of();
         assertTrue(rule.isEventCreationPermitted());
 
         // should not throw
@@ -112,8 +111,7 @@ class TipsetEventCreationRulesTests {
                 .when(rule4)
                 .eventWasCreated();
 
-        final TipsetEventCreationRule aggregateRule =
-                AggregateTipsetEventCreationRules.of(List.of(rule1, rule2, rule3, rule4));
+        final TipsetEventCreationRule aggregateRule = AggregateTipsetEventCreationRules.of(rule1, rule2, rule3, rule4);
 
         assertTrue(aggregateRule.isEventCreationPermitted());
 
