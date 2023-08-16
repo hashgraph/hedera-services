@@ -22,8 +22,8 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import java.io.IOException;
+import java.util.Objects;
 import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
@@ -179,11 +179,7 @@ public class MerkleNftId extends PartialMerkleLeaf implements MerkleLeaf {
      */
     @Override
     public int hashCode() {
-        return new HashCodeBuilder()
-                .append(shardNum)
-                .append(realmNum)
-                .append(tokenNum)
-                .hashCode();
+        return Objects.hash(shardNum, realmNum, tokenNum);
     }
 
     /**

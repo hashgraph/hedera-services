@@ -569,7 +569,7 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
             writableTokenStore = newWritableStoreWithTokens(newNftToken531(10));
             writableTokenRelStore = newWritableStoreWithTokenRels(newAccount4680Token531Rel(0));
             writableNftStore = newWritableStoreWithNfts(Nft.newBuilder()
-                    .id(NftID.newBuilder().tokenId(TOKEN_531).serialNumber(1).build())
+                    .nftId(NftID.newBuilder().tokenId(TOKEN_531).serialNumber(1).build())
                     .ownerId(TREASURY_ACCOUNT_9876)
                     .build());
 
@@ -657,28 +657,28 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
                     newWritableStoreWithTokenRels(newAccount4680Token531Rel(3), newTreasuryToken531Rel(1));
             writableNftStore = newWritableStoreWithNfts(
                     Nft.newBuilder()
-                            .id(NftID.newBuilder()
+                            .nftId(NftID.newBuilder()
                                     .tokenId(TOKEN_531)
                                     .serialNumber(1)
                                     .build())
                             // do not set ownerId - default to null, meaning treasury owns this NFT
                             .build(),
                     Nft.newBuilder()
-                            .id(NftID.newBuilder()
+                            .nftId(NftID.newBuilder()
                                     .tokenId(TOKEN_531)
                                     .serialNumber(2)
                                     .build())
                             .ownerId(ACCOUNT_4680)
                             .build(),
                     Nft.newBuilder()
-                            .id(NftID.newBuilder()
+                            .nftId(NftID.newBuilder()
                                     .tokenId(TOKEN_531)
                                     .serialNumber(3)
                                     .build())
                             .ownerId(ACCOUNT_4680)
                             .build(),
                     Nft.newBuilder()
-                            .id(NftID.newBuilder()
+                            .nftId(NftID.newBuilder()
                                     .tokenId(TOKEN_531)
                                     .serialNumber(4)
                                     .build())
@@ -732,28 +732,28 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
                     newWritableStoreWithTokenRels(newAccount4680Token531Rel(3), newTreasuryToken531Rel(1));
             writableNftStore = newWritableStoreWithNfts(
                     Nft.newBuilder()
-                            .id(NftID.newBuilder()
+                            .nftId(NftID.newBuilder()
                                     .tokenId(TOKEN_531)
                                     .serialNumber(1)
                                     .build())
                             // do not set ownerId - default to null, meaning treasury owns this NFT
                             .build(),
                     Nft.newBuilder()
-                            .id(NftID.newBuilder()
+                            .nftId(NftID.newBuilder()
                                     .tokenId(TOKEN_531)
                                     .serialNumber(2)
                                     .build())
                             .ownerId(ACCOUNT_4680)
                             .build(),
                     Nft.newBuilder()
-                            .id(NftID.newBuilder()
+                            .nftId(NftID.newBuilder()
                                     .tokenId(TOKEN_531)
                                     .serialNumber(3)
                                     .build())
                             .ownerId(ACCOUNT_4680)
                             .build(),
                     Nft.newBuilder()
-                            .id(NftID.newBuilder()
+                            .nftId(NftID.newBuilder()
                                     .tokenId(TOKEN_531)
                                     .serialNumber(4)
                                     .build())
@@ -808,28 +808,28 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
                     newWritableStoreWithTokenRels(newAccount4680Token531Rel(3), newTreasuryToken531Rel(1));
             writableNftStore = newWritableStoreWithNfts(
                     Nft.newBuilder()
-                            .id(NftID.newBuilder()
+                            .nftId(NftID.newBuilder()
                                     .tokenId(TOKEN_531)
                                     .serialNumber(1)
                                     .build())
                             // do not set ownerId - default to null, meaning treasury owns this NFT
                             .build(),
                     Nft.newBuilder()
-                            .id(NftID.newBuilder()
+                            .nftId(NftID.newBuilder()
                                     .tokenId(TOKEN_531)
                                     .serialNumber(2)
                                     .build())
                             .ownerId(ACCOUNT_4680)
                             .build(),
                     Nft.newBuilder()
-                            .id(NftID.newBuilder()
+                            .nftId(NftID.newBuilder()
                                     .tokenId(TOKEN_531)
                                     .serialNumber(3)
                                     .build())
                             .ownerId(ACCOUNT_4680)
                             .build(),
                     Nft.newBuilder()
-                            .id(NftID.newBuilder()
+                            .nftId(NftID.newBuilder()
                                     .tokenId(TOKEN_531)
                                     .serialNumber(4)
                                     .build())

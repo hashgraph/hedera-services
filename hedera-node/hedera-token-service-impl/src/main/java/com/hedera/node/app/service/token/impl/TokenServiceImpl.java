@@ -126,11 +126,11 @@ public class TokenServiceImpl implements TokenService {
                             Account.newBuilder()
                                     .receiverSigRequired(false)
                                     .deleted(false)
-                                    .expiry(expiry)
+                                    .expirationSecond(expiry)
                                     .memo("")
                                     .smartContract(false)
                                     .key(superUserKey)
-                                    .autoRenewSecs(expiry) // TODO is this right?
+                                    .autoRenewSeconds(expiry) // TODO is this right?
                                     .accountId(id)
                                     .tinybarBalance(accountTinyBars)
                                     .build());
@@ -191,7 +191,7 @@ public class TokenServiceImpl implements TokenService {
                         .memo("")
                         .smartContract(false)
                         .key(EMPTY_KEY_LIST)
-                        .expiry(expiry)
+                        .expirationSecond(expiry)
                         .accountId(id)
                         .maxAutoAssociations(0)
                         .tinybarBalance(0)

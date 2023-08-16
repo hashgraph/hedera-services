@@ -256,35 +256,36 @@ public class TipsetWeightCalculator {
     }
 
     /**
-     * Compute the current maximum bully score with respect to all nodes. This is a measure of how well slow nodes'
-     * events are being incorporated in the hashgraph by faster nodes. A high score means slow nodes are being bullied
-     * by fast nodes. A low score means slow nodes are being included in consensus. Lower scores are better.
+     * Compute the current maximum selfishness score with respect to all nodes. This is a measure of how well slow
+     * nodes' events are being incorporated in the hashgraph by faster nodes. A high score means slow nodes are being
+     * ignored by selfish fast nodes. A low score means slow nodes are being included in consensus. Lower scores are
+     * better.
      *
-     * @return the current tipset bully score
+     * @return the current tipset selfishness score
      */
-    public int getMaxBullyScore() {
-        int bullyScore = 0;
+    public int getMaxSelfishnessScore() {
+        int selfishness = 0;
         for (final EventDescriptor eventDescriptor : childlessEventTracker.getChildlessEvents()) {
-            bullyScore = Math.max(bullyScore, getBullyScoreForNode(eventDescriptor.getCreator()));
+            selfishness = Math.max(selfishness, getSelfishnessScoreForNode(eventDescriptor.getCreator()));
         }
-        return bullyScore;
+        return selfishness;
     }
 
     /**
-     * Get the bully score with respect to one node, i.e. how much this node is bullying the specified node. A high
-     * bully score means that we have access to events that could go into our ancestry, but for whatever reason we have
+     * Get the selfishness score with respect to one node, i.e. how much this node is being selfish towards the specified node. A high
+     * selfishness score means that we have access to events that could go into our ancestry, but for whatever reason we have
      * decided not to put into our ancestry.
      * <p>
-     * The bully score is defined as the number of times the snapshot has been advanced without updating the generation
-     * of a particular node. For nodes that do not have any events that are legal other parents, the bully score is
+     * The selfishness score is defined as the number of times the snapshot has been advanced without updating the generation
+     * of a particular node. For nodes that do not have any events that are legal other parents, the selfishness score is
      * defined to be 0, regardless of how many times the snapshot has been advanced.
      *
-     * @param nodeId the node to compute the bully score for
-     * @return the bully score with respect to this node
+     * @param nodeId the node to compute the selfishness score for
+     * @return the selfishness score with respect to this node
      */
-    public int getBullyScoreForNode(@NonNull final NodeId nodeId) {
+    public int getSelfishnessScoreForNode(@NonNull final NodeId nodeId) {
         if (latestSelfEventTipset == null) {
-            // We can't be a bully if we haven't created any events yet.
+            // We can't be selfish if we haven't created any events yet.
             return 0;
         }
 
@@ -294,7 +295,7 @@ public class TipsetWeightCalculator {
             return 0;
         }
 
-        int bullyScore = 0;
+        int selfishness = 0;
         final long latestGeneration = tipsetTracker.getLatestGenerationForNode(nodeId);
 
         // Iterate backwards in time until we find an event from the node being added to our ancestry, or if
@@ -309,7 +310,7 @@ public class TipsetWeightCalculator {
             final long currentGeneration = currentTipset.getTipGenerationForNode(nodeId);
 
             if (currentGeneration == latestGeneration || previousGeneration < currentGeneration) {
-                // We stop increasing the bully score if we observe one of the two following events:
+                // We stop increasing the selfishness score if we observe one of the two following events:
                 //
                 // 1) we find that the latest generation provided by a node matches a snapshot's generation
                 //    (i.e. we've used all events provided by this creator as other parents)
@@ -318,10 +319,10 @@ public class TipsetWeightCalculator {
                 break;
             }
 
-            bullyScore++;
+            selfishness++;
         }
 
-        return bullyScore;
+        return selfishness;
     }
 
     @NonNull

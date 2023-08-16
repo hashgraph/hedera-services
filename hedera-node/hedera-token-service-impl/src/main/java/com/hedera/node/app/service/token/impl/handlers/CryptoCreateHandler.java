@@ -279,8 +279,8 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         long expiry = consensusTime + autoRenewPeriod;
         var builder = Account.newBuilder()
                 .memo(op.memo())
-                .expiry(expiry)
-                .autoRenewSecs(autoRenewPeriod)
+                .expirationSecond(expiry)
+                .autoRenewSeconds(autoRenewPeriod)
                 .receiverSigRequired(op.receiverSigRequired())
                 .maxAutoAssociations(op.maxAutomaticTokenAssociations())
                 .tinybarBalance(op.initialBalance())

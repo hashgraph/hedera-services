@@ -51,7 +51,7 @@ class ReadableTopicStoreImplTest extends ConsensusTestBase {
 
         assertNotNull(topic);
 
-        assertEquals(topicEntityNum.longValue(), topic.id().topicNum());
+        assertEquals(topicEntityNum.longValue(), topic.topicId().topicNum());
         assertEquals(adminKey.toString(), topic.adminKey().toString());
         assertEquals(adminKey.toString(), topic.submitKey().toString());
         assertEquals(this.topic.sequenceNumber(), topic.sequenceNumber());
@@ -75,7 +75,7 @@ class ReadableTopicStoreImplTest extends ConsensusTestBase {
 
         assertNotNull(topic);
 
-        assertEquals(topicEntityNum.longValue(), topic.id().topicNum());
+        assertEquals(topicEntityNum.longValue(), topic.topicId().topicNum());
         assertEquals(adminKey.toString(), topic.adminKey().toString());
         assertEquals(adminKey.toString(), topic.submitKey().toString());
         assertEquals(this.topic.sequenceNumber(), topic.sequenceNumber());
