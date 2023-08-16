@@ -95,9 +95,9 @@ class ReadableScheduleStoreTest {
         BDDMockito.given(accountStore.getAccountById(scheduler)).willReturn(schedulerAccount);
         BDDMockito.given(accountStore.getAccountById(payer)).willReturn(payerAccount);
 
-        BDDMockito.given(scheduleInState.hasPayerAccount()).willReturn(Boolean.TRUE);
-        BDDMockito.given(scheduleInState.payerAccount()).willReturn(payer);
-        BDDMockito.given(scheduleInState.schedulerAccount()).willReturn(adminAccount);
+        BDDMockito.given(scheduleInState.hasPayerAccountId()).willReturn(Boolean.TRUE);
+        BDDMockito.given(scheduleInState.payerAccountId()).willReturn(payer);
+        BDDMockito.given(scheduleInState.schedulerAccountId()).willReturn(adminAccount);
         BDDMockito.given(scheduleInState.hasAdminKey()).willReturn(true);
         BDDMockito.given(scheduleInState.adminKey()).willReturn(adminKey);
         BDDMockito.given(scheduleInState.scheduledTransaction()).willReturn(scheduled);
@@ -125,18 +125,18 @@ class ReadableScheduleStoreTest {
         Assertions.assertNotNull(meta);
         Assertions.assertEquals(adminKey, meta.adminKey());
         Assertions.assertEquals(scheduled, meta.scheduledTransaction());
-        Assertions.assertEquals(payer, meta.payerAccount());
+        Assertions.assertEquals(payer, meta.payerAccountId());
     }
 
     @Test
     void getsScheduleMetaFromFetchedScheduleNoExplicitPayer() {
-        BDDMockito.given(scheduleInState.hasPayerAccount()).willReturn(false);
-        BDDMockito.given(scheduleInState.payerAccount()).willReturn(null);
+        BDDMockito.given(scheduleInState.hasPayerAccountId()).willReturn(false);
+        BDDMockito.given(scheduleInState.payerAccountId()).willReturn(null);
 
         final Schedule meta = scheduleStore.get(testScheduleID);
         Assertions.assertNotNull(meta);
         Assertions.assertEquals(adminKey, meta.adminKey());
         Assertions.assertEquals(scheduled, meta.scheduledTransaction());
-        Assertions.assertNull(meta.payerAccount());
+        Assertions.assertNull(meta.payerAccountId());
     }
 }

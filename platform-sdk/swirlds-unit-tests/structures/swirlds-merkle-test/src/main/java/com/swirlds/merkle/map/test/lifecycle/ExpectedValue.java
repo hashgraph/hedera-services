@@ -21,8 +21,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.merkle.map.test.pta.MapValue;
 import java.io.Serializable;
+import java.util.Objects;
 import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
@@ -174,14 +174,7 @@ public class ExpectedValue implements Serializable {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder()
-                .append(entityType)
-                .append(hash)
-                .append(isErrored)
-                .append(latestHandledStatus)
-                .append(latestSubmitStatus)
-                .append(historyHandledStatus)
-                .toHashCode();
+        return Objects.hash(entityType, hash, isErrored, latestHandledStatus, latestSubmitStatus, historyHandledStatus);
     }
 
     @Override

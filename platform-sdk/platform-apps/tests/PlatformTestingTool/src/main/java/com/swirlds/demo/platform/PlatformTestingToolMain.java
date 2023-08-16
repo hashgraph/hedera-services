@@ -41,6 +41,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.swirlds.base.utility.Triple;
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.merkle.iterators.MerkleIterator;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.Metrics;
@@ -109,7 +110,6 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
@@ -617,8 +617,8 @@ public class PlatformTestingToolMain implements SwirldMain {
                         final VirtualMerkleConfig virtualMerkleConfig = currentConfig.getVirtualMerkleConfig();
                         if (virtualMerkleConfig != null) {
                             final Pair<Long, Long> entitiesFirstIds = extractFirstIdForEntitiesFromSavedState(platform);
-                            virtualMerkleConfig.setFirstAccountId(entitiesFirstIds.getKey());
-                            virtualMerkleConfig.setFirstSmartContractId(entitiesFirstIds.getValue());
+                            virtualMerkleConfig.setFirstAccountId(entitiesFirstIds.key());
+                            virtualMerkleConfig.setFirstSmartContractId(entitiesFirstIds.value());
                             VirtualMerkleStateInitializer.initStateChildren(
                                     platform, selfId.id(), virtualMerkleConfig, useMerkleDb);
                         }
@@ -1002,8 +1002,8 @@ public class PlatformTestingToolMain implements SwirldMain {
      *
      * @param platform
      * 		A {@link Platform instance}
-     * @return A pair of {@code Long}s, where {@code Pair.getKey()} returns the first id to be used by
-     * 		account entities and {@code Pair.getKey()} returns the first id to be used by smart contracts.
+     * @return A pair of {@code Long}s, where {@code Pair.key()} returns the first id to be used by
+     * 		account entities and {@code Pair.key()} returns the first id to be used by smart contracts.
      */
     private Pair<Long, Long> extractFirstIdForEntitiesFromSavedState(final Platform platform) {
         try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =

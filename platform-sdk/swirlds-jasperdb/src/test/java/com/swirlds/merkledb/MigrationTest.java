@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.base.utility.Pair;
 import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualMapMigration;
@@ -32,7 +33,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -68,9 +68,9 @@ class MigrationTest {
                 getStaticThreadManager(),
                 map,
                 (final Pair<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> pair) -> {
-                    assertEquals(pair.getKey().getValue() * 2, pair.getValue().getId(), "key and value do not match");
-                    firstVisitOrder.add(pair.getKey().getValue());
-                    assertTrue(visited.add(pair.getKey().getValue()), "value should not have been already visited");
+                    assertEquals(pair.key().getValue() * 2, pair.value().getId(), "key and value do not match");
+                    firstVisitOrder.add(pair.key().getValue());
+                    assertTrue(visited.add(pair.key().getValue()), "value should not have been already visited");
                 },
                 32);
 
@@ -78,9 +78,9 @@ class MigrationTest {
                 getStaticThreadManager(),
                 map,
                 (final Pair<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> pair) -> {
-                    assertEquals(pair.getKey().getValue() * 2, pair.getValue().getId(), "key and value do not match");
-                    secondVisitOrder.add(pair.getKey().getValue());
-                    assertFalse(visited.add(pair.getKey().getValue()), "value should have already been visited");
+                    assertEquals(pair.key().getValue() * 2, pair.value().getId(), "key and value do not match");
+                    secondVisitOrder.add(pair.key().getValue());
+                    assertFalse(visited.add(pair.key().getValue()), "value should have already been visited");
                 },
                 31); // thread count should not matter for correctness
 
@@ -135,7 +135,7 @@ class MigrationTest {
                 getStaticThreadManager(),
                 map,
                 (final Pair<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> pair) -> {
-                    checkSum2.addAndGet(bytesToLong(pair.getValue().getData()));
+                    checkSum2.addAndGet(bytesToLong(pair.value().getData()));
                 },
                 32);
         assertEquals(checkSum, checkSum2.get());
