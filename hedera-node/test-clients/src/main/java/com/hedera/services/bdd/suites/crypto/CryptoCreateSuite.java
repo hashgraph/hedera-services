@@ -198,7 +198,6 @@ public class CryptoCreateSuite extends HapiSuite {
                         sourcing(() -> getTxnRecord(creation).logged()));
     }
 
-    @HapiTest
     /* Prior to 0.13.0, a "canonical" CryptoCreate (one sig, 3 month auto-renew) cost 1¢. */
     private HapiSpec usdFeeAsExpected() {
         double preV13PriceUsd = 0.01;
