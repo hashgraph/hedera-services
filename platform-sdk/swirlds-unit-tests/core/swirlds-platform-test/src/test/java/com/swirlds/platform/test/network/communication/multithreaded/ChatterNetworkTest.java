@@ -19,6 +19,7 @@ package com.swirlds.platform.test.network.communication.multithreaded;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static org.awaitility.Awaitility.await;
 
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -45,7 +46,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.IntStream;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -80,8 +80,8 @@ class ChatterNetworkTest {
         final Pair<Connection, Connection> connections =
                 ConnectionFactory.createLocalConnections(new NodeId(0L), new NodeId(1));
 
-        final Future<Void> future1 = executor.submit(peer1.getProtocolRunnable(connections.getLeft()));
-        final Future<Void> future2 = executor.submit(peer2.getProtocolRunnable(connections.getRight()));
+        final Future<Void> future1 = executor.submit(peer1.getProtocolRunnable(connections.left()));
+        final Future<Void> future2 = executor.submit(peer2.getProtocolRunnable(connections.right()));
 
         // wait until all messages are sent and received
         await().atMost(WAIT_TIME, WAIT_TIME_UNIT).until(() -> peer1.isDone() && peer2.isDone());

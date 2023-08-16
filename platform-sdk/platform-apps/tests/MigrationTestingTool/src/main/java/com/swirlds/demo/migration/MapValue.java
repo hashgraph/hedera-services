@@ -21,9 +21,9 @@ import com.swirlds.common.merkle.exceptions.IllegalChildIndexException;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.fcqueue.FCQueue;
+import java.util.Objects;
 import java.util.Random;
 import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 public class MapValue extends PartialNaryMerkleInternal implements Keyed<AccountID>, MerkleInternal {
 
@@ -188,11 +188,7 @@ public class MapValue extends PartialNaryMerkleInternal implements Keyed<Account
      */
     @Override
     public int hashCode() {
-        return new HashCodeBuilder()
-                .append(this.getMapKey())
-                .append(this.getInternalValue())
-                .append(this.getRecords())
-                .toHashCode();
+        return Objects.hash(this.getMapKey(), this.getInternalValue(), this.getRecords());
     }
 
     static MapValue generateRandom(final Random random, final AccountID key) {

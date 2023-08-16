@@ -22,9 +22,9 @@ import static com.swirlds.platform.test.grid.GridGraphResult.repeatedChar;
 
 import java.io.PrintWriter;
 import java.util.HashMap;
+import java.util.Objects;
 import org.apache.commons.lang3.builder.CompareToBuilder;
 import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /**
  * A type which holds and renders the results of a single test
@@ -147,7 +147,7 @@ public class GridTest<X extends Comparable<X>, Y extends Comparable<Y>>
      */
     @Override
     public int hashCode() {
-        return new HashCodeBuilder(17, 37).append(getTestName()).toHashCode();
+        return Objects.hash(testName);
     }
 
     /**

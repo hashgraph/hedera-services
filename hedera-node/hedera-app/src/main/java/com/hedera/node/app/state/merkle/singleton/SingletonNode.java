@@ -34,7 +34,9 @@ public class SingletonNode<T> extends PartialBinaryMerkleInternal implements Lab
     private static final long CLASS_ID = 0x3832CC837AB77BFL;
     public static final int CLASS_VERSION = 1;
 
-    // Only exists for constructable registry as it works today. Remove ASAP!
+    /**
+     * @deprecated Only exists for constructable registry as it works today. Remove ASAP!
+     */
     @Deprecated(forRemoval = true)
     public SingletonNode() {
         setLeft(new StringLeaf());

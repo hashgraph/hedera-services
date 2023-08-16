@@ -31,8 +31,8 @@ import com.swirlds.platform.uptime.UptimeDataImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Instant;
+import java.util.Objects;
 import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import org.apache.logging.log4j.LogManager;
@@ -205,10 +205,7 @@ public class DualStateImpl extends PartialMerkleLeaf implements PlatformDualStat
      */
     @Override
     public int hashCode() {
-        return new HashCodeBuilder(17, 37)
-                .append(freezeTime)
-                .append(lastFrozenTime)
-                .toHashCode();
+        return Objects.hash(freezeTime, lastFrozenTime);
     }
 
     /**
