@@ -155,13 +155,18 @@ public class Browser {
             return;
         }
 
+        final Path log4jPath =
+                ConfigurationHolder.getConfigData(PathsConfig.class).getLogPath();
         try {
-            final Path log4jPath =
-                    ConfigurationHolder.getConfigData(PathsConfig.class).getLogPath();
             Log4jSetup.startLoggingFramework(log4jPath).await();
+        } catch (final InterruptedException e) {
+            CommonUtils.tellUserConsole("Interrupted while waiting for log4j to initialize");
+            Thread.currentThread().interrupt();
+        }
 
-            logger = LogManager.getLogger(Browser.class);
+        logger = LogManager.getLogger(Browser.class);
 
+        try {
             launchUnhandled(commandLineArgs);
         } catch (final Exception e) {
             logger.error(EXCEPTION.getMarker(), "Unable to start Browser", e);
