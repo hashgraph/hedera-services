@@ -41,9 +41,9 @@ public class CssRuleSetFactory {
     public static final String TOP_VALUE = "top";
 
     /**
-     * The selectors for the rule set
+     * The selector for the rule set
      */
-    private final List<String> selectors;
+    private final String selector;
     /**
      * The declarations for the rule set
      */
@@ -52,19 +52,22 @@ public class CssRuleSetFactory {
     /**
      * Constructor
      *
-     * @param selectors    the selectors
+     * @param selector     the selector
      * @param declarations the declarations
      */
-    public CssRuleSetFactory(@NonNull final List<String> selectors, @NonNull final List<CssDeclaration> declarations) {
-        this.selectors = Objects.requireNonNull(selectors);
+    public CssRuleSetFactory(@NonNull final String selector, @NonNull final List<CssDeclaration> declarations) {
+        this.selector = Objects.requireNonNull(selector);
         this.declarations = Objects.requireNonNull(declarations);
     }
 
     /**
-     * Constructor for simple rule sets
+     * Constructor for rule sets with only 1 declaration
+     *
+     * @param selector    the selector
+     * @param declaration the declaration
      */
-    public CssRuleSetFactory(@NonNull final String selector, @NonNull final CssDeclaration declarations) {
-        this(List.of(selector), List.of(declarations));
+    public CssRuleSetFactory(@NonNull final String selector, @NonNull final CssDeclaration declaration) {
+        this(selector, List.of(declaration));
     }
 
     /**
@@ -74,7 +77,7 @@ public class CssRuleSetFactory {
      */
     @NonNull
     public String generateCss() {
-        return String.join(" ", selectors) + " {\n"
+        return selector + " {\n"
                 + String.join(
                         "\n",
                         declarations.stream().map(CssDeclaration::toString).toList())

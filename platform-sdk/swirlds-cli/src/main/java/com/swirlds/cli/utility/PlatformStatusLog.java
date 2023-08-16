@@ -16,8 +16,7 @@
 
 package com.swirlds.cli.utility;
 
-import static com.swirlds.cli.utility.HtmlTagFactory.HTML_SPAN_TAG;
-import static org.apache.commons.lang3.StringEscapeUtils.escapeHtml4;
+import static com.swirlds.cli.utility.HtmlGenerator.HTML_SPAN_TAG;
 
 import com.swirlds.common.formatting.TextEffect;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -168,7 +167,7 @@ public class PlatformStatusLog implements FormattableString {
                 + nowIn
                 + new HtmlTagFactory(HTML_SPAN_TAG, newStatus, false)
                         .addClass(STATUS_HTML_CLASS)
-                        .generateTag()
-                + escapeHtml4(statusMessageRemainder);
+                        .generateTag();
+        // intentionally skip writing the remainder of the log. it is duplicate data
     }
 }

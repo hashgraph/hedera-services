@@ -18,7 +18,7 @@ package com.swirlds.platform.cli;
 
 import com.swirlds.cli.commands.SwirldsLogCommand;
 import com.swirlds.cli.utility.AbstractCommand;
-import com.swirlds.cli.utility.LogProcessingUtils;
+import com.swirlds.cli.utility.HtmlGenerator;
 import com.swirlds.cli.utility.SubcommandOf;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedReader;
@@ -67,7 +67,7 @@ public class FormatSwirldsLogCommand extends AbstractCommand {
             logLines = reader.lines().toList();
         }
 
-        final String htmlPage = LogProcessingUtils.generateHtmlPage(logLines);
+        final String htmlPage = HtmlGenerator.generateHtmlPage(logLines);
 
         // TODO define output filename dynamically
         try (final BufferedWriter writer = new BufferedWriter(

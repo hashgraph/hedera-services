@@ -16,6 +16,8 @@
 
 package com.swirlds.cli.utility;
 
+import static com.swirlds.cli.utility.HtmlGenerator.HTML_CLASS_ATTRIBUTE;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
@@ -28,45 +30,6 @@ import java.util.Objects;
  * Class for constructing HTML tags.
  */
 public class HtmlTagFactory {
-    public static final String HTML_HTML_TAG = "html";
-    public static final String HTML_H3_TAG = "h3";
-    public static final String HTML_SCRIPT_TAG = "script";
-    public static final String HTML_LABEL_TAG = "label";
-    public static final String HTML_INPUT_TAG = "input";
-    public static final String HTML_BODY_TAG = "body";
-    public static final String HTML_TABLE_TAG = "table";
-    public static final String HTML_ROW_TAG = "tr";
-    public static final String HTML_DATA_CELL_TAG = "td";
-    public static final String HTML_SPAN_TAG = "span";
-    public static final String HTML_HEAD_TAG = "head";
-    public static final String HTML_STYLE_TAG = "style";
-    public static final String HTML_BREAK_TAG = "br";
-    public static final String HTML_DIV_TAG = "div";
-
-    public static final String HTML_CLASS_ATTRIBUTE = "class";
-    public static final String HTML_SOURCE_ATTRIBUTE = "src";
-    public static final String HTML_TYPE_ATTRIBUTE = "type";
-
-    public static final String HTML_CHECKBOX_TYPE = "checkbox";
-
-    public static final String HIDEABLE_LABEL = "hideable";
-    public static final String NODE_ID_COLUMN_LABEL = "node-id";
-    public static final String ELAPSED_TIME_COLUMN_LABEL = "elapsed-time";
-    public static final String TIMESTAMP_COLUMN_LABEL = "timestamp";
-    public static final String LOG_NUMBER_COLUMN_LABEL = "log-number";
-    public static final String LOG_LEVEL_COLUMN_LABEL = "log-level";
-    public static final String MARKER_COLUMN_LABEL = "marker";
-    public static final String THREAD_NAME_COLUMN_LABEL = "thread-name";
-    public static final String CLASS_NAME_COLUMN_LABEL = "class-name";
-    public static final String REMAINDER_OF_LINE_COLUMN_LABEL = "remainder-of-line";
-
-    public static final String SECTION_HEADING = "section-heading";
-    public static final String HIDER_LABEL = "hider";
-    public static final String HIDER_LABEL_LABEL = "hider-label";
-    public static final String LOG_BODY_LABEL = "log-body";
-    public static final String FILTERS_DIV_LABEL = "filters";
-    public static final String FILTER_COLUMN_DIV_LABEL = "filter-column";
-
     /**
      * This label is used to hold the value of how many filters are currently applied to a field
      * <p>

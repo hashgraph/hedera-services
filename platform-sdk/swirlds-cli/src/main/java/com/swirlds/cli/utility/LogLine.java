@@ -16,18 +16,18 @@
 
 package com.swirlds.cli.utility;
 
-import static com.swirlds.cli.utility.HtmlTagFactory.CLASS_NAME_COLUMN_LABEL;
-import static com.swirlds.cli.utility.HtmlTagFactory.ELAPSED_TIME_COLUMN_LABEL;
-import static com.swirlds.cli.utility.HtmlTagFactory.HIDEABLE_LABEL;
-import static com.swirlds.cli.utility.HtmlTagFactory.HTML_DATA_CELL_TAG;
-import static com.swirlds.cli.utility.HtmlTagFactory.HTML_ROW_TAG;
-import static com.swirlds.cli.utility.HtmlTagFactory.LOG_LEVEL_COLUMN_LABEL;
-import static com.swirlds.cli.utility.HtmlTagFactory.LOG_NUMBER_COLUMN_LABEL;
-import static com.swirlds.cli.utility.HtmlTagFactory.MARKER_COLUMN_LABEL;
-import static com.swirlds.cli.utility.HtmlTagFactory.NODE_ID_COLUMN_LABEL;
-import static com.swirlds.cli.utility.HtmlTagFactory.REMAINDER_OF_LINE_COLUMN_LABEL;
-import static com.swirlds.cli.utility.HtmlTagFactory.THREAD_NAME_COLUMN_LABEL;
-import static com.swirlds.cli.utility.HtmlTagFactory.TIMESTAMP_COLUMN_LABEL;
+import static com.swirlds.cli.utility.HtmlGenerator.CLASS_NAME_COLUMN_LABEL;
+import static com.swirlds.cli.utility.HtmlGenerator.ELAPSED_TIME_COLUMN_LABEL;
+import static com.swirlds.cli.utility.HtmlGenerator.HIDEABLE_LABEL;
+import static com.swirlds.cli.utility.HtmlGenerator.HTML_DATA_CELL_TAG;
+import static com.swirlds.cli.utility.HtmlGenerator.HTML_ROW_TAG;
+import static com.swirlds.cli.utility.HtmlGenerator.LOG_LEVEL_COLUMN_LABEL;
+import static com.swirlds.cli.utility.HtmlGenerator.LOG_NUMBER_COLUMN_LABEL;
+import static com.swirlds.cli.utility.HtmlGenerator.MARKER_COLUMN_LABEL;
+import static com.swirlds.cli.utility.HtmlGenerator.NODE_ID_COLUMN_LABEL;
+import static com.swirlds.cli.utility.HtmlGenerator.REMAINDER_OF_LINE_COLUMN_LABEL;
+import static com.swirlds.cli.utility.HtmlGenerator.THREAD_NAME_COLUMN_LABEL;
+import static com.swirlds.cli.utility.HtmlGenerator.TIMESTAMP_COLUMN_LABEL;
 import static com.swirlds.cli.utility.LogProcessingUtils.parseTimestamp;
 import static com.swirlds.common.units.TimeUnit.UNIT_MILLISECONDS;
 import static org.apache.commons.lang3.StringEscapeUtils.escapeHtml4;
@@ -35,9 +35,6 @@ import static org.apache.commons.lang3.StringEscapeUtils.escapeHtml4;
 import com.swirlds.common.formatting.TextEffect;
 import com.swirlds.common.formatting.UnitFormatter;
 import com.swirlds.common.system.NodeId;
-import static com.swirlds.cli.utility.LogProcessingUtils.parseTimestamp;
-
-import com.swirlds.common.formatting.TextEffect;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.time.ZoneId;
