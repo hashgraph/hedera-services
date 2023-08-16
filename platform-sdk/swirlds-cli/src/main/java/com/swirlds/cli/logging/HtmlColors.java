@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Allows for mapping ANSI colors to HTML colors
+ * Maps ANSI colors to HTML compatible colors
  */
 public class HtmlColors {
     /**
@@ -31,7 +31,7 @@ public class HtmlColors {
     private HtmlColors() {}
 
     /**
-     * The map of ANSI colors to HTML colors. The html colors are experimentally determined with a color picker
+     * The map of ANSI colors to HTML compatible colors. The colors are experimentally determined with a color picker
      */
     public static final Map<TextEffect, String> ansiToHtmlColors = Map.of(
             TextEffect.WHITE, "#808181",
@@ -45,10 +45,10 @@ public class HtmlColors {
             TextEffect.BRIGHT_WHITE, "#fdfcfc");
 
     /**
-     * Get the HTML color for the given ANSI color
+     * Get the HTML compatible color for the given ANSI color
      *
      * @param ansiColor the ANSI color
-     * @return the HTML color, or null if the map doesn't contain the given ANSI color
+     * @return the HTML compatible color, or null if the map doesn't contain the given ANSI color
      */
     @NonNull
     public static String getHtmlColor(@NonNull final TextEffect ansiColor) {

@@ -22,6 +22,10 @@ import java.util.Objects;
 
 /**
  * Creates a CSS rule set
+ * <p>
+ * A rule set consists of a selector, followed by a list of declarations:
+ * <p>
+ * "selector { property1: value; property2: value2; }"
  */
 public class CssRuleSetFactory {
     public static final String DISPLAY_PROPERTY = "display";

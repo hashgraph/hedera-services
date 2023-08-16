@@ -51,9 +51,24 @@ import java.util.Objects;
  */
 public class HtmlGenerator {
     // These values have been chosen to mimic the jetbrains terminal
+    /**
+     * This is a dark gray color
+     */
     public static final String PAGE_BACKGROUND_COLOR = "#1e1e23";
+
+    /**
+     * This is a light gray color
+     */
     public static final String DEFAULT_TEXT_COLOR = "#bdbfc4";
+
+    /**
+     * Jetbrains font
+     */
     public static final String DEFAULT_FONT = "Jetbrains Mono, monospace";
+
+    /**
+     * The source for the minified jQuery library
+     */
     public static final String MIN_JS_SOURCE = "https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js";
 
     public static final String HTML_HTML_TAG = "html";
@@ -75,9 +90,16 @@ public class HtmlGenerator {
     public static final String HTML_SOURCE_ATTRIBUTE = "src";
     public static final String HTML_TYPE_ATTRIBUTE = "type";
 
+    /**
+     * This causes input elements to be rendered as a checkbox
+     */
     public static final String HTML_CHECKBOX_TYPE = "checkbox";
 
+    /**
+     * HTML elements with this class can be hidden with the filter checkboxes
+     */
     public static final String HIDEABLE_LABEL = "hideable";
+
     public static final String NODE_ID_COLUMN_LABEL = "node-id";
     public static final String ELAPSED_TIME_COLUMN_LABEL = "elapsed-time";
     public static final String TIMESTAMP_COLUMN_LABEL = "timestamp";
@@ -88,29 +110,34 @@ public class HtmlGenerator {
     public static final String CLASS_NAME_COLUMN_LABEL = "class-name";
     public static final String REMAINDER_OF_LINE_COLUMN_LABEL = "remainder-of-line";
 
-    public static final String SECTION_HEADING = "section-heading";
-    public static final String HIDER_LABEL = "hider";
-    public static final String HIDER_LABEL_LABEL = "hider-label";
-    public static final String LOG_BODY_LABEL = "log-body";
+    /**
+     * This label is used so that the filter checkboxes aren't themselves hidden. They have the same label as the
+     * elements they can hide, but shouldn't be made invisible
+     */
+    public static final String FILTER_CHECKBOX_LABEL = "filter-checkbox";
+
     public static final String FILTERS_DIV_LABEL = "filters";
     public static final String FILTER_COLUMN_DIV_LABEL = "filter-column";
 
-    public static final String HIDER_JS =
+    /**
+     * The javascript that is used to hide/show elements when the filter checkboxes are clicked
+     */
+    public static final String FILTER_JS =
             """
                     // the checkboxes that have the ability to hide things
-                    var hiders = document.getElementsByClassName("hider");
+                    var filterCheckboxes = document.getElementsByClassName("%s");
 
                     // add a listener to each checkbox
-                    for (var i = 0; i < hiders.length; i++) {
-                        hiders[i].addEventListener("click", function() {
+                    for (var i = 0; i < filterCheckboxes.length; i++) {
+                        filterCheckboxes[i].addEventListener("click", function() {
                             // the classes that exist on the checkbox that is clicked
                             var checkboxClasses = this.classList;
 
                             // the name of the class that should be hidden
-                            // each checkbox has 2 classes, "hider", and the name of the class to be hidden
+                            // each checkbox has 2 classes, "%s", and the name of the class to be hidden
                             var toggleClass;
                             for (j = 0; j < checkboxClasses.length; j++) {
-                                if (checkboxClasses[j] == "hider") {
+                                if (checkboxClasses[j] == "%s") {
                                     continue;
                                 }
 
@@ -136,7 +163,8 @@ public class HtmlGenerator {
                             }
                         });
                     }
-                    """;
+                    """
+                    .formatted(FILTER_CHECKBOX_LABEL, FILTER_CHECKBOX_LABEL, FILTER_CHECKBOX_LABEL);
 
     /**
      * Hidden constructor.
@@ -149,15 +177,13 @@ public class HtmlGenerator {
      * @param elementName the name of the element to hide
      * @return the checkbox
      */
-    private static String createHiderCheckbox(@NonNull final String elementName) {
+    private static String createFilterCheckbox(@NonNull final String elementName) {
         final String inputTag = new HtmlTagFactory(HTML_INPUT_TAG, null, true)
-                .addClasses(List.of(HIDER_LABEL, elementName))
+                .addClasses(List.of(FILTER_CHECKBOX_LABEL, elementName))
                 .addAttribute(HTML_TYPE_ATTRIBUTE, HTML_CHECKBOX_TYPE)
                 .generateTag();
 
-        final String labelTag = new HtmlTagFactory(HTML_LABEL_TAG, "Hide " + elementName, false)
-                .addClass(HIDER_LABEL_LABEL)
-                .generateTag();
+        final String labelTag = new HtmlTagFactory(HTML_LABEL_TAG, "Hide " + elementName, false).generateTag();
 
         final String breakTag = new HtmlTagFactory(HTML_BREAK_TAG, null, true).generateTag();
 
@@ -174,11 +200,9 @@ public class HtmlGenerator {
      * @return the filter div
      */
     private static String createFilterDiv(@NonNull final String filterName, @NonNull final List<String> filterValues) {
-        final String filterHeading = new HtmlTagFactory(HTML_H3_TAG, "Filter by " + filterName, false)
-                .addClass(SECTION_HEADING)
-                .generateTag();
+        final String filterHeading = new HtmlTagFactory(HTML_H3_TAG, "Filter by " + filterName, false).generateTag();
         final List<String> filterCheckboxes =
-                filterValues.stream().map(HtmlGenerator::createHiderCheckbox).toList();
+                filterValues.stream().map(HtmlGenerator::createFilterCheckbox).toList();
 
         return new HtmlTagFactory(
                         HTML_DIV_TAG, "\n" + filterHeading + "\n" + String.join("\n", filterCheckboxes), false)
@@ -361,12 +385,10 @@ public class HtmlGenerator {
         bodyElements.add(generateFiltersDiv(logLines));
         bodyElements.add(generateLogTable(logLines));
 
-        final String scriptTag = new HtmlTagFactory(HTML_SCRIPT_TAG, HIDER_JS, false).generateTag();
+        final String scriptTag = new HtmlTagFactory(HTML_SCRIPT_TAG, FILTER_JS, false).generateTag();
         bodyElements.add(scriptTag);
 
-        return new HtmlTagFactory(HTML_BODY_TAG, String.join("\n", bodyElements), false)
-                .addClass(LOG_BODY_LABEL)
-                .generateTag();
+        return new HtmlTagFactory(HTML_BODY_TAG, String.join("\n", bodyElements), false).generateTag();
     }
 
     /**
