@@ -18,8 +18,13 @@ package com.hedera.node.app.spi.workflows;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.spi.fees.FeeAccumulator;
+import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
+import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -109,7 +114,25 @@ public interface HandleContext {
     Key payerKey();
 
     /**
-     * Returns the next entity number, for use by handlers that create entities.
+     * Get a calculator for calculating fees for the current transaction, and its {@link SubType}. Most transactions
+     * just use {@link SubType#DEFAULT}, but some (such as crypto transfer) need to be more specific.
+     *
+     * @param subType The {@link SubType} of the transaction.
+     * @return The {@link FeeCalculator} to use.
+     */
+    @NonNull
+    FeeCalculator feeCalculator(@NonNull final SubType subType);
+
+    /**
+     * Gets a {@link FeeAccumulator} used for collecting fees for the current transaction.
+     *
+     * @return The {@link FeeAccumulator} to use.
+     */
+    @NonNull
+    FeeAccumulator feeAccumulator();
+
+    /**
+     * Consumes and returns the next entity number, for use by handlers that create entities.
      *
      * <p>If this method is called after a child transaction was dispatched, which is subsequently rolled back,
      * the counter will be rolled back, too. Consequently, the provided number must not be used anymore in this case,
@@ -118,6 +141,17 @@ public interface HandleContext {
      * @return the next entity number
      */
     long newEntityNum();
+
+    /**
+     * Peeks at the next entity number, for use by handlers that create entities.
+     *
+     * <p>If this method is called after a child transaction was dispatched, which is subsequently rolled back,
+     * the counter will be rolled back, too. Consequently, the provided number must not be used anymore in this case,
+     * because it will be reused.
+     *
+     * @return the next entity number
+     */
+    long peekAtNewEntityNum();
 
     /**
      * Returns the validator for attributes of entities created or updated by handlers.
@@ -181,9 +215,7 @@ public interface HandleContext {
      * @return the verification for the given key
      */
     @NonNull
-    default SignatureVerification verificationFor(@NonNull Key key, @NonNull VerificationAssistant callback) {
-        throw new UnsupportedOperationException("Not implemented");
-    }
+    SignatureVerification verificationFor(@NonNull Key key, @NonNull VerificationAssistant callback);
 
     /**
      * Gets the {@link SignatureVerification} for the given hollow account.
@@ -198,6 +230,10 @@ public interface HandleContext {
      */
     @NonNull
     SignatureVerification verificationFor(@NonNull final Bytes evmAlias);
+
+    /** Gets the {@link RecordCache}. */
+    @NonNull
+    RecordCache recordCache();
 
     /**
      * Get a readable store given the store's interface. This gives read-only access to the store.
@@ -224,6 +260,27 @@ public interface HandleContext {
      */
     @NonNull
     <T> T writableStore(@NonNull Class<T> storeInterface);
+
+    /**
+     * Return a service API given the API's interface. This permits use of another service
+     * that doesn't have a corresponding HAPI {@link TransactionBody}.
+     *
+     * @param apiInterface The API interface to find and create an implementation of
+     * @param <T> Interface class for an API
+     * @return An implementation of the provided API interface
+     * @throws IllegalArgumentException if the apiInterface class provided is unknown to the app
+     * @throws NullPointerException if {@code apiInterface} is {@code null}
+     */
+    @NonNull
+    <T> T serviceApi(@NonNull Class<T> apiInterface);
+
+    /**
+     * Returns the information about the network this transaction is being handled in.
+     *
+     * @return the network information
+     */
+    @NonNull
+    NetworkInfo networkInfo();
 
     /**
      * Returns a record builder for the given record builder subtype.
@@ -271,12 +328,36 @@ public interface HandleContext {
      * aware that any state changes introduced by storing data in one of the stores after calling a child transaction
      * will also be rolled back if the child transaction is rolled back.
      *
+     * <p>The provided {@link VerificationAssistant} callback will be called when the child transaction calls any
+     * of the {@code verificationFor} methods. If both, parent and child transaction, provide a
+     * {@link VerificationAssistant}, the one from the parent will be called first.
+     *
      * <p>A {@link TransactionCategory#PRECEDING}-transaction must not dispatch a child transaction.
      *
      * @param txBody the {@link TransactionBody} of the child transaction to dispatch
      * @param recordBuilderClass the record builder class of the child transaction
+     * @param callback a {@link VerificationAssistant} callback function that will observe each primitive key
      * @return the record builder of the child transaction
-     * @throws NullPointerException if {@code txBody} is {@code null}
+     * @throws NullPointerException if any of the arguments is {@code null}
+     * @throws IllegalArgumentException if the current transaction is a
+     * {@link TransactionCategory#PRECEDING}-transaction or if the record builder type is unknown to the app
+     */
+    @NonNull
+    <T> T dispatchChildTransaction(
+            @NonNull TransactionBody txBody,
+            @NonNull Class<T> recordBuilderClass,
+            @NonNull VerificationAssistant callback);
+
+    /**
+     * Dispatches a child transaction without a {@link VerificationAssistant}.
+     *
+     * <p>This method is similar to {@link #dispatchChildTransaction(TransactionBody, Class, VerificationAssistant)}
+     * except that no {@link VerificationAssistant} is provided.
+     *
+     * @param txBody the {@link TransactionBody} of the child transaction to dispatch
+     * @param recordBuilderClass the record builder class of the child transaction
+     * @return the record builder of the child transaction
+     * @throws NullPointerException if any of the arguments is {@code null}
      * @throws IllegalArgumentException if the current transaction is a
      * {@link TransactionCategory#PRECEDING}-transaction or if the record builder type is unknown to the app
      */
@@ -290,10 +371,36 @@ public interface HandleContext {
      * regular child transaction (see {@link #dispatchChildTransaction(TransactionBody, Class)}. But unlike regular
      * child transactions, the records of removable child transactions are removed and not reverted.
      *
+     * <p>The provided {@link VerificationAssistant} callback will be called when the child transaction calls any
+     * of the {@code verificationFor} methods. If both, parent and child transaction, provide a
+     * {@link VerificationAssistant}, the one from the parent will be called first.
+     *
+     * <p>A {@link TransactionCategory#PRECEDING}-transaction must not dispatch a child transaction.
+     *
+     * @param txBody the {@link TransactionBody} of the child transaction to dispatch
+     * @param recordBuilderClass the record builder class of the child transaction
+     * @param callback a {@link VerificationAssistant} callback function that will observe each primitive key
+     * @return the record builder of the child transaction
+     * @throws NullPointerException if any of the arguments is {@code null}
+     * @throws IllegalArgumentException if the current transaction is a
+     * {@link TransactionCategory#PRECEDING}-transaction or if the record builder type is unknown to the app
+     */
+    @NonNull
+    <T> T dispatchRemovableChildTransaction(
+            @NonNull TransactionBody txBody,
+            @NonNull Class<T> recordBuilderClass,
+            @NonNull VerificationAssistant callback);
+
+    /**
+     * Dispatches a removable child transaction without a {@link VerificationAssistant}.
+     *
+     * <p>This method is similar to {@link #dispatchRemovableChildTransaction(TransactionBody, Class, VerificationAssistant)}
+     * except that no {@link VerificationAssistant} is provided.
+     *
      * @param txBody the {@link TransactionBody} of the child transaction to dispatch
      * @param recordBuilderClass the record builder class of the child transaction
      * @return the record builder of the child transaction
-     * @throws NullPointerException if {@code txBody} is {@code null}
+     * @throws NullPointerException if any of the arguments is {@code null}
      * @throws IllegalArgumentException if the current transaction is a
      * {@link TransactionCategory#PRECEDING}-transaction or if the record builder type is unknown to the app
      */
@@ -312,6 +419,19 @@ public interface HandleContext {
      */
     @NonNull
     <T> T addChildRecordBuilder(@NonNull Class<T> recordBuilderClass);
+
+    /**
+     * Adds a preceding child record builder to the list of record builders. If the current {@link HandleContext} (or any parent
+     * context) is rolled back, all child record builders will be reverted.
+     *
+     * @param recordBuilderClass the record type
+     * @return the new child record builder
+     * @param <T> the record type
+     * @throws NullPointerException if {@code recordBuilderClass} is {@code null}
+     * @throws IllegalArgumentException if the record builder type is unknown to the app
+     */
+    @NonNull
+    <T> T addPrecedingChildRecordBuilder(@NonNull Class<T> recordBuilderClass);
 
     /**
      * Adds a removable child record builder to the list of record builders. Unlike a regular child record builder,
@@ -353,22 +473,18 @@ public interface HandleContext {
         void createSavepoint();
 
         /**
+         * Commits all changes since the last savepoint.
+         *
+         * @throws IllegalStateException if the savepoint stack is empty
+         */
+        void commit();
+
+        /**
          * Rolls back the changes up until the last savepoint.
          *
          * @throws IllegalStateException if the savepoint stack is empty
          */
-        default void rollback() {
-            rollback(1);
-        }
-
-        /**
-         * Rolls back the last {@code count} savepoints.
-         *
-         * @param count the number of savepoints to roll back
-         * @throws IllegalArgumentException if {@code count} is less than {@code 1}
-         * @throws IllegalStateException if the transaction stack contains fewer elements than {@code count}
-         */
-        void rollback(int count);
+        void rollback();
 
         /**
          * Returns the depth of the savepoint stack.

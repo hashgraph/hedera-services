@@ -24,7 +24,6 @@ import com.hedera.node.app.spi.workflows.HandleContext.SavepointStack;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.ReadonlyStatesWrapper;
 import com.hedera.node.app.state.WrappedHederaState;
-import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -36,7 +35,8 @@ import java.util.Map;
  */
 public class SavepointStackImpl implements SavepointStack, HederaState {
 
-    private final Deque<Savepoint> stack = new ArrayDeque<>();
+    private final HederaState root;
+    private final Deque<WrappedHederaState> stack = new ArrayDeque<>();
     private final Map<String, WritableStatesStack> writableStatesMap = new HashMap<>();
 
     /**
@@ -45,31 +45,35 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
      * @param root the root state
      * @throws NullPointerException if {@code root} is {@code null}
      */
-    public SavepointStackImpl(@NonNull final HederaState root, @NonNull final Configuration config) {
-        requireNonNull(root, "root must not be null");
-        requireNonNull(config, "config must not be null");
-        setupSavepoint(root, config);
+    public SavepointStackImpl(@NonNull final HederaState root) {
+        this.root = requireNonNull(root, "root must not be null");
+        setupSavepoint(root);
     }
 
-    private void setupSavepoint(@NonNull final HederaState state, @NonNull final Configuration config) {
+    private void setupSavepoint(@NonNull final HederaState state) {
         final var newState = new WrappedHederaState(state);
-        final var savepoint = new Savepoint(newState, config);
-        stack.push(savepoint);
+        stack.push(newState);
     }
 
     @Override
     public void createSavepoint() {
-        setupSavepoint(peek().state(), peek().configuration());
+        setupSavepoint(peek());
     }
 
     @Override
-    public void rollback(final int level) {
-        if (stack.size() <= level) {
-            throw new IllegalStateException("The transaction stack does not contain enough elements");
+    public void commit() {
+        if (stack.size() <= 1) {
+            throw new IllegalStateException("The savepoint stack is empty");
         }
-        for (int i = 0; i < level; i++) {
-            stack.pop();
+        stack.pop().commit();
+    }
+
+    @Override
+    public void rollback() {
+        if (stack.size() <= 1) {
+            throw new IllegalStateException("The savepoint stack is empty");
         }
+        stack.pop();
     }
 
     @Override
@@ -78,13 +82,13 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
     }
 
     /**
-     * Returns the current {@link Savepoint} without removing it from the stack.
+     * Returns the current {@link HederaState} without removing it from the stack.
      *
-     * @return the current {@link Savepoint}
+     * @return the current {@link HederaState}
      * @throws IllegalStateException if the stack has been committed already
      */
     @NonNull
-    public Savepoint peek() {
+    public WrappedHederaState peek() {
         if (stack.isEmpty()) {
             throw new IllegalStateException("The stack has already been committed");
         }
@@ -92,22 +96,23 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
     }
 
     /**
-     * Commits all state changes to the state that was provided when this {@link SavepointStackImpl} was created.
+     * Returns the root {@link ReadableStates} for the given service name.
+     *
+     * @param serviceName the name of the service
+     * @return the root {@link ReadableStates} for the given service name
      */
-    public void commit() {
-        while (!stack.isEmpty()) {
-            stack.pop().state().commit();
-        }
+    @NonNull
+    public ReadableStates rootStates(@NonNull final String serviceName) {
+        return root.createReadableStates(serviceName);
     }
 
     /**
-     * Sets the configuration of the current savepoint.
-     *
-     * @param configuration the configuration of the savepoint
-     * @throws NullPointerException if {@code configuration} is {@code null}
+     * Commits all state changes to the state that was provided when this {@link SavepointStackImpl} was created.
      */
-    public void configuration(@NonNull final Configuration configuration) {
-        peek().configuration(configuration);
+    public void commitFullStack() {
+        while (!stack.isEmpty()) {
+            stack.pop().commit();
+        }
     }
 
     @Override

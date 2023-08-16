@@ -18,9 +18,10 @@ package com.hedera.node.app.service.token.impl.test;
 
 import static org.mockito.Mockito.mock;
 
+import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
-import com.hedera.node.app.service.token.impl.WritableStakingInfoStoreImpl;
+import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.state.WritableStates;
@@ -29,107 +30,67 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class WritableStakingInfoStoreImplTest {
-    private static final long NODE_ID_1 = 1;
+public class WritableStakingInfoStoreImplTest {
+    public static final EntityNumber NODE_ID_1 =
+            EntityNumber.newBuilder().number(1L).build();
 
-    private WritableStakingInfoStoreImpl subject;
+    private WritableStakingInfoStore subject;
 
     @BeforeEach
     void setUp() {
-        final var wrappedState = MapWritableKVState.<Long, StakingNodeInfo>builder(TokenServiceImpl.STAKING_INFO_KEY)
+        final var wrappedState = MapWritableKVState.<EntityNumber, StakingNodeInfo>builder(
+                        TokenServiceImpl.STAKING_INFO_KEY)
                 .value(
                         NODE_ID_1,
                         StakingNodeInfo.newBuilder()
-                                .nodeNumber(NODE_ID_1)
+                                .nodeNumber(NODE_ID_1.number())
                                 .stake(25)
                                 .stakeRewardStart(15)
                                 .unclaimedStakeRewardStart(5)
                                 .build())
                 .build();
-        subject = new WritableStakingInfoStoreImpl(
+        subject = new WritableStakingInfoStore(
                 new MapWritableStates(Map.of(TokenServiceImpl.STAKING_INFO_KEY, wrappedState)));
     }
 
     @SuppressWarnings("DataFlowIssue")
     @Test
     void constructorWithNullArg() {
-        Assertions.assertThatThrownBy(() -> new WritableStakingInfoStoreImpl(null))
+        Assertions.assertThatThrownBy(() -> new WritableStakingInfoStore(null))
                 .isInstanceOf(NullPointerException.class);
     }
 
     @Test
     void constructorWithNonNullArg() {
-        Assertions.assertThatCode(() -> new WritableStakingInfoStoreImpl(mock(WritableStates.class)))
+        Assertions.assertThatCode(() -> new WritableStakingInfoStore(mock(WritableStates.class)))
                 .doesNotThrowAnyException();
     }
 
     @Test
     void getForModifyNodeIdNotFound() {
         Assertions.assertThat(subject.get(-1)).isNull();
-        Assertions.assertThat(subject.get(NODE_ID_1 + 1)).isNull();
+        Assertions.assertThat(subject.get(NODE_ID_1.number() + 1)).isNull();
     }
 
     @Test
     void getForModifyInfoFound() {
-        Assertions.assertThat(subject.get(NODE_ID_1)).isNotNull().isInstanceOf(StakingNodeInfo.class);
+        Assertions.assertThat(subject.get(NODE_ID_1.number())).isNotNull().isInstanceOf(StakingNodeInfo.class);
     }
 
     @SuppressWarnings("DataFlowIssue")
     @Test
     void putWithNullArg() {
-        Assertions.assertThatThrownBy(() -> subject.put(NODE_ID_1 + 1, null)).isInstanceOf(NullPointerException.class);
+        Assertions.assertThatThrownBy(() -> subject.put(NODE_ID_1.number() + 1, null))
+                .isInstanceOf(NullPointerException.class);
     }
 
     @Test
     void putSuccess() {
-        final var newNodeId = NODE_ID_1 + 1;
+        final var newNodeId = NODE_ID_1.number() + 1;
         final var newStakingInfo =
                 StakingNodeInfo.newBuilder().nodeNumber(newNodeId).stake(20).build();
         subject.put(newNodeId, newStakingInfo);
 
         Assertions.assertThat(subject.get(2)).isEqualTo(newStakingInfo);
-    }
-
-    @Test
-    void increaseUnclaimedStartToLargerThanCurrentStakeReward() {
-        assertUnclaimedStakeRewardStartPrecondition();
-
-        subject.increaseUnclaimedStakeRewardStart(NODE_ID_1, 20);
-
-        final var savedStakeInfo = subject.get(NODE_ID_1);
-        Assertions.assertThat(savedStakeInfo).isNotNull();
-        // The passed in amount, 20, is greater than the stake reward start, 15, so the unclaimed stake reward start
-        // value should be the current stake reward start value
-        Assertions.assertThat(savedStakeInfo.unclaimedStakeRewardStart()).isEqualTo(15);
-    }
-
-    @Test
-    void increaseUnclaimedStartToLessThanCurrentStakeReward() {
-        assertUnclaimedStakeRewardStartPrecondition();
-
-        subject.increaseUnclaimedStakeRewardStart(NODE_ID_1, 9);
-
-        final var savedStakeInfo = subject.get(NODE_ID_1);
-        Assertions.assertThat(savedStakeInfo).isNotNull();
-        // The result should be the stake reward start + the unclaimed stake reward start, 5 + 9 = 14
-        Assertions.assertThat(savedStakeInfo.unclaimedStakeRewardStart()).isEqualTo(14);
-    }
-
-    @Test
-    void increaseUnclaimedStartToExactlyCurrentStakeReward() {
-        assertUnclaimedStakeRewardStartPrecondition();
-
-        subject.increaseUnclaimedStakeRewardStart(NODE_ID_1, 10);
-
-        final var savedStakeInfo = subject.get(NODE_ID_1);
-        Assertions.assertThat(savedStakeInfo).isNotNull();
-        // Stake reward start + unclaimed stake reward start, 5 + 10 = 15
-        Assertions.assertThat(savedStakeInfo.unclaimedStakeRewardStart()).isEqualTo(15);
-    }
-
-    private void assertUnclaimedStakeRewardStartPrecondition() {
-        final var existingStakeInfo = subject.get(NODE_ID_1);
-        Assertions.assertThat(existingStakeInfo).isNotNull();
-        Assertions.assertThat(existingStakeInfo.unclaimedStakeRewardStart()).isEqualTo(5);
     }
 }

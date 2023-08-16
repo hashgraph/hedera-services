@@ -246,7 +246,7 @@ public final class StreamFileProducerConcurrent implements BlockRecordStreamProd
     private BlockRecordWriter createBlockRecordWriter(
             @NonNull Bytes lastRunningHash, @NonNull final Instant startConsensusTime, final long blockNumber) {
         try {
-            logger.info("Starting new block record file for block {}", blockNumber);
+            logger.debug("Starting new block record file for block {}", blockNumber);
             final var writer = writerFactory.create();
             final var startRunningHash = asHashObject(lastRunningHash);
             writer.init(hapiVersion, startRunningHash, startConsensusTime, blockNumber);

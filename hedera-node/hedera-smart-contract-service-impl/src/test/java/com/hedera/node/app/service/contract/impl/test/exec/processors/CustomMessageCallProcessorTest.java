@@ -102,7 +102,11 @@ class CustomMessageCallProcessorTest {
     @BeforeEach
     void setUp() {
         subject = new CustomMessageCallProcessor(
-                evm, featureFlags, registry, addressChecks, Map.of(TestHelpers.HTS_PRECOMPILE_ADDRESS, htsPrecompile));
+                evm,
+                featureFlags,
+                registry,
+                addressChecks,
+                Map.of(TestHelpers.HTS_SYSTEM_CONTRACT_ADDRESS, htsPrecompile));
     }
 
     @Test
@@ -113,7 +117,7 @@ class CustomMessageCallProcessorTest {
 
     @Test
     void hederaPrecompilesNotYetSupported() {
-        givenCallWithCode(TestHelpers.HTS_PRECOMPILE_ADDRESS);
+        givenCallWithCode(TestHelpers.HTS_SYSTEM_CONTRACT_ADDRESS);
         assertThrows(UnsupportedOperationException.class, () -> subject.start(frame, operationTracer));
     }
 
@@ -151,7 +155,7 @@ class CustomMessageCallProcessorTest {
         given(frame.getValue()).willReturn(Wei.ONE);
         given(frame.getWorldUpdater()).willReturn(proxyWorldUpdater);
         given(addressChecks.isPresent(RECEIVER_ADDRESS, frame)).willReturn(true);
-        given(proxyWorldUpdater.tryTransferFromContract(SENDER_ADDRESS, RECEIVER_ADDRESS, Wei.ONE.toLong(), true))
+        given(proxyWorldUpdater.tryTransfer(SENDER_ADDRESS, RECEIVER_ADDRESS, Wei.ONE.toLong(), true))
                 .willReturn(Optional.of(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE));
 
         subject.start(frame, operationTracer);
@@ -218,7 +222,7 @@ class CustomMessageCallProcessorTest {
         given(frame.getValue()).willReturn(Wei.ONE);
         given(frame.getWorldUpdater()).willReturn(proxyWorldUpdater);
         given(proxyWorldUpdater.tryLazyCreation(RECEIVER_ADDRESS, frame)).willReturn(Optional.empty());
-        given(proxyWorldUpdater.tryTransferFromContract(SENDER_ADDRESS, RECEIVER_ADDRESS, Wei.ONE.toLong(), true))
+        given(proxyWorldUpdater.tryTransfer(SENDER_ADDRESS, RECEIVER_ADDRESS, Wei.ONE.toLong(), true))
                 .willReturn(Optional.empty());
 
         subject.start(frame, operationTracer);

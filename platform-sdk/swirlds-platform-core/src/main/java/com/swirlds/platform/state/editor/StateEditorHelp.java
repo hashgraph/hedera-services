@@ -32,6 +32,7 @@ public class StateEditorHelp extends StateEditorOperation {
     private CommandLine.Model.CommandSpec spec;
 
     @Override
+    @SuppressWarnings("java:S106")
     public void run() {
         spec.commandLine().getParent().usage(System.out, CommandBuilder.getColorScheme());
     }

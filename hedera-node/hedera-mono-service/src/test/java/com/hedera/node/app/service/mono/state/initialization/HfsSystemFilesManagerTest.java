@@ -174,21 +174,21 @@ class HfsSystemFilesManagerTest {
         final var keyA = mock(PublicKey.class);
         given(keyA.getEncoded()).willReturn(aKeyEncoding);
         addressA = mock(Address.class);
-        final var aIpv4 = new byte[] {(byte) 1, (byte) 2, (byte) 3, (byte) 4};
+        final var aHost = "host1";
         final var memoA = "A new memo that is not the node account ID.";
         given(addressA.getMemo()).willReturn(memoA);
         given(addressA.getNodeId()).willReturn(new NodeId(0));
-        given(addressA.getAddressExternalIpv4()).willReturn(aIpv4);
+        given(addressA.getHostnameExternal()).willReturn(aHost);
         given(addressA.getSigPublicKey()).willReturn(keyA);
 
         final var keyB = mock(PublicKey.class);
         given(keyB.getEncoded()).willReturn(bKeyEncoding);
         addressB = mock(Address.class);
-        final var bIpv4 = new byte[] {(byte) 2, (byte) 3, (byte) 4, (byte) 5};
+        final var bHost = "host2";
         final var memoB = "0.0.3";
         given(addressB.getMemo()).willReturn(memoB);
         given(addressB.getNodeId()).willReturn(new NodeId(1));
-        given(addressB.getAddressExternalIpv4()).willReturn(bIpv4);
+        given(addressB.getHostnameExternal()).willReturn(bHost);
         given(addressB.getSigPublicKey()).willReturn(keyB);
 
         currentBook = mock(AddressBook.class);
@@ -684,8 +684,7 @@ class HfsSystemFilesManagerTest {
             final var nodeId = fromBook.getNodeId(i);
             final var address = fromBook.getAddress(nodeId);
             final var publicKey = address.getSigPublicKey();
-            final var nodeIP = address.getAddressExternalIpv4();
-            final var nodeIPStr = Address.ipString(nodeIP);
+            final var nodeIPStr = address.getHostnameExternal();
             final var memo = address.getMemo();
             final var nodeAddress = NodeAddress.newBuilder()
                     .setIpAddress(ByteString.copyFromUtf8(nodeIPStr))
@@ -695,8 +694,8 @@ class HfsSystemFilesManagerTest {
                     .setStake(address.getWeight());
 
             final var serviceEndpoint = ServiceEndpoint.newBuilder()
-                    .setIpAddressV4(ByteString.copyFrom(address.getAddressExternalIpv4()))
-                    .setPort(address.getPortExternalIpv4());
+                    .setIpAddressV4(ByteString.copyFromUtf8(address.getHostnameExternal()))
+                    .setPort(address.getPortExternal());
             nodeAddress.addServiceEndpoint(serviceEndpoint);
 
             setNodeAccountIfAvailforAddressBook(address, nodeAddress);

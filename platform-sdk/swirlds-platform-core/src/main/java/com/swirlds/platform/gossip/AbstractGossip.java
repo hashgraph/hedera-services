@@ -21,9 +21,11 @@ import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
 import com.swirlds.base.state.LifecyclePhase;
 import com.swirlds.base.state.Startable;
+import com.swirlds.base.time.Time;
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.config.SocketConfig;
+import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
@@ -35,6 +37,7 @@ import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.Crypto;
 import com.swirlds.platform.FreezeManager;
 import com.swirlds.platform.PlatformConstructor;
@@ -119,6 +122,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
      *
      * @param platformContext               the platform context
      * @param threadManager                 the thread manager
+     * @param time                          the time object used to get the current time
      * @param crypto                        can be used to sign things
      * @param addressBook                   the current address book
      * @param selfId                        this node's ID
@@ -139,6 +143,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
     protected AbstractGossip(
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
+            @NonNull final Time time,
             @NonNull final Crypto crypto,
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
@@ -155,12 +160,12 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
             @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final Consumer<SignedState> loadReconnectState,
             @NonNull final Runnable clearAllPipelinesForReconnect) {
-
         this.platformContext = Objects.requireNonNull(platformContext);
         this.addressBook = Objects.requireNonNull(addressBook);
         this.selfId = Objects.requireNonNull(selfId);
         this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
         this.syncMetrics = Objects.requireNonNull(syncMetrics);
+        Objects.requireNonNull(time);
 
         threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
         criticalQuorum = buildCriticalQuorum();
@@ -173,20 +178,22 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
         topology = new StaticTopology(
                 addressBook, selfId, basicConfig.numConnections(), unidirectionalConnectionsEnabled());
 
+        final Configuration configuration = platformContext.getConfiguration();
         final SocketFactory socketFactory =
                 PlatformConstructor.socketFactory(crypto.getKeysAndCerts(), cryptoConfig, socketConfig);
         // create an instance that can create new outbound connections
         final OutboundConnectionCreator connectionCreator = new OutboundConnectionCreator(
-                selfId, socketConfig, this, socketFactory, addressBook, shouldDoVersionCheck(), appVersion);
+                selfId, this, socketFactory, addressBook, shouldDoVersionCheck(), appVersion, configuration);
         connectionManagers = new StaticConnectionManagers(topology, connectionCreator);
         final InboundConnectionHandler inboundConnectionHandler = new InboundConnectionHandler(
                 this,
                 selfId,
                 addressBook,
                 connectionManagers::newConnection,
-                socketConfig,
                 shouldDoVersionCheck(),
-                appVersion);
+                appVersion,
+                time,
+                configuration);
         // allow other members to create connections to me
         final Address address = addressBook.getAddress(selfId);
         final ConnectionServer connectionServer = new ConnectionServer(
@@ -236,6 +243,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
 
         reconnectMetrics = new ReconnectMetrics(platformContext.getMetrics());
 
+        final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
         reconnectHelper = new ReconnectHelper(
                 this::pause,
                 clearAllPipelinesForReconnect::run,
@@ -248,7 +256,8 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
                         threadManager,
                         addressBook,
                         reconnectConfig.asyncStreamTimeout(),
-                        reconnectMetrics));
+                        reconnectMetrics),
+                stateConfig);
     }
 
     /**

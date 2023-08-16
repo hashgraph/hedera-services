@@ -597,7 +597,7 @@ class SyntheticTxnFactoryTest {
         assertEquals(1_234_567L, txnBody.getNodeStakeUpdate().getNodeStake(0).getStakeRewarded());
         assertEquals(987_654_321L, txnBody.getNodeStakeUpdate().getNodeStake(1).getStake());
         assertEquals(54_321L, txnBody.getNodeStakeUpdate().getNodeStake(1).getStakeRewarded());
-        assertEquals(17_808L, txnBody.getNodeStakeUpdate().getMaxStakingRewardRatePerHbar());
+        assertEquals(6_849L, txnBody.getNodeStakeUpdate().getMaxStakingRewardRatePerHbar());
         assertEquals(0L, txnBody.getNodeStakeUpdate().getNodeRewardFeeFraction().getNumerator());
         assertEquals(
                 100L, txnBody.getNodeStakeUpdate().getNodeRewardFeeFraction().getDenominator());
@@ -608,7 +608,7 @@ class SyntheticTxnFactoryTest {
         assertEquals(
                 100L, txnBody.getNodeStakeUpdate().getStakingRewardFeeFraction().getDenominator());
         assertEquals(25_000_000_000_000_000L, txnBody.getNodeStakeUpdate().getStakingStartThreshold());
-        assertEquals(0L, txnBody.getNodeStakeUpdate().getStakingRewardRate());
+        assertEquals(48_630_136_986_000L, txnBody.getNodeStakeUpdate().getStakingRewardRate());
     }
 
     @Test

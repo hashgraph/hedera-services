@@ -43,6 +43,7 @@ import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.metrics.Counter;
@@ -65,7 +66,6 @@ import com.swirlds.test.framework.config.TestConfigBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.LinkedHashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -101,17 +101,16 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
     private static final String ALIASES_KEY = "ALIASES";
     public static final String ALICE_ALIAS = "Alice Alias";
     protected MapWritableKVState<AccountID, Account> accountsState;
-    protected MapWritableKVState<String, AccountID> aliasesState;
+    protected MapWritableKVState<Bytes, AccountID> aliasesState;
     protected HederaState state;
 
     protected void setupStandardStates() {
-        accountsState = new MapWritableKVState<>(
-                ACCOUNTS_KEY,
-                Map.of(
-                        ALICE.accountID(), ALICE.account(),
-                        ERIN.accountID(), ERIN.account(),
-                        STAKING_REWARD_ACCOUNT.accountID(), STAKING_REWARD_ACCOUNT.account()));
-        aliasesState = new MapWritableKVState<>(ALIASES_KEY, Map.of());
+        accountsState = new MapWritableKVState<>(ACCOUNTS_KEY);
+        accountsState.put(ALICE.accountID(), ALICE.account());
+        accountsState.put(ERIN.accountID(), ERIN.account());
+        accountsState.put(STAKING_REWARD_ACCOUNT.accountID(), STAKING_REWARD_ACCOUNT.account());
+        accountsState.commit();
+        aliasesState = new MapWritableKVState<>(ALIASES_KEY);
         final var writableStates = MapWritableStates.builder()
                 .state(accountsState)
                 .state(aliasesState)
@@ -154,7 +153,11 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
         final Configuration configuration = HederaTestConfigBuilder.createConfig();
         final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
         this.metrics = new DefaultMetrics(
-                nodeSelfId, new MetricKeyRegistry(), METRIC_EXECUTOR, new DefaultMetricsFactory(), metricsConfig);
+                nodeSelfId,
+                new MetricKeyRegistry(),
+                METRIC_EXECUTOR,
+                new DefaultMetricsFactory(metricsConfig),
+                metricsConfig);
     }
 
     protected Counter counterMetric(final String name) {

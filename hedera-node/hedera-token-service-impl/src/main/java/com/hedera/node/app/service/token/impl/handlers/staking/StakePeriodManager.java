@@ -18,13 +18,15 @@ package com.hedera.node.app.service.token.impl.handlers.staking;
 
 import static com.hedera.node.app.service.mono.utils.Units.MINUTES_TO_MILLISECONDS;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
-import static com.swirlds.common.utility.Units.MINUTES_TO_SECONDS;
+import static com.swirlds.common.units.UnitConstants.MINUTES_TO_SECONDS;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.ReadableNetworkStakingRewardsStore;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.StakingConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -56,7 +58,7 @@ public class StakePeriodManager {
 
     /**
      * Returns the epoch second at the start of the given stake period. It is used in
-     * {@link com.hedera.node.app.service.token.impl.utils.RewardCalculator} to set the stakePeriodStart
+     * {@link StakeRewardCalculatorImpl} to set the stakePeriodStart
      * on each {@link com.hedera.hapi.node.state.token.StakingNodeInfo} object
      * @param stakePeriod the stake period
      * @return the epoch second at the start of the given stake period
@@ -107,17 +109,20 @@ public class StakePeriodManager {
     /**
      * Returns the first stake period that is not rewardable. This is used to determine
      * if an account is eligible for a reward, as soon as staking rewards are activated.
-     * @param networkRewards the network rewards
+     * @param rewardsStore the network rewards store
      * @param consensusNow the current consensus time
      * @return the first stake period that is not rewardable
      */
     public long firstNonRewardableStakePeriod(
-            @NonNull final ReadableNetworkStakingRewardsStore networkRewards, @NonNull final Instant consensusNow) {
+            @NonNull final ReadableNetworkStakingRewardsStore rewardsStore, @NonNull final Instant consensusNow) {
 
         // The earliest period by which an account can have started staking, _without_ becoming
         // eligible for a reward; if staking is not active, this will return Long.MIN_VALUE so
         // no account can ever be eligible.
-        return networkRewards.isStakingRewardsActivated() ? currentStakePeriod(consensusNow) - 1 : Long.MIN_VALUE;
+        // Remember that accounts are only rewarded for _full_ periods.
+        // So if Alice started staking in the previous period (current - 1), she will not have
+        // completed a full period until current has ended
+        return rewardsStore.isStakingRewardsActivated() ? currentStakePeriod(consensusNow) - 1 : Long.MIN_VALUE;
     }
 
     /**
@@ -173,6 +178,41 @@ public class StakePeriodManager {
     public boolean isEstimatedRewardable(
             final long stakePeriodStart, @NonNull final ReadableNetworkStakingRewardsStore networkRewards) {
         return stakePeriodStart > -1 && stakePeriodStart < estimatedFirstNonRewardableStakePeriod(networkRewards);
+    }
+
+    /**
+     * Given the current and new staked ids for an account, as well as if it received a reward in
+     * this transaction, returns the new {@code stakePeriodStart} for this account:
+     *
+     * <ol>
+     *   <li>{@link com.hedera.node.app.service.mono.ledger.accounts.staking.StakingUtils#NA} if the {@code stakePeriodStart} doesn't need to change; or,
+     *   <li>The value to which the {@code stakePeriodStart} should be changed.
+     * </ol>
+     *
+     * @param originalAccount the original account before the transaction
+     * @param modifiedAccount the modified account after the transaction
+     * @param rewarded whether the account was rewarded during the transaction
+     * @param stakeMetaChanged whether the account's stake metadata changed
+     * @param consensusNow the current consensus time
+     * @return either NA for no new stakePeriodStart, or the new value
+     */
+    public long startUpdateFor(
+            @Nullable final Account originalAccount,
+            @NonNull final Account modifiedAccount,
+            final boolean rewarded,
+            final boolean stakeMetaChanged,
+            @NonNull final Instant consensusNow) {
+        // Only worthwhile to update stakedPeriodStart for an account staking to a node
+        if (modifiedAccount.hasStakedNodeId()) {
+            if ((originalAccount != null && originalAccount.hasStakedAccountId()) || stakeMetaChanged) {
+                // We just started staking to a node today
+                return currentStakePeriod(consensusNow);
+            } else if (rewarded) {
+                // If we were just rewarded, stake period start is yesterday
+                return currentStakePeriod(consensusNow) - 1;
+            }
+        }
+        return -1;
     }
 
     @VisibleForTesting

@@ -16,8 +16,10 @@
 
 package com.hedera.node.app.workflows.handle.record;
 
-import static com.ibm.icu.impl.Assert.fail;
+import static org.assertj.core.api.Fail.fail;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
@@ -25,7 +27,6 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ScheduleID;
-import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenAssociation;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
@@ -41,23 +42,28 @@ import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.hapi.streams.ContractActions;
 import com.hedera.hapi.streams.ContractBytecode;
 import com.hedera.hapi.streams.ContractStateChanges;
+import com.hedera.hapi.streams.TransactionSidecarRecord;
 import com.hedera.node.app.spi.HapiUtils;
+import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.DigestType;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
+import java.util.AbstractMap;
 import java.util.List;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-@SuppressWarnings({"removal", "DataFlowIssue"})
+@SuppressWarnings({"DataFlowIssue"})
 @ExtendWith(MockitoExtension.class)
 public class SingleTransactionRecordBuilderTest {
     public static final Instant CONSENSUS_TIME = Instant.now();
+    public static final Instant PARENT_CONSENSUS_TIME = CONSENSUS_TIME.plusNanos(1L);
     public static final long TRANSACTION_FEE = 6846513L;
     public static final int ENTROPY_NUMBER = 87372879;
     public static final long TOPIC_SEQUENCE_NUMBER = 928782L;
@@ -67,7 +73,7 @@ public class SingleTransactionRecordBuilderTest {
     private @Mock Transaction transaction;
     private @Mock TransactionBody transactionBody;
     private @Mock TransactionID transactionID;
-    private Bytes transactionBytes = Bytes.wrap("Hello Tester");
+    private final Bytes transactionBytes = Bytes.wrap("Hello Tester");
     private @Mock ContractFunctionResult contractCallResult;
     private @Mock ContractFunctionResult contractCreateResult;
     private @Mock TransferList transferList;
@@ -75,7 +81,6 @@ public class SingleTransactionRecordBuilderTest {
     private @Mock ScheduleID scheduleRef;
     private @Mock AssessedCustomFee assessedCustomFee;
     private @Mock TokenAssociation tokenAssociation;
-    private @Mock Timestamp parentConsensusTimestamp;
     private @Mock Bytes alias;
     private @Mock Bytes ethereumHash;
     private @Mock Bytes prngBytes;
@@ -92,12 +97,12 @@ public class SingleTransactionRecordBuilderTest {
     private @Mock ScheduleID scheduleID;
     private @Mock TransactionID scheduledTransactionID;
     private @Mock ContractStateChanges contractStateChanges;
-    private @Mock ContractActions contractAction;
+    private @Mock ContractActions contractActions;
     private @Mock ContractBytecode contractBytecode;
 
     @ParameterizedTest
     @EnumSource(TransactionRecord.EntropyOneOfType.class)
-    public void testBuilder(TransactionRecord.EntropyOneOfType entropyOneOfType) {
+    void testBuilder(TransactionRecord.EntropyOneOfType entropyOneOfType) {
         if (entropyOneOfType == TransactionRecord.EntropyOneOfType.UNSET) {
             return;
         }
@@ -108,9 +113,10 @@ public class SingleTransactionRecordBuilderTest {
         final List<AccountAmount> paidStakingRewards = List.of(accountAmount);
         final List<Long> serialNumbers = List.of(1L, 2L, 3L);
 
-        SingleTransactionRecordBuilder singleTransactionRecordBuilder =
-                new SingleTransactionRecordBuilder(CONSENSUS_TIME);
+        SingleTransactionRecordBuilderImpl singleTransactionRecordBuilder =
+                new SingleTransactionRecordBuilderImpl(CONSENSUS_TIME, PARENT_CONSENSUS_TIME);
         assertEquals(CONSENSUS_TIME, singleTransactionRecordBuilder.consensusNow());
+        assertEquals(PARENT_CONSENSUS_TIME, singleTransactionRecordBuilder.parentConsensusTimestamp());
 
         singleTransactionRecordBuilder
                 .transaction(transaction)
@@ -125,7 +131,6 @@ public class SingleTransactionRecordBuilderTest {
                 .scheduleRef(scheduleRef)
                 .assessedCustomFees(assessedCustomFees)
                 .automaticTokenAssociations(automaticTokenAssociations)
-                .parentConsensusTimestamp(parentConsensusTimestamp)
                 .alias(alias)
                 .ethereumHash(ethereumHash)
                 .paidStakingRewards(paidStakingRewards)
@@ -144,37 +149,28 @@ public class SingleTransactionRecordBuilderTest {
                 .scheduleID(scheduleID)
                 .scheduledTransactionID(scheduledTransactionID)
                 .serialNumbers(serialNumbers)
-                .addContractStateChanges(contractStateChanges, false)
-                .addContractAction(contractAction, false)
-                .addContractBytecode(contractBytecode, false);
+                .contractStateChanges(List.of(new AbstractMap.SimpleEntry<>(contractStateChanges, false)))
+                .contractActions(List.of(new AbstractMap.SimpleEntry<>(contractActions, false)))
+                .contractBytecodes(List.of(new AbstractMap.SimpleEntry<>(contractBytecode, false)));
 
         if (entropyOneOfType == TransactionRecord.EntropyOneOfType.PRNG_BYTES) {
             singleTransactionRecordBuilder.entropyBytes(prngBytes);
-            assertEquals(
-                    TransactionRecord.EntropyOneOfType.PRNG_BYTES,
-                    singleTransactionRecordBuilder.entropy().kind());
-            assertEquals(prngBytes, singleTransactionRecordBuilder.entropy().value());
         } else if (entropyOneOfType == TransactionRecord.EntropyOneOfType.PRNG_NUMBER) {
             singleTransactionRecordBuilder.entropyNumber(ENTROPY_NUMBER);
-            assertEquals(
-                    TransactionRecord.EntropyOneOfType.PRNG_NUMBER,
-                    singleTransactionRecordBuilder.entropy().kind());
-            assertEquals(
-                    ENTROPY_NUMBER, singleTransactionRecordBuilder.entropy().value());
         } else {
             fail("Unknown entropy type");
         }
 
-        assertEquals(status, singleTransactionRecordBuilder.status());
-        assertEquals(accountID, singleTransactionRecordBuilder.accountID());
-        assertEquals(tokenID, singleTransactionRecordBuilder.tokenID());
-        assertEquals(topicID, singleTransactionRecordBuilder.topicID());
-        assertEquals(TOPIC_SEQUENCE_NUMBER, singleTransactionRecordBuilder.topicSequenceNumber());
-        assertEquals(topicRunningHash, singleTransactionRecordBuilder.topicRunningHash());
-        assertEquals(serialNumbers, singleTransactionRecordBuilder.serialNumbers());
-
         SingleTransactionRecord singleTransactionRecord = singleTransactionRecordBuilder.build();
         assertEquals(transaction, singleTransactionRecord.transaction());
+
+        if (entropyOneOfType == TransactionRecord.EntropyOneOfType.PRNG_BYTES) {
+            assertTrue(singleTransactionRecord.record().hasPrngBytes());
+            assertEquals(prngBytes, singleTransactionRecord.record().prngBytes());
+        } else {
+            assertTrue(singleTransactionRecord.record().hasPrngNumber());
+            assertEquals(ENTROPY_NUMBER, singleTransactionRecord.record().prngNumber());
+        }
 
         final Bytes transactionHash;
         try {
@@ -196,7 +192,9 @@ public class SingleTransactionRecordBuilderTest {
         assertEquals(assessedCustomFees, singleTransactionRecord.record().assessedCustomFees());
         assertEquals(
                 automaticTokenAssociations, singleTransactionRecord.record().automaticTokenAssociations());
-        assertEquals(parentConsensusTimestamp, singleTransactionRecord.record().parentConsensusTimestamp());
+        assertEquals(
+                HapiUtils.asTimestamp(PARENT_CONSENSUS_TIME),
+                singleTransactionRecord.record().parentConsensusTimestamp());
         assertEquals(alias, singleTransactionRecord.record().alias());
         assertEquals(ethereumHash, singleTransactionRecord.record().ethereumHash());
         assertEquals(paidStakingRewards, singleTransactionRecord.record().paidStakingRewards());
@@ -221,5 +219,91 @@ public class SingleTransactionRecordBuilderTest {
                 scheduledTransactionID,
                 singleTransactionRecord.record().receipt().scheduledTransactionID());
         assertEquals(serialNumbers, singleTransactionRecord.record().receipt().serialNumbers());
+
+        final var expectedTransactionSidecarRecords = List.of(
+                new TransactionSidecarRecord(
+                        HapiUtils.asTimestamp(CONSENSUS_TIME),
+                        false,
+                        new OneOf<>(
+                                TransactionSidecarRecord.SidecarRecordsOneOfType.STATE_CHANGES, contractStateChanges)),
+                new TransactionSidecarRecord(
+                        HapiUtils.asTimestamp(CONSENSUS_TIME),
+                        false,
+                        new OneOf<>(TransactionSidecarRecord.SidecarRecordsOneOfType.ACTIONS, contractActions)),
+                new TransactionSidecarRecord(
+                        HapiUtils.asTimestamp(CONSENSUS_TIME),
+                        false,
+                        new OneOf<>(TransactionSidecarRecord.SidecarRecordsOneOfType.BYTECODE, contractBytecode)));
+        assertEquals(expectedTransactionSidecarRecords, singleTransactionRecord.transactionSidecarRecords());
+    }
+
+    @Test
+    void testTopLevelRecordBuilder() {
+        SingleTransactionRecordBuilderImpl singleTransactionRecordBuilder =
+                new SingleTransactionRecordBuilderImpl(CONSENSUS_TIME);
+
+        singleTransactionRecordBuilder.transaction(transaction);
+
+        assertEquals(CONSENSUS_TIME, singleTransactionRecordBuilder.consensusNow());
+        assertNull(singleTransactionRecordBuilder.parentConsensusTimestamp());
+        assertEquals(ResponseCodeEnum.OK, singleTransactionRecordBuilder.status());
+
+        SingleTransactionRecord singleTransactionRecord = singleTransactionRecordBuilder.build();
+
+        assertEquals(transaction, singleTransactionRecord.transaction());
+        assertEquals(
+                HapiUtils.asTimestamp(CONSENSUS_TIME),
+                singleTransactionRecord.record().consensusTimestamp());
+        assertNull(singleTransactionRecord.record().parentConsensusTimestamp());
+        assertEquals(
+                ResponseCodeEnum.OK, singleTransactionRecord.record().receipt().status());
+    }
+
+    @Test
+    void testBuilderWithAddMethods() {
+        SingleTransactionRecordBuilderImpl singleTransactionRecordBuilder =
+                new SingleTransactionRecordBuilderImpl(CONSENSUS_TIME);
+
+        SingleTransactionRecord singleTransactionRecord = singleTransactionRecordBuilder
+                .transaction(transaction)
+                .addTokenTransferList(tokenTransfer)
+                .addAssessedCustomFee(assessedCustomFee)
+                .addAutomaticTokenAssociation(tokenAssociation)
+                .addPaidStakingReward(accountAmount)
+                .addSerialNumber(1L)
+                .addContractStateChanges(contractStateChanges, false)
+                .addContractActions(contractActions, false)
+                .addContractBytecode(contractBytecode, false)
+                .build();
+
+        assertEquals(transaction, singleTransactionRecord.transaction());
+        assertEquals(
+                HapiUtils.asTimestamp(CONSENSUS_TIME),
+                singleTransactionRecord.record().consensusTimestamp());
+        assertNull(singleTransactionRecord.record().parentConsensusTimestamp());
+        assertEquals(
+                ResponseCodeEnum.OK, singleTransactionRecord.record().receipt().status());
+        assertEquals(List.of(tokenTransfer), singleTransactionRecord.record().tokenTransferLists());
+        assertEquals(
+                List.of(assessedCustomFee), singleTransactionRecord.record().assessedCustomFees());
+        assertEquals(List.of(tokenAssociation), singleTransactionRecord.record().automaticTokenAssociations());
+        assertEquals(List.of(accountAmount), singleTransactionRecord.record().paidStakingRewards());
+        assertEquals(List.of(1L), singleTransactionRecord.record().receipt().serialNumbers());
+
+        final var expectedTransactionSidecarRecords = List.of(
+                new TransactionSidecarRecord(
+                        HapiUtils.asTimestamp(CONSENSUS_TIME),
+                        false,
+                        new OneOf<>(
+                                TransactionSidecarRecord.SidecarRecordsOneOfType.STATE_CHANGES, contractStateChanges)),
+                new TransactionSidecarRecord(
+                        HapiUtils.asTimestamp(CONSENSUS_TIME),
+                        false,
+                        new OneOf<>(TransactionSidecarRecord.SidecarRecordsOneOfType.ACTIONS, contractActions)),
+                new TransactionSidecarRecord(
+                        HapiUtils.asTimestamp(CONSENSUS_TIME),
+                        false,
+                        new OneOf<>(TransactionSidecarRecord.SidecarRecordsOneOfType.BYTECODE, contractBytecode)));
+        assertEquals(expectedTransactionSidecarRecords, singleTransactionRecord.transactionSidecarRecords());
     }
 }

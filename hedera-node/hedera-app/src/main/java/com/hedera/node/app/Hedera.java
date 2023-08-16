@@ -16,6 +16,7 @@
 
 package com.hedera.node.app;
 
+import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 import static com.hedera.node.app.spi.HapiUtils.parseAccount;
 import static com.swirlds.common.system.InitTrigger.EVENT_STREAM_RECOVERY;
@@ -24,13 +25,14 @@ import static com.swirlds.common.system.InitTrigger.RESTART;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.FileID;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.info.CurrentPlatformStatusImpl;
 import com.hedera.node.app.info.SelfNodeInfoImpl;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
-import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
+import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
@@ -53,6 +55,8 @@ import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.app.workflows.handle.SystemFileUpdateFacility;
+import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.VersionConfig;
 import com.swirlds.common.constructable.ClassConstructorPair;
@@ -117,7 +121,7 @@ public final class Hedera implements SwirldMain {
     private static final int STATE_VERSION_NEWER_THAN_SOFTWARE_VERSION_EXIT_CODE = 10;
     private static final int VERSION_NOT_IN_SAVED_STATE_EXIT_CODE = 11;
     private static final int CRITICAL_FAILURE_EXIT_CODE = 12;
-    // This should come from configuration, NOT be hardcoded.
+    // FUTURE: This should come from configuration, NOT be hardcoded.
     public static final int MAX_SIGNED_TXN_SIZE = 6144;
 
     /**
@@ -185,7 +189,7 @@ public final class Hedera implements SwirldMain {
         // FUTURE: Use the service loader framework to load these services!
         this.servicesRegistry = new ServicesRegistryImpl(Set.of(
                 new ConsensusServiceImpl(),
-                new ContractServiceImpl(),
+                CONTRACT_SERVICE,
                 new FileServiceImpl(),
                 new FreezeServiceImpl(),
                 new NetworkServiceImpl(),
@@ -398,15 +402,10 @@ public final class Hedera implements SwirldMain {
             notifications.register(PlatformStatusChangeListener.class, notification -> {
                 switch (notification.getNewStatus()) {
                     case ACTIVE -> {
-                        run();
                         logger.info("Hederanode#{} is ACTIVE", nodeId);
                     }
                     case BEHIND -> {
                         logger.info("Hederanode#{} is BEHIND", nodeId);
-                        shutdownGrpcServer();
-                    }
-                    case DISCONNECTED -> {
-                        logger.info("Hederanode#{} is DISCONNECTED", nodeId);
                         shutdownGrpcServer();
                     }
                     case FREEZE_COMPLETE -> {
@@ -592,6 +591,9 @@ public final class Hedera implements SwirldMain {
 
         // Now that we have the state created, we are ready to create the dependency graph with Dagger
         initializeDagger(state, GENESIS);
+
+        initializeFeeManager(state);
+        initializeExchangeRateManager(state);
 
         // Store the version in state
         // TODO Who is responsible for saving this in the tree? I assumed it went into dual state... not sensible!
@@ -791,6 +793,46 @@ public final class Hedera implements SwirldMain {
         }
     }
 
+    private void initializeFeeManager(@NonNull final HederaState state) {
+        logger.info("Initializing fee schedules");
+        final var readableFileStore = new ReadableStoreFactory(state).getStore(ReadableFileStore.class);
+        final var hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
+        final var filesConfig = configProvider.getConfiguration().getConfigData(FilesConfig.class);
+        final var fileNum = filesConfig.feeSchedules();
+        final var fileId = FileID.newBuilder()
+                .fileNum(fileNum)
+                .shardNum(hederaConfig.shard())
+                .realmNum(hederaConfig.realm())
+                .build();
+
+        final var fileOpt = readableFileStore.getFileLeaf(fileId);
+        fileOpt.ifPresent(file -> {
+            final var fileData = file.contents();
+            daggerApp.feeManager().update(fileData);
+        });
+        logger.info("Fee schedule initialized");
+    }
+
+    private void initializeExchangeRateManager(@NonNull final HederaState state) {
+        logger.info("Initializing exchange rates");
+        final var readableFileStore = new ReadableStoreFactory(state).getStore(ReadableFileStore.class);
+        final var hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
+        final var filesConfig = configProvider.getConfiguration().getConfigData(FilesConfig.class);
+        final var fileNum = filesConfig.exchangeRates();
+        final var fileId = FileID.newBuilder()
+                .fileNum(fileNum)
+                .shardNum(hederaConfig.shard())
+                .realmNum(hederaConfig.realm())
+                .build();
+
+        final var fileOpt = readableFileStore.getFileLeaf(fileId);
+        fileOpt.ifPresent(file -> {
+            final var fileData = file.contents();
+            daggerApp.exchangeRateManager().update(fileData);
+        });
+        logger.info("Exchange rates initialized");
+    }
+
     /*==================================================================================================================
     *
     * Restart Initialization
@@ -884,6 +926,7 @@ public final class Hedera implements SwirldMain {
             daggerApp = com.hedera.node.app.DaggerHederaInjectionComponent.builder()
                     .initTrigger(trigger)
                     .configuration(configProvider)
+                    .systemFileUpdateFacility(new SystemFileUpdateFacility(configProvider))
                     .self(SelfNodeInfoImpl.of(nodeAddress, version))
                     .initialHash(initialHash)
                     .platform(platform)

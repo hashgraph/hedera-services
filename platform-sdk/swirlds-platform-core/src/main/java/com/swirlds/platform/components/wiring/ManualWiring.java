@@ -16,12 +16,14 @@
 
 package com.swirlds.platform.components.wiring;
 
+import static com.swirlds.common.system.SystemExitCode.FATAL_ERROR;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
 import com.swirlds.common.config.WiringConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.SystemExitCode;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.status.PlatformStatusGetter;
 import com.swirlds.common.system.status.StatusActionSubmitter;
@@ -44,7 +46,6 @@ import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import com.swirlds.platform.metrics.WiringMetrics;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.Shutdown;
-import com.swirlds.platform.system.SystemExitCode;
 import com.swirlds.platform.util.PlatformComponents;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -66,6 +67,7 @@ public class ManualWiring {
     private final ThreadManager threadManager;
     private final AddressBook addressBook;
     private final FreezeManager freezeManager;
+    private final Shutdown shutdown;
     /** A list of all formal platform components */
     private final List<PlatformComponent> platformComponentList = new ArrayList<>();
     /** A list of all informal platform components that need to be started and/or registered as dispatch observers. */
@@ -87,6 +89,7 @@ public class ManualWiring {
         this.addressBook = addressBook;
         this.freezeManager = freezeManager;
         this.wiringMetrics = new WiringMetrics(platformContext.getMetrics());
+        this.shutdown = new Shutdown();
 
         final WiringConfig wiringConfig = platformContext.getConfiguration().getConfigData(WiringConfig.class);
         asyncLatestCompleteStateQueue = new QueueThreadConfiguration<Runnable>(threadManager)
@@ -206,11 +209,26 @@ public class ManualWiring {
     private void handleFatalError(
             @Nullable final String msg, @Nullable final Throwable throwable, @NonNull final SystemExitCode exitCode) {
 
-        Objects.requireNonNull(exitCode);
-
+        // Log this fatal error first, to make sure it ends up in the logs, no matter what else happens
         logFatalError(msg, throwable);
+
+        // Let each platform component attempt to handle the fatal error
         platformComponentList.forEach(PlatformComponent::onFatalError);
-        new Shutdown().shutdown(msg, exitCode);
+
+        // It may be that null was passed in, despite our compiler warnings. In that case, we want to log this fact
+        // with a stack trace for who called this method, so we can track down what code is passing in null.
+        //noinspection ConstantValue
+        if (exitCode == null) {
+            try {
+                throw new NullPointerException("exitCode was null");
+            } catch (final NullPointerException e) {
+                logger.error("exitCode was null. Exiting anyway with FATAL_ERROR", e);
+            }
+        }
+
+        // We will either exit with the code given to us, or FATAL_ERROR if somebody failed to give us a code
+        //noinspection ConstantValue
+        shutdown.shutdown(msg, exitCode == null ? FATAL_ERROR : exitCode);
     }
 
     private static void logFatalError(final String msg, final Throwable throwable) {

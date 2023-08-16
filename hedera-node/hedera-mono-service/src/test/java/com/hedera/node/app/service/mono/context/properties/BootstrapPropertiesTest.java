@@ -146,6 +146,7 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_SIDE_CAR_DIR;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_SIG_FILE_VERSION;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_SHARD;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_TXN_EIP2930_ENABLED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_TXN_MAX_MEMO_UTF8_BYTES;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_TXN_MAX_VALID_DURATION;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_TXN_MIN_VALIDITY_BUFFER_SECS;
@@ -437,6 +438,7 @@ class BootstrapPropertiesTest {
             entry(HEDERA_TXN_MIN_VALID_DURATION, 15L),
             entry(HEDERA_TXN_MAX_VALID_DURATION, 180L),
             entry(HEDERA_TXN_MIN_VALIDITY_BUFFER_SECS, 10),
+            entry(HEDERA_TXN_EIP2930_ENABLED, true),
             entry(LEDGER_ID, "0x03"),
             entry(LEDGER_CHANGE_HIST_MEM_SECS, 20),
             entry(LEDGER_FUNDING_ACCOUNT, 98L),
@@ -506,11 +508,11 @@ class BootstrapPropertiesTest {
             entry(STAKING_REQUIRE_MIN_STAKE_TO_REWARD, false),
             entry(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS, 365),
             entry(STAKING_STARTUP_HELPER_RECOMPUTE, EnumSet.allOf(StakeStartupHelper.RecomputeType.class)),
-            entry(STAKING_REWARD_RATE, 0L),
+            entry(STAKING_REWARD_RATE, 48630136986000L),
             entry(STAKING_START_THRESH, 25000000000000000L),
             entry(STAKING_FEES_NODE_REWARD_PERCENT, 0),
             entry(STAKING_FEES_STAKING_REWARD_PERCENT, 100),
-            entry(STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR, 17808L),
+            entry(STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR, 6849L),
             entry(CONSENSUS_MESSAGE_MAX_BYTES_ALLOWED, 1024),
             entry(CONSENSUS_HANDLE_MAX_PRECEDING_RECORDS, 3L),
             entry(CONSENSUS_HANDLE_MAX_FOLLOWING_RECORDS, 50L),

@@ -19,6 +19,7 @@ package com.swirlds.platform.components.state;
 import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STATE_TO_DISK;
+import static com.swirlds.platform.state.signed.StateToDiskReason.FATAL_ERROR;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.config.ConsensusConfig;
@@ -36,6 +37,7 @@ import com.swirlds.logging.payloads.InsufficientSignaturesPayload;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
 import com.swirlds.platform.components.common.query.PrioritySystemTransactionSubmitter;
 import com.swirlds.platform.components.state.output.IssConsumer;
+import com.swirlds.platform.components.state.output.MinimumGenerationNonAncientConsumer;
 import com.swirlds.platform.components.state.output.NewLatestCompleteStateConsumer;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
@@ -62,6 +64,7 @@ import com.swirlds.platform.state.signed.SignedStateManager;
 import com.swirlds.platform.state.signed.SignedStateMetrics;
 import com.swirlds.platform.state.signed.SignedStateSentinel;
 import com.swirlds.platform.state.signed.SourceOfSignedState;
+import com.swirlds.platform.state.signed.StateToDiskReason;
 import com.swirlds.platform.util.HashLogger;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -216,6 +219,15 @@ public class DefaultStateManagementComponent implements StateManagementComponent
                 dispatchBuilder.getDispatcher(this, StateHashedTrigger.class)::dispatch;
         signedStateHasher = new SignedStateHasher(signedStateMetrics, stateHashedTrigger, fatalErrorConsumer);
 
+        final MinimumGenerationNonAncientConsumer setMinimumGenerationToStore = generation -> {
+            try {
+                preconsensusEventWriter.setMinimumGenerationToStore(generation);
+            } catch (final InterruptedException e) {
+                Thread.currentThread().interrupt();
+                logger.error(EXCEPTION.getMarker(), "interrupted while setting minimum generation non-ancient");
+            }
+        };
+
         signedStateFileManager = new SignedStateFileManager(
                 platformContext,
                 threadManager,
@@ -225,7 +237,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
                 selfId,
                 swirldName,
                 stateToDiskEventConsumer,
-                preconsensusEventWriter::setMinimumGenerationToStore,
+                setMinimumGenerationToStore,
                 statusActionSubmitter);
 
         final StateHasEnoughSignaturesConsumer combinedStateHasEnoughSignaturesConsumer = ss -> {
@@ -324,10 +336,9 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         } else {
             signedStateFileManager.determineIfStateShouldBeSaved(signedState, source);
         }
-        if (source == SourceOfSignedState.RECONNECT && stateConfig.saveReconnectStateToDisk()) {
+        if (source == SourceOfSignedState.RECONNECT) {
             // a state received from reconnect should be saved to disk, but the method stateHasEnoughSignatures will not
             // be called for it by the signed state manager, so we need to call it here
-            // we only call this method if the behaviour is enabled to retain the same behaviour as before
             stateHasEnoughSignatures(signedState);
         }
 
@@ -384,6 +395,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     public ReservedSignedState getLatestSignedState(@NonNull final String reason) {
         return signedStateManager.getLatestSignedState(reason);
     }
@@ -460,7 +472,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
             try (final ReservedSignedState reservedState =
                     signedStateManager.getLatestSignedState("DefaultStateManagementComponent.onFatalError()")) {
                 if (reservedState.isNotNull()) {
-                    signedStateFileManager.dumpState(reservedState.get(), "fatal", true);
+                    signedStateFileManager.dumpState(reservedState.get(), FATAL_ERROR, true);
                 }
             }
         }
@@ -480,14 +492,15 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      *
      * @param round    the round that should be dumped if available. If this parameter is null or if the requested round
      *                 is unavailable then the latest immutable round should be dumped.
-     * @param reason   reason why the state is being dumped, e.g. "fatal" or "iss". Is used as a part of the file path
-     *                 for the dumped state files, so this string should not contain any special characters or
-     *                 whitespace.
+     * @param reason   reason why the state is being dumped
      * @param blocking if this method should block until the operation has been completed
      */
     @Observer(StateDumpRequestedTrigger.class)
     public void stateDumpRequestedObserver(
-            @Nullable final Long round, @NonNull final String reason, @NonNull final Boolean blocking) {
+            @Nullable final Long round, @NonNull final StateToDiskReason reason, @NonNull final Boolean blocking) {
+
+        Objects.requireNonNull(reason);
+        Objects.requireNonNull(blocking);
 
         if (round == null) {
             // No round is specified, dump the latest immutable state.
@@ -520,7 +533,9 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      * @param reason   the reason why the state is being dumped
      * @param blocking if true then block until the state dump is complete
      */
-    private void dumpLatestImmutableState(@NonNull final String reason, final boolean blocking) {
+    private void dumpLatestImmutableState(@NonNull final StateToDiskReason reason, final boolean blocking) {
+        Objects.requireNonNull(reason);
+
         try (final ReservedSignedState reservedState = signedStateManager.getLatestImmutableState(
                 "DefaultStateManagementComponent.dumpLatestImmutableState()")) {
 

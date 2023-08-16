@@ -31,6 +31,7 @@ import com.hedera.node.app.service.contract.impl.exec.operations.CustomSStoreOpe
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import com.hedera.node.app.service.contract.impl.infra.StorageAccessTracker;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
+import java.util.Deque;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -75,6 +76,9 @@ class CustomSStoreOperationTest {
 
     @Mock
     private Account account;
+
+    @Mock
+    private Deque<MessageFrame> stack;
 
     private SStoreOperation realSStoreOperation;
 
@@ -125,6 +129,8 @@ class CustomSStoreOperationTest {
                 .willReturn(UInt256.fromBytes(A_STORAGE_VALUE));
         given(delegate.execute(frame, evm)).willReturn(successResult);
         given(frame.getRecipientAddress()).willReturn(EIP_1014_ADDRESS);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.isEmpty()).willReturn(true);
 
         final var result = subject.execute(frame, evm);
 

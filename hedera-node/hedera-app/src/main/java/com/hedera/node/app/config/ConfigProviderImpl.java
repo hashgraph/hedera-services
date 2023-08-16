@@ -46,6 +46,7 @@ import com.hedera.node.config.data.BalancesConfig;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
 import com.hedera.node.config.data.BootstrapConfig;
 import com.hedera.node.config.data.CacheConfig;
+import com.hedera.node.config.data.ConsensusConfig;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.CryptoCreateWithAliasConfig;
 import com.hedera.node.config.data.DevConfig;
@@ -55,12 +56,10 @@ import com.hedera.node.config.data.FeesConfig;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.GrpcConfig;
 import com.hedera.node.config.data.HederaConfig;
-import com.hedera.node.config.data.IssConfig;
 import com.hedera.node.config.data.LazyCreationConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.NettyConfig;
-import com.hedera.node.config.data.NetworkAdminServiceConfig;
-import com.hedera.node.config.data.QueriesConfig;
+import com.hedera.node.config.data.NetworkAdminConfig;
 import com.hedera.node.config.data.RatesConfig;
 import com.hedera.node.config.data.SchedulingConfig;
 import com.hedera.node.config.data.SigsConfig;
@@ -76,7 +75,6 @@ import com.hedera.node.config.data.VirtualdatasourceConfig;
 import com.hedera.node.config.sources.PropertyConfigSource;
 import com.hedera.node.config.validation.EmulatesMapValidator;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.sources.PropertyFileConfigSource;
 import com.swirlds.common.config.sources.SystemEnvironmentConfigSource;
 import com.swirlds.common.config.sources.SystemPropertiesConfigSource;
@@ -185,12 +183,10 @@ public class ConfigProviderImpl implements ConfigProvider {
                 .withConfigDataType(FilesConfig.class)
                 .withConfigDataType(GrpcConfig.class)
                 .withConfigDataType(HederaConfig.class)
-                .withConfigDataType(IssConfig.class)
                 .withConfigDataType(LazyCreationConfig.class)
                 .withConfigDataType(LedgerConfig.class)
                 .withConfigDataType(NettyConfig.class)
-                .withConfigDataType(NetworkAdminServiceConfig.class)
-                .withConfigDataType(QueriesConfig.class)
+                .withConfigDataType(NetworkAdminConfig.class)
                 .withConfigDataType(RatesConfig.class)
                 .withConfigDataType(SchedulingConfig.class)
                 .withConfigDataType(SigsConfig.class)

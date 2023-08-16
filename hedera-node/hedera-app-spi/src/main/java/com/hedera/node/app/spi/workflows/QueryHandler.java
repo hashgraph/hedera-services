@@ -22,6 +22,7 @@ import com.hedera.hapi.node.base.ResponseHeader;
 import com.hedera.hapi.node.base.ResponseType;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
+import com.hedera.node.app.spi.fees.Fees;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /** A {@code QueryHandler} contains all methods for the different stages of a single query. */
@@ -64,6 +65,19 @@ public interface QueryHandler {
      * @throws NullPointerException if {@code responseType} is {@code null}
      */
     boolean needsAnswerOnlyCost(@NonNull final ResponseType responseType);
+
+    /**
+     * Computes the fees associated with this given query. This method is called during the query workflow, before
+     * validation, and used to determine whether the associated payment is sufficient, and whether the payer has
+     * sufficient funds.
+     *
+     * @param queryContext The context for the query being handled
+     * @return The fees associated with the query
+     */
+    @NonNull
+    default Fees computeFees(@NonNull QueryContext queryContext) {
+        return Fees.FREE;
+    }
 
     /**
      * This method is called during the query workflow. It validates the query, but does not determine the response

@@ -19,6 +19,7 @@ package com.swirlds.platform.gossip.sync;
 import static com.swirlds.logging.LogMarker.RECONNECT;
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
@@ -79,6 +80,7 @@ public class SingleNodeSyncGossip extends AbstractGossip {
      *
      * @param platformContext               the platform context
      * @param threadManager                 the thread manager
+     * @param time                          the time object used to get the current time
      * @param crypto                        can be used to sign things
      * @param addressBook                   the current address book
      * @param selfId                        this node's ID
@@ -102,6 +104,7 @@ public class SingleNodeSyncGossip extends AbstractGossip {
     public SingleNodeSyncGossip(
             @NonNull PlatformContext platformContext,
             @NonNull ThreadManager threadManager,
+            @NonNull final Time time,
             @NonNull Crypto crypto,
             @NonNull AddressBook addressBook,
             @NonNull NodeId selfId,
@@ -123,6 +126,7 @@ public class SingleNodeSyncGossip extends AbstractGossip {
         super(
                 platformContext,
                 threadManager,
+                time,
                 crypto,
                 addressBook,
                 selfId,

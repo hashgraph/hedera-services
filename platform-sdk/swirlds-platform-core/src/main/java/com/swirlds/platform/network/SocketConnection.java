@@ -20,9 +20,9 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.SYNC;
 
 import com.swirlds.common.config.SocketConfig;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.io.exceptions.BadIOException;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.gossip.sync.SyncInputStream;
 import com.swirlds.platform.gossip.sync.SyncOutputStream;
 import java.io.IOException;
@@ -50,6 +50,7 @@ public class SocketConnection implements Connection {
     private final AtomicBoolean connected = new AtomicBoolean(true);
     private final boolean outbound;
     private final String description;
+    private final Configuration configuration;
 
     /**
      * @param connectionTracker tracks open connections
@@ -59,6 +60,7 @@ public class SocketConnection implements Connection {
      * @param socket            the socket connecting the two members over TCP/IP
      * @param dis               the input stream
      * @param dos               the output stream
+     * @param configuration     the configuration from the platform
      */
     protected SocketConnection(
             final NodeId selfId,
@@ -67,10 +69,12 @@ public class SocketConnection implements Connection {
             final boolean outbound,
             final Socket socket,
             final SyncInputStream dis,
-            final SyncOutputStream dos) {
+            final SyncOutputStream dos,
+            final Configuration configuration) {
         Objects.requireNonNull(socket);
         Objects.requireNonNull(dis);
         Objects.requireNonNull(dos);
+        Objects.requireNonNull(configuration);
 
         this.selfId = selfId;
         this.otherId = otherId;
@@ -81,6 +85,7 @@ public class SocketConnection implements Connection {
         this.socket = socket;
         this.dis = dis;
         this.dos = dos;
+        this.configuration = configuration;
     }
 
     /**
@@ -93,6 +98,7 @@ public class SocketConnection implements Connection {
      * @param socket            the socket connecting the two members over TCP/IP
      * @param dis               the input stream
      * @param dos               the output stream
+     * @param configuration     the configuration from the platform
      */
     public static SocketConnection create(
             final NodeId selfId,
@@ -101,8 +107,10 @@ public class SocketConnection implements Connection {
             final boolean outbound,
             final Socket socket,
             final SyncInputStream dis,
-            final SyncOutputStream dos) {
-        final SocketConnection c = new SocketConnection(selfId, otherId, connectionTracker, outbound, socket, dis, dos);
+            final SyncOutputStream dos,
+            final Configuration configuration) {
+        final SocketConnection c =
+                new SocketConnection(selfId, otherId, connectionTracker, outbound, socket, dis, dos, configuration);
         connectionTracker.newConnectionOpened(c);
         return c;
     }
@@ -191,7 +199,7 @@ public class SocketConnection implements Connection {
         /* track the number of bytes written and read during a sync */
         getDis().getSyncByteCounter().resetCount();
         getDos().getSyncByteCounter().resetCount();
-        final SocketConfig socketConfig = ConfigurationHolder.getConfigData(SocketConfig.class);
+        final SocketConfig socketConfig = configuration.getConfigData(SocketConfig.class);
         this.setTimeout(socketConfig.timeoutSyncClientSocket());
     }
 

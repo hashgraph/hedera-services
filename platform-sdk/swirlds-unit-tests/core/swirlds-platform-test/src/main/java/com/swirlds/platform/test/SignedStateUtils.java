@@ -20,9 +20,9 @@ import static com.swirlds.platform.test.PlatformStateUtils.randomPlatformState;
 
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.test.fixtures.RandomUtils;
-import com.swirlds.common.test.state.DummySwirldState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.test.fixtures.state.DummySwirldState;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.util.Random;
 

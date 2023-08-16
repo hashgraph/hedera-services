@@ -160,6 +160,7 @@ public class SyncGossip extends AbstractGossip {
         super(
                 platformContext,
                 threadManager,
+                time,
                 crypto,
                 addressBook,
                 selfId,
@@ -185,6 +186,7 @@ public class SyncGossip extends AbstractGossip {
         final ParallelExecutor shadowgraphExecutor = PlatformConstructor.parallelExecutor(threadManager);
         thingsToStart.add(shadowgraphExecutor);
         syncShadowgraphSynchronizer = new ShadowGraphSynchronizer(
+                platformContext,
                 shadowGraph,
                 addressBook.getSize(),
                 syncMetrics,
@@ -257,7 +259,9 @@ public class SyncGossip extends AbstractGossip {
                                             reconnectConfig.asyncStreamTimeout(),
                                             reconnectMetrics,
                                             reconnectController,
-                                            fallenBehindManager),
+                                            fallenBehindManager,
+                                            statusActionSubmitter,
+                                            platformContext.getConfiguration()),
                                     new ReconnectProtocol(
                                             threadManager,
                                             otherId,
@@ -268,7 +272,8 @@ public class SyncGossip extends AbstractGossip {
                                             reconnectMetrics,
                                             reconnectController,
                                             new DefaultSignedStateValidator(),
-                                            fallenBehindManager),
+                                            fallenBehindManager,
+                                            platformContext.getConfiguration()),
                                     new SyncProtocol(
                                             otherId,
                                             syncShadowgraphSynchronizer,

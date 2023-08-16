@@ -16,13 +16,18 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec;
 
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_COINBASE;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.streams.SidecarType;
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
+import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import java.util.Deque;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,12 +39,24 @@ class FeatureFlagsTest {
     @Mock
     private MessageFrame frame;
 
+    @Mock
+    private Deque<MessageFrame> stack;
+
     @Test
-    void sidecarsDefaultToTrue() {
+    void sidecarsEnabledBasedOnConfig() {
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.isEmpty()).willReturn(true);
         final var subject = mock(FeatureFlags.class);
         doCallRealMethod().when(subject).isSidecarEnabled(any(), any());
+
+        final var config = HederaTestConfigBuilder.create()
+                .withValue("ledger.fundingAccount", DEFAULT_COINBASE)
+                .withValue("contracts.sidecars", "CONTRACT_BYTECODE,CONTRACT_ACTION")
+                .getOrCreateConfig();
+        given(frame.getContextVariable(FrameUtils.CONFIG_CONTEXT_VARIABLE)).willReturn(config);
+
         assertTrue(subject.isSidecarEnabled(frame, SidecarType.CONTRACT_BYTECODE));
         assertTrue(subject.isSidecarEnabled(frame, SidecarType.CONTRACT_ACTION));
-        assertTrue(subject.isSidecarEnabled(frame, SidecarType.CONTRACT_STATE_CHANGE));
+        assertFalse(subject.isSidecarEnabled(frame, SidecarType.CONTRACT_STATE_CHANGE));
     }
 }

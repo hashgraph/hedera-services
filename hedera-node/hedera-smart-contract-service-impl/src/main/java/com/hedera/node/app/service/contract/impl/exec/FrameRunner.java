@@ -25,6 +25,7 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.is
 import static java.util.Objects.requireNonNull;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.COMPLETED_SUCCESS;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
@@ -57,6 +58,7 @@ public class FrameRunner {
      *
      * @param gasLimit the gas limit for the transaction
      * @param frame the frame to run
+     * @param senderId the Hedera id of the sending account
      * @param tracer the tracer to use
      * @param messageCall the message call processor to use
      * @param contractCreation the contract creation processor to use
@@ -64,12 +66,14 @@ public class FrameRunner {
      */
     public HederaEvmTransactionResult runToCompletion(
             final long gasLimit,
+            @NonNull final AccountID senderId,
             @NonNull final MessageFrame frame,
             @NonNull final ActionSidecarContentTracer tracer,
             @NonNull final CustomMessageCallProcessor messageCall,
             @NonNull final ContractCreationProcessor contractCreation) {
         requireNonNull(frame);
         requireNonNull(tracer);
+        requireNonNull(senderId);
         requireNonNull(messageCall);
         requireNonNull(contractCreation);
 
@@ -87,12 +91,12 @@ public class FrameRunner {
         }
         tracer.sanitizeTracedActions(frame);
 
-        // And package up its result
+        // And return the result, success or failure
         final var gasUsed = effectiveGasUsed(gasLimit, frame);
         if (frame.getState() == COMPLETED_SUCCESS) {
-            return successFrom(gasUsed, recipientId, asEvmContractId(recipientAddress), frame);
+            return successFrom(gasUsed, senderId, recipientId, asEvmContractId(recipientAddress), frame);
         } else {
-            return failureFrom(gasUsed, frame);
+            return failureFrom(gasUsed, senderId, frame);
         }
     }
 

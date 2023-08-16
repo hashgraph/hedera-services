@@ -122,6 +122,23 @@ public class UsageAccumulator {
         numPayerKeys = sigUsage.numPayerKeys();
     }
 
+    /**
+     * This is only called in when calculating TokenMintUsage for non-fungible unique tokens,
+     * because it only depends on the number of serials minted and doesn't need all other fields.
+     * Resets all the fields in the accumulator.
+     */
+    public void reset() {
+        numPayerKeys = 0;
+        bpt = 0;
+        bpr = 0;
+        sbpr = 0;
+        vpt = 0;
+        gas = 0;
+        rbs = 0;
+        sbs = 0;
+        networkRbs = 0;
+    }
+
     /* Resource accumulator methods */
     public void addBpt(final long amount) {
         bpt += amount;

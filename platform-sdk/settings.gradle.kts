@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-plugins { id("com.gradle.enterprise").version("3.10.3") }
+pluginManagement { @Suppress("UnstableApiUsage") includeBuild("../build-logic") }
+
+plugins { id("com.gradle.enterprise").version("3.11.4") }
 
 rootProject.name = "swirlds-platform"
 
@@ -43,6 +45,8 @@ include(":swirlds-merkle")
 include(":swirlds-jasperdb")
 
 include(":swirlds-virtualmap")
+
+include(":swirlds-platform-gui")
 
 include(":swirlds-platform-core")
 
@@ -119,9 +123,6 @@ dependencyResolutionManagement {
             // Parsers
             version("jackson-version", "2.13.3")
 
-            // Network
-            version("portmapper-version", "2.0.4")
-
             // JavaFX
             version("javafx-version", "17")
 
@@ -151,7 +152,6 @@ dependencyResolutionManagement {
                 "jackson",
                 listOf("jackson-databind", "jackson-datatype-jsr310", "jackson-dataformat-yaml")
             )
-            bundle("networking", listOf("portmapper"))
             bundle("javafx", listOf("javafx-base"))
             bundle("picocli", listOf("picocli"))
 
@@ -216,9 +216,6 @@ dependencyResolutionManagement {
                     "jackson-dataformat-yaml"
                 )
                 .versionRef("jackson-version")
-            // Networking Bundle
-            library("portmapper", "com.offbynull.portmapper", "portmapper")
-                .versionRef("portmapper-version")
             // JavaFX Bundle
             library("javafx-base", "org.openjfx", "javafx-base").versionRef("javafx-version")
             // Misc

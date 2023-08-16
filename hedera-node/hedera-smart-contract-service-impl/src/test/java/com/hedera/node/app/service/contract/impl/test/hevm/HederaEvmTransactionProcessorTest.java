@@ -35,9 +35,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class HederaEvmTransactionProcessorTest {
     @Mock
-    private HederaEvmCode code;
-
-    @Mock
     private HederaEvmBlocks blocks;
 
     @Mock
@@ -74,7 +71,7 @@ class HederaEvmTransactionProcessorTest {
     @Test
     void calls030AsExpected() {
         final var transaction = wellKnownHapiCall();
-        final var context = wellKnownContextWith(code, blocks, false);
+        final var context = wellKnownContextWith(blocks, false);
 
         subject.process(transaction, worldUpdater, feesOnlyUpdater, context, VERSION_030, tracer, config);
 
@@ -84,7 +81,7 @@ class HederaEvmTransactionProcessorTest {
     @Test
     void calls034AsExpected() {
         final var transaction = wellKnownHapiCall();
-        final var context = wellKnownContextWith(code, blocks, false);
+        final var context = wellKnownContextWith(blocks, false);
 
         subject.process(transaction, worldUpdater, feesOnlyUpdater, context, VERSION_034, tracer, config);
 
@@ -94,7 +91,7 @@ class HederaEvmTransactionProcessorTest {
     @Test
     void calls038AsExpected() {
         final var transaction = wellKnownHapiCall();
-        final var context = wellKnownContextWith(code, blocks, false);
+        final var context = wellKnownContextWith(blocks, false);
 
         subject.process(transaction, worldUpdater, feesOnlyUpdater, context, VERSION_038, tracer, config);
 

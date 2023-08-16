@@ -17,9 +17,8 @@
 package com.hedera.node.app.service.networkadmin.impl;
 
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.node.app.service.networkadmin.FreezeService;
-import com.hedera.node.app.service.networkadmin.impl.codec.MonoSpecialFilesAdapterCodec;
 import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
@@ -29,12 +28,7 @@ import java.util.Set;
 
 /** Standard implementation of the {@link FreezeService} {@link com.hedera.node.app.spi.Service}. */
 public final class FreezeServiceImpl implements FreezeService {
-    // special files will move to FileService
-    public static final String UPGRADE_FILES_KEY = "UPGRADE_FILES";
-    public static final String UPGRADE_FILE_ID_KEY = "UPGRADE_FILE_ID";
     public static final String UPGRADE_FILE_HASH_KEY = "UPGRADE_FILE_HASH";
-
-    public static final String DUAL_STATE_KEY = "DUAL_STATE";
     private static final SemanticVersion GENESIS_VERSION = SemanticVersion.DEFAULT;
 
     @Override
@@ -48,13 +42,16 @@ public final class FreezeServiceImpl implements FreezeService {
             @Override
             @SuppressWarnings("rawtypes")
             public Set<StateDefinition> statesToCreate() {
-                return Set.of(StateDefinition.singleton(UPGRADE_FILES_KEY, new MonoSpecialFilesAdapterCodec()));
+                return Set.of(StateDefinition.singleton(UPGRADE_FILE_HASH_KEY, ProtoBytes.PROTOBUF));
             }
 
             @Override
-            public void migrate(@NonNull MigrationContext ctx) {
-                final var upgradeFilesState = ctx.newStates().getSingleton(UPGRADE_FILES_KEY);
-                upgradeFilesState.put(new MerkleSpecialFiles());
+            public void migrate(@NonNull final MigrationContext ctx) {
+                // Reset the upgrade file hash to empty
+                // It should always be empty at genesis or after an upgrade, to indicate that no upgrade is in progress
+                // Nothing in state can ever be null, so use Bytes.EMPTY to indicate an empty hash
+                final var upgradeFileHashKeyState = ctx.newStates().<ProtoBytes>getSingleton(UPGRADE_FILE_HASH_KEY);
+                upgradeFileHashKeyState.put(ProtoBytes.DEFAULT);
             }
         };
     }

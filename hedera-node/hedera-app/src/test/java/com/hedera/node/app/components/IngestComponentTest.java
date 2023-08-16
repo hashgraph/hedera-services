@@ -18,6 +18,7 @@ package com.hedera.node.app.components;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -30,11 +31,13 @@ import com.hedera.node.app.info.SelfNodeInfoImpl;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.spi.info.SelfNodeInfo;
 import com.hedera.node.app.version.HederaSoftwareVersion;
+import com.hedera.node.app.workflows.handle.SystemFileUpdateFacility;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
@@ -54,6 +57,12 @@ class IngestComponentTest {
     private Platform platform;
 
     @Mock
+    private PlatformContext platformContext;
+
+    @Mock
+    private Metrics metrics;
+
+    @Mock
     private Cryptography cryptography;
 
     private HederaInjectionComponent app;
@@ -63,7 +72,7 @@ class IngestComponentTest {
     void setUp() {
         final Configuration configuration = HederaTestConfigBuilder.createConfig();
         final PlatformContext platformContext = mock(PlatformContext.class);
-        when(platformContext.getConfiguration()).thenReturn(configuration);
+        lenient().when(platformContext.getConfiguration()).thenReturn(configuration);
         when(platform.getContext()).thenReturn(platformContext);
 
         final var selfNodeId = new NodeId(1L);
@@ -76,12 +85,14 @@ class IngestComponentTest {
                         SemanticVersion.newBuilder().major(1).build(),
                         SemanticVersion.newBuilder().major(2).build()));
 
+        final var configProvider = new ConfigProviderImpl(false);
         app = DaggerHederaInjectionComponent.builder()
                 .initTrigger(InitTrigger.GENESIS)
                 .platform(platform)
                 .crypto(CryptographyHolder.get())
                 .bootstrapProps(new BootstrapProperties())
-                .configuration(new ConfigProviderImpl(false))
+                .configuration(configProvider)
+                .systemFileUpdateFacility(new SystemFileUpdateFacility(configProvider))
                 .self(selfNodeInfo)
                 .initialHash(new Hash())
                 .maxSignedTxnSize(1024)
@@ -93,7 +104,8 @@ class IngestComponentTest {
 
     @Test
     void objectGraphRootsAreAvailable() {
-        given(platform.getSelfId()).willReturn(new NodeId(0L));
+        given(platform.getContext()).willReturn(platformContext);
+        given(platformContext.getMetrics()).willReturn(metrics);
 
         final IngestInjectionComponent subject =
                 app.ingestComponentFactory().get().create();

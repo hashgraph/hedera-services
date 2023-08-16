@@ -27,13 +27,17 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.updateTopic;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 
+import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+@HapiTestSuite
 public class TopicGetInfoSuite extends HapiSuite {
+
     private static final Logger log = LogManager.getLogger(TopicGetInfoSuite.class);
     public static final String TEST_TOPIC = "testTopic";
     public static final String TESTMEMO = "testmemo";
@@ -52,6 +56,7 @@ public class TopicGetInfoSuite extends HapiSuite {
         return true;
     }
 
+    @HapiTest
     private HapiSpec allFieldsSetHappyCase() {
         // sequenceNumber should be 0 and runningHash should be 48 bytes all 0s.
         return defaultHapiSpec("AllFieldsSetHappyCase")

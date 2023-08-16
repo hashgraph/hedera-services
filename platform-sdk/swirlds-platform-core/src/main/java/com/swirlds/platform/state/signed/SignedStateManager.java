@@ -305,6 +305,31 @@ public class SignedStateManager implements SignedStateFinder {
     }
 
     /**
+     * An observer of post-consensus state signatures.
+     *
+     * @param signerId    the node that created the signature
+     * @param transaction the signature transaction
+     */
+    public synchronized void handlePostconsensusSignatureTransaction(
+            @NonNull final NodeId signerId, @NonNull final StateSignatureTransaction transaction) {
+
+        Objects.requireNonNull(signerId);
+
+        final long round = transaction.getRound();
+
+        try (final ReservedSignedState reservedState = getIncompleteState(round)) {
+            // it isn't possible to receive a post-consensus signature transaction for a future round,
+            // and if we don't have the state for an old round, we never will.
+            // in both cases, the signature can be ignored
+            if (reservedState.isNull()) {
+                return;
+            }
+
+            addSignature(reservedState.get(), signerId, transaction.getStateSignature());
+        }
+    }
+
+    /**
      * {@inheritDoc}
      */
     @Override

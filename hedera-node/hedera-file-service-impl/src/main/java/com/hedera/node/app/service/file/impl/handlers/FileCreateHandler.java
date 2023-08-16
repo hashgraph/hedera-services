@@ -24,9 +24,9 @@ import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.valid
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.records.CreateFileRecordBuilder;
@@ -66,7 +66,7 @@ public class FileCreateHandler implements TransactionHandler {
 
         final var transactionBody = context.body().fileCreateOrThrow();
 
-        validateAndAddRequiredKeys(transactionBody.keys(), context, false);
+        validateAndAddRequiredKeys(null, transactionBody.keys(), context);
 
         if (!transactionBody.hasExpirationTime()) {
             throw new PreCheckException(INVALID_EXPIRATION_TIME);
@@ -81,8 +81,11 @@ public class FileCreateHandler implements TransactionHandler {
         final var fileServiceConfig = handleContext.configuration().getConfigData(FilesConfig.class);
 
         final var fileCreateTransactionBody = handleContext.body().fileCreateOrThrow();
+
+        // TODO: skip at least the mutability check for privileged "payer" accounts
         if (fileCreateTransactionBody.hasKeys()) {
-            builder.keys(fileCreateTransactionBody.keys());
+            KeyList transactionKeyList = fileCreateTransactionBody.keys();
+            builder.keys(transactionKeyList);
         }
 
         /* Validate if the current file can be created */
@@ -98,7 +101,7 @@ public class FileCreateHandler implements TransactionHandler {
                 expiry,
                 NA,
                 // Shard and realm will be ignored if num is NA
-                AccountID.newBuilder().shardNum(NA).realmNum(NA).accountNum(NA).build());
+                null);
 
         try {
             final var effectiveExpiryMeta =

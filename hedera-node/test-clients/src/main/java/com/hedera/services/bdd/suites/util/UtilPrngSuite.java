@@ -26,6 +26,8 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdW
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PRNG_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
@@ -33,6 +35,7 @@ import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+@HapiTestSuite
 public class UtilPrngSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(UtilPrngSuite.class);
     private static final String PRNG_IS_ENABLED = "utilPrng.isEnabled";
@@ -51,6 +54,7 @@ public class UtilPrngSuite extends HapiSuite {
         return List.of(happyPathWorksForRangeAndBitString(), failsInPreCheckForNegativeRange(), usdFeeAsExpected());
     }
 
+    @HapiTest
     private HapiSpec usdFeeAsExpected() {
         double baseFee = 0.001;
         double plusRangeFee = 0.0010010316;
@@ -78,6 +82,7 @@ public class UtilPrngSuite extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
     private HapiSpec failsInPreCheckForNegativeRange() {
         return defaultHapiSpec("failsInPreCheckForNegativeRange")
                 .given(
@@ -93,6 +98,7 @@ public class UtilPrngSuite extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
     private HapiSpec happyPathWorksForRangeAndBitString() {
         final var rangeTxn = "prngWithRange";
         final var rangeTxn1 = "prngWithRange1";
@@ -107,18 +113,10 @@ public class UtilPrngSuite extends HapiSuite {
                         // n-1 running hash and running has set
                         hapiPrng().payingWith(BOB).blankMemo().via("prng").logged(),
                         // n-1, n-2 running hash and running has set
-                        getTxnRecord("prng")
-                                .hasNoPseudoRandomData() // When running this suite in CI this check
-                                // will fail since it
-                                // already has n-3 running hash
-                                .logged(),
+                        getTxnRecord("prng").logged(),
                         // n-1, n-2, n-3 running hash and running has set
                         hapiPrng(10).payingWith(BOB).via(rangeTxn1).blankMemo().logged(),
-                        getTxnRecord(rangeTxn1)
-                                .hasNoPseudoRandomData() // When running this suite in CI this check
-                                // will fail since it
-                                // already has n-3 running hash
-                                .logged(),
+                        getTxnRecord(rangeTxn1).logged(),
                         hapiPrng().payingWith(BOB).via("prng2").blankMemo().logged())
                 .when(
                         // should have pseudo random data
