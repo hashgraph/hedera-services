@@ -24,8 +24,8 @@ import static java.nio.file.StandardOpenOption.APPEND;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 
-import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.base.utility.Pair;
+import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.Metric.ValueType;
