@@ -88,7 +88,7 @@ public class CryptoCreateValidator {
         if (!isValid(key)) {
             throw new HandleException(INVALID_ADMIN_KEY);
         }
-        attributeValidator.validateKey(op.keyOrThrow());
+        attributeValidator.validateKey(key);
     }
 
     private void validateKeyAndAliasProvidedCase(

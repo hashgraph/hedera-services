@@ -92,7 +92,9 @@ public class AdapterUtils {
                 Map.entry(new ProtoBytes(Bytes.wrap(CURRENTLY_UNUSED_ALIAS)), asAccount(MISSING_NUM.longValue())),
                 Map.entry(new ProtoBytes(Bytes.wrap(NO_RECEIVER_SIG_ALIAS)), toPbj(NO_RECEIVER_SIG)),
                 Map.entry(new ProtoBytes(Bytes.wrap(RECEIVER_SIG_ALIAS)), toPbj(RECEIVER_SIG)),
-                Map.entry(new ProtoBytes(Bytes.wrap(FIRST_TOKEN_SENDER_LITERAL_ALIAS.toByteArray())), toPbj(FIRST_TOKEN_SENDER)));
+                Map.entry(
+                        new ProtoBytes(Bytes.wrap(FIRST_TOKEN_SENDER_LITERAL_ALIAS.toByteArray())),
+                        toPbj(FIRST_TOKEN_SENDER)));
         return new MapWritableKVState<>(ALIASES_KEY, wellKnownAliases);
     }
 

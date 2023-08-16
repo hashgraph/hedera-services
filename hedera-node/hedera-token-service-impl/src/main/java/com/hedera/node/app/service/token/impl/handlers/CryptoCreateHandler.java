@@ -94,9 +94,9 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
             if (op.alias() != null && !op.alias().equals(Bytes.EMPTY)) {
                 final var alias = op.alias();
                 // add evm address key to req keys only if it is derived from a key, diff than the admin key
-                final var isAliasDerivedFromDiffKey = !key.hasEcdsaSecp256k1()
-                        || !Arrays.equals(
-                                recoverAddressFromPubKey(key.ecdsaSecp256k1().toByteArray()), alias.toByteArray());
+                final var isAliasDerivedFromDiffKey = !(key.hasEcdsaSecp256k1()
+                        && Arrays.equals(
+                                recoverAddressFromPubKey(key.ecdsaSecp256k1().toByteArray()), alias.toByteArray()));
                 if (isAliasDerivedFromDiffKey) {
                     // TODO : Need to decide what to do about JWildcardECDSAKey
                 }
@@ -134,6 +134,7 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
                 final var protoBody = fromPbj(handleContext.body());
                 return CryptoFeeBuilder.getCryptoCreateTxFeeMatrices(protoBody, sigValueObj);
             } catch (InvalidTxBodyException e) {
+                // FUTURE : ('post-modularization-cleanup') Replace this with an appropriate HandleException
                 throw new RuntimeException(e);
             }
         });

@@ -83,7 +83,7 @@ public final class CryptoFeeBuilder extends FeeBuilder {
      * @return fee data
      * @throws InvalidTxBodyException when transaction body is invalid
      */
-    public FeeData getCryptoDeleteTxFeeMatrices(final TransactionBody txBody, final SigValueObj sigValObj)
+    public static FeeData getCryptoDeleteTxFeeMatrices(final TransactionBody txBody, final SigValueObj sigValObj)
             throws InvalidTxBodyException {
         if (txBody == null || !txBody.hasCryptoDelete()) {
             throw new InvalidTxBodyException("CryptoDelete Tx Body not available for Fee Calculation");
@@ -145,7 +145,7 @@ public final class CryptoFeeBuilder extends FeeBuilder {
      *
      * @return fee data
      */
-    public FeeData getCostTransactionRecordQueryFeeMatrices() {
+    public static FeeData getCostTransactionRecordQueryFeeMatrices() {
         return FeeData.getDefaultInstance();
     }
 
@@ -156,7 +156,7 @@ public final class CryptoFeeBuilder extends FeeBuilder {
      * @param responseType response type
      * @return fee data
      */
-    public FeeData getTransactionRecordQueryFeeMatrices(
+    public static FeeData getTransactionRecordQueryFeeMatrices(
             final TransactionRecord transRecord, final ResponseType responseType) {
         if (transRecord == null) {
             return FeeData.getDefaultInstance();
@@ -186,7 +186,7 @@ public final class CryptoFeeBuilder extends FeeBuilder {
      * @param responseType response type
      * @return fee data
      */
-    public FeeData getCryptoAccountRecordsQueryFeeMatrices(
+    public static FeeData getCryptoAccountRecordsQueryFeeMatrices(
             final List<TransactionRecord> transRecords, final ResponseType responseType) {
         final var bpt = BASIC_QUERY_HEADER + BASIC_TX_ID_SIZE;
 
@@ -218,7 +218,7 @@ public final class CryptoFeeBuilder extends FeeBuilder {
      *
      * @return fee data
      */
-    public FeeData getCostCryptoAccountRecordsQueryFeeMatrices() {
+    public static FeeData getCostCryptoAccountRecordsQueryFeeMatrices() {
         return getCostForQueryByIDOnly();
     }
 
@@ -227,11 +227,11 @@ public final class CryptoFeeBuilder extends FeeBuilder {
      *
      * @return fee data
      */
-    public FeeData getCostCryptoAccountInfoQueryFeeMatrices() {
+    public static FeeData getCostCryptoAccountInfoQueryFeeMatrices() {
         return getCostForQueryByIDOnly();
     }
 
-    private int getAccountTransactionRecordSize(final TransactionRecord transRecord) {
+    private static int getAccountTransactionRecordSize(final TransactionRecord transRecord) {
         final var memoBytesSize = transRecord.getMemoBytes().size();
 
         final var accountAmountSize = transRecord.hasTransferList()

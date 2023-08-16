@@ -29,8 +29,8 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.List;
@@ -46,7 +46,7 @@ public class EnsureAliasesStep implements TransferStep {
     // Temporary token transfer resolutions map containing the token transfers to alias, is needed to check if
     // an alias is repeated. It is allowed to be repeated in multiple token transfer lists, but not in a single
     // token transfer list
-    private final Map<Bytes, AccountID> tokenTransferResolutions = new HashMap<>();
+    private final Map<ProtoBytes, AccountID> tokenTransferResolutions = new HashMap<>();
 
     public EnsureAliasesStep(@NonNull final CryptoTransferTransactionBody op) {
         this.op = requireNonNull(op);
@@ -79,7 +79,7 @@ public class EnsureAliasesStep implements TransferStep {
                 if (isAlias(adjust.accountIDOrThrow())) {
                     final var account = resolveForFungibleToken(adjust, transferContext);
                     final var alias = adjust.accountIDOrThrow().alias();
-                    tokenTransferResolutions.put(alias, account);
+                    tokenTransferResolutions.put(new ProtoBytes(alias), account);
                     validateTrue(account != null, INVALID_ACCOUNT_ID);
                 }
             }

@@ -459,6 +459,7 @@ public class CryptoCreateSuite extends HapiSuite {
                                 .logged()
                                 .hasPrecheck(INVALID_ADMIN_KEY));
     }
+
     @HapiTest
     private HapiSpec createAnAccountInvalidED25519() {
         long initialBalance = 10_000L;
