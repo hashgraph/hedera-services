@@ -117,14 +117,14 @@ Reconnect, MixedOps-NIReconnectFail-1.5k-10m, services, https://www.notion.so/sw
 Reconnect, SmartContractOps-NIReconnect-14-21m, services, https://www.notion.so/swirldslabs/Reconnect-SmartContractOps-NIReconnect-14-21m-0a33c4c3f497450d89c2c62f5d0afd1e
 Reconnect, VMerkleDual-NDReconnect-500-60m, platform, https://www.notion.so/swirldslabs/Reconnect-VMerkleDual-NDReconnect-500-60m-bed1119b943141cc986c07ff10145468
 
-Restart, Crypto-Restart-1.5k-22m, platform, https://www.notion.so/swirldslabs/Restart-Crypto-Restart-1-5k-22m-46a736a6a4e14526bbccb91d29d9d631
+Restart, Crypto-Restart-1.5k-22m, services, https://www.notion.so/swirldslabs/Restart-Crypto-Restart-1-5k-22m-46a736a6a4e14526bbccb91d29d9d631
 Restart, Crypto-Restart-50k-20m, platform, https://www.notion.so/swirldslabs/Restart-Crypto-Restart-50k-20m-00641595faa8494e913c28b874700dc3
-Restart, Crypto-Restart-Freeze-Bug-1k-9m, platform, https://www.notion.so/swirldslabs/Restart-Crypto-Restart-Freeze-Bug-1k-9m-232f30e8ed9c41dab715f1110b82c8ae?pvs=9
-Restart, Crypto-Restart-RecordStreamV6-1.5k-10m, platform, https://www.notion.so/swirldslabs/Restart-Crypto-Restart-RecordStreamV6-1-5k-10m-fd583108efa4405ba63ccf6a8def4fbf
+Restart, Crypto-Restart-Freeze-Bug-1k-9m, services, https://www.notion.so/swirldslabs/Restart-Crypto-Restart-Freeze-Bug-1k-9m-232f30e8ed9c41dab715f1110b82c8ae?pvs=9
+Restart, Crypto-Restart-RecordStreamV6-1.5k-10m, services, https://www.notion.so/swirldslabs/Restart-Crypto-Restart-RecordStreamV6-1-5k-10m-fd583108efa4405ba63ccf6a8def4fbf
 Restart, FCM-Restart-2.5k-15m, platform, https://www.notion.so/swirldslabs/Restart-FCM-Restart-2-5k-15m-a14ebe33d49a446abd994e49370718b4
 Restart, FCMFCQ-RestartEventStream-1k-10m, platform, https://www.notion.so/swirldslabs/Restart-FCMFCQ-RestartEventStream-1k-10m-30524d93738f4be4bb9a467c8198146d
 Restart, NFT-Restart-2.5k-20m, platform, https://www.notion.so/swirldslabs/Restart-NFT-Restart-2-5k-20m-738a79af30af49019f998ea102eae8a7
-Restart, ScheduleFocus-Restart-1.5-22m, platform, https://www.notion.so/swirldslabs/Restart-ScheduleFocus-Restart-1-5-22m-1c1c890bab1843f2b26e16463a7572cd
+Restart, ScheduleFocus-Restart-1.5-22m, services, https://www.notion.so/swirldslabs/Restart-ScheduleFocus-Restart-1-5-22m-1c1c890bab1843f2b26e16463a7572cd
 
 SimilarStake, Crypto-NIReconnect-Stake-1k-10m, services, https://www.notion.so/swirldslabs/SimilarStake-Crypto-NIReconnect-Stake-1k-10m-0bd8caf3dc9b4e09828248bd9002981b
 SimilarStake, Crypto-Restart-Stake-1k-10m, services, https://www.notion.so/swirldslabs/SimilarStake-Crypto-Restart-Stake-1k-10m-20d563d096cc4335b501483376274371
