@@ -22,7 +22,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.service.consensus.impl.codecs.ConsensusServiceStateTranslator.pbjToState;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
-import static com.hedera.node.app.service.mono.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
@@ -97,9 +96,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
             if (!designatesAccountRemoval(autoRenewAccountID)) {
                 context.requireKeyOrThrow(autoRenewAccountID, INVALID_AUTORENEW_ACCOUNT);
             }
-
         }
-
     }
 
     private boolean onlyExtendsExpiry(@NonNull final ConsensusUpdateTopicTransactionBody op) {
@@ -141,9 +138,11 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
 
         // First validate this topic is mutable; and the pending mutations are allowed
         validateFalse(topic.adminKey() == null && wantsToMutateNonExpiryField(topicUpdate), UNAUTHORIZED);
-        if(!(topicUpdate.hasAutoRenewAccount() && designatesAccountRemoval(topicUpdate.autoRenewAccount()))){
-            if(topic.hasAutoRenewAccountId() ){
-                validateFalse(!topic.hasAdminKey() || (topicUpdate.hasAdminKey() && isEmpty(topicUpdate.adminKey())), AUTORENEW_ACCOUNT_NOT_ALLOWED);
+        if (!(topicUpdate.hasAutoRenewAccount() && designatesAccountRemoval(topicUpdate.autoRenewAccount()))) {
+            if (topic.hasAutoRenewAccountId()) {
+                validateFalse(
+                        !topic.hasAdminKey() || (topicUpdate.hasAdminKey() && isEmpty(topicUpdate.adminKey())),
+                        AUTORENEW_ACCOUNT_NOT_ALLOWED);
             }
         }
         validateMaybeNewAttributes(handleContext, topicUpdate, topic);
@@ -190,7 +189,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         builder.expirationSecond(resolvedExpiryMeta.expiry());
         builder.autoRenewPeriod(resolvedExpiryMeta.autoRenewPeriod());
         builder.autoRenewAccountId(resolvedExpiryMeta.autoRenewAccountId());
-        if(op.hasAutoRenewAccount() && designatesAccountRemoval(op.autoRenewAccount())){
+        if (op.hasAutoRenewAccount() && designatesAccountRemoval(op.autoRenewAccount())) {
             builder.autoRenewAccountId((AccountID) null);
         }
     }
@@ -274,7 +273,8 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
     private boolean designatesAccountRemoval(AccountID id) {
         return id.shardNum() == 0
                 && id.realmNum() == 0
-                && id.hasAccountNum() && id.accountNum() == 0
+                && id.hasAccountNum()
+                && id.accountNum() == 0
                 && id.alias() == null;
     }
 }

@@ -472,8 +472,8 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
             // Also, If we encounter a scenario where tests in the same suite are interfering with each other we
             // can move this logic inside the after method in the MethodTestDescriptor class.
             // This way we will clean up the data after each test.
-            FileUtils.deleteDirectory(context.getSavedStateDirectory());
-            FileUtils.deleteDirectory(context.getEventsLogDir());
+            if (context.getSavedStateDirectory() != null) FileUtils.deleteDirectory(context.getSavedStateDirectory());
+            if (context.getEventsLogDir() != null) FileUtils.deleteDirectory(context.getEventsLogDir());
         }
 
         private boolean allTestsSkipped() {
