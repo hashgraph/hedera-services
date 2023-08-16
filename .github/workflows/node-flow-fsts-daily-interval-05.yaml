@@ -54,9 +54,7 @@ jobs:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}
       hedera-tests-enabled: true
-      slack-results-channel: hedera-regression
-      slack-summary-channel: hedera-regression-summary
-      use-branch-for-slack-channel: false
+      use-branch-for-slack-channel: true
       panel-config: "configs/services/suites/daily/GCP-Daily-Services-Comp-Reconnect-6N-1C.json"
     secrets:
       access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
@@ -75,9 +73,7 @@ jobs:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}
       hedera-tests-enabled: true
-      slack-results-channel: hedera-regression
-      slack-summary-channel: hedera-regression-summary
-      use-branch-for-slack-channel: false
+      use-branch-for-slack-channel: true
       panel-config: "configs/services/suites/daily/GCP-Daily-Services-Comp-NI-Reconnect-Correctness-6N-1C.json"
     secrets:
       access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
