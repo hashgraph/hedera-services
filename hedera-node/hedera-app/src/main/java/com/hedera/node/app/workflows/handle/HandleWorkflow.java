@@ -172,7 +172,7 @@ public class HandleWorkflow {
                         userTransactionsHandled.set(true);
                         handlePlatformTransaction(state, event, creator, platformTxn);
                     }
-                } catch (final Throwable e) {
+                } catch (final Exception e) {
                     logger.fatal(
                             "A fatal unhandled exception occurred during transaction handling. "
                                     + "While this node may not die right away, it is in a bad way, most likely fatally.",
@@ -335,7 +335,7 @@ public class HandleWorkflow {
 
         // store all records at once
         final var recordListResult = recordListBuilder.build();
-        recordCache.add(creator.nodeId(), payer, recordListResult.mainRecord().record(), consensusNow);
+        recordCache.add(creator.nodeId(), payer, recordListResult.mainRecord().transactionRecord(), consensusNow);
         blockRecordManager.endUserTransaction(recordListResult.recordStream(), state);
 
         return txBody;

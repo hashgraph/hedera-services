@@ -278,7 +278,7 @@ public class RecordStreamV6Verifier {
             for (int i = 0; i < recordStreamItems.size(); i++) {
                 var item = recordStreamItems.get(i);
                 var expectedItem = transactionRecordList.get(i);
-                assertEquals(expectedItem.record(), item.record());
+                assertEquals(expectedItem.transactionRecord(), item.record());
                 assertEquals(expectedItem.transaction(), item.transaction());
             }
         }

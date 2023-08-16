@@ -40,6 +40,7 @@ import java.util.stream.Stream;
  */
 public class RecordListBuilder {
 
+    private static final String CONFIGURATION_MUST_NOT_BE_NULL = "configuration must not be null";
     private final List<SingleTransactionRecordBuilderImpl> recordBuilders = new ArrayList<>();
 
     private List<SingleTransactionRecordBuilderImpl> precedingRecordBuilders;
@@ -92,7 +93,7 @@ public class RecordListBuilder {
      * @throws IndexOutOfBoundsException if no more preceding slots are available
      */
     public SingleTransactionRecordBuilderImpl addPreceding(@NonNull final Configuration configuration) {
-        requireNonNull(configuration, "configuration must not be null");
+        requireNonNull(configuration, CONFIGURATION_MUST_NOT_BE_NULL);
         if (precedingRecordBuilders == null) {
             precedingRecordBuilders = new ArrayList<>();
         }
@@ -124,7 +125,7 @@ public class RecordListBuilder {
      * @throws IndexOutOfBoundsException if no more child slots are available
      */
     public SingleTransactionRecordBuilderImpl addChild(@NonNull final Configuration configuration) {
-        requireNonNull(configuration, "configuration must not be null");
+        requireNonNull(configuration, CONFIGURATION_MUST_NOT_BE_NULL);
 
         return doAddChild(configuration);
     }
@@ -142,7 +143,7 @@ public class RecordListBuilder {
      * @throws IndexOutOfBoundsException if no more child slots are available
      */
     public SingleTransactionRecordBuilderImpl addRemovableChild(@NonNull final Configuration configuration) {
-        requireNonNull(configuration, "configuration must not be null");
+        requireNonNull(configuration, CONFIGURATION_MUST_NOT_BE_NULL);
 
         final var recordBuilder = doAddChild(configuration);
 
