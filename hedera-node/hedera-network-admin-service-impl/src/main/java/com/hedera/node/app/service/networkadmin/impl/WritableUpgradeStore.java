@@ -18,6 +18,7 @@ package com.hedera.node.app.service.networkadmin.impl;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.node.app.spi.state.WritableSingletonState;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -31,7 +32,7 @@ import java.util.Optional;
  */
 public class WritableUpgradeStore extends ReadableUpgradeStoreImpl {
     /** The underlying data storage class that holds the update file hash. */
-    private final WritableSingletonState<Bytes> updateFileHash;
+    private final WritableSingletonState<ProtoBytes> updateFileHash;
 
     /**
      * Create a new {@link WritableUpgradeStore} instance.
@@ -50,13 +51,13 @@ public class WritableUpgradeStore extends ReadableUpgradeStoreImpl {
      * @param updateFileHash The update file hash to set. If null, clears the update file hash.
      */
     public void updateFileHash(@Nullable final Bytes updateFileHash) {
-        this.updateFileHash.put(updateFileHash);
+        this.updateFileHash.put(new ProtoBytes(updateFileHash));
     }
 
     @Override
     @NonNull
     public Optional<Bytes> updateFileHash() {
-        Bytes fileHash = updateFileHash.get();
-        return (fileHash == null ? Optional.empty() : Optional.of(fileHash));
+        ProtoBytes fileHash = updateFileHash.get();
+        return (fileHash == null || fileHash.value() == null ? Optional.empty() : Optional.of(fileHash.value()));
     }
 }

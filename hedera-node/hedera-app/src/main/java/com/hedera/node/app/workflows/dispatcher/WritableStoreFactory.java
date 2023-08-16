@@ -31,7 +31,9 @@ import com.hedera.node.app.service.networkadmin.FreezeService;
 import com.hedera.node.app.service.networkadmin.impl.WritableUpgradeStore;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
+import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.spi.state.WritableStates;
@@ -64,6 +66,10 @@ public class WritableStoreFactory {
         newMap.put(WritableTokenStore.class, new StoreEntry(TokenService.NAME, WritableTokenStore::new));
         newMap.put(
                 WritableTokenRelationStore.class, new StoreEntry(TokenService.NAME, WritableTokenRelationStore::new));
+        newMap.put(
+                WritableNetworkStakingRewardsStore.class,
+                new StoreEntry(TokenService.NAME, WritableNetworkStakingRewardsStore::new));
+        newMap.put(WritableStakingInfoStore.class, new StoreEntry(TokenService.NAME, WritableStakingInfoStore::new));
         // FreezeService
         newMap.put(WritableUpgradeStore.class, new StoreEntry(FreezeService.NAME, WritableUpgradeStore::new));
         // FileService
@@ -112,7 +118,9 @@ public class WritableStoreFactory {
         final var entry = STORE_FACTORY.get(storeInterface);
         if (entry != null && serviceName.equals(entry.name())) {
             final var store = entry.factory().apply(states);
-            assert storeInterface.isInstance(store); // This needs to be ensured while stores are registered
+            if (!storeInterface.isInstance(store))
+                throw new IllegalArgumentException("No instance " + storeInterface
+                        + " is available"); // This needs to be ensured while stores are registered
             return storeInterface.cast(store);
         }
         throw new IllegalArgumentException("No store of the given class is available");

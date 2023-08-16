@@ -90,6 +90,10 @@ class BehindStatusLogicTests {
                 new SelfEventReachedConsensusAction(time.now()),
                 logic.getStatus());
         triggerActionAndAssertNoTransition(
+                logic::processEmergencyReconnectStartedAction,
+                new EmergencyReconnectStartedAction(),
+                logic.getStatus());
+        triggerActionAndAssertNoTransition(
                 logic::processFreezePeriodEnteredAction, new FreezePeriodEnteredAction(0), logic.getStatus());
         triggerActionAndAssertNoTransition(
                 logic::processStateWrittenToDiskAction, new StateWrittenToDiskAction(0), logic.getStatus());
@@ -102,10 +106,6 @@ class BehindStatusLogicTests {
                 logic::processStartedReplayingEventsAction, new StartedReplayingEventsAction(), logic.getStatus());
         triggerActionAndAssertException(
                 logic::processDoneReplayingEventsAction, new DoneReplayingEventsAction(time.now()), logic.getStatus());
-        triggerActionAndAssertException(
-                logic::processEmergencyReconnectStartedAction,
-                new EmergencyReconnectStartedAction(),
-                logic.getStatus());
         triggerActionAndAssertException(logic::processFallenBehindAction, new FallenBehindAction(), logic.getStatus());
     }
 }

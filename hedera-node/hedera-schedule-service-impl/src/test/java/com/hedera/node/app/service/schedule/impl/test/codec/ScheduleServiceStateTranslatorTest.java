@@ -23,7 +23,10 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.hapi.node.scheduled.ScheduleCreateTransactionBody;
+import com.hedera.hapi.node.state.primitives.ProtoLong;
+import com.hedera.hapi.node.state.primitives.ProtoString;
 import com.hedera.hapi.node.state.schedule.Schedule;
+import com.hedera.hapi.node.state.schedule.ScheduleList;
 import com.hedera.hapi.node.token.CryptoDeleteTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
@@ -69,8 +72,8 @@ class ScheduleServiceStateTranslatorTest {
     // This one is a perfect 10.
     private static final String ADMIN_KEY_HEX =
             "0000000000191561942608236107294793378084303638130997321548169216";
-    private static final String EXEPECTED_HASH_STRING =
-            "06abd7245b5e40473719948f7dee8120de725e41aa5a72cde8001f72c940ca7d";
+    private static final ProtoString EXEPECTED_HASH_STRING =
+            new ProtoString("06abd7245b5e40473719948f7dee8120de725e41aa5a72cde8001f72c940ca7d");
     private static final String SCHEDULED_TXN_MEMO = "Wait for me!";
     private static final long FEE = 123L;
     private final String memo = "Test";
@@ -120,10 +123,10 @@ class ScheduleServiceStateTranslatorTest {
     private ReadableKVStateBase<ScheduleID, Schedule> schedulesById;
 
     @Mock(strictness = Mock.Strictness.LENIENT)
-    private ReadableKVStateBase<Long, List<Schedule>> schedulesByLong;
+    private ReadableKVStateBase<ProtoLong, ScheduleList> schedulesByLong;
 
     @Mock(strictness = Mock.Strictness.LENIENT)
-    private ReadableKVStateBase<String, List<Schedule>> schedulesByString;
+    private ReadableKVStateBase<ProtoString, ScheduleList> schedulesByString;
 
     ScheduleServiceStateTranslatorTest() {
         scheduledTxn = createScheduledTransaction();
@@ -231,10 +234,11 @@ class ScheduleServiceStateTranslatorTest {
 
     @Test
     void createScheduleVirtualValueFromScheduleUsingReadableScheduleStoreByLong() throws InvalidKeyException {
-        BDDMockito.given(states.<Long, List<Schedule>>get("SCHEDULES_BY_EXPIRY_SEC"))
+        BDDMockito.given(states.<ProtoLong, ScheduleList>get("SCHEDULES_BY_EXPIRY_SEC"))
                 .willReturn(schedulesByLong);
         scheduleStore = new ReadableScheduleStoreImpl(states);
-        BDDMockito.given(schedulesByLong.get(testExpiry)).willReturn(List.of(getValidSchedule()));
+        BDDMockito.given(schedulesByLong.get(new ProtoLong(testExpiry)))
+                .willReturn(new ScheduleList(List.of(getValidSchedule())));
 
         final List<com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue>
                 listScheduleVirtualValue = ScheduleServiceStateTranslator.pbjToState(testExpiry, scheduleStore);
@@ -265,10 +269,10 @@ class ScheduleServiceStateTranslatorTest {
     @Test
     void createScheduleVirtualValueFromScheduleUsingReadableScheduleStoreBySchedule() throws InvalidKeyException {
         Schedule schedule = getValidSchedule();
-        BDDMockito.given(states.<String, List<Schedule>>get("SCHEDULES_BY_EQUALITY"))
+        BDDMockito.given(states.<ProtoString, ScheduleList>get("SCHEDULES_BY_EQUALITY"))
                 .willReturn(schedulesByString);
         scheduleStore = new ReadableScheduleStoreImpl(states);
-        BDDMockito.given(schedulesByString.get(EXEPECTED_HASH_STRING)).willReturn(List.of(schedule));
+        BDDMockito.given(schedulesByString.get(EXEPECTED_HASH_STRING)).willReturn(new ScheduleList(List.of(schedule)));
 
         final List<com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue>
                 listScheduleVirtualValue = ScheduleServiceStateTranslator.pbjToState(schedule, scheduleStore);

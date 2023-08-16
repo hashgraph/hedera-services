@@ -42,7 +42,7 @@ import com.hedera.node.app.service.token.impl.handlers.FinalizeChildRecordHandle
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
-import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -75,7 +75,7 @@ class FinalizeChildRecordHandlerTest extends CryptoTokenHandlerTestBase {
     private static final TokenID TOKEN_321 = asToken(321);
 
     @Mock(strictness = LENIENT)
-    private HandleContext context;
+    private FinalizeContext context;
 
     @Mock
     private CryptoTransferRecordBuilder recordBuilder;
@@ -677,7 +677,7 @@ class FinalizeChildRecordHandlerTest extends CryptoTokenHandlerTestBase {
                                 .build()));
     }
 
-    private HandleContext mockContext() {
+    private FinalizeContext mockContext() {
         given(context.recordBuilder(CryptoTransferRecordBuilder.class)).willReturn(recordBuilder);
 
         given(context.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);

@@ -90,22 +90,6 @@ public interface HederaNativeOperations {
     void finalizeHollowAccountAsContract(@NonNull Bytes evmAddress);
 
     /**
-     * Collects the given {@code amount} of fees from the given {@code fromEntityNumber}.
-     *
-     * @param fromEntityNumber the number of the entity to collect fees from
-     * @param amount          the amount of fees to collect
-     */
-    void collectFee(long fromEntityNumber, final long amount);
-
-    /**
-     * Refunds the given {@code amount} of fees from the given {@code fromEntityNumber}.
-     *
-     * @param fromEntityNumber the number of the entity to refund fees to
-     * @param amount          the amount of fees to collect
-     */
-    void refundFee(long fromEntityNumber, final long amount);
-
-    /**
      * Transfers value from one account or contract to another without creating a record in this {@link HandleHederaOperations},
      * performing signature verification for a receiver with {@code receiverSigRequired=true} by giving priority
      * to the included {@code VerificationStrategy}.

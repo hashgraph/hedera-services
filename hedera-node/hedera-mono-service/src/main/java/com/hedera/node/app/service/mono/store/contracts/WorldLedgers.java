@@ -165,10 +165,10 @@ public class WorldLedgers {
             TokenNftInfo info = infoForNft.get();
             return Optional.of(new EvmNftInfo(
                     info.getNftID().getSerialNumber(),
-                    EntityIdUtils.asTypedEvmAddress(info.getAccountID()),
+                    canonicalAddress(EntityIdUtils.asTypedEvmAddress(info.getAccountID())),
                     info.getCreationTime().getSeconds(),
                     info.getMetadata().toByteArray(),
-                    EntityIdUtils.asTypedEvmAddress(info.getSpenderId()),
+                    canonicalAddress(EntityIdUtils.asTypedEvmAddress(info.getSpenderId())),
                     ledgerId.toByteArray()));
         }
 
@@ -291,7 +291,7 @@ public class WorldLedgers {
         if (staticEntityAccess == null) {
             throw new IllegalStateException("staticApprovedOf should only be used with StaticEntityAccess");
         } else {
-            return staticEntityAccess.approvedSpenderOf(nftId);
+            return canonicalAddress(staticEntityAccess.approvedSpenderOf(nftId));
         }
     }
 
@@ -313,9 +313,9 @@ public class WorldLedgers {
 
     public Address ownerOf(final NftId nftId) {
         if (!areMutable()) {
-            return staticEntityAccess.ownerOf(nftId);
+            return canonicalAddress(staticEntityAccess.ownerOf(nftId));
         }
-        return explicitOwnerOfExtant(nftId).toEvmAddress();
+        return canonicalAddress(explicitOwnerOfExtant(nftId).toEvmAddress());
     }
 
     @SuppressWarnings("unchecked")

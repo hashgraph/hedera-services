@@ -59,6 +59,10 @@ public abstract class MethodBase implements ServerCalls.UnaryMethod<BufferedData
      * Per-thread shared {@link BufferedData} for responses. We store these in a thread local, because we do
      * not have control over the thread pool used by the underlying gRPC server.
      */
+    @SuppressWarnings(
+            "java:S5164") // looks like a false positive ("ThreadLocal" variables should be cleaned up when no longer
+    // used), but these threads are long-lived and the lifetime of the thread local is the same as
+    // the application
     private static final ThreadLocal<BufferedData> BUFFER_THREAD_LOCAL =
             ThreadLocal.withInitial(() -> BufferedData.allocate(MAX_RESPONSE_SIZE));
 
@@ -134,11 +138,11 @@ public abstract class MethodBase implements ServerCalls.UnaryMethod<BufferedData
             // Track the number of times we successfully handled a call
             callsHandledCounter.increment();
             callsHandledSpeedometer.cycle();
-        } catch (final Throwable th) {
+        } catch (final Exception e) {
             // Track the number of times we failed to handle a call
-            logger.error("Failed to handle call! Unexpected exception", th);
+            logger.error("Failed to handle call! Unexpected exception", e);
             callsFailedCounter.increment();
-            responseObserver.onError(th);
+            responseObserver.onError(e);
         }
     }
 
