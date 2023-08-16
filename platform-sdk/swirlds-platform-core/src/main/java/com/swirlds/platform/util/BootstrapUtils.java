@@ -157,19 +157,20 @@ public final class BootstrapUtils {
      * <p>
      * Future work: at some point the app configuration should be separated from the platform configuration
      *
-     * @param configPath the path to the config file
-     * @param appMains   the app main instances
+     * @param pathsConfig the paths of configuration files
+     * @param appMains    the app main instances
      * @return a new configuration instance
      * @throws IOException if there is a problem reading the configuration files
      */
     public static @NonNull Configuration loadConfig(
-            @NonNull final Path configPath, @NonNull final Map<NodeId, SwirldMain> appMains) throws IOException {
-
-        Objects.requireNonNull(configPath, "configPath must not be null");
+            @NonNull final PathsConfig pathsConfig, @NonNull final Map<NodeId, SwirldMain> appMains)
+            throws IOException {
+        Objects.requireNonNull(pathsConfig, "pathsConfig must not be null");
         Objects.requireNonNull(appMains, "appMains must not be null");
 
         // The properties from the config.txt
-        final LegacyConfigProperties configurationProperties = LegacyConfigPropertiesLoader.loadConfigFile(configPath);
+        final LegacyConfigProperties configurationProperties =
+                LegacyConfigPropertiesLoader.loadConfigFile(pathsConfig.getConfigPath());
 
         final ConfigSource settingsConfigSource = LegacyFileConfigSource.ofSettingsFile();
         final ConfigSource mappedSettingsConfigSource = ConfigMappings.addConfigMapping(settingsConfigSource);
