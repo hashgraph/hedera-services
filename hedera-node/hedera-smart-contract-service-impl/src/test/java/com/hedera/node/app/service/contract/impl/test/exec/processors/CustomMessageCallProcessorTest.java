@@ -138,8 +138,6 @@ class CustomMessageCallProcessorTest {
 
     @Test
     void callPrngSystemContractInsufficientGas() {
-        final var isHalted = new AtomicBoolean();
-        givenHaltableFrame(isHalted);
         givenPrngCall();
         given(prngPrecompile.gasRequirement(any())).willReturn(GAS_REQUIREMENT);
 
@@ -307,7 +305,6 @@ class CustomMessageCallProcessorTest {
 
     private void givenPrngCall() {
         givenCallWithCode(TestHelpers.PRNG_SYSTEM_CONTRACT_ADDRESS);
-        given(frame.getValue()).willReturn(Wei.ZERO);
         given(frame.getInputData()).willReturn(TestHelpers.PRNG_SYSTEM_CONTRACT_ADDRESS);
         given(prngPrecompile.computePrecompile(any(), any())).willReturn(result);
         given(result.getOutput()).willReturn(OUTPUT_DATA);

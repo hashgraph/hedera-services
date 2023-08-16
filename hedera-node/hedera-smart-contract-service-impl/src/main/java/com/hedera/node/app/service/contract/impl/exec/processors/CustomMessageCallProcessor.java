@@ -98,18 +98,18 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
     @Override
     public void start(@NonNull final MessageFrame frame, @NonNull final OperationTracer tracer) {
         final var codeAddress = frame.getContractAddress();
-        if (addressChecks.isSystemAccount(codeAddress)) {
+        if (systemContracts.containsKey(codeAddress)) {
+            doExecuteSystemContract(systemContracts.get(codeAddress), frame, tracer);
+            return;
+        } else if (addressChecks.isSystemAccount(codeAddress)) {
             doHaltIfInvalidSystemCall(codeAddress, frame, tracer);
         } else if (transfersValue(frame)) {
             doTransferValueOrHalt(frame, tracer);
         }
         if (!alreadyHalted(frame)) {
             final var evmPrecompile = precompiles.get(codeAddress);
-            final var systemContract = systemContracts.get(codeAddress);
             if (evmPrecompile != null) {
                 doExecutePrecompile(evmPrecompile, frame, tracer);
-            } else if (systemContract != null) {
-                doExecuteSystemContract(systemContract, frame, tracer);
             } else {
                 frame.setState(MessageFrame.State.CODE_EXECUTING);
             }

@@ -18,16 +18,25 @@ package contract;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.FileID;
+import com.hedera.hapi.node.base.NftID;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.contract.ContractCallTransactionBody;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
+import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.Nft;
+import com.hedera.hapi.node.state.token.Token;
+import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.ids.EntityIdService;
@@ -38,6 +47,7 @@ import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.spi.state.ReadableKVState;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -46,6 +56,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.Map;
@@ -89,11 +100,27 @@ public abstract class AbstractContractXTest {
 
     protected abstract long initialEntityNum();
 
+    protected Map<TokenID, Token> initialTokens() {
+        return new HashMap<>();
+    }
+
+    protected Map<EntityIDPair, TokenRelation> initialTokenRelationships() {
+        return new HashMap<>();
+    }
+
+    protected Map<NftID, Nft> initialNfts() {
+        return new HashMap<>();
+    }
+
     protected abstract Map<FileID, File> initialFiles();
 
     protected abstract Map<Bytes, AccountID> initialAliases();
 
     protected abstract Map<AccountID, Account> initialAccounts();
+
+    protected RunningHashes initialRunningHashes() {
+        return RunningHashes.DEFAULT;
+    }
 
     protected abstract void handleAndCommitScenarioTransactions();
 
@@ -113,6 +140,35 @@ public abstract class AbstractContractXTest {
             handler.handle(context);
             ((SavepointStackImpl) context.savepointStack()).commitFullStack();
         }
+    }
+
+    protected HandleContext handleAndCommitSingleTransaction(
+            @NonNull final TransactionHandler handler, @NonNull final TransactionBody txn) {
+        final var context = scaffoldingComponent.contextFactory().apply(txn);
+        handler.handle(context);
+        ((SavepointStackImpl) context.savepointStack()).commitFullStack();
+        return context;
+    }
+
+    protected TransactionBody callTransaction(
+            final AccountID payer,
+            final long value,
+            @NonNull final ContractID contractId,
+            @NonNull final ByteBuffer encoded) {
+        return TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder().accountID(payer))
+                .contractCall(callWithParams(value, contractId, encoded))
+                .build();
+    }
+
+    protected ContractCallTransactionBody callWithParams(
+            final long value, @NonNull final ContractID contractId, @NonNull final ByteBuffer encoded) {
+        return ContractCallTransactionBody.newBuilder()
+                .functionParameters(Bytes.wrap(encoded.array()))
+                .contractID(contractId)
+                .amount(value)
+                .gas(GAS_TO_OFFER)
+                .build();
     }
 
     protected Bytes resourceAsBytes(@NonNull final String loc) {
@@ -142,14 +198,16 @@ public abstract class AbstractContractXTest {
                 BlockRecordService.NAME,
                 Map.of(
                         BlockRecordService.BLOCK_INFO_STATE_KEY, new AtomicReference<>(BlockInfo.DEFAULT),
-                        BlockRecordService.RUNNING_HASHES_STATE_KEY, new AtomicReference<>(RunningHashes.DEFAULT)));
+                        BlockRecordService.RUNNING_HASHES_STATE_KEY, new AtomicReference<>(initialRunningHashes())));
 
         fakeHederaState.addService(
                 TokenService.NAME,
                 Map.of(
+                        TokenServiceImpl.TOKEN_RELS_KEY, initialTokenRelationships(),
                         TokenServiceImpl.ACCOUNTS_KEY, initialAccounts(),
                         TokenServiceImpl.ALIASES_KEY, initialAliases(),
-                        TokenServiceImpl.TOKENS_KEY, new HashMap<>()));
+                        TokenServiceImpl.TOKENS_KEY, initialTokens(),
+                        TokenServiceImpl.NFTS_KEY, initialNfts()));
         fakeHederaState.addService(FileServiceImpl.NAME, Map.of(FileServiceImpl.BLOBS_KEY, initialFiles()));
         fakeHederaState.addService(
                 ContractServiceImpl.NAME,
