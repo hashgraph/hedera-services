@@ -32,7 +32,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class BlockInfoTranslatorTest {
+class BlockInfoTranslatorTest {
 
     private com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext subject;
 
