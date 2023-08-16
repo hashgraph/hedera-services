@@ -55,6 +55,11 @@ The following is a table with general use cases and behavior for Ethereum and He
   - Added `getNonce` method in [MutableEntityAccess](https://github.com/hashgraph/hedera-services/blob/96a85f0e08f82582bbf25328d14ca90fc630c5ef/hedera-node/hedera-mono-service/src/main/java/com/hedera/node/app/service/mono/store/contracts/MutableEntityAccess.java#L103) that uses `HederaLedger`'s `getNonce`
   - Updated `getNonce` in [WorldStateAccount](https://github.com/hashgraph/hedera-services/blob/96a85f0e08f82582bbf25328d14ca90fc630c5ef/hedera-node/hedera-evm/src/main/java/com/hedera/node/app/service/evm/store/contracts/WorldStateAccount.java#L61) to return value from state using `entityAccess` instead of `0`
 
+### Calculate and use proper EVM addresses for `CREATE` addresses instead of using Hedera specific long-zero addresses
+
+After we start storing accurate contract nonce values in state we will be able to calculate `CREATE` addresses for new contracts as per the Ethereum yellow paper.
+We will need to update `HederaEvmCreateOperation.targetContractAddress` to calculate the `CREATE` address of a new contract based on the sender's address and nonce.
+
 ### Feature Flags
 
 We will need to add two feature flags:
@@ -62,7 +67,9 @@ We will need to add two feature flags:
 
 ### Merging of contract into hollow account
 
-When contract is merged into an existing hollow account we are correctly setting its nonce value to 1 in `HederaCreateOperationExternalizer.finalizeHollowAccountIntoContract` as specified in [EIP-161](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-161.md).
+When a contract is created, and it does not create other contracts in its constructor, its nonce is set to 1 (as specified in [EIP-161](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-161.md)).
+In general if the contract creates `N` other contracts in its constructor, then its nonce should be equal to `1+N`.
+When contract is merged into an existing hollow account, we should update implementation in `HederaCreateOperationExternalizer.finalizeHollowAccountIntoContract`, to correctly set its nonce value to `1+N` as described in the general case above.
 
 ### New Classes
 
