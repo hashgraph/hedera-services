@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
@@ -48,7 +49,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.MockMakers;
@@ -280,7 +280,7 @@ public class EmergencyRecoveryFileTests {
             file.write("recovery:\n");
             file.write("  state:\n");
             file.write(Arrays.stream(values)
-                    .map(p -> "    " + p.getLeft() + ": " + p.getRight())
+                    .map(p -> "    " + p.left() + ": " + p.right())
                     .collect(Collectors.joining("\n")));
         } catch (final IOException e) {
             throw new RuntimeException(e);
@@ -294,7 +294,7 @@ public class EmergencyRecoveryFileTests {
             file.write("recovery:\n");
             file.write("  state:\n");
             file.write(Arrays.stream(values)
-                    .map(p -> "    " + p.getLeft() + ": " + p.getRight())
+                    .map(p -> "    " + p.left() + ": " + p.right())
                     .collect(Collectors.joining("\n")));
             file.write("\n  bootstrap:\n");
         } catch (final IOException e) {

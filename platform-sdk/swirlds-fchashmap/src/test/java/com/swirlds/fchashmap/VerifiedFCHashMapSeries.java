@@ -19,13 +19,13 @@ package com.swirlds.fchashmap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.FastCopyable;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Assertions;
 
 /**
@@ -65,7 +65,7 @@ public class VerifiedFCHashMapSeries<K, V extends FastCopyable> {
      * Make a copy of the latest reference map.
      */
     private Map<K, V> makeReferenceCopy() {
-        final Map<K, V> reference = getMutablePair().getLeft();
+        final Map<K, V> reference = getMutablePair().left();
 
         final Map<K, V> referenceCopy = new HashMap<>();
 
@@ -81,7 +81,7 @@ public class VerifiedFCHashMapSeries<K, V extends FastCopyable> {
      * Make a copy of the mutable FCHashMap.
      */
     private FCHashMap<K, V> makeFCHashMapCopy() {
-        return getMutablePair().getRight().copy();
+        return getMutablePair().right().copy();
     }
 
     /**
@@ -100,7 +100,7 @@ public class VerifiedFCHashMapSeries<K, V extends FastCopyable> {
      */
     public void release(final int index) {
         throwIfReleased();
-        final FCHashMap<K, V> map = copies.get(index).getRight();
+        final FCHashMap<K, V> map = copies.get(index).right();
         if (!map.isImmutable()) {
             assertEquals(1, copies.size(), "mutable map must be released last");
         }
@@ -141,8 +141,8 @@ public class VerifiedFCHashMapSeries<K, V extends FastCopyable> {
         assertEquals(value, valueCopy, "value and its copy must be equal");
 
         final Pair<Map<K, V>, FCHashMap<K, V>> pair = getMutablePair();
-        final Map<K, V> reference = pair.getLeft();
-        final FCHashMap<K, V> map = pair.getRight();
+        final Map<K, V> reference = pair.left();
+        final FCHashMap<K, V> map = pair.right();
 
         final V previous = map.put(key, value);
         final V previousReference = reference.put(key, valueCopy);
@@ -157,8 +157,8 @@ public class VerifiedFCHashMapSeries<K, V extends FastCopyable> {
         throwIfReleased();
 
         final Pair<Map<K, V>, FCHashMap<K, V>> pair = getMutablePair();
-        final Map<K, V> reference = pair.getLeft();
-        final FCHashMap<K, V> map = pair.getRight();
+        final Map<K, V> reference = pair.left();
+        final FCHashMap<K, V> map = pair.right();
 
         final V previousReference = reference.remove(key);
         final V previous = map.remove(key);
@@ -182,8 +182,8 @@ public class VerifiedFCHashMapSeries<K, V extends FastCopyable> {
     public ModifiableValues<V> getForModify(final K key) {
         throwIfReleased();
         final Pair<Map<K, V>, FCHashMap<K, V>> pair = getMutablePair();
-        final Map<K, V> reference = pair.getLeft();
-        final FCHashMap<K, V> map = pair.getRight();
+        final Map<K, V> reference = pair.left();
+        final FCHashMap<K, V> map = pair.right();
 
         final V referenceValue = reference.get(key);
         final ModifiableValue<V> modifiableValue = map.getForModify(key);
@@ -198,8 +198,8 @@ public class VerifiedFCHashMapSeries<K, V extends FastCopyable> {
      * Assert that a single copy is valid.
      */
     private void assertCopyValidity(final Pair<Map<K, V>, FCHashMap<K, V>> pair) {
-        final Map<K, V> reference = pair.getLeft();
-        final FCHashMap<K, V> map = pair.getRight();
+        final Map<K, V> reference = pair.left();
+        final FCHashMap<K, V> map = pair.right();
 
         Assertions.assertEquals(reference.size(), map.size(), "size of map should match the reference");
 
