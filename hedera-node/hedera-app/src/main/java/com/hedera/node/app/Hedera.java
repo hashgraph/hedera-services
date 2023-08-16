@@ -594,6 +594,7 @@ public final class Hedera implements SwirldMain {
 
         initializeFeeManager(state);
         initializeExchangeRateManager(state);
+        initializeThrottleManager(state);
 
         // Store the version in state
         // TODO Who is responsible for saving this in the tree? I assumed it went into dual state... not sensible!
@@ -831,6 +832,26 @@ public final class Hedera implements SwirldMain {
             daggerApp.exchangeRateManager().update(fileData);
         });
         logger.info("Exchange rates initialized");
+    }
+
+    private void initializeThrottleManager(@NonNull final HederaState state) {
+        logger.info("Initializing throttles");
+        final var readableFileStore = new ReadableStoreFactory(state).getStore(ReadableFileStore.class);
+        final var hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
+        final var filesConfig = configProvider.getConfiguration().getConfigData(FilesConfig.class);
+        final var fileNum = filesConfig.throttleDefinitions();
+        final var fileId = FileID.newBuilder()
+                .fileNum(fileNum)
+                .shardNum(hederaConfig.shard())
+                .realmNum(hederaConfig.realm())
+                .build();
+
+        final var fileOpt = readableFileStore.getFileLeaf(fileId);
+        fileOpt.ifPresent(file -> {
+            final var fileData = file.contents();
+            // TODO: implement daggerApp.throttleManager().update(fileData);
+        });
+        logger.info("Throttles initialized");
     }
 
     /*==================================================================================================================
