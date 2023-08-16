@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.token.impl.handlers.transfer;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.Map;

@@ -22,7 +22,6 @@ import static com.hedera.node.app.service.token.impl.handlers.transfer.AliasUtil
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.AutoCreationConfig;

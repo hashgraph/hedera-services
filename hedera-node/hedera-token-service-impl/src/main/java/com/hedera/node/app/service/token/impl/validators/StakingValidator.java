@@ -60,12 +60,12 @@ public class StakingValidator {
             @Nullable final Long stakedNodeIdInOp,
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final NetworkInfo networkInfo) {
+        // If staking is not enabled, then can't update staked id
+        validateFalse(!isStakingEnabled && hasDeclineRewardChange, STAKING_NOT_ENABLED);
         final var hasStakingId = stakedAccountIdInOp != null || stakedNodeIdInOp != null;
         if (!hasStakingId) {
             return;
         }
-        // If staking is not enabled, then can't update staked id
-        validateFalse(!isStakingEnabled && hasDeclineRewardChange, STAKING_NOT_ENABLED);
 
         // sentinel values on -1 for stakedNodeId and 0.0.0 for stakedAccountId are used to reset
         // staking on an account
@@ -93,12 +93,12 @@ public class StakingValidator {
             @Nullable final Long stakedNodeIdInOp,
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final NetworkInfo networkInfo) {
+        // If staking is not enabled, then can't update staked id
+        validateFalse(!isStakingEnabled && hasDeclineRewardChange, STAKING_NOT_ENABLED);
         final var hasStakingId = stakedAccountIdInOp != null || stakedNodeIdInOp != null;
         if (!hasStakingId) {
             return;
         }
-        // If staking is not enabled, then can't update staked id
-        validateFalse(!isStakingEnabled && hasDeclineRewardChange, STAKING_NOT_ENABLED);
 
         // sentinel values on -1 for stakedNodeId and 0.0.0 for stakedAccountId are used to reset
         // staking on an account
