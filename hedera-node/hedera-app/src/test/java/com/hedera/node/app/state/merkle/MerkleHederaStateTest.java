@@ -291,7 +291,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
                 final var md = new StateMetadata<>(
                         serviceName,
                         new TestSchema(1),
-                        StateDefinition.<String, String>inMemory(FRUIT_STATE_KEY, STRING_CODEC, STRING_CODEC));
+                        StateDefinition.inMemory(FRUIT_STATE_KEY, STRING_CODEC, STRING_CODEC));
 
                 final var node = createMerkleMap(label);
                 map.put(serviceName, node);
@@ -449,46 +449,30 @@ class MerkleHederaStateTest extends MerkleTestBase {
             // Then query it, we find the data we expected to find
             assertThat(states).isNotNull();
             assertThat(states.isEmpty()).isFalse();
-            assertThat(states.size()).isEqualTo(4); // animal and fruit and country
+            assertThat(states.size()).isEqualTo(4); // animal and fruit and country and steam
 
-            final ReadableKVState<String, String> fruitStates = states.get(FRUIT_STATE_KEY);
-            assertThat(fruitStates).isNotNull();
-            assertThat(fruitStates.get(A_KEY)).isSameAs(APPLE);
-            assertThat(fruitStates.get(B_KEY)).isSameAs(BANANA);
-            assertThat(fruitStates.get(C_KEY)).isNull();
-            assertThat(fruitStates.get(D_KEY)).isNull();
-            assertThat(fruitStates.get(E_KEY)).isNull();
-            assertThat(fruitStates.get(F_KEY)).isNull();
-            assertThat(fruitStates.get(G_KEY)).isNull();
+            final ReadableKVState<String, String> fruitState = states.get(FRUIT_STATE_KEY);
+            assertFruitState(fruitState);
 
-            final ReadableKVState<String, String> animalStates = states.get(ANIMAL_STATE_KEY);
-            assertThat(animalStates).isNotNull();
-            assertThat(animalStates.get(A_KEY)).isNull();
-            assertThat(animalStates.get(B_KEY)).isNull();
-            assertThat(animalStates.get(C_KEY)).isSameAs(CUTTLEFISH);
-            assertThat(animalStates.get(D_KEY)).isSameAs(DOG);
-            assertThat(animalStates.get(E_KEY)).isNull();
-            assertThat(animalStates.get(F_KEY)).isSameAs(FOX);
-            assertThat(animalStates.get(G_KEY)).isNull();
+            final ReadableKVState<String, String> animalState = states.get(ANIMAL_STATE_KEY);
+            assertAnimalState(animalState);
 
             final ReadableSingletonState<String> countryState = states.getSingleton(COUNTRY_STATE_KEY);
-            assertThat(countryState.getStateKey()).isEqualTo(COUNTRY_STATE_KEY);
-            assertThat(countryState.get()).isEqualTo(GHANA);
+            assertCountryState(countryState);
 
             final ReadableQueueState<String> steamState = states.getQueue(STEAM_STATE_KEY);
-            assertThat(steamState.getStateKey()).isEqualTo(STEAM_STATE_KEY);
-            assertThat(steamState.peek()).isEqualTo(ART);
+            assertSteamState(steamState);
 
             // And the states we got back CANNOT be cast to WritableState
             assertThatThrownBy(
                             () -> { //noinspection rawtypes
-                                final var ignored = (WritableKVState) fruitStates;
+                                final var ignored = (WritableKVState) fruitState;
                             })
                     .isInstanceOf(ClassCastException.class);
 
             assertThatThrownBy(
                             () -> { //noinspection rawtypes
-                                final var ignored = (WritableKVState) animalStates;
+                                final var ignored = (WritableKVState) animalState;
                             })
                     .isInstanceOf(ClassCastException.class);
 
@@ -503,6 +487,38 @@ class MerkleHederaStateTest extends MerkleTestBase {
                                 final var ignored = (WritableQueueState) steamState;
                             })
                     .isInstanceOf(ClassCastException.class);
+        }
+
+        private static void assertFruitState(ReadableKVState<String, String> fruitState) {
+            assertThat(fruitState).isNotNull();
+            assertThat(fruitState.get(A_KEY)).isSameAs(APPLE);
+            assertThat(fruitState.get(B_KEY)).isSameAs(BANANA);
+            assertThat(fruitState.get(C_KEY)).isNull();
+            assertThat(fruitState.get(D_KEY)).isNull();
+            assertThat(fruitState.get(E_KEY)).isNull();
+            assertThat(fruitState.get(F_KEY)).isNull();
+            assertThat(fruitState.get(G_KEY)).isNull();
+        }
+
+        private void assertAnimalState(ReadableKVState<String, String> animalState) {
+            assertThat(animalState).isNotNull();
+            assertThat(animalState.get(A_KEY)).isNull();
+            assertThat(animalState.get(B_KEY)).isNull();
+            assertThat(animalState.get(C_KEY)).isSameAs(CUTTLEFISH);
+            assertThat(animalState.get(D_KEY)).isSameAs(DOG);
+            assertThat(animalState.get(E_KEY)).isNull();
+            assertThat(animalState.get(F_KEY)).isSameAs(FOX);
+            assertThat(animalState.get(G_KEY)).isNull();
+        }
+
+        private void assertCountryState(ReadableSingletonState<String> countryState) {
+            assertThat(countryState.getStateKey()).isEqualTo(COUNTRY_STATE_KEY);
+            assertThat(countryState.get()).isEqualTo(GHANA);
+        }
+
+        private void assertSteamState(ReadableQueueState<String> steamState) {
+            assertThat(steamState.getStateKey()).isEqualTo(STEAM_STATE_KEY);
+            assertThat(steamState.peek()).isEqualTo(ART);
         }
     }
 

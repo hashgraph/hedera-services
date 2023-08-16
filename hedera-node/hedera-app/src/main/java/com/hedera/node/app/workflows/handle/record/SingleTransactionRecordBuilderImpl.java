@@ -315,6 +315,7 @@ public class SingleTransactionRecordBuilderImpl
      * @param contractCallResult the contractCall result
      * @return the builder
      */
+    @Override
     @NonNull
     public SingleTransactionRecordBuilderImpl contractCallResult(
             @Nullable final ContractFunctionResult contractCallResult) {
