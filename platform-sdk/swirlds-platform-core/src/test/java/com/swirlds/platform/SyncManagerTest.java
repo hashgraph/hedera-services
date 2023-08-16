@@ -150,10 +150,7 @@ public class SyncManagerTest {
 
     @BeforeAll
     static void beforeAll() {
-        new TestConfigBuilder()
-                .withValue("sync.maxIncomingSyncsInc", 10)
-                .withValue("sync.maxOutgoingSyncs", 10)
-                .getOrCreateConfig();
+        new TestConfigBuilder().getOrCreateConfig();
     }
 
     /**
