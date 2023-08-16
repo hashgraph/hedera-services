@@ -314,9 +314,6 @@ public class HandleWorkflow {
                 try {
                     // Dispatch the transaction to the handler
                     dispatcher.dispatchHandle(context);
-
-                    // commit state
-                    stack.commitFullStack();
                     recordBuilder.status(SUCCESS);
                 } catch (final HandleException e) {
                     rollback(e.getStatus(), stack, recordListBuilder);
@@ -332,6 +329,9 @@ public class HandleWorkflow {
         }
 
         transactionFinalizer.finalizeParentRecord(payer, tokenServiceContext);
+
+        // Commit all state changes
+        stack.commitFullStack();
 
         // store all records at once
         final var recordListResult = recordListBuilder.build();

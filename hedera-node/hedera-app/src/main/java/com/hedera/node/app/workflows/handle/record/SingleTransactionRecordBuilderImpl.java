@@ -119,7 +119,7 @@ public class SingleTransactionRecordBuilderImpl
     private List<TokenAssociation> automaticTokenAssociations = new LinkedList<>();
     private List<AccountAmount> paidStakingRewards = new LinkedList<>();
     private final TransactionRecord.Builder transactionRecordBuilder = TransactionRecord.newBuilder();
-    private TransferList transferList = null;
+    private TransferList transferList = TransferList.DEFAULT;
 
     // fields needed for TransactionReceipt
     private ResponseCodeEnum status = ResponseCodeEnum.OK;

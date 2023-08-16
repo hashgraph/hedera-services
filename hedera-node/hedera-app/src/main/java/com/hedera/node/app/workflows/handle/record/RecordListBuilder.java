@@ -80,7 +80,7 @@ public class RecordListBuilder {
      * @return all child record builders
      */
     public List<SingleTransactionRecordBuilderImpl> childRecordBuilders() {
-        return Collections.unmodifiableList(precedingRecordBuilders);
+        return Collections.unmodifiableList(recordBuilders);
     }
 
     /**
