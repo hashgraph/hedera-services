@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.file.impl.base;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.FILE_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_ONLY;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF;
@@ -53,8 +52,5 @@ public abstract class FileQueryBase extends PaidQueryHandler {
         final var fileStore = Objects.requireNonNull(context).createStore(ReadableFileStore.class);
         final var file = fileStore.getFileMetadata(fileID);
         mustExist(file, INVALID_FILE_ID);
-        if (file.deleted()) {
-            throw new PreCheckException(FILE_DELETED);
-        }
     }
 }
