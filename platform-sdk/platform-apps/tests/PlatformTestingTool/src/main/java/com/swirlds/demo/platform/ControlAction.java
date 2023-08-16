@@ -23,8 +23,9 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.demo.platform.fs.stresstest.proto.ControlType;
 import java.io.IOException;
 import java.time.Instant;
+import java.util.Objects;
 import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
+
 
 public class ControlAction implements SelfSerializable {
     private static final long CLASS_ID = 0x9d36e40b51de36fdL;
@@ -68,7 +69,7 @@ public class ControlAction implements SelfSerializable {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder(17, 37).append(type).toHashCode();
+        return Objects.hash(type);
     }
 
     @Override

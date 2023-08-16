@@ -22,8 +22,8 @@ import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.merkle.map.test.pta.MapValue;
 import java.io.Serializable;
+import java.util.Objects;
 import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /**
  * Value stored in the ExpectedMap with corresponding MapKey
@@ -173,14 +173,7 @@ public class ExpectedValue implements Serializable {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder()
-                .append(entityType)
-                .append(hash)
-                .append(isErrored)
-                .append(latestHandledStatus)
-                .append(latestSubmitStatus)
-                .append(historyHandledStatus)
-                .toHashCode();
+        return Objects.hash(entityType, hash, isErrored, latestHandledStatus, latestSubmitStatus, historyHandledStatus);
     }
 
     @Override

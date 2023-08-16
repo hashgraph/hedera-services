@@ -37,7 +37,7 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Objects;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
+
 
 /**
  * A class used to store base event data that is used to create the hash of that event.
@@ -282,16 +282,16 @@ public class BaseEventHashedData extends AbstractSerializableHashable
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder(17, 37)
-                .append(softwareVersion)
-                .append(creatorId)
-                .append(selfParentGen)
-                .append(otherParentGen)
-                .append(selfParentHash)
-                .append(otherParentHash)
-                .append(timeCreated)
-                .append(transactions)
-                .toHashCode();
+        int result = Objects.hash(
+                softwareVersion,
+                creatorId,
+                selfParentGen,
+                otherParentGen,
+                selfParentHash,
+                otherParentHash,
+                timeCreated);
+        result = 31 * result + Arrays.hashCode(transactions);
+        return result;
     }
 
     @Override

@@ -24,8 +24,8 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.IOException;
 import java.util.Comparator;
+import java.util.Objects;
 import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 public class MapKey implements SelfSerializable, Comparable<MapKey>, FastCopyable {
 
@@ -88,11 +88,7 @@ public class MapKey implements SelfSerializable, Comparable<MapKey>, FastCopyabl
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder()
-                .append(shardId)
-                .append(realmId)
-                .append(accountId)
-                .toHashCode();
+        return Objects.hash(shardId, realmId, accountId);
     }
 
     @Override

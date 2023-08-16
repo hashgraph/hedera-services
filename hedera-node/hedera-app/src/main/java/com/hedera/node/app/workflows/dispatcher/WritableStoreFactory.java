@@ -118,7 +118,9 @@ public class WritableStoreFactory {
         final var entry = STORE_FACTORY.get(storeInterface);
         if (entry != null && serviceName.equals(entry.name())) {
             final var store = entry.factory().apply(states);
-            assert storeInterface.isInstance(store); // This needs to be ensured while stores are registered
+            if (!storeInterface.isInstance(store))
+                throw new IllegalArgumentException("No instance " + storeInterface
+                        + " is available"); // This needs to be ensured while stores are registered
             return storeInterface.cast(store);
         }
         throw new IllegalArgumentException("No store of the given class is available");

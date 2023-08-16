@@ -22,8 +22,8 @@ import java.util.Deque;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /**
  * Keeps events that need to be stored in the signed state when it is created. It makes sure it has last {@code
@@ -134,10 +134,7 @@ public class SignedStateEventStorage {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder(17, 37)
-                .append(queue)
-                .append(latestRoundReceived)
-                .toHashCode();
+        return Objects.hash(queue, latestRoundReceived);
     }
 
     @Override

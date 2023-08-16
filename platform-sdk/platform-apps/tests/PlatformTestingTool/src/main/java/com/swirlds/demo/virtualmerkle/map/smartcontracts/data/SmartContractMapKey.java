@@ -21,8 +21,8 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /**
  * A smart contract has a list of key value pairs to store its data.
@@ -146,10 +146,7 @@ public final class SmartContractMapKey implements VirtualKey {
      */
     @Override
     public int hashCode() {
-        return new HashCodeBuilder(17, 37)
-                .append(contractId)
-                .append(keyValuePairIndex)
-                .toHashCode();
+        return Objects.hash(contractId, keyValuePairIndex);
     }
 
     /**

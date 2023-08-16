@@ -22,8 +22,8 @@ import com.swirlds.common.io.exceptions.InvalidVersionException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.IOException;
+import java.util.Objects;
 import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /**
  * A unique identifier for an {@link Nft}.
@@ -134,11 +134,7 @@ public class NftId implements SelfSerializable {
      */
     @Override
     public int hashCode() {
-        return new HashCodeBuilder()
-                .append(shardNum)
-                .append(realmNum)
-                .append(tokenNum)
-                .hashCode();
+        return Objects.hash(shardNum, realmNum, tokenNum);
     }
 
     /**

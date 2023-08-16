@@ -23,7 +23,6 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Objects;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /**
  * A class used to store consensus data about an event.
@@ -112,14 +111,7 @@ public class ConsensusData implements SelfSerializable {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder(17, 37)
-                .append(generation)
-                .append(roundCreated)
-                .append(stale)
-                .append(roundReceived)
-                .append(consensusOrder)
-                .append(consensusTimestamp)
-                .toHashCode();
+        return Objects.hash(generation, roundCreated, stale, consensusTimestamp, roundReceived, consensusOrder);
     }
 
     @Override

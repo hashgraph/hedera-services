@@ -18,13 +18,13 @@ package com.swirlds.common.test.stream;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.utility.StopWatch;
 import com.swirlds.test.framework.TestQualifierTags;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import org.apache.commons.lang3.time.StopWatch;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;

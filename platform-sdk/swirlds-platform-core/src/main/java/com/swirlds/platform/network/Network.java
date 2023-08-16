@@ -102,7 +102,7 @@ public class Network {
         if (ownAddress == null) {
             ownAddress = getOwnAddresses().stream()
                     .filter(a -> !LOCALHOST.equals(a.getHostAddress()))
-                    .min(Comparator.comparing(Inet4Address.class::isInstance))
+                    .max(Comparator.comparing(Inet4Address.class::isInstance))
                     .map(InetAddress::getHostAddress)
                     .orElse(null);
         }
@@ -180,7 +180,10 @@ public class Network {
                     (firstBlock == 172 && secondBlock >= 16 && secondBlock <= 31)
                     ||
                     // Check for 192.168.x.x
-                    (firstBlock == 192 && secondBlock == 168);
+                    (firstBlock == 192 && secondBlock == 168)
+                    ||
+                    // Check for localhost (starts with 127)
+                    (firstBlock == 127);
             // @formatter:on
         }
 
@@ -192,7 +195,9 @@ public class Network {
             ((ip[0] & 0xFF) == 0xfe && (ip[1] & 0xC0) == 0x80)
                     ||
                     // Check for unique local (starts with fd00::)
-                    (ip[0] & 0xFF) == 0xfd;
+                    (ip[0] & 0xFF) == 0xfd
+                    // Loobback (starts with 0:0)
+                    || ((ip[0] & 0xFF) == 0x00 && (ip[1] & 0xC0) == 0x00);
             // @formatter:on
         }
         return false;

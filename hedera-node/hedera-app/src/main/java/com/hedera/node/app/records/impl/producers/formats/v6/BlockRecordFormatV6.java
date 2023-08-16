@@ -94,8 +94,8 @@ public final class BlockRecordFormatV6 implements BlockRecordFormat {
             @NonNull final SemanticVersion hapiVersion) {
         try {
             // create RecordStreamItem
-            final RecordStreamItem recordStreamItem =
-                    new RecordStreamItem(singleTransactionRecord.transaction(), singleTransactionRecord.record());
+            final RecordStreamItem recordStreamItem = new RecordStreamItem(
+                    singleTransactionRecord.transaction(), singleTransactionRecord.transactionRecord());
             // serialize in format for hashing
             // the format is SelfSerializable header and then protobuf fields in reverse order with no protobuf tag
             final var bout = new ByteArrayOutputStream();
