@@ -194,8 +194,9 @@ public class SystemAccountsInitializer {
                 .memo(account.memo())
                 .declineReward(account.declineReward())
                 .receiverSigRequired(account.receiverSigRequired())
-                .autoRenewPeriod(
-                        Duration.newBuilder().seconds(account.autoRenewSeconds()).build())
+                .autoRenewPeriod(Duration.newBuilder()
+                        .seconds(account.autoRenewSeconds())
+                        .build())
                 .initialBalance(account.tinybarBalance());
     }
 
