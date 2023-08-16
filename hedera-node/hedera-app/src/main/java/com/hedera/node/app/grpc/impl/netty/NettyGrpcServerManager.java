@@ -269,7 +269,7 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
                     .bossEventLoopGroup(new EpollEventLoopGroup())
                     .workerEventLoopGroup(new EpollEventLoopGroup());
             logger.info("Using Epoll for gRPC server");
-        } catch (final Throwable ignored) {
+        } catch (final Exception ignored) {
             // If we can't use Epoll, then just use NIO
             logger.info("Epoll not available, using NIO");
             builder = NettyServerBuilder.forPort(port)

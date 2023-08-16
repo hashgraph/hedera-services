@@ -46,8 +46,6 @@ class QueryHederaNativeOperationsTest {
         assertThrows(UnsupportedOperationException.class, () -> subject.createHollowAccount(Bytes.EMPTY));
         assertThrows(UnsupportedOperationException.class, () -> subject.finalizeHollowAccountAsContract(Bytes.EMPTY));
         assertThrows(UnsupportedOperationException.class, () -> subject.finalizeHollowAccountAsContract(Bytes.EMPTY));
-        assertThrows(UnsupportedOperationException.class, () -> subject.collectFee(1L, 2L));
-        assertThrows(UnsupportedOperationException.class, () -> subject.refundFee(1L, 2L));
         assertThrows(
                 UnsupportedOperationException.class,
                 () -> subject.transferWithReceiverSigCheck(1L, 2L, 3L, MOCK_VERIFICATION_STRATEGY));

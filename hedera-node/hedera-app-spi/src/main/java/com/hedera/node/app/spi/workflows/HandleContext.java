@@ -18,7 +18,10 @@ package com.hedera.node.app.spi.workflows;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.spi.fees.FeeAccumulator;
+import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.records.RecordCache;
@@ -109,6 +112,24 @@ public interface HandleContext {
      */
     @Nullable
     Key payerKey();
+
+    /**
+     * Get a calculator for calculating fees for the current transaction, and its {@link SubType}. Most transactions
+     * just use {@link SubType#DEFAULT}, but some (such as crypto transfer) need to be more specific.
+     *
+     * @param subType The {@link SubType} of the transaction.
+     * @return The {@link FeeCalculator} to use.
+     */
+    @NonNull
+    FeeCalculator feeCalculator(@NonNull final SubType subType);
+
+    /**
+     * Gets a {@link FeeAccumulator} used for collecting fees for the current transaction.
+     *
+     * @return The {@link FeeAccumulator} to use.
+     */
+    @NonNull
+    FeeAccumulator feeAccumulator();
 
     /**
      * Consumes and returns the next entity number, for use by handlers that create entities.
@@ -400,6 +421,19 @@ public interface HandleContext {
     <T> T addChildRecordBuilder(@NonNull Class<T> recordBuilderClass);
 
     /**
+     * Adds a preceding child record builder to the list of record builders. If the current {@link HandleContext} (or any parent
+     * context) is rolled back, all child record builders will be reverted.
+     *
+     * @param recordBuilderClass the record type
+     * @return the new child record builder
+     * @param <T> the record type
+     * @throws NullPointerException if {@code recordBuilderClass} is {@code null}
+     * @throws IllegalArgumentException if the record builder type is unknown to the app
+     */
+    @NonNull
+    <T> T addPrecedingChildRecordBuilder(@NonNull Class<T> recordBuilderClass);
+
+    /**
      * Adds a removable child record builder to the list of record builders. Unlike a regular child record builder,
      * a removable child record builder is removed, if the current {@link HandleContext} (or any parent context) is
      * rolled back.
@@ -439,22 +473,18 @@ public interface HandleContext {
         void createSavepoint();
 
         /**
+         * Commits all changes since the last savepoint.
+         *
+         * @throws IllegalStateException if the savepoint stack is empty
+         */
+        void commit();
+
+        /**
          * Rolls back the changes up until the last savepoint.
          *
          * @throws IllegalStateException if the savepoint stack is empty
          */
-        default void rollback() {
-            rollback(1);
-        }
-
-        /**
-         * Rolls back the last {@code count} savepoints.
-         *
-         * @param count the number of savepoints to roll back
-         * @throws IllegalArgumentException if {@code count} is less than {@code 1}
-         * @throws IllegalStateException if the transaction stack contains fewer elements than {@code count}
-         */
-        void rollback(int count);
+        void rollback();
 
         /**
          * Returns the depth of the savepoint stack.

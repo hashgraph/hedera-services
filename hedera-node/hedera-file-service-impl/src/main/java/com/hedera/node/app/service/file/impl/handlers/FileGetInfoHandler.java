@@ -136,7 +136,7 @@ public class FileGetInfoHandler extends FileQueryBase {
                         hex(CryptographyHolder.get().digestSync(contents).getValue());
                 meta = new FileMetadata(
                         file.fileId(),
-                        Timestamp.newBuilder().seconds(file.expirationTime()).build(),
+                        Timestamp.newBuilder().seconds(file.expirationSecond()).build(),
                         file.keys(),
                         Bytes.EMPTY,
                         upgradeHash,

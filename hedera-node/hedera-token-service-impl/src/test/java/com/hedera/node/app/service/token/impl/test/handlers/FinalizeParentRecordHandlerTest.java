@@ -49,7 +49,7 @@ import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHan
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
-import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -84,7 +84,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
     private static final List<TransactionRecord> EMPTY_TRANSACTION_RECORD_LIST = Collections.emptyList();
 
     @Mock(strictness = LENIENT)
-    private HandleContext context;
+    private FinalizeContext context;
 
     @Mock
     private CryptoTransferRecordBuilder recordBuilder;
@@ -724,9 +724,9 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         final var nftId111 =
                 NftID.newBuilder().tokenId(TOKEN_321).serialNumber(111).build();
         final var nft111 =
-                Nft.newBuilder().id(nftId111).ownerId(ACCOUNT_1212_ID).build();
+                Nft.newBuilder().nftId(nftId111).ownerId(ACCOUNT_1212_ID).build();
         final var nft112 = nft111.copyBuilder()
-                .id(nftId111.copyBuilder().serialNumber(112).build())
+                .nftId(nftId111.copyBuilder().serialNumber(112).build())
                 .build();
         final var acct1212tokenRel1 = givenNonFungibleTokenRelation()
                 .copyBuilder()
@@ -742,9 +742,9 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         final var nftId222 =
                 NftID.newBuilder().tokenId(token246Id).serialNumber(222).build();
         final var nft222 =
-                nft111.copyBuilder().id(nftId222).ownerId(ACCOUNT_3434_ID).build();
+                nft111.copyBuilder().nftId(nftId222).ownerId(ACCOUNT_3434_ID).build();
         final var nft223 = nft222.copyBuilder()
-                .id(nftId222.copyBuilder().serialNumber(223).build())
+                .nftId(nftId222.copyBuilder().serialNumber(223).build())
                 .build();
         final var acct1212tokenRel2 = givenNonFungibleTokenRelation()
                 .copyBuilder()
@@ -899,7 +899,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
                                 .build()));
     }
 
-    private HandleContext mockContext() {
+    private FinalizeContext mockContext() {
         given(context.recordBuilder(CryptoTransferRecordBuilder.class)).willReturn(recordBuilder);
 
         given(context.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);

@@ -24,7 +24,6 @@ import com.hedera.node.app.service.mono.state.migration.TokenRelStorageAdapter;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
-import java.util.Set;
 import java.util.function.Supplier;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -67,11 +66,6 @@ public class BackingTokenRels implements BackingStore<Pair<AccountID, TokenID>, 
     @Override
     public HederaTokenRel getImmutableRef(Pair<AccountID, TokenID> key) {
         return delegate.get().get(fromAccountTokenRel(key));
-    }
-
-    @Override
-    public Set<Pair<AccountID, TokenID>> idSet() {
-        throw new UnsupportedOperationException();
     }
 
     @Override

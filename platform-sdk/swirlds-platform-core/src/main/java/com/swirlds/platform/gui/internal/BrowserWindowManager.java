@@ -16,8 +16,9 @@
 
 package com.swirlds.platform.gui.internal;
 
-import com.swirlds.gui.ScrollableJPanel;
+import com.swirlds.gui.components.ScrollableJPanel;
 import com.swirlds.platform.SwirldsPlatform;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.awt.GraphicsEnvironment;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -86,15 +87,7 @@ public final class BrowserWindowManager {
      *
      * @param comp the index of the tab to select
      */
-    public static void showBrowserWindow(final ScrollableJPanel comp) {
-        showBrowserWindow();
-        getBrowserWindow().goTab(comp);
-    }
-
-    /**
-     * Make the browser window visible. If it doesn't yet exist, then create it.
-     */
-    public static void showBrowserWindow() {
+    public static void showBrowserWindow(@Nullable final ScrollableJPanel comp) {
         if (GraphicsEnvironment.isHeadless()) {
             return;
         }
@@ -103,5 +96,6 @@ public final class BrowserWindowManager {
             return;
         }
         setBrowserWindow(new WinBrowser(new PlatformHashgraphGuiSource()));
+        getBrowserWindow().goTab(comp);
     }
 }

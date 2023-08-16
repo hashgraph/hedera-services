@@ -18,9 +18,9 @@ package com.swirlds.platform.test.grid;
 
 import java.io.PrintWriter;
 import java.util.Arrays;
+import java.util.Objects;
 import org.apache.commons.lang3.builder.CompareToBuilder;
 import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /**
  * A class which defines a single result in GridGraph.
@@ -188,7 +188,7 @@ public class GridGraphResult<X extends Comparable<X>, Y extends Comparable<Y>>
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder(17, 37).append(getX()).append(getY()).toHashCode();
+        return Objects.hash(x, y);
     }
 
     /**

@@ -8,7 +8,6 @@ module com.hedera.node.app.service.util.impl {
     requires transitive javax.inject;
     requires com.hedera.node.config;
     requires com.hedera.node.hapi;
-    requires com.google.common;
     requires com.swirlds.common;
     requires com.swirlds.config;
     requires org.apache.logging.log4j;

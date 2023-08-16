@@ -814,6 +814,11 @@ final class TransactionCheckerTest extends AppTestBase {
                         .isInstanceOf(PreCheckException.class)
                         .hasFieldOrPropertyWithValue("responseCode", INSUFFICIENT_TX_FEE);
             }
+        }
+
+        @Nested
+        @DisplayName("Validate timebox")
+        class ValidateTimebox {
 
             @Test
             @DisplayName("A transaction body with less duration than the minimum will simply fail")
@@ -821,11 +826,13 @@ final class TransactionCheckerTest extends AppTestBase {
                 // Given a transaction body with a duration that is too small
                 final var duration =
                         Duration.newBuilder().seconds(MIN_DURATION - 1).build();
-                final var body = bodyBuilder(txIdBuilder()).transactionValidDuration(duration);
-                final var tx = txBuilder(signedTxBuilder(body, sigMapBuilder())).build();
+                final var body = bodyBuilder(txIdBuilder())
+                        .transactionValidDuration(duration)
+                        .build();
+                final var consensusNow = Instant.now();
 
                 // When we check the transaction body
-                assertThatThrownBy(() -> checker.check(tx))
+                assertThatThrownBy(() -> checker.checkTimeBox(body, consensusNow))
                         .isInstanceOf(PreCheckException.class)
                         .hasFieldOrPropertyWithValue("responseCode", INVALID_TRANSACTION_DURATION);
             }
@@ -836,11 +843,13 @@ final class TransactionCheckerTest extends AppTestBase {
                 // Given a transaction body with a duration that is too large
                 final var duration =
                         Duration.newBuilder().seconds(MAX_DURATION + 1).build();
-                final var body = bodyBuilder(txIdBuilder()).transactionValidDuration(duration);
-                final var tx = txBuilder(signedTxBuilder(body, sigMapBuilder())).build();
+                final var body = bodyBuilder(txIdBuilder())
+                        .transactionValidDuration(duration)
+                        .build();
+                final var consensusNow = Instant.now();
 
                 // When we check the transaction body
-                assertThatThrownBy(() -> checker.check(tx))
+                assertThatThrownBy(() -> checker.checkTimeBox(body, consensusNow))
                         .isInstanceOf(PreCheckException.class)
                         .hasFieldOrPropertyWithValue("responseCode", INVALID_TRANSACTION_DURATION);
             }
@@ -848,15 +857,15 @@ final class TransactionCheckerTest extends AppTestBase {
             @Test
             void testCheckTransactionBodyWithExpiredTimeFails() {
                 // Given a transaction body who's valid start time is in the past
+                final var consensusNow = Instant.now();
                 final var past = Timestamp.newBuilder()
-                        .seconds(Instant.now().getEpochSecond() - 100)
+                        .seconds(consensusNow.getEpochSecond() - 100)
                         .build();
                 final var txId = txIdBuilder().transactionValidStart(past);
-                final var tx = txBuilder(signedTxBuilder(bodyBuilder(txId), sigMapBuilder()))
-                        .build();
+                final var body = bodyBuilder(txId).build();
 
                 // When we check the transaction body
-                assertThatThrownBy(() -> checker.check(tx))
+                assertThatThrownBy(() -> checker.checkTimeBox(body, consensusNow))
                         .isInstanceOf(PreCheckException.class)
                         .hasFieldOrPropertyWithValue("responseCode", TRANSACTION_EXPIRED);
             }
@@ -864,15 +873,15 @@ final class TransactionCheckerTest extends AppTestBase {
             @Test
             void testCheckTransactionBodyWithFutureStartFails() {
                 // Given a transaction body who's valid start time is in the future
+                final var consensusNow = Instant.now();
                 final var future = Timestamp.newBuilder()
-                        .seconds(Instant.now().getEpochSecond() + 100)
+                        .seconds(consensusNow.getEpochSecond() + 100)
                         .build();
                 final var txId = txIdBuilder().transactionValidStart(future);
-                final var tx = txBuilder(signedTxBuilder(bodyBuilder(txId), sigMapBuilder()))
-                        .build();
+                final var body = bodyBuilder(txId).build();
 
                 // When we check the transaction body
-                assertThatThrownBy(() -> checker.check(tx))
+                assertThatThrownBy(() -> checker.checkTimeBox(body, consensusNow))
                         .isInstanceOf(PreCheckException.class)
                         .hasFieldOrPropertyWithValue("responseCode", INVALID_TRANSACTION_START);
             }

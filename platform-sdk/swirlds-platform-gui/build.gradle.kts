@@ -24,5 +24,7 @@ plugins {
 dependencies {
     api(project(":swirlds-base"))
     implementation(project(":swirlds-common"))
+    implementation(project(":swirlds-logging"))
     implementation(libs.commons.lang3)
+    compileOnly(libs.spotbugs.annotations)
 }

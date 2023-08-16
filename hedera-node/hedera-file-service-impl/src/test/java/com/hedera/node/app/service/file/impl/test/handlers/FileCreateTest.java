@@ -212,7 +212,7 @@ class FileCreateTest extends FileTestBase {
         final var actualFile = createdFile.get();
         assertEquals("memo", actualFile.memo());
         assertEquals(keys, actualFile.keys());
-        assertEquals(1_234_567L, actualFile.expirationTime());
+        assertEquals(1_234_567L, actualFile.expirationSecond());
         assertEquals(contentsBytes, actualFile.contents());
         assertEquals(fileId, actualFile.fileId());
         assertFalse(actualFile.deleted());
@@ -243,7 +243,7 @@ class FileCreateTest extends FileTestBase {
         final var actualFile = createdFile.get();
         assertEquals("memo", actualFile.memo());
         assertEquals(keys, actualFile.keys());
-        assertEquals(1_234_567L, actualFile.expirationTime());
+        assertEquals(1_234_567L, actualFile.expirationSecond());
         assertEquals(contentsBytes, actualFile.contents());
         assertEquals(fileId, actualFile.fileId());
         assertFalse(actualFile.deleted());

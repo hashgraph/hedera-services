@@ -17,8 +17,8 @@
 package com.swirlds.demo.platform.expiration;
 
 import com.swirlds.merkle.map.test.pta.MapKey;
+import java.util.Objects;
 import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /**
  * Provides a process object useful for tracking the time of the
@@ -67,7 +67,7 @@ public class ExpirationRecordEntry implements Comparable<ExpirationRecordEntry> 
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder().append(mapKey).append(earliestExpiry).toHashCode();
+        return Objects.hash(earliestExpiry, mapKey);
     }
 
     @Override

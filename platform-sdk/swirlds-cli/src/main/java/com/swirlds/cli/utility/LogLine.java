@@ -35,6 +35,9 @@ import static org.apache.commons.lang3.StringEscapeUtils.escapeHtml4;
 import com.swirlds.common.formatting.TextEffect;
 import com.swirlds.common.formatting.UnitFormatter;
 import com.swirlds.common.system.NodeId;
+import static com.swirlds.cli.utility.LogProcessingUtils.parseTimestamp;
+
+import com.swirlds.common.formatting.TextEffect;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.time.ZoneId;
