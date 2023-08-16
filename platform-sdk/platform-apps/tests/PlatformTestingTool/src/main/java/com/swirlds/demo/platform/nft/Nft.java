@@ -228,7 +228,7 @@ public class Nft extends PartialMerkleLeaf implements Keyed<NftId>, MerkleLeaf {
                 .append("owner", getMapKey())
                 .append("memo", getMemo())
                 .append("serialNumber", getSerialNumber())
-                .build();
+                .toString();
     }
 
     /**

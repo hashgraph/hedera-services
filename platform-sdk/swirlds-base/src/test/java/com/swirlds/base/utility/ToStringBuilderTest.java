@@ -56,9 +56,10 @@ class ToStringBuilderTest {
 
     @Test
     void handlingNull() {
-        ToStringBuilder tsb = new ToStringBuilder(this).append("field1", null).append((String) null);
+        String s = null;
+        ToStringBuilder tsb = new ToStringBuilder(this).append("field1", s).append(s);
 
-        assertEquals("ToStringBuilderTest[field1=null,null]", tsb.toString());
+        assertEquals("ToStringBuilderTest[field1=<null>,<null>]", tsb.toString());
     }
 
     static class Parent {
@@ -85,6 +86,6 @@ class ToStringBuilderTest {
     @Test
     void appendSuper() {
         Child child = new Child();
-        assertEquals("Child[Parent[parentField=parentValue],childField=childValue]", child.toString());
+        assertEquals("ToStringBuilderTest.Child[parentField=parentValue,childField=childValue]", child.toString());
     }
 }

@@ -101,6 +101,6 @@ public class ExpectedLesson<T> {
                 .append("parent", parent)
                 .append("position", positionInParent)
                 .append("original", originalNode)
-                .build();
+                .toString();
     }
 }
