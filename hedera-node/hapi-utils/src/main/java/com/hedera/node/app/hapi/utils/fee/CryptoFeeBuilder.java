@@ -83,7 +83,7 @@ public final class CryptoFeeBuilder extends FeeBuilder {
      * @return fee data
      * @throws InvalidTxBodyException when transaction body is invalid
      */
-    public static FeeData getCryptoDeleteTxFeeMatrices(final TransactionBody txBody, final SigValueObj sigValObj)
+    public FeeData getCryptoDeleteTxFeeMatrices(final TransactionBody txBody, final SigValueObj sigValObj)
             throws InvalidTxBodyException {
         if (txBody == null || !txBody.hasCryptoDelete()) {
             throw new InvalidTxBodyException("CryptoDelete Tx Body not available for Fee Calculation");
