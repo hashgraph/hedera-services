@@ -172,6 +172,16 @@ class GenesisRecordsConsensusHookImplTest {
         verifyNoInteractions(genesisAccountRecordBuilder);
     }
 
+    @Test
+    void processCreatesNoRecordsAfterRunning() {
+        subject.setLastConsensusTime(CONSENSUS_NOW);
+        // Add a single account, so we know the subject isn't skipping processing because there's no data
+        subject.stakingAccounts(
+                Map.of(Account.newBuilder().accountId(ACCOUNT_ID_1).build(), ACCT_1_CREATE.copyBuilder()));
+        subject.process(CONSENSUS_NOW, context);
+        verifyNoInteractions(genesisAccountRecordBuilder);
+    }
+
     @SuppressWarnings("DataFlowIssue")
     @Test
     void systemAccountsNullParam() {

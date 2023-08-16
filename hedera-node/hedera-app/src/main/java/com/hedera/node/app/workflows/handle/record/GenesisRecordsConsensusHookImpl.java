@@ -19,6 +19,7 @@ package com.hedera.node.app.workflows.handle.record;
 import static com.hedera.node.app.spi.HapiUtils.FUNDING_ACCOUNT_EXPIRY;
 import static java.util.Objects.requireNonNull;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.state.token.Account;
@@ -33,6 +34,7 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -40,6 +42,7 @@ import org.apache.logging.log4j.Logger;
  * This class is responsible for storing the system accounts created during node startup, and then creating
  * the corresponding synthetic records when a consensus time becomes available.
  */
+@Singleton
 public class GenesisRecordsConsensusHookImpl implements GenesisRecordsConsensusHook {
     private static final Logger log = LogManager.getLogger(GenesisRecordsConsensusHookImpl.class);
     private static final String SYSTEM_ACCOUNT_CREATION_MEMO = "Synthetic system creation";
@@ -51,6 +54,8 @@ public class GenesisRecordsConsensusHookImpl implements GenesisRecordsConsensusH
     private Map<Account, CryptoCreateTransactionBody.Builder> miscAccounts = new HashMap<>();
     private Map<Account, CryptoCreateTransactionBody.Builder> treasuryClones = new HashMap<>();
 
+    private Instant consensusTimeOfLastHandledTxn = null;
+
     /**
      * <b> ⚠️⚠️ Note: though this method will be called each time a new platform event is received,
      * the records created by this class should only be created once.</b> After each data structure's
@@ -60,6 +65,12 @@ public class GenesisRecordsConsensusHookImpl implements GenesisRecordsConsensusH
      */
     @Override
     public void process(@NonNull final Instant consensusTime, @NonNull final HandleContext context) {
+        // This process should only run ONCE, when a node receives its first transaction after startup
+        if (consensusTimeOfLastHandledTxn != null) return;
+
+        // First we set consensusTimeOfLastHandledTxn so that this process won't run again
+        consensusTimeOfLastHandledTxn = consensusTime;
+
         if (!systemAccounts.isEmpty()) {
             createAccountRecordBuilders(systemAccounts, context, SYSTEM_ACCOUNT_CREATION_MEMO);
             systemAccounts = Collections.emptyMap();
@@ -100,6 +111,11 @@ public class GenesisRecordsConsensusHookImpl implements GenesisRecordsConsensusH
     @Override
     public void treasuryClones(@NonNull final Map<Account, CryptoCreateTransactionBody.Builder> accounts) {
         treasuryClones.putAll(requireNonNull(accounts));
+    }
+
+    @VisibleForTesting
+    void setLastConsensusTime(@Nullable final Instant lastConsensusTime) {
+        consensusTimeOfLastHandledTxn = lastConsensusTime;
     }
 
     private void createAccountRecordBuilders(

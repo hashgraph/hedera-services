@@ -41,5 +41,6 @@ public interface GenesisAccountRecordBuilder {
     /**
      * Tracks the memo for the synthetic record
      */
+    @NonNull
     GenesisAccountRecordBuilder memo(@NonNull final String memo);
 }
