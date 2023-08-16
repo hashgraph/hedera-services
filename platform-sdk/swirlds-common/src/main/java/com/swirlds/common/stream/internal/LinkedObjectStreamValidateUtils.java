@@ -20,6 +20,7 @@ import static com.swirlds.common.stream.internal.StreamValidationResult.PARSE_ST
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.OBJECT_STREAM;
 
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
@@ -34,7 +35,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.util.Iterator;
 import java.util.List;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -68,8 +68,8 @@ public final class LinkedObjectStreamValidateUtils {
         StreamValidationResult result;
         try {
             Pair<StreamValidationResult, Hash> objectResult = validateDirOrFile(streamFile, streamType);
-            if (objectResult.getLeft() != StreamValidationResult.OK) {
-                return objectResult.getLeft();
+            if (objectResult.left() != StreamValidationResult.OK) {
+                return objectResult.left();
             }
             Hash entireHash = LinkedObjectStreamUtilities.computeEntireHash(streamFile);
             result = validateSignature(entireHash, sigFile, publicKey, streamType);
@@ -119,13 +119,13 @@ public final class LinkedObjectStreamValidateUtils {
             return StreamValidationResult.PARSE_SIG_FILE_FAIL;
         }
         StreamValidationResult result;
-        Hash entireHashInSig = parsedPairs.getLeft().getLeft();
+        Hash entireHashInSig = parsedPairs.left().left();
         if (!entireHash.equals(entireHashInSig)) {
             result = StreamValidationResult.SIG_HASH_NOT_MATCH_FILE;
         } else {
-            Signature entireSignature = parsedPairs.getLeft().getRight();
-            Hash metaHashInSig = parsedPairs.getRight().getLeft();
-            Signature metaSignature = parsedPairs.getRight().getRight();
+            Signature entireSignature = parsedPairs.left().right();
+            Hash metaHashInSig = parsedPairs.right().left();
+            Signature metaSignature = parsedPairs.right().right();
             if (!entireSignature.verifySignature(entireHash.getValue(), publicKey)) {
                 result = StreamValidationResult.INVALID_ENTIRE_SIGNATURE;
             } else if (!metaSignature.verifySignature(metaHashInSig.getValue(), publicKey)) {

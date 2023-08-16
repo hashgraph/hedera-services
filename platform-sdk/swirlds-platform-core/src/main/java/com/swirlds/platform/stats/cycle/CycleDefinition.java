@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.stats.cycle;
 
+import com.swirlds.base.utility.Pair;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * Description of a cycle tracked by metrics
@@ -74,8 +74,8 @@ public class CycleDefinition {
         this(
                 category,
                 name,
-                namesAndDescriptions.stream().map(Pair::getLeft).collect(Collectors.toList()),
-                namesAndDescriptions.stream().map(Pair::getRight).collect(Collectors.toList()));
+                namesAndDescriptions.stream().map(Pair::left).collect(Collectors.toList()),
+                namesAndDescriptions.stream().map(Pair::right).collect(Collectors.toList()));
     }
 
     /**

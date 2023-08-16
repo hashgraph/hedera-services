@@ -16,12 +16,13 @@
 
 package com.hedera.node.app.service.file.impl.test.handlers;
 
-import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
+import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.utils.TxnUtils.payerSponsoredPbjTransfer;
 import static com.swirlds.common.utility.CommonUtils.hex;
 import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -48,8 +49,6 @@ import com.hedera.node.app.service.file.ReadableUpgradeFileStore;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.handlers.FileGetInfoHandler;
 import com.hedera.node.app.service.file.impl.test.FileTestBase;
-import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -123,18 +122,10 @@ class FileGetInfoTest extends FileTestBase {
 
     @Test
     void validatesQueryIfInvalidFile() {
-        readableFileState.reset();
-        final var state = MapReadableKVState.<Long, File>builder("FILES").build();
-        given(readableStates.<Long, File>get(FILES)).willReturn(state);
-        final var store = new ReadableFileStoreImpl(readableStates);
-
-        final var query = createGetFileInfoQuery(fileId.fileNum());
+        final var query = createGetFileInfoQuery();
         when(context.query()).thenReturn(query);
-        when(context.createStore(ReadableFileStore.class)).thenReturn(store);
 
-        assertThatThrownBy(() -> subject.validate(context))
-                .isInstanceOf(PreCheckException.class)
-                .has(responseCode(ResponseCodeEnum.INVALID_FILE_ID));
+        assertThrowsPreCheck(() -> subject.validate(context), INVALID_FILE_ID);
     }
 
     @Test
@@ -148,9 +139,7 @@ class FileGetInfoTest extends FileTestBase {
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableFileStore.class)).thenReturn(readableStore);
 
-        assertThatThrownBy(() -> subject.validate(context))
-                .isInstanceOf(PreCheckException.class)
-                .has(responseCode(ResponseCodeEnum.FILE_DELETED));
+        assertDoesNotThrow(() -> subject.validate(context));
     }
 
     @Test
@@ -188,6 +177,22 @@ class FileGetInfoTest extends FileTestBase {
     }
 
     @Test
+    void getsResponseIfInvalidFileID() {
+        givenValidFile();
+        final var responseHeader = ResponseHeader.newBuilder()
+                .nodeTransactionPrecheckCode(ResponseCodeEnum.OK)
+                .build();
+
+        final var query = createGetFileInfoQuery(fileIdNotExist.fileNum());
+        when(context.query()).thenReturn(query);
+        when(context.createStore(ReadableFileStore.class)).thenReturn(readableStore);
+
+        final var response = subject.findResponse(context, responseHeader);
+        final var fileInfoResponse = response.fileGetInfoOrThrow();
+        assertEquals(INVALID_FILE_ID, fileInfoResponse.header().nodeTransactionPrecheckCode());
+    }
+
+    @Test
     void getsResponseIfOkResponseUpgradeFile() {
         givenValidUpgradeFile(false, true);
         refreshStoresWithCurrentFileInBothReadableAndWritable();
@@ -211,7 +216,7 @@ class FileGetInfoTest extends FileTestBase {
                 .memo(file.memo())
                 .fileID(fileId)
                 .keys(keys)
-                .expirationTime(Timestamp.newBuilder().seconds(file.expirationTime()))
+                .expirationTime(Timestamp.newBuilder().seconds(file.expirationSecond()))
                 .ledgerId(ledgerId)
                 .deleted(false)
                 .size(8)
@@ -225,7 +230,7 @@ class FileGetInfoTest extends FileTestBase {
                 .memo(upgradeHash)
                 .fileID(FileID.newBuilder().fileNum(fileSystemFileId.fileNum()).build())
                 .keys(keys)
-                .expirationTime(Timestamp.newBuilder().seconds(file.expirationTime()))
+                .expirationTime(Timestamp.newBuilder().seconds(file.expirationSecond()))
                 .ledgerId(ledgerId)
                 .deleted(false)
                 .size(8)
@@ -239,7 +244,7 @@ class FileGetInfoTest extends FileTestBase {
                 .memo(upgradeHash)
                 .fileID(FileID.newBuilder().fileNum(fileUpgradeFileId.fileNum()).build())
                 .keys(keys)
-                .expirationTime(Timestamp.newBuilder().seconds(file.expirationTime()))
+                .expirationTime(Timestamp.newBuilder().seconds(file.expirationSecond()))
                 .ledgerId(ledgerId)
                 .deleted(false)
                 .size(8)
@@ -251,6 +256,16 @@ class FileGetInfoTest extends FileTestBase {
                 payerSponsoredPbjTransfer(payerIdLiteral, COMPLEX_KEY_ACCOUNT_KT, beneficiaryIdStr, paymentAmount);
         final var data = FileGetInfoQuery.newBuilder()
                 .fileID(FileID.newBuilder().fileNum(fileId).build())
+                .header(QueryHeader.newBuilder().payment(payment).build())
+                .build();
+
+        return Query.newBuilder().fileGetInfo(data).build();
+    }
+
+    private Query createGetFileInfoQuery() {
+        final var payment =
+                payerSponsoredPbjTransfer(payerIdLiteral, COMPLEX_KEY_ACCOUNT_KT, beneficiaryIdStr, paymentAmount);
+        final var data = FileGetInfoQuery.newBuilder()
                 .header(QueryHeader.newBuilder().payment(payment).build())
                 .build();
 

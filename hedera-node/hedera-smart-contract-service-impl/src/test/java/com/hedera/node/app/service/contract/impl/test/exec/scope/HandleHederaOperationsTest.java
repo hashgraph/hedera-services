@@ -213,7 +213,7 @@ class HandleHederaOperationsTest {
                 .autoRenewAccountId(NON_SYSTEM_ACCOUNT_ID)
                 .stakedNodeId(3)
                 .declineReward(true)
-                .autoRenewSecs(666L)
+                .autoRenewSeconds(666L)
                 .maxAutoAssociations(321)
                 .memo("Something")
                 .build();

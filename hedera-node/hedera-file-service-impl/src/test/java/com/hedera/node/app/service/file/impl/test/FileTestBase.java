@@ -84,6 +84,7 @@ public class FileTestBase {
     protected final FileID WELL_KNOWN_SYSTEM_FILE_ID =
             FileID.newBuilder().fileNum(122L).shardNum(0L).realmNum(0L).build();
     protected final FileID fileId = WELL_KNOWN_FILE_ID;
+    protected final FileID fileIdNotExist = FileID.newBuilder().fileNum(6_789L).build();
     protected final FileID fileSystemFileId = WELL_KNOWN_SYSTEM_FILE_ID;
     protected final FileID fileUpgradeFileId = WELL_KNOWN_UPGRADE_FILE_ID;
     protected final com.hederahashgraph.api.proto.java.FileID monoFileID =
@@ -293,7 +294,7 @@ public class FileTestBase {
     protected File createFile() {
         return new File.Builder()
                 .fileId(fileId)
-                .expirationTime(expirationTime)
+                .expirationSecond(expirationTime)
                 .keys(keys)
                 .contents(Bytes.wrap(contents))
                 .memo(memo)
@@ -304,7 +305,7 @@ public class FileTestBase {
     protected File createUpgradeFile() {
         return new File.Builder()
                 .fileId(fileUpgradeFileId)
-                .expirationTime(expirationTime)
+                .expirationSecond(expirationTime)
                 .keys(keys)
                 .contents(Bytes.wrap(contents))
                 .memo(memo)
@@ -315,7 +316,7 @@ public class FileTestBase {
     protected File createFileEmptyMemoAndKeys() {
         return new File.Builder()
                 .fileId(fileId)
-                .expirationTime(expirationTime)
+                .expirationSecond(expirationTime)
                 .contents(Bytes.wrap(contents))
                 .deleted(true)
                 .build();
@@ -324,7 +325,7 @@ public class FileTestBase {
     protected File createFileWithoutContent() {
         return new File.Builder()
                 .fileId(fileId)
-                .expirationTime(expirationTime)
+                .expirationSecond(expirationTime)
                 .keys(keys)
                 .memo(memo)
                 .deleted(true)
