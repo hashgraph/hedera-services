@@ -102,6 +102,7 @@ public class ExpansionBenchmark extends AppTestBase implements Scenarios {
         };
     }
 
+    @SuppressWarnings("java:S2245") // using java.util.Random in benchmarks is fine
     private void fillSigPairs() {
         // The sigPairs are preloaded with the all the cryptographic keys from the key.
         // If we have more pairs than we should, then trim them. If we have fewer than

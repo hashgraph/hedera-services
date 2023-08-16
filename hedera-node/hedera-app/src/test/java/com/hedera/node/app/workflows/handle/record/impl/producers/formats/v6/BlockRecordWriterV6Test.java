@@ -350,7 +350,7 @@ final class BlockRecordWriterV6Test extends AppTestBase {
                 final var singleTransactionRecord = singleTransactionRecords.get(i);
                 final var recordStreamItem = readRecordStreamItems.get(i);
                 assertThat(recordStreamItem.transaction()).isEqualTo(singleTransactionRecord.transaction());
-                assertThat(recordStreamItem.record()).isEqualTo(singleTransactionRecord.record());
+                assertThat(recordStreamItem.record()).isEqualTo(singleTransactionRecord.transactionRecord());
             }
             assertThat(readRecordStreamFile.endObjectRunningHash()).isEqualTo(endRunningHash);
             BlockRecordReaderV6.validateHashes(readRecordStreamFile);
