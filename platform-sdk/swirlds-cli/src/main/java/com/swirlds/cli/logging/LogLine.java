@@ -14,22 +14,22 @@
  * limitations under the License.
  */
 
-package com.swirlds.cli.utility;
+package com.swirlds.cli.logging;
 
-import static com.swirlds.cli.utility.HtmlGenerator.CLASS_NAME_COLUMN_LABEL;
-import static com.swirlds.cli.utility.HtmlGenerator.ELAPSED_TIME_COLUMN_LABEL;
-import static com.swirlds.cli.utility.HtmlGenerator.HIDEABLE_LABEL;
-import static com.swirlds.cli.utility.HtmlGenerator.HTML_DATA_CELL_TAG;
-import static com.swirlds.cli.utility.HtmlGenerator.HTML_ROW_TAG;
-import static com.swirlds.cli.utility.HtmlGenerator.LOG_LEVEL_COLUMN_LABEL;
-import static com.swirlds.cli.utility.HtmlGenerator.LOG_NUMBER_COLUMN_LABEL;
-import static com.swirlds.cli.utility.HtmlGenerator.MARKER_COLUMN_LABEL;
-import static com.swirlds.cli.utility.HtmlGenerator.NODE_ID_COLUMN_LABEL;
-import static com.swirlds.cli.utility.HtmlGenerator.REMAINDER_OF_LINE_COLUMN_LABEL;
-import static com.swirlds.cli.utility.HtmlGenerator.THREAD_NAME_COLUMN_LABEL;
-import static com.swirlds.cli.utility.HtmlGenerator.TIMESTAMP_COLUMN_LABEL;
-import static com.swirlds.cli.utility.LogProcessingUtils.getLogLevelColor;
-import static com.swirlds.cli.utility.LogProcessingUtils.parseTimestamp;
+import static com.swirlds.cli.logging.HtmlGenerator.CLASS_NAME_COLUMN_LABEL;
+import static com.swirlds.cli.logging.HtmlGenerator.ELAPSED_TIME_COLUMN_LABEL;
+import static com.swirlds.cli.logging.HtmlGenerator.HIDEABLE_LABEL;
+import static com.swirlds.cli.logging.HtmlGenerator.HTML_DATA_CELL_TAG;
+import static com.swirlds.cli.logging.HtmlGenerator.HTML_ROW_TAG;
+import static com.swirlds.cli.logging.HtmlGenerator.LOG_LEVEL_COLUMN_LABEL;
+import static com.swirlds.cli.logging.HtmlGenerator.LOG_NUMBER_COLUMN_LABEL;
+import static com.swirlds.cli.logging.HtmlGenerator.MARKER_COLUMN_LABEL;
+import static com.swirlds.cli.logging.HtmlGenerator.NODE_ID_COLUMN_LABEL;
+import static com.swirlds.cli.logging.HtmlGenerator.REMAINDER_OF_LINE_COLUMN_LABEL;
+import static com.swirlds.cli.logging.HtmlGenerator.THREAD_NAME_COLUMN_LABEL;
+import static com.swirlds.cli.logging.HtmlGenerator.TIMESTAMP_COLUMN_LABEL;
+import static com.swirlds.cli.logging.LogProcessingUtils.getLogLevelColor;
+import static com.swirlds.cli.logging.LogProcessingUtils.parseTimestamp;
 import static com.swirlds.common.units.TimeUnit.UNIT_MILLISECONDS;
 import static org.apache.commons.lang3.StringEscapeUtils.escapeHtml4;
 

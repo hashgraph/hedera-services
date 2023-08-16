@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package com.swirlds.cli.utility;
+package com.swirlds.cli.logging;
 
-import static com.swirlds.cli.utility.LogLine.ERROR_LOG_LEVEL_COLOR;
-import static com.swirlds.cli.utility.LogLine.HARMLESS_LOG_LEVEL_COLOR;
-import static com.swirlds.cli.utility.LogLine.WARN_LOG_LEVEL_COLOR;
+import static com.swirlds.cli.logging.LogLine.ERROR_LOG_LEVEL_COLOR;
+import static com.swirlds.cli.logging.LogLine.HARMLESS_LOG_LEVEL_COLOR;
+import static com.swirlds.cli.logging.LogLine.WARN_LOG_LEVEL_COLOR;
 
 import com.swirlds.common.formatting.TextEffect;
 import edu.umd.cs.findbugs.annotations.NonNull;

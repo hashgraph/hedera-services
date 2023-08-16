@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.swirlds.cli.utility;
+package com.swirlds.cli.logging;
 
-import static com.swirlds.cli.utility.HtmlGenerator.HTML_CLASS_ATTRIBUTE;
+import static com.swirlds.cli.logging.HtmlGenerator.HTML_CLASS_ATTRIBUTE;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.cli.utility;
+package com.swirlds.cli.logging;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;

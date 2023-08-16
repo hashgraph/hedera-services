@@ -17,8 +17,8 @@
 package com.swirlds.platform.cli;
 
 import com.swirlds.cli.commands.SwirldsLogCommand;
+import com.swirlds.cli.logging.HtmlGenerator;
 import com.swirlds.cli.utility.AbstractCommand;
-import com.swirlds.cli.utility.HtmlGenerator;
 import com.swirlds.cli.utility.SubcommandOf;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedReader;

@@ -18,6 +18,7 @@ package com.swirlds.cli.utility;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.swirlds.cli.logging.PlatformStatusLog;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

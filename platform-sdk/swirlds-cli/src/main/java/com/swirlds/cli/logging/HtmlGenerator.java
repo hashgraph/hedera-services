@@ -14,31 +14,31 @@
  * limitations under the License.
  */
 
-package com.swirlds.cli.utility;
+package com.swirlds.cli.logging;
 
-import static com.swirlds.cli.utility.CssRuleSetFactory.BACKGROUND_COLOR_PROPERTY;
-import static com.swirlds.cli.utility.CssRuleSetFactory.BREAK_WORD_VALUE;
-import static com.swirlds.cli.utility.CssRuleSetFactory.DISPLAY_PROPERTY;
-import static com.swirlds.cli.utility.CssRuleSetFactory.FONT_PROPERTY;
-import static com.swirlds.cli.utility.CssRuleSetFactory.MAX_WIDTH_PROPERTY;
-import static com.swirlds.cli.utility.CssRuleSetFactory.NORMAL_VALUE;
-import static com.swirlds.cli.utility.CssRuleSetFactory.NO_WRAP_VALUE;
-import static com.swirlds.cli.utility.CssRuleSetFactory.OVERFLOW_WRAP_PROPERTY;
-import static com.swirlds.cli.utility.CssRuleSetFactory.PADDING_LEFT_PROPERTY;
-import static com.swirlds.cli.utility.CssRuleSetFactory.TEXT_COLOR_PROPERTY;
-import static com.swirlds.cli.utility.CssRuleSetFactory.TOP_VALUE;
-import static com.swirlds.cli.utility.CssRuleSetFactory.VERTICAL_ALIGN_PROPERTY;
-import static com.swirlds.cli.utility.CssRuleSetFactory.WHITE_SPACE_PROPERTY;
-import static com.swirlds.cli.utility.CssRuleSetFactory.WORD_BREAK_PROPERTY;
-import static com.swirlds.cli.utility.HtmlColors.getHtmlColor;
-import static com.swirlds.cli.utility.HtmlTagFactory.DATA_HIDE_LABEL;
-import static com.swirlds.cli.utility.LogLine.CLASS_NAME_COLOR;
-import static com.swirlds.cli.utility.LogLine.LOG_MARKER_COLOR;
-import static com.swirlds.cli.utility.LogLine.LOG_NUMBER_COLOR;
-import static com.swirlds.cli.utility.LogLine.THREAD_NAME_COLOR;
-import static com.swirlds.cli.utility.LogLine.TIMESTAMP_COLOR;
-import static com.swirlds.cli.utility.LogProcessingUtils.getLogLevelColor;
-import static com.swirlds.cli.utility.PlatformStatusLog.STATUS_HTML_CLASS;
+import static com.swirlds.cli.logging.CssRuleSetFactory.BACKGROUND_COLOR_PROPERTY;
+import static com.swirlds.cli.logging.CssRuleSetFactory.BREAK_WORD_VALUE;
+import static com.swirlds.cli.logging.CssRuleSetFactory.DISPLAY_PROPERTY;
+import static com.swirlds.cli.logging.CssRuleSetFactory.FONT_PROPERTY;
+import static com.swirlds.cli.logging.CssRuleSetFactory.MAX_WIDTH_PROPERTY;
+import static com.swirlds.cli.logging.CssRuleSetFactory.NORMAL_VALUE;
+import static com.swirlds.cli.logging.CssRuleSetFactory.NO_WRAP_VALUE;
+import static com.swirlds.cli.logging.CssRuleSetFactory.OVERFLOW_WRAP_PROPERTY;
+import static com.swirlds.cli.logging.CssRuleSetFactory.PADDING_LEFT_PROPERTY;
+import static com.swirlds.cli.logging.CssRuleSetFactory.TEXT_COLOR_PROPERTY;
+import static com.swirlds.cli.logging.CssRuleSetFactory.TOP_VALUE;
+import static com.swirlds.cli.logging.CssRuleSetFactory.VERTICAL_ALIGN_PROPERTY;
+import static com.swirlds.cli.logging.CssRuleSetFactory.WHITE_SPACE_PROPERTY;
+import static com.swirlds.cli.logging.CssRuleSetFactory.WORD_BREAK_PROPERTY;
+import static com.swirlds.cli.logging.HtmlColors.getHtmlColor;
+import static com.swirlds.cli.logging.HtmlTagFactory.DATA_HIDE_LABEL;
+import static com.swirlds.cli.logging.LogLine.CLASS_NAME_COLOR;
+import static com.swirlds.cli.logging.LogLine.LOG_MARKER_COLOR;
+import static com.swirlds.cli.logging.LogLine.LOG_NUMBER_COLOR;
+import static com.swirlds.cli.logging.LogLine.THREAD_NAME_COLOR;
+import static com.swirlds.cli.logging.LogLine.TIMESTAMP_COLOR;
+import static com.swirlds.cli.logging.LogProcessingUtils.getLogLevelColor;
+import static com.swirlds.cli.logging.PlatformStatusLog.STATUS_HTML_CLASS;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.ZoneId;

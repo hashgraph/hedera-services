@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.cli.utility;
+package com.swirlds.cli.logging;
 
 import static org.apache.commons.lang3.StringEscapeUtils.escapeHtml4;
 

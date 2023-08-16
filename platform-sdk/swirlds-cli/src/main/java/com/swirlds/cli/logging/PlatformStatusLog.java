@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.swirlds.cli.utility;
+package com.swirlds.cli.logging;
 
-import static com.swirlds.cli.utility.HtmlGenerator.HTML_SPAN_TAG;
+import static com.swirlds.cli.logging.HtmlGenerator.HTML_SPAN_TAG;
 
 import com.swirlds.common.formatting.TextEffect;
 import edu.umd.cs.findbugs.annotations.NonNull;
