@@ -373,7 +373,7 @@ class ConsensusUpdateTopicTest extends ConsensusTestBase {
         subject.handle(handleContext);
 
         final var newTopic = writableTopicState.get(topicId);
-        assertEquals(123L, newTopic.expiry());
+        assertEquals(123L, newTopic.expirationSecond());
     }
 
     @Test
