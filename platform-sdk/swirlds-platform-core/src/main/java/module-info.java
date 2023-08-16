@@ -124,7 +124,6 @@ module com.swirlds.platform {
     exports com.swirlds.platform.gossip.shadowgraph;
     exports com.swirlds.platform.recovery.emergencyfile;
     exports com.swirlds.platform.event;
-    exports com.swirlds.platform.startup;
 
     /* Swirlds Libraries */
     requires com.swirlds.base;

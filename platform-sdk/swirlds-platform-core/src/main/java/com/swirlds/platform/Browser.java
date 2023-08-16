@@ -49,6 +49,8 @@ import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.MetricsProvider;
 import com.swirlds.common.metrics.platform.DefaultMetricsProvider;
+import com.swirlds.common.startup.CommandLineArgs;
+import com.swirlds.common.startup.Log4jSetup;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldMain;
@@ -67,8 +69,6 @@ import com.swirlds.platform.crypto.CryptoConstants;
 import com.swirlds.platform.gui.internal.StateHierarchy;
 import com.swirlds.platform.network.Network;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
-import com.swirlds.platform.startup.CommandLineArgs;
-import com.swirlds.platform.startup.Log4jSetup;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.address.AddressBookInitializer;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -85,6 +85,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
@@ -189,7 +190,9 @@ public class Browser {
         PlatformConfigUtils.checkConfiguration(configuration);
 
         final Path log4jPath = configuration.getConfigData(PathsConfig.class).getLogPath();
-        Log4jSetup.startLoggingFramework(log4jPath);
+        final CountDownLatch latch = Log4jSetup.startLoggingFramework(log4jPath);
+        latch.await();
+
         logger = LogManager.getLogger(Browser.class);
         logger.info(STARTUP.getMarker(), "\n\n" + STARTUP_MESSAGE + "\n");
         logger.debug(STARTUP.getMarker(), () -> new NodeStartPayload().toString());
