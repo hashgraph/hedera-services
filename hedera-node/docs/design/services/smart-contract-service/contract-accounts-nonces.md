@@ -13,6 +13,9 @@ In order to provide more complete EVM account equivalence support and a better d
 
 - Handle nonce updates for EOAs
 
+## Assumptions
+- Mirror Node is able to process nonce updates through transaction records
+
 ## Architecture
 
 The following is a table with general use cases and behavior for Ethereum and Hedera:
@@ -25,51 +28,32 @@ The following is a table with general use cases and behavior for Ethereum and He
 | Contract transaction resulting in `CREATE/CREATE2` (`ContractCall` or `ContractCreate`) | -                                                                                                          | initial contract nonce value is 1; nonce is incremented for each contract creation initiated by an account, updates are not externalized to Mirror Node                          | initial contract nonce value is 1; nonce is incremented for each contract creation initiated by an account, updates are externalized to Mirror Node                              |
 
 ### Contract Nonce Externalization
-- Contract account nonces are updated in Consensus Node state using in the following places:
-  - [HederaWorldState](https://github.com/hashgraph/hedera-services/blob/96a85f0e08f82582bbf25328d14ca90fc630c5ef/hedera-node/hedera-mono-service/src/main/java/com/hedera/node/app/service/mono/store/contracts/HederaWorldState.java)
-  - [ContractCreateTransitionLogic](https://github.com/hashgraph/hedera-services/blob/develop/hedera-node/hedera-mono-service/src/main/java/com/hedera/node/app/service/mono/txns/contract/ContractCreateTransitionLogic.java#L209)
-  - [ContractCallTransitionLogic](https://github.com/hashgraph/hedera-services/blob/develop/hedera-node/hedera-mono-service/src/main/java/com/hedera/node/app/service/mono/txns/contract/ContractCallTransitionLogic.java#L148)
-  - [TransactionProcessingResult](https://github.com/hashgraph/hedera-services/blob/96a85f0e08f82582bbf25328d14ca90fc630c5ef/hedera-node/hedera-mono-service/src/main/java/com/hedera/node/app/service/mono/contracts/execution/TransactionProcessingResult.java)
-  - [EvmFnResult](https://github.com/hashgraph/hedera-services/blob/96a85f0e08f82582bbf25328d14ca90fc630c5ef/hedera-node/hedera-mono-service/src/main/java/com/hedera/node/app/service/mono/state/submerkle/EvmFnResult.java)
-
-
-- We keep a `ContractId -> nonce` tree map inside `HederaWorldState`, it is updated on each call of `commit()` (using newly added method `trackContractNonces()`).
-- Method `trackContractNonces` in `HederaWorldState` follows the pattern of `trackNewlyCreatedAccounts`.
+- We keep a `ContractId -> nonce` tree map inside [HederaWorldState](https://github.com/hashgraph/hedera-services/blob/develop/hedera-node/hedera-mono-service/src/main/java/com/hedera/node/app/service/mono/store/contracts/HederaWorldState.java#L79), it is updated on each call of `commit()` (using newly added method `trackContractNonces()`).
+- Method `trackContractNonces` in [HederaWorldState](https://github.com/hashgraph/hedera-services/blob/develop/hedera-node/hedera-mono-service/src/main/java/com/hedera/node/app/service/mono/store/contracts/HederaWorldState.java#L393) follows the pattern of `trackNewlyCreatedAccounts`.
     - Checks if an account is a new smart contract and externalizes its nonce.
     - Checks if an existing smart contract's nonce is updated and externalizes it.
-- Added a `ContractId -> nonce` tree map inside `TransactionProcessingResult`.
-- Persists account contract nonces into state in `ContractCreateTransitionLogic` and `ContractCallTransitionLogic` using `setContractNonces` from `TransactionProcessingResult`.
-- Created new `ContractNonceInfo` submerkle class with two main entities - `contractId` and `nonce`
-- Added new method `serializableContractNoncesFrom` in `EvmFnResult` that builds `List<ContractNonceInfo>` (submerkle) from `Map<ContractID, Long>`
+- Added a `ContractId -> nonce` tree map inside [TransactionProcessingResult](https://github.com/hashgraph/hedera-services/blob/develop/hedera-node/hedera-mono-service/src/main/java/com/hedera/node/app/service/mono/contracts/execution/TransactionProcessingResult.java#L45).
+- Persists account contract nonces into state in [ContractCreateTransitionLogic](https://github.com/hashgraph/hedera-services/blob/develop/hedera-node/hedera-mono-service/src/main/java/com/hedera/node/app/service/mono/txns/contract/ContractCreateTransitionLogic.java#L209) and [ContractCallTransitionLogic](https://github.com/hashgraph/hedera-services/blob/develop/hedera-node/hedera-mono-service/src/main/java/com/hedera/node/app/service/mono/txns/contract/ContractCallTransitionLogic.java#L148) using `setContractNonces` from `TransactionProcessingResult`.
+- Created new [ContractNonceInfo](https://github.com/hashgraph/hedera-services/blob/develop/hedera-node/hedera-mono-service/src/main/java/com/hedera/node/app/service/mono/state/submerkle/ContractNonceInfo.java) submerkle class with two main entities - `contractId` and `nonce`
+- Added new method `serializableContractNoncesFrom` in [EvmFnResult](https://github.com/hashgraph/hedera-services/blob/96a85f0e08f82582bbf25328d14ca90fc630c5ef/hedera-node/hedera-mono-service/src/main/java/com/hedera/node/app/service/mono/state/submerkle/EvmFnResult.java) that builds `List<ContractNonceInfo>` (submerkle) from `Map<ContractID, Long>`
 - Added new verison `7` (`RELEASE_0400_VERSION`) and externalized logic for `serialize` and `deserialize` of `contractNonces` in `EvmFnResult`
-
-
-
 
 ### Fix Storing Of Nonces Into State
 
-- Fix storing of nonces is done in the following places:
-  - [UpdateAccountTracker](https://github.com/hashgraph/hedera-services/blob/96a85f0e08f82582bbf25328d14ca90fc630c5ef/hedera-node/hedera-evm/src/main/java/com/hedera/node/app/service/evm/store/UpdateAccountTracker.java)
-  - [UpdateAccountTrackerImpl](https://github.com/hashgraph/hedera-services/blob/96a85f0e08f82582bbf25328d14ca90fc630c5ef/hedera-node/hedera-mono-service/src/main/java/com/hedera/node/app/service/mono/store/UpdateAccountTrackerImpl.java)
-  - [UpdateTrackingAccount](https://github.com/hashgraph/hedera-services/blob/96a85f0e08f82582bbf25328d14ca90fc630c5ef/hedera-node/hedera-evm/src/main/java/com/hedera/node/app/service/evm/store/models/UpdateTrackingAccount.java)
-  - [HederaEvmEntityAccess](https://github.com/hashgraph/hedera-services/blob/96a85f0e08f82582bbf25328d14ca90fc630c5ef/hedera-node/hedera-evm/src/main/java/com/hedera/node/app/service/evm/store/contracts/HederaEvmEntityAccess.java)
-  - [MutableEntityAccess](https://github.com/hashgraph/hedera-services/blob/96a85f0e08f82582bbf25328d14ca90fc630c5ef/hedera-node/hedera-mono-service/src/main/java/com/hedera/node/app/service/mono/store/contracts/MutableEntityAccess.java)
-  - [WorldStateAccount](https://github.com/hashgraph/hedera-services/blob/96a85f0e08f82582bbf25328d14ca90fc630c5ef/hedera-node/hedera-evm/src/main/java/com/hedera/node/app/service/evm/store/contracts/WorldStateAccount.java)
-  - [HederaLedger](https://github.com/hashgraph/hedera-services/blob/96a85f0e08f82582bbf25328d14ca90fc630c5ef/hedera-node/hedera-mono-service/src/main/java/com/hedera/node/app/service/mono/ledger/HederaLedger.java)
-  
-
-- Currently we are not storing contract account nonces into state and this needs a fix similar to `setBalance` in `UpdateTrackingAccount`.
+- Currently we are not storing contract account nonces into state and this needs a fix similar to `setBalance` in [UpdateTrackingAccount](https://github.com/hashgraph/hedera-services/blob/96a85f0e08f82582bbf25328d14ca90fc630c5ef/hedera-node/hedera-evm/src/main/java/com/hedera/node/app/service/evm/store/models/UpdateTrackingAccount.java).
 - For all created and updated contracts we should store their nonces in state.
   - We need a way to track a contract account's `nonce` by its `address`.
-  - - Added new method `setNonce` in `UpdateAccountTrackerImpl` 
+  - - Added method `setNonce` in [UpdateAccountTracker](https://github.com/hashgraph/hedera-services/blob/96a85f0e08f82582bbf25328d14ca90fc630c5ef/hedera-node/hedera-evm/src/main/java/com/hedera/node/app/service/evm/store/UpdateAccountTracker.java)
+  - - Added method `setNonce` in [UpdateAccountTrackerImpl](https://github.com/hashgraph/hedera-services/blob/96a85f0e08f82582bbf25328d14ca90fc630c5ef/hedera-node/hedera-mono-service/src/main/java/com/hedera/node/app/service/mono/store/UpdateAccountTrackerImpl.java) 
   - - It sets property `ETHEREUM_NONCE` for `address` into `trackingAccounts`
-  - Updated `setNonce` in `UpdateTrackingAccount` to use `UpdateAccountTrackerImpl`s implementation
+  - Updated `setNonce` in [UpdateTrackingAccount](https://github.com/hashgraph/hedera-services/blob/96a85f0e08f82582bbf25328d14ca90fc630c5ef/hedera-node/hedera-evm/src/main/java/com/hedera/node/app/service/evm/store/models/UpdateTrackingAccount.java#L142) to use [UpdateAccountTrackerImpl](https://github.com/hashgraph/hedera-services/blob/96a85f0e08f82582bbf25328d14ca90fc630c5ef/hedera-node/hedera-mono-service/src/main/java/com/hedera/node/app/service/mono/store/UpdateAccountTrackerImpl.java#L51)'s implementation
   - `AbstractLedgerWorldUpdater` -> `createAccount` -> `newMutable.setNonce(nonce)`
   - `AbstractStackedLedgerUpdater` -> `commit` -> `mutable.setNonce(updatedAccount.getNonce())`
 - We also need a way to read a contract account's nonces from state.
-  - Added `getNonce` method in `HederaLedger` that retrieves `nonce` by `AccountID`
-  - Added `getNonce` method in `MutableEntityAccess` that uses `HederaLedger`'s `getNonce`
-  - Updated `getNonce` in `WorldStateAccount` to return value from state using `entityAccess` instead of `0`
+  - Added `getNonce` method in [HederaEvmEntityAccess](https://github.com/hashgraph/hedera-services/blob/96a85f0e08f82582bbf25328d14ca90fc630c5ef/hedera-node/hedera-evm/src/main/java/com/hedera/node/app/service/evm/store/contracts/HederaEvmEntityAccess.java#L29)
+  - Added `getNonce` method in [HederaLedger](https://github.com/hashgraph/hedera-services/blob/96a85f0e08f82582bbf25328d14ca90fc630c5ef/hedera-node/hedera-mono-service/src/main/java/com/hedera/node/app/service/mono/ledger/HederaLedger.java#L230) that retrieves `nonce` by `AccountID`
+  - Added `getNonce` method in [MutableEntityAccess](https://github.com/hashgraph/hedera-services/blob/96a85f0e08f82582bbf25328d14ca90fc630c5ef/hedera-node/hedera-mono-service/src/main/java/com/hedera/node/app/service/mono/store/contracts/MutableEntityAccess.java#L103) that uses `HederaLedger`'s `getNonce`
+  - Updated `getNonce` in [WorldStateAccount](https://github.com/hashgraph/hedera-services/blob/96a85f0e08f82582bbf25328d14ca90fc630c5ef/hedera-node/hedera-evm/src/main/java/com/hedera/node/app/service/evm/store/contracts/WorldStateAccount.java#L61) to return value from state using `entityAccess` instead of `0`
 
 ### Feature Flags
 
