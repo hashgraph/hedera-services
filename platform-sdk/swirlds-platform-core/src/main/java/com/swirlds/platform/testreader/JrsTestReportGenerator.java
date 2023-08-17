@@ -207,7 +207,6 @@ public final class JrsTestReportGenerator {
                                 var table = document.getElementById(tableName);
                                 for (var i = 1; i < table.rows.length; i++) {
                                     var row = table.rows[i];
-                                    // var firstCell = row.cells[0];
                                     for (var j = 0; j < row.cells.length; j++) {
                                         var cell = row.cells[j];
                                         cell.onclick = (function() {
