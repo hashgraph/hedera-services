@@ -28,25 +28,6 @@ import java.util.Objects;
  * "selector { property1: value; property2: value2; }"
  */
 public class CssRuleSetFactory {
-    public static final String DISPLAY_PROPERTY = "display";
-    public static final String FONT_PROPERTY = "font-family";
-    public static final String BACKGROUND_COLOR_PROPERTY = "background-color";
-    public static final String TEXT_COLOR_PROPERTY = "color";
-    public static final String WHITE_SPACE_PROPERTY = "white-space";
-    public static final String PADDING_LEFT_PROPERTY = "padding-left";
-    public static final String OVERFLOW_WRAP_PROPERTY = "overflow-wrap";
-    public static final String MAX_WIDTH_PROPERTY = "max-width";
-    public static final String VERTICAL_ALIGN_PROPERTY = "vertical-align";
-    public static final String WORD_BREAK_PROPERTY = "word-break";
-    public static final String HEIGHT_PROPERTY = "height";
-    public static final String BORDER_COLLAPSE_PROPERTY = "border-collapse";
-    public static final String COLSPAN_PROPERTY = "colspan";
-    public static final String WIDTH_PROPERTY = "width";
-    public static final String NO_WRAP_VALUE = "nowrap";
-    public static final String NORMAL_VALUE = "normal";
-    public static final String BREAK_WORD_VALUE = "break-word";
-    public static final String TOP_VALUE = "top";
-
     /**
      * The selector for the rule set
      */
@@ -65,16 +46,6 @@ public class CssRuleSetFactory {
     public CssRuleSetFactory(@NonNull final String selector, @NonNull final List<CssDeclaration> declarations) {
         this.selector = Objects.requireNonNull(selector);
         this.declarations = Objects.requireNonNull(declarations);
-    }
-
-    /**
-     * Constructor for rule sets with only 1 declaration
-     *
-     * @param selector    the selector
-     * @param declaration the declaration
-     */
-    public CssRuleSetFactory(@NonNull final String selector, @NonNull final CssDeclaration declaration) {
-        this(selector, List.of(declaration));
     }
 
     /**

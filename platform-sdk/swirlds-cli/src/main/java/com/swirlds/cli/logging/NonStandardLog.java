@@ -16,7 +16,6 @@
 
 package com.swirlds.cli.logging;
 
-import static com.swirlds.cli.logging.CssRuleSetFactory.COLSPAN_PROPERTY;
 import static com.swirlds.cli.logging.HtmlGenerator.ELAPSED_TIME_COLUMN_LABEL;
 import static com.swirlds.cli.logging.HtmlGenerator.HIDEABLE_LABEL;
 import static com.swirlds.cli.logging.HtmlGenerator.HTML_DATA_CELL_TAG;
@@ -90,7 +89,7 @@ public class NonStandardLog {
         final HtmlTagFactory contentsFactory = new HtmlTagFactory(
                         HTML_DATA_CELL_TAG, escapeHtml4(nonStandardText), false)
                 .addClasses(List.of(NON_STANDARD_LABEL, HIDEABLE_LABEL))
-                .addAttribute(COLSPAN_PROPERTY, "5");
+                .addAttribute("colspan", "5");
         dataCellTags.add(contentsFactory.generateTag());
 
         // add classes via the parent line, so that this non-standard log will be filtered with its parent
