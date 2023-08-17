@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.event.tipset;
 
+import com.swirlds.platform.EventImpl;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 

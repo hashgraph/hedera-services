@@ -33,7 +33,7 @@ import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.EventImpl;
 import com.swirlds.platform.observers.EventAddedObserver;
 import com.swirlds.platform.stats.AverageStat;
 import java.time.temporal.ChronoUnit;

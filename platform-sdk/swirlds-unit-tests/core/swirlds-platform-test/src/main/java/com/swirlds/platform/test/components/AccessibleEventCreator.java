@@ -20,6 +20,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.platform.EventImpl;
 import com.swirlds.platform.components.EventCreationRules;
 import com.swirlds.platform.components.EventCreator;
 import com.swirlds.platform.components.EventHandler;
@@ -27,7 +28,6 @@ import com.swirlds.platform.components.EventMapper;
 import com.swirlds.platform.components.transaction.TransactionPool;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
 import com.swirlds.platform.consensus.GraphGenerations;
-import com.swirlds.platform.internal.EventImpl;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 

@@ -34,6 +34,7 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.LedgerConfig;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -93,7 +94,7 @@ public class FileDeleteHandler implements TransactionHandler {
                 .fileId(file.fileId())
                 .expirationSecond(file.expirationSecond())
                 .keys(file.keys())
-                .contents(null)
+                .contents(Bytes.EMPTY)
                 .memo(file.memo())
                 .deleted(true);
 
