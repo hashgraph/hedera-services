@@ -99,7 +99,7 @@ public class SystemFileUpdateFacility {
             } else if (fileNum == config.hapiPermissions()) {
                 logger.error("Update of HAPI permissions not implemented");
             } else if (fileNum == config.throttleDefinitions()) {
-                logger.error("Update of throttle definitions not implemented");
+                logger.error("Update of throttle definitions not implemented"); // TODO: add the update here as well
             } else if (fileNum == config.upgradeFileNumber()) {
 
             }

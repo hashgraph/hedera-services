@@ -851,7 +851,7 @@ public final class Hedera implements SwirldMain {
         final var fileOpt = readableFileStore.getFileLeaf(fileId);
         fileOpt.ifPresent(file -> {
             final var fileData = file.contents();
-            // TODO: implement daggerApp.throttleManager().update(fileData);
+            daggerApp.throttleManager().update(fileData);
         });
         logger.info("Throttles initialized");
     }
