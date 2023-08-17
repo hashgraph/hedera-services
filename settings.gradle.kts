@@ -17,9 +17,11 @@
 pluginManagement { @Suppress("UnstableApiUsage") includeBuild("build-logic") }
 
 includeBuild("platform-sdk")
+
 includeBuild("hedera-node")
 
 includeAllBuilds("platform-sdk/platform-apps/demos")
+
 includeAllBuilds("platform-sdk/platform-apps/tests")
 
 fun includeAllBuilds(containingFolder: String) {

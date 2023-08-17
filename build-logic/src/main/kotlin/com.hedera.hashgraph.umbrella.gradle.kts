@@ -19,6 +19,9 @@ import org.gradle.kotlin.dsl.repositories
 
 plugins {
     id("lifecycle-base")
+    id("com.hedera.hashgraph.repositories")
+    id("com.hedera.hashgraph.spotless-conventions")
+    id("com.hedera.hashgraph.spotless-kotlin-conventions")
 }
 
 // This is for configuring the umbrella build - i.e. the root of the repository, which can
@@ -29,8 +32,6 @@ plugins {
 // corresponding lifecycle tasks in the other builds.
 // https://docs.gradle.org/current/userguide/structuring_software_products_details.html#using_an_umbrella_build
 
-tasks.register("spotlessCheck")
-tasks.register("spotlessApply")
 tasks.register("checkAllModuleInfo")
 
 configureLifecycleTask("assemble")
