@@ -48,14 +48,14 @@ public class HtmlColors {
      * Get the HTML compatible color for the given ANSI color
      *
      * @param ansiColor the ANSI color
-     * @return the HTML compatible color, or null if the map doesn't contain the given ANSI color
+     * @return the HTML compatible color
      */
     @NonNull
     public static String getHtmlColor(@NonNull final TextEffect ansiColor) {
         Objects.requireNonNull(ansiColor);
 
         if (!ansiToHtmlColors.containsKey(ansiColor)) {
-            return "";
+            throw new IllegalArgumentException("The given ANSI color is not supported: " + ansiColor);
         }
 
         return ansiToHtmlColors.get(ansiColor);

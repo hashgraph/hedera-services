@@ -17,6 +17,7 @@
 package com.swirlds.cli.logging;
 
 import static com.swirlds.cli.logging.CssRuleSetFactory.BACKGROUND_COLOR_PROPERTY;
+import static com.swirlds.cli.logging.CssRuleSetFactory.BORDER_COLLAPSE_PROPERTY;
 import static com.swirlds.cli.logging.CssRuleSetFactory.BREAK_WORD_VALUE;
 import static com.swirlds.cli.logging.CssRuleSetFactory.DISPLAY_PROPERTY;
 import static com.swirlds.cli.logging.CssRuleSetFactory.FONT_PROPERTY;
@@ -56,6 +57,8 @@ public class HtmlGenerator {
      * This is a dark gray color
      */
     public static final String PAGE_BACKGROUND_COLOR = "#1e1e23";
+
+    public static final String HIGHLIGHT_COLOR = "#353539";
 
     /**
      * This is a light gray color
@@ -102,6 +105,8 @@ public class HtmlGenerator {
      */
     public static final String HIDEABLE_LABEL = "hideable";
 
+    public static final String LOG_LINE_LABEL = "log-line";
+
     public static final String NODE_ID_COLUMN_LABEL = "node-id";
     public static final String ELAPSED_TIME_COLUMN_LABEL = "elapsed-time";
     public static final String TIMESTAMP_COLUMN_LABEL = "timestamp";
@@ -127,6 +132,8 @@ public class HtmlGenerator {
      * This label is used to make the filter column and log table scroll independently
      */
     public static final String INDEPENDENT_SCROLL_LABEL = "independent-scroll";
+
+    public static final String LOG_TABLE_LABEL = "log-table";
 
     /**
      * The javascript that is used to hide/show elements when the filter checkboxes are clicked
@@ -226,6 +233,22 @@ public class HtmlGenerator {
     private static List<String> generateCssRules(@NonNull final List<LogLine> logLines) {
         final List<String> cssRules = new ArrayList<>();
 
+        // set page defaults
+        cssRules.add(new CssRuleSetFactory(
+                        "html *",
+                        List.of(
+                                new CssDeclaration(FONT_PROPERTY, DEFAULT_FONT),
+                                new CssDeclaration(BACKGROUND_COLOR_PROPERTY, PAGE_BACKGROUND_COLOR),
+                                new CssDeclaration(TEXT_COLOR_PROPERTY, DEFAULT_TEXT_COLOR),
+                                new CssDeclaration(WHITE_SPACE_PROPERTY, NO_WRAP_VALUE),
+                                new CssDeclaration(VERTICAL_ALIGN_PROPERTY, TOP_VALUE)))
+                .generateCss());
+
+        // make log table have no border
+        cssRules.add(
+                new CssRuleSetFactory("." + LOG_TABLE_LABEL, new CssDeclaration(BORDER_COLLAPSE_PROPERTY, "collapse"))
+                        .generateCss());
+
         // hide elements that have a data-hide value that isn't 0 or NaN
         cssRules.add(new CssRuleSetFactory(
                         "[%s]:not([%s~='0']):not([%s~=\"NaN\"])"
@@ -245,16 +268,6 @@ public class HtmlGenerator {
         cssRules.add(new CssRuleSetFactory("." + INDEPENDENT_SCROLL_LABEL, new CssDeclaration("overflow", "auto"))
                 .generateCss());
 
-        // set page defaults
-        cssRules.add(new CssRuleSetFactory(
-                        "html *",
-                        List.of(
-                                new CssDeclaration(FONT_PROPERTY, DEFAULT_FONT),
-                                new CssDeclaration(BACKGROUND_COLOR_PROPERTY, PAGE_BACKGROUND_COLOR),
-                                new CssDeclaration(TEXT_COLOR_PROPERTY, DEFAULT_TEXT_COLOR),
-                                new CssDeclaration(WHITE_SPACE_PROPERTY, NO_WRAP_VALUE),
-                                new CssDeclaration(VERTICAL_ALIGN_PROPERTY, TOP_VALUE)))
-                .generateCss());
         // pad the log table columns
         cssRules.add(new CssRuleSetFactory(HTML_DATA_CELL_TAG, new CssDeclaration(PADDING_LEFT_PROPERTY, "1em"))
                 .generateCss());
@@ -303,6 +316,12 @@ public class HtmlGenerator {
         cssRules.add(new CssRuleSetFactory(
                         "." + STATUS_HTML_CLASS,
                         new CssDeclaration(TEXT_COLOR_PROPERTY, getHtmlColor(PlatformStatusLog.STATUS_COLOR)))
+                .generateCss());
+
+        // highlight log lines when you hover over them with your mouse
+        cssRules.add(new CssRuleSetFactory(
+                        "." + LOG_LINE_LABEL + ":hover td",
+                        new CssDeclaration(BACKGROUND_COLOR_PROPERTY, HIGHLIGHT_COLOR))
                 .generateCss());
 
         // create color rules for each log level
@@ -387,7 +406,9 @@ public class HtmlGenerator {
                 logLines.stream().map(LogLine::generateHtmlString).toList();
         final String combinedLogLines = "\n" + String.join("\n", formattedLogLines) + "\n";
 
-        return new HtmlTagFactory(HTML_TABLE_TAG, combinedLogLines, false).generateTag();
+        return new HtmlTagFactory(HTML_TABLE_TAG, combinedLogLines, false)
+                .addClass(LOG_TABLE_LABEL)
+                .generateTag();
     }
 
     /**

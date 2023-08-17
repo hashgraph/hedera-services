@@ -39,6 +39,7 @@ public class CssRuleSetFactory {
     public static final String VERTICAL_ALIGN_PROPERTY = "vertical-align";
     public static final String WORD_BREAK_PROPERTY = "word-break";
     public static final String HEIGHT_PROPERTY = "height";
+    public static final String BORDER_COLLAPSE_PROPERTY = "border-collapse";
     public static final String NO_WRAP_VALUE = "nowrap";
     public static final String NORMAL_VALUE = "normal";
     public static final String BREAK_WORD_VALUE = "break-word";

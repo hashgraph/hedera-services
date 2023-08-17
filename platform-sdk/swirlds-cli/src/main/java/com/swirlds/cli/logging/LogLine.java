@@ -22,6 +22,7 @@ import static com.swirlds.cli.logging.HtmlGenerator.HIDEABLE_LABEL;
 import static com.swirlds.cli.logging.HtmlGenerator.HTML_DATA_CELL_TAG;
 import static com.swirlds.cli.logging.HtmlGenerator.HTML_ROW_TAG;
 import static com.swirlds.cli.logging.HtmlGenerator.LOG_LEVEL_COLUMN_LABEL;
+import static com.swirlds.cli.logging.HtmlGenerator.LOG_LINE_LABEL;
 import static com.swirlds.cli.logging.HtmlGenerator.LOG_NUMBER_COLUMN_LABEL;
 import static com.swirlds.cli.logging.HtmlGenerator.MARKER_COLUMN_LABEL;
 import static com.swirlds.cli.logging.HtmlGenerator.NODE_ID_COLUMN_LABEL;
@@ -375,7 +376,8 @@ public class LogLine implements FormattableString {
 
         // the actual value of these elements of the line become classes for the line itself, so that we can filter
         // based on these values
-        final List<String> rowClassNames = Stream.of(logLevel, marker, threadName, className, HIDEABLE_LABEL)
+        final List<String> rowClassNames = Stream.of(
+                        logLevel, marker, threadName, className, HIDEABLE_LABEL, LOG_LINE_LABEL)
                 .map(StringEscapeUtils::escapeHtml4)
                 .toList();
 
