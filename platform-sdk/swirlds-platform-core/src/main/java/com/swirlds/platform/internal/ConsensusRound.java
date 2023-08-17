@@ -20,6 +20,7 @@ import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.events.ConsensusEvent;
+import com.swirlds.platform.EventImpl;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.util.iterator.TypedIterator;

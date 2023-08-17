@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.stream.EventStreamType;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.EventImpl;
 import com.swirlds.platform.recovery.RecoveryTestUtils;
 import java.io.IOException;
 import java.net.URISyntaxException;
