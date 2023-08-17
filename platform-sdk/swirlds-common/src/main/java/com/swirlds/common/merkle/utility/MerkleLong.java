@@ -16,15 +16,13 @@
 
 package com.swirlds.common.merkle.utility;
 
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
-
+import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import java.io.IOException;
 import java.util.Objects;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * A utility node that contains a long value.
@@ -142,8 +140,6 @@ public class MerkleLong extends PartialMerkleLeaf implements MerkleLeaf {
 
     @Override
     public String toString() {
-        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
-                .append("value", value)
-                .toString();
+        return new ToStringBuilder(this).append("value", value).toString();
     }
 }
