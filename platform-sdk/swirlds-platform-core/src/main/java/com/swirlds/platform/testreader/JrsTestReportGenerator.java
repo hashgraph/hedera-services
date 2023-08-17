@@ -120,7 +120,7 @@ public final class JrsTestReportGenerator {
                                 padding: 8px;
                             }
                             .testDataTable > tbody > tr > td:hover {
-                                border-color: red;
+                                border-color: #DDDDDD;
                             }
                             .sidePanel {
                                 position: sticky;
@@ -148,7 +148,7 @@ public final class JrsTestReportGenerator {
                                 color: #a64dff;
                             }
                             a:hover {
-                                color: yellow;
+                                color: #aea85d;
                             }
                             a:link.passLink {
                                 color: #3cb371;
@@ -157,7 +157,7 @@ public final class JrsTestReportGenerator {
                                 color: #267349;
                             }
                             a:hover.passLink {
-                                color: yellow;
+                                color: #aea85d;
                             }
                             a:link.failLink {
                                 color: #f0524f;
@@ -166,7 +166,7 @@ public final class JrsTestReportGenerator {
                                 color: #d31612;
                             }
                             a:hover.failLink {
-                                color: yellow;
+                                color: #aea85d;
                             }
                             a:link.unknownLink {
                                 color: slateBlue;
