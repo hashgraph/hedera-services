@@ -31,25 +31,40 @@ import org.apache.logging.log4j.Logger;
 public class ThrottleManager {
 
     private static final Logger logger = LogManager.getLogger(ThrottleManager.class);
+    private static final ThrottleDefinitions DEFAULT_THROTTLE_DEFINITIONS = ThrottleDefinitions.DEFAULT;
 
     private ThrottleDefinitions throttleDefinitions;
     private List<ThrottleBucket> throttleBuckets;
 
     @Inject
     public ThrottleManager() {
-        // Dagger2
+        // Initialize the throttle definitions. The default is not particularly useful, but isn't null.
+        throttleDefinitions = DEFAULT_THROTTLE_DEFINITIONS;
+        throttleBuckets = DEFAULT_THROTTLE_DEFINITIONS.throttleBuckets();
     }
 
+    /**
+     * Updates the throttle definition information. MUST BE CALLED on the handle thread!
+     *
+     * @param bytes The protobuf encoded {@link ThrottleDefinitions}.
+     */
     public void update(@NonNull final Bytes bytes) {
         // Parse the throttle file. If we cannot parse it, we just continue with whatever our previous rate was.
         try {
             throttleDefinitions = ThrottleDefinitions.PROTOBUF.parse(bytes.toReadableSequentialData());
         } catch (final Exception e) {
-            // Not being able to parse the exchange rate file is not fatal, and may happen if the exchange rate file
+            // Not being able to parse the throttle file is not fatal, and may happen if the throttle file
             // was too big for a single file update for example.
-            logger.warn("Unable to parse exchange rate file", e);
+            logger.warn("Unable to parse the throttle file", e);
         }
-        throttleBuckets = throttleDefinitions.throttleBuckets();
+
+        final var rawThrottleBuckets = throttleDefinitions.throttleBuckets();
+        if (rawThrottleBuckets != null) {
+            throttleBuckets = rawThrottleBuckets;
+        } else {
+            logger.warn("Throttle definition file did not contain throttle buckets!");
+            throttleBuckets = DEFAULT_THROTTLE_DEFINITIONS.throttleBuckets();
+        }
     }
 
     /**
@@ -59,5 +74,14 @@ public class ThrottleManager {
     @NonNull
     public List<ThrottleBucket> throttleBuckets() {
         return throttleBuckets;
+    }
+
+    /**
+     * Gets the current {@link ThrottleDefinitions}
+     * @return The current {@link ThrottleDefinitions}.
+     */
+    @NonNull
+    public ThrottleDefinitions throttleDefinitions() {
+        return throttleDefinitions;
     }
 }
