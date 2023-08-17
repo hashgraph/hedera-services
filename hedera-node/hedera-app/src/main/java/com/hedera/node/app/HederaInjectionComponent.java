@@ -27,6 +27,7 @@ import com.hedera.node.app.grpc.GrpcInjectionModule;
 import com.hedera.node.app.grpc.GrpcServerManager;
 import com.hedera.node.app.info.CurrentPlatformStatus;
 import com.hedera.node.app.info.InfoInjectionModule;
+import com.hedera.node.app.info.NumbersModule;
 import com.hedera.node.app.metrics.MetricsInjectionModule;
 import com.hedera.node.app.platform.PlatformModule;
 import com.hedera.node.app.records.BlockRecordInjectionModule;
@@ -82,7 +83,8 @@ import javax.inject.Singleton;
             BlockRecordInjectionModule.class,
             ThrottleInjectionModule.class,
             SolvencyInjectionModule.class,
-            PlatformModule.class
+            PlatformModule.class,
+            NumbersModule.class
         })
 public interface HederaInjectionComponent {
     /* Needed by ServicesState */

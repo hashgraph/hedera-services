@@ -137,6 +137,13 @@ public class FeeCalculatorImpl implements FeeCalculator {
 
     @NonNull
     @Override
+    public FeeCalculator addStorageBytesHours(long seconds) {
+        usage.addSbs(seconds);
+        return this;
+    }
+
+    @NonNull
+    @Override
     public Fees legacyCalculate(@NonNull Function<SigValueObj, com.hederahashgraph.api.proto.java.FeeData> callback) {
         final var sigValueObject = new SigValueObj(sigUsage.numSigs(), sigUsage.numPayerKeys(), sigUsage.sigsSize());
         final var matrix = callback.apply(sigValueObject);
