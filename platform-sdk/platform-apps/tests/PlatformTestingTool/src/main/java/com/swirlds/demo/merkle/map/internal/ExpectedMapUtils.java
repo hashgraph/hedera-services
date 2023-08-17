@@ -16,6 +16,7 @@
 
 package com.swirlds.demo.merkle.map.internal;
 
+import com.swirlds.base.utility.Triple;
 import com.swirlds.common.notification.listeners.ReconnectCompleteNotification;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.utility.AutoCloseableWrapper;
@@ -30,7 +31,6 @@ import com.swirlds.merkle.map.test.lifecycle.LifecycleStatus;
 import com.swirlds.merkle.map.test.lifecycle.TransactionState;
 import com.swirlds.merkle.map.test.pta.MapKey;
 import java.time.Instant;
-import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
@@ -100,13 +100,13 @@ public class ExpectedMapUtils {
 
         ExpectedFCMFamily expectedFCMFamily = state.getStateExpectedMap();
 
-        MapKey key = submittedPayloadTriple.getRight();
+        MapKey key = submittedPayloadTriple.right();
 
         if (key == null) {
             return;
         }
 
-        final PAYLOAD_TYPE payload_type = submittedPayloadTriple.getMiddle();
+        final PAYLOAD_TYPE payload_type = submittedPayloadTriple.middle();
         if (payload_type == PAYLOAD_TYPE.TYPE_MINT_TOKEN
                 || payload_type == PAYLOAD_TYPE.TYPE_BURN_TOKEN
                 || payload_type == PAYLOAD_TYPE.TYPE_TRANSFER_TOKEN) {
@@ -128,7 +128,7 @@ public class ExpectedMapUtils {
             // it doesn't exist in expectedMap as its cleared, while rebuilding after reconnect.
             // So we add those entities to expectedMap, if they doesn't exist
             boolean isEntityInserted = expectedFCMFamily.insertMissingEntity(
-                    submittedPayloadTriple.getLeft(), expectedFCMFamily, key, payloadConfig);
+                    submittedPayloadTriple.left(), expectedFCMFamily, key, payloadConfig);
             if (!isEntityInserted) {
                 return;
             }
@@ -141,7 +141,7 @@ public class ExpectedMapUtils {
             // LatestSubmitStatus can be null in the case when an entity is rebuilt
             // during restart or reconnect. Set latestSubmitStatus if it is null from the transaction payload
             LifecycleStatus status =
-                    expectedFCMFamily.buildLifecycleStatusFromPayload(submittedPayloadTriple.getLeft(), payloadConfig);
+                    expectedFCMFamily.buildLifecycleStatusFromPayload(submittedPayloadTriple.left(), payloadConfig);
             value.setLatestSubmitStatus(status);
         }
 

@@ -41,6 +41,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.swirlds.base.utility.Pair;
+import com.swirlds.base.utility.Triple;
 import com.swirlds.common.merkle.iterators.MerkleIterator;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.Metrics;
@@ -109,7 +110,6 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
@@ -336,15 +336,15 @@ public class PlatformTestingToolMain implements SwirldMain {
             logger.info(
                     LOGM_SUBMIT_DETAIL,
                     "is about to submit a {} transaction for {}",
-                    submittedPayloadTriple.getMiddle(),
-                    submittedPayloadTriple.getRight());
+                    submittedPayloadTriple.middle(),
+                    submittedPayloadTriple.right());
             // if the platform is not active, we don't submit transaction
             if (!isActive) {
                 logger.info(LOGM_SUBMIT_DETAIL, "will not submit the transaction because isActive is false");
                 return false;
             }
             boolean success = submitter.trySubmit(
-                    platform, Pair.of(submittedPayloadTriple.getLeft(), submittedPayloadTriple.getMiddle()));
+                    platform, Pair.of(submittedPayloadTriple.left(), submittedPayloadTriple.middle()));
             if (!success) { // if failed keep bytes payload try next time
                 try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
                         UnsafeMutablePTTStateAccessor.getInstance().getUnsafeMutableState(platform.getSelfId())) {
