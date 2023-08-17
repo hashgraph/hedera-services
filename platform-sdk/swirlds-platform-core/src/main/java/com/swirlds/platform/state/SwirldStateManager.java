@@ -24,7 +24,7 @@ import com.swirlds.common.threading.framework.Stoppable;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.EventImpl;
 import com.swirlds.platform.FreezePeriodChecker;
-import com.swirlds.platform.eventhandling.EventTransactionPool;
+import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.state.signed.LoadableFromSignedState;
 
@@ -55,7 +55,7 @@ public interface SwirldStateManager extends FreezePeriodChecker, Clearable, Load
      *
      * @return the transaction pool
      */
-    EventTransactionPool getTransactionPool();
+    TransactionPool getTransactionPool();
 
     /**
      * Handles the events in a consensus round. Implementations are responsible for invoking {@link
@@ -114,7 +114,7 @@ public interface SwirldStateManager extends FreezePeriodChecker, Clearable, Load
     /**
      * <p>Submits a self transaction for any necessary processing separate from the transaction's propagation to the
      * network. A transaction must only be submitted here if it is also submitted for network propagation in {@link
-     * EventTransactionPool}.</p>
+     * TransactionPool}.</p>
      *
      * @param transaction
      * 		the transaction to submit
@@ -125,7 +125,7 @@ public interface SwirldStateManager extends FreezePeriodChecker, Clearable, Load
 
     /**
      * Submits a self transaction (i.e. a transaction created by this node and put into a self event).
-     * Implementations must submit this transaction for network propagation in {@link EventTransactionPool}.
+     * Implementations must submit this transaction for network propagation in {@link TransactionPool}.
      *
      * @param transaction
      * 		the transaction to submit

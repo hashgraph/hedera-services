@@ -43,7 +43,7 @@ import com.swirlds.platform.event.tipset.rules.ReconnectStateSavedRule;
 import com.swirlds.platform.event.tipset.rules.TipsetEventCreationRule;
 import com.swirlds.platform.event.tipset.rules.TipsetMaximumRateRule;
 import com.swirlds.platform.event.tipset.rules.TipsetPlatformStatusRule;
-import com.swirlds.platform.eventhandling.EventTransactionPool;
+import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.time.Duration;
@@ -137,7 +137,7 @@ class TipsetEventCreationRulesTests {
     @Test
     @DisplayName("Blocked by StartUpFrozenManager Test")
     void blockedByStartUpFrozenManagerTest() {
-        final EventTransactionPool transactionPool = mock(EventTransactionPool.class);
+        final TransactionPool transactionPool = mock(TransactionPool.class);
         final Supplier<PlatformStatus> platformStatusSupplier = () -> ACTIVE;
 
         final AtomicReference<EventCreationRuleResponse> shouldCreateEvent =
@@ -170,8 +170,9 @@ class TipsetEventCreationRulesTests {
         when(startUpEventFrozenManager.shouldCreateEvent()).thenAnswer(invocation -> PASS);
 
         final AtomicInteger numSignatureTransactions = new AtomicInteger(0);
-        final EventTransactionPool transactionPool = mock(EventTransactionPool.class);
-        when(transactionPool.numSignatureTransEvent()).thenAnswer(invocation -> numSignatureTransactions.get());
+        final TransactionPool transactionPool = mock(TransactionPool.class);
+        when(transactionPool.hasBufferedSignatureTransactions())
+                .thenAnswer(invocation -> numSignatureTransactions.get());
 
         final AtomicInteger eventCreationCount = new AtomicInteger(0);
         final TipsetEventCreator baseEventCreator = mock(TipsetEventCreator.class);
@@ -191,7 +192,7 @@ class TipsetEventCreationRulesTests {
     @Test
     @DisplayName("Blocked by Status Test")
     void blockedByStatus() {
-        final EventTransactionPool transactionPool = mock(EventTransactionPool.class);
+        final TransactionPool transactionPool = mock(TransactionPool.class);
         final StartUpEventFrozenManager startUpEventFrozenManager = mock(StartUpEventFrozenManager.class);
         when(startUpEventFrozenManager.shouldCreateEvent()).thenAnswer(invocation -> PASS);
 

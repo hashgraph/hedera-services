@@ -16,16 +16,13 @@
 
 package com.swirlds.platform.eventhandling;
 
-import static com.swirlds.common.metrics.Metrics.INFO_CATEGORY;
-
 import com.swirlds.common.config.TransactionConfig;
-import com.swirlds.common.metrics.FunctionGauge;
-import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.system.EventCreationRule;
 import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
-import com.swirlds.platform.components.transaction.TransactionPool;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -39,58 +36,63 @@ import java.util.function.BooleanSupplier;
  * Store a list of transactions created by self, both system and non-system, for wrapping in the next event to be
  * created.
  */
-public class EventTransactionPool implements TransactionPool, TransactionSupplier {
+public class TransactionPool implements TransactionSupplier, EventCreationRule {
 
     /**
      * A list of transactions created by this node waiting to be put into a self-event.
      */
-    protected final Queue<ConsensusTransactionImpl> transEvent = new LinkedList<>();
+    private final Queue<ConsensusTransactionImpl> bufferedTransactions = new LinkedList<>();
 
     /**
      * A list of high-priority transactions created by this node waiting to be put into a self-event. Transactions in
-     * this queue are always inserted into an event before transactions waiting in {@link #transEvent}.
+     * this queue are always inserted into an event before transactions waiting in {@link #bufferedTransactions}.
      */
-    protected final Queue<ConsensusTransactionImpl> priorityTransEvent = new LinkedList<>();
+    private final Queue<ConsensusTransactionImpl> priorityBufferedTransactions = new LinkedList<>();
 
     /**
-     * the number of user transactions in the transEvent/priorityTransEvent lists
+     * The number of buffered signature transactions waiting to be put into events.
      */
-    protected volatile int numUserTransEvent = 0;
-
-    /**
-     * the number of signature system transactions in the transEvent/priorityTransEvent lists
-     */
-    protected volatile int numSignatureTransEvent = 0;
+    private int bufferedSignatureTransactionCount = 0;
 
     /**
      * Indicates if the system is currently in a freeze.
      */
     private final BooleanSupplier inFreeze;
 
-    protected final TransactionConfig transactionConfig;
+    /**
+     * The maximum number of bytes of transactions that can be put in an event.
+     */
+    private final int maxTransactionBytesPerEvent;
+
+    /**
+     * The maximum desired size of the transaction queue. If the queue is larger than this, then new app transactions
+     * are rejected.
+     */
+    private final int throttleTransactionQueueSize;
+
+    /**
+     * Metrics for the transaction pool.
+     */
+    private final TransactionPoolMetrics transactionPoolMetrics;
 
     /**
      * Creates a new transaction pool for transactions waiting to be put in an event.
      *
-     * @param metrics  the metrics engine
-     * @param transactionConfig configuration to use
-     * @param inFreeze Indicates if the system is currently in a freeze
+     * @param platformContext the platform context
+     * @param inFreeze        Indicates if the system is currently in a freeze
      */
-    public EventTransactionPool(
-            @NonNull final Metrics metrics,
-            @NonNull final TransactionConfig transactionConfig,
-            @Nullable final BooleanSupplier inFreeze) {
-        this.transactionConfig = Objects.requireNonNull(transactionConfig);
+    public TransactionPool(@NonNull final PlatformContext platformContext, @Nullable final BooleanSupplier inFreeze) {
+
+        Objects.requireNonNull(platformContext);
         this.inFreeze = inFreeze;
 
-        metrics.getOrCreate(
-                new FunctionGauge.Config<>(INFO_CATEGORY, "transEvent", Integer.class, this::getTransEventSize)
-                        .withDescription("transEvent queue size")
-                        .withUnit("count"));
-        metrics.getOrCreate(new FunctionGauge.Config<>(
-                        INFO_CATEGORY, "priorityTransEvent", Integer.class, this::getPriorityTransEventSize)
-                .withDescription("priorityTransEvent queue size")
-                .withUnit("count"));
+        final TransactionConfig transactionConfig =
+                platformContext.getConfiguration().getConfigData(TransactionConfig.class);
+        maxTransactionBytesPerEvent = transactionConfig.maxTransactionBytesPerEvent();
+        throttleTransactionQueueSize = transactionConfig.throttleTransactionQueueSize();
+
+        transactionPoolMetrics = new TransactionPoolMetrics(
+                platformContext, this::getBufferedTransactionCount, this::getPriorityBufferedTransactionCount);
     }
 
     /**
@@ -99,17 +101,18 @@ public class EventTransactionPool implements TransactionPool, TransactionSupplie
      * @param currentEventSize the current size in bytes of the event being constructed
      * @return the next transaction, or null if no transaction is available
      */
+    @Nullable
     @SuppressWarnings("ConstantConditions")
     private ConsensusTransactionImpl getNextTransaction(final int currentEventSize) {
+        final int maxSize = maxTransactionBytesPerEvent - currentEventSize;
 
-        final int maxSize = transactionConfig.maxTransactionBytesPerEvent() - currentEventSize;
-
-        if (!priorityTransEvent.isEmpty() && priorityTransEvent.peek().getSerializedLength() <= maxSize) {
-            return priorityTransEvent.poll();
+        if (!priorityBufferedTransactions.isEmpty()
+                && priorityBufferedTransactions.peek().getSerializedLength() <= maxSize) {
+            return priorityBufferedTransactions.poll();
         }
 
-        if (!transEvent.isEmpty() && transEvent.peek().getSerializedLength() <= maxSize) {
-            return transEvent.poll();
+        if (!bufferedTransactions.isEmpty() && bufferedTransactions.peek().getSerializedLength() <= maxSize) {
+            return bufferedTransactions.poll();
         }
 
         return null;
@@ -120,10 +123,11 @@ public class EventTransactionPool implements TransactionPool, TransactionSupplie
      * them as an array, along with a boolean indicating if the array of transactions returned contains a freeze state
      * signature transaction.
      */
+    @NonNull
     @Override
     public synchronized ConsensusTransactionImpl[] getTransactions() {
         // Early return due to no transactions waiting
-        if (transEvent.isEmpty() && priorityTransEvent.isEmpty()) {
+        if (bufferedTransactions.isEmpty() && priorityBufferedTransactions.isEmpty()) {
             return new ConsensusTransactionImpl[0];
         }
 
@@ -141,53 +145,46 @@ public class EventTransactionPool implements TransactionPool, TransactionSupplie
             currEventSize += transaction.getSerializedLength();
             selectedTrans.add(transaction);
 
-            if (!transaction.isSystem()) {
-                numUserTransEvent--;
-            } else {
-                if (isSignatureTrans(transaction)) {
-                    numSignatureTransEvent--;
-                }
+            if (transaction.isSystem() && isSignatureTransaction(transaction)) {
+                bufferedSignatureTransactionCount--;
             }
         }
 
         return selectedTrans.toArray(new ConsensusTransactionImpl[0]);
     }
 
-    private static boolean isSignatureTrans(final ConsensusTransaction transaction) {
+    /**
+     * Check if a transaction is a signature transaction.
+     *
+     * @param transaction the transaction to check
+     * @return true if the transaction is a signature transaction
+     */
+    private static boolean isSignatureTransaction(@NonNull final ConsensusTransaction transaction) {
         // check the class rather than casting and calling getType() because it is more performant
         return transaction.getClass().equals(StateSignatureTransaction.class);
     }
 
     /**
-     * @return the number of transactions waiting to be put in an event, both user and state signature system
-     * transactions
+     * Check if there are any buffered signature transactions waiting to be put into events.
+     *
+     * @return true if there are any buffered signature transactions
      */
-    public int numTransForEvent() {
-        return numUserTransEvent + numSignatureTransEvent;
-    }
-
-    /**
-     * @return the number of signature transactions waiting to be put in an event.
-     */
-    public int numSignatureTransEvent() {
-        return numSignatureTransEvent;
+    public synchronized boolean hasBufferedSignatureTransactions() {
+        return bufferedSignatureTransactionCount > 0;
     }
 
     /**
      * {@inheritDoc}
      */
     @SuppressWarnings("ConstantConditions")
+    @NonNull
     @Override
-    public EventCreationRuleResponse shouldCreateEvent() {
-        if (numSignatureTransEvent() > 0 && inFreeze.getAsBoolean()) {
+    public synchronized EventCreationRuleResponse shouldCreateEvent() {
+        if (hasBufferedSignatureTransactions() && inFreeze.getAsBoolean()) {
             return EventCreationRuleResponse.CREATE;
         } else {
             return EventCreationRuleResponse.PASS;
         }
-    }
-
-    public boolean submitTransaction(final ConsensusTransactionImpl transaction) {
-        return submitTransaction(transaction, false);
     }
 
     /**
@@ -202,25 +199,32 @@ public class EventTransactionPool implements TransactionPool, TransactionSupplie
      * @return true if successful
      */
     @SuppressWarnings("ConstantConditions")
-    public synchronized boolean submitTransaction(final ConsensusTransactionImpl transaction, final boolean priority) {
+    public synchronized boolean submitTransaction(
+            @NonNull final ConsensusTransactionImpl transaction, final boolean priority) {
+
+        Objects.requireNonNull(transaction);
 
         // Always submit system transactions. If it's not a system transaction, then only submit it if we
         // don't violate queue size capacity restrictions.
         if (!transaction.isSystem()
-                && (transEvent.size() + priorityTransEvent.size()) > transactionConfig.throttleTransactionQueueSize()) {
+                && (bufferedTransactions.size() + priorityBufferedTransactions.size()) > throttleTransactionQueueSize) {
+            transactionPoolMetrics.recordRejectedAppTransaction();
             return false;
         }
 
-        if (!transaction.isSystem()) {
-            numUserTransEvent++;
-        } else if (isSignatureTrans(transaction)) {
-            numSignatureTransEvent++;
+        if (transaction.isSystem()) {
+            if (isSignatureTransaction(transaction)) {
+                bufferedSignatureTransactionCount++;
+            }
+            transactionPoolMetrics.recordSubmittedPlatformTransaction();
+        } else {
+            transactionPoolMetrics.recordAcceptedAppTransaction();
         }
 
         if (priority) {
-            priorityTransEvent.add(transaction);
+            priorityBufferedTransactions.add(transaction);
         } else {
-            transEvent.add(transaction);
+            bufferedTransactions.add(transaction);
         }
 
         return true;
@@ -231,8 +235,8 @@ public class EventTransactionPool implements TransactionPool, TransactionSupplie
      *
      * @return the number of transactions
      */
-    public synchronized int getTransEventSize() {
-        return transEvent.size();
+    private synchronized int getBufferedTransactionCount() {
+        return bufferedTransactions.size();
     }
 
     /**
@@ -240,22 +244,16 @@ public class EventTransactionPool implements TransactionPool, TransactionSupplie
      *
      * @return the number of transactions
      */
-    public synchronized int getPriorityTransEventSize() {
-        return priorityTransEvent.size();
-    }
-
-    /** return a single string giving the number of transactions in transEvent */
-    public synchronized String status() {
-        return "transEvent size =" + (transEvent.size() + priorityTransEvent.size());
+    private synchronized int getPriorityBufferedTransactionCount() {
+        return priorityBufferedTransactions.size();
     }
 
     /**
      * Clear all the transactions
      */
     public synchronized void clear() {
-        transEvent.clear();
-        priorityTransEvent.clear();
-        numUserTransEvent = 0;
-        numSignatureTransEvent = 0;
+        bufferedTransactions.clear();
+        priorityBufferedTransactions.clear();
+        bufferedSignatureTransactionCount = 0;
     }
 }
