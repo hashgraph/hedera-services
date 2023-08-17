@@ -193,6 +193,40 @@ public final class JrsTestReportGenerator {
         sb.append(
                 """
                         <script>
+                            function onLoad() {
+                                registerClickListeners();
+                                colorAllTableRows();
+                            }
+                            function registerClickListeners() {
+                                registerClickListenersForTable('table_sortedByName');
+                                registerClickListenersForTable('table_sortedByAge');
+                                registerClickListenersForTable('table_sortedByStatus');
+                            }
+                            var previouslySelectedRow = null;
+                            function registerClickListenersForTable(tableName) {
+                                var table = document.getElementById(tableName);
+                                for (var i = 1; i < table.rows.length; i++) {
+                                    var row = table.rows[i];
+                                    // var firstCell = row.cells[0];
+                                    for (var j = 0; j < row.cells.length; j++) {
+                                        var cell = row.cells[j];
+                                        cell.onclick = (function() {
+                                            if (previouslySelectedRow == this) {
+                                                return;
+                                            }
+                                            for (var k = 0; k < this.cells.length; k++) {
+                                                this.cells[k].style.borderBottomColor = "#f0524f";
+                                            }
+                                            if (previouslySelectedRow != null) {
+                                                for (var k = 0; k < previouslySelectedRow.cells.length; k++) {
+                                                    previouslySelectedRow.cells[k].style.borderBottomColor = "#555555";
+                                                }
+                                            }
+                                            previouslySelectedRow = this;
+                                        }).bind(row);
+                                    }
+                                }
+                            }
                             function sortByName() {
                                 document.getElementById('table_sortedByName').style.display = "block";
                                 document.getElementById('table_sortedByAge').style.display = "none";
@@ -853,7 +887,7 @@ public final class JrsTestReportGenerator {
         sb.append("<html>\n");
         generateHeader(sb, now);
         sb.append("""
-                <body onload="colorAllTableRows()">
+                <body onload="onLoad()">
                 """);
         generateBody(sb, data, metadata, now, bucketPrefix, bucketPrefixReplacement);
         sb.append("</body>\n");
