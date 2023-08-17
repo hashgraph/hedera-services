@@ -81,8 +81,16 @@ public class FileServiceUtils {
             throw new PreCheckException(INVALID_FILE_ID);
         }
 
-        final var fileMeta = fileStore.getFileMetadata(fileId);
-        mustExist(fileMeta, INVALID_FILE_ID);
+        final var fileConfig = context.configuration().getConfigData(FilesConfig.class);
+
+        FileMetadata fileMeta = null;
+        if (fileId.fileNum() != fileConfig.upgradeFileNumber()) {
+            fileMeta = fileStore.getFileMetadata(fileId);
+            mustExist(fileMeta, INVALID_FILE_ID);
+        }
+
+//        final var fileMeta = fileStore.getFileMetadata(fileId);
+//        mustExist(fileMeta, INVALID_FILE_ID);
 
         final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
         // we cannot delete system files
