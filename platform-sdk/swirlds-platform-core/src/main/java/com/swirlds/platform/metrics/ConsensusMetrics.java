@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.metrics;
 
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.EventImpl;
 
 /**
  * Collection of metrics related to consensus
