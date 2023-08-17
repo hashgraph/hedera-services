@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.event.tipset;
 
+import com.swirlds.platform.EventImpl;
 import com.swirlds.platform.event.EventDescriptor;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;

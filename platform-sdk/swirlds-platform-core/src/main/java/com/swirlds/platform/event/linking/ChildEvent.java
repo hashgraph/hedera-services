@@ -19,8 +19,8 @@ package com.swirlds.platform.event.linking;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.platform.EventImpl;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.internal.EventImpl;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**

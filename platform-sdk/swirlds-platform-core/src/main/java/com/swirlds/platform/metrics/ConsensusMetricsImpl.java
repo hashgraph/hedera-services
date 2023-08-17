@@ -30,7 +30,7 @@ import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.EventImpl;
 import com.swirlds.platform.stats.AverageAndMax;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
