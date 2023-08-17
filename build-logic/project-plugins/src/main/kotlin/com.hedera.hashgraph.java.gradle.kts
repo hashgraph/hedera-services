@@ -110,36 +110,32 @@ testing {
             // targets there (although it's planned).
             // Thus, we use 'tasks.register' and set 'testClassesDirs' and 'sources' to the
             // information we get from the 'source set' (sources) of this 'test suite'.
-            val hammerTest =
-                tasks.register<Test>("hammerTest") {
-                    testClassesDirs = sources.output.classesDirs
-                    classpath = sources.runtimeClasspath
+            tasks.register<Test>("hammerTest") {
+                testClassesDirs = sources.output.classesDirs
+                classpath = sources.runtimeClasspath
 
-                    shouldRunAfter(tasks.test)
+                shouldRunAfter(tasks.test)
 
-                    useJUnitPlatform { includeTags("HAMMER") }
-                    maxHeapSize = "8g"
-                    jvmArgs("-XX:ActiveProcessorCount=16")
+                useJUnitPlatform { includeTags("HAMMER") }
+                maxHeapSize = "8g"
+                jvmArgs("-XX:ActiveProcessorCount=16")
+            }
+
+            tasks.register<Test>("performanceTest") {
+                testClassesDirs = sources.output.classesDirs
+                classpath = sources.runtimeClasspath
+
+                shouldRunAfter(tasks.test)
+
+                useJUnitPlatform {
+                    includeTags("TIME_CONSUMING", "AT_SCALE", "REMOTE_ONLY", "PERFORMANCE")
                 }
 
-            val performanceTest =
-                tasks.register<Test>("performanceTest") {
-                    testClassesDirs = sources.output.classesDirs
-                    classpath = sources.runtimeClasspath
-
-                    shouldRunAfter(tasks.test)
-
-                    useJUnitPlatform {
-                        includeTags("TIME_CONSUMING", "AT_SCALE", "REMOTE_ONLY", "PERFORMANCE")
-                    }
-
-                    setForkEvery(1)
-                    minHeapSize = "2g"
-                    maxHeapSize = "16g"
-                    jvmArgs("-XX:ActiveProcessorCount=16", "-XX:+UseZGC")
-                }
-
-            tasks.check { dependsOn(hammerTest, performanceTest) }
+                setForkEvery(1)
+                minHeapSize = "2g"
+                maxHeapSize = "16g"
+                jvmArgs("-XX:ActiveProcessorCount=16", "-XX:+UseZGC")
+            }
         }
     }
 }

@@ -31,7 +31,6 @@ import java.lang.management.ManagementFactory;
 import java.util.Objects;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -577,7 +576,6 @@ class LongListValidRangeTest {
     public static final int NUM_LONGS_PER_CHUNK = 10000;
     public static final int INITIAL_DATA_SIZE = 10_000_000;
 
-    @Disabled("Failure: expected: <80000000> but was: <80008192>")
     @SuppressWarnings("OptionalGetWithoutIsPresent")
     @Tag(TestTypeTags.PERFORMANCE)
     @Tag(TestComponentTags.VMAP)
