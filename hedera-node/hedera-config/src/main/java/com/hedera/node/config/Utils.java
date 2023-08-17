@@ -42,17 +42,10 @@ public final class Utils {
         configuration.getConfigDataTypes().forEach(configDataType -> {
             final var propertyNamePrefix = ConfigReflectionUtils.getNamePrefixForConfigDataRecord(configDataType);
             Arrays.stream(configDataType.getRecordComponents())
-                    .filter(component -> component.getAnnotation(NetworkProperty.class) != null)
-                    .forEach(component -> {
-                        final var name = ConfigReflectionUtils.getPropertyNameForConfigDataProperty(
-                                propertyNamePrefix, component);
-                        final var configData = configuration.getConfigData(configDataType);
-                        try {
-                            recordProperties.put(name, component.getAccessor().invoke(configData));
-                        } catch (final Exception e) {
-                            e.printStackTrace();
-                        }
-                    });
+                    .filter(component -> component.isAnnotationPresent(NetworkProperty.class))
+                    .map(component ->
+                            ConfigReflectionUtils.getPropertyNameForConfigDataProperty(propertyNamePrefix, component))
+                    .forEach(name -> recordProperties.put(name, configuration.getValue(name)));
         });
 
         return Collections.unmodifiableSortedMap(recordProperties);
