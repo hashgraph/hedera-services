@@ -28,6 +28,8 @@ plugins {
     id("com.hedera.hashgraph.spotless-kotlin-conventions")
 }
 
+version = providers.fileContents(rootProject.layout.projectDirectory.versionTxt()).asText.get()
+
 java {
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(17))
@@ -173,3 +175,8 @@ val dependencyAnalysis = extensions.findByType<AbstractExtension>()
 if (dependencyAnalysis is DependencyAnalysisSubExtension) {
     dependencyAnalysis.issues { onAny { exclude(project.path) } }
 }
+
+// Find the version.txt in the root of the repository, independent of
+// which build is started from where.
+fun Directory.versionTxt(): RegularFile =
+    file("version.txt").let { if (it.asFile.exists()) it else this.dir("..").versionTxt() }
