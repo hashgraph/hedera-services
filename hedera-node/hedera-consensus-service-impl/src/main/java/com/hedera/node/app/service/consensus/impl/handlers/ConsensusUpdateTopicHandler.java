@@ -188,9 +188,10 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         final var resolvedExpiryMeta = resolvedUpdateMetaFrom(handleContext.expiryValidator(), op, topic);
         builder.expirationSecond(resolvedExpiryMeta.expiry());
         builder.autoRenewPeriod(resolvedExpiryMeta.autoRenewPeriod());
-        builder.autoRenewAccountId(resolvedExpiryMeta.autoRenewAccountId());
         if (op.hasAutoRenewAccount() && designatesAccountRemoval(op.autoRenewAccount())) {
             builder.autoRenewAccountId((AccountID) null);
+        } else {
+            builder.autoRenewAccountId(resolvedExpiryMeta.autoRenewAccountId());
         }
     }
 
