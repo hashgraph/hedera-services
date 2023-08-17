@@ -31,38 +31,43 @@ import static org.apache.commons.lang3.StringEscapeUtils.escapeHtml4;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.StringEscapeUtils;
 
 /**
- * A log line that doesn't adhere to the standard format.
+ * A log that doesn't adhere to the standard format. Becomes part of the most recent log line.
  */
-public class NonStandardLogLine implements LogLine {
+public class NonStandardLog {
     /**
      * The original text
      */
-    final String logText;
+    private String nonStandardText = "";
 
     /**
      * The most recent standard log line to come before this non-standard line
      */
-    private final StandardLogLine parentLogLine;
+    private final LogLine parentLogLine;
 
     /**
      * Constructor
      *
-     * @param logText       the original text
-     * @param parentLogLine the most recent standard log line to come before this non-standard line
+     * @param parentLogLine the most recent log line to come before this non-standard line
      */
-    public NonStandardLogLine(@NonNull final String logText, @NonNull StandardLogLine parentLogLine) {
-        this.logText = logText;
+    public NonStandardLog(@NonNull LogLine parentLogLine) {
         this.parentLogLine = parentLogLine;
+    }
+
+    public void addLogText(@NonNull final String logText) {
+        if (!nonStandardText.isEmpty()) {
+            this.nonStandardText += "\n";
+        }
+        this.nonStandardText += Objects.requireNonNull(logText);
     }
 
     /**
      * {@inheritDoc}
      */
-    @Override
     @NonNull
     public String generateHtmlString() {
         final List<String> dataCellTags = new ArrayList<>();
@@ -82,12 +87,13 @@ public class NonStandardLogLine implements LogLine {
         dataCellTags.add(logNumberTagFactory.generateTag());
 
         // add the non-standard contents
-        final HtmlTagFactory contentsFactory = new HtmlTagFactory(HTML_DATA_CELL_TAG, escapeHtml4(logText), false)
+        final HtmlTagFactory contentsFactory = new HtmlTagFactory(
+                        HTML_DATA_CELL_TAG, escapeHtml4(nonStandardText), false)
                 .addClasses(List.of(NON_STANDARD_LABEL, HIDEABLE_LABEL))
                 .addAttribute(COLSPAN_PROPERTY, "5");
         dataCellTags.add(contentsFactory.generateTag());
 
-        // add classes via the parent line, so that this non-standard log line will be filtered with its parent
+        // add classes via the parent line, so that this non-standard log will be filtered with its parent
         final List<String> rowClassNames = Stream.of(
                         parentLogLine.getLogLevel(),
                         parentLogLine.getMarker(),

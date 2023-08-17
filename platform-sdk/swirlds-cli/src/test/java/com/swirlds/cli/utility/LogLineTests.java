@@ -19,16 +19,16 @@ package com.swirlds.cli.utility;
 import static com.swirlds.cli.logging.LogProcessingUtils.parseTimestamp;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.swirlds.cli.logging.StandardLogLine;
+import com.swirlds.cli.logging.LogLine;
 import java.time.ZoneId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Tests for the StandardLogLine class
+ * Tests for the LogLine class
  */
-@DisplayName("StandardLogLine Tests")
-class StandardLogLineTests {
+@DisplayName("LogLine Tests")
+class LogLineTests {
     public static final String testString =
             """
                     2023-08-04 13:50:09.751 102      INFO  PLATFORM_STATUS  <<platform: status-state-machine>> PlatformStatusStateMachine: Platform spent 441.0 ms in STARTING_UP. Now in REPLAYING_EVENTS {"oldStatus":"STARTING_UP","newStatus":"REPLAYING_EVENTS"} [com.swirlds.logging.payloads.PlatformStatusPayload]
@@ -37,7 +37,7 @@ class StandardLogLineTests {
     @Test
     @DisplayName("Test splitting a log line")
     void splitLogLine() {
-        final StandardLogLine logLine = new StandardLogLine(testString, ZoneId.systemDefault());
+        final LogLine logLine = new LogLine(testString, ZoneId.systemDefault());
 
         assertEquals(parseTimestamp("2023-08-04 13:50:09.751", ZoneId.systemDefault()), logLine.getTimestamp());
         assertEquals("102", logLine.getLogNumber());
