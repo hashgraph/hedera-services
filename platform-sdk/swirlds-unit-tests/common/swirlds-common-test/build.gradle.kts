@@ -19,17 +19,15 @@ plugins {
     id("com.hedera.hashgraph.maven-publish")
 }
 
-dependencies {
-    javaModuleDependencies {
-        testImplementation(project(":swirlds-base"))
-        testImplementation(project(":swirlds-config-api"))
-        testImplementation(project(":swirlds-test-framework"))
-        testImplementation(testFixtures(project(":swirlds-base")))
-        testImplementation(testFixtures(project(":swirlds-common")))
-        testImplementation(gav("com.google.truth"))
-        testImplementation(gav("org.assertj.core"))
-        testImplementation(gav("org.junit.jupiter.params"))
-        testImplementation(gav("org.mockito"))
-        testCompileOnly(gav("com.github.spotbugs.annotations"))
-    }
+testModuleInfo {
+    requires("com.swirlds.base")
+    requires("com.swirlds.base.test.fixtures")
+    requires("com.swirlds.common.test.fixtures")
+    requires("com.swirlds.config.api")
+    requires("com.swirlds.test.framework")
+    requires("com.google.truth")
+    requires("org.assertj.core")
+    requires("org.junit.jupiter.params")
+    requires("org.mockito")
+    requiresStatic("com.github.spotbugs.annotations")
 }

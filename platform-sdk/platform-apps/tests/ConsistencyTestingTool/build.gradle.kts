@@ -18,10 +18,8 @@ plugins { id("com.hedera.hashgraph.application") }
 
 application.mainClass.set("com.swirlds.demo.consistency.ConsistencyTestingToolMain")
 
-dependencies {
-    javaModuleDependencies {
-        testImplementation(gav("com.swirlds.platform.core"))
-        testImplementation(gav("org.junit.jupiter.api"))
-        testImplementation(gav("org.mockito"))
-    }
+testModuleInfo {
+    requires("com.swirlds.platform.core")
+    requires("org.junit.jupiter.api")
+    requires("org.mockito")
 }

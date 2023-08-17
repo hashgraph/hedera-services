@@ -16,12 +16,10 @@
 
 plugins { id("com.hedera.hashgraph.sdk.conventions") }
 
-dependencies {
-    javaModuleDependencies {
-        testImplementation(project(":swirlds-base"))
-        testImplementation(project(":swirlds-test-framework"))
-        testImplementation(gav("org.apache.commons.io"))
-        testImplementation(gav("org.junit.jupiter.api"))
-        testImplementation(gav("org.junit.jupiter.params"))
-    }
+testModuleInfo {
+    requires("com.swirlds.base")
+    requires("com.swirlds.test.framework")
+    requires("org.apache.commons.io")
+    requires("org.junit.jupiter.api")
+    requires("org.junit.jupiter.params")
 }

@@ -20,16 +20,16 @@ plugins {
     id("com.hedera.hashgraph.benchmark-conventions")
 }
 
-dependencies {
-    javaModuleDependencies {
-        jmhImplementation(gav("jmh.core"))
+jmhModuleInfo {
+    requires("jmh.core")
+}
 
-        testImplementation(project(":swirlds-test-framework"))
-        testImplementation(testFixtures(project(":swirlds-common")))
-        testImplementation(testFixtures(project(":swirlds-config-api")))
-        testImplementation(gav("org.apache.logging.log4j.core"))
-        testImplementation(gav("org.junit.jupiter.api"))
-        testImplementation(gav("org.junit.jupiter.params"))
-        testImplementation(gav("org.mockito"))
-    }
+testModuleInfo {
+    requires("com.swirlds.common.test.fixtures")
+    requires("com.swirlds.config.api.test.fixtures")
+    requires("com.swirlds.test.framework")
+    requires("org.apache.logging.log4j.core")
+    requires("org.junit.jupiter.api")
+    requires("org.junit.jupiter.params")
+    requires("org.mockito")
 }

@@ -19,9 +19,7 @@ plugins {
     id("com.hedera.hashgraph.maven-publish")
 }
 
-dependencies {
-    javaModuleDependencies {
-        testImplementation(gav("org.junit.jupiter.api"))
-        testImplementation(gav("org.junit.jupiter.params"))
-    }
+testModuleInfo {
+    requires("org.junit.jupiter.api")
+    requires("org.junit.jupiter.params")
 }

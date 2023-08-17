@@ -23,15 +23,13 @@ plugins {
 
 application.mainClass.set("com.swirlds.demo.platform.PlatformTestingToolMain")
 
-dependencies {
-    javaModuleDependencies {
-        testImplementation(gav("com.swirlds.test.framework"))
-        testImplementation(gav("org.apache.logging.log4j.core"))
-        testImplementation(gav("org.bouncycastle.provider"))
-        testImplementation(gav("org.junit.jupiter.params"))
-        testImplementation(gav("org.junit.jupiter.api"))
-        testImplementation(gav("org.mockito"))
-    }
+testModuleInfo {
+    requires("com.swirlds.test.framework")
+    requires("org.apache.logging.log4j.core")
+    requires("org.bouncycastle.provider")
+    requires("org.junit.jupiter.params")
+    requires("org.junit.jupiter.api")
+    requires("org.mockito")
 }
 
 protobuf { protoc { artifact = "com.google.protobuf:protoc:3.21.5" } }

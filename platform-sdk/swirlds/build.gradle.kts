@@ -16,12 +16,10 @@
 
 plugins { id("com.hedera.hashgraph.application") }
 
-dependencies {
-    javaModuleDependencies {
-        runtimeOnly(project(":swirlds-platform-core"))
-        runtimeOnly(project(":swirlds-merkle"))
-        runtimeOnly(project(":swirlds-merkle-test"))
-    }
+mainModuleInfo {
+    runtimeOnly("com.swirlds.platform.core")
+    runtimeOnly("com.swirlds.merkle")
+    runtimeOnly("com.swirlds.merkle.test")
 }
 
 application.mainClass.set("com.swirlds.platform.Browser")

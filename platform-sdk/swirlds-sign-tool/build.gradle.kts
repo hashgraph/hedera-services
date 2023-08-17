@@ -21,10 +21,8 @@ plugins {
 
 application.mainClass.set("com.swirlds.signingtool.FileSignTool")
 
-dependencies {
-    javaModuleDependencies {
-        testImplementation(project(":swirlds-test-framework"))
-        testImplementation(gav("org.apache.commons.lang3"))
-        testImplementation(gav("org.junit.jupiter.api"))
-    }
+testModuleInfo {
+    requires("com.swirlds.test.framework")
+    requires("org.apache.commons.lang3")
+    requires("org.junit.jupiter.api")
 }

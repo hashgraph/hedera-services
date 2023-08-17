@@ -19,15 +19,13 @@ plugins {
     id("com.hedera.hashgraph.maven-publish")
 }
 
-dependencies {
-    javaModuleDependencies {
-        testImplementation(project(":swirlds-common-testing"))
-        testImplementation(project(":swirlds-config-api"))
-        testImplementation(project(":swirlds-jasperdb"))
-        testImplementation(project(":swirlds-test-framework"))
-        testImplementation(project(":swirlds-virtualmap"))
-        testImplementation(testFixtures(project(":swirlds-config-api")))
-        testImplementation(gav("org.junit.jupiter.api"))
-        testImplementation(gav("org.junit.jupiter.params"))
-    }
+testModuleInfo {
+    requires("com.swirlds.common.testing")
+    requires("com.swirlds.config.api")
+    requires("com.swirlds.jasperdb")
+    requires("com.swirlds.test.framework")
+    requires("com.swirlds.virtualmap")
+    requires("com.swirlds.config.api.test.fixtures")
+    requires("org.junit.jupiter.api")
+    requires("org.junit.jupiter.params")
 }

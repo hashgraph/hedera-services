@@ -19,24 +19,24 @@ plugins {
     id("com.hedera.hashgraph.benchmark-conventions")
 }
 
-dependencies {
-    javaModuleDependencies {
-        jmhImplementation(project(":swirlds-common"))
-        jmhImplementation(project(":swirlds-config-api"))
-        jmhImplementation(project(":swirlds-platform-core"))
-        jmhImplementation(testFixtures(project(":swirlds-common")))
-        jmhImplementation(testFixtures(project(":swirlds-platform-core")))
-        jmhImplementation(gav("jmh.core"))
-        jmhImplementation(gav("org.apache.commons.lang3"))
+jmhModuleInfo {
+    requires("com.swirlds.common")
+    requires("com.swirlds.config.api")
+    requires("com.swirlds.platform.core")
+    requires("com.swirlds.common.test.fixtures")
+    requires("com.swirlds.platform.core.test.fixtures")
+    requires("jmh.core")
+    requires("org.apache.commons.lang3")
+}
 
-        testImplementation(project(":swirlds-common-testing"))
-        testImplementation(project(":swirlds-merkle"))
-        testImplementation(project(":swirlds-sign-tool")) // should be removed in future
-        testImplementation(testFixtures(project(":swirlds-base")))
-        testImplementation(gav("awaitility"))
-        testImplementation(gav("org.apache.commons.collections4"))
-        testImplementation(gav("org.junit.jupiter.params"))
-        testImplementation(gav("org.mockito.junit.jupiter"))
-        testCompileOnly(gav("com.github.spotbugs.annotations"))
-    }
+testModuleInfo {
+    requires("com.swirlds.common.testing")
+    requires("com.swirlds.merkle")
+    requires("com.swirlds.sign.tool") // should be removed in future
+    requires("com.swirlds.base.test.fixtures")
+    requires("awaitility")
+    requires("org.apache.commons.collections4")
+    requires("org.junit.jupiter.params")
+    requires("org.mockito.junit.jupiter")
+    requiresStatic("com.github.spotbugs.annotations")
 }

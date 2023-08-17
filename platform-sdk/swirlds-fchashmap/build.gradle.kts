@@ -19,12 +19,10 @@ plugins {
     id("com.hedera.hashgraph.maven-publish")
 }
 
-dependencies {
-    javaModuleDependencies {
-        testImplementation(project(":swirlds-base"))
-        testImplementation(project(":swirlds-test-framework"))
-        testImplementation(testFixtures(project(":swirlds-common")))
-        testImplementation(gav("org.apache.commons.lang3"))
-        testImplementation(gav("org.junit.jupiter.api"))
-    }
+testModuleInfo {
+    requires("com.swirlds.base")
+    requires("com.swirlds.test.framework")
+    requires("com.swirlds.common.test.fixtures")
+    requires("org.apache.commons.lang3")
+    requires("org.junit.jupiter.api")
 }

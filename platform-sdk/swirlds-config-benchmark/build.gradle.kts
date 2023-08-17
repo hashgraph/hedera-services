@@ -19,12 +19,10 @@ plugins {
     id("com.hedera.hashgraph.benchmark-conventions")
 }
 
-dependencies {
-    javaModuleDependencies {
-        jmhImplementation(project(":swirlds-common"))
-        jmhImplementation(project(":swirlds-config-api"))
-        jmhImplementation(gav("jmh.core"))
-    }
+jmhModuleInfo {
+    requires("com.swirlds.common")
+    requires("com.swirlds.config.api")
+    requires("jmh.core")
 }
 
 tasks.withType<Javadoc>().configureEach { enabled = false }

@@ -19,17 +19,15 @@ plugins {
     id("com.hedera.hashgraph.benchmark-conventions")
 }
 
-dependencies {
-    javaModuleDependencies {
-        jmhImplementation(project(":swirlds-common"))
-        jmhImplementation(project(":swirlds-config-api"))
-        jmhImplementation(project(":swirlds-fchashmap"))
-        jmhImplementation(project(":swirlds-jasperdb"))
-        jmhImplementation(project(":swirlds-virtualmap"))
-        jmhImplementation(gav("jmh.core"))
-        jmhImplementation(gav("org.apache.commons.lang3"))
-        jmhImplementation(gav("org.apache.logging.log4j"))
-    }
+jmhModuleInfo {
+    requires("com.swirlds.common")
+    requires("com.swirlds.config.api")
+    requires("com.swirlds.fchashmap")
+    requires("com.swirlds.jasperdb")
+    requires("com.swirlds.virtualmap")
+    requires("jmh.core")
+    requires("org.apache.commons.lang3")
+    requires("org.apache.logging.log4j")
 }
 
 jmh {

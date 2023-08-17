@@ -20,4 +20,4 @@ plugins {
     id("java-test-fixtures")
 }
 
-dependencies { javaModuleDependencies { testImplementation(gav("org.junit.jupiter.api")) } }
+testModuleInfo { requires("org.junit.jupiter.api") }

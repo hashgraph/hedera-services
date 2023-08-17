@@ -20,21 +20,21 @@ plugins {
     id("java-test-fixtures")
 }
 
-dependencies {
-    javaModuleDependencies {
-        runtimeOnly(gav("resource.loader"))
-        runtimeOnly(gav("com.sun.jna"))
+mainModuleInfo {
+    runtimeOnly("resource.loader")
+    runtimeOnly("com.sun.jna")
+}
 
-        testImplementation(project(":swirlds-common-testing"))
-        testImplementation(project(":swirlds-test-framework"))
-        testImplementation(testFixtures(project(":swirlds-base")))
-        testImplementation(testFixtures(project(":swirlds-config-api")))
-        testImplementation(gav("org.apache.logging.log4j.core"))
-        testImplementation(gav("org.assertj.core"))
-        testImplementation(gav("org.junit.jupiter.api"))
-        testImplementation(gav("org.junit.jupiter.params"))
-        testImplementation(gav("org.mockito"))
-        testImplementation(gav("org.mockito.junit.jupiter"))
-        testCompileOnly(gav("com.github.spotbugs.annotations"))
-    }
+testModuleInfo {
+    requires("com.swirlds.common.testing")
+    requires("com.swirlds.test.framework")
+    requires("com.swirlds.base.test.fixtures")
+    requires("com.swirlds.config.api.test.fixtures")
+    requires("org.apache.logging.log4j.core")
+    requires("org.assertj.core")
+    requires("org.junit.jupiter.api")
+    requires("org.junit.jupiter.params")
+    requires("org.mockito")
+    requires("org.mockito.junit.jupiter")
+    requiresStatic("com.github.spotbugs.annotations")
 }

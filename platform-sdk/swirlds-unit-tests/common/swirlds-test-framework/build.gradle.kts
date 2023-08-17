@@ -19,9 +19,7 @@ plugins {
     id("com.hedera.hashgraph.maven-publish")
 }
 
-dependencies {
-    javaModuleDependencies {
-        runtimeOnly(project(":swirlds-config-api"))
-        runtimeOnly(project(":swirlds-config-impl"))
-    }
+mainModuleInfo {
+    runtimeOnly("com.swirlds.config.api")
+    runtimeOnly("com.swirlds.config.impl")
 }
