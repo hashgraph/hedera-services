@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,11 @@
  * limitations under the License.
  */
 
-@Suppress("UnstableApiUsage")
-dependencyResolutionManagement {
-    repositories { gradlePluginPortal() }
-}
+dependencyResolutionManagement { repositories { gradlePluginPortal() } }
 
-// There are two projects for convention plugins to have different dependencies to external plugins for
-// project and settings plugins. Otherwise, 'com.diffplug.spotless' and 'me.champeau.includegit' clash
-// because they transitively depend on different JGit versions.
+// There are two projects for convention plugins to have different dependencies to external plugins
+// for project and settings plugins. Otherwise, 'com.diffplug.spotless' and 'me.champeau.includegit'
+// clash because they transitively depend on different JGit versions.
 
 include("project-plugins")
 

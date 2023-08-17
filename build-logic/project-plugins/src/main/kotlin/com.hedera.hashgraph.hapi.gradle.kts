@@ -24,24 +24,19 @@ plugins {
 // Configure Protobuf Plugin to download protoc executable rather than using local installed version
 protobuf {
     val libs = the<VersionCatalogsExtension>().named("libs")
-    protoc {
-        artifact = "com.google.protobuf:protoc:" + libs.findVersion("google-proto").get()
-    }
+    protoc { artifact = "com.google.protobuf:protoc:" + libs.findVersion("google-proto").get() }
     plugins {
         // Add GRPC plugin as we need to generate GRPC services
         id("grpc") {
             artifact = "io.grpc:protoc-gen-grpc-java:" + libs.findVersion("grpc-proto").get()
         }
     }
-    generateProtoTasks {
-        ofSourceSet("main").forEach { it.plugins { id("grpc") } }
-    }
+    generateProtoTasks { ofSourceSet("main").forEach { it.plugins { id("grpc") } } }
 }
 
 configurations.compileProtoPath {
     // Make all dependency versions accessible to proto compile
     extendsFrom(configurations["internal"])
 }
-configurations.testCompileProtoPath {
-    extendsFrom(configurations["internal"])
-}
+
+configurations.testCompileProtoPath { extendsFrom(configurations["internal"]) }

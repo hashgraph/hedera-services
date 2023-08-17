@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-plugins {
-    id("com.diffplug.spotless")
-}
+plugins { id("com.diffplug.spotless") }
 
 spotless {
     // Disable the automatic application of Spotless to all source sets when the check task is run.
@@ -38,21 +36,21 @@ spotless {
     format("actionYaml") {
         target(".github/workflows/*.yaml")
         /*
-        * Prettier requires NodeJS and NPM installed; however, the NodeJS Gradle plugin and Spotless do not yet
-        * integrate with each other. Currently there is an open issue report against spotless.
-        *
-        *   *** Please see for more information: https://github.com/diffplug/spotless/issues/728 ***
-        *
-        * The workaround provided in the above issue does not work in Gradle 7.5+ and therefore is not a viable solution.
-        */
-        //prettier()
+         * Prettier requires NodeJS and NPM installed; however, the NodeJS Gradle plugin and Spotless do not yet
+         * integrate with each other. Currently there is an open issue report against spotless.
+         *
+         *   *** Please see for more information: https://github.com/diffplug/spotless/issues/728 ***
+         *
+         * The workaround provided in the above issue does not work in Gradle 7.5+ and therefore is not a viable solution.
+         */
+        // prettier()
 
         trimTrailingWhitespace()
         indentWithSpaces()
         endWithNewline()
 
         licenseHeader(
-            """
+                """
             ##
             # Copyright (C) ${'$'}YEAR Hedera Hashgraph, LLC
             #
@@ -68,7 +66,10 @@ spotless {
             # See the License for the specific language governing permissions and
             # limitations under the License.
             ##${"\n\n"}
-        """.trimIndent(), "(name)"
-        ).updateYearWithLatest(true)
+        """
+                    .trimIndent(),
+                "(name)"
+            )
+            .updateYearWithLatest(true)
     }
 }

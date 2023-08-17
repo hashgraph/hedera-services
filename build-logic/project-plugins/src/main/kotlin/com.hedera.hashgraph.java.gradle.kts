@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,8 +31,7 @@ plugins {
 java {
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(17))
-        @Suppress("UnstableApiUsage")
-        vendor.set(JvmVendorSpec.ADOPTIUM)
+        @Suppress("UnstableApiUsage") vendor.set(JvmVendorSpec.ADOPTIUM)
     }
 }
 
@@ -41,25 +40,18 @@ configurations.all {
     resolutionStrategy.preferProjectModules()
 }
 
-val internal: Configuration = configurations.create("internal") {
-    isCanBeConsumed = false
-    isCanBeResolved = false
-}
+val internal: Configuration =
+    configurations.create("internal") {
+        isCanBeConsumed = false
+        isCanBeResolved = false
+    }
 
-dependencies {
-    "internal"(platform("com.hedera.hashgraph:hedera-dependency-versions"))
-}
+dependencies { "internal"(platform("com.hedera.hashgraph:hedera-dependency-versions")) }
 
 sourceSets.all {
-    configurations.getByName(annotationProcessorConfigurationName) {
-        extendsFrom(internal)
-    }
-    configurations.getByName(compileClasspathConfigurationName) {
-        extendsFrom(internal)
-    }
-    configurations.getByName(runtimeClasspathConfigurationName) {
-        extendsFrom(internal)
-    }
+    configurations.getByName(annotationProcessorConfigurationName) { extendsFrom(internal) }
+    configurations.getByName(compileClasspathConfigurationName) { extendsFrom(internal) }
+    configurations.getByName(runtimeClasspathConfigurationName) { extendsFrom(internal) }
 }
 
 tasks.withType<AbstractArchiveTask>().configureEach {
@@ -69,18 +61,17 @@ tasks.withType<AbstractArchiveTask>().configureEach {
     dirMode = 775
 }
 
-tasks.jar {
-    exclude("**/classpath.index")
-}
+tasks.jar { exclude("**/classpath.index") }
 
-tasks.withType<JavaCompile>().configureEach {
-    options.encoding = "UTF-8"
-}
+tasks.withType<JavaCompile>().configureEach { options.encoding = "UTF-8" }
 
 tasks.withType<Javadoc>().configureEach {
     options.encoding = "UTF-8"
-    (options as StandardJavadocDocletOptions)
-        .tags("apiNote:a:API Note:", "implSpec:a:Implementation Requirements:", "implNote:a:Implementation Note:")
+    (options as StandardJavadocDocletOptions).tags(
+        "apiNote:a:API Note:",
+        "implSpec:a:Implementation Requirements:",
+        "implNote:a:Implementation Note:"
+    )
 }
 
 testing {
@@ -112,59 +103,58 @@ testing {
                 }
             }
 
-            // Add 'targets' (tasks of type Test) for the 'test' test suite: 'hammerTest' and 'performanceTest'.
-            // Gradle's test suite API does not yet allow to add additional targets there (although it's planned).
-            // Thus, we need to go directly via 'tasks.register' and then set 'testClassesDirs' and 'sources' to
-            // the information we get from the 'source set' (sources) of this 'test suite'.
-            val hammerTest = tasks.register<Test>("hammerTest") {
-                testClassesDirs = sources.output.classesDirs
-                classpath = sources.runtimeClasspath
+            // Add 'targets' (tasks of type Test) for the 'test' test suite: 'hammerTest' and
+            // 'performanceTest'.  Gradle's test suite API does not yet allow to add additional
+            // targets there (although it's planned).
+            // Thus, we use 'tasks.register' and set 'testClassesDirs' and 'sources' to the
+            // information we get from the 'source set' (sources) of this 'test suite'.
+            val hammerTest =
+                tasks.register<Test>("hammerTest") {
+                    testClassesDirs = sources.output.classesDirs
+                    classpath = sources.runtimeClasspath
 
-                shouldRunAfter(tasks.test)
+                    shouldRunAfter(tasks.test)
 
-                useJUnitPlatform {
-                    includeTags("HAMMER")
-                }
-                maxHeapSize = "8g"
-                jvmArgs("-XX:ActiveProcessorCount=16")
-            }
-
-            val performanceTest = tasks.register<Test>("performanceTest") {
-                testClassesDirs = sources.output.classesDirs
-                classpath = sources.runtimeClasspath
-
-                shouldRunAfter(tasks.test)
-
-                useJUnitPlatform {
-                    includeTags("TIME_CONSUMING", "AT_SCALE", "REMOTE_ONLY", "PERFORMANCE")
+                    useJUnitPlatform { includeTags("HAMMER") }
+                    maxHeapSize = "8g"
+                    jvmArgs("-XX:ActiveProcessorCount=16")
                 }
 
-                setForkEvery(1)
-                minHeapSize = "2g"
-                maxHeapSize = "16g"
-                jvmArgs("-XX:ActiveProcessorCount=16", "-XX:+UseZGC")
-            }
+            val performanceTest =
+                tasks.register<Test>("performanceTest") {
+                    testClassesDirs = sources.output.classesDirs
+                    classpath = sources.runtimeClasspath
 
-            tasks.check {
-                dependsOn(hammerTest, performanceTest)
-            }
+                    shouldRunAfter(tasks.test)
+
+                    useJUnitPlatform {
+                        includeTags("TIME_CONSUMING", "AT_SCALE", "REMOTE_ONLY", "PERFORMANCE")
+                    }
+
+                    setForkEvery(1)
+                    minHeapSize = "2g"
+                    maxHeapSize = "16g"
+                    jvmArgs("-XX:ActiveProcessorCount=16", "-XX:+UseZGC")
+                }
+
+            tasks.check { dependsOn(hammerTest, performanceTest) }
         }
     }
 }
 
 tasks.jacocoTestReport {
-    // Configure Jacoco so it outputs XML reports (needed by SonarCloud), and so that it combines the code
-    // coverage from both unit and integration tests into a single report from `jacocoTestReport`
+    // Configure Jacoco so it outputs XML reports (needed by SonarCloud)
     reports {
         xml.required.set(true)
         html.required.set(true)
     }
 
-    // Pick up results that have been produced by any of the 'Test' tasks - in this or previous build runs
+    // Pick up results that have been produced by any of the 'Test' tasks,
+    // in this or previous build runs, to combine them in one report
     val allTestTasks = tasks.withType<Test>()
-    executionData.from(allTestTasks.map {
-        it.extensions.getByType<JacocoTaskExtension>().destinationFile
-    })
+    executionData.from(
+        allTestTasks.map { it.extensions.getByType<JacocoTaskExtension>().destinationFile }
+    )
     shouldRunAfter(allTestTasks)
 }
 
@@ -179,6 +169,7 @@ tasks.assemble {
 // conceptually wrong, because in whitebox testing the 'main' and 'test'
 // module are conceptually considered one module (main module extended with tests)
 val dependencyAnalysis = extensions.findByType<AbstractExtension>()
+
 if (dependencyAnalysis is DependencyAnalysisSubExtension) {
     dependencyAnalysis.issues { onAny { exclude(project.path) } }
 }

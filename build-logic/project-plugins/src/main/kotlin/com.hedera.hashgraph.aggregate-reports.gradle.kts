@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,8 @@ plugins {
     id("lazy.zoo.gradle.git-data-plugin")
 }
 
-// Configure the Sonarqube extension for SonarCloud reporting. These properties should not be changed so no need to
+// Configure the Sonarqube extension for SonarCloud reporting.
+// These properties should not be changed so no need to
 // have them in the gradle.properties defintions.
 sonarqube {
     properties {
@@ -49,7 +50,12 @@ sonarqube {
 
 dependencyCheck {
     autoUpdate = true
-    formats = listOf(ReportGenerator.Format.HTML.name, ReportGenerator.Format.XML.name, ReportGenerator.Format.JUNIT.name)
+    formats =
+        listOf(
+            ReportGenerator.Format.HTML.name,
+            ReportGenerator.Format.XML.name,
+            ReportGenerator.Format.JUNIT.name
+        )
     junitFailOnCVSS = 7.0f
     failBuildOnCVSS = 11.0f
     outputDirectory = layout.buildDirectory.dir("reports/dependency-check").get().asFile.toString()
@@ -58,19 +64,23 @@ dependencyCheck {
 tasks.register("githubVersionSummary") {
     group = "github"
     doLast {
-        val ghStepSummaryPath: String = providers.environmentVariable("GITHUB_STEP_SUMMARY").orNull ?:
-            throw IllegalArgumentException("This task may only be run in a Github Actions CI environment!" +
-                    "Unable to locate the GITHUB_STEP_SUMMARY environment variable.")
+        val ghStepSummaryPath: String =
+            providers.environmentVariable("GITHUB_STEP_SUMMARY").orNull
+                ?: throw IllegalArgumentException(
+                    "This task may only be run in a Github Actions CI environment!" +
+                        "Unable to locate the GITHUB_STEP_SUMMARY environment variable."
+                )
 
-        Utils.generateProjectVersionReport(rootProject, BufferedOutputStream(File(ghStepSummaryPath).outputStream()))
+        Utils.generateProjectVersionReport(
+            rootProject,
+            BufferedOutputStream(File(ghStepSummaryPath).outputStream())
+        )
     }
 }
 
 tasks.register("showVersion") {
     group = "versioning"
-    doLast {
-        println(project.version)
-    }
+    doLast { println(project.version) }
 }
 
 tasks.register("versionAsPrefixedCommit") {
@@ -106,7 +116,9 @@ tasks.register("versionAsSpecified") {
         val verStr = providers.gradleProperty("newVersion")
 
         if (!verStr.isPresent) {
-            throw IllegalArgumentException("No newVersion property provided! Please add the parameter -PnewVersion=<version> when running this task.")
+            throw IllegalArgumentException(
+                "No newVersion property provided! Please add the parameter -PnewVersion=<version> when running this task."
+            )
         }
 
         val newVer = SemVer.parse(verStr.get())

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,8 @@
  */
 
 plugins {
-    // Support convention plugins written in Kotlin. Convention plugins are build scripts in 'src/main'
-    // that automatically become available as plugins in the main build.
+    // Support convention plugins written in Kotlin. Convention plugins are build scripts in
+    // 'src/main' that automatically become available as plugins in the main build.
     `kotlin-dsl`
 }
 
@@ -27,7 +27,9 @@ dependencies {
     implementation("com.google.protobuf:protobuf-gradle-plugin:0.9.3")
     implementation("com.gorylenko.gradle-git-properties:gradle-git-properties:2.4.1")
     implementation("gradle.plugin.com.github.johnrengelman:shadow:7.1.2")
-    implementation("gradle.plugin.com.google.cloud.artifactregistry:artifactregistry-gradle-plugin:2.2.1")
+    implementation(
+        "gradle.plugin.com.google.cloud.artifactregistry:artifactregistry-gradle-plugin:2.2.1"
+    )
     implementation("gradle.plugin.lazy.zoo.gradle:git-data-plugin:1.2.2")
     implementation("me.champeau.jmh:jmh-gradle-plugin:0.7.1")
     implementation("net.swiftzer.semver:semver:1.1.2")

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,9 +24,8 @@ plugins {
 
 group = "com.hedera.hashgraph"
 
-javaModuleDependencies {
-    versionsFromConsistentResolution(":app")
-}
+javaModuleDependencies { versionsFromConsistentResolution(":app") }
+
 configurations.getByName("mainRuntimeClasspath") {
     extendsFrom(configurations.getByName("internal"))
 }
@@ -40,25 +39,37 @@ testing {
 
             targets.all {
                 testTask {
-                    // "shouldRunAfter" will only make sure if both test and itest are run concurrently,
-                    // that "test" completes first. If you run "itest" directly, it doesn't force "test" to run.
+                    // "shouldRunAfter" will only make sure if both test and itest are run
+                    // concurrently, that "test" completes first. If you run "itest"
+                    // directly, it doesn't force "test" to run.
                     shouldRunAfter(tasks.test)
 
-                    addTestListener(object : TestListener {
-                        override fun beforeSuite(suite: TestDescriptor) {
-                            logger.lifecycle("=====> Starting Suite: " + suite.displayName + " <=====")
-                        }
+                    addTestListener(
+                        object : TestListener {
+                            override fun beforeSuite(suite: TestDescriptor) {
+                                logger.lifecycle(
+                                    "=====> Starting Suite: " + suite.displayName + " <====="
+                                )
+                            }
 
-                        override fun beforeTest(testDescriptor: TestDescriptor) {}
-                        override fun afterTest(testDescriptor: TestDescriptor, result: TestResult) {
-                            logger.lifecycle(
-                                SimpleDateFormat.getDateTimeInstance()
-                                    .format(Date()) + ": " + testDescriptor.displayName + " " + result.resultType.name
-                            )
-                        }
+                            override fun beforeTest(testDescriptor: TestDescriptor) {}
 
-                        override fun afterSuite(suite: TestDescriptor, result: TestResult) {}
-                    })
+                            override fun afterTest(
+                                testDescriptor: TestDescriptor,
+                                result: TestResult
+                            ) {
+                                logger.lifecycle(
+                                    SimpleDateFormat.getDateTimeInstance().format(Date()) +
+                                        ": " +
+                                        testDescriptor.displayName +
+                                        " " +
+                                        result.resultType.name
+                                )
+                            }
+
+                            override fun afterSuite(suite: TestDescriptor, result: TestResult) {}
+                        }
+                    )
                 }
             }
         }
@@ -69,8 +80,9 @@ testing {
 
             targets.all {
                 testTask {
-                    // "shouldRunAfter" will only make sure if both test and eet are run concurrently,
-                    // that "test" completes first. If you run "eet" directly, it doesn't force "test" to run.
+                    // "shouldRunAfter" will only make sure if both test and eet are run
+                    // concurrently, that "test" completes first. If you run "eet"
+                    // directly, it doesn't force "test" to run.
                     shouldRunAfter(tasks.test)
                 }
             }
@@ -82,8 +94,9 @@ testing {
 
             targets.all {
                 testTask {
-                    // "shouldRunAfter" will only make sure if both test and xtest are run concurrently,
-                    // that "test" completes first. If you run "xtest" directly, it doesn't force "test" to run.
+                    // "shouldRunAfter" will only make sure if both test and xtest are run
+                    // concurrently, that "test" completes first. If you run "xtest"
+                    // directly, it doesn't force "test" to run.
                     shouldRunAfter(tasks.test)
                 }
             }

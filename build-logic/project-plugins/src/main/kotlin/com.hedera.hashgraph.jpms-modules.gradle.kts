@@ -1,18 +1,17 @@
 /*
- * Copyright 2016-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
  *
- * This software is the confidential and proprietary information of
- * Hedera Hashgraph, LLC. ("Confidential Information"). You shall not
- * disclose such Confidential Information and shall use it only in
- * accordance with the terms of the license agreement yaou entered into
- * with Hedera Hashgraph.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * HEDERA HASHGRAPH MAKES NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF
- * THE SOFTWARE, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
- * TO THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
- * PARTICULAR PURPOSE, OR NON-INFRINGEMENT. HEDERA HASHGRAPH SHALL NOT BE LIABLE FOR
- * ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, MODIFYING OR
- * DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 import com.hedera.hashgraph.gradlebuild.rules.IoGrpcDependencyMetadataRule
@@ -209,7 +208,7 @@ extraJavaModuleInfo {
     automaticModule("org.jetbrains.kotlin:kotlin-stdlib-common", "kotlin.stdlib.common")
     automaticModule("org.jetbrains.kotlinx:kotlinx-metadata-jvm", "kotlinx.metadata.jvm")
 
-    // These have to be automatic modules as they can not be re-jared because they contain native libraries.
+    // automatic modules that can not be re-jared because they contain native libraries
     automaticModule("com.goterl:lazysodium-java", "lazysodium.java")
     automaticModule("com.goterl:resource-loader", "resource.loader")
     automaticModule("org.hyperledger.besu:secp256k1", "org.hyperledger.besu.secp256k1")
@@ -227,8 +226,14 @@ extraJavaModuleInfo {
 
     // automatic modules to make it build, might be able to move them full modules
     automaticModule("com.google.android:annotations", "com.google.android.annotations")
-    automaticModule("org.codehaus.mojo:animal-sniffer-annotations", "org.codehaus.mojo.animalsniffer.annotations")
-    automaticModule("org.eclipse.microprofile.health:microprofile-health-api", "microprofile.health.api")
+    automaticModule(
+        "org.codehaus.mojo:animal-sniffer-annotations",
+        "org.codehaus.mojo.animalsniffer.annotations"
+    )
+    automaticModule(
+        "org.eclipse.microprofile.health:microprofile-health-api",
+        "microprofile.health.api"
+    )
     automaticModule("org.openjfx:javafx-base", "javafx.base")
 
     // Compile Time Modules
@@ -238,7 +243,10 @@ extraJavaModuleInfo {
     automaticModule("com.google.dagger:dagger-producers", "dagger.producers")
     automaticModule("com.google.errorprone:javac-shaded", "com.google.errorprone.javac.shaded")
     automaticModule("com.google.googlejavaformat:google-java-format", "com.google.googlejavaformat")
-    automaticModule("com.google.devtools.ksp:symbol-processing-api", "com.google.devtools.ksp.symbolprocessingapi")
+    automaticModule(
+        "com.google.devtools.ksp:symbol-processing-api",
+        "com.google.devtools.ksp.symbolprocessingapi"
+    )
     automaticModule("org.hyperledger.besu:arithmetic", "org.hyperledger.besu.arithmetic")
     automaticModule("com.squareup:javapoet", "com.squareup.javapoet")
     automaticModule("org.checkerframework:checker-qual", "org.checkerframework.checker.qual")
@@ -247,7 +255,10 @@ extraJavaModuleInfo {
     automaticModule("org.hyperledger.besu.internal:util", "org.hyperledger.besu.internal.util")
     automaticModule("org.testcontainers:junit-jupiter", "org.testcontainers.junit.jupiter")
     automaticModule("io.perfmark:perfmark-api", "io.perfmark")
-    automaticModule("com.google.auto.value:auto-value-annotations", "com.google.auto.value.annotations")
+    automaticModule(
+        "com.google.auto.value:auto-value-annotations",
+        "com.google.auto.value.annotations"
+    )
     automaticModule("com.google.truth:truth", "com.google.truth")
 
     // Automatic modules for PBJ dependencies
@@ -259,8 +270,14 @@ extraJavaModuleInfo {
     // Test Related Modules
     automaticModule("org.mockito:mockito-inline", "org.mockito.inline")
     automaticModule("com.google.jimfs:jimfs", "com.google.jimfs")
-    automaticModule("com.github.docker-java:docker-java-transport", "com.github.docker.java.transport")
-    automaticModule("com.github.docker-java:docker-java-transport-zerodep", "com.github.docker.transport.zerodep")
+    automaticModule(
+        "com.github.docker-java:docker-java-transport",
+        "com.github.docker.java.transport"
+    )
+    automaticModule(
+        "com.github.docker-java:docker-java-transport-zerodep",
+        "com.github.docker.transport.zerodep"
+    )
     automaticModule("com.github.docker-java:docker-java-api", "com.github.docker.java.api")
     automaticModule("hamcrest-core-1.3.jar", "hamcrest.core")
     automaticModule("org.awaitility:awaitility", "awaitility")
@@ -268,13 +285,19 @@ extraJavaModuleInfo {
     automaticModule("org.testcontainers:junit-jupiter", "org.testcontainers.junit.jupiter")
     automaticModule("io.prometheus:simpleclient", "io.prometheus.simpleclient")
     automaticModule("io.prometheus:simpleclient_common", "io.prometheus.simpleclient_common")
-    automaticModule("io.prometheus:simpleclient_httpserver", "io.prometheus.simpleclient.httpserver")
+    automaticModule(
+        "io.prometheus:simpleclient_httpserver",
+        "io.prometheus.simpleclient.httpserver"
+    )
     automaticModule("org.openjdk.jmh:jmh-core", "jmh.core")
     automaticModule("org.openjdk.jmh:jmh-generator-asm", "jmh.generator.asm")
     automaticModule("org.openjdk.jmh:jmh-generator-bytecode", "jmh.generator.bytecode")
     automaticModule("org.openjdk.jmh:jmh-generator-reflection", "jmh.generator.reflection")
     automaticModule("net.sf.jopt-simple:jopt-simple", "jopt.simple")
 
-    automaticModule("uk.org.webcompere:system-stubs-jupiter", "uk.org.webcompere.systemstubs.jupiter")
+    automaticModule(
+        "uk.org.webcompere:system-stubs-jupiter",
+        "uk.org.webcompere.systemstubs.jupiter"
+    )
     automaticModule("uk.org.webcompere:system-stubs-core", "uk.org.webcompere.systemstubs.core")
 }

@@ -22,6 +22,4 @@ plugins {
 
 group = "com.hedera.hashgraph"
 
-javaPlatform {
-    allowDependencies()
-}
+javaPlatform { allowDependencies() }

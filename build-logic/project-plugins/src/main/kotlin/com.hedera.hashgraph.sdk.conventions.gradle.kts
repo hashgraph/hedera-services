@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,16 +25,13 @@ plugins {
 
 group = "com.swirlds"
 
-javaModuleDependencies {
-    versionsFromConsistentResolution(":swirlds-platform-core")
-}
+javaModuleDependencies { versionsFromConsistentResolution(":swirlds-platform-core") }
+
 configurations.getByName("mainRuntimeClasspath") {
     extendsFrom(configurations.getByName("internal"))
 }
 
-gitProperties {
-    keys = listOf("git.build.version", "git.commit.id", "git.commit.id.abbrev")
-}
+gitProperties { keys = listOf("git.build.version", "git.commit.id", "git.commit.id.abbrev") }
 
 testlogger {
     theme = ThemeType.MOCHA

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-plugins {
-    id("com.diffplug.spotless")
-}
+plugins { id("com.diffplug.spotless") }
 
 spotless {
     java {
@@ -37,7 +35,7 @@ spotless {
         // The delimiter override below is required to support some
         // of our test classes which are in the default package.
         licenseHeader(
-            """
+                """
            /*
             * Copyright (C) ${'$'}YEAR Hedera Hashgraph, LLC
             *
@@ -53,7 +51,10 @@ spotless {
             * See the License for the specific language governing permissions and
             * limitations under the License.
             */${"\n\n"}
-        """.trimIndent(), "(package|import)"
-        ).updateYearWithLatest(true)
+        """
+                    .trimIndent(),
+                "(package|import)"
+            )
+            .updateYearWithLatest(true)
     }
 }
