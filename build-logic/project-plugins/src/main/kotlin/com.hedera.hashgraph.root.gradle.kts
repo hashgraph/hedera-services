@@ -29,6 +29,8 @@ plugins {
 
 tasks.register("checkAllModuleInfo")
 
+configureLifecycleTask("clean")
+
 configureLifecycleTask("assemble")
 
 configureLifecycleTask("check")

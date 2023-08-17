@@ -33,6 +33,8 @@ spotless { kotlinGradle { target("build-logic/**/*.gradle.kts") } }
 
 tasks.register("checkAllModuleInfo")
 
+configureLifecycleTask("clean")
+
 configureLifecycleTask("assemble")
 
 configureLifecycleTask("check")
