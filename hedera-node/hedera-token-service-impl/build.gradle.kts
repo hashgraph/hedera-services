@@ -18,27 +18,24 @@ plugins { id("com.hedera.hashgraph.conventions") }
 
 description = "Default Hedera Token Service Implementation"
 
-dependencies {
-    javaModuleDependencies {
-        annotationProcessor(gav("dagger.compiler"))
+mainModuleInfo { annotationProcessor("dagger.compiler") }
 
-        testImplementation(project(":app"))
-        testImplementation(project(":app-service-token-impl"))
-        testImplementation(testFixtures(project(":app-service-mono")))
-        testImplementation(testFixtures(project(":app-spi")))
-        testImplementation(testFixtures(project(":config")))
-        testImplementation(gav("com.swirlds.merkle"))
-        testImplementation(gav("com.swirlds.test.framework"))
-        testImplementation(gav("org.assertj.core"))
-        testImplementation(gav("org.bouncycastle.provider"))
-        testImplementation(gav("org.hamcrest"))
-        testImplementation(gav("org.junit.jupiter.api"))
-        testImplementation(gav("org.junit.jupiter.params"))
-        testImplementation(gav("org.mockito"))
-        testImplementation(gav("org.mockito.junit.jupiter"))
-        testCompileOnly(gav("com.github.spotbugs.annotations"))
-        testRuntimeOnly(gav("org.mockito.inline"))
-
-        testImplementation(testFixtures(project(":app-service-token")))
-    }
+testModuleInfo {
+    requires("com.hedera.node.app")
+    requires("com.hedera.node.app.service.token.impl")
+    requires("com.hedera.node.app.service.mono.test.fixtures")
+    requires("com.hedera.node.app.spi.test.fixtures")
+    requires("com.hedera.node.config.test.fixtures")
+    requires("com.hedera.node.app.service.token.test.fixtures")
+    requires("com.swirlds.merkle")
+    requires("com.swirlds.test.framework")
+    requires("org.assertj.core")
+    requires("org.bouncycastle.provider")
+    requires("org.hamcrest")
+    requires("org.junit.jupiter.api")
+    requires("org.junit.jupiter.params")
+    requires("org.mockito")
+    requires("org.mockito.junit.jupiter")
+    requiresStatic("com.github.spotbugs.annotations")
+    runtimeOnly("org.mockito.inline")
 }

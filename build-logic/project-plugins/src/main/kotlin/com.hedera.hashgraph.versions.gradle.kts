@@ -18,6 +18,7 @@ plugins {
     id("java-platform")
     id("com.hedera.hashgraph.jpms-modules")
     id("com.hedera.hashgraph.jpms-module-dependencies")
+    id("org.gradlex.java-module-versions")
 }
 
 group = "com.hedera.hashgraph"

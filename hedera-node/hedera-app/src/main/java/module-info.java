@@ -45,7 +45,7 @@ module com.hedera.node.app {
     requires static com.github.spotbugs.annotations;
 
     exports com.hedera.node.app to
-            com.swirlds.platform;
+            com.swirlds.platform.core;
     exports com.hedera.node.app.state to
             com.swirlds.common,
             com.hedera.node.app.test.fixtures;
@@ -60,26 +60,26 @@ module com.hedera.node.app {
     exports com.hedera.node.app.state.merkle.singleton to
             com.swirlds.common;
     exports com.hedera.node.app.authorization to
-            com.swirlds.platform;
+            com.swirlds.platform.core;
     exports com.hedera.node.app.state.merkle.adapters to
-            com.swirlds.platform;
+            com.swirlds.platform.core;
     exports com.hedera.node.app.fees to
-            com.swirlds.platform;
+            com.swirlds.platform.core;
     exports com.hedera.node.app.throttle to
-            com.swirlds.platform;
+            com.swirlds.platform.core;
     exports com.hedera.node.app.workflows.dispatcher;
     exports com.hedera.node.app.config;
     exports com.hedera.node.app.workflows.handle.validation;
     exports com.hedera.node.app.state.recordcache to
             com.swirlds.common;
     exports com.hedera.node.app.services to
-            com.swirlds.platform;
+            com.swirlds.platform.core;
     exports com.hedera.node.app.signature to
             com.hedera.node.app.test.fixtures;
     exports com.hedera.node.app.info to
             com.hedera.node.app.test.fixtures,
             com.swirlds.common,
-            com.swirlds.platform;
+            com.swirlds.platform.core;
     exports com.hedera.node.app.workflows.handle to
             com.hedera.node.app.test.fixtures;
     exports com.hedera.node.app.state.merkle.queue to

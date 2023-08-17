@@ -23,7 +23,17 @@ plugins {
 
 description = "Hedera Services Test Clients for End to End Tests (EET)"
 
-tasks.jar { manifest { attributes("Automatic-Module-Name" to "com.hedera.node.app.testclient") } }
+// -----
+// module-info.java is ony used to define dependencies for now.
+// It is not compiled and instead the classpath is used during compilation.
+// This is temporary. To compile as module, remove the below and fix the
+// compile errors in HapiTestEngine.
+tasks.jar { manifest { attributes("Automatic-Module-Name" to "com.hedera.node.test.clients") } }
+
+tasks.compileJava { modularity.inferModulePath.set(false) }
+
+sourceSets.main { java.exclude("module-info.java") }
+// -----
 
 tasks.test {
     // Disable these EET tests from being executed as part of the gradle "test" task.
@@ -41,66 +51,21 @@ sourceSets {
     main { resources { srcDir("src/main/resource") } }
 }
 
-dependencies {
-    javaModuleDependencies {
-        api(project(":app-hapi-fees"))
-        api(project(":app-hapi-utils"))
-        api(project(":hapi"))
-        api(gav("com.fasterxml.jackson.annotation"))
-        api(gav("com.google.common"))
-        api(gav("com.google.protobuf"))
-        api(gav("com.swirlds.common"))
-        api(gav("headlong"))
-        api(gav("info.picocli"))
-        api(gav("io.grpc"))
-        api(gav("net.i2p.crypto.eddsa"))
-        api(gav("org.apache.commons.io"))
-        api(gav("org.apache.logging.log4j"))
-        api(gav("org.junit.jupiter.api"))
-        api(gav("org.junit.platform.commons"))
-        api(gav("org.junit.platform.engine"))
-        api(gav("org.testcontainers"))
-        api(gav("org.yaml.snakeyaml"))
-        api(gav("tuweni.bytes"))
+itestModuleInfo {
+    requires("com.hedera.node.test.clients")
+    requires("com.hedera.node.hapi")
+    requires("org.apache.commons.lang3")
+    requires("org.junit.jupiter.api")
+    requires("org.testcontainers")
+    requires("org.testcontainers.junit.jupiter")
+    requires("org.apache.commons.lang3")
+}
 
-        implementation(project(":app"))
-        implementation(project(":app-service-evm"))
-        implementation(project(":config"))
-        implementation(gav("com.fasterxml.jackson.core"))
-        implementation(gav("com.fasterxml.jackson.databind"))
-        implementation(gav("com.github.docker.java.api"))
-        implementation(gav("com.github.spotbugs.annotations"))
-        implementation(gav("com.swirlds.config.api"))
-        implementation(gav("com.swirlds.fchashmap"))
-        implementation(gav("com.swirlds.jasperdb"))
-        implementation(gav("com.swirlds.platform"))
-        implementation(gav("com.swirlds.virtualmap"))
-        implementation(gav("grpc.netty"))
-        implementation(gav("io.netty.handler"))
-        implementation(gav("org.apache.commons.lang3"))
-        implementation(gav("org.apache.logging.log4j.core"))
-        implementation(gav("org.bouncycastle.provider"))
-        implementation(gav("org.hyperledger.besu.crypto"))
-        implementation(gav("org.hyperledger.besu.datatypes"))
-        implementation(gav("org.hyperledger.besu.evm"))
-        implementation(gav("org.json"))
-        implementation(gav("org.opentest4j"))
-        implementation(gav("tuweni.units"))
-        compileOnly(gav("com.github.spotbugs.annotations"))
-
-        itestImplementation(project(path))
-        itestImplementation(project(":hapi"))
-        itestImplementation(gav("org.apache.commons.lang3"))
-        itestImplementation(gav("org.junit.jupiter.api"))
-        itestImplementation(gav("org.testcontainers"))
-        itestImplementation(gav("org.testcontainers.junit.jupiter"))
-        itestImplementation(gav("org.apache.commons.lang3"))
-
-        eetImplementation(project(path))
-        eetImplementation(gav("org.junit.jupiter.api"))
-        eetImplementation(gav("org.testcontainers"))
-        eetImplementation(gav("org.testcontainers.junit.jupiter"))
-    }
+eetModuleInfo {
+    requires("com.hedera.node.test.clients")
+    requires("org.junit.jupiter.api")
+    requires("org.testcontainers")
+    requires("org.testcontainers.junit.jupiter")
 }
 
 tasks.itest {

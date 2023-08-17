@@ -18,20 +18,18 @@ plugins { id("com.hedera.hashgraph.conventions") }
 
 description = "Default Hedera Util Service Implementation"
 
-dependencies {
-    javaModuleDependencies {
-        annotationProcessor(gav("dagger.compiler"))
+mainModuleInfo { annotationProcessor("dagger.compiler") }
 
-        testImplementation(project(":app-service-network-admin"))
-        testImplementation(testFixtures(project(":app-spi")))
-        testImplementation(testFixtures(project(":config")))
-        testImplementation(gav("com.swirlds.config.api"))
-        testImplementation(gav("com.swirlds.test.framework"))
-        testImplementation(gav("org.assertj.core"))
-        testImplementation(gav("org.junit.jupiter.api"))
-        testImplementation(gav("org.junit.jupiter.params"))
-        testImplementation(gav("org.mockito"))
-        testImplementation(gav("org.mockito.junit.jupiter"))
-        testCompileOnly(gav("com.github.spotbugs.annotations"))
-    }
+testModuleInfo {
+    requires("com.hedera.node.app.service.network.admin")
+    requires("com.hedera.node.app.spi.test.fixtures")
+    requires("com.hedera.node.config.test.fixtures")
+    requires("com.swirlds.config.api")
+    requires("com.swirlds.test.framework")
+    requires("org.assertj.core")
+    requires("org.junit.jupiter.api")
+    requires("org.junit.jupiter.params")
+    requires("org.mockito")
+    requires("org.mockito.junit.jupiter")
+    requiresStatic("com.github.spotbugs.annotations")
 }

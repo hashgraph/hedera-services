@@ -21,15 +21,9 @@ plugins {
 
 description = "Hedera Services Command-Line Clients"
 
-dependencies {
-    javaModuleDependencies {
-        implementation(gav("org.apache.logging.log4j"))
-        implementation(gav("org.apache.logging.log4j.core"))
-        implementation(gav("tuweni.bytes"))
-        implementation(gav("tuweni.units"))
-        testImplementation(gav("org.junit.jupiter.api"))
-        testImplementation(gav("org.mockito"))
-        testImplementation(gav("org.mockito.junit.jupiter"))
-        testRuntimeOnly(gav("org.mockito.inline"))
-    }
+testModuleInfo {
+    requires("org.junit.jupiter.api")
+    requires("org.mockito")
+    requires("org.mockito.junit.jupiter")
+    runtimeOnly("org.mockito.inline")
 }

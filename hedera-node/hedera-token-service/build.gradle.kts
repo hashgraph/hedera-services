@@ -20,5 +20,3 @@ plugins {
 }
 
 description = "Hedera Token Service API"
-
-dependencies { javaModuleDependencies { testCompileOnly(gav("com.github.spotbugs.annotations")) } }

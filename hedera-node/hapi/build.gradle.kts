@@ -22,15 +22,13 @@ plugins {
 
 description = "Hedera API"
 
-dependencies {
-    javaModuleDependencies {
-        testImplementation(project(":hapi"))
-        // we depend on the protoc compiled hapi during test as we test our pbj generated code
-        // against it to make sure it is compatible
-        testImplementation(gav("com.google.protobuf.util"))
-        testImplementation(gav("org.junit.jupiter.api"))
-        testImplementation(gav("org.junit.jupiter.params"))
-    }
+testModuleInfo {
+    requires("com.hedera.node.hapi")
+    // we depend on the protoc compiled hapi during test as we test our pbj generated code
+    // against it to make sure it is compatible
+    requires("com.google.protobuf.util")
+    requires("org.junit.jupiter.api")
+    requires("org.junit.jupiter.params")
 }
 
 // Add downloaded HAPI repo protobuf files into build directory and add to sources to build them

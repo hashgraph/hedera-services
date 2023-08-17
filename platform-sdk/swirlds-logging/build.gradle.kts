@@ -18,3 +18,10 @@ plugins {
     id("com.hedera.hashgraph.sdk.conventions")
     id("com.hedera.hashgraph.maven-publish")
 }
+
+testModuleInfo {
+    requires("com.swirlds.test.framework")
+    requires("org.apache.logging.log4j.core")
+    requires("org.junit.jupiter.api")
+    requires("org.junit.jupiter.params")
+}
