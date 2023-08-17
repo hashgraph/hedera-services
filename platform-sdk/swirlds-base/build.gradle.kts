@@ -19,6 +19,7 @@ plugins {
     `java-library`
     id("com.swirlds.platform.maven-publish")
     id("org.gradle.java-test-fixtures")
+    id("com.hedera.hashgraph.benchmark-conventions")
 }
 
 dependencies {
