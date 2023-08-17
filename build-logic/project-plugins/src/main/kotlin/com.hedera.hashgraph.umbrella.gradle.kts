@@ -49,6 +49,9 @@ fun configureLifecycleTask(taskName: String) {
     tasks.named(taskName) {
         dependsOn(
             gradle.includedBuilds
+                // Not this build
+                .filter { it.projectDir != projectDir }
+                // Not the build-logic build
                 .filter { it.name != "build-logic" }
                 .map { build -> build.task(":${taskName}") }
         )

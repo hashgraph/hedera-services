@@ -36,3 +36,8 @@ gradleEnterprise {
         termsOfServiceAgree = "yes"
     }
 }
+
+// Allow projects inside a build to be addressed by dependency coordinates notation.
+// https://docs.gradle.org/current/userguide/composite_builds.html#included_build_declaring_substitutions
+// Some functionality of the 'java-module-dependencies' plugin relies on this.
+includeBuild(".")
