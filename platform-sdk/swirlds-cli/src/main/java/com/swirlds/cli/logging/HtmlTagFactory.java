@@ -16,8 +16,6 @@
 
 package com.swirlds.cli.logging;
 
-import static com.swirlds.cli.logging.HtmlGenerator.HTML_CLASS_ATTRIBUTE;
-
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
@@ -123,7 +121,7 @@ public class HtmlTagFactory {
      * @return this
      */
     public HtmlTagFactory addClass(@NonNull final String className) {
-        return addAttribute(HTML_CLASS_ATTRIBUTE, className);
+        return addAttribute("class", className);
     }
 
     /**
@@ -133,7 +131,7 @@ public class HtmlTagFactory {
      * @return this
      */
     public HtmlTagFactory addClasses(@NonNull final List<String> classNames) {
-        return addAttribute(HTML_CLASS_ATTRIBUTE, classNames);
+        return addAttribute("class", classNames);
     }
 
     /**

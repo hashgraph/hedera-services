@@ -18,8 +18,6 @@ package com.swirlds.cli.logging;
 
 import static com.swirlds.cli.logging.HtmlGenerator.ELAPSED_TIME_COLUMN_LABEL;
 import static com.swirlds.cli.logging.HtmlGenerator.HIDEABLE_LABEL;
-import static com.swirlds.cli.logging.HtmlGenerator.HTML_DATA_CELL_TAG;
-import static com.swirlds.cli.logging.HtmlGenerator.HTML_ROW_TAG;
 import static com.swirlds.cli.logging.HtmlGenerator.LOG_LINE_LABEL;
 import static com.swirlds.cli.logging.HtmlGenerator.LOG_NUMBER_COLUMN_LABEL;
 import static com.swirlds.cli.logging.HtmlGenerator.NODE_ID_COLUMN_LABEL;
@@ -72,22 +70,21 @@ public class NonStandardLog {
         final List<String> dataCellTags = new ArrayList<>();
 
         // add some empty cells for alignment purposes
-        final HtmlTagFactory nodeIdTagFactory = new HtmlTagFactory(HTML_DATA_CELL_TAG, "", false)
-                .addClasses(List.of(NODE_ID_COLUMN_LABEL, HIDEABLE_LABEL));
+        final HtmlTagFactory nodeIdTagFactory =
+                new HtmlTagFactory("td", "", false).addClasses(List.of(NODE_ID_COLUMN_LABEL, HIDEABLE_LABEL));
         dataCellTags.add(nodeIdTagFactory.generateTag());
-        final HtmlTagFactory logStartTimeTagFactory = new HtmlTagFactory(HTML_DATA_CELL_TAG, "", false)
-                .addClasses(List.of(ELAPSED_TIME_COLUMN_LABEL, HIDEABLE_LABEL));
+        final HtmlTagFactory logStartTimeTagFactory =
+                new HtmlTagFactory("td", "", false).addClasses(List.of(ELAPSED_TIME_COLUMN_LABEL, HIDEABLE_LABEL));
         dataCellTags.add(logStartTimeTagFactory.generateTag());
-        final HtmlTagFactory timestampTagFactory = new HtmlTagFactory(HTML_DATA_CELL_TAG, "", false)
-                .addClasses(List.of(TIMESTAMP_COLUMN_LABEL, HIDEABLE_LABEL));
+        final HtmlTagFactory timestampTagFactory =
+                new HtmlTagFactory("td", "", false).addClasses(List.of(TIMESTAMP_COLUMN_LABEL, HIDEABLE_LABEL));
         dataCellTags.add(timestampTagFactory.generateTag());
-        final HtmlTagFactory logNumberTagFactory = new HtmlTagFactory(HTML_DATA_CELL_TAG, "", false)
-                .addClasses(List.of(LOG_NUMBER_COLUMN_LABEL, HIDEABLE_LABEL));
+        final HtmlTagFactory logNumberTagFactory =
+                new HtmlTagFactory("td", "", false).addClasses(List.of(LOG_NUMBER_COLUMN_LABEL, HIDEABLE_LABEL));
         dataCellTags.add(logNumberTagFactory.generateTag());
 
         // add the non-standard contents
-        final HtmlTagFactory contentsFactory = new HtmlTagFactory(
-                        HTML_DATA_CELL_TAG, escapeHtml4(nonStandardText), false)
+        final HtmlTagFactory contentsFactory = new HtmlTagFactory("td", escapeHtml4(nonStandardText), false)
                 .addClasses(List.of(NON_STANDARD_LABEL, HIDEABLE_LABEL))
                 .addAttribute("colspan", "5");
         dataCellTags.add(contentsFactory.generateTag());
@@ -104,7 +101,7 @@ public class NonStandardLog {
                 .map(StringEscapeUtils::escapeHtml4)
                 .toList();
 
-        return new HtmlTagFactory(HTML_ROW_TAG, "\n" + String.join("\n", dataCellTags) + "\n", false)
+        return new HtmlTagFactory("tr", "\n" + String.join("\n", dataCellTags) + "\n", false)
                 .addClasses(rowClassNames)
                 .generateTag();
     }

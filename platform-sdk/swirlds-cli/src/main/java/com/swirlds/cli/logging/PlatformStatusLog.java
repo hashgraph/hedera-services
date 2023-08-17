@@ -16,8 +16,6 @@
 
 package com.swirlds.cli.logging;
 
-import static com.swirlds.cli.logging.HtmlGenerator.HTML_SPAN_TAG;
-
 import com.swirlds.common.formatting.TextEffect;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.regex.Pattern;
@@ -157,15 +155,15 @@ public class PlatformStatusLog implements FormattableString {
     @Override
     public String generateHtmlString() {
         return platformSpent
-                + new HtmlTagFactory(HTML_SPAN_TAG, duration, false)
+                + new HtmlTagFactory("span", duration, false)
                         .addClass(STATUS_HTML_CLASS)
                         .generateTag()
                 + in
-                + new HtmlTagFactory(HTML_SPAN_TAG, previousStatus, false)
+                + new HtmlTagFactory("span", previousStatus, false)
                         .addClass(STATUS_HTML_CLASS)
                         .generateTag()
                 + nowIn
-                + new HtmlTagFactory(HTML_SPAN_TAG, newStatus, false)
+                + new HtmlTagFactory("span", newStatus, false)
                         .addClass(STATUS_HTML_CLASS)
                         .generateTag();
         // intentionally skip writing the remainder of the log. it is duplicate data

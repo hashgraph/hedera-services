@@ -19,8 +19,6 @@ package com.swirlds.cli.logging;
 import static com.swirlds.cli.logging.HtmlGenerator.CLASS_NAME_COLUMN_LABEL;
 import static com.swirlds.cli.logging.HtmlGenerator.ELAPSED_TIME_COLUMN_LABEL;
 import static com.swirlds.cli.logging.HtmlGenerator.HIDEABLE_LABEL;
-import static com.swirlds.cli.logging.HtmlGenerator.HTML_DATA_CELL_TAG;
-import static com.swirlds.cli.logging.HtmlGenerator.HTML_ROW_TAG;
 import static com.swirlds.cli.logging.HtmlGenerator.LOG_LEVEL_COLUMN_LABEL;
 import static com.swirlds.cli.logging.HtmlGenerator.LOG_LINE_LABEL;
 import static com.swirlds.cli.logging.HtmlGenerator.LOG_NUMBER_COLUMN_LABEL;
@@ -362,7 +360,7 @@ public class LogLine implements FormattableString {
         final List<String> dataCellTags = new ArrayList<>();
 
         final HtmlTagFactory nodeIdTagFactory = new HtmlTagFactory(
-                        HTML_DATA_CELL_TAG, nodeId == null ? "" : "node" + escapeHtml4(nodeId.toString()) + " ", false)
+                        "td", nodeId == null ? "" : "node" + escapeHtml4(nodeId.toString()) + " ", false)
                 .addClasses(List.of(NODE_ID_COLUMN_LABEL, HIDEABLE_LABEL));
         dataCellTags.add(nodeIdTagFactory.generateTag());
 
@@ -375,39 +373,36 @@ public class LogLine implements FormattableString {
             elapsedTimeString = escapeHtml4(unitFormatter.render());
         }
 
-        final HtmlTagFactory logStartTimeTagFactory = new HtmlTagFactory(HTML_DATA_CELL_TAG, elapsedTimeString, false)
+        final HtmlTagFactory logStartTimeTagFactory = new HtmlTagFactory("td", elapsedTimeString, false)
                 .addClasses(List.of(ELAPSED_TIME_COLUMN_LABEL, HIDEABLE_LABEL));
         dataCellTags.add(logStartTimeTagFactory.generateTag());
 
-        final HtmlTagFactory timestampTagFactory = new HtmlTagFactory(
-                        HTML_DATA_CELL_TAG, escapeHtml4(timestampOriginalString), false)
+        final HtmlTagFactory timestampTagFactory = new HtmlTagFactory("td", escapeHtml4(timestampOriginalString), false)
                 .addClasses(List.of(TIMESTAMP_COLUMN_LABEL, HIDEABLE_LABEL));
         dataCellTags.add(timestampTagFactory.generateTag());
 
-        final HtmlTagFactory logNumberTagFactory = new HtmlTagFactory(HTML_DATA_CELL_TAG, escapeHtml4(logNumber), false)
+        final HtmlTagFactory logNumberTagFactory = new HtmlTagFactory("td", escapeHtml4(logNumber), false)
                 .addClasses(List.of(LOG_NUMBER_COLUMN_LABEL, HIDEABLE_LABEL));
         dataCellTags.add(logNumberTagFactory.generateTag());
 
-        final HtmlTagFactory logLevelTagFactory = new HtmlTagFactory(HTML_DATA_CELL_TAG, escapeHtml4(logLevel), false)
+        final HtmlTagFactory logLevelTagFactory = new HtmlTagFactory("td", escapeHtml4(logLevel), false)
                 .addClasses(List.of(LOG_LEVEL_COLUMN_LABEL, HIDEABLE_LABEL, logLevel));
         dataCellTags.add(logLevelTagFactory.generateTag());
 
-        final HtmlTagFactory markerTagFactory = new HtmlTagFactory(HTML_DATA_CELL_TAG, escapeHtml4(marker), false)
+        final HtmlTagFactory markerTagFactory = new HtmlTagFactory("td", escapeHtml4(marker), false)
                 .addClasses(List.of(MARKER_COLUMN_LABEL, HIDEABLE_LABEL));
         dataCellTags.add(markerTagFactory.generateTag());
 
-        final HtmlTagFactory threadNameTagFactory = new HtmlTagFactory(
-                        HTML_DATA_CELL_TAG, escapeHtml4(threadName), false)
+        final HtmlTagFactory threadNameTagFactory = new HtmlTagFactory("td", escapeHtml4(threadName), false)
                 .addClasses(List.of(THREAD_NAME_COLUMN_LABEL, HIDEABLE_LABEL));
         dataCellTags.add(threadNameTagFactory.generateTag());
 
-        final HtmlTagFactory classNameTagFactory = new HtmlTagFactory(
-                        HTML_DATA_CELL_TAG, escapeHtml4(className) + colonSpace, false)
+        final HtmlTagFactory classNameTagFactory = new HtmlTagFactory("td", escapeHtml4(className) + colonSpace, false)
                 .addClasses(List.of(CLASS_NAME_COLUMN_LABEL, HIDEABLE_LABEL));
         dataCellTags.add(classNameTagFactory.generateTag());
 
         final HtmlTagFactory remainderOfLineTagFactory = new HtmlTagFactory(
-                        HTML_DATA_CELL_TAG,
+                        "td",
                         // don't escape this string, since it's assumed generateHtmlString returns a string already
                         // escaped
                         remainderOfLine.generateHtmlString(),
@@ -428,7 +423,7 @@ public class LogLine implements FormattableString {
                 .map(StringEscapeUtils::escapeHtml4)
                 .toList();
 
-        final String mainLine = new HtmlTagFactory(HTML_ROW_TAG, "\n" + String.join("\n", dataCellTags) + "\n", false)
+        final String mainLine = new HtmlTagFactory("tr", "\n" + String.join("\n", dataCellTags) + "\n", false)
                 .addClasses(rowClassNames)
                 .generateTag();
 

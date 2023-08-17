@@ -64,39 +64,12 @@ public class HtmlGenerator {
      */
     public static final String MIN_JS_SOURCE = "https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js";
 
-    // TODO inline all of these
-    public static final String HTML_HTML_TAG = "html";
-    public static final String HTML_H2_TAG = "h2";
-    public static final String HTML_H3_TAG = "h3";
-    public static final String HTML_SCRIPT_TAG = "script";
-    public static final String HTML_LABEL_TAG = "label";
-    public static final String HTML_INPUT_TAG = "input";
-    public static final String HTML_BODY_TAG = "body";
-    public static final String HTML_TABLE_TAG = "table";
-    public static final String HTML_ROW_TAG = "tr";
-    public static final String HTML_DATA_CELL_TAG = "td";
-    public static final String HTML_SPAN_TAG = "span";
-    public static final String HTML_HEAD_TAG = "head";
-    public static final String HTML_STYLE_TAG = "style";
-    public static final String HTML_BREAK_TAG = "br";
-    public static final String HTML_DIV_TAG = "div";
-
-    public static final String HTML_CLASS_ATTRIBUTE = "class";
-    public static final String HTML_SOURCE_ATTRIBUTE = "src";
-    public static final String HTML_TYPE_ATTRIBUTE = "type";
-
-    /**
-     * This causes input elements to be rendered as a checkbox
-     */
-    public static final String HTML_CHECKBOX_TYPE = "checkbox";
-
     /**
      * HTML elements with this class can be hidden with the filter checkboxes
      */
     public static final String HIDEABLE_LABEL = "hideable";
 
     public static final String LOG_LINE_LABEL = "log-line";
-
     public static final String NODE_ID_COLUMN_LABEL = "node-id";
     public static final String ELAPSED_TIME_COLUMN_LABEL = "elapsed-time";
     public static final String TIMESTAMP_COLUMN_LABEL = "timestamp";
@@ -189,13 +162,13 @@ public class HtmlGenerator {
      * @return the checkbox
      */
     private static String createFilterCheckbox(@NonNull final String elementName) {
-        final String inputTag = new HtmlTagFactory(HTML_INPUT_TAG, null, true)
+        final String inputTag = new HtmlTagFactory("input", null, true)
                 .addClasses(List.of(FILTER_CHECKBOX_LABEL, elementName))
-                .addAttribute(HTML_TYPE_ATTRIBUTE, HTML_CHECKBOX_TYPE)
+                .addAttribute("type", "checkbox")
                 .generateTag();
 
-        final String labelTag = new HtmlTagFactory(HTML_LABEL_TAG, elementName, false).generateTag();
-        final String breakTag = new HtmlTagFactory(HTML_BREAK_TAG, null, true).generateTag();
+        final String labelTag = new HtmlTagFactory("label", elementName, false).generateTag();
+        final String breakTag = new HtmlTagFactory("br", null, true).generateTag();
 
         return inputTag + "\n" + labelTag + "\n" + breakTag + "\n";
     }
@@ -210,12 +183,11 @@ public class HtmlGenerator {
      * @return the filter div
      */
     private static String createFilterDiv(@NonNull final String filterName, @NonNull final List<String> filterValues) {
-        final String filterHeading = new HtmlTagFactory(HTML_H3_TAG, filterName, false).generateTag();
+        final String filterHeading = new HtmlTagFactory("h3", filterName, false).generateTag();
         final List<String> filterCheckboxes =
                 filterValues.stream().map(HtmlGenerator::createFilterCheckbox).toList();
 
-        return new HtmlTagFactory(
-                        HTML_DIV_TAG, "\n" + filterHeading + "\n" + String.join("\n", filterCheckboxes), false)
+        return new HtmlTagFactory("div", "\n" + filterHeading + "\n" + String.join("\n", filterCheckboxes), false)
                 .generateTag();
     }
 
@@ -262,7 +234,7 @@ public class HtmlGenerator {
                 new CssDeclaration("display", "none"));
 
         // pad the log table columns
-        addToCssRules(cssRules, HTML_DATA_CELL_TAG, new CssDeclaration("padding-left", "1em"));
+        addToCssRules(cssRules, "td", new CssDeclaration("padding-left", "1em"));
 
         // set a max width for remainder column, and wrap words
         addToCssRules(
@@ -319,7 +291,7 @@ public class HtmlGenerator {
                 .distinct()
                 .forEach(logLevel -> addToCssRules(
                         cssRules,
-                        HTML_DATA_CELL_TAG + "." + logLevel,
+                        "td" + "." + logLevel,
                         new CssDeclaration("color", getHtmlColor(getLogLevelColor(logLevel)))));
 
         return cssRules.entrySet().stream()
@@ -334,13 +306,13 @@ public class HtmlGenerator {
      * @return the head of the HTML page
      */
     private static String generateHead(@NonNull final String css) {
-        final String cssTag = new HtmlTagFactory(HTML_STYLE_TAG, css, false).generateTag();
+        final String cssTag = new HtmlTagFactory("style", css, false).generateTag();
 
-        final String minJsSourceTag = new HtmlTagFactory(HTML_SCRIPT_TAG, "", false)
-                .addAttribute(HTML_SOURCE_ATTRIBUTE, MIN_JS_SOURCE)
+        final String minJsSourceTag = new HtmlTagFactory("script", "", false)
+                .addAttribute("src", MIN_JS_SOURCE)
                 .generateTag();
 
-        return new HtmlTagFactory(HTML_HEAD_TAG, "\n" + cssTag + "\n" + minJsSourceTag + "\n", false).generateTag();
+        return new HtmlTagFactory("head", "\n" + cssTag + "\n" + minJsSourceTag + "\n", false).generateTag();
     }
 
     /**
@@ -376,16 +348,16 @@ public class HtmlGenerator {
 
         final String filterDivsCombined = "\n" + String.join("\n", filterDivs) + "\n";
 
-        final String filtersHeading = new HtmlTagFactory(HTML_H2_TAG, "Filters", false).generateTag();
+        final String filtersHeading = new HtmlTagFactory("h2", "Filters", false).generateTag();
 
-        final String scrollableFilterColumn = new HtmlTagFactory(HTML_DIV_TAG, filterDivsCombined, false)
+        final String scrollableFilterColumn = new HtmlTagFactory("div", filterDivsCombined, false)
                 .addClass(INDEPENDENT_SCROLL_LABEL)
                 .generateTag();
 
         // make the filter columns and the log table scroll independently
         addToCssRules(cssRules, "." + INDEPENDENT_SCROLL_LABEL, new CssDeclaration("overflow", "auto"));
 
-        return new HtmlTagFactory(HTML_DIV_TAG, filtersHeading + "\n" + scrollableFilterColumn, false).generateTag();
+        return new HtmlTagFactory("div", filtersHeading + "\n" + scrollableFilterColumn, false).generateTag();
     }
 
     /**
@@ -402,7 +374,7 @@ public class HtmlGenerator {
 
         addToCssRules(cssRules, "." + LOG_TABLE_LABEL, new CssDeclaration("border-collapse", "collapse"));
 
-        return new HtmlTagFactory(HTML_TABLE_TAG, combinedLogLines, false)
+        return new HtmlTagFactory("table", combinedLogLines, false)
                 .addClass(LOG_TABLE_LABEL)
                 .generateTag();
     }
@@ -418,7 +390,7 @@ public class HtmlGenerator {
             @NonNull final List<LogLine> logLines, @NonNull final Map<String, List<CssDeclaration>> cssRules) {
 
         final String filtersDiv = generateFiltersDiv(logLines, cssRules);
-        final String tableDiv = new HtmlTagFactory(HTML_DIV_TAG, generateLogTable(logLines, cssRules), false)
+        final String tableDiv = new HtmlTagFactory("div", generateLogTable(logLines, cssRules), false)
                 .addClass(INDEPENDENT_SCROLL_LABEL)
                 .addClass(TABLE_INDEPENDENT_SCROLL_LABEL)
                 .generateTag();
@@ -428,7 +400,7 @@ public class HtmlGenerator {
 
         // this is a div surrounding the filters and the log table
         // its purpose is so that there can be 2 independently scrollable columns
-        final String doubleColumnDiv = new HtmlTagFactory(HTML_DIV_TAG, filtersDiv + "\n" + tableDiv, false)
+        final String doubleColumnDiv = new HtmlTagFactory("div", filtersDiv + "\n" + tableDiv, false)
                 .addClass(DOUBLE_COLUMNS_DIV_LABEL)
                 .generateTag();
 
@@ -438,9 +410,9 @@ public class HtmlGenerator {
                 new CssDeclaration("display", "flex"),
                 new CssDeclaration("height", "100%"));
 
-        final String scriptTag = new HtmlTagFactory(HTML_SCRIPT_TAG, FILTER_JS, false).generateTag();
+        final String scriptTag = new HtmlTagFactory("script", FILTER_JS, false).generateTag();
 
-        return new HtmlTagFactory(HTML_BODY_TAG, doubleColumnDiv + "\n" + scriptTag, false).generateTag();
+        return new HtmlTagFactory("body", doubleColumnDiv + "\n" + scriptTag, false).generateTag();
     }
 
     /**
@@ -513,6 +485,6 @@ public class HtmlGenerator {
         final String css = generateCss(logLines, cssRules);
         final String head = generateHead(css);
 
-        return new HtmlTagFactory(HTML_HTML_TAG, "\n" + head + "\n" + body + "\n", false).generateTag();
+        return new HtmlTagFactory("html", "\n" + head + "\n" + body + "\n", false).generateTag();
     }
 }
