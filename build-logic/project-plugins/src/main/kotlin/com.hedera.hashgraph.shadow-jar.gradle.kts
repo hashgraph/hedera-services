@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,4 +14,22 @@
  * limitations under the License.
  */
 
-plugins { id("com.github.johnrengelman.shadow") }
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+
+plugins {
+    id("java")
+    id("com.github.johnrengelman.shadow")
+}
+
+tasks.withType<ShadowJar>().configureEach {
+    group = "shadow"
+    from(sourceSets.main.get().output)
+    mergeServiceFiles()
+
+    // Defer the resolution  of 'runtimeClasspath'. This is an issue in the shadow
+    // plugin that it automatically accesses the files in 'runtimeClasspath' while
+    // Gradle is building the task graph. The three lines below work around that.
+    inputs.files(project.configurations.runtimeClasspath)
+    configurations = emptyList()
+    doFirst { configurations = listOf(project.configurations.runtimeClasspath.get()) }
+}
