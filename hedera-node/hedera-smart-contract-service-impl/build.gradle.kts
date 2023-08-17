@@ -36,7 +36,3 @@ dependencies {
         testRuntimeOnly(gav("org.mockito.inline"))
     }
 }
-
-val generatedSources = file("build/generated/sources/annotationProcessor/java/main")
-
-java.sourceSets["main"].java.srcDir(generatedSources)
