@@ -20,13 +20,13 @@ plugins {
 }
 
 jmhModuleInfo {
+    requires("com.swirlds.base")
     requires("com.swirlds.common")
     requires("com.swirlds.config.api")
     requires("com.swirlds.platform.core")
     requires("com.swirlds.common.test.fixtures")
     requires("com.swirlds.platform.core.test.fixtures")
     requires("jmh.core")
-    requires("org.apache.commons.lang3")
 }
 
 testModuleInfo {
@@ -36,6 +36,7 @@ testModuleInfo {
     requires("com.swirlds.base.test.fixtures")
     requires("awaitility")
     requires("org.apache.commons.collections4")
+    requires("org.apache.commons.lang3")
     requires("org.junit.jupiter.params")
     requires("org.mockito.junit.jupiter")
     requiresStatic("com.github.spotbugs.annotations")

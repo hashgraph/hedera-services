@@ -165,7 +165,6 @@ module com.swirlds.common {
     requires transitive com.swirlds.logging;
     requires transitive io.prometheus.simpleclient;
     requires transitive lazysodium.java;
-    requires transitive org.apache.commons.lang3;
     requires transitive org.apache.logging.log4j;
     requires io.github.classgraph;
     requires io.prometheus.simpleclient.httpserver;
@@ -173,6 +172,7 @@ module com.swirlds.common {
     requires jdk.httpserver;
     requires jdk.management;
     requires org.apache.commons.codec;
+    requires org.apache.commons.lang3;
     requires org.bouncycastle.provider;
     requires static com.github.spotbugs.annotations;
 }

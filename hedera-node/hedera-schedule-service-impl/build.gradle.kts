@@ -26,7 +26,6 @@ dependencies {
         testImplementation(testFixtures(project(":app-spi")))
         testImplementation(testFixtures(project(":config")))
         testImplementation(project(":app"))
-        testImplementation(project(":app-service-schedule-impl"))
         testImplementation(gav("com.swirlds.test.framework"))
         testImplementation(gav("org.assertj.core"))
         testImplementation(gav("org.junit.jupiter.api"))

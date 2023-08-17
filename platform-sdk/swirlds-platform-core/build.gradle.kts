@@ -20,9 +20,7 @@ plugins {
     id("java-test-fixtures")
 }
 
-mainModuleInfo {
-    runtimeOnly("com.swirlds.config.impl")
-}
+mainModuleInfo { runtimeOnly("com.swirlds.config.impl") }
 
 testModuleInfo {
     requires("com.swirlds.base.test.fixtures")

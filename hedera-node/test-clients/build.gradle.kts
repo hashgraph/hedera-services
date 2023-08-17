@@ -58,7 +58,6 @@ dependencies {
         api(gav("net.i2p.crypto.eddsa"))
         api(gav("org.apache.commons.io"))
         api(gav("org.apache.logging.log4j"))
-        api(gav("org.checkerframework.checker.qual"))
         api(gav("org.junit.jupiter.api"))
         api(gav("org.junit.platform.commons"))
         api(gav("org.junit.platform.engine"))
@@ -66,6 +65,7 @@ dependencies {
         api(gav("org.yaml.snakeyaml"))
         api(gav("tuweni.bytes"))
 
+        implementation(project(":app"))
         implementation(project(":app-service-evm"))
         implementation(project(":config"))
         implementation(gav("com.fasterxml.jackson.core"))
@@ -88,7 +88,7 @@ dependencies {
         implementation(gav("org.json"))
         implementation(gav("org.opentest4j"))
         implementation(gav("tuweni.units"))
-        implementation(project(":app"))
+        compileOnly(gav("com.github.spotbugs.annotations"))
 
         itestImplementation(project(path))
         itestImplementation(project(":hapi"))

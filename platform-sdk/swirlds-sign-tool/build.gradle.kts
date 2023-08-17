@@ -22,7 +22,7 @@ plugins {
 application.mainClass.set("com.swirlds.signingtool.FileSignTool")
 
 testModuleInfo {
+    requires("com.swirlds.base")
     requires("com.swirlds.test.framework")
-    requires("org.apache.commons.lang3")
     requires("org.junit.jupiter.api")
 }

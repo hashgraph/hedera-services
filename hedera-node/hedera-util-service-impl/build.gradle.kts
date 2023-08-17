@@ -28,10 +28,10 @@ dependencies {
         testImplementation(gav("com.swirlds.config.api"))
         testImplementation(gav("com.swirlds.test.framework"))
         testImplementation(gav("org.assertj.core"))
-        testImplementation(gav("org.checkerframework.checker.qual"))
         testImplementation(gav("org.junit.jupiter.api"))
         testImplementation(gav("org.junit.jupiter.params"))
         testImplementation(gav("org.mockito"))
         testImplementation(gav("org.mockito.junit.jupiter"))
+        testCompileOnly(gav("com.github.spotbugs.annotations"))
     }
 }

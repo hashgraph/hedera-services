@@ -11,6 +11,7 @@ module com.hedera.node.services.cli {
     requires com.hedera.node.hapi;
     requires com.google.common;
     requires com.google.protobuf;
+    requires com.swirlds.base;
     requires com.swirlds.config.api;
     requires com.swirlds.virtualmap;
     requires org.apache.commons.lang3;

@@ -23,6 +23,5 @@ testModuleInfo {
     requires("com.swirlds.base")
     requires("com.swirlds.test.framework")
     requires("com.swirlds.common.test.fixtures")
-    requires("org.apache.commons.lang3")
     requires("org.junit.jupiter.api")
 }

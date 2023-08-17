@@ -33,7 +33,6 @@ dependencies {
         testImplementation(testFixtures(project(":config")))
         testImplementation(testFixtures(project(":app-spi")))
         testImplementation(gav("com.google.jimfs"))
-        testImplementation(gav("com.swirlds.base"))
         testImplementation(gav("com.swirlds.test.framework"))
         testImplementation(gav("io.github.classgraph"))
         testImplementation(gav("org.assertj.core"))

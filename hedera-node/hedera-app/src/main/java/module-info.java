@@ -31,6 +31,7 @@ module com.hedera.node.app {
     requires com.hedera.node.app.service.util;
     requires com.google.common;
     requires com.google.protobuf;
+    requires com.swirlds.base;
     requires com.swirlds.fchashmap;
     requires com.swirlds.fcqueue;
     requires com.swirlds.platform.core;
@@ -39,7 +40,6 @@ module com.hedera.node.app {
     requires io.netty.handler;
     requires io.netty.transport.classes.epoll;
     requires io.netty.transport;
-    requires org.apache.commons.lang3;
     requires org.apache.logging.log4j;
     requires org.slf4j;
     requires static com.github.spotbugs.annotations;
