@@ -33,6 +33,7 @@ import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.spi.fixtures.TransactionFactory;
 import com.hedera.node.config.converter.BytesConverter;
+import com.hedera.node.config.converter.LongPairConverter;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -68,6 +69,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
 
         final var config = new TestConfigBuilder(false)
                 .withConverter(new BytesConverter())
+                .withConverter(new LongPairConverter())
                 .withConfigDataType(FilesConfig.class)
                 .withConfigDataType(LedgerConfig.class)
                 .getOrCreateConfig();

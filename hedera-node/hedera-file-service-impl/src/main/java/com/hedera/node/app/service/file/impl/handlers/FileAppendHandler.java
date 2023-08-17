@@ -165,7 +165,7 @@ public class FileAppendHandler implements TransactionHandler {
         final var fees = handleContext
                 .feeCalculator(SubType.DEFAULT)
                 .addBytesPerTransaction(BASIC_ENTITY_ID_SIZE + dataLength)
-                .addStorageBytesHours(dataLength * effectiveLifeTime)
+                .addStorageBytesSeconds(dataLength * effectiveLifeTime)
                 .calculate();
 
         handleContext.feeAccumulator().charge(handleContext.payer(), fees);

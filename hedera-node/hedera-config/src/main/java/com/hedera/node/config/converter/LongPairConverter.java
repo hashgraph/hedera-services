@@ -32,7 +32,7 @@ public class LongPairConverter implements ConfigConverter<LongPair> {
     public LongPair convert(final String value) throws IllegalArgumentException, NullPointerException {
         Objects.requireNonNull(value, "Parameter 'value' cannot be null");
         final String[] split = value.split(PATTERN, 2);
-        if (split.length == 1) {
+        if (split.length <= 1) {
             throw new IllegalArgumentException("Invalid long pair: " + value);
         }
         final String left = split[0];

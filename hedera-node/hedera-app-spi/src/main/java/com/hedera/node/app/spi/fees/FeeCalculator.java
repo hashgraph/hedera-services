@@ -53,7 +53,7 @@ public interface FeeCalculator {
     FeeCalculator addBytesPerTransaction(long bytes);
 
     @NonNull
-    FeeCalculator addStorageBytesHours(long seconds);
+    FeeCalculator addStorageBytesSeconds(long seconds);
 
     @NonNull
     FeeCalculator addNetworkRamByteSeconds(long amount);

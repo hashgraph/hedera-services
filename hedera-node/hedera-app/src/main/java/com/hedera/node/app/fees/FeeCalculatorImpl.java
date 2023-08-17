@@ -137,7 +137,7 @@ public class FeeCalculatorImpl implements FeeCalculator {
 
     @NonNull
     @Override
-    public FeeCalculator addStorageBytesHours(long seconds) {
+    public FeeCalculator addStorageBytesSeconds(long seconds) {
         usage.addSbs(seconds);
         return this;
     }

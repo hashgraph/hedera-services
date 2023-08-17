@@ -109,7 +109,7 @@ class FileAppendTest extends FileTestBase {
         when(handleContext.feeCalculator(any(SubType.class))).thenReturn(feeCalculator);
         when(feeCalculator.calculate()).thenReturn(Fees.FREE);
         when(feeCalculator.addBytesPerTransaction(anyLong())).thenReturn(feeCalculator);
-        when(feeCalculator.addStorageBytesHours(anyLong())).thenReturn(feeCalculator);
+        when(feeCalculator.addStorageBytesSeconds(anyLong())).thenReturn(feeCalculator);
         when(handleContext.feeAccumulator()).thenReturn(feeAccumulator);
         when(feeCalculator.legacyCalculate(any())).thenReturn(Fees.FREE);
     }

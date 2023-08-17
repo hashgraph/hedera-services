@@ -21,7 +21,7 @@ import dagger.Binds;
 import dagger.Module;
 
 @Module
-public interface NumbersModule {
+public interface FileNumbersModule {
 
     @Binds
     HederaFileNumbers fileConfigProvider(HederaFileNumbersImpl fileProviderImpl);

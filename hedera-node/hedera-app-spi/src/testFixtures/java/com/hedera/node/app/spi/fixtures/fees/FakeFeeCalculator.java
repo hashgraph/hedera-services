@@ -38,7 +38,7 @@ public class FakeFeeCalculator implements FeeCalculator {
 
     @NonNull
     @Override
-    public FeeCalculator addStorageBytesHours(long seconds) {
+    public FeeCalculator addStorageBytesSeconds(long seconds) {
         return this;
     }
 

@@ -59,6 +59,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.config.data.FilesConfig;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.node.config.types.LongPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
@@ -123,10 +124,9 @@ class FileCreateTest extends FileTestBase {
     void setUp() {
         subject = new FileCreateHandler();
         fileStore = new WritableFileStore(writableStates);
-        config = new FilesConfig(
-                101L, 121L, 112L, 111L, 122L, 102L, new LongPair(150L, 159L), 123L, 1000000L, 1024, 150L);
+        config = HederaTestConfigBuilder.createConfig().getConfigData(FilesConfig.class);
         lenient().when(handleContext.configuration()).thenReturn(configuration);
-        lenient().when(configuration.getConfigData(FilesConfig.class)).thenReturn(config);
+        lenient().when(configuration.getConfigData(any())).thenReturn(config);
         lenient().when(handleContext.writableStore(WritableFileStore.class)).thenReturn(fileStore);
     }
 
