@@ -45,3 +45,25 @@ tasks.register<JavaExec>("run") {
             }
     )
 }
+
+val cleanRun =
+    tasks.register<Delete>("cleanRun") {
+        delete(
+            sdkDir.asFileTree.matching {
+                include("settingsUsed.txt")
+                include("swirlds.jar")
+                include("metricsDoc.tsv")
+                include("*.csv")
+                include("*.log")
+            }
+        )
+
+        val dataDir = sdkDir.dir("data")
+        delete(dataDir.dir("accountBalances"))
+        delete(dataDir.dir("apps"))
+        delete(dataDir.dir("lib"))
+        delete(dataDir.dir("recordstreams"))
+        delete(dataDir.dir("saved"))
+    }
+
+tasks.clean { dependsOn(cleanRun) }

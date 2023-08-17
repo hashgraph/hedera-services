@@ -54,29 +54,6 @@ tasks.distTar { enabled = false }
 
 tasks.distZip { enabled = false }
 
-val cleanRun =
-    tasks.register<Delete>("cleanRun") {
-        val sdkDir = sdkDir(layout.projectDirectory)
-        delete(
-            sdkDir.asFileTree.matching {
-                include("settingsUsed.txt")
-                include("swirlds.jar")
-                include("metricsDoc.tsv")
-                include("*.csv")
-                include("*.log")
-            }
-        )
-
-        val dataDir = sdkDir.dir("data")
-        delete(dataDir.dir("accountBalances"))
-        delete(dataDir.dir("apps"))
-        delete(dataDir.dir("lib"))
-        delete(dataDir.dir("recordstreams"))
-        delete(dataDir.dir("saved"))
-    }
-
-tasks.clean { dependsOn(cleanRun) }
-
 tasks.jar {
     // Gradle fails to track 'configurations.runtimeClasspath' as an input to the task if it is
     // only used in the 'mainfest.attributes'. Hence, we explicitly add it as input.
