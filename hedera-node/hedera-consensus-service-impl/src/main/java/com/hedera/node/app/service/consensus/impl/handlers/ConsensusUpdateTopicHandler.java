@@ -138,12 +138,11 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
 
         // First validate this topic is mutable; and the pending mutations are allowed
         validateFalse(topic.adminKey() == null && wantsToMutateNonExpiryField(topicUpdate), UNAUTHORIZED);
-        if (!(topicUpdate.hasAutoRenewAccount() && designatesAccountRemoval(topicUpdate.autoRenewAccount()))) {
-            if (topic.hasAutoRenewAccountId()) {
-                validateFalse(
-                        !topic.hasAdminKey() || (topicUpdate.hasAdminKey() && isEmpty(topicUpdate.adminKey())),
-                        AUTORENEW_ACCOUNT_NOT_ALLOWED);
-            }
+        if (!(topicUpdate.hasAutoRenewAccount() && designatesAccountRemoval(topicUpdate.autoRenewAccount()))
+                && topic.hasAutoRenewAccountId()) {
+            validateFalse(
+                    !topic.hasAdminKey() || (topicUpdate.hasAdminKey() && isEmpty(topicUpdate.adminKey())),
+                    AUTORENEW_ACCOUNT_NOT_ALLOWED);
         }
         validateMaybeNewAttributes(handleContext, topicUpdate, topic);
 
