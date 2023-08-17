@@ -24,6 +24,7 @@ import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import com.hedera.node.app.service.contract.impl.state.PendingCreation;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
+import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.ResultStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
@@ -234,7 +235,7 @@ public interface HederaWorldUpdater extends WorldUpdater {
     /**
      * Externalizes the results of a system contract call into a record
      * @param result    The result of the system contract call
-     * @param isError   Whether the result is an error
+     * @param status    Whether the result is an error
      */
-    public void externalizeSystemContractResults(@NonNull final ContractFunctionResult result, boolean isError);
+    public void externalizeSystemContractResults(@NonNull final ContractFunctionResult result, ResultStatus status);
 }

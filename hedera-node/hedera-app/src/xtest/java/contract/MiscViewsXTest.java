@@ -16,6 +16,7 @@
 
 package contract;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
 import static contract.AssortedOpsXTestConstants.ONE_HBAR;
 import static contract.MiscViewsXTestConstants.COINBASE_ID;
@@ -30,6 +31,7 @@ import static contract.MiscViewsXTestConstants.PRNG_SEED;
 import static contract.MiscViewsXTestConstants.SECRET;
 import static contract.MiscViewsXTestConstants.SPECIAL_QUERIES_X_TEST;
 import static contract.MiscViewsXTestConstants.VIEWS_INITCODE_FILE_ID;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.hedera.hapi.node.base.AccountID;
@@ -53,6 +55,7 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.state.ReadableKVState;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.HashMap;
 import java.util.List;
@@ -64,8 +67,10 @@ public class MiscViewsXTest extends AbstractContractXTest {
     @Override
     protected void handleAndCommitScenarioTransactions() {
         handleAndCommit(CONTRACT_SERVICE.handlers().contractCreateHandler(), synthCreateTxn());
-        var context =
+        final var context =
                 handleAndCommitSingleTransaction(CONTRACT_SERVICE.handlers().contractCallHandler(), synthCallPrng());
+        final var recordBuilder = context.recordBuilder(SingleTransactionRecordBuilder.class);
+        assertEquals(SUCCESS, recordBuilder.status());
     }
 
     private TransactionBody synthCreateTxn() {
@@ -83,7 +88,7 @@ public class MiscViewsXTest extends AbstractContractXTest {
     }
 
     private TransactionBody synthCallPrng() {
-        return callTransaction(ERC_USER_ID, 0L, SPECIAL_QUERIES_X_TEST, GET_PRNG_SEED.encodeCallWithArgs());
+        return createCallTransactionBody(ERC_USER_ID, 0L, SPECIAL_QUERIES_X_TEST, GET_PRNG_SEED.encodeCallWithArgs());
     }
 
     @Override
@@ -142,7 +147,7 @@ public class MiscViewsXTest extends AbstractContractXTest {
             nfts.put(
                     id,
                     Nft.newBuilder()
-                            .id(id)
+                            .nftId(id)
                             .ownerId(ERC_USER_ID)
                             .metadata(Bytes.wrap("https://example.com/721/" + sn))
                             .build());

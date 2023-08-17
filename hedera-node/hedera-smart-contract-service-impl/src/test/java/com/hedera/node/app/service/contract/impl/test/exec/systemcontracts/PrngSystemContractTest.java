@@ -119,7 +119,7 @@ class PrngSystemContractTest {
     @Test
     void wrongFunctionSelectorFailedTest() {
         // given:
-        givenCommon();
+        givenCommonBlockValues();
 
         // when:
         var actual = subject.computePrecompile(EXPECTED_RANDOM_NUMBER, messageFrame);

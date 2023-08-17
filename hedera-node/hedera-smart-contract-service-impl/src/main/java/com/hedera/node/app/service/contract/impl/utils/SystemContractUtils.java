@@ -26,10 +26,15 @@ import org.apache.tuweni.bytes.Bytes;
 /**
  * Utilities for system contracts.
  */
-public class SystemContractUtils {
+public final class SystemContractUtils {
 
     private SystemContractUtils() {
         throw new UnsupportedOperationException("Utility Class");
+    }
+
+    public enum ResultStatus {
+        IS_SUCCESS,
+        IS_ERROR
     }
 
     /**
@@ -39,7 +44,8 @@ public class SystemContractUtils {
      * @param contractID    The contract ID.
      * @return              The created contract function result for a successful call.
      */
-    public static @NonNull ContractFunctionResult contractFunctionResultSuccessFor(
+    @NonNull
+    public static ContractFunctionResult contractFunctionResultSuccessFor(
             final long gasUsed, final Bytes result, final ContractID contractID) {
         return ContractFunctionResult.newBuilder()
                 .gasUsed(gasUsed)
@@ -55,7 +61,8 @@ public class SystemContractUtils {
      * @param contractID    The contract ID.
      * @return              The created contract function result when for a failed call.
      */
-    public static @NonNull ContractFunctionResult contractFunctionResultFailedFor(
+    @NonNull
+    public static ContractFunctionResult contractFunctionResultFailedFor(
             final long gasUsed, final String errorMsg, final ContractID contractID) {
         return ContractFunctionResult.newBuilder()
                 .gasUsed(gasUsed)

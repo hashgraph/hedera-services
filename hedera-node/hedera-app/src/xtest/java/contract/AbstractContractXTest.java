@@ -150,18 +150,18 @@ public abstract class AbstractContractXTest {
         return context;
     }
 
-    protected TransactionBody callTransaction(
+    protected TransactionBody createCallTransactionBody(
             final AccountID payer,
             final long value,
             @NonNull final ContractID contractId,
             @NonNull final ByteBuffer encoded) {
         return TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder().accountID(payer))
-                .contractCall(callWithParams(value, contractId, encoded))
+                .contractCall(createContractCallTransactionBody(value, contractId, encoded))
                 .build();
     }
 
-    protected ContractCallTransactionBody callWithParams(
+    protected ContractCallTransactionBody createContractCallTransactionBody(
             final long value, @NonNull final ContractID contractId, @NonNull final ByteBuffer encoded) {
         return ContractCallTransactionBody.newBuilder()
                 .functionParameters(Bytes.wrap(encoded.array()))

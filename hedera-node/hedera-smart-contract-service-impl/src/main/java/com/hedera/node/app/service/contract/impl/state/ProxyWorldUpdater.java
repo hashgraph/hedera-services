@@ -34,6 +34,7 @@ import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperatio
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.ResultStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
@@ -419,8 +420,9 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      * {@inheritDoc}
      */
     @Override
-    public void externalizeSystemContractResults(@NonNull final ContractFunctionResult result, boolean isError) {
-        systemContractOperations.externalizeResult(result, isError);
+    public void externalizeSystemContractResults(
+            @NonNull final ContractFunctionResult result, final ResultStatus status) {
+        systemContractOperations.externalizeResult(result, status);
     }
 
     private long getValidatedCreationNumber(

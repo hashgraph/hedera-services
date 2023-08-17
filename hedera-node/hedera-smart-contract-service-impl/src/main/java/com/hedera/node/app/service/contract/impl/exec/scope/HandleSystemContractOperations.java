@@ -29,6 +29,7 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
+import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.ResultStatus;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -101,12 +102,15 @@ public class HandleSystemContractOperations implements SystemContractOperations 
         throw new AssertionError("Not implemented");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public void externalizeResult(@NonNull final ContractFunctionResult result, final boolean isError) {
+    public void externalizeResult(@NonNull final ContractFunctionResult result, final ResultStatus status) {
         final var childRecordBuilder = context.addChildRecordBuilder(ContractCallRecordBuilder.class);
         childRecordBuilder
                 .contractID(result.contractID())
-                .status(isError ? FAIL_INVALID : SUCCESS)
+                .status(status == ResultStatus.IS_ERROR ? FAIL_INVALID : SUCCESS)
                 .contractCallResult(result);
     }
 }

@@ -28,6 +28,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleSystemContractOperations;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils;
+import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.ResultStatus;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import org.junit.jupiter.api.BeforeEach;
@@ -91,7 +92,7 @@ class HandleSystemContractOperationsTest {
         given(recordBuilder.contractID(ContractID.DEFAULT)).willReturn(recordBuilder);
 
         // when
-        subject.externalizeResult(contractFunctionResult, false);
+        subject.externalizeResult(contractFunctionResult, ResultStatus.IS_SUCCESS);
 
         // then
         verify(recordBuilder).contractID(ContractID.DEFAULT);
@@ -110,7 +111,7 @@ class HandleSystemContractOperationsTest {
         given(recordBuilder.contractID(ContractID.DEFAULT)).willReturn(recordBuilder);
 
         // when
-        subject.externalizeResult(contractFunctionResult, true);
+        subject.externalizeResult(contractFunctionResult, ResultStatus.IS_ERROR);
 
         // then
         verify(recordBuilder).contractID(ContractID.DEFAULT);

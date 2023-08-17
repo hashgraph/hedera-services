@@ -108,22 +108,22 @@ public class AssortedOpsXTest extends AbstractContractXTest {
     }
 
     private TransactionBody synthDeterministicDeploy() {
-        return callTransaction(
+        return createCallTransactionBody(
                 MISC_PAYER_ID, ONE_HBAR, ASSORTED_OPS_CONTRACT_ID, DEPLOY_DETERMINISTIC_CHILD.encodeCallWithArgs(SALT));
     }
 
     private TransactionBody synthGoldbergesqueDeploy() {
-        return callTransaction(
+        return createCallTransactionBody(
                 MISC_PAYER_ID, 2 * ONE_HBAR, ASSORTED_OPS_CONTRACT_ID, DEPLOY_GOLDBERGESQUE.encodeCallWithArgs(SALT));
     }
 
     private TransactionBody synthVacateAddress() {
-        return callTransaction(
+        return createCallTransactionBody(
                 MISC_PAYER_ID, 0, FINALIZED_AND_DESTRUCTED_CONTRACT_ID, VACATE_ADDRESS.encodeCallWithArgs());
     }
 
     private TransactionBody synthTakeFive() {
-        return callTransaction(MISC_PAYER_ID, 0, ASSORTED_OPS_CONTRACT_ID, TAKE_FIVE.encodeCallWithArgs());
+        return createCallTransactionBody(MISC_PAYER_ID, 0, ASSORTED_OPS_CONTRACT_ID, TAKE_FIVE.encodeCallWithArgs());
     }
 
     @Override

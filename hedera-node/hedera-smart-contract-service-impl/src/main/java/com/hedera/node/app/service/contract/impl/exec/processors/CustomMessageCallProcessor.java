@@ -98,22 +98,38 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
     @Override
     public void start(@NonNull final MessageFrame frame, @NonNull final OperationTracer tracer) {
         final var codeAddress = frame.getContractAddress();
+
+        // This must be done first as the system contract address range overlaps with system accounts
+        // also, we do not allow transfer of value to system contracts
         if (systemContracts.containsKey(codeAddress)) {
             doExecuteSystemContract(systemContracts.get(codeAddress), frame, tracer);
             return;
-        } else if (addressChecks.isSystemAccount(codeAddress)) {
-            doHaltIfInvalidSystemCall(codeAddress, frame, tracer);
-        } else if (transfersValue(frame)) {
-            doTransferValueOrHalt(frame, tracer);
         }
-        if (!alreadyHalted(frame)) {
-            final var evmPrecompile = precompiles.get(codeAddress);
-            if (evmPrecompile != null) {
-                doExecutePrecompile(evmPrecompile, frame, tracer);
-            } else {
-                frame.setState(MessageFrame.State.CODE_EXECUTING);
+
+        // Check to see if the code address is a system account and possibly halt
+        if (addressChecks.isSystemAccount(codeAddress)) {
+            doHaltIfInvalidSystemCall(codeAddress, frame, tracer);
+            if (alreadyHalted(frame)) {
+                return;
             }
         }
+
+        // Transfer value to the contract if required and possibly halt
+        if (transfersValue(frame)) {
+            doTransferValueOrHalt(frame, tracer);
+            if (alreadyHalted(frame)) {
+                return;
+            }
+        }
+
+        // Handle evm precompiles
+        final var evmPrecompile = precompiles.get(codeAddress);
+        if (evmPrecompile != null) {
+            doExecutePrecompile(evmPrecompile, frame, tracer);
+            return;
+        }
+
+        frame.setState(MessageFrame.State.CODE_EXECUTING);
     }
 
     public boolean isImplicitCreationEnabled(@NonNull Configuration config) {

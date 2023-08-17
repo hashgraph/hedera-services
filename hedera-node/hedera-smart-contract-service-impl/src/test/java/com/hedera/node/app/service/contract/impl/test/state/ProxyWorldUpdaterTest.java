@@ -55,6 +55,7 @@ import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.StorageAccess;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils;
+import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.ResultStatus;
 import java.util.List;
 import java.util.Optional;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -466,7 +467,7 @@ class ProxyWorldUpdaterTest {
         var contractFunctionResult = SystemContractUtils.contractFunctionResultSuccessFor(
                 0, org.apache.tuweni.bytes.Bytes.EMPTY, ContractID.DEFAULT);
 
-        subject.externalizeSystemContractResults(contractFunctionResult, false);
-        verify(systemContractOperations).externalizeResult(contractFunctionResult, false);
+        subject.externalizeSystemContractResults(contractFunctionResult, ResultStatus.IS_SUCCESS);
+        verify(systemContractOperations).externalizeResult(contractFunctionResult, ResultStatus.IS_SUCCESS);
     }
 }

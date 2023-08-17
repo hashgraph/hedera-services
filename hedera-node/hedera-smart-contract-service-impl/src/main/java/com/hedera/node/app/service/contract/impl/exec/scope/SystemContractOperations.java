@@ -24,6 +24,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.ResultStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -107,7 +108,7 @@ public interface SystemContractOperations {
      * Attempts to create a child record of the current record, with the given {@code result}
      *
      * @param result    contract function result
-     * @param isError   true if the result contains an error
+     * @param status    whether the result is success or an error
      */
-    public void externalizeResult(@NonNull final ContractFunctionResult result, final boolean isError);
+    public void externalizeResult(@NonNull final ContractFunctionResult result, final ResultStatus status);
 }

@@ -26,11 +26,14 @@ import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INVALID_OPERA
 
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
+import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.ResultStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -45,6 +48,7 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
  */
 @Singleton
 public class PrngSystemContract extends AbstractPrecompiledContract {
+    private static final Logger log = LogManager.getLogger(PrngSystemContract.class);
     private static final String PRECOMPILE_NAME = "PRNG";
     // random256BitGenerator(uint256)
     static final int PSEUDORANDOM_SEED_GENERATOR_SELECTOR = 0xd83bf9a1;
@@ -79,13 +83,12 @@ public class PrngSystemContract extends AbstractPrecompiledContract {
             requireNonNull(randomNum);
             final var result = PrecompiledContract.PrecompileContractResult.success(randomNum);
 
-            // create a child record if we are not in a static call
-            if (!frame.isStatic()) {
-                createSuccessfulRecord(frame, randomNum, contractID);
-            }
+            // create a child record
+            createSuccessfulRecord(frame, randomNum, contractID);
 
             return result;
         } catch (Exception e) {
+            log.warn("Internal precompile failure", e);
             // create a failed record and returned a halt result
             createFailedRecord(frame, FAIL_INVALID.toString(), contractID);
             return PrecompiledContract.PrecompileContractResult.halt(Bytes.EMPTY, Optional.of(INVALID_OPERATION));
@@ -94,22 +97,26 @@ public class PrngSystemContract extends AbstractPrecompiledContract {
 
     void createSuccessfulRecord(
             @NonNull MessageFrame frame, @NonNull final Bytes randomNum, @NonNull final ContractID contractID) {
-        requireNonNull(frame);
-        requireNonNull(randomNum);
-        requireNonNull(contractID);
-        var updater = (ProxyWorldUpdater) frame.getWorldUpdater();
-        updater.externalizeSystemContractResults(
-                contractFunctionResultSuccessFor(gasRequirement, randomNum, contractID), false);
+        if (frame.isStatic()) {
+            requireNonNull(frame);
+            requireNonNull(randomNum);
+            requireNonNull(contractID);
+            var updater = (ProxyWorldUpdater) frame.getWorldUpdater();
+            updater.externalizeSystemContractResults(
+                    contractFunctionResultSuccessFor(gasRequirement, randomNum, contractID), ResultStatus.IS_SUCCESS);
+        }
     }
 
     void createFailedRecord(
             @NonNull MessageFrame frame, @NonNull final String errorMsg, @NonNull final ContractID contractID) {
-        requireNonNull(frame);
-        requireNonNull(contractID);
-        contractFunctionResultFailedFor(gasRequirement, errorMsg, contractID);
-        var updater = (ProxyWorldUpdater) frame.getWorldUpdater();
-        updater.externalizeSystemContractResults(
-                contractFunctionResultFailedFor(gasRequirement, errorMsg, contractID), true);
+        if (frame.isStatic()) {
+            requireNonNull(frame);
+            requireNonNull(contractID);
+            contractFunctionResultFailedFor(gasRequirement, errorMsg, contractID);
+            var updater = (ProxyWorldUpdater) frame.getWorldUpdater();
+            updater.externalizeSystemContractResults(
+                    contractFunctionResultFailedFor(gasRequirement, errorMsg, contractID), ResultStatus.IS_ERROR);
+        }
     }
 
     Bytes generatePseudoRandomData(@NonNull final Bytes input, @NonNull final MessageFrame frame) {
