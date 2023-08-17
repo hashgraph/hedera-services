@@ -17,7 +17,6 @@
 package com.swirlds.cli.logging;
 
 import static com.swirlds.cli.logging.HtmlColors.getHtmlColor;
-import static com.swirlds.cli.logging.HtmlTagFactory.DATA_HIDE_LABEL;
 import static com.swirlds.cli.logging.LogLine.CLASS_NAME_COLOR;
 import static com.swirlds.cli.logging.LogLine.LOG_MARKER_COLOR;
 import static com.swirlds.cli.logging.LogLine.LOG_NUMBER_COLOR;
@@ -68,6 +67,13 @@ public class HtmlGenerator {
      * HTML elements with this class can be hidden with the filter checkboxes
      */
     public static final String HIDEABLE_LABEL = "hideable";
+
+    /**
+     * This label is used to hold the value of how many filters are currently applied to a field
+     * <p>
+     * This is used to determine if the field should be hidden or not
+     */
+    public static final String DATA_HIDE_LABEL = "data-hide";
 
     public static final String LOG_LINE_LABEL = "log-line";
     public static final String NODE_ID_COLUMN_LABEL = "node-id";

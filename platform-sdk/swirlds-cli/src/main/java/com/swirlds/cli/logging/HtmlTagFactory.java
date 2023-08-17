@@ -29,13 +29,6 @@ import java.util.Objects;
  */
 public class HtmlTagFactory {
     /**
-     * This label is used to hold the value of how many filters are currently applied to a field
-     * <p>
-     * This is used to determine if the field should be hidden or not
-     */
-    public static final String DATA_HIDE_LABEL = "data-hide";
-
-    /**
      * Map from attribute name to list of attribute values.
      */
     private final Map<String, List<String>> attributeMap = new HashMap<>();
