@@ -31,7 +31,6 @@ val mockitoVersion = "4.11.0"
 val nettyVersion = "4.1.87.Final"
 val prometheusVersion = "0.16.0"
 val protobufVersion = "3.21.7"
-val swirldsVersion = "0.42.0-adhoc.x369ea419"
 val systemStubsVersion = "2.0.2"
 val testContainersVersion = "1.17.2"
 val tuweniVersion = "2.2.0"
@@ -54,18 +53,6 @@ dependencies.constraints {
         api(gav("com.google.protobuf.util", protobufVersion))
         api(gav("com.hedera.pbj.runtime", "0.7.4"))
         api(gav("com.sun.jna", "5.12.1"))
-        api(gav("com.swirlds.base", swirldsVersion))
-        api(gav("com.swirlds.cli", swirldsVersion))
-        api(gav("com.swirlds.common", swirldsVersion))
-        api(gav("com.swirlds.config.api", swirldsVersion))
-        api(gav("com.swirlds.fchashmap", swirldsVersion))
-        api(gav("com.swirlds.fcqueue", swirldsVersion))
-        api(gav("com.swirlds.jasperdb", swirldsVersion))
-        api(gav("com.swirlds.logging", swirldsVersion))
-        api(gav("com.swirlds.merkle", swirldsVersion))
-        api(gav("com.swirlds.platform.core", swirldsVersion))
-        api(gav("com.swirlds.test.framework", swirldsVersion))
-        api(gav("com.swirlds.virtualmap", swirldsVersion))
         api(gav("dagger", daggerVersion))
         api(gav("dagger.compiler", daggerVersion))
         api(gav("grpc.netty", grpcVersion))
