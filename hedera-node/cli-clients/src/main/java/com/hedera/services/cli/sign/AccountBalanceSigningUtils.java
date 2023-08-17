@@ -79,13 +79,10 @@ public class AccountBalanceSigningUtils {
 
             return true;
         } catch (final SignatureException | InvalidKeyException | IOException e) {
-            log.error(
-                    "signAccountBalanceFile :: Failed to sign file [{}] with exception : [{}]%n", streamFileToSign, e);
+            log.error("signAccountBalanceFile :: Failed to sign file [{}]", streamFileToSign);
             return false;
         } catch (final NoSuchAlgorithmException | NoSuchProviderException e) {
-            log.error(
-                    "signAccountBalanceFile :: Irrecoverable error encountered when signing [{}] with exception : [{}]%n",
-                    streamFileToSign, e);
+            log.error("signAccountBalanceFile :: Irrecoverable error encountered when signing [{}]", streamFileToSign);
             throw new RuntimeException("signAccountBalanceFile :: Irrecoverable error encountered", e);
         }
     }
