@@ -530,6 +530,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
      */
     public String getInfoString() {
         return new TextTable()
+                .setBordersEnabled(false)
                 .addRow("Round", round)
                 .addRow("Number of consensus events", numEventsCons)
                 .addRow("Consensus events running hash", hashEventsCons == null ? "null" : hashEventsCons.toMnemonic())
