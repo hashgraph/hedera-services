@@ -35,8 +35,6 @@ tasks.test {
 
 tasks.itest { systemProperty("itests", System.getProperty("itests")) }
 
-configurations { evaluationDependsOn(":app-hapi-fees") }
-
 sourceSets {
     // Needed because "resource" directory is misnamed. See
     // https://github.com/hashgraph/hedera-services/issues/3361
@@ -117,15 +115,9 @@ tasks.eet {
 }
 
 tasks.shadowJar {
-    dependsOn(project(":app-hapi-fees").tasks.jar)
-
     mergeServiceFiles()
 
     archiveFileName.set("SuiteRunner.jar")
-    isReproducibleFileOrder = true
-    isPreserveFileTimestamps = false
-    fileMode = 664
-    dirMode = 775
 
     manifest {
         attributes(
@@ -137,8 +129,6 @@ tasks.shadowJar {
 
 val yahCliJar =
     tasks.register<ShadowJar>("yahCliJar") {
-        dependsOn(project(":app-hapi-fees").tasks.jar)
-
         group = "shadow"
         from(sourceSets.main.get().output)
         configurations = listOf(project.configurations["runtimeClasspath"])
@@ -147,10 +137,6 @@ val yahCliJar =
         exclude(listOf("META-INF/*.DSA", "META-INF/*.RSA", "META-INF/*.SF", "META-INF/INDEX.LIST"))
 
         archiveClassifier.set("yahcli")
-        isReproducibleFileOrder = true
-        isPreserveFileTimestamps = false
-        fileMode = 664
-        dirMode = 775
 
         manifest {
             attributes(
