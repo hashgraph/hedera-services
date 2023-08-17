@@ -21,11 +21,13 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.AN_ED25519_KEY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_ACCOUNT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.B_NEW_ACCOUNT_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CANONICAL_ALIAS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_LEDGER_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_ACCOUNT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SOME_DURATION;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.accountCreationFor;
+import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthAccountCreationFromHapi;
+import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthContractCreationFromParent;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -35,17 +37,21 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.ContractNonceInfo;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
 import com.hedera.node.app.service.contract.impl.state.WritableContractStateStore;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -64,6 +70,9 @@ class HandleHederaOperationsTest {
 
     @Mock
     private BlockRecordInfo blockRecordInfo;
+
+    @Mock
+    private ReadableAccountStore accountStore;
 
     @Mock
     private HandleContext context;
@@ -139,8 +148,8 @@ class HandleHederaOperationsTest {
     }
 
     @Test
-    void lazyCreationCostInGasNotImplemented() {
-        assertThrows(AssertionError.class, subject::lazyCreationCostInGas);
+    void lazyCreationCostInGasHardcoded() {
+        assertEquals(1L, subject.lazyCreationCostInGas());
     }
 
     @Test
@@ -198,8 +207,35 @@ class HandleHederaOperationsTest {
     }
 
     @Test
-    void createContractNotImplemented() {
-        assertThrows(AssertionError.class, () -> subject.createContract(1L, 2L, 3L, Bytes.EMPTY));
+    void createContractWithParentDispatchesAsExpectedThenMarksCreated() {
+        final var parent = Account.newBuilder()
+                .key(Key.newBuilder().contractID(ContractID.newBuilder().contractNum(123L)))
+                .autoRenewAccountId(NON_SYSTEM_ACCOUNT_ID)
+                .stakedNodeId(3)
+                .declineReward(true)
+                .autoRenewSeconds(666L)
+                .maxAutoAssociations(321)
+                .memo("Something")
+                .build();
+        final var pendingId = ContractID.newBuilder().contractNum(666L).build();
+        final var synthContractCreation = synthContractCreationFromParent(pendingId, parent);
+        final var synthAccountCreation =
+                synthAccountCreationFromHapi(pendingId, CANONICAL_ALIAS, synthContractCreation);
+        final var synthTxn = TransactionBody.newBuilder()
+                .cryptoCreateAccount(synthAccountCreation)
+                .build();
+        given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
+        given(context.dispatchChildTransaction(synthTxn, CryptoCreateRecordBuilder.class))
+                .willReturn(cryptoCreateRecordBuilder);
+        given(cryptoCreateRecordBuilder.status()).willReturn(OK);
+        given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+        given(accountStore.getAccountById(NON_SYSTEM_ACCOUNT_ID)).willReturn(parent);
+
+        subject.createContract(666L, NON_SYSTEM_ACCOUNT_ID.accountNumOrThrow(), CANONICAL_ALIAS);
+
+        verify(context).dispatchChildTransaction(synthTxn, CryptoCreateRecordBuilder.class);
+        verify(tokenServiceApi)
+                .markAsContract(AccountID.newBuilder().accountNum(666L).build());
     }
 
     @Test
@@ -211,14 +247,14 @@ class HandleHederaOperationsTest {
                 .build();
         final var pendingId = ContractID.newBuilder().contractNum(666L).build();
         final var synthTxn = TransactionBody.newBuilder()
-                .cryptoCreateAccount(accountCreationFor(pendingId, CANONICAL_ALIAS, someBody))
+                .cryptoCreateAccount(synthAccountCreationFromHapi(pendingId, CANONICAL_ALIAS, someBody))
                 .build();
         given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
         given(context.dispatchChildTransaction(synthTxn, CryptoCreateRecordBuilder.class))
                 .willReturn(cryptoCreateRecordBuilder);
         given(cryptoCreateRecordBuilder.status()).willReturn(OK);
 
-        subject.createContract(666L, someBody, 1L, CANONICAL_ALIAS);
+        subject.createContract(666L, someBody, CANONICAL_ALIAS);
 
         verify(context).dispatchChildTransaction(synthTxn, CryptoCreateRecordBuilder.class);
         verify(tokenServiceApi)
@@ -234,28 +270,34 @@ class HandleHederaOperationsTest {
                 .build();
         final var pendingId = ContractID.newBuilder().contractNum(666L).build();
         final var synthTxn = TransactionBody.newBuilder()
-                .cryptoCreateAccount(accountCreationFor(pendingId, CANONICAL_ALIAS, someBody))
+                .cryptoCreateAccount(synthAccountCreationFromHapi(pendingId, CANONICAL_ALIAS, someBody))
                 .build();
         given(context.dispatchChildTransaction(synthTxn, CryptoCreateRecordBuilder.class))
                 .willReturn(cryptoCreateRecordBuilder);
         given(cryptoCreateRecordBuilder.status()).willReturn(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
 
-        assertThrows(AssertionError.class, () -> subject.createContract(666L, someBody, 1L, CANONICAL_ALIAS));
+        assertThrows(AssertionError.class, () -> subject.createContract(666L, someBody, CANONICAL_ALIAS));
     }
 
     @Test
-    void deleteAliasedContractNotImplemented() {
-        assertThrows(AssertionError.class, () -> subject.deleteAliasedContract(Bytes.EMPTY));
+    void deleteUnaliasedContractUsesApi() {
+        given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
+        subject.deleteUnaliasedContract(CALLED_CONTRACT_ID.contractNumOrThrow());
+        verify(tokenServiceApi).deleteAndMaybeUnaliasContract(CALLED_CONTRACT_ID);
     }
 
     @Test
-    void deleteUnaliasedContractNotImplemented() {
-        assertThrows(AssertionError.class, () -> subject.deleteUnaliasedContract(123L));
+    void deleteAliasedContractUsesApi() {
+        given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
+        subject.deleteAliasedContract(CANONICAL_ALIAS);
+        verify(tokenServiceApi)
+                .deleteAndMaybeUnaliasContract(
+                        ContractID.newBuilder().evmAddress(CANONICAL_ALIAS).build());
     }
 
     @Test
-    void getModifiedAccountNumbersNotImplemented() {
-        assertThrows(AssertionError.class, subject::getModifiedAccountNumbers);
+    void getModifiedAccountNumbersIsNotActuallyNeeded() {
+        assertSame(Collections.emptyList(), subject.getModifiedAccountNumbers());
     }
 
     @Test

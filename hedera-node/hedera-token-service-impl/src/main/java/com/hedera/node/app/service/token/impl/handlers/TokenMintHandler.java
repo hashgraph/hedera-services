@@ -226,7 +226,7 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
             @NonNull final Bytes meta,
             final long currentSerialNumber) {
         return Nft.newBuilder()
-                .id(NftID.newBuilder()
+                .nftId(NftID.newBuilder()
                         .tokenId(tokenId)
                         .serialNumber(currentSerialNumber)
                         .build())

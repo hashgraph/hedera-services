@@ -129,7 +129,7 @@ public class FileAppendHandler implements TransactionHandler {
         /* Copy all the fields from existing file and change deleted flag */
         final var fileBuilder = new File.Builder()
                 .fileId(file.fileId())
-                .expirationTime(file.expirationTime())
+                .expirationSecond(file.expirationSecond())
                 .keys(file.keys())
                 .contents(Bytes.wrap(newContents))
                 .memo(file.memo())

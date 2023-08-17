@@ -40,6 +40,7 @@ import static java.lang.System.exit;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.merkle.iterators.MerkleIterator;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.Metrics;
@@ -62,6 +63,7 @@ import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.units.UnitConstants;
 import com.swirlds.common.utility.AutoCloseableWrapper;
+import com.swirlds.common.utility.StopWatch;
 import com.swirlds.demo.merkle.map.FCMConfig;
 import com.swirlds.demo.merkle.map.MapValueData;
 import com.swirlds.demo.merkle.map.MapValueFCQ;
@@ -78,6 +80,7 @@ import com.swirlds.demo.virtualmerkle.state.VirtualMerkleStateInitializer;
 import com.swirlds.demo.virtualmerkle.transaction.handler.VirtualMerkleTransactionHandler;
 import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.fcqueue.FCQueueStatistics;
+import com.swirlds.gui.model.GuiModel;
 import com.swirlds.logging.payloads.ApplicationFinishedPayload;
 import com.swirlds.logging.payloads.CreateTransactionFailedPayload;
 import com.swirlds.merkle.map.MerkleMap;
@@ -85,7 +88,6 @@ import com.swirlds.merkle.map.test.pta.MapKey;
 import com.swirlds.merkle.map.test.pta.TransactionRecord;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.ParameterProvider;
-import com.swirlds.platform.gui.GuiPlatformAccessor;
 import com.swirlds.virtualmap.internal.merkle.VirtualLeafNode;
 import java.io.File;
 import java.io.FileInputStream;
@@ -107,8 +109,6 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.commons.lang3.time.StopWatch;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -539,7 +539,7 @@ public class PlatformTestingToolMain implements SwirldMain {
         platform.getNotificationEngine().register(PlatformStatusChangeListener.class, this::platformStatusChange);
         registerReconnectCompleteListener();
 
-        GuiPlatformAccessor.getInstance().setAbout(selfId, "Platform Testing Demo");
+        GuiModel.getInstance().setAbout(selfId, "Platform Testing Demo");
         try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
                 UnsafeMutablePTTStateAccessor.getInstance().getUnsafeMutableState(platform.getSelfId())) {
             final PlatformTestingToolState state = wrapper.get();
@@ -617,8 +617,8 @@ public class PlatformTestingToolMain implements SwirldMain {
                         final VirtualMerkleConfig virtualMerkleConfig = currentConfig.getVirtualMerkleConfig();
                         if (virtualMerkleConfig != null) {
                             final Pair<Long, Long> entitiesFirstIds = extractFirstIdForEntitiesFromSavedState(platform);
-                            virtualMerkleConfig.setFirstAccountId(entitiesFirstIds.getKey());
-                            virtualMerkleConfig.setFirstSmartContractId(entitiesFirstIds.getValue());
+                            virtualMerkleConfig.setFirstAccountId(entitiesFirstIds.key());
+                            virtualMerkleConfig.setFirstSmartContractId(entitiesFirstIds.value());
                             VirtualMerkleStateInitializer.initStateChildren(
                                     platform, selfId.id(), virtualMerkleConfig, useMerkleDb);
                         }
@@ -1002,8 +1002,8 @@ public class PlatformTestingToolMain implements SwirldMain {
      *
      * @param platform
      * 		A {@link Platform instance}
-     * @return A pair of {@code Long}s, where {@code Pair.getKey()} returns the first id to be used by
-     * 		account entities and {@code Pair.getKey()} returns the first id to be used by smart contracts.
+     * @return A pair of {@code Long}s, where {@code Pair.key()} returns the first id to be used by
+     * 		account entities and {@code Pair.key()} returns the first id to be used by smart contracts.
      */
     private Pair<Long, Long> extractFirstIdForEntitiesFromSavedState(final Platform platform) {
         try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =

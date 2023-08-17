@@ -30,6 +30,7 @@ import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -138,6 +139,7 @@ class MigrationRecordsManagerTest {
 
     private final List<HederaAccount> treasuryClones = new ArrayList<>();
     private final List<HederaAccount> systemAccounts = new ArrayList<>();
+    private final List<HederaAccount> stakingFundAccounts = new ArrayList<>();
     private final List<HederaAccount> blocklistedAccounts = new ArrayList<>();
     private final MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
     private final AtomicInteger nextTracker = new AtomicInteger();
@@ -233,7 +235,7 @@ class MigrationRecordsManagerTest {
     }
 
     @Test
-    void streamsTreasuryAccountCreationRecordsWithTransferList() {
+    void streamsTreasuryAccountCreationRecordsWithTransferList() throws InvalidKeyException {
         final ArgumentCaptor<TransactionBody.Builder> bodyCaptor = forClass(TransactionBody.Builder.class);
         subject.setSideEffectsFactory(() -> switch (nextTracker.getAndIncrement()) {
             case 0 -> tracker2;
@@ -253,9 +255,11 @@ class MigrationRecordsManagerTest {
         given(merkleAccount.isReceiverSigRequired()).willReturn(true);
         given(merkleAccount.getAccountKey()).willReturn(pretendTreasuryKey);
         given(merkleAccount.getMemo()).willReturn("123");
+        givenStakingFundAccountsCreated();
 
         subject.publishMigrationRecords(now);
 
+        verify(systemAccountsCreator).ensureSynthRecordsPresentOnFirstEverTransaction();
         verify(sigImpactHistorian).markEntityChanged(2L);
         verify(recordsHistorian, times(3))
                 .trackPrecedingChildRecord(eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(record));
@@ -273,7 +277,7 @@ class MigrationRecordsManagerTest {
     }
 
     @Test
-    void streamsSystemAccountCreationRecords() {
+    void streamsSystemAccountCreationRecords() throws InvalidKeyException {
         final ArgumentCaptor<TransactionBody.Builder> bodyCaptor = forClass(TransactionBody.Builder.class);
         final var rewardSynthBody = expectedSyntheticRewardAccount();
         final var cloneSynthBody = expectedSyntheticTreasuryClone();
@@ -293,10 +297,11 @@ class MigrationRecordsManagerTest {
         given(creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, tracker101, SYSTEM_ACCOUNT_CREATION_MEMO))
                 .willReturn(pretend101);
 
-        given(accountNumbers.stakingRewardAccount()).willReturn(stakingRewardAccount);
-        given(accountNumbers.nodeRewardAccount()).willReturn(nodeRewardAccount);
+        lenient().when(accountNumbers.stakingRewardAccount()).thenReturn(stakingRewardAccount);
+        lenient().when(accountNumbers.nodeRewardAccount()).thenReturn(nodeRewardAccount);
         givenSomeTreasuryClones();
         givenSystemAccountsCreated();
+        givenStakingFundAccountsCreated();
 
         subject.publishMigrationRecords(now);
 
@@ -335,11 +340,12 @@ class MigrationRecordsManagerTest {
                 .willReturn(pretend801);
         given(creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, tracker200, BLOCKED_ACCOUNT_CREATION_MEMO))
                 .willReturn(pretend200);
-        given(creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, tracker201, BLOCKED_ACCOUNT_CREATION_MEMO))
-                .willReturn(pretend201);
-        given(accountNumbers.stakingRewardAccount()).willReturn(stakingRewardAccount);
-        given(accountNumbers.nodeRewardAccount()).willReturn(nodeRewardAccount);
+        lenient()
+                .when(creator.createSuccessfulSyntheticRecord(
+                        NO_CUSTOM_FEES, tracker201, BLOCKED_ACCOUNT_CREATION_MEMO))
+                .thenReturn(pretend201);
         givenBlocklistedAccountsCreated();
+        givenStakingFundAccountsCreated();
 
         subject.publishMigrationRecords(now);
 
@@ -380,11 +386,11 @@ class MigrationRecordsManagerTest {
     }
 
     @Test
-    void ifContextIndicatesRecordsNeedToBeStreamedThenDoesSo() {
+    void ifContextIndicatesRecordsNeedToBeStreamedThenDoesSo() throws InvalidKeyException {
         final ArgumentCaptor<TransactionBody.Builder> bodyCaptor = forClass(TransactionBody.Builder.class);
         final var rewardSynthBody = expectedSyntheticRewardAccount();
         final var cloneSynthBody = expectedSyntheticTreasuryClone();
-
+        givenStakingFundAccountsCreated();
         given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
         given(creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, tracker800, MEMO))
                 .willReturn(pretend800);
@@ -394,8 +400,6 @@ class MigrationRecordsManagerTest {
                 .willReturn(pretend200);
         given(creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, tracker201, TREASURY_CLONE_MEMO))
                 .willReturn(pretend201);
-        given(accountNumbers.stakingRewardAccount()).willReturn(stakingRewardAccount);
-        given(accountNumbers.nodeRewardAccount()).willReturn(nodeRewardAccount);
         givenSomeTreasuryClones();
 
         subject.publishMigrationRecords(now);
@@ -593,7 +597,16 @@ class MigrationRecordsManagerTest {
         given(systemAccountsCreator.getSystemAccountsCreated()).willReturn(systemAccounts);
     }
 
-    private void givenBlocklistedAccountsCreated() throws InvalidKeyException {
+    private void givenStakingFundAccountsCreated() throws InvalidKeyException {
+        stakingFundAccounts.addAll(List.of(
+                accountWith(stakingRewardAccount, JKey.mapKey(EXPECTED_KEY)),
+                accountWith(nodeRewardAccount, JKey.mapKey(EXPECTED_KEY))));
+        stakingFundAccounts.get(0).setEntityNum(EntityNum.fromLong(800L));
+        stakingFundAccounts.get(1).setEntityNum(EntityNum.fromLong(801L));
+        given(systemAccountsCreator.getStakingFundAccountsCreated()).willReturn(stakingFundAccounts);
+    }
+
+    private void givenBlocklistedAccountsCreated() {
         blocklistedAccounts.addAll(List.of(
                 blockedAccount(ByteString.copyFromUtf8(EVM_ADDRESS_1), MEMO_1),
                 blockedAccount(ByteString.copyFromUtf8(EVM_ADDRESS_2), MEMO_2)));
@@ -602,7 +615,7 @@ class MigrationRecordsManagerTest {
         given(blocklistAccountCreator.getBlockedAccountsCreated()).willReturn(blocklistedAccounts);
     }
 
-    private HederaAccount blockedAccount(ByteString evmAddress, String memo) throws InvalidKeyException {
+    private HederaAccount blockedAccount(ByteString evmAddress, String memo) {
         return new HederaAccountCustomizer()
                 .isReceiverSigRequired(true)
                 .isDeclinedReward(true)

@@ -16,18 +16,16 @@
 
 package com.swirlds.common.utility;
 
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
-
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.IOException;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.CompareToBuilder;
 import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /**
  * A standard representation of a semantic version number.
@@ -120,7 +118,7 @@ public final class SemanticVersion implements Comparable<SemanticVersion>, SelfS
      * 		if the {@code version} argument is a {@code null} reference.
      */
     public static SemanticVersion parse(final String version) {
-        throwArgNull(version, "version");
+        Objects.requireNonNull(version, "version must not be null");
         final Matcher matcher = SEMVER_PATTERN.matcher(version);
 
         if (!matcher.matches()) {
@@ -148,7 +146,9 @@ public final class SemanticVersion implements Comparable<SemanticVersion>, SelfS
     @Override
     @SuppressWarnings("NullableProblems")
     public int compareTo(final SemanticVersion that) {
-        if (this == that) return 0;
+        if (this == that) {
+            return 0;
+        }
 
         return new CompareToBuilder()
                 .append(major, that.major)
@@ -164,9 +164,13 @@ public final class SemanticVersion implements Comparable<SemanticVersion>, SelfS
      */
     @Override
     public boolean equals(final Object o) {
-        if (this == o) return true;
+        if (this == o) {
+            return true;
+        }
 
-        if (!(o instanceof final SemanticVersion that)) return false;
+        if (!(o instanceof final SemanticVersion that)) {
+            return false;
+        }
 
         return new EqualsBuilder()
                 .append(major, that.major)
@@ -182,13 +186,7 @@ public final class SemanticVersion implements Comparable<SemanticVersion>, SelfS
      */
     @Override
     public int hashCode() {
-        return new HashCodeBuilder(17, 37)
-                .append(major)
-                .append(minor)
-                .append(patch)
-                .append(prerelease)
-                .append(build)
-                .toHashCode();
+        return Objects.hash(major, minor, patch, prerelease, build);
     }
 
     /**

@@ -66,8 +66,7 @@ import java.time.InstantSource;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -94,6 +93,7 @@ public class HandleWorkflow {
     private final FeeManager feeManager;
     private final ExchangeRateManager exchangeRateManager;
     private final ParentRecordFinalizer transactionFinalizer;
+    private final SystemFileUpdateFacility systemFileUpdateFacility;
 
     @Inject
     public HandleWorkflow(
@@ -111,7 +111,8 @@ public class HandleWorkflow {
             @NonNull final StakingPeriodTimeHook stakingPeriodTimeHook,
             @NonNull final FeeManager feeManager,
             @NonNull final ExchangeRateManager exchangeRateManager,
-            @NonNull final ParentRecordFinalizer transactionFinalizer) {
+            @NonNull final ParentRecordFinalizer transactionFinalizer,
+            @NonNull final SystemFileUpdateFacility systemFileUpdateFacility) {
         this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow, "preHandleWorkflow must not be null");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
@@ -127,6 +128,8 @@ public class HandleWorkflow {
         this.feeManager = requireNonNull(feeManager, "feeManager must not be null");
         this.exchangeRateManager = requireNonNull(exchangeRateManager, "exchangeRateManager must not be null");
         this.transactionFinalizer = requireNonNull(transactionFinalizer, "transactionFinalizer must not be null");
+        this.systemFileUpdateFacility =
+                requireNonNull(systemFileUpdateFacility, "systemFileUpdateFacility must not be null");
     }
 
     /**
@@ -136,32 +139,37 @@ public class HandleWorkflow {
      * @param round the next {@link Round} that needs to be processed
      */
     public void handleRound(@NonNull final HederaState state, @NonNull final Round round) {
+        // Keep track of whether any user transactions were handled. If so, then we will need to close the round
+        // with the block record manager.
+        final var userTransactionsHandled = new AtomicBoolean(false);
         // handle each transaction in the round
-        round.forEachEventTransaction((event, txn) -> {
+        round.forEachEventTransaction((event, platformTxn) -> {
             try {
-                handlePlatformTransaction(state, event, txn);
-            } catch (final Throwable e) {
+                // skip system transactions
+                if (!platformTxn.isSystem()) {
+                    userTransactionsHandled.set(true);
+                    handlePlatformTransaction(state, event, platformTxn);
+                }
+            } catch (final Exception e) {
                 logger.fatal(
                         "A fatal unhandled exception occurred during transaction handling. "
                                 + "While this node may not die right away, it is in a bad way, most likely fatally.",
                         e);
             }
         });
-        // inform BlockRecordManager that the round is complete, so it can update running-hashes in state
+        // Inform the BlockRecordManager that the round is complete, so it can update running-hashes in state
         // that have been being computed in background threads. The running hash has to be included in
         // state, but we want to synchronize with background threads as infrequently as possible. So once per
         // round is the minimum we can do.
-        blockRecordManager.endRound(state);
+        if (userTransactionsHandled.get()) {
+            blockRecordManager.endRound(state);
+        }
     }
 
     private void handlePlatformTransaction(
             @NonNull final HederaState state,
             @NonNull final ConsensusEvent platformEvent,
             @NonNull final ConsensusTransaction platformTxn) {
-        // skip system transactions
-        if (platformTxn.isSystem()) {
-            return;
-        }
 
         // Get the consensus timestamp
         final Instant consensusNow = platformTxn.getConsensusTimestamp();
@@ -207,28 +215,26 @@ public class HandleWorkflow {
                 default -> throw new PreCheckException(preHandleResult.responseCode());
             }
 
+            // Check the time box of the transaction
+            checker.checkTimeBox(txBody, consensusNow);
+
             // Check all signature verifications. This will also wait, if validation is still ongoing.
-            final var timeout = hederaConfig.workflowVerificationTimeoutMS();
-            final var maxMillis = instantSource.millis() + timeout;
-            final var payerKeyVerification =
-                    preHandleResult.verificationResults().get(preHandleResult.payerKey());
-            if (payerKeyVerification.get(timeout, TimeUnit.MILLISECONDS).failed()) {
+            final var verifier = new BaseHandleContextVerifier(hederaConfig, preHandleResult.verificationResults());
+
+            final var payerKeyVerification = verifier.verificationFor(preHandleResult.payerKey());
+            if (payerKeyVerification.failed()) {
                 throw new HandleException(ResponseCodeEnum.INVALID_SIGNATURE);
             }
+
             for (final var key : preHandleResult.requiredKeys()) {
-                final var remainingMillis = maxMillis - instantSource.millis();
-                if (remainingMillis <= 0) {
-                    throw new TimeoutException("Verification of signatures timed out");
-                }
-                final var verification = preHandleResult.verificationResults().get(key);
-                if (verification.get(remainingMillis, TimeUnit.MILLISECONDS).failed()) {
+                final var verification = verifier.verificationFor(key);
+                if (verification.failed()) {
                     throw new HandleException(ResponseCodeEnum.INVALID_SIGNATURE);
                 }
             }
 
             // Setup context
-            final var stack = new SavepointStackImpl(state, configuration);
-            final var verifier = new BaseHandleContextVerifier(hederaConfig, preHandleResult.verificationResults());
+            final var stack = new SavepointStackImpl(state);
             final var context = new HandleContextImpl(
                     transactionInfo,
                     preHandleResult.payer(),
@@ -237,6 +243,7 @@ public class HandleWorkflow {
                     TransactionCategory.USER,
                     recordBuilder,
                     stack,
+                    configuration,
                     verifier,
                     recordListBuilder,
                     checker,
@@ -256,26 +263,24 @@ public class HandleWorkflow {
             dispatcher.dispatchHandle(context);
 
             // TODO: Finalize transaction with the help of the token service
-            final var finalizationContext = new FinalizeContextImpl(preHandleResult.payer(), recordBuilder, stack);
+            final var finalizationContext =
+                    new FinalizeContextImpl(preHandleResult.payer(), recordBuilder, configuration, stack);
             transactionFinalizer.finalizeParentRecord(
                     finalizationContext, List.of()); // TODO Need actual list of child records?
 
             recordBuilder.status(SUCCESS);
 
             // commit state
-            stack.commit();
+            stack.commitFullStack();
+
+            // Notify responsible facility if system-file was uploaded
+            systemFileUpdateFacility.handleTxBody(state, txBody);
+
         } catch (final PreCheckException e) {
             recordFailedTransaction(e.responseCode(), recordBuilder, recordListBuilder);
         } catch (final HandleException e) {
             recordFailedTransaction(e.getStatus(), recordBuilder, recordListBuilder);
-        } catch (final InterruptedException e) {
-            logger.error("Interrupted while waiting for signature verification", e);
-            Thread.currentThread().interrupt();
-            recordBuilder.status(ResponseCodeEnum.UNKNOWN);
-        } catch (final TimeoutException e) {
-            logger.warn("Timed out while waiting for signature verification, probably going to ISS soon", e);
-            recordBuilder.status(ResponseCodeEnum.UNKNOWN);
-        } catch (final Throwable e) {
+        } catch (final Exception e) {
             logger.error("An unexpected exception was thrown during handle", e);
             recordBuilder.status(ResponseCodeEnum.UNKNOWN);
         }
@@ -292,7 +297,7 @@ public class HandleWorkflow {
             // FUTURE: This needs to be replaced by a proper implementation, as can be found in PR
             // https://github.com/hashgraph/hedera-services/pull/7473
             recordCache.add(
-                    0, preHandleResult.payer(), recordListResult.mainRecord().record(), consensusNow);
+                    0, preHandleResult.payer(), recordListResult.mainRecord().transactionRecord(), consensusNow);
         } else {
             throw new IllegalStateException("pre handle result was null!");
         }

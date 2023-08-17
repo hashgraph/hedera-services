@@ -27,6 +27,7 @@ import com.hedera.hapi.streams.SidecarType;
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import java.util.Deque;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,8 +39,13 @@ class FeatureFlagsTest {
     @Mock
     private MessageFrame frame;
 
+    @Mock
+    private Deque<MessageFrame> stack;
+
     @Test
     void sidecarsEnabledBasedOnConfig() {
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.isEmpty()).willReturn(true);
         final var subject = mock(FeatureFlags.class);
         doCallRealMethod().when(subject).isSidecarEnabled(any(), any());
 

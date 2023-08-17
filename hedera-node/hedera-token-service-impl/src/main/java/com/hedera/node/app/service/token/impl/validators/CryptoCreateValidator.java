@@ -21,6 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_REQUIRED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl.isMirror;
+import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
@@ -82,7 +83,10 @@ public class CryptoCreateValidator {
             @NonNull final CryptoCreateWithAliasConfig config,
             @NonNull final ReadableAccountStore readableAccountStore) {
         validateTrue(config.enabled(), NOT_SUPPORTED);
-        attributeValidator.validateKey(op.keyOrThrow());
+        // TODO - to match the mono-service synthetic hollow account creation, we need an empty key list here
+        if (!isEmpty(op.keyOrThrow())) {
+            attributeValidator.validateKey(op.keyOrThrow());
+        }
         validateTrue(op.alias().length() == EVM_ADDRESS_SIZE, INVALID_ALIAS_KEY);
         validateFalse(isMirror(op.alias()), INVALID_ALIAS_KEY);
         validateTrue(readableAccountStore.getAccountIDByAlias(op.alias()) == null, ALIAS_ALREADY_ASSIGNED);

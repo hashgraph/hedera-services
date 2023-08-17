@@ -153,9 +153,9 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
         return pbjToTuweniBytes(hederaOperations.entropy());
     }
 
-    @Nullable
     @Override
-    public HederaEvmAccount getHederaAccount(@NonNull ContractID contractId) {
+    public @Nullable HederaEvmAccount getHederaAccount(@NonNull final ContractID contractId) {
+        requireNonNull(contractId);
         final Address address;
         if (contractId.hasEvmAddress()) {
             address = pbjToBesuAddress(contractId.evmAddressOrThrow());
@@ -171,11 +171,13 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
 
     @Override
     public void collectFee(@NonNull final AccountID payerId, final long amount) {
+        requireNonNull(payerId);
         hederaOperations.collectFee(payerId, amount);
     }
 
     @Override
     public void refundFee(@NonNull final AccountID payerId, final long amount) {
+        requireNonNull(payerId);
         hederaOperations.refundFee(payerId, amount);
     }
 
@@ -183,12 +185,9 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      * {@inheritDoc}
      */
     @Override
-    public Optional<ExceptionalHaltReason> tryTransferFromContract(
-            @NonNull final Address sendingContract,
-            @NonNull final Address recipient,
-            final long amount,
-            final boolean delegateCall) {
-        return evmFrameState.tryTransfer(sendingContract, recipient, amount, delegateCall);
+    public Optional<ExceptionalHaltReason> tryTransfer(
+            @NonNull final Address from, @NonNull final Address to, final long amount, final boolean delegateCall) {
+        return evmFrameState.tryTransfer(from, to, amount, delegateCall);
     }
 
     /**
@@ -224,6 +223,14 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
     public Address setupTopLevelCreate(@NonNull ContractCreateTransactionBody body) {
         setupPendingCreation(null, requireNonNull(body), null);
         return requireNonNull(pendingCreation).address();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void setupTopLevelLazyCreate(@NonNull final Address alias) {
+        setupPendingCreation(null, null, requireNonNull(alias));
     }
 
     /**
@@ -298,11 +305,12 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
             throw new IllegalStateException(CANNOT_CREATE + address + " without a pending creation");
         }
         final var number = getValidatedCreationNumber(address, balance, pendingCreation);
-        if (pendingCreation.isTopLevel()) {
-            hederaOperations.createContract(number, pendingCreation.body(), nonce, pendingCreation.aliasIfApplicable());
+        if (pendingCreation.isHapiCreation()) {
+            hederaOperations.createContract(
+                    number, requireNonNull(pendingCreation.body()), pendingCreation.aliasIfApplicable());
         } else {
             hederaOperations.createContract(
-                    number, pendingCreation.parentNumber(), nonce, pendingCreation.aliasIfApplicable());
+                    number, pendingCreation.parentNumber(), pendingCreation.aliasIfApplicable());
         }
         return evmFrameState.getMutableAccount(pendingCreation.address());
     }
@@ -354,7 +362,15 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      */
     @Override
     public @NonNull ProxyWorldUpdater updater() {
-        return new ProxyWorldUpdater(hederaOperations.begin(), evmFrameStateFactory, this);
+        final var child = new ProxyWorldUpdater(hederaOperations.begin(), evmFrameStateFactory, this);
+        // Hand off any pending creation to the child updater; this a bit of a hack, but
+        // lets the TransactionProcessor client code "flow" as naturally as possible,
+        // without need to defer setting up creation until the initial frame is built
+        // (since its updater will be a child of the RootProxyWorldUpdater)
+        if (this.pendingCreation != null) {
+            child.pendingCreation = this.pendingCreation;
+        }
+        return child;
     }
 
     /**

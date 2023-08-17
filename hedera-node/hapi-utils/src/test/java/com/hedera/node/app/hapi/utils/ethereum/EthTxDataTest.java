@@ -95,6 +95,30 @@ class EthTxDataTest {
     }
 
     @Test
+    void effectiveValueIsNominalWhenReasonable() {
+        final var subject = EthTxData.populateEthTxData(Hex.decode(RAW_TX_TYPE_0));
+        final var nominal = subject.value().divide(WEIBARS_TO_TINYBARS).longValueExact();
+        assertEquals(nominal, subject.effectiveTinybarValue());
+    }
+
+    @Test
+    void effectiveOfferedGasPriceIsNominalWhenReasonable() {
+        final var subject = EthTxData.populateEthTxData(Hex.decode(RAW_TX_TYPE_0));
+        final var nominal =
+                subject.getMaxGasAsBigInteger().divide(WEIBARS_TO_TINYBARS).longValueExact();
+        assertEquals(nominal, subject.effectiveOfferedGasPriceInTinybars());
+    }
+
+    @Test
+    void effectiveOfferedGasPriceAvoidsOverflow() {
+        final var subject = EthTxData.populateEthTxData(Hex.decode(RAW_TX_TYPE_0))
+                .replaceValue(
+                        BigInteger.valueOf(Long.MAX_VALUE).add(BigInteger.ONE).multiply(WEIBARS_TO_TINYBARS));
+        final var expected = Long.MAX_VALUE;
+        assertEquals(expected, subject.effectiveTinybarValue());
+    }
+
+    @Test
     void extractFrontierSignature() {
         final var frontierTx = EthTxData.populateEthTxData(Hex.decode(RAW_TX_TYPE_0));
         assertNotNull(frontierTx);

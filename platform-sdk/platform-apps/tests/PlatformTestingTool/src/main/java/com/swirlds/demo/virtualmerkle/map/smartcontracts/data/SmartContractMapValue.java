@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /**
  * This is the value of a key value pair from a smart contract.
@@ -160,7 +159,7 @@ public final class SmartContractMapValue implements VirtualValue {
      */
     @Override
     public int hashCode() {
-        return new HashCodeBuilder(17, 37).append(value).toHashCode();
+        return Arrays.hashCode(value);
     }
 
     public static int getSizeInBytes() {

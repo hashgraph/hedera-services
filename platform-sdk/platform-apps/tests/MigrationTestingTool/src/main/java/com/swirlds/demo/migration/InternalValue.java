@@ -21,8 +21,8 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import java.io.IOException;
+import java.util.Objects;
 import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 public class InternalValue extends PartialMerkleLeaf implements MerkleLeaf {
 
@@ -130,16 +130,15 @@ public class InternalValue extends PartialMerkleLeaf implements MerkleLeaf {
      */
     @Override
     public int hashCode() {
-        return new HashCodeBuilder()
-                .append(this.balance)
-                .append(expirationTime)
-                .append(autoRenewPeriod)
-                .append(senderThreshold)
-                .append(receiverThreshold)
-                .append(memo)
-                .append(isSmartContract)
-                .append(receiverSigRequired)
-                .hashCode();
+        return Objects.hash(
+                balance,
+                expirationTime,
+                autoRenewPeriod,
+                senderThreshold,
+                receiverThreshold,
+                memo,
+                isSmartContract,
+                receiverSigRequired);
     }
 
     /**

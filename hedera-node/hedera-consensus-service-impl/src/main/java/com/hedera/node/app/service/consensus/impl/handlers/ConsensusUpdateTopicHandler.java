@@ -19,6 +19,8 @@ package com.hedera.node.app.service.consensus.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
+import static com.hedera.node.app.service.consensus.impl.codecs.ConsensusServiceStateTranslator.pbjToState;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
@@ -27,11 +29,14 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.consensus.ConsensusUpdateTopicTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
+import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
+import com.hedera.node.app.service.mono.fees.calculation.consensus.txns.UpdateTopicResourceUsage;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -42,12 +47,16 @@ import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * This class contains all workflow-related functionality regarding {@link HederaFunctionality#CONSENSUS_UPDATE_TOPIC}.
  */
 @Singleton
 public class ConsensusUpdateTopicHandler implements TransactionHandler {
+    private static final Logger logger = LogManager.getLogger(ConsensusUpdateTopicHandler.class);
+
     @Inject
     public ConsensusUpdateTopicHandler() {
         // Exists for injection
@@ -111,6 +120,17 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         final var topic = maybeTopic.get();
         validateFalse(topic.deleted(), INVALID_TOPIC_ID);
 
+        final var fees = handleContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> {
+            try {
+                return new UpdateTopicResourceUsage()
+                        .usageGivenExplicit(fromPbj(handleContext.body()), sigValueObj, pbjToState(topic));
+            } catch (InvalidTxBodyException e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+        handleContext.feeAccumulator().charge(handleContext.payer(), fees);
+
         // First validate this topic is mutable; and the pending mutations are allowed
         validateFalse(topic.adminKey() == null && wantsToMutateNonExpiryField(topicUpdate), UNAUTHORIZED);
         validateMaybeNewAttributes(handleContext, topicUpdate, topic);
@@ -118,7 +138,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         // Now we apply the mutations to a builder
         final var builder = new Topic.Builder();
         // But first copy over the immutable topic attributes to the builder
-        builder.id(topic.id());
+        builder.topicId(topic.topicId());
         builder.sequenceNumber(topic.sequenceNumber());
         builder.runningHash(topic.runningHash());
         builder.deleted(topic.deleted());
@@ -154,7 +174,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
             builder.memo(topic.memo());
         }
         final var resolvedExpiryMeta = resolvedUpdateMetaFrom(handleContext.expiryValidator(), op, topic);
-        builder.expiry(resolvedExpiryMeta.expiry());
+        builder.expirationSecond(resolvedExpiryMeta.expiry());
         builder.autoRenewPeriod(resolvedExpiryMeta.autoRenewPeriod());
         builder.autoRenewAccountId(resolvedExpiryMeta.autoRenewAccountId());
     }
@@ -180,7 +200,8 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
             @NonNull final ExpiryValidator expiryValidator,
             @NonNull final ConsensusUpdateTopicTransactionBody op,
             @NonNull final Topic topic) {
-        final var currentMeta = new ExpiryMeta(topic.expiry(), topic.autoRenewPeriod(), topic.autoRenewAccountId());
+        final var currentMeta =
+                new ExpiryMeta(topic.expirationSecond(), topic.autoRenewPeriod(), topic.autoRenewAccountId());
         if (updatesExpiryMeta(op)) {
             final var updateMeta = new ExpiryMeta(effExpiryOf(op), effAutoRenewPeriodOf(op), op.autoRenewAccount());
             return expiryValidator.resolveUpdateAttempt(currentMeta, updateMeta);

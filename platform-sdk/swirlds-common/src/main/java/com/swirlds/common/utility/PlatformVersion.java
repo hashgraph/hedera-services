@@ -17,12 +17,12 @@
 package com.swirlds.common.utility;
 
 import static com.swirlds.common.utility.CommonUtils.nullToBlank;
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.system.SoftwareVersion;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
@@ -109,8 +109,8 @@ public final class PlatformVersion implements SoftwareVersion {
      * @throws InvalidSemanticVersionException
      * 		if a version descriptor cannot be read or an exception occurs while reading the version descriptor.
      */
-    public static PlatformVersion fromJarFile(final Path file) {
-        throwArgNull(file, "file");
+    public static PlatformVersion fromJarFile(@NonNull final Path file) {
+        Objects.requireNonNull(file, "file must not be null");
 
         try (final JarFile jarFile = new JarFile(file.toFile())) {
             final ZipEntry ze = jarFile.getEntry(GIT_PROPERTIES_FILE);
@@ -138,8 +138,8 @@ public final class PlatformVersion implements SoftwareVersion {
      * @throws InvalidSemanticVersionException
      * 		if a version descriptor cannot be read or an exception occurs while reading the version descriptor.
      */
-    public static PlatformVersion fromStream(final InputStream stream) throws IOException {
-        throwArgNull(stream, "stream");
+    public static PlatformVersion fromStream(@NonNull final InputStream stream) throws IOException {
+        Objects.requireNonNull(stream, "stream must not be null");
 
         final Properties properties = new Properties();
         properties.load(stream);
@@ -156,8 +156,8 @@ public final class PlatformVersion implements SoftwareVersion {
      * @throws InvalidSemanticVersionException
      * 		if a version descriptor cannot be read or an exception occurs while reading the version descriptor.
      */
-    public static PlatformVersion fromProperties(final Properties properties) {
-        throwArgNull(properties, "properties");
+    public static PlatformVersion fromProperties(@NonNull final Properties properties) {
+        Objects.requireNonNull(properties, "properties must not be null");
 
         final String versionString = properties.getProperty(GIT_BUILD_VERSION);
         final String commitId = nullToBlank(properties.getProperty(GIT_COMMIT_ID));
@@ -180,8 +180,8 @@ public final class PlatformVersion implements SoftwareVersion {
      * @throws InvalidSemanticVersionException
      * 		if a version descriptor cannot be found or an exception occurs while reading the version descriptor.
      */
-    public static PlatformVersion fromClassLoader(final ClassLoader loader) {
-        throwArgNull(loader, "loader");
+    public static PlatformVersion fromClassLoader(@NonNull final ClassLoader loader) {
+        Objects.requireNonNull(loader, "loader must not be null");
 
         try (final InputStream inputStream = loader.getResourceAsStream(GIT_PROPERTIES_FILE)) {
             if (inputStream == null) {
@@ -219,8 +219,8 @@ public final class PlatformVersion implements SoftwareVersion {
      * @throws InvalidSemanticVersionException
      * 		if a version descriptor cannot be found or an exception occurs while reading the version descriptor.
      */
-    public static PlatformVersion locate(final Class<?> sourceClass) {
-        throwArgNull(sourceClass, "sourceClass");
+    public static PlatformVersion locate(@NonNull final Class<?> sourceClass) {
+        Objects.requireNonNull(sourceClass, "sourceClass must not be null");
         final ClassLoader classLoader = sourceClass.getClassLoader();
         return fromClassLoader(classLoader);
     }
@@ -270,8 +270,9 @@ public final class PlatformVersion implements SoftwareVersion {
      * 		if the {@code sourceClass} argument is a {@code null} reference.
      */
     @SuppressWarnings("squid:S1166")
-    public static PlatformVersion locateOrDefault(final Class<?> sourceClass, final PlatformVersion defaultVersion) {
-        throwArgNull(sourceClass, "sourceClass");
+    public static PlatformVersion locateOrDefault(
+            @NonNull final Class<?> sourceClass, final PlatformVersion defaultVersion) {
+        Objects.requireNonNull(sourceClass, "sourceClass must not be null");
         try {
             return locate(sourceClass);
         } catch (final InvalidSemanticVersionException ignored) {

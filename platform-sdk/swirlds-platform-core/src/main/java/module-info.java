@@ -103,7 +103,8 @@ module com.swirlds.platform {
             com.swirlds.platform.test;
     exports com.swirlds.platform.reconnect.emergency to
             com.swirlds.platform.test;
-    exports com.swirlds.platform.recovery.internal to
+    exports com.swirlds.platform.recovery.events to
+            com.hedera.node.services.cli,
             com.swirlds.platform.test;
     exports com.swirlds.platform.uptime to
             com.swirlds.config.impl;
@@ -146,9 +147,6 @@ module com.swirlds.platform {
 
     /* Apache Commons */
     requires org.apache.commons.lang3;
-
-    /* Networking Libraries */
-    requires portmapper;
 
     /* Logging Libraries */
     requires org.apache.logging.log4j;

@@ -22,8 +22,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.common.system.NodeId;
+import com.swirlds.platform.EventImpl;
 import com.swirlds.platform.eventhandling.SignedStateEventStorage;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
 import org.junit.jupiter.api.DisplayName;

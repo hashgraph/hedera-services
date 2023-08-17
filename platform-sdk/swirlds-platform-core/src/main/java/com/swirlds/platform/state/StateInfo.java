@@ -17,7 +17,7 @@
 package com.swirlds.platform.state;
 
 import com.swirlds.common.Releasable;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.EventImpl;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.UnaryOperator;
 

@@ -38,9 +38,9 @@ import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.common.utility.AutoCloseableWrapper;
+import com.swirlds.gui.model.GuiModel;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.SwirldsPlatform;
-import com.swirlds.platform.gui.GuiPlatformAccessor;
 import java.nio.charset.StandardCharsets;
 
 /**
@@ -79,9 +79,9 @@ public class HelloSwirldDemoMain implements SwirldMain {
 
         this.platform = (SwirldsPlatform) platform;
         this.selfId = id;
-        final int winNum = GuiPlatformAccessor.getInstance().getInstanceNumber(selfId);
+        final int winNum = GuiModel.getInstance().getInstanceNumber(selfId);
         this.console = createConsole(platform, winNum, true); // create the window, make it visible
-        GuiPlatformAccessor.getInstance().setAbout(platform.getSelfId(), "Hello Swirld v. 1.0\n");
+        GuiModel.getInstance().setAbout(platform.getSelfId(), "Hello Swirld v. 1.0\n");
     }
 
     @Override

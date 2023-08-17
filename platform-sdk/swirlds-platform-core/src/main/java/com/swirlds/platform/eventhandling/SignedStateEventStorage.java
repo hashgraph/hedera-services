@@ -16,13 +16,13 @@
 
 package com.swirlds.platform.eventhandling;
 
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.EventImpl;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
@@ -117,7 +117,9 @@ public class SignedStateEventStorage {
 
     @Override
     public boolean equals(final Object o) {
-        if (this == o) return true;
+        if (this == o) {
+            return true;
+        }
 
         if (o == null || getClass() != o.getClass()) {
             return false;
@@ -133,10 +135,7 @@ public class SignedStateEventStorage {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder(17, 37)
-                .append(queue)
-                .append(latestRoundReceived)
-                .toHashCode();
+        return Objects.hash(queue, latestRoundReceived);
     }
 
     @Override

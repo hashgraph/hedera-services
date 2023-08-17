@@ -60,14 +60,20 @@ public interface TokenServiceApi {
      * Marks an account as a contract.
      *
      */
-    void markAsContract(@NonNull AccountID justCreated);
+    void markAsContract(@NonNull AccountID accountId);
+
+    /**
+     * Finalizes a hollow account as a contract.
+     *
+     */
+    void finalizeHollowAccountAsContract(@NonNull AccountID hollowAccountId, long initialNonce);
 
     /**
      * Deletes the contract with the given id.
      *
-     * @param idToDelete the id of the contract to delete
+     * @param contractId the id of the contract to delete
      */
-    void deleteAndMaybeUnaliasContract(@NonNull AccountID idToDelete);
+    void deleteAndMaybeUnaliasContract(@NonNull ContractID contractId);
 
     /**
      * Increments the nonce of the given contract.

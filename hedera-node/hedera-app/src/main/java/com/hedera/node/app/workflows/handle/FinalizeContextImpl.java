@@ -24,7 +24,6 @@ import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
-import com.hedera.node.app.workflows.handle.stack.Savepoint;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -36,9 +35,9 @@ import java.time.Instant;
 public class FinalizeContextImpl implements FinalizeContext {
     private final AccountID payer;
     private final SingleTransactionRecordBuilderImpl recordBuilder;
-    private final SavepointStackImpl stack;
+    private final Configuration configuration;
+    private final ReadableStoreFactory readableStoreFactory;
     private final WritableStoreFactory writableStoreFactory;
-    private ReadableStoreFactory readableStoreFactory;
 
     /**
      * Constructs a {@link FinalizeContextImpl}.
@@ -50,15 +49,14 @@ public class FinalizeContextImpl implements FinalizeContext {
     public FinalizeContextImpl(
             @NonNull final AccountID payer,
             @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
+            @NonNull final Configuration configuration,
             @NonNull final SavepointStackImpl stack) {
         this.payer = requireNonNull(payer, "payer must not be null");
         this.recordBuilder = requireNonNull(recordBuilder, "recordBuilder must not be null");
-        this.stack = requireNonNull(stack, "stack must not be null");
+        this.configuration = requireNonNull(configuration, "configuration must not be null");
+        requireNonNull(stack, "stack must not be null");
+        this.readableStoreFactory = new ReadableStoreFactory(stack);
         this.writableStoreFactory = new WritableStoreFactory(stack, TokenService.NAME);
-    }
-
-    private Savepoint current() {
-        return stack.peek();
     }
 
     @Override
@@ -76,14 +74,14 @@ public class FinalizeContextImpl implements FinalizeContext {
     @Override
     @NonNull
     public Configuration configuration() {
-        return current().configuration();
+        return configuration;
     }
 
     @Override
     @NonNull
     public <C> C readableStore(@NonNull final Class<C> storeInterface) {
         requireNonNull(storeInterface, "storeInterface must not be null");
-        return readableStoreFactory().getStore(storeInterface);
+        return readableStoreFactory.getStore(storeInterface);
     }
 
     @Override
@@ -107,12 +105,5 @@ public class FinalizeContextImpl implements FinalizeContext {
             throw new IllegalArgumentException("Not a valid record builder class");
         }
         return recordBuilderClass.cast(recordBuilder);
-    }
-
-    private ReadableStoreFactory readableStoreFactory() {
-        if (readableStoreFactory == null) {
-            readableStoreFactory = new ReadableStoreFactory(stack);
-        }
-        return readableStoreFactory;
     }
 }

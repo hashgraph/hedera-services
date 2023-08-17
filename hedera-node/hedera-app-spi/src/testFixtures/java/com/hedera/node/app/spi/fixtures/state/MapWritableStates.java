@@ -114,6 +114,11 @@ public class MapWritableStates implements WritableStates, CommittableWritableSta
         });
     }
 
+    @Override
+    public String toString() {
+        return "MapWritableStates{" + "states=" + states + '}';
+    }
+
     /**
      * Creates a new {@link Builder}.
      *

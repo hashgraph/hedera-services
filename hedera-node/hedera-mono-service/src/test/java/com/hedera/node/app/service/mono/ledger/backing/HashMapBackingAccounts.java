@@ -22,7 +22,6 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 public class HashMapBackingAccounts implements BackingStore<AccountID, HederaAccount> {
     final AccountID GENESIS = IdUtils.asAccount("0.0.2");
@@ -57,11 +56,6 @@ public class HashMapBackingAccounts implements BackingStore<AccountID, HederaAcc
     @Override
     public void remove(AccountID id) {
         accounts.remove(id);
-    }
-
-    @Override
-    public Set<AccountID> idSet() {
-        return accounts.keySet();
     }
 
     @Override

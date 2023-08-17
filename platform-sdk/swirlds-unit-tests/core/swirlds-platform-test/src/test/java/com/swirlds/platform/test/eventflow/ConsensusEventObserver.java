@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.test.eventflow;
 
+import com.swirlds.platform.EventImpl;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.ConsensusRoundObserver;
 import java.util.ArrayList;
 import java.util.List;
