@@ -38,6 +38,7 @@ import com.swirlds.common.formatting.TextEffect;
 import com.swirlds.common.formatting.UnitFormatter;
 import com.swirlds.common.system.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -154,24 +155,24 @@ public class LogLine implements FormattableString {
     /**
      * The node ID of the node that generated this log line. May be null if node ID wasn't specified.
      */
-    private NodeId nodeId;
+    private final NodeId nodeId;
 
     /**
      * The start time of the log file that this log line is from. May be null if log start time wasn't specified.
      */
-    private Instant logStartTime;
+    private Instant logStartTime = null;
 
     /**
      * Construct a new LogLine from a log line string.
      *
      * @param logLineString the log line string
      * @param zoneId        the zone ID of the timestamp in the log line
+     * @param nodeId        the node ID of the node that generated this log line
      */
-    public LogLine(@NonNull final String logLineString, @NonNull final ZoneId zoneId) {
+    public LogLine(@NonNull final String logLineString, @NonNull final ZoneId zoneId, @Nullable final NodeId nodeId) {
         this.originalLogString = Objects.requireNonNull(logLineString);
         this.zoneId = Objects.requireNonNull(zoneId);
-        this.nodeId = null;
-        this.logStartTime = null;
+        this.nodeId = nodeId;
 
         final Matcher logLineMatcher = Pattern.compile(FULL_REGEX).matcher(logLineString.trim());
 
@@ -201,15 +202,23 @@ public class LogLine implements FormattableString {
         }
     }
 
-    public LogLine(
-            @NonNull final String logLineString,
-            @NonNull final ZoneId zoneId,
-            @NonNull final NodeId nodeId,
-            @NonNull final Instant logStartTime) {
-        this(logLineString, zoneId);
+    /**
+     * Constructor without node id
+     *
+     * @param logLineString the log line string
+     * @param zoneId        the zone ID of the timestamp in the log line
+     */
+    public LogLine(@NonNull final String logLineString, @NonNull final ZoneId zoneId) {
+        this(logLineString, zoneId, null);
+    }
 
-        this.nodeId = nodeId;
-        this.logStartTime = logStartTime;
+    /**
+     * The earliest timestamp of any log line in the system
+     *
+     * @param logStartTime the log starting time
+     */
+    public void setLogStartTime(@NonNull final Instant logStartTime) {
+        this.logStartTime = Objects.requireNonNull(logStartTime);
     }
 
     /**

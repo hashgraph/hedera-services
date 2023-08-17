@@ -20,6 +20,7 @@ import com.swirlds.cli.commands.SwirldsLogCommand;
 import com.swirlds.cli.logging.HtmlGenerator;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
+import com.swirlds.common.system.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -27,7 +28,9 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import picocli.CommandLine;
 
@@ -67,7 +70,10 @@ public class FormatSwirldsLogCommand extends AbstractCommand {
             logLines = reader.lines().toList();
         }
 
-        final String htmlPage = HtmlGenerator.generateHtmlPage(logLines);
+        final Map<NodeId, List<String>> logLinesByNode = new HashMap<>();
+        logLinesByNode.put(NodeId.FIRST_NODE_ID, logLines);
+
+        final String htmlPage = HtmlGenerator.generateHtmlPage(logLinesByNode);
 
         // TODO define output filename dynamically
         try (final BufferedWriter writer = new BufferedWriter(

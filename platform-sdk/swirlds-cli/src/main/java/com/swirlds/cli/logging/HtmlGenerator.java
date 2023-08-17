@@ -16,6 +16,17 @@
 
 package com.swirlds.cli.logging;
 
+import com.swirlds.common.system.NodeId;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
+import java.time.Instant;
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
 import static com.swirlds.cli.logging.CssRuleSetFactory.BACKGROUND_COLOR_PROPERTY;
 import static com.swirlds.cli.logging.CssRuleSetFactory.BORDER_COLLAPSE_PROPERTY;
 import static com.swirlds.cli.logging.CssRuleSetFactory.BREAK_WORD_VALUE;
@@ -42,12 +53,6 @@ import static com.swirlds.cli.logging.LogLine.THREAD_NAME_COLOR;
 import static com.swirlds.cli.logging.LogLine.TIMESTAMP_COLOR;
 import static com.swirlds.cli.logging.LogProcessingUtils.getLogLevelColor;
 import static com.swirlds.cli.logging.PlatformStatusLog.STATUS_HTML_CLASS;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
 
 /**
  * Generates an HTML log page
@@ -190,7 +195,8 @@ public class HtmlGenerator {
     /**
      * Hidden constructor.
      */
-    private HtmlGenerator() {}
+    private HtmlGenerator() {
+    }
 
     /**
      * Create a checkbox that can hide elements with the given name
@@ -225,7 +231,7 @@ public class HtmlGenerator {
                 filterValues.stream().map(HtmlGenerator::createFilterCheckbox).toList();
 
         return new HtmlTagFactory(
-                        HTML_DIV_TAG, "\n" + filterHeading + "\n" + String.join("\n", filterCheckboxes), false)
+                HTML_DIV_TAG, "\n" + filterHeading + "\n" + String.join("\n", filterCheckboxes), false)
                 .generateTag();
     }
 
@@ -240,13 +246,13 @@ public class HtmlGenerator {
 
         // set page defaults
         cssRules.add(new CssRuleSetFactory(
-                        "html *",
-                        List.of(
-                                new CssDeclaration(FONT_PROPERTY, DEFAULT_FONT),
-                                new CssDeclaration(BACKGROUND_COLOR_PROPERTY, PAGE_BACKGROUND_COLOR),
-                                new CssDeclaration(TEXT_COLOR_PROPERTY, DEFAULT_TEXT_COLOR),
-                                new CssDeclaration(WHITE_SPACE_PROPERTY, NO_WRAP_VALUE),
-                                new CssDeclaration(VERTICAL_ALIGN_PROPERTY, TOP_VALUE)))
+                "html *",
+                List.of(
+                        new CssDeclaration(FONT_PROPERTY, DEFAULT_FONT),
+                        new CssDeclaration(BACKGROUND_COLOR_PROPERTY, PAGE_BACKGROUND_COLOR),
+                        new CssDeclaration(TEXT_COLOR_PROPERTY, DEFAULT_TEXT_COLOR),
+                        new CssDeclaration(WHITE_SPACE_PROPERTY, NO_WRAP_VALUE),
+                        new CssDeclaration(VERTICAL_ALIGN_PROPERTY, TOP_VALUE)))
                 .generateCss());
 
         // make log table have no border
@@ -256,17 +262,17 @@ public class HtmlGenerator {
 
         // hide elements that have a data-hide value that isn't 0 or NaN
         cssRules.add(new CssRuleSetFactory(
-                        "[%s]:not([%s~='0']):not([%s~=\"NaN\"])"
-                                .formatted(DATA_HIDE_LABEL, DATA_HIDE_LABEL, DATA_HIDE_LABEL),
-                        new CssDeclaration(DISPLAY_PROPERTY, "none"))
+                "[%s]:not([%s~='0']):not([%s~=\"NaN\"])"
+                        .formatted(DATA_HIDE_LABEL, DATA_HIDE_LABEL, DATA_HIDE_LABEL),
+                new CssDeclaration(DISPLAY_PROPERTY, "none"))
                 .generateCss());
 
         // display the filter columns and the log table side by side, at full height
         cssRules.add(new CssRuleSetFactory(
-                        "." + DOUBLE_COLUMNS_DIV_LABEL,
-                        List.of(
-                                new CssDeclaration(DISPLAY_PROPERTY, "flex"),
-                                new CssDeclaration(HEIGHT_PROPERTY, "100%")))
+                "." + DOUBLE_COLUMNS_DIV_LABEL,
+                List.of(
+                        new CssDeclaration(DISPLAY_PROPERTY, "flex"),
+                        new CssDeclaration(HEIGHT_PROPERTY, "100%")))
                 .generateCss());
 
         // make the filter columns and the log table scroll independently
@@ -284,54 +290,54 @@ public class HtmlGenerator {
 
         // set a max width for remainder column, and wrap words
         cssRules.add(new CssRuleSetFactory(
-                        "." + REMAINDER_OF_LINE_COLUMN_LABEL,
-                        List.of(
-                                new CssDeclaration(MAX_WIDTH_PROPERTY, "100em"),
-                                new CssDeclaration(OVERFLOW_WRAP_PROPERTY, BREAK_WORD_VALUE),
-                                new CssDeclaration(WORD_BREAK_PROPERTY, BREAK_WORD_VALUE),
-                                new CssDeclaration(WHITE_SPACE_PROPERTY, NORMAL_VALUE)))
+                "." + REMAINDER_OF_LINE_COLUMN_LABEL,
+                List.of(
+                        new CssDeclaration(MAX_WIDTH_PROPERTY, "100em"),
+                        new CssDeclaration(OVERFLOW_WRAP_PROPERTY, BREAK_WORD_VALUE),
+                        new CssDeclaration(WORD_BREAK_PROPERTY, BREAK_WORD_VALUE),
+                        new CssDeclaration(WHITE_SPACE_PROPERTY, NORMAL_VALUE)))
                 .generateCss());
 
         // set a max width for thread name column, and wrap words
         cssRules.add(new CssRuleSetFactory(
-                        "." + THREAD_NAME_COLUMN_LABEL,
-                        List.of(
-                                new CssDeclaration(MAX_WIDTH_PROPERTY, "30em"),
-                                new CssDeclaration(OVERFLOW_WRAP_PROPERTY, BREAK_WORD_VALUE),
-                                new CssDeclaration(WORD_BREAK_PROPERTY, BREAK_WORD_VALUE),
-                                new CssDeclaration(WHITE_SPACE_PROPERTY, NORMAL_VALUE)))
+                "." + THREAD_NAME_COLUMN_LABEL,
+                List.of(
+                        new CssDeclaration(MAX_WIDTH_PROPERTY, "30em"),
+                        new CssDeclaration(OVERFLOW_WRAP_PROPERTY, BREAK_WORD_VALUE),
+                        new CssDeclaration(WORD_BREAK_PROPERTY, BREAK_WORD_VALUE),
+                        new CssDeclaration(WHITE_SPACE_PROPERTY, NORMAL_VALUE)))
                 .generateCss());
 
         // specify colors for each column
         cssRules.add(new CssRuleSetFactory(
-                        "." + TIMESTAMP_COLUMN_LABEL,
-                        new CssDeclaration(TEXT_COLOR_PROPERTY, getHtmlColor(TIMESTAMP_COLOR)))
+                "." + TIMESTAMP_COLUMN_LABEL,
+                new CssDeclaration(TEXT_COLOR_PROPERTY, getHtmlColor(TIMESTAMP_COLOR)))
                 .generateCss());
         cssRules.add(new CssRuleSetFactory(
-                        "." + LOG_NUMBER_COLUMN_LABEL,
-                        new CssDeclaration(TEXT_COLOR_PROPERTY, getHtmlColor(LOG_NUMBER_COLOR)))
+                "." + LOG_NUMBER_COLUMN_LABEL,
+                new CssDeclaration(TEXT_COLOR_PROPERTY, getHtmlColor(LOG_NUMBER_COLOR)))
                 .generateCss());
         cssRules.add(new CssRuleSetFactory(
-                        "." + MARKER_COLUMN_LABEL,
-                        new CssDeclaration(TEXT_COLOR_PROPERTY, getHtmlColor(LOG_MARKER_COLOR)))
+                "." + MARKER_COLUMN_LABEL,
+                new CssDeclaration(TEXT_COLOR_PROPERTY, getHtmlColor(LOG_MARKER_COLOR)))
                 .generateCss());
         cssRules.add(new CssRuleSetFactory(
-                        "." + THREAD_NAME_COLUMN_LABEL,
-                        new CssDeclaration(TEXT_COLOR_PROPERTY, getHtmlColor(THREAD_NAME_COLOR)))
+                "." + THREAD_NAME_COLUMN_LABEL,
+                new CssDeclaration(TEXT_COLOR_PROPERTY, getHtmlColor(THREAD_NAME_COLOR)))
                 .generateCss());
         cssRules.add(new CssRuleSetFactory(
-                        "." + CLASS_NAME_COLUMN_LABEL,
-                        new CssDeclaration(TEXT_COLOR_PROPERTY, getHtmlColor(CLASS_NAME_COLOR)))
+                "." + CLASS_NAME_COLUMN_LABEL,
+                new CssDeclaration(TEXT_COLOR_PROPERTY, getHtmlColor(CLASS_NAME_COLOR)))
                 .generateCss());
         cssRules.add(new CssRuleSetFactory(
-                        "." + STATUS_HTML_CLASS,
-                        new CssDeclaration(TEXT_COLOR_PROPERTY, getHtmlColor(PlatformStatusLog.STATUS_COLOR)))
+                "." + STATUS_HTML_CLASS,
+                new CssDeclaration(TEXT_COLOR_PROPERTY, getHtmlColor(PlatformStatusLog.STATUS_COLOR)))
                 .generateCss());
 
         // highlight log lines when you hover over them with your mouse
         cssRules.add(new CssRuleSetFactory(
-                        "." + LOG_LINE_LABEL + ":hover td",
-                        new CssDeclaration(BACKGROUND_COLOR_PROPERTY, HIGHLIGHT_COLOR))
+                "." + LOG_LINE_LABEL + ":hover td",
+                new CssDeclaration(BACKGROUND_COLOR_PROPERTY, HIGHLIGHT_COLOR))
                 .generateCss());
 
         // create color rules for each log level
@@ -339,8 +345,8 @@ public class HtmlGenerator {
                 logLines.stream().map(LogLine::getLogLevel).distinct().toList();
         cssRules.addAll(existingLogLevels.stream()
                 .map(logLevel -> new CssRuleSetFactory(
-                                HTML_DATA_CELL_TAG + "." + logLevel,
-                                new CssDeclaration(TEXT_COLOR_PROPERTY, getHtmlColor(getLogLevelColor(logLevel))))
+                        HTML_DATA_CELL_TAG + "." + logLevel,
+                        new CssDeclaration(TEXT_COLOR_PROPERTY, getHtmlColor(getLogLevelColor(logLevel))))
                         .generateCss())
                 .toList());
 
@@ -446,25 +452,43 @@ public class HtmlGenerator {
     }
 
     /**
+     * Go through all log lines, find the earliest time, and set the log start time for each log line
+     *
+     * @param logLines the log lines
+     */
+    private static void setFirstLogTime(@NonNull final List<LogLine> logLines) {
+        final LogLine firstLogLine = logLines.stream()
+                .min(Comparator.comparing(LogLine::getTimestamp))
+                .orElse(null);
+
+        final Instant firstLogTime = firstLogLine == null ? null : firstLogLine.getTimestamp();
+
+        if (firstLogTime != null) {
+            logLines.forEach(logLine -> logLine.setLogStartTime(firstLogTime));
+        }
+    }
+
+    /**
      * Generate an HTML page from a list of log line strings
      *
      * @param logLineStrings the log line strings
      * @return the HTML page
      */
-    public static String generateHtmlPage(@NonNull final List<String> logLineStrings) {
+    public static String generateHtmlPage(@NonNull final Map<NodeId, List<String>> logLineStrings) {
         Objects.requireNonNull(logLineStrings);
 
-        final List<LogLine> logLines = logLineStrings.stream()
-                .map(string -> {
+        final List<LogLine> logLines = logLineStrings.entrySet().stream()
+                .flatMap(entry -> entry.getValue().stream().map(logLineString -> {
                     try {
-                        return new LogLine(string, ZoneId.systemDefault());
+                        return new LogLine(logLineString, ZoneId.systemDefault(), entry.getKey());
                     } catch (final Exception e) {
                         // TODO handle this case
                         return null;
                     }
-                })
-                .filter(Objects::nonNull)
+                }))
                 .toList();
+
+        setFirstLogTime(logLines);
 
         final List<String> pageElements = List.of(generateHead(logLines), generateBody(logLines));
         final String pageElementsCombined = "\n" + String.join("\n", pageElements) + "\n";
