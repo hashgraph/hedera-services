@@ -430,12 +430,6 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
         Query receiptQuery = txnReceiptQueryFor(extractTxnId(txnSubmitted));
         do {
             Response response = statusResponse(spec, receiptQuery);
-            if (response.getTransactionGetReceipt()
-                    .getHeader()
-                    .getNodeTransactionPrecheckCode()
-                    .equals(ResponseCodeEnum.PLATFORM_NOT_ACTIVE)) {
-                throw new IllegalStateException("Node is not active");
-            }
             lastReceipt = response.getTransactionGetReceipt().getReceipt();
             ResponseCodeEnum statusNow = lastReceipt.getStatus();
             if (acceptAnyStatus) {
