@@ -16,9 +16,9 @@
 
 package com.swirlds.cli.logging;
 
-import static com.swirlds.cli.logging.LogLine.ERROR_LOG_LEVEL_COLOR;
-import static com.swirlds.cli.logging.LogLine.HARMLESS_LOG_LEVEL_COLOR;
-import static com.swirlds.cli.logging.LogLine.WARN_LOG_LEVEL_COLOR;
+import static com.swirlds.cli.logging.StandardLogLine.ERROR_LOG_LEVEL_COLOR;
+import static com.swirlds.cli.logging.StandardLogLine.HARMLESS_LOG_LEVEL_COLOR;
+import static com.swirlds.cli.logging.StandardLogLine.WARN_LOG_LEVEL_COLOR;
 
 import com.swirlds.common.formatting.TextEffect;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -77,7 +77,7 @@ public class LogProcessingUtils {
     @NonNull
     static String colorizeLogLineAnsi(@NonNull final String inputString, @NonNull final ZoneId zoneId) {
         try {
-            final LogLine logLine = new LogLine(inputString, zoneId);
+            final StandardLogLine logLine = new StandardLogLine(inputString, zoneId);
 
             return logLine.generateAnsiString();
         } catch (final Exception e) {

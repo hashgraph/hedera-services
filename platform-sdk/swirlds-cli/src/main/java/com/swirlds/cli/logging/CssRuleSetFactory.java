@@ -40,6 +40,7 @@ public class CssRuleSetFactory {
     public static final String WORD_BREAK_PROPERTY = "word-break";
     public static final String HEIGHT_PROPERTY = "height";
     public static final String BORDER_COLLAPSE_PROPERTY = "border-collapse";
+    public static final String COLSPAN_PROPERTY = "colspan";
     public static final String WIDTH_PROPERTY = "width";
     public static final String NO_WRAP_VALUE = "nowrap";
     public static final String NORMAL_VALUE = "normal";
