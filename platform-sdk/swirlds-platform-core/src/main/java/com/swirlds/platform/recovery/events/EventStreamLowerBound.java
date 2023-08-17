@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.recovery.internal;
+package com.swirlds.platform.recovery.events;
 
 import com.swirlds.common.system.events.ConsensusData;
 import com.swirlds.common.system.events.DetailedConsensusEvent;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.EventImpl;
 
 /**
  * A lower bound on events in an event stream based on the consensus data in the events. The bound is inclusive of exact

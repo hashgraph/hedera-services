@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.file.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
 import static com.swirlds.common.utility.CommonUtils.hex;
@@ -75,8 +76,8 @@ public class FileGetInfoHandler extends FileQueryBase {
     public void validate(@NonNull final QueryContext context) throws PreCheckException {
         final var query = context.query();
         final FileGetInfoQuery op = query.fileGetInfoOrThrow();
-        if (op.hasFileID()) {
-            validateFileExistence(op.fileID(), context);
+        if (!op.hasFileID()) {
+            throw new PreCheckException(INVALID_FILE_ID);
         }
     }
 
@@ -90,7 +91,7 @@ public class FileGetInfoHandler extends FileQueryBase {
         final var fileServiceConfig = context.configuration().getConfigData(FilesConfig.class);
         final var op = query.fileGetInfoOrThrow();
         final var responseBuilder = FileGetInfoResponse.newBuilder();
-        final var file = op.fileIDOrElse(FileID.DEFAULT);
+        final var file = op.fileIDOrThrow();
 
         final var responseType = op.headerOrElse(QueryHeader.DEFAULT).responseType();
         responseBuilder.header(header);
@@ -101,7 +102,14 @@ public class FileGetInfoHandler extends FileQueryBase {
             } catch (IOException e) {
                 throw new RuntimeException("Unable to read file contents", e);
             }
-            optionalInfo.ifPresent(responseBuilder::fileInfo);
+
+            if (optionalInfo.isEmpty()) {
+                responseBuilder.header(header.copyBuilder()
+                        .nodeTransactionPrecheckCode(INVALID_FILE_ID)
+                        .build());
+            } else {
+                responseBuilder.fileInfo(optionalInfo.get());
+            }
         }
 
         return Response.newBuilder().fileGetInfo(responseBuilder).build();

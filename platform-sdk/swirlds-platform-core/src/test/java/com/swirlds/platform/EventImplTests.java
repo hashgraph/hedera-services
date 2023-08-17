@@ -16,7 +16,7 @@
 
 package com.swirlds.platform;
 
-import static com.swirlds.platform.internal.EventImpl.MIN_TRANS_TIMESTAMP_INCR_NANOS;
+import static com.swirlds.platform.EventImpl.MIN_TRANS_TIMESTAMP_INCR_NANOS;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -34,7 +34,6 @@ import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import com.swirlds.common.system.transaction.internal.SystemTransaction;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.TransactionUtils;
-import com.swirlds.platform.internal.EventImpl;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;

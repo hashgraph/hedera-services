@@ -20,8 +20,8 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.transaction.internal.SystemTransaction;
+import com.swirlds.platform.EventImpl;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;

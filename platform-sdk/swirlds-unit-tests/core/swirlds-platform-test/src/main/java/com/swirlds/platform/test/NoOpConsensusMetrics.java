@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test;
 
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.EventImpl;
 import com.swirlds.platform.metrics.ConsensusMetrics;
 
 public class NoOpConsensusMetrics implements ConsensusMetrics {

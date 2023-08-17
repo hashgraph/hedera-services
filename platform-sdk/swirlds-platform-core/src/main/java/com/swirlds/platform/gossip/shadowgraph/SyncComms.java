@@ -19,9 +19,9 @@ package com.swirlds.platform.gossip.shadowgraph;
 import static com.swirlds.logging.LogMarker.SYNC_INFO;
 
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.platform.EventImpl;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.SyncException;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.ByteConstants;
 import com.swirlds.platform.network.Connection;

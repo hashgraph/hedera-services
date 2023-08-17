@@ -17,8 +17,8 @@
 package com.swirlds.platform.gossip.shadowgraph;
 
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.platform.EventImpl;
 import com.swirlds.platform.EventStrings;
-import com.swirlds.platform.internal.EventImpl;
 
 /**
  * A shadow event wraps a hashgraph event, and provides parent pointers to shadow events.

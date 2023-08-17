@@ -19,8 +19,8 @@ package com.swirlds.platform.test.eventhandling;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import com.swirlds.common.config.ConsensusConfig;
+import com.swirlds.platform.EventImpl;
 import com.swirlds.platform.eventhandling.SignedStateEventsAndGenerations;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.Random;

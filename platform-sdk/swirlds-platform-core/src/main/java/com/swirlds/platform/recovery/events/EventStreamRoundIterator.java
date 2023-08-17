@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.recovery.internal;
+package com.swirlds.platform.recovery.events;
 
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.events.DetailedConsensusEvent;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.EventImpl;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;

@@ -31,7 +31,7 @@ import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.TransactionUtils;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.EventImpl;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
 import java.time.Instant;
 import java.util.List;
