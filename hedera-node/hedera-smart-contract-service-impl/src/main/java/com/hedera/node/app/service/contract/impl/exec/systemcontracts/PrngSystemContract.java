@@ -97,7 +97,7 @@ public class PrngSystemContract extends AbstractPrecompiledContract {
 
     void createSuccessfulRecord(
             @NonNull MessageFrame frame, @NonNull final Bytes randomNum, @NonNull final ContractID contractID) {
-        if (frame.isStatic()) {
+        if (!frame.isStatic()) {
             requireNonNull(frame);
             requireNonNull(randomNum);
             requireNonNull(contractID);
@@ -109,7 +109,7 @@ public class PrngSystemContract extends AbstractPrecompiledContract {
 
     void createFailedRecord(
             @NonNull MessageFrame frame, @NonNull final String errorMsg, @NonNull final ContractID contractID) {
-        if (frame.isStatic()) {
+        if (!frame.isStatic()) {
             requireNonNull(frame);
             requireNonNull(contractID);
             contractFunctionResultFailedFor(gasRequirement, errorMsg, contractID);

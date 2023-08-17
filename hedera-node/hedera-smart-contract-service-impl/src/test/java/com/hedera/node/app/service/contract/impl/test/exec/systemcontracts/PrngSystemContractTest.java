@@ -106,6 +106,7 @@ class PrngSystemContractTest {
     void computePrecompileFailedTest() {
         // given:
         givenCommon();
+        given(messageFrame.isStatic()).willReturn(false);
         given(messageFrame.getWorldUpdater()).willReturn(proxyWorldUpdater);
         given(proxyWorldUpdater.entropy()).willReturn(Bytes.wrap(ZERO_ENTROPY.toByteArray()));
 
@@ -119,7 +120,7 @@ class PrngSystemContractTest {
     @Test
     void wrongFunctionSelectorFailedTest() {
         // given:
-        givenCommonBlockValues();
+        givenCommon();
 
         // when:
         var actual = subject.computePrecompile(EXPECTED_RANDOM_NUMBER, messageFrame);
