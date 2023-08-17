@@ -26,6 +26,7 @@ import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKeySeriali
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKeySupplier;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValueSupplier;
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
@@ -34,7 +35,6 @@ import com.swirlds.jasperdb.VirtualLeafRecordSerializer;
 import com.swirlds.jasperdb.files.DataFileCommon;
 import com.swirlds.virtualmap.VirtualMap;
 import java.io.IOException;
-import com.swirlds.base.utility.Pair;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

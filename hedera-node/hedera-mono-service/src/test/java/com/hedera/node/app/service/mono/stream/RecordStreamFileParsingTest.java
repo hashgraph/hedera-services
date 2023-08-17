@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -34,7 +35,6 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.util.Iterator;
-import com.swirlds.base.utility.Pair;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
