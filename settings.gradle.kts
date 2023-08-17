@@ -16,6 +16,8 @@
 
 pluginManagement { @Suppress("UnstableApiUsage") includeBuild("build-logic") }
 
+plugins { id("com.hedera.hashgraph.settings") }
+
 includeBuild("platform-sdk")
 
 includeBuild("hedera-node")

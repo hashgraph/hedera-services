@@ -16,22 +16,9 @@
 
 import me.champeau.gradle.igp.gitRepositories
 
-// Add local maven build directory to plugin repos
-pluginManagement {
-    repositories {
-        gradlePluginPortal()
-        mavenCentral()
-        maven { url = uri("https://oss.sonatype.org/content/repositories/snapshots") }
-    }
-    @Suppress("UnstableApiUsage") includeBuild("../build-logic")
-}
+pluginManagement { @Suppress("UnstableApiUsage") includeBuild("../build-logic") }
 
-plugins {
-    id("com.gradle.enterprise").version("3.11.4")
-    // Use GIT plugin to clone HAPI protobuf files
-    // See documentation https://melix.github.io/includegit-gradle-plugin/latest/index.html
-    id("me.champeau.includegit").version("0.1.6")
-}
+plugins { id("com.hedera.hashgraph.settings") }
 
 includeBuild("../hedera-dependency-versions")
 
@@ -90,14 +77,6 @@ include(":test-clients", "test-clients")
 fun include(name: String, path: String) {
     include(name)
     project(name).projectDir = File(rootDir, path)
-}
-
-// Enable Gradle Build Scan
-gradleEnterprise {
-    buildScan {
-        termsOfServiceUrl = "https://gradle.com/terms-of-service"
-        termsOfServiceAgree = "yes"
-    }
 }
 
 // The HAPI API version to use for Protobuf sources. This can be a tag or branch

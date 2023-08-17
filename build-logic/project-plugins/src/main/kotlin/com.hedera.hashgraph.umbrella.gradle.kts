@@ -1,5 +1,3 @@
-import org.gradle.kotlin.dsl.repositories
-
 /*
  * Copyright 2016-2022 Hedera Hashgraph, LLC
  *
@@ -22,6 +20,12 @@ plugins {
     id("com.hedera.hashgraph.repositories")
     id("com.hedera.hashgraph.spotless-conventions")
     id("com.hedera.hashgraph.spotless-kotlin-conventions")
+}
+
+spotless {
+    kotlinGradle {
+        target("build-logic/**/*.gradle.kts")
+    }
 }
 
 // This is for configuring the umbrella build - i.e. the root of the repository, which can

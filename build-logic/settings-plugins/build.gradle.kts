@@ -14,15 +14,9 @@
  * limitations under the License.
  */
 
-@Suppress("UnstableApiUsage")
-dependencyResolutionManagement {
-    repositories { gradlePluginPortal() }
+plugins { `kotlin-dsl` }
+
+dependencies {
+    implementation("com.gradle:gradle-enterprise-gradle-plugin:3.14.1")
+    implementation("me.champeau.gradle.includegit:plugin:0.1.6")
 }
-
-// There are two projects for convention plugins to have different dependencies to external plugins for
-// project and settings plugins. Otherwise, 'com.diffplug.spotless' and 'me.champeau.includegit' clash
-// because they transitively depend on different JGit versions.
-
-include("project-plugins")
-
-include("settings-plugins")

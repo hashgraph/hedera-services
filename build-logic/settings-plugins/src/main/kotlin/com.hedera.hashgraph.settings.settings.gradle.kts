@@ -14,15 +14,25 @@
  * limitations under the License.
  */
 
-@Suppress("UnstableApiUsage")
-dependencyResolutionManagement {
-    repositories { gradlePluginPortal() }
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        mavenCentral()
+        maven { url = uri("https://oss.sonatype.org/content/repositories/snapshots") }
+    }
 }
 
-// There are two projects for convention plugins to have different dependencies to external plugins for
-// project and settings plugins. Otherwise, 'com.diffplug.spotless' and 'me.champeau.includegit' clash
-// because they transitively depend on different JGit versions.
+plugins {
+    id("com.gradle.enterprise")
+    // Use GIT plugin to clone HAPI protobuf files
+    // See documentation https://melix.github.io/includegit-gradle-plugin/latest/index.html
+    id("me.champeau.includegit")
+}
 
-include("project-plugins")
-
-include("settings-plugins")
+// Enable Gradle Build Scan
+gradleEnterprise {
+    buildScan {
+        termsOfServiceUrl = "https://gradle.com/terms-of-service"
+        termsOfServiceAgree = "yes"
+    }
+}

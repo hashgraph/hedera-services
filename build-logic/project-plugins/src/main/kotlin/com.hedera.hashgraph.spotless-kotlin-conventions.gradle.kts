@@ -39,7 +39,7 @@ spotless {
             * See the License for the specific language governing permissions and
             * limitations under the License.
             */${"\n\n"}
-        """.trimIndent(), "(import|plugins|pluginManagement)"
+        """.trimIndent(), "(import|plugins|pluginManagement|dependencyResolutionManagement|repositories)"
         ).updateYearWithLatest(true)
     }
 }
