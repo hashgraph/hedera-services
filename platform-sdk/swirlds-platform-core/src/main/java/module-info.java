@@ -138,7 +138,6 @@ module com.swirlds.platform {
     /* JDK Libraries */
     requires java.management;
     requires java.scripting;
-    requires java.sql;
     requires jdk.management;
     requires jdk.net;
 

@@ -47,7 +47,6 @@ module com.swirlds.demo.platform {
     requires org.apache.commons.math3;
     requires org.apache.commons.io;
     requires com.swirlds.merkle.test;
-    requires java.sql;
     requires com.swirlds.fchashmap;
     requires com.swirlds.common.test.fixtures;
 }

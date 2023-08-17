@@ -23,6 +23,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 
@@ -86,5 +87,22 @@ public class PropertyConfigSource implements ConfigSource {
     @Override
     public int getOrdinal() {
         return ordinal;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        PropertyConfigSource that = (PropertyConfigSource) o;
+        return ordinal == that.ordinal && Objects.equals(properties, that.properties);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(properties, ordinal);
     }
 }
