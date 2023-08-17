@@ -18,13 +18,12 @@ package com.swirlds.platform.event;
 
 import static com.swirlds.platform.event.EventUtils.toShortString;
 import static com.swirlds.platform.event.EventUtils.toShortStrings;
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
+import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.platform.EventImpl;
 import com.swirlds.platform.RoundInfo;
 import java.time.Instant;
 import java.util.ArrayList;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * A class that stores temporary data that is used while calculating consensus inside the platform. This data is not
@@ -84,7 +83,7 @@ public class InternalEventData {
 
     @Override
     public String toString() {
-        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+        return new ToStringBuilder(this)
                 .append("selfParent", toShortString(selfParent))
                 .append("otherParent", toShortString(otherParent))
                 .append("timeReceived", timeReceived)

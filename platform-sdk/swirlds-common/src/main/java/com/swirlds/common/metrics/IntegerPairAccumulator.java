@@ -17,14 +17,13 @@
 package com.swirlds.common.metrics;
 
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
+import com.swirlds.base.utility.ToStringBuilder;
 import java.util.EnumSet;
 import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.IntBinaryOperator;
 import java.util.function.IntSupplier;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * An {@code IntegerPairAccumulator} accumulates two {@code int}-values, which can be updated atomically.
@@ -425,7 +424,7 @@ public interface IntegerPairAccumulator<T> extends Metric {
          */
         @Override
         public String toString() {
-            return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+            return new ToStringBuilder(this)
                     .appendSuper(super.toString())
                     .append("type", type.getName())
                     .toString();
