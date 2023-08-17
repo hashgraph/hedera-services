@@ -30,7 +30,7 @@ description = "Hedera Services Test Clients for End to End Tests (EET)"
 // compile errors in HapiTestEngine.
 tasks.jar { manifest { attributes("Automatic-Module-Name" to "com.hedera.node.test.clients") } }
 
-tasks.compileJava { modularity.inferModulePath.set(false) }
+java { modularity.inferModulePath.set(false) }
 
 sourceSets.main { java.exclude("module-info.java") }
 // -----
