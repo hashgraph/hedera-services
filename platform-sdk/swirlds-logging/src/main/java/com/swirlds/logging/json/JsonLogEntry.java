@@ -18,13 +18,12 @@ package com.swirlds.logging.json;
 
 import static com.swirlds.logging.payloads.AbstractLogPayload.extractPayloadType;
 import static com.swirlds.logging.payloads.AbstractLogPayload.parsePayload;
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.logging.payloads.LogPayload;
 import java.time.Instant;
 import java.util.Objects;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * A single entry in a json log file.
@@ -196,7 +195,7 @@ public class JsonLogEntry {
      */
     @Override
     public String toString() {
-        final ToStringBuilder tsb = new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+        final ToStringBuilder tsb = new ToStringBuilder(this)
                 .append("timestamp", timestamp.toString())
                 .append("thread", thread)
                 .append("level", level)
@@ -208,7 +207,7 @@ public class JsonLogEntry {
             tsb.append("exception type", exceptionType).append("exception message", exceptionMessage);
         }
 
-        return tsb.build();
+        return tsb.toString();
     }
 
     @Override

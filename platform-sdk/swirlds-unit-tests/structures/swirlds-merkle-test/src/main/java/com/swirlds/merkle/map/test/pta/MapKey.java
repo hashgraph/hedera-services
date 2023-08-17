@@ -17,6 +17,7 @@
 package com.swirlds.merkle.map.test.pta;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.FastCopyable;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -24,8 +25,6 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.Objects;
-import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.apache.commons.lang3.builder.ToStringStyle;
 
 public class MapKey implements SelfSerializable, Comparable<MapKey>, FastCopyable {
 
@@ -89,7 +88,7 @@ public class MapKey implements SelfSerializable, Comparable<MapKey>, FastCopyabl
 
     @Override
     public String toString() {
-        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
+        return new ToStringBuilder(this)
                 .append(shardId)
                 .append(realmId)
                 .append(accountId)

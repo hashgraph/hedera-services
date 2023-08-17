@@ -18,12 +18,11 @@ package com.swirlds.merkle.map.test.lifecycle;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.merkle.map.test.pta.MapValue;
 import java.io.Serializable;
 import java.util.Objects;
-import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.apache.commons.lang3.builder.ToStringStyle;
 
 /**
  * Value stored in the ExpectedMap with corresponding MapKey
@@ -195,7 +194,7 @@ public class ExpectedValue implements Serializable {
 
     @Override
     public String toString() {
-        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
+        return new ToStringBuilder(this)
                 .append("EntityType", entityType)
                 .append("Hash", hash)
                 .append("isErrored", isErrored)

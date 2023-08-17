@@ -16,14 +16,13 @@
 
 package com.swirlds.platform.eventhandling;
 
+import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.platform.EventImpl;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
-import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.apache.commons.lang3.builder.ToStringStyle;
 
 /**
  * Keeps events that need to be stored in the signed state when it is created. It makes sure it has last {@code
@@ -133,7 +132,7 @@ public class SignedStateEventStorage {
 
     @Override
     public String toString() {
-        return new ToStringBuilder(this, ToStringStyle.MULTI_LINE_STYLE)
+        return new ToStringBuilder(this)
                 .append("queue", queue)
                 .append("latestRoundReceived", latestRoundReceived)
                 .toString();
