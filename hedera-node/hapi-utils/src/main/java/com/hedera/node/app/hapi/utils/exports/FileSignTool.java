@@ -312,8 +312,11 @@ public class FileSignTool {
                 }
             }
         }
-        final var fileHeaderString = Arrays.toString(fileHeader);
-        LOGGER.info(MARKER, "Record stream file header is {}", fileHeaderString);
+
+        if (LOGGER.isInfoEnabled()) {
+            final var fileHeaderString = Arrays.toString(fileHeader);
+            LOGGER.info(MARKER, "Record stream file header is {}", fileHeaderString);
+        }
 
         try (final SerializableDataOutputStream dosMeta =
                         new SerializableDataOutputStream(new HashingOutputStream(metadataStreamDigest));
@@ -343,7 +346,10 @@ public class FileSignTool {
             final int version = recordResult.getKey();
             final byte[] serializedBytes = recordResult.getValue().get().toByteArray();
 
-            LOGGER.info(MARKER, "Writing file header {}", fileHeaderString);
+            if (LOGGER.isInfoEnabled()) {
+                final var fileHeaderString = Arrays.toString(fileHeader);
+                LOGGER.info(MARKER, "Writing file header {}", fileHeaderString);
+            }
             // update meta digest
             for (final int value : fileHeader) {
                 dosMeta.writeInt(value);
@@ -361,8 +367,10 @@ public class FileSignTool {
             // update stream digest
             LOGGER.info(MARKER, "Writing version {}", version);
             dos.writeInt(version);
-            final var serializedBytesSubstring = hex(serializedBytes).substring(0, 32);
-            LOGGER.info(MARKER, "Writing serializedBytes {}", serializedBytesSubstring);
+            if (LOGGER.isInfoEnabled()) {
+                final var serializedBytesSubstring = hex(serializedBytes).substring(0, 32);
+                LOGGER.info(MARKER, "Writing serializedBytes {}", serializedBytesSubstring);
+            }
             dos.write(serializedBytes);
             dos.flush();
 
