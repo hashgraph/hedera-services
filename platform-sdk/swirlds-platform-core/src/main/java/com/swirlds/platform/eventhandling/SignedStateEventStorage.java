@@ -17,7 +17,7 @@
 package com.swirlds.platform.eventhandling;
 
 import com.swirlds.base.utility.ToStringBuilder;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.EventImpl;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.LinkedList;

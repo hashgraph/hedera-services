@@ -19,8 +19,8 @@ package com.swirlds.platform.test.event;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
+import com.swirlds.platform.EventImpl;
 import com.swirlds.platform.event.ThreadSafeSelfEventStorage;
-import com.swirlds.platform.internal.EventImpl;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 

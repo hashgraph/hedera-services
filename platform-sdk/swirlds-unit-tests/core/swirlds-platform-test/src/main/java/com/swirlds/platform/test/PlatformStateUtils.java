@@ -24,7 +24,7 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator.WeightDistributionStrategy;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.EventImpl;
 import com.swirlds.platform.state.MinGenInfo;
 import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.state.PlatformState;

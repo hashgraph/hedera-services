@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.observers;
 
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.EventImpl;
 import com.swirlds.platform.observers.EventAddedObserver;
 
 public class AddedObserver extends SimpleEventTracker implements EventAddedObserver {

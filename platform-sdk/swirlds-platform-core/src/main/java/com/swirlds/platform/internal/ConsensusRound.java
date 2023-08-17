@@ -19,6 +19,7 @@ package com.swirlds.platform.internal;
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.events.ConsensusEvent;
+import com.swirlds.platform.EventImpl;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.util.iterator.TypedIterator;

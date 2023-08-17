@@ -20,8 +20,8 @@ import static com.swirlds.platform.event.EventUtils.toShortString;
 import static com.swirlds.platform.event.EventUtils.toShortStrings;
 
 import com.swirlds.base.utility.ToStringBuilder;
+import com.swirlds.platform.EventImpl;
 import com.swirlds.platform.RoundInfo;
-import com.swirlds.platform.internal.EventImpl;
 import java.time.Instant;
 import java.util.ArrayList;
 
