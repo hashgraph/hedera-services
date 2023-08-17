@@ -31,6 +31,7 @@ import static com.swirlds.cli.logging.CssRuleSetFactory.TEXT_COLOR_PROPERTY;
 import static com.swirlds.cli.logging.CssRuleSetFactory.TOP_VALUE;
 import static com.swirlds.cli.logging.CssRuleSetFactory.VERTICAL_ALIGN_PROPERTY;
 import static com.swirlds.cli.logging.CssRuleSetFactory.WHITE_SPACE_PROPERTY;
+import static com.swirlds.cli.logging.CssRuleSetFactory.WIDTH_PROPERTY;
 import static com.swirlds.cli.logging.CssRuleSetFactory.WORD_BREAK_PROPERTY;
 import static com.swirlds.cli.logging.HtmlColors.getHtmlColor;
 import static com.swirlds.cli.logging.HtmlTagFactory.DATA_HIDE_LABEL;
@@ -132,6 +133,10 @@ public class HtmlGenerator {
      * This label is used to make the filter column and log table scroll independently
      */
     public static final String INDEPENDENT_SCROLL_LABEL = "independent-scroll";
+    /**
+     * For styling particular to the log table instance of an independent scroll box
+     */
+    public static final String TABLE_INDEPENDENT_SCROLL_LABEL = "table-independent-scroll";
 
     public static final String LOG_TABLE_LABEL = "log-table";
 
@@ -267,6 +272,11 @@ public class HtmlGenerator {
         // make the filter columns and the log table scroll independently
         cssRules.add(new CssRuleSetFactory("." + INDEPENDENT_SCROLL_LABEL, new CssDeclaration("overflow", "auto"))
                 .generateCss());
+
+        // make the log table independent scroll fill 100% of width
+        cssRules.add(
+                new CssRuleSetFactory("." + TABLE_INDEPENDENT_SCROLL_LABEL, new CssDeclaration(WIDTH_PROPERTY, "100%"))
+                        .generateCss());
 
         // pad the log table columns
         cssRules.add(new CssRuleSetFactory(HTML_DATA_CELL_TAG, new CssDeclaration(PADDING_LEFT_PROPERTY, "1em"))
@@ -421,6 +431,7 @@ public class HtmlGenerator {
         final String filtersDiv = generateFiltersDiv(logLines);
         final String tableDiv = new HtmlTagFactory(HTML_DIV_TAG, generateLogTable(logLines), false)
                 .addClass(INDEPENDENT_SCROLL_LABEL)
+                .addClass(TABLE_INDEPENDENT_SCROLL_LABEL)
                 .generateTag();
 
         // this is a div surrounding the filters and the log table
