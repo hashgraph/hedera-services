@@ -76,6 +76,8 @@ include(":swirlds-platform-apps:tests:ConsistencyTestingTool")
 
 include(":swirlds-platform-apps:tests:StatsSigningTestingTool")
 
+include(":swirlds-platform-apps:tests:StressTestingTool")
+
 include(":swirlds-benchmarks")
 
 include(":swirlds-unit-tests")
