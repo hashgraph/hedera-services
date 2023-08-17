@@ -95,7 +95,7 @@ The `AddressBook` supports the following queries:
 - `int getIndex(long id)`: get the index in this address book for a given node ID
 - `Address getAddress(long id)`: given a node ID, return that node's address
 
-TODO
+FUTURE WORK
 
 ### AddressBook Mutability
 

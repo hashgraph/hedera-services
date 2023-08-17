@@ -21,6 +21,7 @@ import com.hedera.node.app.authorization.AuthorizerInjectionModule;
 import com.hedera.node.app.components.IngestInjectionComponent;
 import com.hedera.node.app.components.QueryInjectionComponent;
 import com.hedera.node.app.fees.ExchangeRateManager;
+import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.fees.FeesInjectionModule;
 import com.hedera.node.app.grpc.GrpcInjectionModule;
 import com.hedera.node.app.grpc.GrpcServerManager;
@@ -30,7 +31,6 @@ import com.hedera.node.app.metrics.MetricsInjectionModule;
 import com.hedera.node.app.platform.PlatformModule;
 import com.hedera.node.app.records.BlockRecordInjectionModule;
 import com.hedera.node.app.records.BlockRecordManager;
-import com.hedera.node.app.service.mono.LegacyMonoInjectionModule;
 import com.hedera.node.app.service.mono.context.annotations.BootstrapProps;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.mono.utils.NamedDigestFactory;
@@ -47,6 +47,7 @@ import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.throttle.ThrottleInjectionModule;
 import com.hedera.node.app.workflows.WorkflowsInjectionModule;
 import com.hedera.node.app.workflows.handle.HandleWorkflow;
+import com.hedera.node.app.workflows.handle.SystemFileUpdateFacility;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
 import com.swirlds.common.crypto.Cryptography;
@@ -70,7 +71,6 @@ import javax.inject.Singleton;
 @Singleton
 @Component(
         modules = {
-            LegacyMonoInjectionModule.class,
             ServicesInjectionModule.class,
             WorkflowsInjectionModule.class,
             HederaStateInjectionModule.class,
@@ -114,6 +114,8 @@ public interface HederaInjectionComponent {
 
     BlockRecordManager blockRecordManager();
 
+    FeeManager feeManager();
+
     ExchangeRateManager exchangeRateManager();
 
     @Component.Builder
@@ -141,6 +143,9 @@ public interface HederaInjectionComponent {
 
         @BindsInstance
         Builder configuration(ConfigProvider configProvider);
+
+        @BindsInstance
+        Builder systemFileUpdateFacility(SystemFileUpdateFacility systemFileUpdateFacility);
 
         @BindsInstance
         Builder maxSignedTxnSize(@MaxSignedTxnSize final int maxSignedTxnSize);

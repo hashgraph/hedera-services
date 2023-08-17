@@ -279,8 +279,7 @@ class DefaultRunningAverageMetricTest {
         final RunningAverageMetric metric = new DefaultRunningAverageMetric(config);
 
         // then
-        assertThrows(
-                IllegalArgumentException.class, () -> metric.get(null), "Calling get() with null should throw an IAE");
+        assertThrows(NullPointerException.class, () -> metric.get(null), "Calling get() with null should throw an IAE");
     }
 
     @Test

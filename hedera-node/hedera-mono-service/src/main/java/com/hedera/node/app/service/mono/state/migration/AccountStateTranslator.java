@@ -90,9 +90,9 @@ public class AccountStateTranslator {
                 .tinybarBalance(account.getBalance())
                 .receiverSigRequired(account.isReceiverSigRequired())
                 .key(PbjConverter.asPbjKey(account.getAccountKey()))
-                .autoRenewSecs(account.getAutoRenewSecs())
+                .autoRenewSeconds(account.getAutoRenewSecs())
                 .deleted(account.isDeleted())
-                .expiry(account.getExpiry())
+                .expirationSecond(account.getExpiry())
                 .maxAutoAssociations(account.getMaxAutomaticAssociations())
                 .usedAutoAssociations(account.getUsedAutoAssociations())
                 .contractKvPairsNumber(account.getNumContractKvPairs())
@@ -256,9 +256,9 @@ public class AccountStateTranslator {
         merkleAccount.setReceiverSigRequired(account.receiverSigRequired());
         merkleAccount.setAccountKey((JKey) PbjConverter.fromPbjKeyUnchecked(account.keyOrElse((Key.DEFAULT)))
                 .orElse(null));
-        merkleAccount.setAutoRenewSecs(account.autoRenewSecs());
+        merkleAccount.setAutoRenewSecs(account.autoRenewSeconds());
         merkleAccount.setDeleted(account.deleted());
-        merkleAccount.setExpiry(account.expiry());
+        merkleAccount.setExpiry(account.expirationSecond());
         merkleAccount.setMaxAutomaticAssociations(account.maxAutoAssociations());
         merkleAccount.setUsedAutomaticAssociations(account.usedAutoAssociations());
         merkleAccount.setNumContractKvPairs(account.contractKvPairsNumber());

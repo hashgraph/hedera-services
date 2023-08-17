@@ -17,14 +17,11 @@
 package com.hedera.node.app.service.mono.ledger.backing.pure;
 
 import static com.hedera.node.app.service.mono.utils.EntityNum.fromAccountId;
-import static java.util.stream.Collectors.toSet;
 
 import com.hedera.node.app.service.mono.ledger.backing.BackingStore;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
-import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
-import java.util.Set;
 import java.util.function.Supplier;
 
 public class PureBackingAccounts implements BackingStore<AccountID, HederaAccount> {
@@ -57,11 +54,6 @@ public class PureBackingAccounts implements BackingStore<AccountID, HederaAccoun
     @Override
     public boolean contains(AccountID id) {
         return delegate.get().containsKey(fromAccountId(id));
-    }
-
-    @Override
-    public Set<AccountID> idSet() {
-        return delegate.get().keySet().stream().map(EntityNum::toGrpcAccountId).collect(toSet());
     }
 
     @Override

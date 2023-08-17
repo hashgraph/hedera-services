@@ -17,10 +17,10 @@
 package com.swirlds.platform.gossip.chatter;
 
 import com.swirlds.common.system.NodeId;
+import com.swirlds.platform.EventImpl;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.chatter.protocol.ChatterCore;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.ConsensusRoundObserver;
 import com.swirlds.platform.observers.EventAddedObserver;
 

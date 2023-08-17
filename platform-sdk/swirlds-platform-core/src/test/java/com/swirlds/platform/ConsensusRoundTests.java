@@ -24,7 +24,6 @@ import static org.mockito.Mockito.when;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.internal.EventImpl;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;

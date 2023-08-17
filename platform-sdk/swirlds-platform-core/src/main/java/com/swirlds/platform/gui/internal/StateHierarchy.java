@@ -20,6 +20,7 @@ import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
 
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.gui.model.InfoApp;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;

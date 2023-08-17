@@ -22,10 +22,10 @@ import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.threading.framework.Stoppable;
 import com.swirlds.common.utility.Clearable;
+import com.swirlds.platform.EventImpl;
 import com.swirlds.platform.FreezePeriodChecker;
 import com.swirlds.platform.eventhandling.EventTransactionPool;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.LoadableFromSignedState;
 
 /**

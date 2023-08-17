@@ -18,11 +18,11 @@ package com.swirlds.platform.test.event.creation;
 
 import com.swirlds.common.system.EventCreationRule;
 import com.swirlds.common.system.EventCreationRuleResponse;
+import com.swirlds.platform.EventImpl;
 import com.swirlds.platform.components.EventCreationRules;
 import com.swirlds.platform.event.creation.LoggingEventCreationRules;
 import com.swirlds.platform.event.creation.ParentBasedCreationRule;
 import com.swirlds.platform.event.creation.StaticCreationRules;
-import com.swirlds.platform.internal.EventImpl;
 import java.util.List;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

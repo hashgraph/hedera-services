@@ -45,7 +45,10 @@ import org.apache.logging.log4j.Logger;
 
 public class CryptoTransferLoadTest extends LoadTest {
     private static final Logger log = LogManager.getLogger(CryptoTransferLoadTest.class);
-    private Random r = new Random();
+
+    @SuppressWarnings("java:S2245") // using java.util.Random in tests is fine
+    private Random r = new Random(528352L);
+
     private static final long TEST_ACCOUNT_STARTS_FROM = 1001L;
 
     public static void main(String... args) {

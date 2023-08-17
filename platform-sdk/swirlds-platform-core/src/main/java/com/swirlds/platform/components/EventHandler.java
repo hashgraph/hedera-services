@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.components;
 
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.EventImpl;
 
 /**
  * An object that is capable of accepting events and handling them.

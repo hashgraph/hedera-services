@@ -19,6 +19,8 @@ package com.swirlds.gui;
 import com.swirlds.common.Console;
 import com.swirlds.common.system.SystemExitCode;
 import com.swirlds.common.system.SystemExitUtils;
+import com.swirlds.gui.components.PrePaintableJPanel;
+import com.swirlds.gui.components.ScrollableJPanel;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.GraphicsEnvironment;

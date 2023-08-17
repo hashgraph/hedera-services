@@ -21,8 +21,8 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /**
  * This class represents the key to find an account that is being
@@ -147,11 +147,7 @@ public class AccountVirtualMapKey implements VirtualKey {
      */
     @Override
     public int hashCode() {
-        return new HashCodeBuilder(17, 37)
-                .append(realmID)
-                .append(shardId)
-                .append(accountID)
-                .toHashCode();
+        return Objects.hash(realmID, shardId, accountID);
     }
 
     public static int getSizeInBytes() {

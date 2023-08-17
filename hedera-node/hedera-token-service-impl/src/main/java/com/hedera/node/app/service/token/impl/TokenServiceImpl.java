@@ -16,31 +16,31 @@
 
 package com.hedera.node.app.service.token.impl;
 
+import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
+import static com.hedera.node.app.spi.HapiUtils.EMPTY_KEY_LIST;
+import static com.hedera.node.app.spi.HapiUtils.FUNDING_ACCOUNT_EXPIRY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.state.common.EntityIDPair;
+import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.primitives.ProtoString;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.node.app.service.mono.state.codec.MonoMapCodecAdapter;
-import com.hedera.node.app.service.mono.state.merkle.MerklePayerRecords;
-import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
-import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
-import com.hedera.node.app.service.mono.state.virtual.EntityNumValue;
-import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
-import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKeySerializer;
-import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKey;
-import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKeySerializer;
-import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValue;
-import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
-import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.hapi.node.state.token.NetworkStakingRewards;
+import com.hedera.hapi.node.state.token.Nft;
+import com.hedera.hapi.node.state.token.StakingNodeInfo;
+import com.hedera.hapi.node.state.token.Token;
+import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.token.TokenService;
-import com.hedera.node.app.service.token.impl.serdes.EntityNumCodec;
 import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
-import com.hedera.node.app.spi.state.codec.StringCodec;
+import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.BootstrapConfig;
 import com.hedera.node.config.data.HederaConfig;
@@ -77,13 +77,14 @@ public class TokenServiceImpl implements TokenService {
             @Override
             public Set<StateDefinition> statesToCreate() {
                 return Set.of(
-                        tokensDef(),
-                        onDiskAccountsDef(),
-                        onDiskAliasesDef(),
-                        onDiskNftsDef(),
-                        onDiskTokenRelsDef(),
-                        payerRecordsDef(),
-                        stakingInfoDef());
+                        StateDefinition.inMemory(TOKENS_KEY, TokenID.PROTOBUF, Token.PROTOBUF),
+                        StateDefinition.onDisk(ACCOUNTS_KEY, AccountID.PROTOBUF, Account.PROTOBUF, MAX_ACCOUNTS),
+                        StateDefinition.onDisk(ALIASES_KEY, ProtoString.PROTOBUF, AccountID.PROTOBUF, MAX_ACCOUNTS),
+                        StateDefinition.onDisk(NFTS_KEY, NftID.PROTOBUF, Nft.PROTOBUF, MAX_MINTABLE_NFTS),
+                        StateDefinition.onDisk(
+                                TOKEN_RELS_KEY, EntityIDPair.PROTOBUF, TokenRelation.PROTOBUF, MAX_TOKEN_RELS),
+                        StateDefinition.inMemory(STAKING_INFO_KEY, EntityNumber.PROTOBUF, StakingNodeInfo.PROTOBUF),
+                        StateDefinition.singleton(STAKING_NETWORK_REWARDS_KEY, NetworkStakingRewards.PROTOBUF));
             }
 
             @Override
@@ -124,67 +125,49 @@ public class TokenServiceImpl implements TokenService {
                             Account.newBuilder()
                                     .receiverSigRequired(false)
                                     .deleted(false)
-                                    .expiry(expiry)
+                                    .expirationSecond(expiry)
                                     .memo("")
                                     .smartContract(false)
                                     .key(superUserKey)
-                                    .autoRenewSecs(expiry) // TODO is this right?
+                                    .autoRenewSeconds(expiry) // TODO is this right?
                                     .accountId(id)
                                     .tinybarBalance(accountTinyBars)
-                                    //                                    .declineReward(true)
                                     .build());
                 }
+                addStakingAccounts(asAccount(800), accounts, FUNDING_ACCOUNT_EXPIRY);
+                addStakingAccounts(asAccount(801), accounts, FUNDING_ACCOUNT_EXPIRY);
+
+                updateNetworkRewards(ctx);
             }
         };
     }
 
-    private StateDefinition<AccountID, Account> onDiskAccountsDef() {
-        final var keySerdes = AccountID.PROTOBUF;
-        final var valueSerdes = Account.PROTOBUF;
-        return StateDefinition.onDisk(ACCOUNTS_KEY, keySerdes, valueSerdes, MAX_ACCOUNTS);
+    private void updateNetworkRewards(final MigrationContext ctx) {
+        // Set genesis network rewards state
+        final var networkRewardsState = ctx.newStates().getSingleton(STAKING_NETWORK_REWARDS_KEY);
+        final var networkRewards = NetworkStakingRewards.newBuilder()
+                .pendingRewards(0)
+                .totalStakedRewardStart(0)
+                .totalStakedStart(0)
+                .stakingRewardsActivated(true)
+                .build();
+        networkRewardsState.put(networkRewards);
     }
 
-    private StateDefinition<String, EntityNumValue> onDiskAliasesDef() {
-        final var keySerdes = StringCodec.SINGLETON;
-        final var valueSerdes =
-                MonoMapCodecAdapter.codecForVirtualValue(EntityNumValue.CURRENT_VERSION, EntityNumValue::new);
-        return StateDefinition.onDisk(ALIASES_KEY, keySerdes, valueSerdes, MAX_ACCOUNTS);
-    }
-
-    private StateDefinition<EntityNum, MerklePayerRecords> payerRecordsDef() {
-        final var keySerdes = new EntityNumCodec();
-        final var valueSerdes = MonoMapCodecAdapter.codecForSelfSerializable(
-                MerklePayerRecords.CURRENT_VERSION, MerklePayerRecords::new);
-        return StateDefinition.inMemory(PAYER_RECORDS_KEY, keySerdes, valueSerdes);
-    }
-
-    private StateDefinition<EntityNum, MerkleToken> tokensDef() {
-        final var keySerdes = new EntityNumCodec();
-        final var valueSerdes =
-                MonoMapCodecAdapter.codecForSelfSerializable(MerkleToken.CURRENT_VERSION, MerkleToken::new);
-        return StateDefinition.inMemory(TOKENS_KEY, keySerdes, valueSerdes);
-    }
-
-    private StateDefinition<EntityNumVirtualKey, OnDiskTokenRel> onDiskTokenRelsDef() {
-        final var keySerdes = MonoMapCodecAdapter.codecForVirtualKey(
-                EntityNumVirtualKey.CURRENT_VERSION, EntityNumVirtualKey::new, new EntityNumVirtualKeySerializer());
-        final var valueSerdes =
-                MonoMapCodecAdapter.codecForVirtualValue(OnDiskTokenRel.CURRENT_VERSION, OnDiskTokenRel::new);
-        return StateDefinition.onDisk(TOKEN_RELS_KEY, keySerdes, valueSerdes, MAX_TOKEN_RELS);
-    }
-
-    private StateDefinition<UniqueTokenKey, UniqueTokenValue> onDiskNftsDef() {
-        final var keySerdes = MonoMapCodecAdapter.codecForVirtualKey(
-                UniqueTokenKey.CURRENT_VERSION, UniqueTokenKey::new, new UniqueTokenKeySerializer());
-        final var valueSerdes =
-                MonoMapCodecAdapter.codecForVirtualValue(UniqueTokenValue.CURRENT_VERSION, UniqueTokenValue::new);
-        return StateDefinition.onDisk(NFTS_KEY, keySerdes, valueSerdes, MAX_MINTABLE_NFTS);
-    }
-
-    private StateDefinition<EntityNum, MerkleStakingInfo> stakingInfoDef() {
-        final var keySerdes = new EntityNumCodec();
-        final var valueSerdes =
-                MonoMapCodecAdapter.codecForSelfSerializable(MerkleStakingInfo.CURRENT_VERSION, MerkleStakingInfo::new);
-        return StateDefinition.inMemory(STAKING_INFO_KEY, keySerdes, valueSerdes);
+    private void addStakingAccounts(
+            final AccountID id, final WritableKVState<Object, Object> accounts, final long expiry) {
+        accounts.put(
+                id,
+                Account.newBuilder()
+                        .receiverSigRequired(false)
+                        .deleted(false)
+                        .memo("")
+                        .smartContract(false)
+                        .key(EMPTY_KEY_LIST)
+                        .expirationSecond(expiry)
+                        .accountId(id)
+                        .maxAutoAssociations(0)
+                        .tinybarBalance(0)
+                        .build());
     }
 }

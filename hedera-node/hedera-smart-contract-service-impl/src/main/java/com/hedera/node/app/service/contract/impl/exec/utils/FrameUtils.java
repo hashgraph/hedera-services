@@ -36,7 +36,7 @@ public class FrameUtils {
     }
 
     public static @NonNull Configuration configOf(@NonNull final MessageFrame frame) {
-        return requireNonNull(frame.getContextVariable(CONFIG_CONTEXT_VARIABLE));
+        return requireNonNull(initialFrameOf(frame).getContextVariable(CONFIG_CONTEXT_VARIABLE));
     }
 
     public static @NonNull ContractsConfig contractsConfigOf(@NonNull final MessageFrame frame) {
@@ -57,7 +57,7 @@ public class FrameUtils {
     }
 
     public static @Nullable StorageAccessTracker accessTrackerFor(@NonNull final MessageFrame frame) {
-        return frame.getContextVariable(TRACKER_CONTEXT_VARIABLE);
+        return initialFrameOf(frame).getContextVariable(TRACKER_CONTEXT_VARIABLE);
     }
 
     public static @NonNull ProxyWorldUpdater proxyUpdaterFor(@NonNull final MessageFrame frame) {
@@ -74,5 +74,10 @@ public class FrameUtils {
 
     public static boolean alreadyHalted(@NonNull final MessageFrame frame) {
         return frame.getState() == MessageFrame.State.EXCEPTIONAL_HALT;
+    }
+
+    private static @NonNull MessageFrame initialFrameOf(@NonNull final MessageFrame frame) {
+        final var stack = frame.getMessageFrameStack();
+        return stack.isEmpty() ? frame : stack.getLast();
     }
 }

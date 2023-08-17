@@ -26,6 +26,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.node.app.service.file.impl.ReadableUpgradeFileStoreImpl;
 import com.hedera.node.app.spi.fixtures.state.ListReadableQueueState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
@@ -62,10 +63,10 @@ class ReadableUpgradeFileStoreImplTest extends FileTestBase {
     @Test
     void missingUpgradeFileIsNull() {
         final var stateData =
-                ListReadableQueueState.<Bytes>builder(UPGRADE_DATA_KEY).build();
+                ListReadableQueueState.<ProtoBytes>builder(UPGRADE_DATA_KEY).build();
         final var stateFile = MapWritableKVState.<FileID, File>builder(FILES).build();
 
-        given(filteredReadableStates.<Bytes>getQueue(UPGRADE_DATA_KEY)).willReturn(stateData);
+        given(filteredReadableStates.<ProtoBytes>getQueue(UPGRADE_DATA_KEY)).willReturn(stateData);
         given(filteredReadableStates.<FileID, File>get(FILES)).willReturn(stateFile);
         subject = new ReadableUpgradeFileStoreImpl(filteredReadableStates);
         assertThat(subject.peek()).isNull();

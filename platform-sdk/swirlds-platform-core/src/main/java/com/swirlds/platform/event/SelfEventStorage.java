@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.event;
 
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.EventImpl;
 
 /**
  * Used for storing the latest event created by me
