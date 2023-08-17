@@ -317,8 +317,9 @@ jobs:
         id: regression-gradle-build
         uses: gradle/gradle-build-action@v2
         with:
+          build-root-directory: platform-sdk/regression
           gradle-version: ${{ inputs.gradle-version }}
-          arguments: -p platform-sdk assemble --scan --parallel
+          arguments: assemble --scan --parallel
 
       - name: Compute Actual Branch Name
         id: branch
