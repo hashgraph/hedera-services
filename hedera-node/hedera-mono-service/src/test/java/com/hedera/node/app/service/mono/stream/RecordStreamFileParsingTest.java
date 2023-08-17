@@ -34,7 +34,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.util.Iterator;
-import org.apache.commons.lang3.tuple.Pair;
+import com.swirlds.base.utility.Pair;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -67,8 +67,8 @@ class RecordStreamFileParsingTest {
                 LinkedObjectStreamUtilities.computeMetaHash(streamFile, Release023xStreamType.RELEASE_023x_STREAM_TYPE);
         Pair<Pair<Hash, Signature>, Pair<Hash, Signature>> parsedResult =
                 LinkedObjectStreamUtilities.parseSigFile(sigFile, Release023xStreamType.RELEASE_023x_STREAM_TYPE);
-        Hash entireHashInSig = parsedResult.getLeft().getLeft();
-        Hash metaHashInSig = parsedResult.getRight().getLeft();
+        Hash entireHashInSig = parsedResult.left().left();
+        Hash metaHashInSig = parsedResult.right().left();
         assertEquals(expectedEntireHash, entireHashInSig);
         assertEquals(expectedMetaHash, metaHashInSig);
     }

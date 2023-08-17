@@ -25,7 +25,7 @@ import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualMapMigration;
 import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
-import org.apache.commons.lang3.tuple.Pair;
+import com.swirlds.base.utility.Pair;
 
 public interface VirtualMapLike<K extends VirtualKey, V extends VirtualValue> {
     void registerMetrics(Metrics metrics);
@@ -72,6 +72,7 @@ public interface VirtualMapLike<K extends VirtualKey, V extends VirtualValue> {
                     final InterruptableConsumer<Pair<K, V>> handler,
                     final int threadCount)
                     throws InterruptedException {
+                VirtualMapMigration.extractVirtualMapData(threadManager, real, handler, threadCount);
                 VirtualMapMigration.extractVirtualMapData(threadManager, real, handler, threadCount);
             }
 
