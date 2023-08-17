@@ -36,7 +36,7 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.utility.ReferenceCounter;
 import com.swirlds.common.utility.RuntimeObjectRecord;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.EventImpl;
 import com.swirlds.platform.state.MinGenInfo;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction;
@@ -49,7 +49,6 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -393,7 +392,7 @@ public class SignedState implements SignedStateInfo {
      */
     @Override
     public int hashCode() {
-        return new HashCodeBuilder(17, 37).append(sigSet).append(state).toHashCode();
+        return Objects.hash(sigSet, state);
     }
 
     /**

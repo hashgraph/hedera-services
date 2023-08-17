@@ -196,7 +196,7 @@ class FileSystemDeleteTest extends FileTestBase {
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
         lenient().when(handleContext.consensusNow()).thenReturn(instant);
-        lenient().when(instant.getEpochSecond()).thenReturn(existingFile.get().expirationTime() + 100);
+        lenient().when(instant.getEpochSecond()).thenReturn(existingFile.get().expirationSecond() + 100);
         subject.handle(handleContext);
 
         final var changedFile = writableStore.get(fileId);
@@ -215,7 +215,7 @@ class FileSystemDeleteTest extends FileTestBase {
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
         lenient().when(handleContext.consensusNow()).thenReturn(instant);
-        lenient().when(instant.getEpochSecond()).thenReturn(existingFile.get().expirationTime() - 100);
+        lenient().when(instant.getEpochSecond()).thenReturn(existingFile.get().expirationSecond() - 100);
         subject.handle(handleContext);
 
         final var changedFile = writableStore.get(fileId);

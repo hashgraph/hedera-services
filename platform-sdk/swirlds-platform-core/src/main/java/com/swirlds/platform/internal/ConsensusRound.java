@@ -20,6 +20,7 @@ import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.events.ConsensusEvent;
+import com.swirlds.platform.EventImpl;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.util.iterator.TypedIterator;
@@ -30,7 +31,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
@@ -205,7 +205,7 @@ public class ConsensusRound implements Round {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder(17, 37).append(consensusEvents).toHashCode();
+        return Objects.hash(consensusEvents);
     }
 
     @Override

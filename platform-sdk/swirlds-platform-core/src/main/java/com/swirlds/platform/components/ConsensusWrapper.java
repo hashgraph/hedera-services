@@ -18,9 +18,9 @@ package com.swirlds.platform.components;
 
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.Consensus;
+import com.swirlds.platform.EventImpl;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.internal.EventImpl;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;

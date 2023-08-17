@@ -27,8 +27,8 @@ import com.swirlds.merkle.map.test.pta.MapKey;
 import com.swirlds.merkle.map.test.pta.MapValue;
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.Objects;
 import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 public class MapValueData extends PartialMerkleLeaf implements Keyed<MapKey>, MapValue, Serializable, MerkleLeaf {
 
@@ -158,13 +158,7 @@ public class MapValueData extends PartialMerkleLeaf implements Keyed<MapKey>, Ma
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder()
-                .append(balance)
-                .append(sendThresholdValue)
-                .append(receiveThresholdValue)
-                .append(receiverSignatureRequired)
-                .append(uid)
-                .build();
+        return Objects.hash(balance, sendThresholdValue, receiveThresholdValue, receiverSignatureRequired, uid);
     }
 
     public String toString() {

@@ -26,11 +26,11 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.builder.CompareToBuilder;
 import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /**
  * A class which generates a TSV text grid with the results given. A header and a footer are also included.
@@ -253,7 +253,7 @@ public class GridGraph<X extends Comparable<X>, Y extends Comparable<Y>>
      */
     @Override
     public int hashCode() {
-        return new HashCodeBuilder(17, 37).append(getGraphName()).toHashCode();
+        return Objects.hash(graphName);
     }
 
     /**

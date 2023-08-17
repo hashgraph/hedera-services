@@ -46,7 +46,7 @@ class OnDiskReadableStateTest extends MerkleTestBase {
     @DisplayName("The size of the state is the size of the virtual map")
     void sizeWorks() {
         final var state = new OnDiskReadableKVState<>(md, virtualMap);
-        assertThat(state.size()).isEqualTo(0);
+        assertThat(state.size()).isZero();
 
         add(virtualMap, md, A_KEY, APPLE);
         add(virtualMap, md, B_KEY, BANANA);

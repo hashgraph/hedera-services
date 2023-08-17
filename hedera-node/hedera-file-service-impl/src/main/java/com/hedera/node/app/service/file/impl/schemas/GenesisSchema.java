@@ -156,7 +156,7 @@ public class GenesisSchema extends Schema {
                             .contents(CurrentAndNextFeeSchedule.PROTOBUF.toBytes(feeSchedule))
                             .fileId(fileId)
                             .keys(KeyList.newBuilder().keys(masterKey))
-                            .expirationTime(bootstrapConfig.systemEntityExpiry())
+                            .expirationSecond(bootstrapConfig.systemEntityExpiry())
                             .build());
         } catch (IOException | NullPointerException e) {
             throw new IllegalArgumentException(
@@ -278,7 +278,7 @@ public class GenesisSchema extends Schema {
                         .contents(ExchangeRateSet.PROTOBUF.toBytes(exchangeRateSet))
                         .fileId(fileId)
                         .keys(KeyList.newBuilder().keys(masterKey))
-                        .expirationTime(bootstrapConfig.systemEntityExpiry())
+                        .expirationSecond(bootstrapConfig.systemEntityExpiry())
                         .build());
     }
 
@@ -317,7 +317,7 @@ public class GenesisSchema extends Schema {
                         .contents(ServicesConfigurationList.PROTOBUF.toBytes(servicesConfigList))
                         .fileId(fileId)
                         .keys(KeyList.newBuilder().keys(masterKey))
-                        .expirationTime(bootstrapConfig.systemEntityExpiry())
+                        .expirationSecond(bootstrapConfig.systemEntityExpiry())
                         .build());
     }
 
@@ -391,7 +391,7 @@ public class GenesisSchema extends Schema {
                                 .build()))
                         .fileId(fileId)
                         .keys(KeyList.newBuilder().keys(masterKey))
-                        .expirationTime(bootstrapConfig.systemEntityExpiry())
+                        .expirationSecond(bootstrapConfig.systemEntityExpiry())
                         .build());
     }
 
@@ -462,7 +462,7 @@ public class GenesisSchema extends Schema {
                         .contents(Bytes.wrap(throttleDefinitionsProtoBytes))
                         .fileId(fileId)
                         .keys(KeyList.newBuilder().keys(masterKey))
-                        .expirationTime(bootstrapConfig.systemEntityExpiry())
+                        .expirationSecond(bootstrapConfig.systemEntityExpiry())
                         .build());
     }
 

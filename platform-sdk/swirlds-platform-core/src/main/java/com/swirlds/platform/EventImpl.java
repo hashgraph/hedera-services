@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.internal;
+package com.swirlds.platform;
 
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndLogIfInterrupted;
 
@@ -42,8 +42,6 @@ import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.system.transaction.internal.SystemTransaction;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.platform.EventStrings;
-import com.swirlds.platform.RoundInfo;
 import com.swirlds.platform.event.EventCounter;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.InternalEventData;
@@ -62,7 +60,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.CountDownLatch;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /**
  * An internal platform event. It holds all the event data relevant to the platform. It implements the Event interface
@@ -330,9 +327,13 @@ public class EventImpl extends AbstractSerializableHashable
      */
     @Override
     public boolean equals(final Object o) {
-        if (this == o) return true;
+        if (this == o) {
+            return true;
+        }
 
-        if (o == null || getClass() != o.getClass()) return false;
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
 
         final EventImpl event = (EventImpl) o;
 
@@ -344,10 +345,7 @@ public class EventImpl extends AbstractSerializableHashable
      */
     @Override
     public int hashCode() {
-        return new HashCodeBuilder(17, 37)
-                .append(baseEvent)
-                .append(consensusData)
-                .toHashCode();
+        return Objects.hash(baseEvent, consensusData);
     }
 
     /**

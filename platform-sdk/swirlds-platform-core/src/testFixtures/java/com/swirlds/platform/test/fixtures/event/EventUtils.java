@@ -18,14 +18,15 @@ package com.swirlds.platform.test.fixtures.event;
 
 import static java.lang.Integer.max;
 
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.fixtures.merkle.util.MerkleSerializeUtils;
+import com.swirlds.platform.EventImpl;
 import com.swirlds.platform.eventhandling.SignedStateEventsAndGenerations;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
@@ -45,7 +46,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Assertions;
 
 public abstract class EventUtils {
