@@ -58,7 +58,7 @@ public class ToStringBuilder {
     private static final char PACKAGE_SEPARATOR = '.';
     private static final char INNER_CLASS_SEPARATOR = '$';
     private final StringBuilder builder;
-    private final int initLength;
+    private boolean parameterAdded = false;
 
     /**
      * Create a new ToStringBuilder for the given object.
@@ -67,9 +67,7 @@ public class ToStringBuilder {
      */
     public ToStringBuilder(@NonNull final Object object) {
         builder = new StringBuilder();
-
         builder.append(formatClassName(object.getClass().getName())).append("[");
-        initLength = builder.length();
     }
 
     /**
@@ -88,7 +86,7 @@ public class ToStringBuilder {
 
         if (matcher.find()) {
             builder.append(matcher.group(1));
-            builder.append(",");
+            appendSeparator();
         }
 
         return this;
@@ -106,7 +104,8 @@ public class ToStringBuilder {
     @NonNull
     public ToStringBuilder append(@Nullable final Object value) {
         final String formattedValue = value == null ? NULL_STRING : value.toString();
-        builder.append(formattedValue).append(",");
+        builder.append(formattedValue);
+        appendSeparator();
         return this;
     }
 
@@ -124,7 +123,8 @@ public class ToStringBuilder {
     public ToStringBuilder append(@NonNull final String fieldName, @Nullable final Object value) {
         Objects.requireNonNull(fieldName, "fieldName must not be null");
         final String formattedValue = value == null ? NULL_STRING : value.toString();
-        builder.append(fieldName).append("=").append(formattedValue).append(",");
+        builder.append(fieldName).append("=").append(formattedValue);
+        appendSeparator();
         return this;
     }
 
@@ -136,7 +136,7 @@ public class ToStringBuilder {
     @Override
     @NonNull
     public String toString() {
-        if (builder.length() > initLength) {
+        if (parameterAdded) {
             builder.setLength(builder.length() - 1); // Remove last comma
         }
         builder.append("]");
@@ -155,5 +155,10 @@ public class ToStringBuilder {
         Objects.requireNonNull(input, "input must not be null");
         final String withoutPackage = input.replaceFirst(PACKAGE_PREFIX_PATTERN, "");
         return withoutPackage.replace(INNER_CLASS_SEPARATOR, PACKAGE_SEPARATOR);
+    }
+
+    private void appendSeparator() {
+        builder.append(",");
+        parameterAdded = true;
     }
 }

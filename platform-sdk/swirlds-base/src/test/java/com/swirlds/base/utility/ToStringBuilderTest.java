@@ -24,7 +24,7 @@ class ToStringBuilderTest {
 
     @Test
     void appendingWithNameAndValue() {
-        ToStringBuilder tsb =
+        final ToStringBuilder tsb =
                 new ToStringBuilder(this).append("field1", "value1").append("field2", "value2");
 
         assertEquals("ToStringBuilderTest[field1=value1,field2=value2]", tsb.toString());
@@ -32,20 +32,21 @@ class ToStringBuilderTest {
 
     @Test
     void appendingValueOnly() {
-        ToStringBuilder tsb = new ToStringBuilder(this).append("testValue1").append("testValue2");
+        final ToStringBuilder tsb =
+                new ToStringBuilder(this).append("testValue1").append("testValue2");
 
         assertEquals("ToStringBuilderTest[testValue1,testValue2]", tsb.toString());
     }
 
     @Test
     void emptyToString() {
-        ToStringBuilder tsb = new ToStringBuilder(this);
+        final ToStringBuilder tsb = new ToStringBuilder(this);
         assertEquals("ToStringBuilderTest[]", tsb.toString());
     }
 
     @Test
     void testMixedAppending() {
-        ToStringBuilder tsb = new ToStringBuilder(this)
+        final ToStringBuilder tsb = new ToStringBuilder(this)
                 .append("field1", "value1")
                 .append("valueOnly1")
                 .append("field2", "value2")
@@ -56,8 +57,9 @@ class ToStringBuilderTest {
 
     @Test
     void handlingNull() {
-        String s = null;
-        ToStringBuilder tsb = new ToStringBuilder(this).append("field1", s).append(s);
+        final String s = null;
+        final ToStringBuilder tsb =
+                new ToStringBuilder(this).append("field1", s).append(s);
 
         assertEquals("ToStringBuilderTest[field1=<null>,<null>]", tsb.toString());
     }
@@ -85,7 +87,7 @@ class ToStringBuilderTest {
 
     @Test
     void appendSuper() {
-        Child child = new Child();
+        final Child child = new Child();
         assertEquals("ToStringBuilderTest.Child[parentField=parentValue,childField=childValue]", child.toString());
     }
 }
