@@ -22,6 +22,7 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
+import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
