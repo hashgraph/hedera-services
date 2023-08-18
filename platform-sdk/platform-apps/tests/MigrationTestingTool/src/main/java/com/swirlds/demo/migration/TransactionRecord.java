@@ -16,6 +16,7 @@
 
 package com.swirlds.demo.migration;
 
+import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.FastCopyable;
 import com.swirlds.common.crypto.AbstractSerializableHashable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -23,8 +24,6 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.Random;
-import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.apache.commons.lang3.builder.ToStringStyle;
 
 public class TransactionRecord extends AbstractSerializableHashable implements FastCopyable {
 
@@ -191,7 +190,7 @@ public class TransactionRecord extends AbstractSerializableHashable implements F
      */
     @Override
     public String toString() {
-        return new ToStringBuilder(this, ToStringStyle.NO_CLASS_NAME_STYLE)
+        return new ToStringBuilder(this)
                 .append("status", status.getBytes())
                 .append("accountID", accountID)
                 .append("fileID", fileID)

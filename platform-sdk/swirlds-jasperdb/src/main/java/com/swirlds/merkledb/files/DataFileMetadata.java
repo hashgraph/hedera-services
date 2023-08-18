@@ -18,8 +18,8 @@ package com.swirlds.merkledb.files;
 
 import static com.swirlds.merkledb.files.DataFileCommon.FOOTER_SIZE;
 import static com.swirlds.merkledb.serialize.BaseSerializer.VARIABLE_DATA_SIZE;
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
+import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -29,7 +29,6 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
 import java.util.Objects;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * DataFile's metadata that is stored in the data file's footer
@@ -193,7 +192,7 @@ public final class DataFileMetadata {
     /** toString for debugging */
     @Override
     public String toString() {
-        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+        return new ToStringBuilder(this)
                 .append("fileFormatVersion", fileFormatVersion)
                 .append("dataItemValueSize", dataItemValueSize)
                 .append("dataItemCount", dataItemCount)
