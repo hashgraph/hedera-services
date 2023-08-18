@@ -249,7 +249,7 @@ class ConsensusUpdateTopicTest extends ConsensusTestBase {
     @Test
     @DisplayName("Delete admin key with empty Threshold key failed")
     void appliesDeleteEmptyAdminKeyWithThresholdKeyList() {
-        givenValidTopic(AccountID.newBuilder().accountNum(0).build(), false);
+        givenValidTopic(null, false);
         refreshStoresWithCurrentTopicInBothReadableAndWritable();
 
         final var op = OP_BUILDER.topicID(topicId).adminKey(EMPTY_THRESHOLD_KEY).build();
