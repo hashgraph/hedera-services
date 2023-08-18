@@ -14,14 +14,11 @@
  * limitations under the License.
  */
 
-import java.io.BufferedOutputStream
-import net.swiftzer.semver.SemVer
 import org.owasp.dependencycheck.reporting.ReportGenerator
 
 plugins {
     id("org.sonarqube")
     id("org.owasp.dependencycheck")
-    id("lazy.zoo.gradle.git-data-plugin")
 }
 
 // Configure the Sonarqube extension for SonarCloud reporting.
@@ -59,69 +56,4 @@ dependencyCheck {
     junitFailOnCVSS = 7.0f
     failBuildOnCVSS = 11.0f
     outputDirectory = layout.buildDirectory.dir("reports/dependency-check").get().asFile.toString()
-}
-
-tasks.register("githubVersionSummary") {
-    group = "github"
-    doLast {
-        val ghStepSummaryPath: String =
-            providers.environmentVariable("GITHUB_STEP_SUMMARY").orNull
-                ?: throw IllegalArgumentException(
-                    "This task may only be run in a Github Actions CI environment!" +
-                        "Unable to locate the GITHUB_STEP_SUMMARY environment variable."
-                )
-
-        Utils.generateProjectVersionReport(
-            rootProject,
-            BufferedOutputStream(File(ghStepSummaryPath).outputStream())
-        )
-    }
-}
-
-tasks.register("showVersion") {
-    group = "versioning"
-    doLast { println(project.version) }
-}
-
-tasks.register("versionAsPrefixedCommit") {
-    group = "versioning"
-    doLast {
-        gitData.lastCommitHash?.let {
-            val prefix = providers.gradleProperty("commitPrefix").getOrElse("adhoc")
-            val newPrerel = prefix + ".x" + it.take(8)
-            val currVer = SemVer.parse(rootProject.version.toString())
-            try {
-                val newVer = SemVer(currVer.major, currVer.minor, currVer.patch, newPrerel)
-                Utils.updateVersion(rootProject, newVer)
-            } catch (e: java.lang.IllegalArgumentException) {
-                throw IllegalArgumentException(String.format("%s: %s", e.message, newPrerel), e)
-            }
-        }
-    }
-}
-
-tasks.register("versionAsSnapshot") {
-    group = "versioning"
-    doLast {
-        val currVer = SemVer.parse(rootProject.version.toString())
-        val newVer = SemVer(currVer.major, currVer.minor, currVer.patch, "SNAPSHOT")
-
-        Utils.updateVersion(rootProject, newVer)
-    }
-}
-
-tasks.register("versionAsSpecified") {
-    group = "versioning"
-    doLast {
-        val verStr = providers.gradleProperty("newVersion")
-
-        if (!verStr.isPresent) {
-            throw IllegalArgumentException(
-                "No newVersion property provided! Please add the parameter -PnewVersion=<version> when running this task."
-            )
-        }
-
-        val newVer = SemVer.parse(verStr.get())
-        Utils.updateVersion(rootProject, newVer)
-    }
 }

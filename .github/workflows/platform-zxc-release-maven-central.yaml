@@ -187,7 +187,7 @@ jobs:
         uses: gradle/gradle-build-action@v2
         with:
           gradle-version: ${{ inputs.gradle-version }}
-          arguments: -p platform-sdk versionAsSpecified --scan -PnewVersion=${{ inputs.new-version }}
+          arguments: versionAsSpecified --scan -PnewVersion=${{ inputs.new-version }}
 
       - name: Version Report
         uses: gradle/gradle-build-action@v2

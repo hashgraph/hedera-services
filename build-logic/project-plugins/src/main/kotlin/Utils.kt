@@ -16,6 +16,8 @@
 
 import net.swiftzer.semver.SemVer
 import org.gradle.api.Project
+import org.gradle.api.file.Directory
+import org.gradle.api.file.RegularFile
 import java.io.File
 import java.io.OutputStream
 import java.io.PrintStream
@@ -23,37 +25,16 @@ import java.io.PrintStream
 
 class Utils {
     companion object {
+
+        // Find the version.txt in the root of the repository, independent of
+        // which build is started from where.
+        @JvmStatic
+        fun Directory.versionTxt(): RegularFile =
+            file("version.txt").let { if (it.asFile.exists()) it else this.dir("..").versionTxt() }
+
         @JvmStatic
         fun updateVersion(project: Project, newVersion: SemVer) {
-            val gradlePropFile = File(project.projectDir, "gradle.properties")
-
-            val lines = if (gradlePropFile.exists()) {
-                gradlePropFile.readLines(Charsets.UTF_8)
-            } else {
-                emptyList()
-            }
-
-            val versionStr = "version=$newVersion"
-
-            val finalLines = if (lines.isNotEmpty()) {
-                lines.map {
-                    if (it.trimStart().startsWith("version=")) {
-                        versionStr
-                    } else {
-                        it
-                    }
-                }
-            } else {
-                listOf(versionStr)
-            }
-
-            gradlePropFile.bufferedWriter(Charsets.UTF_8).use { writer ->
-                finalLines.forEach {
-                    writer.write(it)
-                    writer.newLine()
-                }
-                writer.flush()
-            }
+            project.layout.projectDirectory.versionTxt().asFile.writeText(newVersion.toString())
         }
 
         @JvmStatic
