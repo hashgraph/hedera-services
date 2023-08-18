@@ -160,6 +160,9 @@ public interface HederaInjectionComponent {
         @BindsInstance
         Builder instantSource(InstantSource instantSource);
 
+        @BindsInstance
+        Builder throttleManager(ThrottleManager throttleManager);
+
         HederaInjectionComponent build();
     }
 }

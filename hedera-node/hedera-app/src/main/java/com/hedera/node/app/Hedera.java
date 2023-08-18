@@ -52,6 +52,7 @@ import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
+import com.hedera.node.app.throttle.ThrottleManager;
 import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.handle.SystemFileUpdateFacility;
@@ -143,6 +144,8 @@ public final class Hedera implements SwirldMain {
     private Platform platform;
     /** The configuration for this node */
     private ConfigProviderImpl configProvider;
+    /** The throttle manager for parsing the throttle definition file */
+    private ThrottleManager throttleManager;
     /**
      * Dependencies managed by Dagger. Set during state initialization. The mono-service requires this object, but none
      * of the rest of the system (and particularly the modular implementation) uses it directly. Rather, it is created
@@ -588,6 +591,9 @@ public final class Hedera implements SwirldMain {
         this.configProvider = new ConfigProviderImpl(true);
         logConfiguration();
 
+        logger.info("Initializing ThrottleManager");
+        this.throttleManager = new ThrottleManager();
+
         // Create all the nodes in the merkle tree for all the services
         onMigrate(state, null);
 
@@ -948,7 +954,8 @@ public final class Hedera implements SwirldMain {
             daggerApp = com.hedera.node.app.DaggerHederaInjectionComponent.builder()
                     .initTrigger(trigger)
                     .configuration(configProvider)
-                    .systemFileUpdateFacility(new SystemFileUpdateFacility(configProvider))
+                    .throttleManager(throttleManager)
+                    .systemFileUpdateFacility(new SystemFileUpdateFacility(configProvider, throttleManager))
                     .self(SelfNodeInfoImpl.of(nodeAddress, version))
                     .initialHash(initialHash)
                     .platform(platform)

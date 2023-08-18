@@ -92,7 +92,7 @@ class IngestComponentTest {
                 .crypto(CryptographyHolder.get())
                 .bootstrapProps(new BootstrapProperties())
                 .configuration(configProvider)
-                .systemFileUpdateFacility(new SystemFileUpdateFacility(configProvider))
+                .systemFileUpdateFacility(new SystemFileUpdateFacility(configProvider, null)) // TODO: fix
                 .self(selfNodeInfo)
                 .initialHash(new Hash())
                 .maxSignedTxnSize(1024)

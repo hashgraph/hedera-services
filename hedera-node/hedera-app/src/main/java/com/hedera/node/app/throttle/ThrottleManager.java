@@ -21,13 +21,15 @@ import com.hedera.hapi.node.transaction.ThrottleDefinitions;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-// TODO: add documentations and comments
-@Singleton
+/**
+ * Parses the throttle definition file and makes it available to the workflows.
+ *
+ * The throttle implementation will use the {@link ThrottleBucket} list, found in the throttle definition file,
+ * to throttle the different Hedera operations(CRYPTO_TRANSFER, FILE_CREATE, TOKEN_CREATE, etc.).
+ */
 public class ThrottleManager {
 
     private static final Logger logger = LogManager.getLogger(ThrottleManager.class);
@@ -36,7 +38,6 @@ public class ThrottleManager {
     private ThrottleDefinitions throttleDefinitions;
     private List<ThrottleBucket> throttleBuckets;
 
-    @Inject
     public ThrottleManager() {
         // Initialize the throttle definitions. The default is not particularly useful, but isn't null.
         throttleDefinitions = DEFAULT_THROTTLE_DEFINITIONS;
