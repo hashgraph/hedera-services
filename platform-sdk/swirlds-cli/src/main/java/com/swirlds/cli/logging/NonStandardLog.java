@@ -18,7 +18,6 @@ package com.swirlds.cli.logging;
 
 import static com.swirlds.cli.logging.HtmlGenerator.ELAPSED_TIME_COLUMN_LABEL;
 import static com.swirlds.cli.logging.HtmlGenerator.HIDEABLE_LABEL;
-import static com.swirlds.cli.logging.HtmlGenerator.LOG_LINE_LABEL;
 import static com.swirlds.cli.logging.HtmlGenerator.LOG_NUMBER_COLUMN_LABEL;
 import static com.swirlds.cli.logging.HtmlGenerator.NODE_ID_COLUMN_LABEL;
 import static com.swirlds.cli.logging.HtmlGenerator.NON_STANDARD_LABEL;
@@ -96,8 +95,7 @@ public class NonStandardLog {
                         parentLogLine.getThreadName(),
                         parentLogLine.getClassName(),
                         parentLogLine.getNodeId() == null ? "" : "node" + parentLogLine.getNodeId(),
-                        HIDEABLE_LABEL,
-                        LOG_LINE_LABEL)
+                        HIDEABLE_LABEL)
                 .map(StringEscapeUtils::escapeHtml4)
                 .toList();
 

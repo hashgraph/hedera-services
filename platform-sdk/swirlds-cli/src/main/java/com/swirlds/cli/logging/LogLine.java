@@ -423,14 +423,21 @@ public class LogLine implements FormattableString {
                 .map(StringEscapeUtils::escapeHtml4)
                 .toList();
 
-        final String mainLine = new HtmlTagFactory("tr", "\n" + String.join("\n", dataCellTags) + "\n", false)
+        final String mainLogRow = new HtmlTagFactory("tr", "\n" + String.join("\n", dataCellTags) + "\n", false)
                 .addClasses(rowClassNames)
                 .generateTag();
 
         if (additionalLines == null) {
-            return mainLine;
+            return mainLogRow;
         } else {
-            return mainLine + "\n" + additionalLines.generateHtmlString();
+            final String nestedTableBody = new HtmlTagFactory(
+                            "tbody", mainLogRow + "\n" + additionalLines.generateHtmlString(), false)
+                    .addClass(LOG_LINE_LABEL)
+                    .generateTag();
+
+            return new HtmlTagFactory("td", nestedTableBody, false)
+                    .addAttribute("colspan", "9")
+                    .generateTag();
         }
     }
 }
