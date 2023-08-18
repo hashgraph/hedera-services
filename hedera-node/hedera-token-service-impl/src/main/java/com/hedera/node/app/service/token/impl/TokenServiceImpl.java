@@ -85,12 +85,12 @@ public class TokenServiceImpl implements TokenService {
                 new SystemAccountsInitializer().createSystemAccounts(ctx);
 
                 initializeNetworkRewards(ctx);
-                updateStakingNodeInfo(ctx);
+                initializeStakingNodeInfo(ctx);
             }
         };
     }
 
-    private void updateStakingNodeInfo(final MigrationContext ctx) {
+    private void initializeStakingNodeInfo(final MigrationContext ctx) {
         // TODO: This need to go through address book and set all the nodes
         final var config = ctx.configuration();
         final var ledgerConfig = config.getConfigData(LedgerConfig.class);
