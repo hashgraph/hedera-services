@@ -258,9 +258,11 @@ public class HtmlGenerator {
                 "." + THREAD_NAME_COLUMN_LABEL, new CssDeclaration("color", getHtmlColor(THREAD_NAME_COLOR)));
         cssFactory.addRule("." + CLASS_NAME_COLUMN_LABEL, new CssDeclaration("color", getHtmlColor(CLASS_NAME_COLOR)));
         cssFactory.addRule(
-                "." + STATUS_HTML_CLASS, new CssDeclaration("color", getHtmlColor(PlatformStatusLog.STATUS_COLOR)));
+                "." + STATUS_HTML_CLASS,
+                new CssDeclaration("color", getHtmlColor(PlatformStatusLog.STATUS_COLOR)),
+                new CssDeclaration("background-color", "inherit"));
 
-        // highlight log lines when you hover over them with your mouse TODO add spans
+        // highlight log lines when you hover over them with your mouse
         cssFactory.addRule("." + LOG_LINE_LABEL + ":hover td", new CssDeclaration("background-color", HIGHLIGHT_COLOR));
 
         // create color rules for each log level
