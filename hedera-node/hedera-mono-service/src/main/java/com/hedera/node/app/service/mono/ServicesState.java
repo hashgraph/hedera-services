@@ -783,8 +783,8 @@ public class ServicesState extends PartialNaryMerkleInternal
                                 AdHocThreadManager.getStaticThreadManager(),
                                 source,
                                 kvPair -> {
-                                    final K key = kvPair.getKey();
-                                    final V value = kvPair.getValue();
+                                    final K key = kvPair.left();
+                                    final V value = kvPair.right();
                                     final VirtualMap<K, V> curCopy = targetMapRef.get();
                                     curCopy.put(key, value);
                                     // Make a map copy every X rounds to flush map cache to disk
