@@ -27,6 +27,8 @@ import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INVALID_OPERA
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.ResultStatus;
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Optional;
@@ -87,9 +89,13 @@ public class PrngSystemContract extends AbstractPrecompiledContract {
             createSuccessfulRecord(frame, randomNum, contractID);
 
             return result;
-        } catch (Exception e) {
+        } catch (InvalidTransactionException e) {
+            // This error is caused by the user sending in the wrong selector
+            createFailedRecord(frame, FAIL_INVALID.toString(), contractID);
+            return PrecompiledContract.PrecompileContractResult.halt(Bytes.EMPTY, Optional.of(INVALID_OPERATION));
+        } catch (NullPointerException e) {
+            // Log a warning as this error will be caused by insufficient entropy
             log.warn("Internal precompile failure", e);
-            // create a failed record and returned a halt result
             createFailedRecord(frame, FAIL_INVALID.toString(), contractID);
             return PrecompiledContract.PrecompileContractResult.halt(Bytes.EMPTY, Optional.of(INVALID_OPERATION));
         }
@@ -124,7 +130,8 @@ public class PrngSystemContract extends AbstractPrecompiledContract {
         if (selector == PSEUDORANDOM_SEED_GENERATOR_SELECTOR) {
             return random256BitGenerator(frame);
         }
-        return null;
+        throw new InvalidTransactionException(
+                "Invalid selector for PRNG precompile", ResponseCodeEnum.INVALID_TRANSACTION);
     }
 
     Bytes random256BitGenerator(final MessageFrame frame) {
@@ -136,7 +143,7 @@ public class PrngSystemContract extends AbstractPrecompiledContract {
     }
 
     long calculateGas(@NonNull final Instant now) {
-        // TODO: Update gas calculations once the fee calculator classes are available
+        // @future('8094') Update gas calculations once the fee calculator classes are available
         // final var feesInTinyCents = pricingUtils.getCanonicalPriceInTinyCents(PRNG);
         // final var currentGasPriceInTinyCents = livePricesSource.currentGasPriceInTinycents(now, ContractCall);
         // return feesInTinyCents / currentGasPriceInTinyCents;

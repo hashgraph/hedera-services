@@ -110,5 +110,5 @@ public interface SystemContractOperations {
      * @param result    contract function result
      * @param status    whether the result is success or an error
      */
-    public void externalizeResult(@NonNull final ContractFunctionResult result, final ResultStatus status);
+    public void externalizeResult(@NonNull final ContractFunctionResult result, @NonNull final ResultStatus status);
 }

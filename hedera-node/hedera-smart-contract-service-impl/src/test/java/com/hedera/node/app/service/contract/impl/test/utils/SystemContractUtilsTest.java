@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.contract.impl.test.utils;
 
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -41,7 +41,7 @@ class SystemContractUtilsTest {
                 .contractID(contractID)
                 .build();
         final var actual = SystemContractUtils.contractFunctionResultSuccessFor(gasUsed, result, contractID);
-        assertEquals(expected, actual);
+        assertThat(actual).isEqualTo(expected);
     }
 
     @Test
@@ -52,6 +52,6 @@ class SystemContractUtilsTest {
                 .contractID(contractID)
                 .build();
         final var actual = SystemContractUtils.contractFunctionResultFailedFor(gasUsed, errorMessage, contractID);
-        assertEquals(expected, actual);
+        assertThat(actual).isEqualTo(expected);
     }
 }
