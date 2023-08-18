@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.state;
 
+import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.Hash;
@@ -27,8 +28,8 @@ import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.events.EventSerializationOptions;
 import com.swirlds.common.utility.NonCryptographicHashing;
-import com.swirlds.platform.EventImpl;
 import com.swirlds.platform.consensus.RoundCalculationUtils;
+import com.swirlds.platform.internal.EventImpl;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -37,8 +38,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.apache.commons.lang3.builder.ToStringStyle;
 
 /**
  * A collection of miscellaneous platform data.
@@ -584,7 +583,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
      */
     @Override
     public String toString() {
-        return new ToStringBuilder(this, ToStringStyle.MULTI_LINE_STYLE)
+        return new ToStringBuilder(this)
                 .append("round", round)
                 .append("numEventsCons", numEventsCons)
                 .append("hashEventsCons", hashEventsCons)

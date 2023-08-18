@@ -32,7 +32,10 @@ import java.util.Set;
  * A convenient base class from which other tests can extend to get access to common APIs and
  * utilities.
  */
+// Suppress the warning that we shouldn't throw generic exceptions(RuntimeException in static())
+@SuppressWarnings("java:S112")
 public class TestBase {
+
     /** All the ASCII capital letters */
     public static final String CAPITALS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     /** A set of words. Used to generate random word lists */
@@ -157,6 +160,8 @@ public class TestBase {
      * @return A random string created by the given alphabet and of the requested length.
      */
     @NonNull
+    // Suppress the warning that we should use assert
+    @SuppressWarnings("java:S4274")
     public static String randomString(
             @NonNull final Random generator, @NonNull final String alphabet, final int length) {
         assert !alphabet.isBlank();
@@ -171,6 +176,8 @@ public class TestBase {
     }
 
     @NonNull
+    // Suppress the warning that we should use assert
+    @SuppressWarnings("java:S4274")
     public static byte[] randomBytes(@NonNull final Random generator, final int length) {
         assert length >= 0;
 

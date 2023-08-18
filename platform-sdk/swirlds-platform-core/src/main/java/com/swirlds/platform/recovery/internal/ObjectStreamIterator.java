@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.recovery.events;
+package com.swirlds.platform.recovery.internal;
 
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.SelfSerializable;

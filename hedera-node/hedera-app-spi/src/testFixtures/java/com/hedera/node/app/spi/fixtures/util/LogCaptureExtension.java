@@ -102,6 +102,8 @@ public class LogCaptureExtension implements TestInstancePostProcessor, AfterEach
         injectCaptor(o, subject, logCaptor);
     }
 
+    // Suppress the warning that the reflection shouldn't be used
+    @SuppressWarnings("java:S3011")
     private void injectCaptor(@NonNull final Object test, @NonNull final Field subject, @NonNull final Field logCaptor)
             throws IllegalAccessException {
         requireNonNull(test);

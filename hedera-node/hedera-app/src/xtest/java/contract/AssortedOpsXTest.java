@@ -61,6 +61,7 @@ import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.state.ReadableKVState;
@@ -231,7 +232,7 @@ public class AssortedOpsXTest extends AbstractContractXTest {
     }
 
     @Override
-    protected void assertExpectedAliases(@NonNull final ReadableKVState<Bytes, AccountID> aliases) {
+    protected void assertExpectedAliases(@NonNull final ReadableKVState<ProtoBytes, AccountID> aliases) {
         assertEquals(POINTLESS_INTERMEDIARY_ID, aliases.get(POINTLESS_INTERMEDIARY_ADDRESS));
         assertEquals(RUBE_GOLDBERG_CHILD_ID, aliases.get(DETERMINISTIC_CHILD_ADDRESS));
     }

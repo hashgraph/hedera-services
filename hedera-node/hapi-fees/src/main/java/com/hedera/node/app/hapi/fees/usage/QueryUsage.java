@@ -30,6 +30,8 @@ public class QueryUsage {
     private long rb = BASIC_QUERY_RES_HEADER;
 
     /* Once state proofs are supported, this will be needed to compute {@code rb}. */
+    // Suppressing the warning that the field is not used
+    @SuppressWarnings("java:S1068")
     private final ResponseType responseType;
 
     public QueryUsage(final ResponseType responseType) {

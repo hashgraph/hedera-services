@@ -45,7 +45,6 @@ import org.apache.logging.log4j.Logger;
 
 @HapiTestSuite
 public class TopicCreateSuite extends HapiSuite {
-
     private static final Logger log = LogManager.getLogger(TopicCreateSuite.class);
 
     public static void main(String... args) {

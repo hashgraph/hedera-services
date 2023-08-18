@@ -22,6 +22,7 @@ import static com.swirlds.logging.LogMarker.FREEZE;
 import static com.swirlds.logging.LogMarker.STARTUP;
 
 import com.google.protobuf.ByteString;
+import com.swirlds.base.utility.Triple;
 import com.swirlds.common.FastCopyable;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
@@ -52,7 +53,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
-import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
@@ -316,18 +316,20 @@ public class TransactionPool implements FastCopyable {
         } else if (generateType == PAYLOAD_TYPE.TYPE_FCM_TEST) {
             invalidSig = invalidSig();
             payloadPair = fcmTransactionPool.getTransaction(invalidSig);
-            if (payloadPair != null) payload = payloadPair.getLeft();
+            if (payloadPair != null) {
+                payload = payloadPair.left();
+            }
         } else if (generateType == PAYLOAD_TYPE.TYPE_VIRTUAL_MERKLE_TEST) {
             payloadPair = virtualMerkleTransactionPool.getTransaction();
             if (payloadPair != null) {
-                payload = payloadPair.getLeft();
+                payload = payloadPair.left();
             }
         } else if (generateType == PAYLOAD_TYPE.TYPE_FCM_VIRTUAL_MIX) {
             if (isFCMTransaction()) {
                 invalidSig = invalidSig();
                 payloadPair = fcmTransactionPool.getTransaction(invalidSig);
                 if (payloadPair != null) {
-                    payload = payloadPair.getLeft();
+                    payload = payloadPair.left();
                 }
             }
             // payloadPair still null indicates it's the turn to generate virtual merkle transaction
@@ -335,7 +337,7 @@ public class TransactionPool implements FastCopyable {
             if (payloadPair == null) {
                 payloadPair = virtualMerkleTransactionPool.getTransaction();
                 if (payloadPair != null) {
-                    payload = payloadPair.getLeft();
+                    payload = payloadPair.left();
                 } else {
                     logger.info(MARKER, "Generated enough virtual merkle test for sequential mode");
                 }
@@ -343,8 +345,7 @@ public class TransactionPool implements FastCopyable {
         }
 
         if (payload != null && config.isAppendSig()) { // if require signature add more buffer space
-            payloadPair =
-                    Triple.of(appendSignature(payload, invalidSig), payloadPair.getMiddle(), payloadPair.getRight());
+            payloadPair = Triple.of(appendSignature(payload, invalidSig), payloadPair.middle(), payloadPair.right());
         }
 
         return payloadPair;

@@ -31,6 +31,9 @@ public abstract class FreeQueryHandler implements QueryHandler {
     }
 
     @Override
+    // Suppressing the warning that this method is the same as requiresNodePayment.
+    // To be removed if that changes
+    @SuppressWarnings("java:S4144")
     public boolean needsAnswerOnlyCost(@NonNull final ResponseType responseType) {
         requireNonNull(responseType);
         return false;

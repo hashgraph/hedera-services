@@ -102,6 +102,8 @@ public abstract class WritableQueueStateBase<E> implements WritableQueueState<E>
 
     @Nullable
     @Override
+    // Suppressing the warning about the nested ternary operations
+    @SuppressWarnings("java:S3358")
     public E peek() {
         if (peekedElement != null) return peekedElement;
         if (dsIterator == null) dsIterator = iterateOnDataSource();
