@@ -24,7 +24,6 @@ import static com.hedera.node.app.service.mono.state.migration.StateVersions.MIN
 import static com.hedera.node.app.service.mono.state.migration.UniqueTokensMigrator.migrateFromUniqueTokenMerkleMap;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.parseAccount;
 import static com.swirlds.common.system.InitTrigger.GENESIS;
-import static com.swirlds.common.system.InitTrigger.RECONNECT;
 import static com.swirlds.common.system.InitTrigger.RESTART;
 import static java.util.Objects.requireNonNull;
 
