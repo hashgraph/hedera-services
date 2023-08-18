@@ -34,6 +34,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import org.apache.logging.log4j.Level;
 
 /**
  * Generates an HTML log page
@@ -316,7 +317,11 @@ public class HtmlGenerator {
 
         filterDivs.add(createFilterDiv(
                 "Log Level",
-                logLines.stream().map(LogLine::getLogLevel).distinct().toList()));
+                logLines.stream()
+                        .map(LogLine::getLogLevel)
+                        .distinct()
+                        .sorted(Comparator.comparing(Level::toLevel))
+                        .toList()));
         filterDivs.add(createFilterDiv(
                 "Log Marker",
                 logLines.stream().map(LogLine::getMarker).distinct().toList()));
