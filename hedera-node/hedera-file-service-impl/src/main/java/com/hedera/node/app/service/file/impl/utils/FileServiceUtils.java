@@ -66,10 +66,9 @@ public class FileServiceUtils {
      *
      * @param fileId the file id to validate and to fetch the metadata
      * @param fileStore the file store to fetch the metadata of specified file id
-     * @return the file metadata of specific file id
      * @throws PreCheckException if the file id is invalid or the file does not exist
      */
-    public static @NonNull FileMetadata preValidate(
+    public static void preValidate(
             @Nullable final FileID fileId,
             @NonNull final ReadableFileStore fileStore,
             @NonNull final PreHandleContext context,
@@ -83,22 +82,18 @@ public class FileServiceUtils {
 
         final var fileConfig = context.configuration().getConfigData(FilesConfig.class);
 
+        // TODO we should still check if upgrade file exist after modularization is done otherwise E2E test is failing.
         FileMetadata fileMeta = null;
         if (fileId.fileNum() != fileConfig.upgradeFileNumber()) {
             fileMeta = fileStore.getFileMetadata(fileId);
             mustExist(fileMeta, INVALID_FILE_ID);
         }
 
-//        final var fileMeta = fileStore.getFileMetadata(fileId);
-//        mustExist(fileMeta, INVALID_FILE_ID);
-
         final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
         // we cannot delete system files
         if (fileId.fileNum() <= ledgerConfig.numReservedSystemEntities() && isDelete) {
             throw new PreCheckException(INVALID_FILE_ID);
         }
-
-        return fileMeta;
     }
 
     /**
