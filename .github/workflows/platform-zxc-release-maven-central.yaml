@@ -234,6 +234,7 @@ jobs:
           author_email: ${{ secrets.git-user-email }}
           commit: --signoff --gpg-sign
           message: "[Automated Maven Central Release] Platform SDK v${{ inputs.new-version }}"
+          remove: ${{ steps.google-auth.outputs.credentials_file_path }}
 
 #      - name: Cache SDK Release Archives
 #        id: archive-cache
