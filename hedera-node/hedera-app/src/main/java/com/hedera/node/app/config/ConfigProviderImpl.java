@@ -18,6 +18,7 @@ package com.hedera.node.app.config;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.ServicesConfigurationList;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.converter.AccountIDConverter;
@@ -73,6 +74,7 @@ import com.hedera.node.config.data.UtilPrngConfig;
 import com.hedera.node.config.data.VersionConfig;
 import com.hedera.node.config.data.VirtualdatasourceConfig;
 import com.hedera.node.config.sources.PropertyConfigSource;
+import com.hedera.node.config.sources.SettingsConfigSource;
 import com.hedera.node.config.validation.EmulatesMapValidator;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.config.sources.PropertyFileConfigSource;
@@ -83,11 +85,9 @@ import com.swirlds.common.threading.locks.Locks;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.ObjIntConsumer;
 import javax.inject.Singleton;
@@ -222,16 +222,13 @@ public class ConfigProviderImpl implements ConfigProvider {
     private void addByteSource(@NonNull final ConfigurationBuilder builder, @NonNull final Bytes propertyFileContent) {
         requireNonNull(builder);
         requireNonNull(propertyFileContent);
-        try (final var in = propertyFileContent.toInputStream()) {
-            final byte[] bytes = in.readAllBytes();
-            try (ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes)) {
-                Properties properties = new Properties();
-                properties.load(inputStream);
-                final PropertyConfigSource configSource = new PropertyConfigSource(properties, 101);
-                builder.withSource(configSource);
-            }
-        } catch (IOException e) {
-            throw new IllegalStateException("Can not create config source for bytes", e);
+        try {
+            final var configurationList =
+                    ServicesConfigurationList.PROTOBUF.parseStrict(propertyFileContent.toReadableSequentialData());
+            final var configSource = new SettingsConfigSource(configurationList.nameValueOrThrow(), 101);
+            builder.withSource(configSource);
+        } catch (IOException | NullPointerException e) {
+            // Ignore. This method may be called with a partial file during regular execution.
         }
     }
 
