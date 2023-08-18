@@ -17,48 +17,55 @@
 package com.swirlds.cli.logging;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
 /**
- * Creates a CSS rule set
- * <p>
- * A rule set consists of a selector, followed by a list of declarations:
- * <p>
- * "selector { property1: value; property2: value2; }"
+ * Utility class for turning CSS rules into a single CSS string, for inclusion in an HTML page.
  */
 public class CssRuleSetFactory {
     /**
-     * The selector for the rule set
+     * The rules that will be part of the output CSS string.
      */
-    private final String selector;
-    /**
-     * The declarations for the rule set
-     */
-    private final List<CssDeclaration> declarations;
+    private final List<String> rules = new ArrayList<>();
 
     /**
-     * Constructor
+     * Create a string representing a CSS rule
      *
-     * @param selector     the selector
-     * @param declarations the declarations
-     */
-    public CssRuleSetFactory(@NonNull final String selector, @NonNull final List<CssDeclaration> declarations) {
-        this.selector = Objects.requireNonNull(selector);
-        this.declarations = Objects.requireNonNull(declarations);
-    }
-
-    /**
-     * Generate the CSS string
-     *
-     * @return the CSS string
+     * @return the CSS rule string
      */
     @NonNull
-    public String generateCss() {
+    private static String createRuleString(
+            @NonNull final String selector, @NonNull final List<CssDeclaration> declarations) {
         return selector + " {\n"
                 + String.join(
                         "\n",
                         declarations.stream().map(CssDeclaration::toString).toList())
                 + "\n}";
+    }
+
+    /**
+     * Add a rule that will be part of the output CSS
+     *
+     * @param selector     the CSS selector
+     * @param declarations the CSS declarations
+     */
+    public void addRule(@NonNull final String selector, @NonNull final CssDeclaration... declarations) {
+        Objects.requireNonNull(selector);
+        Objects.requireNonNull(declarations);
+
+        rules.add(createRuleString(selector, Arrays.asList(declarations)));
+    }
+
+    /**
+     * Generate the CSS string representing all the rules that have been added
+     *
+     * @return the CSS string
+     */
+    @NonNull
+    public String generateCss() {
+        return String.join("\n", rules);
     }
 }
