@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -34,7 +35,6 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.util.Iterator;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -67,8 +67,8 @@ class RecordStreamFileParsingTest {
                 LinkedObjectStreamUtilities.computeMetaHash(streamFile, Release023xStreamType.RELEASE_023x_STREAM_TYPE);
         Pair<Pair<Hash, Signature>, Pair<Hash, Signature>> parsedResult =
                 LinkedObjectStreamUtilities.parseSigFile(sigFile, Release023xStreamType.RELEASE_023x_STREAM_TYPE);
-        Hash entireHashInSig = parsedResult.getLeft().getLeft();
-        Hash metaHashInSig = parsedResult.getRight().getLeft();
+        Hash entireHashInSig = parsedResult.left().left();
+        Hash metaHashInSig = parsedResult.right().left();
         assertEquals(expectedEntireHash, entireHashInSig);
         assertEquals(expectedMetaHash, metaHashInSig);
     }
