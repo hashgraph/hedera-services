@@ -22,6 +22,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import com.swirlds.cli.PlatformCli;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
+import com.swirlds.common.startup.CommandLineArgs;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.Browser;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -63,7 +64,7 @@ public class BrowseCommand extends AbstractCommand {
     @Override
     public Integer call() throws IOException, InterruptedException {
         try {
-            Browser.launch(new HashSet<>(localNodes), null);
+            Browser.launch(new CommandLineArgs(new HashSet<>(localNodes)));
         } catch (final Exception e) {
             e.printStackTrace();
             return FATAL_ERROR.getExitCode();

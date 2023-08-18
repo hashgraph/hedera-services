@@ -23,6 +23,7 @@ plugins {
 dependencies {
     // Individual Dependencies
     api(libs.commons.lang3)
+    implementation(project(":swirlds-base"))
     compileOnly(libs.spotbugs.annotations)
 
     // Bundle Dependencies

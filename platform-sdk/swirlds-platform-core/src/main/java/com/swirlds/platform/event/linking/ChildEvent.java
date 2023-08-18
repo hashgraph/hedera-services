@@ -16,12 +16,10 @@
 
 package com.swirlds.platform.event.linking;
 
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
-
+import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.platform.EventImpl;
 import com.swirlds.platform.event.GossipEvent;
-import org.apache.commons.lang3.builder.ToStringBuilder;
+import com.swirlds.platform.internal.EventImpl;
 
 /**
  * A {@link GossipEvent} whose parents may or may not be missing. A parent is considered missing if it is non-ancient
@@ -187,7 +185,7 @@ public final class ChildEvent {
 
     @Override
     public String toString() {
-        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+        return new ToStringBuilder(this)
                 .append("child", child)
                 .append("missingSelfParent", missingSelfParent)
                 .append("missingOtherParent", missingOtherParent)

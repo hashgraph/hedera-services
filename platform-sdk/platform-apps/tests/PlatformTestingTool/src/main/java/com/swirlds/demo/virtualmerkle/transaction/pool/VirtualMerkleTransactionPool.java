@@ -21,6 +21,7 @@ import static java.lang.String.format;
 
 import com.google.protobuf.ByteString;
 import com.swirlds.base.utility.Pair;
+import com.swirlds.base.utility.Triple;
 import com.swirlds.demo.merkle.map.internal.ExpectedFCMFamily;
 import com.swirlds.demo.platform.PAYLOAD_TYPE;
 import com.swirlds.demo.platform.fs.stresstest.proto.Activity;
@@ -33,7 +34,6 @@ import com.swirlds.demo.virtualmerkle.config.VirtualMerkleConfig;
 import com.swirlds.demo.virtualmerkle.random.PTTRandom;
 import com.swirlds.merkle.map.test.pta.MapKey;
 import java.util.function.Supplier;
-import org.apache.commons.lang3.tuple.Triple;
 
 /**
  * This class builds the transactions for virtual merkle tests.
