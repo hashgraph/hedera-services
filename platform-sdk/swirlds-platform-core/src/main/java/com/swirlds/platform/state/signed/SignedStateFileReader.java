@@ -24,6 +24,7 @@ import static com.swirlds.platform.state.signed.SignedStateFileUtils.getSignedSt
 import static java.nio.file.Files.exists;
 import static java.nio.file.Files.isDirectory;
 
+import com.swirlds.base.utility.Triple;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
@@ -40,7 +41,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 import java.util.TreeMap;
-import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -153,12 +153,12 @@ public final class SignedStateFileReader {
                 });
 
         final SignedState newSignedState =
-                new SignedState(platformContext, data.getLeft(), "SignedStateFileReader.readStateFile()");
+                new SignedState(platformContext, data.left(), "SignedStateFileReader.readStateFile()");
 
-        newSignedState.setSigSet(data.getRight());
+        newSignedState.setSigSet(data.right());
 
         returnState = new DeserializedSignedState(
-                newSignedState.reserve("SignedStateFileReader.readStateFile()"), data.getMiddle());
+                newSignedState.reserve("SignedStateFileReader.readStateFile()"), data.middle());
 
         return returnState;
     }
