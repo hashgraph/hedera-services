@@ -22,6 +22,7 @@ import static com.swirlds.common.units.UnitConstants.MEBIBYTES_TO_BYTES;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.JASPER_DB;
 
+import com.swirlds.base.utility.StringUtils;
 import com.swirlds.jasperdb.KeyRange;
 import com.swirlds.jasperdb.collections.IndexedObject;
 import com.swirlds.jasperdb.collections.LongList;
@@ -45,7 +46,6 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -388,9 +388,9 @@ public final class DataFileCommon {
         logger.info(
                 JASPER_DB.getMarker(),
                 """
-						[{}] Merged {} files into {} files in {} seconds. Read at {} Written at {}
-						        filesToMerge = {} allMergeableFiles = {}
-						        allFilesAfter = {}""",
+                        [{}] Merged {} files into {} files in {} seconds. Read at {} Written at {}
+                                filesToMerge = {} allMergeableFiles = {}
+                                allFilesAfter = {}""",
                 storeName,
                 formatSizeBytes(filesToMergeSize),
                 formatSizeBytes(mergedFilesCreatedSize),

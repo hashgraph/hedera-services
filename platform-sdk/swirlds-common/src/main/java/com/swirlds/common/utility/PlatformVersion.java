@@ -18,6 +18,7 @@ package com.swirlds.common.utility;
 
 import static com.swirlds.common.utility.CommonUtils.nullToBlank;
 
+import com.swirlds.base.utility.StringUtils;
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -31,7 +32,6 @@ import java.util.Objects;
 import java.util.Properties;
 import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
-import org.apache.commons.lang3.StringUtils;
 
 /**
  * Represents a unique platform or core system version number and associated commit identifier. Provides methods to

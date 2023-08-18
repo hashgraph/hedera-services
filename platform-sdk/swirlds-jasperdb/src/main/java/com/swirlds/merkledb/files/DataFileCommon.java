@@ -22,6 +22,7 @@ import static com.swirlds.common.units.UnitConstants.MEBIBYTES_TO_BYTES;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.MERKLE_DB;
 
+import com.swirlds.base.utility.StringUtils;
 import com.swirlds.merkledb.KeyRange;
 import com.swirlds.merkledb.collections.IndexedObject;
 import com.swirlds.merkledb.collections.LongList;
@@ -45,7 +46,6 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

@@ -16,6 +16,7 @@
 
 package com.swirlds.common.utility;
 
+import com.swirlds.base.utility.StringUtils;
 import java.awt.Dialog;
 import java.awt.GraphicsEnvironment;
 import java.awt.Window;
@@ -43,7 +44,6 @@ import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.lang3.StringUtils;
 
 /**
  * Utility class for other operations
