@@ -218,7 +218,7 @@ public final class JrsTestReportGenerator {
                                             }
                                             if (previouslySelectedRow != null) {
                                                 for (var k = 0; k < previouslySelectedRow.cells.length; k++) {
-                                                    previouslySelectedRow.cells[k].style.borderBottomColor = "#555555";
+                                                    previouslySelectedRow.cells[k].style.borderBottomColor = "";
                                                 }
                                             }
                                             previouslySelectedRow = this;

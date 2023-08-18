@@ -28,6 +28,7 @@ import com.swirlds.platform.testreader.JrsTestIdentifier;
 import com.swirlds.platform.testreader.JrsTestMetadata;
 import com.swirlds.platform.util.VirtualTerminal;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -81,7 +82,7 @@ public class JrsTestReaderReportCommand extends AbstractCommand {
             names = {"-o", "--output"},
             description = "Specify the path to the output html file. Defaults to 'report.html'.")
     private void setOutput(@NonNull final Path output) {
-        this.output = pathMustNotExist(getAbsolutePath(output));
+        this.output = getAbsolutePath(output);
     }
 
     @CommandLine.Option(
@@ -104,6 +105,14 @@ public class JrsTestReaderReportCommand extends AbstractCommand {
     public Integer call() {
         final VirtualTerminal terminal =
                 new VirtualTerminal().setProgressIndicatorEnabled(true).setThrowOnError(true);
+
+        if (Files.exists(output)) {
+            try {
+                Files.delete(output);
+            } catch (final IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
 
         final Instant now = Instant.now();
 
