@@ -21,9 +21,9 @@ import static com.swirlds.platform.test.grid.GridGraphResult.PIPE;
 import static com.swirlds.platform.test.grid.GridGraphResult.repeatedChar;
 
 import java.io.PrintWriter;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Objects;
-import org.apache.commons.lang3.builder.CompareToBuilder;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 
 /**
@@ -154,17 +154,16 @@ public class GridTest<X extends Comparable<X>, Y extends Comparable<Y>>
      * {@inheritDoc}
      */
     @Override
-    public int compareTo(final GridTest<X, Y> o) {
-        if (this == o) {
+    public int compareTo(final GridTest<X, Y> that) {
+        if (this == that) {
             return 0;
         }
 
-        if (o == null || getClass() != o.getClass()) {
+        if (that == null || getClass() != that.getClass()) {
             return 1;
         }
 
-        return new CompareToBuilder()
-                .append(this.getTestName(), o.getTestName())
-                .build();
+        return Comparator.<GridTest<X, Y>, String>comparing(GridTest::getTestName)
+                .compare(this, that);
     }
 }

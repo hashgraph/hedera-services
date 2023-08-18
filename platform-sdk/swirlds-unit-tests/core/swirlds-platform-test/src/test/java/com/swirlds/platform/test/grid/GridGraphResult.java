@@ -18,8 +18,8 @@ package com.swirlds.platform.test.grid;
 
 import java.io.PrintWriter;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Objects;
-import org.apache.commons.lang3.builder.CompareToBuilder;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 
 /**
@@ -195,19 +195,18 @@ public class GridGraphResult<X extends Comparable<X>, Y extends Comparable<Y>>
      * {@inheritDoc}
      */
     @Override
-    public int compareTo(final GridGraphResult<X, Y> o) {
-        if (this == o) {
+    public int compareTo(final GridGraphResult<X, Y> that) {
+        if (this == that) {
             return 0;
         }
 
-        if (o == null || getClass() != o.getClass()) {
+        if (that == null || getClass() != that.getClass()) {
             return 1;
         }
 
-        return new CompareToBuilder()
-                .append(getX(), o.getX())
-                .append(getY(), o.getY())
-                .build();
+        return Comparator.<GridGraphResult<X, Y>, X>comparing(GridGraphResult::getX)
+                .thenComparing(GridGraphResult::getY)
+                .compare(this, that);
     }
 
     /**

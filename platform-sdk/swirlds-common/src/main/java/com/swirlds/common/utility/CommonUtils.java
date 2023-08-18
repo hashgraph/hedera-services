@@ -43,7 +43,6 @@ import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.lang3.Conversion;
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -325,8 +324,13 @@ public class CommonUtils {
      * @return the byte array
      */
     public static byte[] intToBytes(final int value) {
-        final byte[] result = new byte[Integer.BYTES];
-        return Conversion.intToByteArray(value, 0, result, 0, Integer.BYTES);
+        final byte[] dst = new byte[Integer.BYTES];
+
+        for (int i = 0; i < Integer.BYTES; i++) {
+            final int shift = i * 8;
+            dst[i] = (byte) (0xff & (value >> shift));
+        }
+        return dst;
     }
 
     /**

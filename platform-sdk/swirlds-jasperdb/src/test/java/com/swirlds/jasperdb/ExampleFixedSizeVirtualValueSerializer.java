@@ -16,7 +16,7 @@
 
 package com.swirlds.jasperdb;
 
-import static org.apache.commons.lang3.RandomUtils.nextInt;
+import static com.swirlds.common.test.fixtures.RandomUtils.nextInt;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;

@@ -22,6 +22,7 @@ import static com.swirlds.platform.test.grid.GridGraphResult.TAB;
 import static com.swirlds.platform.test.grid.GridGraphResult.repeatedChar;
 
 import java.io.PrintWriter;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -29,7 +30,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.apache.commons.lang3.builder.CompareToBuilder;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 
 /**
@@ -260,18 +260,17 @@ public class GridGraph<X extends Comparable<X>, Y extends Comparable<Y>>
      * {@inheritDoc}
      */
     @Override
-    public int compareTo(final GridGraph<X, Y> o) {
-        if (this == o) {
+    public int compareTo(final GridGraph<X, Y> that) {
+        if (this == that) {
             return 0;
         }
 
-        if (o == null || getClass() != o.getClass()) {
+        if (that == null || getClass() != that.getClass()) {
             return 1;
         }
 
-        return new CompareToBuilder()
-                .append(this.getGraphName(), o.getGraphName())
-                .build();
+        return Comparator.<GridGraph<X, Y>, String>comparing(GridGraph::getGraphName)
+                .compare(this, that);
     }
 
     /**

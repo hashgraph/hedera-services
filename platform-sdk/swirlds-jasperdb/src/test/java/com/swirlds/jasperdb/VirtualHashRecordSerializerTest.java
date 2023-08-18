@@ -16,7 +16,7 @@
 
 package com.swirlds.jasperdb;
 
-import static org.apache.commons.lang3.RandomUtils.nextInt;
+import static com.swirlds.common.test.fixtures.RandomUtils.nextInt;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;

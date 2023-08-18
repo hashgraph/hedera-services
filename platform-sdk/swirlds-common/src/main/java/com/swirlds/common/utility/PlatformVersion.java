@@ -26,12 +26,12 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
+import java.util.Comparator;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.builder.CompareToBuilder;
 
 /**
  * Represents a unique platform or core system version number and associated commit identifier. Provides methods to
@@ -354,9 +354,8 @@ public final class PlatformVersion implements SoftwareVersion {
             return -1;
         }
 
-        return new CompareToBuilder()
-                .append(versionNumber, pv.versionNumber)
-                .append(commit, pv.commit)
-                .build();
+        return Comparator.comparing(PlatformVersion::versionNumber)
+                .thenComparing(PlatformVersion::commit)
+                .compare(this, pv);
     }
 }
