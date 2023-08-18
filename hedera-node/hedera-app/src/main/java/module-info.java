@@ -79,4 +79,6 @@ module com.hedera.node.app {
             com.hedera.node.app.test.fixtures,
             com.swirlds.common,
             com.swirlds.platform;
+    exports com.hedera.node.app.workflows.handle to
+            com.hedera.node.app.test.fixtures;
 }

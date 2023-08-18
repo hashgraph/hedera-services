@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows;
+package com.hedera.node.app.workflows.handle;
 
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager.DEFAULT_STAKING_PERIOD_MINS;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
@@ -26,7 +26,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater;
-import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.service.token.records.StakingContext;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
@@ -47,7 +47,7 @@ class StakingPeriodTimeHookTest {
     private EndOfStakingPeriodUpdater stakingPeriodCalculator;
 
     @Mock
-    private HandleContext context;
+    private StakingContext context;
 
     private StakingPeriodTimeHook subject;
 
@@ -70,18 +70,20 @@ class StakingPeriodTimeHookTest {
     @Test
     void processUpdateCalledForNullConsensusTime() {
         subject.setLastConsensusTime(null);
+        given(context.consensusTime()).willReturn(CONSENSUS_TIME_1234567);
 
-        subject.process(CONSENSUS_TIME_1234567, context);
+        subject.process(context);
 
-        verify(stakingPeriodCalculator).updateNodes(notNull(), notNull());
+        verify(stakingPeriodCalculator).updateNodes(notNull());
     }
 
     @Test
     void processUpdateSkippedForPreviousConsensusTime() {
         final var beforeLastConsensusTime = CONSENSUS_TIME_1234567.minusSeconds(1);
+        given(context.consensusTime()).willReturn(beforeLastConsensusTime);
         subject.setLastConsensusTime(CONSENSUS_TIME_1234567);
 
-        subject.process(beforeLastConsensusTime, context);
+        subject.process(context);
 
         verifyNoInteractions(stakingPeriodCalculator);
     }
@@ -91,6 +93,7 @@ class StakingPeriodTimeHookTest {
         given(context.configuration()).willReturn(newPeriodMinsConfig());
         // Use any number of seconds that gets isNextPeriod(...) to return true
         var currentConsensusTime = CONSENSUS_TIME_1234567.plusSeconds(500_000);
+        given(context.consensusTime()).willReturn(currentConsensusTime);
         subject.setLastConsensusTime(CONSENSUS_TIME_1234567);
 
         // Pre-condition check
@@ -98,18 +101,19 @@ class StakingPeriodTimeHookTest {
                         currentConsensusTime, CONSENSUS_TIME_1234567, context))
                 .isTrue();
 
-        subject.process(currentConsensusTime, context);
+        subject.process(context);
 
-        verify(stakingPeriodCalculator).updateNodes(eq(currentConsensusTime), notNull());
+        verify(stakingPeriodCalculator)
+                .updateNodes(argThat(stakingContext -> currentConsensusTime.equals(stakingContext.consensusTime())));
     }
 
     @Test
     void processUpdateExceptionIsCaught() {
         doThrow(new RuntimeException("test exception"))
                 .when(stakingPeriodCalculator)
-                .updateNodes(any(), any());
+                .updateNodes(any());
 
-        Assertions.assertThatNoException().isThrownBy(() -> subject.process(CONSENSUS_TIME_1234567, context));
+        Assertions.assertThatNoException().isThrownBy(() -> subject.process(context));
     }
 
     @Test
