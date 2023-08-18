@@ -19,20 +19,20 @@ package com.swirlds.common.test.metrics.extensions;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
-import com.swirlds.common.metrics.extensions.BusyTime;
+import com.swirlds.common.metrics.extensions.FractionalTimer;
 import java.time.Duration;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class BusyTimeTest {
+class FractionalTimerTest {
     private final FakeTime clock = new FakeTime(Instant.EPOCH, Duration.ZERO);
-    private BusyTime metric;
+    private FractionalTimer metric;
 
     @BeforeEach
     void reset() {
         clock.reset();
-        metric = new BusyTime(clock);
+        metric = new FractionalTimer(clock);
     }
 
     /**
@@ -41,58 +41,58 @@ class BusyTimeTest {
     @Test
     void diagramExample() {
         // time == 1
-        assertEquals(0.0, metric.getBusyFraction(), "initially, the busy fraction should be 0");
+        assertEquals(0.0, metric.getActiveFraction(), "initially, the busy fraction should be 0");
 
         clock.tick(Duration.ofSeconds(1)); // time == 2
-        assertEquals(0.0, metric.getBusyFraction(), "no work has started yet, so the busy fraction should be 0");
-        metric.startingWork();
+        assertEquals(0.0, metric.getActiveFraction(), "no work has started yet, so the busy fraction should be 0");
+        metric.activate();
         assertEquals(
                 0.0,
-                metric.getBusyFraction(),
+                metric.getActiveFraction(),
                 "work has started, but not time has elapsed yet, so the busy fraction should be 0");
 
         clock.tick(Duration.ofSeconds(1)); // time == 3
         assertEquals(
                 0.5,
-                metric.getBusyFraction(),
+                metric.getActiveFraction(),
                 "1 second of work, 1 second of idle, so the busy fraction should be 0.5");
-        metric.finishedWork();
-        assertEquals(0.5, metric.getBusyFraction(), "no time has elapsed, so the value should still be 0.5");
+        metric.deactivate();
+        assertEquals(0.5, metric.getActiveFraction(), "no time has elapsed, so the value should still be 0.5");
 
         clock.tick(Duration.ofSeconds(1)); // time == 4
         assertEquals(
                 0.33,
-                metric.getBusyFraction(),
+                metric.getActiveFraction(),
                 0.01,
                 "1 second of work, 2 seconds of idle, so the busy fraction should be 0.33");
 
         clock.tick(Duration.ofSeconds(1)); // time == 5
         assertEquals(
                 0.25,
-                metric.getBusyFraction(),
+                metric.getActiveFraction(),
                 0.01,
                 "1 second of work, 3 seconds of idle, so the busy fraction should be 0.25");
 
         clock.tick(Duration.ofSeconds(1)); // time == 6
         assertEquals(
                 0.20,
-                metric.getBusyFraction(),
+                metric.getActiveFraction(),
                 0.01,
                 "1 second of work, 4 seconds of idle, so the busy fraction should be 0.20");
-        metric.startingWork();
-        assertEquals(0.20, metric.getBusyFraction(), "no time has elapsed, so the value should still be 0.2");
+        metric.activate();
+        assertEquals(0.20, metric.getActiveFraction(), "no time has elapsed, so the value should still be 0.2");
 
         clock.tick(Duration.ofSeconds(1)); // time == 7
         assertEquals(
                 0.33,
-                metric.getBusyFraction(),
+                metric.getActiveFraction(),
                 0.01,
                 "2 second of work, 4 seconds of idle, so the busy fraction should be 0.33");
 
         clock.tick(Duration.ofSeconds(1)); // time == 8
         assertEquals(
                 0.43,
-                metric.getBusyFraction(),
+                metric.getActiveFraction(),
                 0.01,
                 "3 second of work, 4 seconds of idle, so the busy fraction should be 0.43");
         assertEquals(
@@ -100,12 +100,12 @@ class BusyTimeTest {
                 metric.getAndReset(),
                 0.01,
                 "the snapshot should contain the same value returned by getBusyFraction()");
-        assertEquals(0.0, metric.getBusyFraction(), "the snapshotting should reset the value");
+        assertEquals(0.0, metric.getActiveFraction(), "the snapshotting should reset the value");
 
         clock.tick(Duration.ofSeconds(1)); // time == 9
         assertEquals(
                 1.0,
-                metric.getBusyFraction(),
+                metric.getActiveFraction(),
                 "work has been ongoing since the reset, so the busy fraction should be 1");
     }
 
@@ -114,7 +114,7 @@ class BusyTimeTest {
         clock.tick(Duration.ofSeconds(10));
         assertEquals(0.0, metric.getAndReset(), "no work has been done, expect 0");
         clock.tick(Duration.ofSeconds(5));
-        metric.startingWork();
+        metric.activate();
         clock.tick(Duration.ofSeconds(5));
         assertEquals(0.5, metric.getAndReset(), "half the time was spend doing work, expect 0.5");
         clock.tick(Duration.ofSeconds(10));
@@ -124,16 +124,16 @@ class BusyTimeTest {
     @Test
     void badUpdates() {
         clock.tick(Duration.ofSeconds(2));
-        metric.startingWork();
+        metric.activate();
         clock.tick(Duration.ofSeconds(1));
         // starting work again without finishing the previous work
-        metric.startingWork();
+        metric.activate();
         clock.tick(Duration.ofSeconds(1));
         assertEquals(0.5, metric.getAndReset(), "the second startingWork() should be ignored, so 0.5 is expected");
         clock.tick(Duration.ofSeconds(1));
-        metric.finishedWork();
+        metric.deactivate();
         clock.tick(Duration.ofSeconds(1));
-        metric.finishedWork();
+        metric.deactivate();
         clock.tick(Duration.ofSeconds(1));
         assertEquals(
                 0.33, metric.getAndReset(), 0.01, "the second finishedWork() should be ignored, so 0.33 is expected");
@@ -141,15 +141,15 @@ class BusyTimeTest {
 
     @Test
     void metricNotReset() {
-        metric.startingWork();
+        metric.activate();
         clock.tick(Duration.ofMinutes(30));
-        metric.finishedWork();
+        metric.deactivate();
         clock.tick(Duration.ofMinutes(10));
-        metric.startingWork();
-        metric.finishedWork();
+        metric.activate();
+        metric.deactivate();
         assertEquals(-1.0, metric.getAndReset(), 0.01, "this in an overflow, so -1 is expected");
         clock.tick(Duration.ofMinutes(1));
-        metric.startingWork();
+        metric.activate();
         clock.tick(Duration.ofMinutes(1));
         assertEquals(
                 0.5,
