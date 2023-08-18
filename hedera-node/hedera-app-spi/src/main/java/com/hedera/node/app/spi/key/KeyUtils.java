@@ -30,10 +30,16 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 // NOTE: This class is not in the right place. But is needed by several modules.
 // !!!!!!!!!!🔥🔥🔥 It should be moved once we find where to keep it. 🔥🔥🔥!!!!!!!!!!!
 public class KeyUtils {
+
     public static final int ED25519_BYTE_LENGTH = 32;
     private static final byte ODD_PARITY = (byte) 0x03;
     private static final byte EVEN_PARITY = (byte) 0x02;
     public static final int ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH = 33;
+
+    private KeyUtils() {
+        throw new UnsupportedOperationException("Utility Class");
+    }
+
     /**
      * Checks if the given key is empty.
      * For a KeyList type checks if the list is empty.
@@ -107,7 +113,7 @@ public class KeyUtils {
         } else if (pbjKey.hasEcdsaSecp256k1()) {
             final var ecKey = ((Bytes) key.value());
             return ecKey.length() == ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH
-                    && ((ecKey.getByte(0) == EVEN_PARITY || ecKey.getByte(0) == ODD_PARITY));
+                    && (ecKey.getByte(0) == EVEN_PARITY || ecKey.getByte(0) == ODD_PARITY);
         } else if (pbjKey.hasDelegatableContractId()) {
             return ((ContractID) key.value()).contractNum().intValue() > 0;
         } else if (pbjKey.hasContractID()) {

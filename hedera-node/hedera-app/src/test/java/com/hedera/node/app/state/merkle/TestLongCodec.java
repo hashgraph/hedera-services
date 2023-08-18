@@ -46,6 +46,9 @@ class TestLongCodec implements Codec<Long> {
 
     @NonNull
     @Override
+    // Suppressing the warning that this method is the same as requiresNodePayment.
+    // To be removed if that changes
+    @SuppressWarnings("java:S4144")
     public Long parseStrict(@NonNull ReadableSequentialData input) {
         Objects.requireNonNull(input);
         return Long.valueOf(input.readLong());

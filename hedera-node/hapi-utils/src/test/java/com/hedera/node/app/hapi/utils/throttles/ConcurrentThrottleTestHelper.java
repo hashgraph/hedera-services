@@ -51,6 +51,8 @@ public class ConcurrentThrottleTestHelper {
         Assertions.assertEquals(0.0, percentDeviation, maxPerDeviation);
     }
 
+    // Suppressing the warning that we use TimeUnit.sleep
+    @SuppressWarnings("java:S2925")
     public int runWith(final DeterministicThrottle subject) throws InterruptedException {
         final AtomicInteger allowed = new AtomicInteger(0);
         final AtomicBoolean stopped = new AtomicBoolean(false);
