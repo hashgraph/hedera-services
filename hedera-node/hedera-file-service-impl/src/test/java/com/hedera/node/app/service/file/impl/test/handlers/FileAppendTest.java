@@ -48,7 +48,6 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.Fees;
-import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -88,9 +87,6 @@ class FileAppendTest extends FileTestBase {
     protected Account payerAccount;
 
     @Mock(strictness = Mock.Strictness.LENIENT)
-    HederaFileNumbers fileNumbers;
-
-    @Mock(strictness = Mock.Strictness.LENIENT)
     FeeCalculator feeCalculator;
 
     @Mock(strictness = Mock.Strictness.LENIENT)
@@ -102,7 +98,7 @@ class FileAppendTest extends FileTestBase {
 
     @BeforeEach
     void setUp() {
-        subject = new FileAppendHandler(fileNumbers);
+        subject = new FileAppendHandler();
         testConfig = HederaTestConfigBuilder.createConfig();
         when(preHandleContext.configuration()).thenReturn(testConfig);
         when(handleContext.configuration()).thenReturn(testConfig);
