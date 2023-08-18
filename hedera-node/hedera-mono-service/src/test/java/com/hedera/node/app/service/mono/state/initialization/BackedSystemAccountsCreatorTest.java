@@ -19,17 +19,17 @@ package com.hedera.node.app.service.mono.state.initialization;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_SYSTEM_ENTITY_EXPIRY;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_NUM_SYSTEM_ACCOUNTS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.node.app.service.mono.config.AccountNumbers;
 import com.hedera.node.app.service.mono.config.HederaNumbers;
@@ -43,10 +43,7 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
-import com.hedera.test.extensions.LogCaptor;
-import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
-import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
@@ -57,15 +54,11 @@ import com.swirlds.common.system.address.AddressBook;
 import java.security.InvalidKeyException;
 import java.time.Instant;
 import java.util.List;
-import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 
-@ExtendWith(LogCaptureExtension.class)
 class BackedSystemAccountsCreatorTest {
-
     private final long shard = 0;
     private final long realm = 0;
     private final long totalBalance = 100l;
@@ -79,9 +72,6 @@ class BackedSystemAccountsCreatorTest {
     private BackingStore<AccountID, HederaAccount> backingAccounts;
     private TreasuryCloner treasuryCloner;
     private HederaAccountNumbers accountNums;
-
-    @LoggingTarget
-    private LogCaptor logCaptor;
 
     @LoggingSubject
     private BackedSystemAccountsCreator subject;
@@ -113,8 +103,6 @@ class BackedSystemAccountsCreatorTest {
         given(book.getAddress(new NodeId(0L))).willReturn(address);
 
         backingAccounts = (BackingStore<AccountID, HederaAccount>) mock(BackingStore.class);
-        given(backingAccounts.idSet())
-                .willReturn(Set.of(accountWith(1), accountWith(2), accountWith(3), accountWith(4)));
         given(backingAccounts.getImmutableRef(accountWith(1))).willReturn(withExpectedBalance(0));
         given(backingAccounts.getImmutableRef(accountWith(2))).willReturn(withExpectedBalance(totalBalance));
         given(backingAccounts.getImmutableRef(accountWith(3))).willReturn(withExpectedBalance(0));
@@ -135,6 +123,7 @@ class BackedSystemAccountsCreatorTest {
 
         // when:
         subject.ensureSystemAccounts(backingAccounts, book);
+        assertDoesNotThrow(subject::ensureSynthRecordsPresentOnFirstEverTransaction);
 
         assertEquals(missingSystemAccount, subject.getSystemAccountsCreated());
         assertEquals(treasuryClones, subject.getTreasuryClonesCreated());
@@ -203,17 +192,15 @@ class BackedSystemAccountsCreatorTest {
     }
 
     @Test
-    void createsNothingIfAllPresent() {
-        given(backingAccounts.contains(any())).willReturn(true);
-        final var desiredInfo = String.format("Ledger float is %d tinyBars in %d accounts.", totalBalance, 4);
-
-        // when:
-        subject.ensureSystemAccounts(backingAccounts, book);
+    void internalCreateOnlyPrepsSyntheticRecords() {
+        subject.ensureSynthRecordsPresentOnFirstEverTransaction();
 
         // then:
-        verify(backingAccounts, never()).put(any(), any());
+        verifyNoInteractions(backingAccounts);
         // and:
-        assertThat(logCaptor.infoLogs(), contains(desiredInfo));
+        assertNotEquals(0, subject.getSystemAccountsCreated().size());
+        assertNotEquals(0, subject.getStakingFundAccountsCreated().size());
+        verify(treasuryCloner).ensureTreasuryClonesExist(false);
     }
 
     @Test
@@ -230,7 +217,7 @@ class BackedSystemAccountsCreatorTest {
         verify(backingAccounts).put(eq(funding801), captor.capture());
         final var new801 = captor.getValue();
         assertEquals(canonicalFundingAccount(), new801);
-        verify(treasuryCloner).ensureTreasuryClonesExist();
+        verify(treasuryCloner).ensureTreasuryClonesExist(true);
     }
 
     private MerkleAccount canonicalFundingAccount() {

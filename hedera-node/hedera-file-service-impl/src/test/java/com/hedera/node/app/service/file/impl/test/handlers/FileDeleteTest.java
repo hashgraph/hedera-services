@@ -21,7 +21,6 @@ import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.notNull;
@@ -217,7 +216,7 @@ class FileDeleteTest extends FileTestBase {
 
         assertTrue(changedFile.isPresent());
         assertTrue(changedFile.get().deleted());
-        assertNull(changedFile.get().contents());
+        assertEquals(changedFile.get().contents(), Bytes.EMPTY);
     }
 
     @Test

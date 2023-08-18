@@ -17,15 +17,14 @@
 package com.swirlds.common.merkle.synchronization.internal;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
+import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * A wrapper object for a node that the sending synchronizer intends to send to the receiver. These objects form a
@@ -175,7 +174,7 @@ public class NodeToSend {
 
     @Override
     public String toString() {
-        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+        return new ToStringBuilder(this)
                 .append("response", responseReceived ? responseStatus : "?")
                 .append("node", node)
                 .toString();

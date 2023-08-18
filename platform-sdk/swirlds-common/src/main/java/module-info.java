@@ -34,6 +34,7 @@ module com.swirlds.common {
     exports com.swirlds.common.merkle.impl.internal;
     exports com.swirlds.common.merkle.interfaces;
     exports com.swirlds.common.merkle.iterators;
+    exports com.swirlds.common.merkle.proof;
     exports com.swirlds.common.merkle.route;
     exports com.swirlds.common.merkle.synchronization;
     exports com.swirlds.common.merkle.synchronization.config;
@@ -155,6 +156,7 @@ module com.swirlds.common {
             com.swirlds.platform,
             com.swirlds.platform.test,
             com.swirlds.gui;
+    exports com.swirlds.common.startup;
 
     requires transitive com.swirlds.base;
     requires com.swirlds.config;

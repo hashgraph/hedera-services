@@ -469,11 +469,6 @@ public final class SmartContractFeeBuilder extends FeeBuilder {
         // calculate BPT - Total Bytes in Transaction
         long txBodySize = 0;
         txBodySize = getCommonTransactionBodyBytes(txBody);
-        /*
-         * ContractID contractID = BASIC_ENTITY_ID_SIZE oneof obtainers { AccountID transferAccountID =
-         * BASIC_ENTITY_ID_SIZE
-         * ContractID transferContractID = BASIC_ENTITY_ID_SIZE }
-         */
 
         bpt = txBodySize + BASIC_ENTITY_ID_SIZE + BASIC_ENTITY_ID_SIZE + sigValObj.getSignatureSize();
 

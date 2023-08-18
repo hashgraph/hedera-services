@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.test.sync;
 
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.network.Connection;
 import java.io.IOException;
@@ -25,7 +26,6 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.commons.lang3.tuple.Pair;
 
 @FunctionalInterface
 public interface ConnectionFactory {

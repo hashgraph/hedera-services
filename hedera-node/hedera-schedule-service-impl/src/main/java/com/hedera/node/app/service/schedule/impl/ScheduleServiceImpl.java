@@ -18,8 +18,8 @@ package com.hedera.node.app.service.schedule.impl;
 
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.hapi.node.state.primitive.ProtoLong;
-import com.hedera.hapi.node.state.primitive.ProtoString;
+import com.hedera.hapi.node.state.primitives.ProtoLong;
+import com.hedera.hapi.node.state.primitives.ProtoString;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.schedule.ScheduleList;
 import com.hedera.node.app.service.mono.state.codec.MonoMapCodecAdapter;

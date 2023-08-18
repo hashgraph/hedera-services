@@ -18,7 +18,7 @@ package com.hedera.node.app.service.networkadmin.impl;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.state.primitive.ProtoBytes;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.node.app.spi.state.WritableSingletonState;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;

@@ -17,10 +17,12 @@
 package com.hedera.node.app.service.token.impl.api;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+import static com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator.IMMUTABILITY_SENTINEL_KEY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.contract.ContractNonceInfo;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -50,6 +52,8 @@ import org.apache.logging.log4j.Logger;
  */
 public class TokenServiceApiImpl implements TokenServiceApi {
     private static final Logger logger = LogManager.getLogger(TokenServiceApiImpl.class);
+    private static final Key STANDIN_CONTRACT_KEY =
+            Key.newBuilder().contractID(ContractID.newBuilder().contractNum(0)).build();
 
     private final StakingValidator stakingValidator;
     private final WritableAccountStore store;
@@ -97,7 +101,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
             @Nullable final Long stakedNodeIdInOp,
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final NetworkInfo networkInfo) {
-        stakingValidator.validateStakedId(
+        stakingValidator.validateStakedIdForCreation(
                 isStakingEnabled,
                 hasDeclineRewardChange,
                 stakedIdKind,
@@ -124,18 +128,43 @@ public class TokenServiceApiImpl implements TokenServiceApi {
      * {@inheritDoc}
      */
     @Override
-    public void deleteAndMaybeUnaliasContract(@NonNull final AccountID idToDelete) {
-        requireNonNull(idToDelete);
-        if (idToDelete.hasAccountNum()) {
-            store.remove(idToDelete);
-        } else {
-            final var alias = idToDelete.aliasOrThrow();
-            final var contractAccountId = store.getAccountIDByAlias(alias);
-            if (contractAccountId != null) {
-                store.remove(contractAccountId);
-                store.removeAlias(alias);
-            }
+    public void finalizeHollowAccountAsContract(@NonNull final AccountID hollowAccountId, final long initialNonce) {
+        requireNonNull(hollowAccountId);
+        final var hollowAccount = requireNonNull(store.get(hollowAccountId));
+        if (!IMMUTABILITY_SENTINEL_KEY.equals(hollowAccount.keyOrThrow())) {
+            throw new IllegalArgumentException(
+                    "Cannot finalize non-hollow account " + hollowAccountId + " as contract");
         }
+        final var accountAsContract = hollowAccount
+                .copyBuilder()
+                .key(STANDIN_CONTRACT_KEY)
+                .smartContract(true)
+                .ethereumNonce(initialNonce)
+                .build();
+        store.put(accountAsContract);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void deleteAndMaybeUnaliasContract(@NonNull final ContractID contractId) {
+        requireNonNull(contractId);
+        final var contract = requireNonNull(store.getContractById(contractId));
+
+        final var evmAddress = contract.alias();
+        final var usedEvmAddress = contractId.evmAddressOrElse(Bytes.EMPTY);
+        if (!usedEvmAddress.equals(evmAddress)) {
+            logger.error(
+                    "Contract {} has an alias {} different than its referencing EVM address {}",
+                    contractId,
+                    evmAddress,
+                    usedEvmAddress);
+        }
+        maybeRemoveAlias(store, evmAddress);
+        maybeRemoveAlias(store, usedEvmAddress);
+
+        store.put(contract.copyBuilder().alias(Bytes.EMPTY).deleted(true).build());
     }
 
     /**
@@ -236,6 +265,12 @@ public class TokenServiceApiImpl implements TokenServiceApi {
                 .firstContractStorageKey(firstKey)
                 .contractKvPairsNumber(newNumKvPairs)
                 .build());
+    }
+
+    private void maybeRemoveAlias(@NonNull final WritableAccountStore store, @NonNull final Bytes alias) {
+        if (!Bytes.EMPTY.equals(alias)) {
+            store.removeAlias(alias);
+        }
     }
 
     @Override

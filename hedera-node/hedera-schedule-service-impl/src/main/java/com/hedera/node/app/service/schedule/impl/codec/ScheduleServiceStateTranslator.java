@@ -61,14 +61,14 @@ public final class ScheduleServiceStateTranslator {
         }
 
         if (virtualValue.getKey() != null) {
-            scheduleBuilder.id(ScheduleID.newBuilder()
+            scheduleBuilder.scheduleId(ScheduleID.newBuilder()
                     .scheduleNum(virtualValue.getKey().getKeyAsLong())
                     .build());
         }
 
         final EntityId scheduleAccount = virtualValue.schedulingAccount();
         if (scheduleAccount != null) {
-            scheduleBuilder.schedulerAccount(AccountID.newBuilder()
+            scheduleBuilder.schedulerAccountId(AccountID.newBuilder()
                     .accountNum(scheduleAccount.num())
                     .realmNum(scheduleAccount.realm())
                     .shardNum(scheduleAccount.shard())
@@ -77,7 +77,7 @@ public final class ScheduleServiceStateTranslator {
 
         final EntityId payerAccount = virtualValue.payer();
         if (payerAccount != null) {
-            scheduleBuilder.payerAccount(AccountID.newBuilder()
+            scheduleBuilder.payerAccountId(AccountID.newBuilder()
                     .accountNum(payerAccount.num())
                     .realmNum(payerAccount.realm())
                     .shardNum(payerAccount.shard())
@@ -99,18 +99,12 @@ public final class ScheduleServiceStateTranslator {
 
         final RichInstant expirationTime = virtualValue.expirationTimeProvided();
         if (expirationTime != null) {
-            scheduleBuilder.expirationTimeProvided(Timestamp.newBuilder()
-                    .seconds(expirationTime.getSeconds())
-                    .nanos(expirationTime.getNanos())
-                    .build());
+            scheduleBuilder.providedExpirationSecond(expirationTime.getSeconds());
         }
 
         final RichInstant calculatedExpirationTime = virtualValue.calculatedExpirationTime();
         if (calculatedExpirationTime != null) {
-            scheduleBuilder.calculatedExpirationTime(Timestamp.newBuilder()
-                    .seconds(calculatedExpirationTime.getSeconds())
-                    .nanos(calculatedExpirationTime.getNanos())
-                    .build());
+            scheduleBuilder.calculatedExpirationSecond(calculatedExpirationTime.getSeconds());
         }
 
         final Timestamp resolutionTime = getResolutionTime(virtualValue);
@@ -205,16 +199,15 @@ public final class ScheduleServiceStateTranslator {
     public static com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue pbjToState(
             @NonNull final Schedule schedule) {
         Objects.requireNonNull(schedule);
-        Objects.requireNonNull(schedule.id());
+        Objects.requireNonNull(schedule.scheduleId());
 
         final byte[] body = PbjConverter.asBytes(
                 TransactionBody.PROTOBUF, Objects.requireNonNull(schedule.originalCreateTransaction()));
         com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue scheduleVirtualValue =
                 new com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue();
 
-        if (body.length > 0 && schedule.calculatedExpirationTime() != null) {
-            scheduleVirtualValue = ScheduleVirtualValue.from(
-                    body, schedule.calculatedExpirationTime().seconds());
+        if (body.length > 0 && schedule.calculatedExpirationSecond() != Schedule.DEFAULT.calculatedExpirationSecond()) {
+            scheduleVirtualValue = ScheduleVirtualValue.from(body, schedule.calculatedExpirationSecond());
         }
 
         if (schedule.resolutionTime() != null) {
@@ -227,7 +220,8 @@ public final class ScheduleServiceStateTranslator {
             }
         }
 
-        scheduleVirtualValue.setKey(EntityNumVirtualKey.fromLong(schedule.id().scheduleNum()));
+        scheduleVirtualValue.setKey(
+                EntityNumVirtualKey.fromLong(schedule.scheduleId().scheduleNum()));
 
         final List<Key> keys = schedule.signatories();
 

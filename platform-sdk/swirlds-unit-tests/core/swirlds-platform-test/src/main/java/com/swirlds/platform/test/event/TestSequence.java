@@ -23,10 +23,10 @@ import static com.swirlds.platform.test.fixtures.event.EventUtils.printGranularE
 import static com.swirlds.platform.test.fixtures.event.EventUtils.sortEventList;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.base.utility.Pair;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import java.util.List;
 import java.util.function.BiConsumer;
-import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * Describes the expected behavior of a consensus test sequence. A consensus test may be composed of one or more
@@ -211,7 +211,7 @@ public class TestSequence {
         final Pair<Integer, Integer> ratios = countConsensusAndStaleEvents(allEvents1);
 
         // Validate consensus ratio
-        final double consensusRatio = ((double) ratios.getLeft()) / allEvents1.size();
+        final double consensusRatio = ((double) ratios.left()) / allEvents1.size();
 
         assertTrue(
                 consensusRatio >= minimumConsensusRatio,
@@ -225,7 +225,7 @@ public class TestSequence {
                         consensusRatio, maximumConsensusRatio, currentSequenceNum));
 
         // Validate stale ratio
-        final double staleRatio = ((double) ratios.getRight()) / allEvents1.size();
+        final double staleRatio = ((double) ratios.right()) / allEvents1.size();
 
         assertTrue(
                 staleRatio >= minimumStaleRatio,

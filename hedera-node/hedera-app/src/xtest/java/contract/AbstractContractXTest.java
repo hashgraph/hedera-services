@@ -27,6 +27,7 @@ import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
@@ -101,7 +102,7 @@ public abstract class AbstractContractXTest {
             @NonNull ReadableKVState<SlotKey, SlotValue> storage,
             @NonNull ReadableKVState<AccountID, Account> accounts);
 
-    protected abstract void assertExpectedAliases(@NonNull ReadableKVState<Bytes, AccountID> aliases);
+    protected abstract void assertExpectedAliases(@NonNull ReadableKVState<ProtoBytes, AccountID> aliases);
 
     protected abstract void assertExpectedAccounts(@NonNull ReadableKVState<AccountID, Account> accounts);
 
@@ -111,7 +112,7 @@ public abstract class AbstractContractXTest {
         for (final var txn : txns) {
             final var context = scaffoldingComponent.contextFactory().apply(txn);
             handler.handle(context);
-            ((SavepointStackImpl) context.savepointStack()).commit();
+            ((SavepointStackImpl) context.savepointStack()).commitFullStack();
         }
     }
 
@@ -160,7 +161,7 @@ public abstract class AbstractContractXTest {
         scaffoldingComponent.workingStateAccessor().setHederaState(fakeHederaState);
     }
 
-    private ReadableKVState<Bytes, AccountID> finalAliases() {
+    private ReadableKVState<ProtoBytes, AccountID> finalAliases() {
         return scaffoldingComponent
                 .hederaState()
                 .createReadableStates(TokenServiceImpl.NAME)

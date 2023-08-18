@@ -16,15 +16,14 @@
 
 package com.swirlds.platform.eventhandling;
 
+import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.platform.internal.EventImpl;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
-import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.apache.commons.lang3.builder.ToStringStyle;
 
 /**
  * Keeps events that need to be stored in the signed state when it is created. It makes sure it has last {@code
@@ -117,7 +116,9 @@ public class SignedStateEventStorage {
 
     @Override
     public boolean equals(final Object o) {
-        if (this == o) return true;
+        if (this == o) {
+            return true;
+        }
 
         if (o == null || getClass() != o.getClass()) {
             return false;
@@ -133,15 +134,12 @@ public class SignedStateEventStorage {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder(17, 37)
-                .append(queue)
-                .append(latestRoundReceived)
-                .toHashCode();
+        return Objects.hash(queue, latestRoundReceived);
     }
 
     @Override
     public String toString() {
-        return new ToStringBuilder(this, ToStringStyle.MULTI_LINE_STYLE)
+        return new ToStringBuilder(this)
                 .append("queue", queue)
                 .append("latestRoundReceived", latestRoundReceived)
                 .toString();

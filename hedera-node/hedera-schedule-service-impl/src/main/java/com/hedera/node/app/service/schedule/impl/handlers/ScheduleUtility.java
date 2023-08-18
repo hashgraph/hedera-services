@@ -27,6 +27,7 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.hapi.node.scheduled.ScheduleCreateTransactionBody;
+import com.hedera.hapi.node.state.primitives.ProtoLong;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -121,17 +122,17 @@ public final class ScheduleUtility {
     static Schedule markExecuted(@NonNull final Schedule schedule, @NonNull final Instant consensusTime) {
         final Timestamp consensusTimestamp = new Timestamp(consensusTime.getEpochSecond(), consensusTime.getNano());
         return new Schedule(
+                schedule.scheduleId(),
                 schedule.deleted(),
                 true,
                 schedule.waitForExpiry(),
                 schedule.memo(),
-                schedule.id(),
-                schedule.schedulerAccount(),
-                schedule.payerAccount(),
+                schedule.schedulerAccountId(),
+                schedule.payerAccountId(),
                 schedule.adminKey(),
                 schedule.scheduleValidStart(),
-                schedule.expirationTimeProvided(),
-                schedule.calculatedExpirationTime(),
+                schedule.providedExpirationSecond(),
+                schedule.calculatedExpirationSecond(),
                 consensusTimestamp,
                 schedule.scheduledTransaction(),
                 schedule.originalCreateTransaction(),
@@ -141,17 +142,17 @@ public final class ScheduleUtility {
     @NonNull
     static Schedule replaceSignatories(@NonNull final Schedule schedule, @NonNull final Set<Key> newSignatories) {
         return new Schedule(
+                schedule.scheduleId(),
                 schedule.deleted(),
                 schedule.executed(),
                 schedule.waitForExpiry(),
                 schedule.memo(),
-                schedule.id(),
-                schedule.schedulerAccount(),
-                schedule.payerAccount(),
+                schedule.schedulerAccountId(),
+                schedule.payerAccountId(),
                 schedule.adminKey(),
                 schedule.scheduleValidStart(),
-                schedule.expirationTimeProvided(),
-                schedule.calculatedExpirationTime(),
+                schedule.providedExpirationSecond(),
+                schedule.calculatedExpirationSecond(),
                 schedule.resolutionTime(),
                 schedule.scheduledTransaction(),
                 schedule.originalCreateTransaction(),
@@ -165,17 +166,17 @@ public final class ScheduleUtility {
             @NonNull final Instant consensusTime) {
         final Timestamp consensusTimestamp = new Timestamp(consensusTime.getEpochSecond(), consensusTime.getNano());
         return new Schedule(
+                schedule.scheduleId(),
                 schedule.deleted(),
                 true,
                 schedule.waitForExpiry(),
                 schedule.memo(),
-                schedule.id(),
-                schedule.schedulerAccount(),
-                schedule.payerAccount(),
+                schedule.schedulerAccountId(),
+                schedule.payerAccountId(),
                 schedule.adminKey(),
                 schedule.scheduleValidStart(),
-                schedule.expirationTimeProvided(),
-                schedule.calculatedExpirationTime(),
+                schedule.providedExpirationSecond(),
+                schedule.calculatedExpirationSecond(),
                 consensusTimestamp,
                 schedule.scheduledTransaction(),
                 schedule.originalCreateTransaction(),
@@ -219,13 +220,13 @@ public final class ScheduleUtility {
         final ScheduleID nullId = null;
 
         Schedule.Builder builder = Schedule.newBuilder();
-        builder.id(nullId).deleted(false).executed(false);
+        builder.scheduleId(nullId).deleted(false).executed(false);
         builder.waitForExpiry(createTransaction.waitForExpiry());
-        builder.adminKey(createTransaction.adminKey()).schedulerAccount(parentTransactionId.accountID());
-        builder.payerAccount(createTransaction.payerAccountIDOrElse(schedulerAccount));
-        builder.schedulerAccount(schedulerAccount);
+        builder.adminKey(createTransaction.adminKey()).schedulerAccountId(parentTransactionId.accountID());
+        builder.payerAccountId(createTransaction.payerAccountIDOrElse(schedulerAccount));
+        builder.schedulerAccountId(schedulerAccount);
         builder.scheduleValidStart(parentTransactionId.transactionValidStart());
-        builder.calculatedExpirationTime(calculatedExpirationTime);
+        builder.calculatedExpirationSecond(calculatedExpirationTime.seconds());
         builder.originalCreateTransaction(currentTransaction);
         builder.memo(createTransaction.memo());
         builder.scheduledTransaction(createTransaction.scheduledTransactionBody());
@@ -243,13 +244,13 @@ public final class ScheduleUtility {
         final ScheduleID finalId = getNextScheduleID(parentTransactionId, newEntityNumber);
 
         Schedule.Builder build = Schedule.newBuilder();
-        build.id(finalId).deleted(false).executed(false);
+        build.scheduleId(finalId).deleted(false).executed(false);
         build.waitForExpiry(provisionalSchedule.waitForExpiry());
-        build.adminKey(provisionalSchedule.adminKey()).schedulerAccount(parentTransactionId.accountID());
-        build.payerAccount(provisionalSchedule.payerAccount());
-        build.schedulerAccount(provisionalSchedule.schedulerAccount());
+        build.adminKey(provisionalSchedule.adminKey()).schedulerAccountId(parentTransactionId.accountID());
+        build.payerAccountId(provisionalSchedule.payerAccountId());
+        build.schedulerAccountId(provisionalSchedule.schedulerAccountId());
         build.scheduleValidStart(provisionalSchedule.scheduleValidStart());
-        build.calculatedExpirationTime(provisionalSchedule.calculatedExpirationTime());
+        build.calculatedExpirationSecond(provisionalSchedule.calculatedExpirationSecond());
         build.originalCreateTransaction(provisionalSchedule.originalCreateTransaction());
         build.memo(provisionalSchedule.memo());
         build.scheduledTransaction(provisionalSchedule.scheduledTransaction());
@@ -274,20 +275,13 @@ public final class ScheduleUtility {
         final TransactionBody originalTransaction = valueInState.originalCreateTransactionOrThrow();
         final TransactionID parentTransactionId = originalTransaction.transactionIDOrThrow();
         // payer on parent transaction ID will also never be null...
-        final AccountID payerAccount = valueInState.payerAccountOrElse(parentTransactionId.accountIDOrThrow());
+        final AccountID payerAccount = valueInState.payerAccountIdOrElse(parentTransactionId.accountIDOrThrow());
         // Scheduled transaction ID is the same as its parent except
         //     if scheduled is set true, payer *might* be modified, and the nonce is incremented.
         final TransactionID.Builder builder = TransactionID.newBuilder().accountID(payerAccount);
         builder.transactionValidStart(parentTransactionId.transactionValidStart());
         builder.scheduled(true).nonce(parentTransactionId.nonce() + 1);
         return builder.build();
-    }
-
-    @NonNull
-    static Instant instantFromTimestamp(@Nullable final Timestamp timestampValue, Instant defaultValue) {
-        return timestampValue != null
-                ? Instant.ofEpochSecond(timestampValue.seconds(), timestampValue.nanos())
-                : defaultValue;
     }
 
     @NonNull
@@ -318,8 +312,10 @@ public final class ScheduleUtility {
         if (scheduleToHash.scheduledTransaction() != null) {
             addToHash(hasher, scheduleToHash.scheduledTransaction());
         }
-        if (scheduleToHash.expirationTimeProvided() != null) {
-            addToHash(hasher, scheduleToHash.expirationTimeProvided());
+        if (scheduleToHash.providedExpirationSecond() != Schedule.DEFAULT.providedExpirationSecond()) {
+            // @todo('7905') fix to not use Proto serialization
+            //            hasher.putLong(scheduleToHash.providedExpirationSecond());
+            addToHash(hasher, scheduleToHash.providedExpirationSecond());
         }
         hasher.putBoolean(scheduleToHash.waitForExpiry());
         return hasher.hash().toString();
@@ -333,8 +329,9 @@ public final class ScheduleUtility {
     }
 
     @SuppressWarnings("UnstableApiUsage")
-    private static void addToHash(final Hasher hasher, final Timestamp timeToAdd) {
-        final byte[] bytes = Timestamp.PROTOBUF.toBytes(timeToAdd).toByteArray();
+    private static void addToHash(final Hasher hasher, final Long timeToAdd) {
+        final byte[] bytes =
+                ProtoLong.PROTOBUF.toBytes(new ProtoLong(timeToAdd)).toByteArray();
         hasher.putInt(bytes.length);
         hasher.putBytes(bytes);
     }

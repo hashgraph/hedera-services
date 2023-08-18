@@ -473,22 +473,18 @@ public interface HandleContext {
         void createSavepoint();
 
         /**
+         * Commits all changes since the last savepoint.
+         *
+         * @throws IllegalStateException if the savepoint stack is empty
+         */
+        void commit();
+
+        /**
          * Rolls back the changes up until the last savepoint.
          *
          * @throws IllegalStateException if the savepoint stack is empty
          */
-        default void rollback() {
-            rollback(1);
-        }
-
-        /**
-         * Rolls back the last {@code count} savepoints.
-         *
-         * @param count the number of savepoints to roll back
-         * @throws IllegalArgumentException if {@code count} is less than {@code 1}
-         * @throws IllegalStateException if the transaction stack contains fewer elements than {@code count}
-         */
-        void rollback(int count);
+        void rollback();
 
         /**
          * Returns the depth of the savepoint stack.

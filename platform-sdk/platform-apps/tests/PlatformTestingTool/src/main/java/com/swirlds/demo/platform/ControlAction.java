@@ -16,16 +16,15 @@
 
 package com.swirlds.demo.platform;
 
+import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.demo.platform.fs.stresstest.proto.ControlType;
 import java.io.IOException;
 import java.time.Instant;
+import java.util.Objects;
 import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
-import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.apache.commons.lang3.builder.ToStringStyle;
 
 public class ControlAction implements SelfSerializable {
     private static final long CLASS_ID = 0x9d36e40b51de36fdL;
@@ -54,9 +53,13 @@ public class ControlAction implements SelfSerializable {
 
     @Override
     public boolean equals(final Object o) {
-        if (this == o) return true;
+        if (this == o) {
+            return true;
+        }
 
-        if (o == null || getClass() != o.getClass()) return false;
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
 
         final ControlAction that = (ControlAction) o;
 
@@ -65,12 +68,12 @@ public class ControlAction implements SelfSerializable {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder(17, 37).append(type).toHashCode();
+        return Objects.hash(type);
     }
 
     @Override
     public String toString() {
-        return new ToStringBuilder(this, ToStringStyle.NO_CLASS_NAME_STYLE)
+        return new ToStringBuilder(this)
                 .append("timestamp", timestamp)
                 .append("type", type)
                 .toString();

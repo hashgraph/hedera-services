@@ -37,7 +37,6 @@ dependencies {
     // Bundle Dependencies
     implementation(libs.bundles.logging.impl)
     implementation(libs.bundles.javafx)
-    implementation(libs.bundles.networking)
     implementation(libs.bundles.picocli)
     implementation(libs.bundles.jackson)
 

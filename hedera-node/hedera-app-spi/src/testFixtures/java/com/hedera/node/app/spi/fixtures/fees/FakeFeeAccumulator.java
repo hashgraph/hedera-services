@@ -23,8 +23,12 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 
 public class FakeFeeAccumulator implements FeeAccumulator {
     @Override
-    public void charge(@NonNull AccountID payer, @NonNull Fees fees) {}
+    public void charge(@NonNull AccountID payer, @NonNull Fees fees) {
+        // not implemented yet
+    }
 
     @Override
-    public void refund(@NonNull AccountID receiver, @NonNull Fees fees) {}
+    public void refund(@NonNull AccountID receiver, @NonNull Fees fees) {
+        // not implemented yet
+    }
 }

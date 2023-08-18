@@ -79,7 +79,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
 
         given(configProvider.getConfiguration()).willReturn(versionedConfig);
         given(context.configuration()).willReturn(configuration);
-        given(context.consensusNow()).willReturn(consensusInstant);
+        given(context.consensusTime()).willReturn(consensusInstant);
         givenStoresAndConfig(context);
 
         stakingRewardHelper = new StakingRewardsHelper();
@@ -163,7 +163,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                 .atStartOfDay(ZoneOffset.UTC)
                 .toInstant();
 
-        given(context.consensusNow()).willReturn(nextDayInstant);
+        given(context.consensusTime()).willReturn(nextDayInstant);
         given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
         subject.applyStakingRewards(context);
@@ -196,7 +196,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         // We use next stake period to trigger rewards.
         Instant nextDayInstant = originalInstant.plus(2, ChronoUnit.DAYS);
 
-        given(context.consensusNow()).willReturn(nextDayInstant);
+        given(context.consensusTime()).willReturn(nextDayInstant);
 
         subject.applyStakingRewards(context);
 
@@ -225,7 +225,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                 writableAccountStore.get(payerId).copyBuilder().stakedNodeId(0L).build());
 
         // We use next stake period to trigger rewards
-        given(context.consensusNow())
+        given(context.consensusTime())
                 .willReturn(LocalDate.ofEpochDay(stakePeriodStart + 1)
                         .atStartOfDay(ZoneOffset.UTC)
                         .toInstant());
@@ -254,7 +254,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         // Change node, so to trigger rewards
         writableAccountStore.put(account.copyBuilder().stakedNodeId(0L).build());
 
-        given(context.consensusNow()).willReturn(stakePeriodStartInstant);
+        given(context.consensusTime()).willReturn(stakePeriodStartInstant);
         given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
         subject.applyStakingRewards(context);
@@ -281,7 +281,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         writableAccountStore.put(
                 writableAccountStore.get(payerId).copyBuilder().stakedNodeId(0L).build());
 
-        given(context.consensusNow()).willReturn(originalInstant);
+        given(context.consensusTime()).willReturn(originalInstant);
         given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
         subject.applyStakingRewards(context);
@@ -338,7 +338,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                 .tinybarBalance(2 * newBalance)
                 .build());
 
-        given(context.consensusNow()).willReturn(stakePeriodStartInstant);
+        given(context.consensusTime()).willReturn(stakePeriodStartInstant);
         given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
         subject.applyStakingRewards(context);
@@ -386,7 +386,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                 .stakedNodeId(0L)
                 .build());
 
-        given(context.consensusNow())
+        given(context.consensusTime())
                 .willReturn(LocalDate.ofEpochDay(stakePeriodStart + 2)
                         .atStartOfDay(ZoneOffset.UTC)
                         .toInstant());
@@ -447,12 +447,13 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                 .stakedNodeId(0L)
                 .build());
 
-        given(context.consensusNow())
+        given(context.consensusTime())
                 .willReturn(LocalDate.ofEpochDay(stakePeriodStart + 2)
                         .atStartOfDay(ZoneOffset.UTC)
                         .toInstant());
         given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-        given(context.recordBuilder(CryptoDeleteRecordBuilder.class)).willReturn(recordBuilder);
+        given(context.userTransactionRecordBuilder(CryptoDeleteRecordBuilder.class))
+                .willReturn(recordBuilder);
         given(recordBuilder.getNumberOfDeletedAccounts()).willReturn(1);
         given(recordBuilder.getDeletedAccountBeneficiaryFor(payerId)).willReturn(ownerId);
 
@@ -483,7 +484,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                 .tinybarBalance(accountBalance - HBARS_TO_TINYBARS)
                 .build());
 
-        given(context.consensusNow())
+        given(context.consensusTime())
                 .willReturn(LocalDate.ofEpochDay(stakePeriodStart + 2)
                         .atStartOfDay(ZoneOffset.UTC)
                         .toInstant());
@@ -525,7 +526,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                 .tinybarBalance(accountBalance - HBARS_TO_TINYBARS)
                 .build());
 
-        given(context.consensusNow())
+        given(context.consensusTime())
                 .willReturn(LocalDate.ofEpochDay(stakePeriodStart)
                         .atStartOfDay(ZoneOffset.UTC)
                         .toInstant());
@@ -569,7 +570,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                 .tinybarBalance(accountBalance - HBARS_TO_TINYBARS)
                 .build());
 
-        given(context.consensusNow())
+        given(context.consensusTime())
                 .willReturn(LocalDate.ofEpochDay(stakePeriodStart + 1)
                         .atStartOfDay(ZoneOffset.UTC)
                         .toInstant());
@@ -625,7 +626,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                 .stakedAccountId(ownerId)
                 .build());
 
-        given(context.consensusNow())
+        given(context.consensusTime())
                 .willReturn(LocalDate.ofEpochDay(stakePeriodStart + 2)
                         .atStartOfDay(ZoneOffset.UTC)
                         .toInstant());
@@ -685,12 +686,13 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                 .stakedNodeId(0L)
                 .build());
 
-        given(context.consensusNow())
+        given(context.consensusTime())
                 .willReturn(LocalDate.ofEpochDay(stakePeriodStart + 2)
                         .atStartOfDay(ZoneOffset.UTC)
                         .toInstant());
         given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-        given(context.recordBuilder(CryptoDeleteRecordBuilder.class)).willReturn(recordBuilder);
+        given(context.userTransactionRecordBuilder(CryptoDeleteRecordBuilder.class))
+                .willReturn(recordBuilder);
         given(recordBuilder.getNumberOfDeletedAccounts()).willReturn(1);
         given(recordBuilder.getDeletedAccountBeneficiaryFor(payerId)).willReturn(ownerId);
 
@@ -733,12 +735,13 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                 .stakedNodeId(0L)
                 .build());
 
-        given(context.consensusNow())
+        given(context.consensusTime())
                 .willReturn(LocalDate.ofEpochDay(stakePeriodStart + 2)
                         .atStartOfDay(ZoneOffset.UTC)
                         .toInstant());
         given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-        given(context.recordBuilder(CryptoDeleteRecordBuilder.class)).willReturn(recordBuilder);
+        given(context.userTransactionRecordBuilder(CryptoDeleteRecordBuilder.class))
+                .willReturn(recordBuilder);
         given(recordBuilder.getNumberOfDeletedAccounts()).willReturn(1);
         given(recordBuilder.getDeletedAccountBeneficiaryFor(payerId)).willReturn(ownerId);
 
@@ -788,12 +791,13 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                 .stakedNodeId(0L)
                 .build());
 
-        given(context.consensusNow())
+        given(context.consensusTime())
                 .willReturn(LocalDate.ofEpochDay(stakePeriodStart + 2)
                         .atStartOfDay(ZoneOffset.UTC)
                         .toInstant());
         given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-        given(context.recordBuilder(CryptoDeleteRecordBuilder.class)).willReturn(recordBuilder);
+        given(context.userTransactionRecordBuilder(CryptoDeleteRecordBuilder.class))
+                .willReturn(recordBuilder);
 
         given(recordBuilder.getNumberOfDeletedAccounts()).willReturn(2);
         given(recordBuilder.getDeletedAccountBeneficiaryFor(payerId)).willReturn(ownerId);
@@ -835,7 +839,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                 .stakedAccountId(ownerId)
                 .build());
 
-        given(context.consensusNow())
+        given(context.consensusTime())
                 .willReturn(LocalDate.ofEpochDay(stakePeriodStart)
                         .atStartOfDay(ZoneOffset.UTC)
                         .toInstant());
@@ -897,7 +901,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                 .tinybarBalance(stakingRewardAccount.tinybarBalance() + HBARS_TO_TINYBARS)
                 .build());
 
-        given(context.consensusNow())
+        given(context.consensusTime())
                 .willReturn(LocalDate.ofEpochDay(stakePeriodStart)
                         .atStartOfDay(ZoneOffset.UTC)
                         .toInstant());
@@ -956,7 +960,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         writableAccountStore.put(
                 account.copyBuilder().stakedAccountId(stakingRewardId).build());
 
-        given(context.consensusNow())
+        given(context.consensusTime())
                 .willReturn(LocalDate.ofEpochDay(stakePeriodStart)
                         .atStartOfDay(ZoneOffset.UTC)
                         .toInstant());

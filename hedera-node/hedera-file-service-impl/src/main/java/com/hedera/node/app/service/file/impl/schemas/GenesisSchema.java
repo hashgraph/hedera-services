@@ -38,7 +38,7 @@ import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TimestampSeconds;
 import com.hedera.hapi.node.base.TransactionFeeSchedule;
 import com.hedera.hapi.node.state.file.File;
-import com.hedera.hapi.node.state.primitive.ProtoBytes;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.node.app.spi.state.MigrationContext;
@@ -49,6 +49,7 @@ import com.hedera.node.config.Utils;
 import com.hedera.node.config.data.BootstrapConfig;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -99,10 +100,10 @@ public class GenesisSchema extends Schema {
         createGenesisAddressBook(bootstrapConfig, filesConfig, files);
         createGenesisNodeDetails(bootstrapConfig, filesConfig, files);
         createGenesisFeeSchedule(bootstrapConfig, hederaConfig, filesConfig, files);
-        createGenesisExchangeRate(bootstrapConfig, filesConfig, files);
-        createGenesisNetworkProperties(bootstrapConfig, filesConfig, files, ctx.configuration());
-        createGenesisHapiPermissions(bootstrapConfig, filesConfig, files);
-        createGenesisThrottleDefinitions(bootstrapConfig, filesConfig, files);
+        createGenesisExchangeRate(bootstrapConfig, hederaConfig, filesConfig, files);
+        createGenesisNetworkProperties(bootstrapConfig, hederaConfig, filesConfig, files, ctx.configuration());
+        createGenesisHapiPermissions(bootstrapConfig, hederaConfig, filesConfig, files);
+        createGenesisThrottleDefinitions(bootstrapConfig, hederaConfig, filesConfig, files);
         createGenesisSoftwareUpdateZip(bootstrapConfig, filesConfig, files);
     }
 
@@ -143,10 +144,10 @@ public class GenesisSchema extends Schema {
             final var feeSchedule = parseFeeSchedules(feeScheduleJsonBytes);
             final var fileNum = filesConfig.feeSchedules();
             final var fileId = FileID.newBuilder()
-                    .fileNum(fileNum)
                     .shardNum(hederaConfig.shard())
                     .realmNum(hederaConfig.realm())
-                    .build(); // default to shard=0, realm=0
+                    .fileNum(fileNum)
+                    .build();
             final var masterKey =
                     Key.newBuilder().ed25519(bootstrapConfig.genesisPublicKey()).build();
             files.put(
@@ -155,7 +156,7 @@ public class GenesisSchema extends Schema {
                             .contents(CurrentAndNextFeeSchedule.PROTOBUF.toBytes(feeSchedule))
                             .fileId(fileId)
                             .keys(KeyList.newBuilder().keys(masterKey))
-                            .expirationTime(bootstrapConfig.systemEntityExpiry())
+                            .expirationSecond(bootstrapConfig.systemEntityExpiry())
                             .build());
         } catch (IOException | NullPointerException e) {
             throw new IllegalArgumentException(
@@ -245,6 +246,7 @@ public class GenesisSchema extends Schema {
 
     private void createGenesisExchangeRate(
             @NonNull final BootstrapConfig bootstrapConfig,
+            @NonNull final HederaConfig hederaConfig,
             @NonNull final FilesConfig filesConfig,
             @NonNull final WritableKVState<FileID, File> files) {
         logger.debug("Creating genesis exchange rate file");
@@ -263,7 +265,11 @@ public class GenesisSchema extends Schema {
                 .build();
 
         final var fileNum = filesConfig.exchangeRates();
-        final var fileId = FileID.newBuilder().fileNum(fileNum).build(); // default to shard=0, realm=0
+        final var fileId = FileID.newBuilder()
+                .shardNum(hederaConfig.shard())
+                .realmNum(hederaConfig.realm())
+                .fileNum(fileNum)
+                .build();
         final var masterKey =
                 Key.newBuilder().ed25519(bootstrapConfig.genesisPublicKey()).build();
         files.put(
@@ -272,7 +278,7 @@ public class GenesisSchema extends Schema {
                         .contents(ExchangeRateSet.PROTOBUF.toBytes(exchangeRateSet))
                         .fileId(fileId)
                         .keys(KeyList.newBuilder().keys(masterKey))
-                        .expirationTime(bootstrapConfig.systemEntityExpiry())
+                        .expirationSecond(bootstrapConfig.systemEntityExpiry())
                         .build());
     }
 
@@ -281,6 +287,7 @@ public class GenesisSchema extends Schema {
 
     private void createGenesisNetworkProperties(
             @NonNull final BootstrapConfig bootstrapConfig,
+            @NonNull final HederaConfig hederaConfig,
             @NonNull final FilesConfig filesConfig,
             @NonNull final WritableKVState<FileID, File> files,
             @NonNull final Configuration configuration) {
@@ -297,8 +304,11 @@ public class GenesisSchema extends Schema {
         final var servicesConfigList =
                 ServicesConfigurationList.newBuilder().nameValue(settings).build();
         final var fileNum = filesConfig.networkProperties();
-        // default to shard=0, realm=0. Should get from config
-        final var fileId = FileID.newBuilder().fileNum(fileNum).build();
+        final var fileId = FileID.newBuilder()
+                .shardNum(hederaConfig.shard())
+                .realmNum(hederaConfig.realm())
+                .fileNum(fileNum)
+                .build();
         final var masterKey =
                 Key.newBuilder().ed25519(bootstrapConfig.genesisPublicKey()).build();
         files.put(
@@ -307,7 +317,7 @@ public class GenesisSchema extends Schema {
                         .contents(ServicesConfigurationList.PROTOBUF.toBytes(servicesConfigList))
                         .fileId(fileId)
                         .keys(KeyList.newBuilder().keys(masterKey))
-                        .expirationTime(bootstrapConfig.systemEntityExpiry())
+                        .expirationSecond(bootstrapConfig.systemEntityExpiry())
                         .build());
     }
 
@@ -316,12 +326,13 @@ public class GenesisSchema extends Schema {
 
     private void createGenesisHapiPermissions(
             @NonNull final BootstrapConfig bootstrapConfig,
+            @NonNull final HederaConfig hederaConfig,
             @NonNull final FilesConfig filesConfig,
             @NonNull final WritableKVState<FileID, File> files) {
         logger.debug("Creating genesis HAPI permissions file");
 
         // Get the path to the HAPI permissions file
-        final var pathToApiPermissions = Path.of(bootstrapConfig.feeSchedulesJsonResource());
+        final var pathToApiPermissions = Path.of(bootstrapConfig.hapiPermissionsPath());
 
         // If the file exists, load from there
         String apiPermissionsContent = null;
@@ -365,7 +376,11 @@ public class GenesisSchema extends Schema {
 
         // Store the configuration in state
         final var fileNum = filesConfig.hapiPermissions();
-        final var fileId = FileID.newBuilder().fileNum(fileNum).build(); // default to shard=0, realm=0
+        final var fileId = FileID.newBuilder()
+                .shardNum(hederaConfig.shard())
+                .realmNum(hederaConfig.realm())
+                .fileNum(fileNum)
+                .build();
         final var masterKey =
                 Key.newBuilder().ed25519(bootstrapConfig.genesisPublicKey()).build();
         files.put(
@@ -376,7 +391,7 @@ public class GenesisSchema extends Schema {
                                 .build()))
                         .fileId(fileId)
                         .keys(KeyList.newBuilder().keys(masterKey))
-                        .expirationTime(bootstrapConfig.systemEntityExpiry())
+                        .expirationSecond(bootstrapConfig.systemEntityExpiry())
                         .build());
     }
 
@@ -385,10 +400,70 @@ public class GenesisSchema extends Schema {
 
     private void createGenesisThrottleDefinitions(
             @NonNull final BootstrapConfig bootstrapConfig,
+            @NonNull final HederaConfig hederaConfig,
             @NonNull final FilesConfig filesConfig,
             @NonNull final WritableKVState<FileID, File> files) {
         logger.debug("Creating genesis throttle definitions file");
-        // TBD Implement this method
+
+        // Get the path to the throttles permissions file
+        final var throttleDefinitionsResource = bootstrapConfig.throttleDefsJsonResource();
+        final var pathToThrottleDefinitions = Path.of(throttleDefinitionsResource);
+
+        // If the file exists, load from there
+        String throttleDefinitionsContent = null;
+        if (Files.exists(pathToThrottleDefinitions)) {
+            try {
+                throttleDefinitionsContent = Files.readString(pathToThrottleDefinitions);
+                logger.info("Throttle definitions loaded from {}", pathToThrottleDefinitions);
+            } catch (IOException e) {
+                logger.warn(
+                        "Throttle definitions could not be loaded from {}, looking for fallback on classpath",
+                        pathToThrottleDefinitions);
+            }
+        }
+
+        // Otherwise, load from the classpath. If that cannot be done, we have a totally broken build.
+        if (throttleDefinitionsContent == null) {
+            try (final var in =
+                    Thread.currentThread().getContextClassLoader().getResourceAsStream(throttleDefinitionsResource)) {
+                throttleDefinitionsContent = new String(requireNonNull(in).readAllBytes(), UTF_8);
+                logger.info("Throttle definitions loaded from classpath resource {}", throttleDefinitionsResource);
+            } catch (IOException | NullPointerException e) {
+                logger.fatal("Throttle definitions could not be loaded from disk or from classpath");
+                throw new IllegalStateException("Throttle definitions could not be loaded from classpath", e);
+            }
+        }
+
+        // Parse the throttle definitions JSON file into a ServicesConfigurationList protobuf object
+        byte[] throttleDefinitionsProtoBytes;
+        try {
+            var om = new ObjectMapper();
+            var throttleDefinitionsObj = om.readValue(
+                    throttleDefinitionsContent,
+                    com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions.class);
+            throttleDefinitionsProtoBytes = throttleDefinitionsObj.toProto().toByteArray();
+        } catch (IOException e) {
+            logger.fatal("Throttle definitions JSON could not be parsed and converted to proto");
+            throw new IllegalStateException("Throttle definitions JSON could not be parsed and converted to proto", e);
+        }
+
+        // Store the configuration in state
+        final var fileNum = filesConfig.throttleDefinitions();
+        final var fileId = FileID.newBuilder()
+                .shardNum(hederaConfig.shard())
+                .realmNum(hederaConfig.realm())
+                .fileNum(fileNum)
+                .build();
+        final var masterKey =
+                Key.newBuilder().ed25519(bootstrapConfig.genesisPublicKey()).build();
+        files.put(
+                fileId,
+                File.newBuilder()
+                        .contents(Bytes.wrap(throttleDefinitionsProtoBytes))
+                        .fileId(fileId)
+                        .keys(KeyList.newBuilder().keys(masterKey))
+                        .expirationSecond(bootstrapConfig.systemEntityExpiry())
+                        .build());
     }
 
     // ================================================================================================================

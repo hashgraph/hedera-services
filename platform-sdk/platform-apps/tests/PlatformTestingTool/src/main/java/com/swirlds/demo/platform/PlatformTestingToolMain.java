@@ -40,6 +40,8 @@ import static java.lang.System.exit;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.swirlds.base.utility.Pair;
+import com.swirlds.base.utility.Triple;
 import com.swirlds.common.merkle.iterators.MerkleIterator;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.Metrics;
@@ -62,6 +64,7 @@ import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.units.UnitConstants;
 import com.swirlds.common.utility.AutoCloseableWrapper;
+import com.swirlds.common.utility.StopWatch;
 import com.swirlds.demo.merkle.map.FCMConfig;
 import com.swirlds.demo.merkle.map.MapValueData;
 import com.swirlds.demo.merkle.map.MapValueFCQ;
@@ -107,9 +110,6 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.commons.lang3.time.StopWatch;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
@@ -336,15 +336,15 @@ public class PlatformTestingToolMain implements SwirldMain {
             logger.info(
                     LOGM_SUBMIT_DETAIL,
                     "is about to submit a {} transaction for {}",
-                    submittedPayloadTriple.getMiddle(),
-                    submittedPayloadTriple.getRight());
+                    submittedPayloadTriple.middle(),
+                    submittedPayloadTriple.right());
             // if the platform is not active, we don't submit transaction
             if (!isActive) {
                 logger.info(LOGM_SUBMIT_DETAIL, "will not submit the transaction because isActive is false");
                 return false;
             }
             boolean success = submitter.trySubmit(
-                    platform, Pair.of(submittedPayloadTriple.getLeft(), submittedPayloadTriple.getMiddle()));
+                    platform, Pair.of(submittedPayloadTriple.left(), submittedPayloadTriple.middle()));
             if (!success) { // if failed keep bytes payload try next time
                 try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
                         UnsafeMutablePTTStateAccessor.getInstance().getUnsafeMutableState(platform.getSelfId())) {
@@ -617,8 +617,8 @@ public class PlatformTestingToolMain implements SwirldMain {
                         final VirtualMerkleConfig virtualMerkleConfig = currentConfig.getVirtualMerkleConfig();
                         if (virtualMerkleConfig != null) {
                             final Pair<Long, Long> entitiesFirstIds = extractFirstIdForEntitiesFromSavedState(platform);
-                            virtualMerkleConfig.setFirstAccountId(entitiesFirstIds.getKey());
-                            virtualMerkleConfig.setFirstSmartContractId(entitiesFirstIds.getValue());
+                            virtualMerkleConfig.setFirstAccountId(entitiesFirstIds.key());
+                            virtualMerkleConfig.setFirstSmartContractId(entitiesFirstIds.value());
                             VirtualMerkleStateInitializer.initStateChildren(
                                     platform, selfId.id(), virtualMerkleConfig, useMerkleDb);
                         }
@@ -1002,8 +1002,8 @@ public class PlatformTestingToolMain implements SwirldMain {
      *
      * @param platform
      * 		A {@link Platform instance}
-     * @return A pair of {@code Long}s, where {@code Pair.getKey()} returns the first id to be used by
-     * 		account entities and {@code Pair.getKey()} returns the first id to be used by smart contracts.
+     * @return A pair of {@code Long}s, where {@code Pair.key()} returns the first id to be used by
+     * 		account entities and {@code Pair.key()} returns the first id to be used by smart contracts.
      */
     private Pair<Long, Long> extractFirstIdForEntitiesFromSavedState(final Platform platform) {
         try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =

@@ -18,8 +18,8 @@ package com.hedera.node.app.service.schedule.impl;
 
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.Timestamp;
-import com.hedera.hapi.node.state.primitive.ProtoLong;
-import com.hedera.hapi.node.state.primitive.ProtoString;
+import com.hedera.hapi.node.state.primitives.ProtoLong;
+import com.hedera.hapi.node.state.primitives.ProtoString;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.schedule.ScheduleList;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
@@ -100,7 +100,7 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
 
     @Override
     public void put(@NonNull final Schedule scheduleToAdd) {
-        schedulesByIdMutable.put(scheduleToAdd.idOrThrow(), scheduleToAdd);
+        schedulesByIdMutable.put(scheduleToAdd.scheduleIdOrThrow(), scheduleToAdd);
         final ProtoString newHash = new ProtoString(ScheduleUtility.calculateStringHash(scheduleToAdd));
         final ScheduleList inStateEquality = schedulesByEqualityMutable.get(newHash);
         List<Schedule> byEquality = inStateEquality != null ? inStateEquality.schedules() : null;
@@ -110,8 +110,7 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
         byEquality.add(scheduleToAdd);
         schedulesByEqualityMutable.put(newHash, new ScheduleList(byEquality));
         // calculated expiration time is never null...
-        final ProtoLong expirationSecond =
-                new ProtoLong(scheduleToAdd.calculatedExpirationTimeOrThrow().seconds());
+        final ProtoLong expirationSecond = new ProtoLong(scheduleToAdd.calculatedExpirationSecond());
         final ScheduleList inStateExpiration = schedulesByExpirationMutable.get(expirationSecond);
         List<Schedule> byExpiration = inStateExpiration != null ? inStateExpiration.schedules() : null;
         if (byExpiration == null) {
@@ -125,17 +124,17 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
     private Schedule markDeleted(final Schedule schedule, final Instant consensusTime) {
         final Timestamp consensusTimestamp = new Timestamp(consensusTime.getEpochSecond(), consensusTime.getNano());
         return new Schedule(
+                schedule.scheduleId(),
                 true,
                 schedule.executed(),
                 schedule.waitForExpiry(),
                 schedule.memo(),
-                schedule.id(),
-                schedule.schedulerAccount(),
-                schedule.payerAccount(),
+                schedule.schedulerAccountId(),
+                schedule.payerAccountId(),
                 schedule.adminKey(),
                 schedule.scheduleValidStart(),
-                schedule.expirationTimeProvided(),
-                schedule.calculatedExpirationTime(),
+                schedule.providedExpirationSecond(),
+                schedule.calculatedExpirationSecond(),
                 consensusTimestamp,
                 schedule.scheduledTransaction(),
                 schedule.originalCreateTransaction(),

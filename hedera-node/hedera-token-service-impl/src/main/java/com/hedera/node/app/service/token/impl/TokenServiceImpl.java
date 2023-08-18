@@ -28,7 +28,7 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.common.EntityNumber;
-import com.hedera.hapi.node.state.primitive.ProtoString;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
 import com.hedera.hapi.node.state.token.Nft;
@@ -45,7 +45,9 @@ import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.BootstrapConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
+import com.hedera.node.config.data.StakingConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Arrays;
 import java.util.Set;
 
 /** An implementation of the {@link TokenService} interface. */
@@ -60,7 +62,6 @@ public class TokenServiceImpl implements TokenService {
     public static final String ALIASES_KEY = "ALIASES";
     public static final String ACCOUNTS_KEY = "ACCOUNTS";
     public static final String TOKEN_RELS_KEY = "TOKEN_RELS";
-    public static final String PAYER_RECORDS_KEY = "PAYER_RECORDS";
     public static final String STAKING_INFO_KEY = "STAKING_INFOS";
     public static final String STAKING_NETWORK_REWARDS_KEY = "STAKING_NETWORK_REWARDS";
 
@@ -79,7 +80,7 @@ public class TokenServiceImpl implements TokenService {
                 return Set.of(
                         StateDefinition.inMemory(TOKENS_KEY, TokenID.PROTOBUF, Token.PROTOBUF),
                         StateDefinition.onDisk(ACCOUNTS_KEY, AccountID.PROTOBUF, Account.PROTOBUF, MAX_ACCOUNTS),
-                        StateDefinition.onDisk(ALIASES_KEY, ProtoString.PROTOBUF, AccountID.PROTOBUF, MAX_ACCOUNTS),
+                        StateDefinition.onDisk(ALIASES_KEY, ProtoBytes.PROTOBUF, AccountID.PROTOBUF, MAX_ACCOUNTS),
                         StateDefinition.onDisk(NFTS_KEY, NftID.PROTOBUF, Nft.PROTOBUF, MAX_MINTABLE_NFTS),
                         StateDefinition.onDisk(
                                 TOKEN_RELS_KEY, EntityIDPair.PROTOBUF, TokenRelation.PROTOBUF, MAX_TOKEN_RELS),
@@ -125,11 +126,11 @@ public class TokenServiceImpl implements TokenService {
                             Account.newBuilder()
                                     .receiverSigRequired(false)
                                     .deleted(false)
-                                    .expiry(expiry)
+                                    .expirationSecond(expiry)
                                     .memo("")
                                     .smartContract(false)
                                     .key(superUserKey)
-                                    .autoRenewSecs(expiry) // TODO is this right?
+                                    .autoRenewSeconds(expiry) // TODO is this right?
                                     .accountId(id)
                                     .tinybarBalance(accountTinyBars)
                                     .build());
@@ -138,8 +139,34 @@ public class TokenServiceImpl implements TokenService {
                 addStakingAccounts(asAccount(801), accounts, FUNDING_ACCOUNT_EXPIRY);
 
                 updateNetworkRewards(ctx);
+                updateStakingNodeInfo(ctx);
             }
         };
+    }
+
+    private void updateStakingNodeInfo(final MigrationContext ctx) {
+        // TODO: This need to go through address book and set all the nodes
+        final var config = ctx.configuration();
+        final var ledgerConfig = config.getConfigData(LedgerConfig.class);
+        final var stakingConfig = config.getConfigData(StakingConfig.class);
+        final var numberOfNodes = 1;
+
+        final long maxStakePerNode = ledgerConfig.totalTinyBarFloat() / numberOfNodes;
+        final long minStakePerNode = maxStakePerNode / 2;
+
+        final var numRewardHistoryStoredPeriods = stakingConfig.rewardHistoryNumStoredPeriods();
+        final var stakingInfoState = ctx.newStates().get(STAKING_INFO_KEY);
+        final var rewardSumHistory = new Long[numRewardHistoryStoredPeriods];
+        Arrays.fill(rewardSumHistory, 0L);
+
+        final var stakingInfo = StakingNodeInfo.newBuilder()
+                .nodeNumber(0)
+                .maxStake(maxStakePerNode)
+                .minStake(minStakePerNode)
+                .rewardSumHistory(Arrays.asList(rewardSumHistory))
+                .weight(500)
+                .build();
+        stakingInfoState.put(EntityNumber.newBuilder().number(0L).build(), stakingInfo);
     }
 
     private void updateNetworkRewards(final MigrationContext ctx) {
@@ -164,7 +191,7 @@ public class TokenServiceImpl implements TokenService {
                         .memo("")
                         .smartContract(false)
                         .key(EMPTY_KEY_LIST)
-                        .expiry(expiry)
+                        .expirationSecond(expiry)
                         .accountId(id)
                         .maxAutoAssociations(0)
                         .tinybarBalance(0)

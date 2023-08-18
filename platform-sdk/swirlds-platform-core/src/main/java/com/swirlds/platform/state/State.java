@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.state;
 
+import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.exceptions.IllegalChildIndexException;
@@ -26,10 +27,8 @@ import com.swirlds.common.utility.RuntimeObjectRecord;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
 import com.swirlds.platform.internal.EventImpl;
 import java.util.HashMap;
+import java.util.Objects;
 import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
-import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.apache.commons.lang3.builder.ToStringStyle;
 
 /**
  * The root of the merkle tree holding the state of the Swirlds ledger.
@@ -262,11 +261,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
      */
     @Override
     public int hashCode() {
-        return new HashCodeBuilder(17, 37)
-                .append(getPlatformState())
-                .append(getSwirldState())
-                .append(getPlatformDualState())
-                .toHashCode();
+        return Objects.hash(getPlatformState(), getSwirldState(), getPlatformDualState());
     }
 
     /**
@@ -274,7 +269,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
      */
     @Override
     public String toString() {
-        return new ToStringBuilder(this, ToStringStyle.MULTI_LINE_STYLE)
+        return new ToStringBuilder(this)
                 .append("platformState", getPlatformState())
                 .append("swirldState", getSwirldState())
                 .append("dualState", getPlatformDualState())
