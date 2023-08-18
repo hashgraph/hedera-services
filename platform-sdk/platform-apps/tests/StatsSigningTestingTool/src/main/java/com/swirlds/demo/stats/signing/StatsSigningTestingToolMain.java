@@ -42,19 +42,23 @@ import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
-import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.demo.stats.signing.algorithms.ECSecP256K1Algorithm;
+import com.swirlds.demo.stats.signing.algorithms.X25519SigningAlgorithm;
+import com.swirlds.gui.model.GuiModel;
 import com.swirlds.platform.Browser;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.concurrent.atomic.AtomicReference;
+import com.swirlds.platform.ParameterProvider;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * A testing tool which generates a number of transactions per second, and simulates handling them
+ * This demo collects statistics on the running of the network and consensus systems. It writes them to the screen, and
+ * also saves them to disk in a comma separated value (.csv) file. Each transaction is 100 random bytes. So
+ * StatsSigningDemoState.handleTransaction doesn't actually do anything.
  */
 public class StatsSigningTestingToolMain implements SwirldMain {
+    // the first four come from the parameters in the config.txt file
+
     private static final Logger logger = LogManager.getLogger(StatsSigningTestingToolMain.class);
-    private static final BasicSoftwareVersion SOFTWARE_VERSION = new BasicSoftwareVersion(1);
     /**
      * the time of the last measurement of TPS
      */
@@ -64,11 +68,33 @@ public class StatsSigningTestingToolMain implements SwirldMain {
      */
     double toCreate = 0;
     /**
+     * should this run with no windows?
+     */
+    private boolean headless = false;
+    /**
+     * bytes in each transaction
+     */
+    private int bytesPerTrans = 100;
+    /**
+     * create at most this many transactions in preEvent, even if more is needed to meet target rate
+     */
+    private int transPerEventMax = 2048;
+    /**
+     * transactions in each Event
+     */
+    private int transPerSecToCreate = 100;
+    /**
+     * the size of the signed transaction pool
+     */
+    private int signedTransPoolSize = 1024;
+    /**
      * the app is run by this
      */
     private Platform platform;
 
     private TransactionPool transactionPool;
+
+    private static final BasicSoftwareVersion softwareVersion = new BasicSoftwareVersion(1);
 
     private final StoppableThread transactionGenerator;
 
@@ -100,9 +126,6 @@ public class StatsSigningTestingToolMain implements SwirldMain {
      */
     private long rampUpStartTimeMilliSeconds = 0;
 
-    /** App configuration */
-    private final AtomicReference<SSTTConfig> configHolder = new AtomicReference<>();
-
     /**
      * This is just for debugging: it allows the app to run in Eclipse. If the config.txt exists and lists a particular
      * SwirldMain class as the one to run, then it can run in Eclipse (with the green triangle icon).
@@ -124,22 +147,42 @@ public class StatsSigningTestingToolMain implements SwirldMain {
     }
 
     @Override
-    public void updateConfigurationBuilder(@NonNull final ConfigurationBuilder configurationBuilder) {
-        configurationBuilder.withConfigDataType(SSTTConfig.class);
-    }
-
-    @Override
-    public void init(@NonNull final Platform platform, @NonNull final NodeId id) {
+    public void init(final Platform platform, final NodeId id) {
         this.platform = platform;
-        final SSTTConfig config = platform.getContext().getConfiguration().getConfigData(SSTTConfig.class);
-        configHolder.set(config);
-        expectedTPS = config.transPerSecToCreate()
-                / (double) platform.getAddressBook().getSize();
+        // parse the config.txt parameters, and allow optional _ as in 1_000_000
+        final String[] parameters = ParameterProvider.getInstance().getParameters();
+        headless = (parameters[0].equals("1"));
+        bytesPerTrans = Integer.parseInt(parameters[3].replaceAll("_", ""));
+        transPerEventMax = Integer.parseInt(parameters[4].replaceAll("_", ""));
+        transPerSecToCreate = Integer.parseInt(parameters[5].replaceAll("_", ""));
+
+        expectedTPS = transPerSecToCreate / (double) platform.getAddressBook().getSize();
 
         // the higher the expected TPS, the smaller the window
         tps_measure_window_milliseconds = (int) (WINDOW_CALCULATION_CONST / expectedTPS);
 
-        transactionPool = new TransactionPool(config.transPoolSize(), config.bytesPerTrans());
+        // If we have a 7th setting, treat it as the signedTransPoolSize
+        if (parameters.length > 6) {
+            signedTransPoolSize = Integer.parseInt(parameters[6].replaceAll("_", ""));
+        }
+
+        if (transPerEventMax == -1 && transPerSecToCreate == -1) {
+            // they shouldn't both be -1, so set one of them
+            transPerEventMax = 1024;
+        }
+        GuiModel.getInstance()
+                .setAbout(
+                        platform.getSelfId(),
+                        "Stats Signing Demo v. 1.3\nThis writes statistics to a log file,"
+                                + " such as the number of transactions per second.");
+
+        transactionPool = new TransactionPool(
+                platform.getSelfId(),
+                signedTransPoolSize,
+                bytesPerTrans,
+                true,
+                new ECSecP256K1Algorithm(),
+                new X25519SigningAlgorithm());
 
         final Metrics metrics = platform.getContext().getMetrics();
         transactionSubmitSpeedometer = metrics.getOrCreate(TRAN_SUBMIT_TPS_SPEED_CONFIG);
@@ -174,11 +217,6 @@ public class StatsSigningTestingToolMain implements SwirldMain {
     }
 
     private synchronized void generateTransactions() {
-        if (configHolder.get() == null) {
-            // if the app has not been initialized yet, do nothing
-            return;
-        }
-
         byte[] transaction;
         final long now = System.nanoTime();
         int numCreated = 0;
@@ -188,7 +226,7 @@ public class StatsSigningTestingToolMain implements SwirldMain {
         // to avoid a huge burst of transactions at the start of the test
         if (lastTPSMeasureTime == 0) {
             lastTPSMeasureTime = now;
-            rampUpStartTimeMilliSeconds = now / MILLISECONDS_TO_NANOSECONDS;
+            rampUpStartTimeMilliSeconds = (long) (now / MILLISECONDS_TO_NANOSECONDS);
             logger.info(
                     STARTUP.getMarker(),
                     "First time calling generateTransactions() Expected TPS per code is {}",
@@ -196,24 +234,29 @@ public class StatsSigningTestingToolMain implements SwirldMain {
             return;
         }
 
-        // ramp up the TPS to the expected value
-        long elapsedTime = now / MILLISECONDS_TO_NANOSECONDS - rampUpStartTimeMilliSeconds;
-        final double rampUpTPS;
-        if (elapsedTime < TPS_RAMP_UP_WINDOW_MILLISECONDS) {
-            rampUpTPS = expectedTPS * elapsedTime / ((double) (TPS_RAMP_UP_WINDOW_MILLISECONDS));
-        } else {
-            rampUpTPS = expectedTPS;
-        }
+        if (transPerSecToCreate > -1) { // if not unlimited (-1 means unlimited)
+            // ramp up the TPS to the expected value
+            long elapsedTime = now / MILLISECONDS_TO_NANOSECONDS - rampUpStartTimeMilliSeconds;
+            double rampUpTPS = 0;
+            if (elapsedTime < TPS_RAMP_UP_WINDOW_MILLISECONDS) {
+                rampUpTPS = expectedTPS * elapsedTime / ((double) (TPS_RAMP_UP_WINDOW_MILLISECONDS));
+            } else {
+                rampUpTPS = expectedTPS;
+            }
 
-        // for every measure window, re-calculate the toCreate counter
-        if (((double) now - lastTPSMeasureTime) * NANOSECONDS_TO_MICROSECONDS > tps_measure_window_milliseconds) {
-            toCreate = ((double) now - lastTPSMeasureTime) * NANOSECONDS_TO_SECONDS * rampUpTPS;
-            lastTPSMeasureTime = now;
+            // for every measure window, re-calculate the toCreate counter
+            if (((double) now - lastTPSMeasureTime) * NANOSECONDS_TO_MICROSECONDS > tps_measure_window_milliseconds) {
+                toCreate = ((double) now - lastTPSMeasureTime) * NANOSECONDS_TO_SECONDS * rampUpTPS;
+                lastTPSMeasureTime = now;
+            }
         }
 
         while (true) {
-            if (toCreate < 1) {
+            if (transPerSecToCreate > -1 && toCreate < 1) {
                 break; // don't create too many transactions per second
+            }
+            if (transPerEventMax > -1 && numCreated >= transPerEventMax) {
+                break; // don't create too many transactions per event
             }
 
             // Retrieve a random signed transaction from the pool
@@ -233,7 +276,7 @@ public class StatsSigningTestingToolMain implements SwirldMain {
 
     @Override
     public SwirldState newState() {
-        return new StatsSigningTestingToolState(configHolder::get);
+        return new StatsSigningTestingToolState(() -> transactionPool);
     }
 
     /**
@@ -241,6 +284,6 @@ public class StatsSigningTestingToolMain implements SwirldMain {
      */
     @Override
     public BasicSoftwareVersion getSoftwareVersion() {
-        return SOFTWARE_VERSION;
+        return softwareVersion;
     }
 }

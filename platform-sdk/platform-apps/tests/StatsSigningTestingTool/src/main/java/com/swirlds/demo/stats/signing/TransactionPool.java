@@ -16,33 +16,84 @@
 
 package com.swirlds.demo.stats.signing;
 
+import static com.swirlds.common.utility.CommonUtils.hex;
+import static com.swirlds.logging.LogMarker.ADV_CRYPTO_SYSTEM;
+import static com.swirlds.logging.LogMarker.EXCEPTION;
+
+import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.transaction.Transaction;
+import com.swirlds.demo.stats.signing.algorithms.ExtendedSignature;
+import com.swirlds.demo.stats.signing.algorithms.SigningAlgorithm;
+import com.swirlds.demo.stats.signing.algorithms.X25519SigningAlgorithm;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.security.SignatureException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
- * Provides pre-generated random transactions.
+ * Provides pre-generated random transactions that are optionally pre-signed.
  */
 final class TransactionPool {
+
+    /**
+     * use this for all logging, as controlled by the optional data/log4j2.xml file
+     */
+    private static final Logger logger = LogManager.getLogger(TransactionPool.class);
+
     /**
      * the array of transactions
      */
     private final byte[][] transactions;
 
     /**
+     * the fixed size of each transaction, not including the signature and public key
+     */
+    private final int transactionSize;
+
+    /**
+     * indicates whether the transactions should be signed
+     */
+    private final boolean signed;
+
+    /**
      * the standard psuedo-random number generator
      */
     private final Random random;
 
+    private final List<SigningAlgorithm> enabledAlgorithms;
+
+    private final Map<Byte, SigningAlgorithm> activeAlgorithms;
+
+    private final NodeId nodeId;
+
     /**
-     * Constructs a TransactionPool instance with a fixed pool size, fixed transaction size.
+     * Constructs a TransactionPool instance with a fixed pool size, fixed transaction size, and whether to pre-sign
+     * each
+     * transaction.
      *
      * @param poolSize
      * 		the number of pre-generated transactions
      * @param transactionSize
      * 		the size of randomly generated transaction
+     * @param signed
+     * 		whether to pre-sign each random transaction
      * @throws IllegalArgumentException
      * 		if the {@code poolSize} or the {@code transactionSize} parameters are less than one (1)
      */
-    TransactionPool(final int poolSize, final int transactionSize) {
+    TransactionPool(
+            @NonNull final NodeId nodeId,
+            final int poolSize,
+            final int transactionSize,
+            final boolean signed,
+            @Nullable final SigningAlgorithm... enabledAlgorithms) {
         if (poolSize < 1) {
             throw new IllegalArgumentException("poolSize");
         }
@@ -52,15 +103,29 @@ final class TransactionPool {
         }
 
         this.random = new Random();
+        this.signed = signed;
 
-        // the fixed size of each transaction
+        this.nodeId = Objects.requireNonNull(nodeId);
+        this.transactionSize = transactionSize;
         this.transactions = new byte[poolSize][];
+        this.enabledAlgorithms = new ArrayList<>();
+        this.activeAlgorithms = new HashMap<>();
 
-        for (int i = 0; i < transactions.length; i++) {
-            final byte[] data = new byte[transactionSize];
-            random.nextBytes(data);
-            transactions[i] = data;
+        if (enabledAlgorithms != null && enabledAlgorithms.length > 0) {
+            this.enabledAlgorithms.addAll(Arrays.asList(enabledAlgorithms));
+        } else {
+            this.enabledAlgorithms.add(new X25519SigningAlgorithm());
         }
+
+        init();
+    }
+
+    void expandSignatures(final Transaction tx) {
+        if (!TransactionCodec.txIsSigned(tx.getContents())) {
+            return;
+        }
+
+        tx.add(TransactionCodec.extractSignature(tx.getContents()));
     }
 
     /**
@@ -70,5 +135,94 @@ final class TransactionPool {
      */
     byte[] transaction() {
         return transactions[random.nextInt(transactions.length)];
+    }
+
+    /**
+     * Performs one-time initialization of this instance.
+     */
+    private void init() {
+        if (signed) {
+            tryAcquirePrimitives();
+        }
+
+        final List<SigningAlgorithm> algorithms = new ArrayList<>(this.activeAlgorithms.values());
+        int lastChosenAlg = 0;
+        long transactionId = nodeId.id() * transactions.length;
+
+        for (int i = 0; i < transactions.length; i++) {
+            final byte[] data = new byte[transactionSize];
+            random.nextBytes(data);
+
+            if (signed && !algorithms.isEmpty()) {
+                final SigningAlgorithm alg = algorithms.get(lastChosenAlg);
+                lastChosenAlg++;
+
+                if (lastChosenAlg >= algorithms.size()) {
+                    lastChosenAlg = 0;
+                }
+
+                try {
+                    final ExtendedSignature exSig = alg.signEx(data, 0, data.length);
+                    final byte[] sig = exSig.getSignature();
+
+                    logger.trace(
+                            ADV_CRYPTO_SYSTEM.getMarker(),
+                            "Signing Transaction [ id = {}, signatureType = {}, publicKey = {}, signature = {}, "
+                                    + "r = {}, s = {}, data = {} ]",
+                            transactionId,
+                            alg.getSignatureType(),
+                            hex(alg.getPublicKey()),
+                            hex(sig),
+                            hex(exSig.getR()),
+                            hex(exSig.getS()),
+                            hex(data));
+
+                    transactions[i] = TransactionCodec.encode(alg, transactionId, sig, data);
+                } catch (SignatureException e) {
+                    // If we are unable to sign the transaction then log the failure and create an unsigned transaction
+                    logger.error(
+                            EXCEPTION.getMarker(),
+                            "Failed to Sign Transaction (Proceeding As Unsigned) [ id = {} ]",
+                            transactionId,
+                            e);
+                    transactions[i] = TransactionCodec.encode(null, transactionId, null, data);
+                }
+            } else {
+                transactions[i] = TransactionCodec.encode(null, transactionId, null, data);
+            }
+
+            transactionId++;
+        }
+    }
+
+    /**
+     * Initializes the {@link #activeAlgorithms} map and creates the public/private keys.
+     */
+    private void tryAcquirePrimitives() {
+        for (final SigningAlgorithm algorithm : enabledAlgorithms) {
+            try {
+                if (algorithm == null) {
+                    continue;
+                }
+
+                if (activeAlgorithms.containsKey(algorithm.getId())) {
+                    throw new IllegalStateException(
+                            String.format("Duplicate signing algorithm specified [ id = %s ]", algorithm.getId()));
+                }
+
+                algorithm.tryAcquirePrimitives();
+
+                if (algorithm.isAvailable()) {
+                    activeAlgorithms.put(algorithm.getId(), algorithm);
+                }
+            } catch (Exception ex) {
+                logger.error(
+                        EXCEPTION.getMarker(),
+                        "Failed to Activate Signing Algorithm [ id = {}, class = {} ]",
+                        algorithm.getId(),
+                        algorithm.getClass().getName(),
+                        ex);
+            }
+        }
     }
 }
