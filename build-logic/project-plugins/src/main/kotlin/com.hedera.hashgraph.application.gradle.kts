@@ -18,9 +18,12 @@ plugins {
     id("application")
     id("com.hedera.hashgraph.java")
     id("com.hedera.hashgraph.dependency-analysis")
+    id("com.gorylenko.gradle-git-properties")
 }
 
 group = "com.swirlds"
+
+gitProperties { keys = listOf("git.build.version", "git.commit.id", "git.commit.id.abbrev") }
 
 // Find the central SDK deployment dir by searching up the folder hierarchy
 fun sdkDir(dir: Directory): Directory =
@@ -54,28 +57,4 @@ tasks.distTar { enabled = false }
 
 tasks.distZip { enabled = false }
 
-tasks.jar {
-    // Gradle fails to track 'configurations.runtimeClasspath' as an input to the task if it is
-    // only used in the 'mainfest.attributes'. Hence, we explicitly add it as input.
-    inputs.files(configurations.runtimeClasspath)
-    manifest {
-        attributes(
-            "Main-Class" to application.mainClass,
-            "Class-Path" to
-                configurations.runtimeClasspath.get().elements.map { entry ->
-                    entry
-                        .map {
-                            File(
-                                copyLib
-                                    .get()
-                                    .destinationDir
-                                    .relativeTo(copyApp.get().destinationDir),
-                                it.asFile.name
-                            )
-                        }
-                        .sorted()
-                        .joinToString(separator = " ")
-                }
-        )
-    }
-}
+tasks.jar { manifest { attributes("Main-Class" to application.mainClass) } }

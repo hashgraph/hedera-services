@@ -29,3 +29,20 @@ tasks.copyApp {
     // Copy directly into 'sdk' and not 'sdk/data/apps'
     into(rootProject.layout.projectDirectory.dir("sdk"))
 }
+
+tasks.jar {
+    // Gradle fails to track 'configurations.runtimeClasspath' as an input to the task if it is
+    // only used in the 'mainfest.attributes'. Hence, we explicitly add it as input.
+    inputs.files(configurations.runtimeClasspath)
+    manifest {
+        attributes(
+            "Class-Path" to
+                configurations.runtimeClasspath.get().elements.map { entry ->
+                    entry
+                        .map { "data/lib/" + it.asFile.name }
+                        .sorted()
+                        .joinToString(separator = " ")
+                }
+        )
+    }
+}
