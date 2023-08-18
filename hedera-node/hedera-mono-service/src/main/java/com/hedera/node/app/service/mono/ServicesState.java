@@ -468,10 +468,6 @@ public class ServicesState extends PartialNaryMerkleInternal
                 app.sysFilesManager().createManagedFilesIfMissing();
                 app.stakeStartupHelper().doGenesisHousekeeping(addressBook());
             }
-            if (trigger != RECONNECT) {
-                // Once we have a dynamic address book, this will run unconditionally
-                app.sysFilesManager().updateStakeDetails();
-            }
         }
         return app;
     }
