@@ -70,7 +70,6 @@ public class StringUtils {
             return str;
         }
 
-        final String format = "%" + padChar + size + "s";
-        return String.format(format, str);
+        return String.valueOf(padChar).repeat(size - str.length()) + str;
     }
 }
