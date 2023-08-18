@@ -40,6 +40,7 @@ import com.hedera.hapi.node.base.TokenSupplyType;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
 import com.hedera.hapi.node.state.token.AccountCryptoAllowance;
@@ -284,9 +285,9 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected final long autoRenewSecs = 100L;
     protected static final long payerBalance = 10_000L;
     /* ---------- States ---------- */
-    protected MapReadableKVState<Bytes, AccountID> readableAliases;
+    protected MapReadableKVState<ProtoBytes, AccountID> readableAliases;
     protected MapReadableKVState<AccountID, Account> readableAccounts;
-    protected MapWritableKVState<Bytes, AccountID> writableAliases;
+    protected MapWritableKVState<ProtoBytes, AccountID> writableAliases;
     protected MapWritableKVState<AccountID, Account> writableAccounts;
     protected MapReadableKVState<TokenID, Token> readableTokenState;
     protected MapWritableKVState<TokenID, Token> writableTokenState;
@@ -353,7 +354,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
 
     /* ---------- Maps for updating both readable and writable stores ---------- */
     private Map<AccountID, Account> accountsMap;
-    private Map<Bytes, AccountID> aliasesMap;
+    private Map<ProtoBytes, AccountID> aliasesMap;
     private Map<TokenID, Token> tokensMap;
     private Map<EntityIDPair, TokenRelation> tokenRelsMap;
     private Map<Long, StakingNodeInfo> stakingNodeInfoMap;
@@ -398,8 +399,8 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         tokensMap.put(fungibleTokenIDC, fungibleTokenC);
 
         aliasesMap = new HashMap<>();
-        aliasesMap.put(alias.alias(), payerId);
-        aliasesMap.put(contractAlias.evmAddress(), asAccount(contract.contractNum()));
+        aliasesMap.put(new ProtoBytes(alias.alias()), payerId);
+        aliasesMap.put(new ProtoBytes(contractAlias.evmAddress()), asAccount(contract.contractNum()));
 
         tokenRelsMap = new HashMap<>();
         tokenRelsMap.put(fungiblePair, fungibleTokenRelation);
@@ -448,7 +449,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         readableAliases = readableAliasState();
         writableAliases = emptyWritableAliasStateBuilder().build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
-        given(readableStates.<Bytes, AccountID>get(ALIASES)).willReturn(readableAliases);
+        given(readableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(readableAliases);
         readableAccountStore = new ReadableAccountStoreImpl(readableStates);
         writableAccountStore = new WritableAccountStore(writableStates);
     }
@@ -459,9 +460,9 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         readableAliases = readableAliasState();
         writableAliases = writableAliasesState();
         given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
-        given(readableStates.<Bytes, AccountID>get(ALIASES)).willReturn(readableAliases);
+        given(readableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(readableAliases);
         given(writableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(writableAccounts);
-        given(writableStates.<Bytes, AccountID>get(ALIASES)).willReturn(writableAliases);
+        given(writableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(writableAliases);
         readableAccountStore = new ReadableAccountStoreImpl(readableStates);
         writableAccountStore = new WritableAccountStore(writableStates);
     }
@@ -584,7 +585,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     }
 
     @NonNull
-    protected MapWritableKVState<Bytes, AccountID> writableAliasesState() {
+    protected MapWritableKVState<ProtoBytes, AccountID> writableAliasesState() {
         final var builder = emptyWritableAliasStateBuilder();
         for (final var entry : aliasesMap.entrySet()) {
             builder.value(entry.getKey(), entry.getValue());
@@ -593,7 +594,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     }
 
     @NonNull
-    protected MapReadableKVState<Bytes, AccountID> readableAliasState() {
+    protected MapReadableKVState<ProtoBytes, AccountID> readableAliasState() {
         final var builder = emptyReadableAliasStateBuilder();
         for (final var entry : aliasesMap.entrySet()) {
             builder.value(entry.getKey(), entry.getValue());
