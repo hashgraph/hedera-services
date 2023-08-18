@@ -29,6 +29,7 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.RECEIVER_S
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.utils.EntityNum;
@@ -86,12 +87,14 @@ public class AdapterUtils {
                 (AccountID id) -> new EntityNum(id.accountNumOrThrow().intValue()));
     }
 
-    public static MapWritableKVState<Bytes, AccountID> wellKnownAliasState() {
-        final Map<Bytes, AccountID> wellKnownAliases = Map.ofEntries(
-                Map.entry(Bytes.wrap(CURRENTLY_UNUSED_ALIAS), asAccount(MISSING_NUM.longValue())),
-                Map.entry(Bytes.wrap(NO_RECEIVER_SIG_ALIAS), toPbj(NO_RECEIVER_SIG)),
-                Map.entry(Bytes.wrap(RECEIVER_SIG_ALIAS), toPbj(RECEIVER_SIG)),
-                Map.entry(Bytes.wrap(FIRST_TOKEN_SENDER_LITERAL_ALIAS.toByteArray()), toPbj(FIRST_TOKEN_SENDER)));
+    public static MapWritableKVState<ProtoBytes, AccountID> wellKnownAliasState() {
+        final Map<ProtoBytes, AccountID> wellKnownAliases = Map.ofEntries(
+                Map.entry(new ProtoBytes(Bytes.wrap(CURRENTLY_UNUSED_ALIAS)), asAccount(MISSING_NUM.longValue())),
+                Map.entry(new ProtoBytes(Bytes.wrap(NO_RECEIVER_SIG_ALIAS)), toPbj(NO_RECEIVER_SIG)),
+                Map.entry(new ProtoBytes(Bytes.wrap(RECEIVER_SIG_ALIAS)), toPbj(RECEIVER_SIG)),
+                Map.entry(
+                        new ProtoBytes(Bytes.wrap(FIRST_TOKEN_SENDER_LITERAL_ALIAS.toByteArray())),
+                        toPbj(FIRST_TOKEN_SENDER)));
         return new MapWritableKVState<>(ALIASES_KEY, wellKnownAliases);
     }
 

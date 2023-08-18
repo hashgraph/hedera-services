@@ -22,6 +22,7 @@ plugins {
 description = "Hedera Application - SPI"
 
 dependencies {
+    implementation(project(":app-hapi-utils"))
     javaModuleDependencies {
         testImplementation(project(":app-spi"))
         testImplementation(gav("org.apache.commons.lang3"))
