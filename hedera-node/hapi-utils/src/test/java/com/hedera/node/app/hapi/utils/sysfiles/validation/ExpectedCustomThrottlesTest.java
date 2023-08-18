@@ -79,6 +79,8 @@ import org.junit.jupiter.api.Test;
 
 class ExpectedCustomThrottlesTest {
     @Test
+    // Suppress the warning that we use too many assets
+    @SuppressWarnings("java:S5961")
     void releaseTwentyHasExpected() {
         assertEquals(56, ACTIVE_OPS.size());
 

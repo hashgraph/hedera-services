@@ -32,6 +32,7 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.node.app.AppTestBase;
 import com.hedera.node.app.config.VersionedConfigImpl;
@@ -582,8 +583,9 @@ class HandleWorkflowTest extends AppTestBase {
         workflow.handleRound(state, round);
 
         // then
-        final var alice = aliasesState.get(Bytes.wrap(ALICE_ALIAS));
-        assertThat(alice).isNotNull().isEqualTo(ALICE.account().accountId());
+        final var alice = aliasesState.get(new ProtoBytes(Bytes.wrap(ALICE_ALIAS)));
+        assertThat(alice).isNotNull();
+        assertThat(alice).isEqualTo(ALICE.account().accountId());
         // TODO: Check that record was created
         verify(systemFileUpdateFacility).handleTxBody(eq(state), any());
     }
@@ -677,7 +679,7 @@ class HandleWorkflowTest extends AppTestBase {
             workflow.handleRound(state, round);
 
             // then
-            final var alice = aliasesState.get(Bytes.wrap(ALICE_ALIAS));
+            final var alice = aliasesState.get(new ProtoBytes(Bytes.wrap(ALICE_ALIAS)));
             assertThat(alice).isNotNull().isEqualTo(ALICE.account().accountId());
             // TODO: Check that record was created
         }

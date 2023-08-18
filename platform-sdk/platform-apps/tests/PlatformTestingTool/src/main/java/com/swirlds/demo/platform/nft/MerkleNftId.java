@@ -16,6 +16,7 @@
 
 package com.swirlds.demo.platform.nft;
 
+import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.io.exceptions.InvalidVersionException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -24,8 +25,6 @@ import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import java.io.IOException;
 import java.util.Objects;
 import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.apache.commons.lang3.builder.ToStringStyle;
 
 /**
  * A unique identifier for an {@link Nft}.
@@ -186,7 +185,7 @@ public class MerkleNftId extends PartialMerkleLeaf implements MerkleLeaf {
      * {@inheritDoc}
      */
     public String toString() {
-        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
+        return new ToStringBuilder(this)
                 .append("ShardNum", shardNum)
                 .append("RealmNum", realmNum)
                 .append("TokenNum", tokenNum)

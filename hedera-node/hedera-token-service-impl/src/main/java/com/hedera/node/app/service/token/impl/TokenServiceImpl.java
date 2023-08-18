@@ -24,7 +24,7 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.common.EntityNumber;
-import com.hedera.hapi.node.state.primitives.ProtoString;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
 import com.hedera.hapi.node.state.token.Nft;
@@ -36,7 +36,14 @@ import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
+import com.hedera.node.app.spi.state.WritableKVState;
+import com.hedera.node.config.data.AccountsConfig;
+import com.hedera.node.config.data.BootstrapConfig;
+import com.hedera.node.config.data.HederaConfig;
+import com.hedera.node.config.data.LedgerConfig;
+import com.hedera.node.config.data.StakingConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Arrays;
 import java.util.Set;
 
 /** An implementation of the {@link TokenService} interface. */
@@ -69,7 +76,7 @@ public class TokenServiceImpl implements TokenService {
                 return Set.of(
                         StateDefinition.inMemory(TOKENS_KEY, TokenID.PROTOBUF, Token.PROTOBUF),
                         StateDefinition.onDisk(ACCOUNTS_KEY, AccountID.PROTOBUF, Account.PROTOBUF, MAX_ACCOUNTS),
-                        StateDefinition.onDisk(ALIASES_KEY, ProtoString.PROTOBUF, AccountID.PROTOBUF, MAX_ACCOUNTS),
+                        StateDefinition.onDisk(ALIASES_KEY, ProtoBytes.PROTOBUF, AccountID.PROTOBUF, MAX_ACCOUNTS),
                         StateDefinition.onDisk(NFTS_KEY, NftID.PROTOBUF, Nft.PROTOBUF, MAX_MINTABLE_NFTS),
                         StateDefinition.onDisk(
                                 TOKEN_RELS_KEY, EntityIDPair.PROTOBUF, TokenRelation.PROTOBUF, MAX_TOKEN_RELS),
@@ -82,8 +89,34 @@ public class TokenServiceImpl implements TokenService {
                 new SystemAccountsInitializer().createSystemAccounts(ctx);
 
                 initializeNetworkRewards(ctx);
+                updateStakingNodeInfo(ctx);
             }
         };
+    }
+
+    private void updateStakingNodeInfo(final MigrationContext ctx) {
+        // TODO: This need to go through address book and set all the nodes
+        final var config = ctx.configuration();
+        final var ledgerConfig = config.getConfigData(LedgerConfig.class);
+        final var stakingConfig = config.getConfigData(StakingConfig.class);
+        final var numberOfNodes = 1;
+
+        final long maxStakePerNode = ledgerConfig.totalTinyBarFloat() / numberOfNodes;
+        final long minStakePerNode = maxStakePerNode / 2;
+
+        final var numRewardHistoryStoredPeriods = stakingConfig.rewardHistoryNumStoredPeriods();
+        final var stakingInfoState = ctx.newStates().get(STAKING_INFO_KEY);
+        final var rewardSumHistory = new Long[numRewardHistoryStoredPeriods];
+        Arrays.fill(rewardSumHistory, 0L);
+
+        final var stakingInfo = StakingNodeInfo.newBuilder()
+                .nodeNumber(0)
+                .maxStake(maxStakePerNode)
+                .minStake(minStakePerNode)
+                .rewardSumHistory(Arrays.asList(rewardSumHistory))
+                .weight(500)
+                .build();
+        stakingInfoState.put(EntityNumber.newBuilder().number(0L).build(), stakingInfo);
     }
 
     private void initializeNetworkRewards(final MigrationContext ctx) {
