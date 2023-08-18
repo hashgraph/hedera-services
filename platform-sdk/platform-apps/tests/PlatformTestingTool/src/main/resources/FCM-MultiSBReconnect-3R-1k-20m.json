@@ -70,9 +70,9 @@
 	  1,
 	  2
 	],
-	"maximumReconnectCount": 3,
+	"maximumReconnectCount": 2,
 	"millisecondSleepPeriod": 10000,
-	"totalMillisecondsToSleep": 240000,
+	"totalMillisecondsToSleep": 360000,
 	"throttleInitMillisecondDelay": 30000
   }
 }
