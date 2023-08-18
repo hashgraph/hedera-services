@@ -33,6 +33,7 @@ import static com.swirlds.common.units.TimeUnit.UNIT_MILLISECONDS;
 import static org.apache.commons.lang3.StringEscapeUtils.escapeHtml4;
 
 import com.swirlds.common.formatting.TextEffect;
+import com.swirlds.common.formatting.UnitFormat;
 import com.swirlds.common.formatting.UnitFormatter;
 import com.swirlds.common.system.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -368,8 +369,11 @@ public class LogLine implements FormattableString {
         if (logStartTime == null) {
             elapsedTimeString = "";
         } else {
-            final UnitFormatter unitFormatter =
-                    new UnitFormatter(timestamp.toEpochMilli() - logStartTime.toEpochMilli(), UNIT_MILLISECONDS);
+            final UnitFormatter unitFormatter = new UnitFormatter(
+                            timestamp.toEpochMilli() - logStartTime.toEpochMilli(), UNIT_MILLISECONDS)
+                    .setUnitFormat(UnitFormat.MULTI_SIMPLIFIED)
+                    .setDecimalPlaces(0)
+                    .setShowSpaceInBetween(false);
             elapsedTimeString = escapeHtml4(unitFormatter.render());
         }
 

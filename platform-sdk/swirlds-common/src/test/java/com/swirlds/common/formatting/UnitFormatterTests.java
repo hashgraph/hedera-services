@@ -72,7 +72,7 @@ class UnitFormatterTests {
                 "2,048.0 KB",
                 DataUnit.UNIT_KILOBYTES
                         .buildFormatter(1024 * 2)
-                        .setSimplify(false)
+                        .setUnitFormat(UnitFormat.UNSIMPLIFIED)
                         .render());
     }
 
@@ -126,7 +126,7 @@ class UnitFormatterTests {
                 "2,048.0 KB",
                 DataUnit.UNIT_KILOBYTES
                         .buildFormatter(1024 * 2.0)
-                        .setSimplify(false)
+                        .setUnitFormat(UnitFormat.UNSIMPLIFIED)
                         .render());
         assertEquals(
                 "9.877 KB",
