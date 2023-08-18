@@ -23,6 +23,7 @@ import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Collections;
 
 /**
  * Utility class for working with keys. This validates if the key is empty and valid.
@@ -57,13 +58,28 @@ public class KeyUtils {
             return true;
         }
         if (pbjKey.hasKeyList()) {
-            return !((KeyList) key.value()).hasKeys()
-                    || (((KeyList) key.value()).hasKeys()
-                            && ((KeyList) key.value()).keys().isEmpty());
+            final var keyList = (KeyList) key.value();
+            if (!keyList.hasKeys() || keyList.keys().size() == 0) {
+                return true;
+            }
+            for (final var k : keyList.keys()) {
+                if (!isEmpty(k)) {
+                    return false;
+                }
+            }
+            return true;
         } else if (pbjKey.hasThresholdKey()) {
-            return !((ThresholdKey) key.value()).hasKeys()
-                    || (((ThresholdKey) key.value()).hasKeys()
-                            && ((ThresholdKey) key.value()).keys().keys().isEmpty());
+            final var thresholdKey = (ThresholdKey) key.value();
+            if ((!thresholdKey.hasKeys()
+                    || thresholdKey.keys().keysOrElse(Collections.emptyList()).size() == 0)) {
+                return true;
+            }
+            for (final var k : thresholdKey.keys().keys()) {
+                if (!isEmpty(k)) {
+                    return false;
+                }
+            }
+            return true;
         } else if (pbjKey.hasEd25519()) {
             return ((Bytes) key.value()).length() == 0;
         } else if (pbjKey.hasEcdsaSecp256k1()) {

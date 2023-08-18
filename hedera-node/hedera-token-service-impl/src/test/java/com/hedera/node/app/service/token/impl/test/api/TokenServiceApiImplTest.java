@@ -111,7 +111,8 @@ class TokenServiceApiImplTest {
     void delegatesStakingValidationAsExpected() {
         subject.assertValidStakingElection(true, false, "STAKED_NODE_ID", null, 123L, accountStore, networkInfo);
 
-        verify(stakingValidator).validateStakedId(true, false, "STAKED_NODE_ID", null, 123L, accountStore, networkInfo);
+        verify(stakingValidator)
+                .validateStakedIdForCreation(true, false, "STAKED_NODE_ID", null, 123L, accountStore, networkInfo);
     }
 
     @Test
