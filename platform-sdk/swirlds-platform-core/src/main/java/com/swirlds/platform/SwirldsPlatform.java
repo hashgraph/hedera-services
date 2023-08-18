@@ -216,7 +216,7 @@ public class SwirldsPlatform implements Platform, Startable {
     private final ConsensusRoundHandler consensusRoundHandler;
     /** Handles all interaction with {@link SwirldState} */
     private final SwirldStateManager swirldStateManager;
-    /** Checks the validity of transactions and submits valid ones to the event transaction pool */
+    /** Checks the validity of transactions and submits valid ones to the transaction pool */
     private final SwirldTransactionSubmitter transactionSubmitter;
     /** clears all pipelines to prepare for a reconnect */
     private final Clearable clearAllPipelines;

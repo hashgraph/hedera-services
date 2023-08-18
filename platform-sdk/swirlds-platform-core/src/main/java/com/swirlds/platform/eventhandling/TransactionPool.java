@@ -231,7 +231,7 @@ public class TransactionPool implements TransactionSupplier, EventCreationRule {
     }
 
     /**
-     * get the number of transactions in the transEvent queue
+     * get the number of buffered transactions
      *
      * @return the number of transactions
      */
@@ -240,7 +240,7 @@ public class TransactionPool implements TransactionSupplier, EventCreationRule {
     }
 
     /**
-     * get the number of transactions in the priorityTransEvent queue
+     * get the number of priority buffered transactions
      *
      * @return the number of transactions
      */

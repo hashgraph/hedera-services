@@ -73,7 +73,7 @@ public class SyncManagerTest {
         public DummyHashgraph hashgraph;
         public AddressBook addressBook;
         public NodeId selfId;
-        public TransactionPool eventTransactionPool;
+        public TransactionPool transactionPool;
         public SwirldStateManager swirldStateManager;
         public RandomGraph connectionGraph;
         public SyncManagerImpl syncManager;
@@ -93,7 +93,7 @@ public class SyncManagerTest {
             final PlatformContext platformContext =
                     TestPlatformContextBuilder.create().build();
 
-            eventTransactionPool = spy(new TransactionPool(platformContext, null));
+            transactionPool = spy(new TransactionPool(platformContext, null));
 
             this.swirldStateManager = swirldStateManager;
 

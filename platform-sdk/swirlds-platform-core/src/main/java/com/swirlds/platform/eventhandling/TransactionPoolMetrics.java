@@ -43,13 +43,15 @@ public class TransactionPoolMetrics {
     private static final SpeedometerMetric.Config SUBMITTED_PLATFORM_TRANSACTIONS_CONFIG = new SpeedometerMetric.Config(
                     "platform", "submittedPlatformTransactions")
             .withDescription(
-                    "Cycled when an app transaction is submitted (platform transactions are always accepted).");
+                    "Cycled when a platform transaction is submitted (platform transactions are always accepted).");
     private final SpeedometerMetric submittedPlatformTransactions;
 
     /**
      * Create metrics for the transaction pool.
      *
-     * @param platformContext the platform context
+     * @param platformContext                     the platform context
+     * @param getBufferedTransactionCount         a supplier for the number of buffered transactions
+     * @param getPriorityBufferedTransactionCount a supplier for the number of priority buffered transactions
      */
     public TransactionPoolMetrics(
             @NonNull final PlatformContext platformContext,
@@ -64,14 +66,14 @@ public class TransactionPoolMetrics {
 
         metrics.getOrCreate(new FunctionGauge.Config<>(
                         PLATFORM_CATEGORY, "bufferedTransactions", Integer.class, getBufferedTransactionCount)
-                .withDescription("transEvent queue size")
+                .withDescription("The number of transactions waiting to be inserted into an event.")
                 .withUnit("count"));
         metrics.getOrCreate(new FunctionGauge.Config<>(
                         PLATFORM_CATEGORY,
                         "bufferedPriorityTransactions",
                         Integer.class,
                         getPriorityBufferedTransactionCount)
-                .withDescription("priorityTransEvent queue size")
+                .withDescription("The number of priority transactions waiting to be inserted into an event.")
                 .withUnit("count"));
     }
 
