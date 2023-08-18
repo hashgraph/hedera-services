@@ -24,7 +24,6 @@ import static com.hedera.node.app.service.mono.state.migration.StateVersions.MIN
 import static com.hedera.node.app.service.mono.state.migration.UniqueTokensMigrator.migrateFromUniqueTokenMerkleMap;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.parseAccount;
 import static com.swirlds.common.system.InitTrigger.GENESIS;
-import static com.swirlds.common.system.InitTrigger.RECONNECT;
 import static com.swirlds.common.system.InitTrigger.RESTART;
 import static java.util.Objects.requireNonNull;
 
@@ -467,10 +466,6 @@ public class ServicesState extends PartialNaryMerkleInternal
                                 app.backingAccounts(), app.workingState().addressBook());
                 app.sysFilesManager().createManagedFilesIfMissing();
                 app.stakeStartupHelper().doGenesisHousekeeping(addressBook());
-            }
-            if (trigger != RECONNECT) {
-                // Once we have a dynamic address book, this will run unconditionally
-                app.sysFilesManager().updateStakeDetails();
             }
         }
         return app;
