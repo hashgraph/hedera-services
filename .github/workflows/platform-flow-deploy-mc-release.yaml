@@ -81,6 +81,7 @@ jobs:
       java-version: ${{ github.event.inputs.java-version || '17.0.3' }}
       custom-job-label: "Release / Maven Central"
     secrets:
+      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
       gpg-key-contents: ${{ secrets.PLATFORM_GPG_KEY_CONTENTS }}
       gpg-key-passphrase: ${{ secrets.PLATFORM_GPG_KEY_PASSPHRASE }}
       git-user-name: ${{ secrets.PLATFORM_GIT_USER_NAME }}
