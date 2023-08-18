@@ -31,17 +31,17 @@ import java.util.function.Supplier;
 public class TransactionPoolMetrics {
 
     private static final SpeedometerMetric.Config ACCEPTED_APP_TRANSACTIONS_CONFIG = new SpeedometerMetric.Config(
-                    "platform", "acceptedAppTransactions")
+            PLATFORM_CATEGORY, "acceptedAppTransactions")
             .withDescription("Cycled when an app transaction is submitted to the transaction pool and accepted.");
     private final SpeedometerMetric acceptedAppTransactions;
 
     private static final SpeedometerMetric.Config REJECTED_APP_TRANSACTIONS_CONFIG = new SpeedometerMetric.Config(
-                    "platform", "rejectedAppTransactions")
+            PLATFORM_CATEGORY, "rejectedAppTransactions")
             .withDescription("Cycled when an app transaction is submitted to the transaction pool and not accepted.");
     private final SpeedometerMetric rejectedAppTransactions;
 
     private static final SpeedometerMetric.Config SUBMITTED_PLATFORM_TRANSACTIONS_CONFIG = new SpeedometerMetric.Config(
-                    "platform", "submittedPlatformTransactions")
+            PLATFORM_CATEGORY, "submittedPlatformTransactions")
             .withDescription(
                     "Cycled when a platform transaction is submitted (platform transactions are always accepted).");
     private final SpeedometerMetric submittedPlatformTransactions;
@@ -66,7 +66,7 @@ public class TransactionPoolMetrics {
 
         metrics.getOrCreate(new FunctionGauge.Config<>(
                         PLATFORM_CATEGORY, "bufferedTransactions", Integer.class, getBufferedTransactionCount)
-                .withDescription("The number of transactions waiting to be inserted into an event.")
+                .withDescription("The number of non-priority transactions waiting to be inserted into an event.")
                 .withUnit("count"));
         metrics.getOrCreate(new FunctionGauge.Config<>(
                         PLATFORM_CATEGORY,

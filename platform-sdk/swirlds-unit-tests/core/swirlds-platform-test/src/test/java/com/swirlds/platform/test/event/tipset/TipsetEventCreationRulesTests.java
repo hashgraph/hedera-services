@@ -172,7 +172,7 @@ class TipsetEventCreationRulesTests {
         final AtomicInteger numSignatureTransactions = new AtomicInteger(0);
         final TransactionPool transactionPool = mock(TransactionPool.class);
         when(transactionPool.hasBufferedSignatureTransactions())
-                .thenAnswer(invocation -> numSignatureTransactions.get());
+                .thenAnswer(invocation -> numSignatureTransactions.get() > 0);
 
         final AtomicInteger eventCreationCount = new AtomicInteger(0);
         final TipsetEventCreator baseEventCreator = mock(TipsetEventCreator.class);
