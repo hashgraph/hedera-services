@@ -152,6 +152,10 @@ public class FileAppendHandler implements TransactionHandler {
         final var dataLength =
                 (fileAppend.contents() != null) ? fileAppend.contents().length() : 0;
 
+        /**
+         * TODO: revisit after modularizaion completed
+         * PR conversation: 8089
+         */
         final long effectiveLifeTime;
         if (fileNumbers.isSoftwareUpdateFile(file.fileId().fileNum())) {
             effectiveLifeTime = THREE_MONTHS_IN_SECONDS;
