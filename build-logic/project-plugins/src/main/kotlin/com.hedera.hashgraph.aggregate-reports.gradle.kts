@@ -23,7 +23,7 @@ plugins {
 
 // Configure the Sonarqube extension for SonarCloud reporting.
 // These properties should not be changed so no need to
-// have them in the gradle.properties defintions.
+// have them in the gradle.properties definitions.
 sonarqube {
     properties {
         property("sonar.host.url", "https://sonarcloud.io")
