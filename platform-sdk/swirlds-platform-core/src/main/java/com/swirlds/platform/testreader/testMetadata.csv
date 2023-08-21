@@ -85,7 +85,7 @@ NIReconnectCorrectness, TokenValidate-NIReconnect-1-16m, services, https://www.n
 NIReconnectCorrectness, TransactionHistory-NIReconnect-1-16m, services, https://www.notion.so/swirldslabs/NIReconnectCorrectness-TransactionHistory-NIReconnect-1-16m-cb66da1f8fa5457d9c604f0e4ce5f9da
 
 NetError, FCMFCQ-NetError-1k-25m, platform, https://www.notion.so/swirldslabs/NetError-FCMFCQ-NetError-1k-25m-29a9d01acb4e4660897db647bef2a886
-NetError, Misc-Basic-14-20m, platform, https://www.notion.so/swirldslabs/NetError-Misc-Basic-14-20m-96752536f01343ba815d415b48c63b2c
+NetError, Misc-Basic-14-20m, services, https://www.notion.so/swirldslabs/NetError-Misc-Basic-14-20m-96752536f01343ba815d415b48c63b2c
 
 Performance, Contract-Restart-Performance-Random-35-30m, services, https://www.notion.so/swirldslabs/Performance-Contract-Restart-Performance-Random-35-30m-62d20ba7030a485f83dbb6b7b053d3e7
 Performance, Crypto-Restart-Performance-Hotspot-10k-61m, services, https://www.notion.so/swirldslabs/Performance-Crypto-Restart-Performance-Hotspot-10k-61m-dd8fc090b1c647efba7b85b65912cf22
