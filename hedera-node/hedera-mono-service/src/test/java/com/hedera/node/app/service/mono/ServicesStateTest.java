@@ -421,7 +421,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(app.hashLogger()).willReturn(hashLogger);
         given(app.initializationFlow()).willReturn(initFlow);
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
-        given(app.sysFilesManager()).willReturn(systemFilesManager);
+
         given(platform.getSelfId()).willReturn(selfId);
         given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
 
@@ -618,7 +618,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(app.initializationFlow()).willReturn(initFlow);
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
         given(platform.getSelfId()).willReturn(selfId);
-        given(app.sysFilesManager()).willReturn(systemFilesManager);
+
         given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
         // and:
         APPS.save(selfId, app);
@@ -654,7 +654,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(app.initializationFlow()).willReturn(initFlow);
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
         given(platform.getSelfId()).willReturn(selfId);
-        given(app.sysFilesManager()).willReturn(systemFilesManager);
+
         given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
         // and:
         APPS.save(selfId, app);
@@ -683,7 +683,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(app.initializationFlow()).willReturn(initFlow);
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
         given(platform.getSelfId()).willReturn(selfId);
-        given(app.sysFilesManager()).willReturn(systemFilesManager);
+
         given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
         // and:
         APPS.save(selfId, app);
@@ -715,7 +715,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(app.initializationFlow()).willReturn(initFlow);
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
         given(platform.getSelfId()).willReturn(selfId);
-        given(app.sysFilesManager()).willReturn(systemFilesManager);
+
         given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
         // and:
         APPS.save(selfId, app);
@@ -786,7 +786,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
         given(platform.getSelfId()).willReturn(selfId);
         given(platform.getAddressBook()).willReturn(addressBook);
-        given(app.sysFilesManager()).willReturn(systemFilesManager);
+
         given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
         // and:
         APPS.save(selfId, app);
@@ -829,7 +829,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
         given(platform.getSelfId()).willReturn(selfId);
         given(platform.getAddressBook()).willReturn(addressBook);
-        given(app.sysFilesManager()).willReturn(systemFilesManager);
+
         given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
         // and:
         APPS.save(selfId, app);
@@ -882,7 +882,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
         given(platform.getSelfId()).willReturn(selfId);
         given(platform.getAddressBook()).willReturn(addressBook);
-        given(app.sysFilesManager()).willReturn(systemFilesManager);
+
         given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
         // and:
         APPS.save(selfId, app);
@@ -984,7 +984,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         // This signed state should be auto-closed by the try block
         try (ReservedSignedState state = loadSignedState(relocatedSignedState.toString())) {
             final var mockPlatform = createMockPlatformWithCrypto();
-            given(addressBook.getAddress(new NodeId(0L))).willReturn(address);
+
             given(mockPlatform.getAddressBook()).willReturn(addressBook);
             ServicesState swirldState = (ServicesState) state.get().getSwirldState();
             swirldState.init(mockPlatform, new DualStateImpl(), RESTART, forHapiAndHedera("0.30.0", "0.30.5"));

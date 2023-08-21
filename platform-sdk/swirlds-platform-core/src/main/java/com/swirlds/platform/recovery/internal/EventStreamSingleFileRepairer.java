@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.recovery.events;
+package com.swirlds.platform.recovery.internal;
 
 import static com.swirlds.common.crypto.DigestType.SHA_384;
 import static com.swirlds.common.stream.internal.TimestampStreamFileWriter.OBJECT_STREAM_VERSION;
