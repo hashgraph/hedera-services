@@ -18,6 +18,7 @@ package com.hedera.node.app.workflows.handle;
 
 import static com.hedera.node.app.service.file.impl.FileServiceImpl.BLOBS_KEY;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -62,6 +63,9 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
 
     private SystemFileUpdateFacility subject;
 
+    @Mock
+    private ThrottleManager throttleManager;
+
     @BeforeEach
     void setUp() {
         files = new HashMap<>();
@@ -74,7 +78,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
                 .getOrCreateConfig();
         when(configProvider.getConfiguration()).thenReturn(new VersionedConfigImpl(config, 1L));
 
-        subject = new SystemFileUpdateFacility(configProvider, new ThrottleManager());
+        subject = new SystemFileUpdateFacility(configProvider, throttleManager);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -129,5 +133,24 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
 
         // then
         verify(configProvider).update(FILE_BYTES);
+    }
+
+    @Test
+    void throttleMangerUpdatedOnFileUpdate() {
+        // given
+        final var configuration = configProvider.getConfiguration();
+        final var config = configuration.getConfigData(FilesConfig.class);
+
+        final var fileNum = config.throttleDefinitions();
+        final var fileID = FileID.newBuilder().fileNum(fileNum).build();
+        final var txBody = TransactionBody.newBuilder()
+                .fileAppend(FileAppendTransactionBody.newBuilder().fileID(fileID));
+        files.put(fileID, File.newBuilder().contents(FILE_BYTES).build());
+
+        // when
+        subject.handleTxBody(state, txBody.build());
+
+        // then
+        verify(throttleManager, times(1)).update(SystemFileUpdateFacility.getFileContent(state, fileID));
     }
 }

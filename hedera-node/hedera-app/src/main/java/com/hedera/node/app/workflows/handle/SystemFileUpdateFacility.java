@@ -116,7 +116,7 @@ public class SystemFileUpdateFacility {
     }
 
     @NonNull
-    private static Bytes getFileContent(@NonNull final HederaState state, @NonNull final FileID fileID) {
+    public static Bytes getFileContent(@NonNull final HederaState state, @NonNull final FileID fileID) {
         final var states = state.createReadableStates(FileService.NAME);
         final var filesMap = states.<FileID, File>get(BLOBS_KEY);
         final var file = filesMap.get(fileID);
