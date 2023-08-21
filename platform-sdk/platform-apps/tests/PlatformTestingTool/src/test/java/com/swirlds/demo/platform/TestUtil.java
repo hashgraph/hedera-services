@@ -75,11 +75,11 @@ public class TestUtil {
      * Sign a transaction when payload is given
      *
      * @param payload
-     * @param transactionPool
+     * @param pttTransactionPool
      * @return
      */
-    public static byte[] signTransaction(byte[] payload, TransactionPool transactionPool) {
-        return transactionPool.signAndConcatenatePubKeySignature(
+    public static byte[] signTransaction(byte[] payload, PttTransactionPool pttTransactionPool) {
+        return pttTransactionPool.signAndConcatenatePubKeySignature(
                 payload, false, AppTransactionSignatureType.ECDSA_SECP256K1);
     }
 

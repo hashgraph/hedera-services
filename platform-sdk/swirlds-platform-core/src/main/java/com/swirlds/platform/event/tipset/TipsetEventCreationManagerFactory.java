@@ -35,7 +35,7 @@ import com.swirlds.platform.event.tipset.rules.TipsetBackpressureRule;
 import com.swirlds.platform.event.tipset.rules.TipsetEventCreationRule;
 import com.swirlds.platform.event.tipset.rules.TipsetMaximumRateRule;
 import com.swirlds.platform.event.tipset.rules.TipsetPlatformStatusRule;
-import com.swirlds.platform.eventhandling.EventTransactionPool;
+import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.observers.ConsensusRoundObserver;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.observers.PreConsensusEventObserver;
@@ -80,7 +80,7 @@ public final class TipsetEventCreationManagerFactory {
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
             @NonNull final SoftwareVersion appVersion,
-            @NonNull final EventTransactionPool transactionPool,
+            @NonNull final TransactionPool transactionPool,
             @NonNull final QueueThread<EventIntakeTask> eventIntakeQueue,
             @NonNull final EventObserverDispatcher eventObserverDispatcher,
             @NonNull final Supplier<PlatformStatus> platformStatusSupplier,

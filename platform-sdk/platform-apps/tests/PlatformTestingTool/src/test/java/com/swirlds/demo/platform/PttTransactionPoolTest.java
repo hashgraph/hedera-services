@@ -54,7 +54,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-public class TransactionPoolTest {
+public class PttTransactionPoolTest {
     private static final Platform platform;
     private static final ExpectedFCMFamily expectedFCMFamily;
     private static final FCMFamily fCMFamily;
@@ -67,7 +67,7 @@ public class TransactionPoolTest {
     private static final long otherID = 1;
     private static final int nodesNum = 4;
     private static PayloadConfig config = PayloadConfig.builder().build();
-    private static TransactionPool transactionPool;
+    private static PttTransactionPool pttTransactionPool;
     private static MapValueFCQ fcqValue;
 
     static {
@@ -126,7 +126,7 @@ public class TransactionPoolTest {
     public void invalidSigTest() {
         // invalidSigRatio be 1 denotes all signatures for FCMTransaction should be invalid
         config = PayloadConfig.builder().setInvalidSigRatio(1).build();
-        transactionPool = new TransactionPool(
+        pttTransactionPool = new PttTransactionPool(
                 platform,
                 myID,
                 config,
@@ -138,7 +138,7 @@ public class TransactionPoolTest {
                 Mockito.mock(TransactionSubmitter.class),
                 Mockito.mock(ExpectedFCMFamily.class));
         for (int i = 0; i < 100; i++) {
-            assertTrue(transactionPool.invalidSig());
+            assertTrue(pttTransactionPool.invalidSig());
         }
     }
 
@@ -147,7 +147,7 @@ public class TransactionPoolTest {
     public void validSigTest() {
         // invalidSigRatio be 0 denotes all signatures for FCMTransaction should be valid
         config = PayloadConfig.builder().setInvalidSigRatio(0).build();
-        transactionPool = new TransactionPool(
+        pttTransactionPool = new PttTransactionPool(
                 platform,
                 myID,
                 config,
@@ -159,7 +159,7 @@ public class TransactionPoolTest {
                 Mockito.mock(TransactionSubmitter.class),
                 Mockito.mock(ExpectedFCMFamily.class));
         for (int i = 0; i < 100; i++) {
-            assertFalse(transactionPool.invalidSig());
+            assertFalse(pttTransactionPool.invalidSig());
         }
     }
 
