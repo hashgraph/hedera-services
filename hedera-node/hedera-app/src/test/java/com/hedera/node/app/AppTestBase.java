@@ -20,6 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.config.VersionedConfigImpl;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
@@ -43,7 +44,6 @@ import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.metrics.Counter;
@@ -101,7 +101,7 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
     private static final String ALIASES_KEY = "ALIASES";
     public static final String ALICE_ALIAS = "Alice Alias";
     protected MapWritableKVState<AccountID, Account> accountsState;
-    protected MapWritableKVState<Bytes, AccountID> aliasesState;
+    protected MapWritableKVState<ProtoBytes, AccountID> aliasesState;
     protected HederaState state;
 
     protected void setupStandardStates() {
@@ -109,6 +109,7 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
         accountsState.put(ALICE.accountID(), ALICE.account());
         accountsState.put(ERIN.accountID(), ERIN.account());
         accountsState.put(STAKING_REWARD_ACCOUNT.accountID(), STAKING_REWARD_ACCOUNT.account());
+        accountsState.put(FUNDING_ACCOUNT.accountID(), FUNDING_ACCOUNT.account());
         accountsState.commit();
         aliasesState = new MapWritableKVState<>(ALIASES_KEY);
         final var writableStates = MapWritableStates.builder()
@@ -135,7 +136,7 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
             SemanticVersion.newBuilder().major(1).minor(2).patch(3).build(),
             SemanticVersion.newBuilder().major(1).minor(2).patch(3).build());
     /** Represents "this node" in our tests. */
-    private final NodeId nodeSelfId = new NodeId(7);
+    protected final NodeId nodeSelfId = new NodeId(7);
     /** The AccountID of "this node" in our tests. */
     protected final AccountID nodeSelfAccountId =
             AccountID.newBuilder().shardNum(0).realmNum(0).accountNum(8).build();

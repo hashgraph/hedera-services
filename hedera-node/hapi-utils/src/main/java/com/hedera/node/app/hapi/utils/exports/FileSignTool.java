@@ -88,10 +88,6 @@ public class FileSignTool {
     private static final String CSV_EXTENSION = ".csv";
     private static final String ACCOUNT_BALANCE_EXTENSION = ".pb";
     private static final String SIG_FILE_NAME_END = "_sig";
-    /** next bytes are signature */
-    private static final byte TYPE_SIGNATURE = 3;
-    /** next 48 bytes are hash384 of content of the file to be signed */
-    private static final byte TYPE_FILE_HASH = 4;
 
     private static final int DEFAULT_RECORD_STREAM_VERSION = 6;
 
@@ -107,7 +103,6 @@ public class FileSignTool {
 
     private static final Logger LOGGER = LogManager.getLogger(FileSignTool.class);
     private static final Marker MARKER = MarkerManager.getMarker("FILE_SIGN");
-    private static final int BYTES_COUNT_IN_INT = 4;
     /** default log4j2 file name */
     private static final String DEFAULT_LOG_CONFIG = "log4j2.xml";
     /** supported stream version file */
@@ -262,8 +257,7 @@ public class FileSignTool {
         return UnsafeByteOperations.unsafeWrap(bytes);
     }
 
-    private static SignatureObject generateSignatureObject(
-            final String relatedRecordStreamFile, final byte[] hash, final KeyPair sigKeyPair)
+    private static SignatureObject generateSignatureObject(final byte[] hash, final KeyPair sigKeyPair)
             throws NoSuchAlgorithmException, SignatureException, NoSuchProviderException, InvalidKeyException {
         final byte[] signature = sign(hash, sigKeyPair);
         return SignatureObject.newBuilder()
@@ -284,6 +278,10 @@ public class FileSignTool {
                 .build();
     }
 
+    // Suppressing the warning that Optional.isEmpty is not called before using the Optional.
+    // In reality, it is called, Sonar just can't detect it.
+    // Ignoring also that we use generic exception instead of custom
+    @SuppressWarnings({"java:S3655", "java:S112"})
     private static void createSignatureFileForRecordFile(
             final String recordFile,
             final StreamType streamType,
@@ -314,7 +312,11 @@ public class FileSignTool {
                 }
             }
         }
-        LOGGER.info(MARKER, "Record stream file header is {}", Arrays.toString(fileHeader));
+
+        if (LOGGER.isInfoEnabled()) {
+            final var fileHeaderString = Arrays.toString(fileHeader);
+            LOGGER.info(MARKER, "Record stream file header is {}", fileHeaderString);
+        }
 
         try (final SerializableDataOutputStream dosMeta =
                         new SerializableDataOutputStream(new HashingOutputStream(metadataStreamDigest));
@@ -323,6 +325,11 @@ public class FileSignTool {
             // parse record file
             final Pair<Integer, Optional<RecordStreamFile>> recordResult =
                     readMaybeCompressedRecordStreamFile(recordFile);
+
+            if (recordResult == null || recordResult.getValue().isEmpty()) {
+                throw new RuntimeException("Record result is empty");
+            }
+
             final long blockNumber = recordResult.getValue().get().getBlockNumber();
             final byte[] startRunningHash = recordResult
                     .getValue()
@@ -339,14 +346,19 @@ public class FileSignTool {
             final int version = recordResult.getKey();
             final byte[] serializedBytes = recordResult.getValue().get().toByteArray();
 
-            LOGGER.info(MARKER, "Writing file header {}", Arrays.toString(fileHeader));
+            if (LOGGER.isInfoEnabled()) {
+                final var fileHeaderString = Arrays.toString(fileHeader);
+                LOGGER.info(MARKER, "Writing file header {}", fileHeaderString);
+            }
             // update meta digest
             for (final int value : fileHeader) {
                 dosMeta.writeInt(value);
             }
-            LOGGER.info(MARKER, "Writing start running hash {}", hex(startRunningHash));
+            final var startRunningHashHex = hex(startRunningHash);
+            LOGGER.info(MARKER, "Writing start running hash {}", startRunningHashHex);
             dosMeta.write(startRunningHash);
-            LOGGER.info(MARKER, "Writing end running hash {}", hex(endRunningHash));
+            final var endRunningHashHex = hex(endRunningHash);
+            LOGGER.info(MARKER, "Writing end running hash {}", endRunningHashHex);
             dosMeta.write(endRunningHash);
             LOGGER.info(MARKER, "Writing block number {}", blockNumber);
             dosMeta.writeLong(blockNumber);
@@ -355,8 +367,10 @@ public class FileSignTool {
             // update stream digest
             LOGGER.info(MARKER, "Writing version {}", version);
             dos.writeInt(version);
-            LOGGER.info(
-                    MARKER, "Writing serializedBytes {}", hex(serializedBytes).substring(0, 32));
+            if (LOGGER.isInfoEnabled()) {
+                final var serializedBytesSubstring = hex(serializedBytes).substring(0, 32);
+                LOGGER.info(MARKER, "Writing serializedBytes {}", serializedBytesSubstring);
+            }
             dos.write(serializedBytes);
             dos.flush();
 
@@ -368,9 +382,8 @@ public class FileSignTool {
             throw new RuntimeException(message);
         }
 
-        final SignatureObject metadataSignature =
-                generateSignatureObject(recordFile, metadataStreamDigest.digest(), sigKeyPair);
-        final SignatureObject fileSignature = generateSignatureObject(recordFile, streamDigest.digest(), sigKeyPair);
+        final SignatureObject metadataSignature = generateSignatureObject(metadataStreamDigest.digest(), sigKeyPair);
+        final SignatureObject fileSignature = generateSignatureObject(streamDigest.digest(), sigKeyPair);
         final SignatureFile.Builder signatureFile =
                 SignatureFile.newBuilder().setFileSignature(fileSignature).setMetadataSignature(metadataSignature);
 
@@ -400,6 +413,8 @@ public class FileSignTool {
         }
     }
 
+    // Suppressing the warning that we use generic exception instead of custom
+    @SuppressWarnings("java:S112")
     public static void main(final String[] args) {
         final String streamTypeJsonPath = System.getProperty(STREAM_TYPE_JSON_PROPERTY);
         // load StreamType from json file, if such json file doesn't exist, use EVENT as streamType

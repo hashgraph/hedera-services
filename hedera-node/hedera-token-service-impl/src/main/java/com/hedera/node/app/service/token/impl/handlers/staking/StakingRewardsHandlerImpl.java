@@ -69,11 +69,11 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
         final var stakingInfoStore = context.writableStore(WritableStakingInfoStore.class);
         final var accountsConfig = context.configuration().getConfigData(AccountsConfig.class);
         final var stakingRewardAccountId = asAccount(accountsConfig.stakingRewardAccount());
-        final var consensusNow = context.consensusNow();
+        final var consensusNow = context.consensusTime();
 
         // TODO: confirm if the getDeletedAccountBeneficiaries should be in
         //  SingleTransactionRecordBuilder interface instead
-        final var recordBuilder = context.recordBuilder(CryptoDeleteRecordBuilder.class);
+        final var recordBuilder = context.userTransactionRecordBuilder(CryptoDeleteRecordBuilder.class);
 
         // Apply all changes related to stakedId changes, and adjust stakedToMe
         // for all accounts staking to an account
@@ -134,9 +134,10 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
                 }
                 if (scenario.awardsToAccount()) {
                     final var newStakedAccountId = modifiedAccount.stakedAccountId();
+                    final var balance = originalAccount == null ? 0 : originalAccount.tinybarBalance();
                     // Always trigger a reward situation for the new stakee when they are
                     // gaining an indirect staker, even if it doesn't change their total stake
-                    final var roundedFinalBalance = roundedToHbar(originalAccount.tinybarBalance());
+                    final var roundedFinalBalance = roundedToHbar(balance);
                     updateStakedToMeFor(newStakedAccountId, roundedFinalBalance, writableStore);
                 }
             }

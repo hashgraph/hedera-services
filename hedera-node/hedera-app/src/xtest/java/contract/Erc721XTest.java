@@ -45,6 +45,7 @@ import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.state.ReadableKVState;
@@ -173,7 +174,7 @@ public class Erc721XTest extends AbstractContractXTest {
     }
 
     @Override
-    protected void assertExpectedAliases(@NotNull final ReadableKVState<Bytes, AccountID> aliases) {
+    protected void assertExpectedAliases(@NotNull final ReadableKVState<ProtoBytes, AccountID> aliases) {
         // No aliases change in this test
     }
 
