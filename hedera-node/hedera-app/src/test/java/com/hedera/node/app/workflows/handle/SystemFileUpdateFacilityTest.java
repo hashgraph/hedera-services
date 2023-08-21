@@ -32,6 +32,7 @@ import com.hedera.node.app.config.VersionedConfigImpl;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.spi.fixtures.TransactionFactory;
+import com.hedera.node.app.throttle.ThrottleManager;
 import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.LedgerConfig;
@@ -73,7 +74,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
                 .getOrCreateConfig();
         when(configProvider.getConfiguration()).thenReturn(new VersionedConfigImpl(config, 1L));
 
-        subject = new SystemFileUpdateFacility(configProvider, null); // TODO: fix
+        subject = new SystemFileUpdateFacility(configProvider, new ThrottleManager());
     }
 
     @SuppressWarnings("ConstantConditions")
