@@ -18,7 +18,6 @@ import net.swiftzer.semver.SemVer
 import org.gradle.api.Project
 import org.gradle.api.file.Directory
 import org.gradle.api.file.RegularFile
-import java.io.File
 import java.io.OutputStream
 import java.io.PrintStream
 
@@ -50,7 +49,7 @@ class Utils {
                     writer.println("| --- | --- |")
 
                     // Write table rows
-                    rootProject.childProjects.values.onEach {
+                    rootProject.subprojects.forEach {
                         writer.printf("| %s | %s |\n", it.name, it.version.toString())
                     }
                     writer.flush()

@@ -136,14 +136,14 @@ tasks.jar {
 val copyLib =
     tasks.register<Copy>("copyLib") {
         from(project.configurations.getByName("runtimeClasspath"))
-        into(rootProject.layout.projectDirectory.file("data/lib"))
+        into(layout.projectDirectory.dir("../data/lib"))
     }
 
 // Copy built jar into `data/apps` and rename HederaNode.jar
 val copyApp =
     tasks.register<Copy>("copyApp") {
         from(tasks.jar)
-        into(rootProject.layout.projectDirectory.file("data/apps"))
+        into(layout.projectDirectory.dir("../data/apps"))
         rename { "HederaNode.jar" }
         shouldRunAfter(tasks.named("copyLib"))
     }
@@ -157,7 +157,7 @@ tasks.assemble {
 tasks.register<JavaExec>("run") {
     group = "application"
     dependsOn(tasks.assemble)
-    workingDir = rootProject.layout.projectDirectory.asFile
+    workingDir = layout.projectDirectory.dir("..").asFile
     jvmArgs = listOf("-cp", "data/lib/*")
     mainClass.set("com.swirlds.platform.Browser")
 }
@@ -165,14 +165,14 @@ tasks.register<JavaExec>("run") {
 tasks.register<JavaExec>("modrun") {
     group = "application"
     dependsOn(tasks.assemble)
-    workingDir = rootProject.layout.projectDirectory.asFile
+    workingDir = layout.projectDirectory.dir("..").asFile
     jvmArgs = listOf("-cp", "data/lib/*", "-Dhedera.workflows.enabled=true")
     mainClass.set("com.swirlds.platform.Browser")
 }
 
 val cleanRun =
     tasks.register<Delete>("cleanRun") {
-        val prjDir = rootProject.layout.projectDirectory
+        val prjDir = layout.projectDirectory.dir("..")
         delete(prjDir.dir("database"))
         delete(prjDir.dir("output"))
         delete(prjDir.dir("settingsUsed.txt"))
@@ -196,7 +196,7 @@ var updateDockerEnvTask =
             "Creates the .env file in the docker folder that contains environment variables for docker"
         group = "docker"
 
-        workingDir(rootProject.layout.projectDirectory.dir("docker"))
+        workingDir(layout.projectDirectory.dir("../docker"))
         commandLine("./update-env.sh", project.version)
     }
 
@@ -205,8 +205,8 @@ tasks.register<Exec>("createDockerImage") {
     group = "docker"
 
     dependsOn(updateDockerEnvTask, tasks.assemble)
-    workingDir(rootProject.layout.projectDirectory.dir("docker"))
-    commandLine("./docker-build.sh", project.version, rootProject.projectDir)
+    workingDir(layout.projectDirectory.dir("../docker"))
+    commandLine("./docker-build.sh", project.version, layout.projectDirectory.dir("..").asFile)
 }
 
 tasks.register<Exec>("startDockerContainers") {
@@ -214,7 +214,7 @@ tasks.register<Exec>("startDockerContainers") {
     group = "docker"
 
     dependsOn(updateDockerEnvTask)
-    workingDir(rootProject.layout.projectDirectory.dir("docker"))
+    workingDir(layout.projectDirectory.dir("../docker"))
     commandLine("docker-compose", "up")
 }
 
@@ -223,6 +223,6 @@ tasks.register<Exec>("stopDockerContainers") {
     group = "docker"
 
     dependsOn(updateDockerEnvTask)
-    workingDir(rootProject.layout.projectDirectory.dir("docker"))
+    workingDir(layout.projectDirectory.dir("../docker"))
     commandLine("docker-compose", "stop")
 }

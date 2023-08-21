@@ -27,7 +27,7 @@ application.mainClass.set("com.swirlds.platform.Browser")
 tasks.copyApp {
     // Adjust configuration from 'com.hedera.hashgraph.application':
     // Copy directly into 'sdk' and not 'sdk/data/apps'
-    into(rootProject.layout.projectDirectory.dir("sdk"))
+    into(layout.projectDirectory.dir("../sdk"))
 }
 
 tasks.jar {
