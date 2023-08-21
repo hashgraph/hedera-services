@@ -228,7 +228,7 @@ jobs:
         uses: gradle/gradle-build-action@v2
         with:
           gradle-version: ${{ inputs.gradle-version }}
-          arguments: -p platform-sdk githubVersionSummary --scan
+          arguments: githubVersionSummary --scan
 
       - name: Gradle Assemble
         uses: gradle/gradle-build-action@v2

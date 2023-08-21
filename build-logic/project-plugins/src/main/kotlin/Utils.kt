@@ -39,6 +39,7 @@ class Utils {
         @JvmStatic
         fun generateProjectVersionReport(rootProject: Project, ostream: OutputStream) {
             val writer = PrintStream(ostream, false, Charsets.UTF_8)
+            val version = rootProject.layout.projectDirectory.versionTxt().asFile.readText()
 
             ostream.use {
                 writer.use {
@@ -47,11 +48,9 @@ class Utils {
                     writer.println()
                     writer.println("| Artifact Name | Version Number |")
                     writer.println("| --- | --- |")
-
                     // Write table rows
-                    rootProject.subprojects.forEach {
-                        writer.printf("| %s | %s |\n", it.name, it.version.toString())
-                    }
+                    writer.printf("| %s | %s |\n", "hedera-node", version)
+                    writer.printf("| %s | %s |\n", "platform-sdk", version)
                     writer.flush()
                     ostream.flush()
                 }
