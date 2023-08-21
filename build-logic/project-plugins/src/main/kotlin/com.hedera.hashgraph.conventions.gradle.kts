@@ -108,5 +108,5 @@ tasks.assemble {
     // 'assemble' compiles all sources, including all test sources
     dependsOn(tasks.named("itestClasses"))
     dependsOn(tasks.named("eetClasses"))
-    dependsOn(tasks.named("xtestClasses"))
+    // dependsOn(tasks.named("xtestClasses"))
 }
