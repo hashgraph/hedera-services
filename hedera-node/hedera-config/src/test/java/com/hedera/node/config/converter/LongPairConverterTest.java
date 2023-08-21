@@ -53,7 +53,7 @@ class LongPairConverterTest {
     }
 
     @Test
-    void testInvalidValueMultipleSemicolon() {
+    void testInvalidValueMultipleDashes() {
         // given
         final LongPairConverter converter = new LongPairConverter();
         final String value = "1-2-3;";
@@ -63,7 +63,7 @@ class LongPairConverterTest {
     }
 
     @Test
-    void testInvalidValueNoSemicolon() {
+    void testInvalidValueNoDashes() {
         // given
         final LongPairConverter converter = new LongPairConverter();
         final String value = "1";
@@ -101,7 +101,7 @@ class LongPairConverterTest {
         final List<LongPair> values = configuration.getValues("testProperty", LongPair.class);
 
         // then
-        assertThat(values).isNotNull().hasSize(1);
+        assertThat(values).hasSize(1);
         assertThat(values.get(0).left()).isEqualTo(1L);
         assertThat(values.get(0).right()).isEqualTo(2L);
     }
