@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows;
+package com.hedera.node.app.workflows.handle;
 
 import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakePeriodManager.DEFAULT_STAKING_PERIOD_MINS;
 import static com.hedera.node.app.service.mono.utils.Units.MINUTES_TO_MILLISECONDS;
@@ -24,7 +24,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater;
-import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.service.token.records.StakingContext;
 import com.hedera.node.config.data.StakingConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -60,13 +60,15 @@ public class StakingPeriodTimeHook implements ConsensusTimeHook {
      * to catch up on updates and distributions when first coming online.
      */
     @Override
-    public void process(@NonNull Instant consensusTime, @NonNull final HandleContext context) {
+    public void process(@NonNull final StakingContext context) {
+        requireNonNull(context, "context must not be null");
+        final var consensusTime = context.consensusTime();
         if (consensusTimeOfLastHandledTxn == null
                 || consensusTime.getEpochSecond() > consensusTimeOfLastHandledTxn.getEpochSecond()
                         && isNextStakingPeriod(consensusTime, consensusTimeOfLastHandledTxn, context)) {
             // Handle the daily staking distributions and updates
             try {
-                stakingCalculator.updateNodes(consensusTime, context);
+                stakingCalculator.updateNodes(context);
             } catch (final Exception e) {
                 logger.error("CATASTROPHIC failure updating end-of-day stakes", e);
             }
@@ -85,9 +87,11 @@ public class StakingPeriodTimeHook implements ConsensusTimeHook {
     static boolean isNextStakingPeriod(
             @NonNull final Instant currentConsensusTime,
             @NonNull final Instant previousConsensusTime,
-            @NonNull final HandleContext handleContext) {
-        final var stakingPeriod =
-                handleContext.configuration().getConfigData(StakingConfig.class).periodMins();
+            @NonNull final StakingContext stakingContext) {
+        final var stakingPeriod = stakingContext
+                .configuration()
+                .getConfigData(StakingConfig.class)
+                .periodMins();
         if (stakingPeriod == DEFAULT_STAKING_PERIOD_MINS) {
             return isLaterUtcDay(currentConsensusTime, previousConsensusTime);
         } else {

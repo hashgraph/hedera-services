@@ -18,8 +18,8 @@ package com.hedera.node.app.service.token.impl.handlers.staking;
 
 import static com.hedera.node.app.service.mono.utils.Units.HBARS_TO_TINYBARS;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
-import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.*;
 import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.calculateRewardSumHistory;
+import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.computeNextStake;
 import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.readableNonZeroHistory;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -36,8 +36,8 @@ import com.hedera.node.app.service.token.ReadableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.records.NodeStakeUpdateRecordBuilder;
+import com.hedera.node.app.service.token.records.StakingContext;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
-import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.StakingConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigDecimal;
@@ -79,10 +79,10 @@ public class EndOfStakingPeriodUpdater {
      * Updates all (relevant) staking-related values for all nodes, as well as any network reward information,
      * at the end of a staking period. This method must be invoked during handling of a transaction
      *
-     * @param consensusTime the consensus time of the transaction used to end the staking period
      * @param context the context of the transaction used to end the staking period
      */
-    public void updateNodes(@NonNull final Instant consensusTime, @NonNull final HandleContext context) {
+    public void updateNodes(@NonNull final StakingContext context) {
+        final var consensusTime = context.consensusTime();
         log.info("Updating node stakes for a just-finished period @ {}", consensusTime);
 
         // First, determine if staking is enabled. If not, there is nothing to do

@@ -18,84 +18,82 @@ package com.hedera.node.app.workflows.handle;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.records.FinalizeContext;
+import com.hedera.node.app.service.token.records.StakingContext;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
+import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.function.Consumer;
 
-/**
- * The default implementation of {@link FinalizeContext}.
- */
-public class FinalizeContextImpl implements FinalizeContext {
-    private final AccountID payer;
-    private final SingleTransactionRecordBuilderImpl recordBuilder;
+public class TokenServiceContextImpl implements StakingContext, FinalizeContext {
     private final Configuration configuration;
     private final ReadableStoreFactory readableStoreFactory;
     private final WritableStoreFactory writableStoreFactory;
+    private final RecordListBuilder recordListBuilder;
 
-    /**
-     * Constructs a {@link FinalizeContextImpl}.
-     *
-     * @param payer              The {@link AccountID} of the payer
-     * @param recordBuilder      The main {@link SingleTransactionRecordBuilderImpl}
-     * @param stack              The {@link SavepointStackImpl} used to manage savepoints
-     */
-    public FinalizeContextImpl(
-            @NonNull final AccountID payer,
-            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
+    public TokenServiceContextImpl(
             @NonNull final Configuration configuration,
-            @NonNull final SavepointStackImpl stack) {
-        this.payer = requireNonNull(payer, "payer must not be null");
-        this.recordBuilder = requireNonNull(recordBuilder, "recordBuilder must not be null");
+            @NonNull final SavepointStackImpl stack,
+            @NonNull final RecordListBuilder recordListBuilder) {
         this.configuration = requireNonNull(configuration, "configuration must not be null");
+        this.recordListBuilder = requireNonNull(recordListBuilder, "recordListBuilder must not be null");
         requireNonNull(stack, "stack must not be null");
+
         this.readableStoreFactory = new ReadableStoreFactory(stack);
         this.writableStoreFactory = new WritableStoreFactory(stack, TokenService.NAME);
     }
 
-    @Override
     @NonNull
-    public Instant consensusNow() {
-        return recordBuilder.consensusNow();
+    @Override
+    public Instant consensusTime() {
+        return recordListBuilder.userTransactionRecordBuilder().consensusNow();
     }
 
     @NonNull
     @Override
-    public AccountID payer() {
-        return payer;
-    }
-
-    @Override
-    @NonNull
     public Configuration configuration() {
         return configuration;
     }
 
-    @Override
     @NonNull
-    public <C> C readableStore(@NonNull final Class<C> storeInterface) {
+    @Override
+    public <T> T readableStore(@NonNull Class<T> storeInterface) {
         requireNonNull(storeInterface, "storeInterface must not be null");
         return readableStoreFactory.getStore(storeInterface);
     }
 
-    @Override
     @NonNull
-    public <C> C writableStore(@NonNull final Class<C> storeInterface) {
+    @Override
+    public <T> T writableStore(@NonNull Class<T> storeInterface) {
         requireNonNull(storeInterface, "storeInterface must not be null");
         return writableStoreFactory.getStore(storeInterface);
     }
 
-    @Override
     @NonNull
-    public <T> T recordBuilder(@NonNull final Class<T> recordBuilderClass) {
+    @Override
+    public <T> T userTransactionRecordBuilder(@NonNull Class<T> recordBuilderClass) {
         requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
-        return castRecordBuilder(recordBuilder, recordBuilderClass);
+        return castRecordBuilder(recordListBuilder.userTransactionRecordBuilder(), recordBuilderClass);
+    }
+
+    @Override
+    public <T> void forEachChildRecord(@NonNull Class<T> recordBuilderClass, @NonNull Consumer<T> consumer) {
+        requireNonNull(consumer, "consumer must not be null");
+        final var childRecordBuilders = recordListBuilder.childRecordBuilders();
+        childRecordBuilders.forEach(child -> consumer.accept(castRecordBuilder(child, recordBuilderClass)));
+    }
+
+    @NonNull
+    @Override
+    public <T> T addPrecedingChildRecordBuilder(@NonNull Class<T> recordBuilderClass) {
+        final var result = recordListBuilder.addPreceding(configuration());
+        return castRecordBuilder(result, recordBuilderClass);
     }
 
     private static <T> T castRecordBuilder(
