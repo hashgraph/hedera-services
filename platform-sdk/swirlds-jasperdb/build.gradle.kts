@@ -23,7 +23,6 @@ plugins {
 jmhModuleInfo { requires("jmh.core") }
 
 testModuleInfo {
-    requires("com.swirlds.base")
     requires("com.swirlds.common.test.fixtures")
     requires("com.swirlds.config.api.test.fixtures")
     requires("com.swirlds.test.framework")

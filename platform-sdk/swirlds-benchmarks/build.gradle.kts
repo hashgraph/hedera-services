@@ -20,13 +20,13 @@ plugins {
 }
 
 jmhModuleInfo {
+    requires("com.swirlds.base")
     requires("com.swirlds.common")
     requires("com.swirlds.config.api")
     requires("com.swirlds.fchashmap")
     requires("com.swirlds.jasperdb")
     requires("com.swirlds.virtualmap")
     requires("jmh.core")
-    requires("org.apache.commons.lang3")
     requires("org.apache.logging.log4j")
 }
 

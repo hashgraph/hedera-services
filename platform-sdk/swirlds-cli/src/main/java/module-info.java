@@ -14,6 +14,5 @@ module com.swirlds.cli {
     requires transitive info.picocli;
     requires transitive org.apache.logging.log4j;
     requires io.github.classgraph;
-    requires org.apache.logging.log4j.core;
     requires static com.github.spotbugs.annotations;
 }

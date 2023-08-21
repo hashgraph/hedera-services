@@ -8,6 +8,6 @@ module com.swirlds.logging {
     requires transitive org.apache.logging.log4j;
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.datatype.jsr310;
-    requires static com.github.spotbugs.annotations;
     requires com.swirlds.base;
+    requires static com.github.spotbugs.annotations;
 }
