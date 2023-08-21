@@ -16,30 +16,38 @@
 
 package com.hedera.node.app.service.file.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FILE_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_FILE_SIZE_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.preValidate;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateAndAddRequiredKeys;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
+import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.file.FileUpdateTransactionBody;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.node.app.hapi.fees.usage.file.FileOpsUsage;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
+import com.hedera.node.app.service.mono.fees.calculation.file.txns.FileUpdateResourceUsage;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.FilesConfig;
+import com.hederahashgraph.api.proto.java.Duration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -51,10 +59,12 @@ import javax.inject.Singleton;
 public class FileUpdateHandler implements TransactionHandler {
     private static final Timestamp EXPIRE_NEVER =
             Timestamp.newBuilder().seconds(Long.MAX_VALUE - 1).build();
+    private final FileOpsUsage fileOpsUsage;
 
     @Inject
-    public FileUpdateHandler() {
+    public FileUpdateHandler(final FileOpsUsage fileOpsUsage) {
         // Exists for injection
+        this.fileOpsUsage = fileOpsUsage;
     }
 
     /**
@@ -105,11 +115,19 @@ public class FileUpdateHandler implements TransactionHandler {
         final var file = maybeFile.get();
         validateFalse(file.deleted(), FILE_DELETED);
 
+        final var fees = handleContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> {
+            return new FileUpdateResourceUsage(fileOpsUsage)
+                    .usageGiven(fromPbj(handleContext.body()), sigValueObj, fromPbj(file));
+        });
+
+        handleContext.feeAccumulator().charge(handleContext.payer(), fees);
+
         // First validate this file is mutable; and the pending mutations are allowed
         // TODO: add or condition for privilege accounts from context
         validateFalse(file.keys() == null, UNAUTHORIZED);
 
         validateMaybeNewMemo(handleContext.attributeValidator(), fileUpdate);
+        validateExpirationTime(fileUpdate, file, handleContext);
 
         // Now we apply the mutations to a builder
         final var builder = new File.Builder();
@@ -168,6 +186,23 @@ public class FileUpdateHandler implements TransactionHandler {
             builder.expirationSecond(op.expirationTime().seconds());
         } else {
             builder.expirationSecond(file.expirationSecond());
+        }
+    }
+
+    private void validateExpirationTime(FileUpdateTransactionBody op, File file, HandleContext handleContext) {
+        if (op.hasExpirationTime()) {
+            final var effectiveDuration = Duration.newBuilder()
+                    .setSeconds(op.expirationTime().seconds() - file.expirationSecond())
+                    .build();
+            final var maxEntityLifetime = handleContext
+                    .configuration()
+                    .getConfigData(EntitiesConfig.class)
+                    .maxLifetime();
+            final var now = handleContext.consensusNow().getEpochSecond();
+            final var expiryGivenMaxLifetime = now + maxEntityLifetime;
+            validateTrue(
+                    effectiveDuration.getSeconds() > now && effectiveDuration.getSeconds() <= expiryGivenMaxLifetime,
+                    AUTORENEW_DURATION_NOT_IN_RANGE);
         }
     }
 
