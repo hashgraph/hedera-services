@@ -18,6 +18,7 @@ plugins {
     id("java")
     id("maven-publish")
     id("signing")
+    id("com.google.cloud.artifactregistry.gradle-plugin")
 }
 
 java {
