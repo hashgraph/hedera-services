@@ -31,17 +31,17 @@ import java.util.function.Supplier;
 public class TransactionPoolMetrics {
 
     private static final SpeedometerMetric.Config ACCEPTED_APP_TRANSACTIONS_CONFIG = new SpeedometerMetric.Config(
-            PLATFORM_CATEGORY, "acceptedAppTransactions")
+                    PLATFORM_CATEGORY, "acceptedAppTransactions")
             .withDescription("Cycled when an app transaction is submitted to the transaction pool and accepted.");
     private final SpeedometerMetric acceptedAppTransactions;
 
     private static final SpeedometerMetric.Config REJECTED_APP_TRANSACTIONS_CONFIG = new SpeedometerMetric.Config(
-            PLATFORM_CATEGORY, "rejectedAppTransactions")
+                    PLATFORM_CATEGORY, "rejectedAppTransactions")
             .withDescription("Cycled when an app transaction is submitted to the transaction pool and not accepted.");
     private final SpeedometerMetric rejectedAppTransactions;
 
     private static final SpeedometerMetric.Config SUBMITTED_PLATFORM_TRANSACTIONS_CONFIG = new SpeedometerMetric.Config(
-            PLATFORM_CATEGORY, "submittedPlatformTransactions")
+                    PLATFORM_CATEGORY, "submittedPlatformTransactions")
             .withDescription(
                     "Cycled when a platform transaction is submitted (platform transactions are always accepted).");
     private final SpeedometerMetric submittedPlatformTransactions;
