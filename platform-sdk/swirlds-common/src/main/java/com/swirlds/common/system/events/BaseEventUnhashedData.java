@@ -70,6 +70,19 @@ public class BaseEventUnhashedData implements SelfSerializable {
         this.otherSeq = SEQUENCE_UNUSED;
     }
 
+
+    // TODO remove
+    private SyncDescription syncDescription;
+
+    public void setSyncDescription(@NonNull final SyncDescription syncDescription) {
+        this.syncDescription = syncDescription;
+    }
+
+    @NonNull
+    public SyncDescription getSyncDescription() {
+        return syncDescription;
+    }
+
     @Override
     public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
         out.writeLong(creatorSeq);

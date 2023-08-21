@@ -100,12 +100,15 @@ public class InOrderLinker extends AbstractEventLinker {
         final GossipEvent e = event.getChild().getBaseEvent();
         missingParentsLogger.error(
                 INVALID_EVENT_ERROR.getMarker(),
-                "Invalid event! {} missing for {} min gen:{}\n"
-                        + "most recent event by missing self parent creator:{}\n"
-                        + "most recent event by missing self parent creator:{}",
+                """
+                        Invalid event! {} missing for {} min gen:{}
+                        {}
+                        most recent event by missing self parent creator:{}
+                        most recent event by missing other parent creator:{}""",
                 event.missingParentsString(),
                 EventStrings.toMediumString(e),
                 getMinGenerationNonAncient(),
+                event.getChild().getBaseEvent().getUnhashedData().getSyncDescription(),
                 EventStrings.toShortString(
                         mostRecentEvent.apply(e.getHashedData().getCreatorId())),
                 EventStrings.toShortString(

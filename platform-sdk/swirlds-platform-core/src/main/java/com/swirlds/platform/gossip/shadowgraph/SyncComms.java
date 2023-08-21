@@ -19,6 +19,7 @@ package com.swirlds.platform.gossip.shadowgraph;
 import static com.swirlds.logging.LogMarker.SYNC_INFO;
 
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.system.events.SyncDescription;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.SyncException;
 import com.swirlds.platform.internal.EventImpl;
@@ -254,7 +255,8 @@ public final class SyncComms {
             final Connection conn,
             final Consumer<GossipEvent> eventHandler,
             final SyncMetrics syncMetrics,
-            final CountDownLatch eventReadingDone) {
+            final CountDownLatch eventReadingDone,
+            final SyncDescription syncDescription) {
         return () -> {
             logger.info(SYNC_INFO.getMarker(), "{} reading events start", conn.getDescription());
             int eventsRead = 0;
@@ -269,6 +271,7 @@ public final class SyncComms {
                     switch (next) {
                         case ByteConstants.COMM_EVENT_NEXT -> {
                             final GossipEvent gossipEvent = conn.getDis().readEventData();
+                            gossipEvent.getUnhashedData().setSyncDescription(syncDescription);
                             eventHandler.accept(gossipEvent);
                             eventsRead++;
                         }

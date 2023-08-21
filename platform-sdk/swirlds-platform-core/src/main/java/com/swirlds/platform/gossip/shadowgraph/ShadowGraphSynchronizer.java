@@ -20,6 +20,7 @@ import static com.swirlds.logging.LogMarker.SYNC_INFO;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
+import com.swirlds.common.system.events.SyncDescription;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.common.threading.pool.ParallelExecutor;
@@ -190,6 +191,7 @@ public class ShadowGraphSynchronizer {
         // reporting and performance analysis
         final SyncTiming timing = new SyncTiming();
         final List<EventImpl> sendList;
+        final SyncDescription syncDescription;
         try (final GenerationReservation reservation = shadowGraph.reserve()) {
             conn.initForSync();
 
@@ -223,6 +225,13 @@ public class ShadowGraphSynchronizer {
                 return false;
             }
 
+            syncDescription = new SyncDescription(
+                    myGenerations.getMinRoundGeneration(),
+                    myGenerations.getMinGenerationNonAncient(),
+                    conn.getOtherId(),
+                    theirGensTips.getGenerations().getMinRoundGeneration(),
+                    theirGensTips.getGenerations().getMinGenerationNonAncient());
+
             // events that I know they already have
             final Set<ShadowEvent> knownSet = new HashSet<>();
 
@@ -246,7 +255,7 @@ public class ShadowGraphSynchronizer {
             sendList = createSendList(knownSet, myGenerations, theirGensTips.getGenerations());
         }
 
-        return phase3(conn, timing, sendList);
+        return phase3(conn, timing, sendList, syncDescription);
     }
 
     private Generations getGenerations(final long minRoundGen) {
@@ -322,7 +331,7 @@ public class ShadowGraphSynchronizer {
      * @return true if the phase was successful, false if it was aborted
      * @throws ParallelExecutionException if anything goes wrong
      */
-    private boolean phase3(final Connection conn, final SyncTiming timing, final List<EventImpl> sendList)
+    private boolean phase3(final Connection conn, final SyncTiming timing, final List<EventImpl> sendList, SyncDescription syncDescription)
             throws ParallelExecutionException {
         timing.setTimePoint(4);
         // the reading thread uses this to indicate to the writing thread that it is done
@@ -330,7 +339,7 @@ public class ShadowGraphSynchronizer {
         // the writer will set it to true if writing is aborted
         final AtomicBoolean writeAborted = new AtomicBoolean(false);
         final Integer eventsRead = readWriteParallel(
-                SyncComms.phase3Read(conn, eventHandler, syncMetrics, eventReadingDone),
+                SyncComms.phase3Read(conn, eventHandler, syncMetrics, eventReadingDone, syncDescription),
                 SyncComms.phase3Write(conn, sendList, eventReadingDone, writeAborted),
                 conn);
         if (eventsRead < 0 || writeAborted.get()) {
