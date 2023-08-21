@@ -20,19 +20,23 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.FILE_CONTENT_EMPTY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FILE_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.preValidate;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateAndAddRequiredKeys;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateContent;
+import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.file.FileAppendTransactionBody;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
+import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -54,10 +58,12 @@ import org.apache.logging.log4j.Logger;
 @Singleton
 public class FileAppendHandler implements TransactionHandler {
     private static final Logger logger = LogManager.getLogger(FileAppendHandler.class);
+    private HederaFileNumbers fileNumbers;
 
     @Inject
-    public FileAppendHandler() {
+    public FileAppendHandler(@NonNull final HederaFileNumbers fileNumbers) {
         // Exists for injection
+        this.fileNumbers = fileNumbers;
     }
 
     /**
@@ -110,6 +116,8 @@ public class FileAppendHandler implements TransactionHandler {
         }
         final var file = optionalFile.get();
 
+        feeCalculation(handleContext, fileAppend, file);
+
         // TODO: skip at least the mutability check for privileged "payer" accounts
 
         // First validate this file is mutable; and the pending mutations are allowed
@@ -138,6 +146,33 @@ public class FileAppendHandler implements TransactionHandler {
         /* --- Put the modified file. It will be in underlying state's modifications map.
         It will not be committed to state until commit is called on the state.--- */
         fileStore.put(fileBuilder.build());
+    }
+
+    private void feeCalculation(HandleContext handleContext, FileAppendTransactionBody fileAppend, File file) {
+        final var dataLength =
+                (fileAppend.contents() != null) ? fileAppend.contents().length() : 0;
+
+        /**
+         * TODO: revisit after modularizaion completed
+         * PR conversation: 8089
+         */
+        final long effectiveLifeTime;
+        if (fileNumbers.isSoftwareUpdateFile(file.fileId().fileNum())) {
+            effectiveLifeTime = THREE_MONTHS_IN_SECONDS;
+        } else {
+            final var effCreationTime =
+                    handleContext.body().transactionID().transactionValidStart().seconds();
+            final var effExpiration = (file.expirationSecond() > 0) ? file.expirationSecond() : effCreationTime;
+            effectiveLifeTime = effExpiration - effCreationTime;
+        }
+
+        final var fees = handleContext
+                .feeCalculator(SubType.DEFAULT)
+                .addBytesPerTransaction(BASIC_ENTITY_ID_SIZE + dataLength)
+                .addStorageBytesSeconds(dataLength * effectiveLifeTime)
+                .calculate();
+
+        handleContext.feeAccumulator().charge(handleContext.payer(), fees);
     }
 
     private void handleAppendUpgradeFile(FileAppendTransactionBody fileAppend, HandleContext handleContext) {

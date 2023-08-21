@@ -24,7 +24,6 @@ import static com.hedera.node.app.service.mono.state.migration.StateVersions.MIN
 import static com.hedera.node.app.service.mono.state.migration.UniqueTokensMigrator.migrateFromUniqueTokenMerkleMap;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.parseAccount;
 import static com.swirlds.common.system.InitTrigger.GENESIS;
-import static com.swirlds.common.system.InitTrigger.RECONNECT;
 import static com.swirlds.common.system.InitTrigger.RESTART;
 import static java.util.Objects.requireNonNull;
 
@@ -468,10 +467,6 @@ public class ServicesState extends PartialNaryMerkleInternal
                 app.sysFilesManager().createManagedFilesIfMissing();
                 app.stakeStartupHelper().doGenesisHousekeeping(addressBook());
             }
-            if (trigger != RECONNECT) {
-                // Once we have a dynamic address book, this will run unconditionally
-                app.sysFilesManager().updateStakeDetails();
-            }
         }
         return app;
     }
@@ -783,8 +778,8 @@ public class ServicesState extends PartialNaryMerkleInternal
                                 AdHocThreadManager.getStaticThreadManager(),
                                 source,
                                 kvPair -> {
-                                    final K key = kvPair.getKey();
-                                    final V value = kvPair.getValue();
+                                    final K key = kvPair.left();
+                                    final V value = kvPair.right();
                                     final VirtualMap<K, V> curCopy = targetMapRef.get();
                                     curCopy.put(key, value);
                                     // Make a map copy every X rounds to flush map cache to disk
