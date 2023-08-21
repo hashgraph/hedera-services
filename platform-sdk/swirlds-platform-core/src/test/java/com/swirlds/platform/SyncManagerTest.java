@@ -52,7 +52,6 @@ import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.List;
 import java.util.Random;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -146,14 +145,6 @@ public class SyncManagerTest {
                             reconnectConfig),
                     eventConfig);
         }
-    }
-
-    @BeforeAll
-    static void beforeAll() {
-        new TestConfigBuilder()
-                .withValue("sync.maxIncomingSyncsInc", 10)
-                .withValue("sync.maxOutgoingSyncs", 10)
-                .getOrCreateConfig();
     }
 
     /**

@@ -49,6 +49,7 @@ import com.hedera.node.app.service.contract.impl.records.EthereumTransactionReco
 import com.hedera.node.app.service.file.impl.records.CreateFileRecordBuilder;
 import com.hedera.node.app.service.schedule.ScheduleRecordBuilder;
 import com.hedera.node.app.service.token.api.FeeRecordBuilder;
+import com.hedera.node.app.service.token.records.ChildRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoDeleteRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
@@ -96,6 +97,7 @@ public class SingleTransactionRecordBuilderImpl
                 CreateFileRecordBuilder,
                 CryptoCreateRecordBuilder,
                 CryptoTransferRecordBuilder,
+                ChildRecordBuilder,
                 PrngRecordBuilder,
                 ScheduleRecordBuilder,
                 TokenMintRecordBuilder,
@@ -119,6 +121,7 @@ public class SingleTransactionRecordBuilderImpl
     private List<TokenAssociation> automaticTokenAssociations = new LinkedList<>();
     private List<AccountAmount> paidStakingRewards = new LinkedList<>();
     private final TransactionRecord.Builder transactionRecordBuilder = TransactionRecord.newBuilder();
+    private TransferList transferList = TransferList.DEFAULT;
 
     // fields needed for TransactionReceipt
     private ResponseCodeEnum status = ResponseCodeEnum.OK;
@@ -185,6 +188,7 @@ public class SingleTransactionRecordBuilderImpl
                 .transactionHash(transactionHash)
                 .consensusTimestamp(consensusTimestamp)
                 .parentConsensusTimestamp(parentConsensusTimestamp)
+                .transferList(transferList)
                 .tokenTransferLists(tokenTransferLists)
                 .assessedCustomFees(assessedCustomFees)
                 .automaticTokenAssociations(automaticTokenAssociations)
@@ -349,8 +353,14 @@ public class SingleTransactionRecordBuilderImpl
     @NonNull
     public SingleTransactionRecordBuilderImpl transferList(@NonNull final TransferList transferList) {
         requireNonNull(transferList, "transferList must not be null");
-        transactionRecordBuilder.transferList(transferList);
+        this.transferList = transferList;
         return this;
+    }
+
+    @Override
+    @NonNull
+    public TransferList transferList() {
+        return transferList;
     }
 
     /**

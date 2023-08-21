@@ -109,6 +109,7 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
         accountsState.put(ALICE.accountID(), ALICE.account());
         accountsState.put(ERIN.accountID(), ERIN.account());
         accountsState.put(STAKING_REWARD_ACCOUNT.accountID(), STAKING_REWARD_ACCOUNT.account());
+        accountsState.put(FUNDING_ACCOUNT.accountID(), FUNDING_ACCOUNT.account());
         accountsState.commit();
         aliasesState = new MapWritableKVState<>(ALIASES_KEY);
         final var writableStates = MapWritableStates.builder()
@@ -135,7 +136,7 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
             SemanticVersion.newBuilder().major(1).minor(2).patch(3).build(),
             SemanticVersion.newBuilder().major(1).minor(2).patch(3).build());
     /** Represents "this node" in our tests. */
-    private final NodeId nodeSelfId = new NodeId(7);
+    protected final NodeId nodeSelfId = new NodeId(7);
     /** The AccountID of "this node" in our tests. */
     protected final AccountID nodeSelfAccountId =
             AccountID.newBuilder().shardNum(0).realmNum(0).accountNum(8).build();
