@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows;
+package com.hedera.node.app.workflows.handle;
 
-import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.service.token.records.StakingContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Instant;
 
 /**
  * Interface responsible for running any actions that need to happen at the end of
@@ -31,8 +30,7 @@ public interface ConsensusTimeHook {
      * Processing hook to run at the end of each transaction. There are certain actions that need
      * to be taken once we have a new consensus timestamp. Any such actions should be done here
      *
-     * @param consensusTime the consensus timestamp of the latest transaction being processed
-     * @param context the {@code HandleContext} context of the transaction being processed
+     * @param context the {@code StakingContext} context of the transaction being processed
      */
-    void process(@NonNull Instant consensusTime, @NonNull final HandleContext context);
+    void process(@NonNull final StakingContext context);
 }

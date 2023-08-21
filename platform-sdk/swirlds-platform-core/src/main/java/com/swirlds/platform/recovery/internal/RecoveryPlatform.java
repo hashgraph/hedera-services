@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.recovery.events;
+package com.swirlds.platform.recovery.internal;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.platform.crypto.CryptoSetup.initNodeSecurity;
