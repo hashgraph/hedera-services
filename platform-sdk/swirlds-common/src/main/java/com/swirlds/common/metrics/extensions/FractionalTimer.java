@@ -116,14 +116,14 @@ public class FractionalTimer {
     /**
      * Notifies the metric that we are entering an active period.
      */
-    public void activate() {
+    public void activate() { // TODO method that takes time from the caller
         accumulator.accumulateAndGet(WORK_START, this::statusUpdate);
     }
 
     /**
      * Notifies the metric that we are entering an inactive period.
      */
-    public void deactivate() {
+    public void deactivate() { // TODO method that takes time from the caller
         accumulator.accumulateAndGet(WORK_END, this::statusUpdate);
     }
 
