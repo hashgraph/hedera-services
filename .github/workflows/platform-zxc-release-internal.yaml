@@ -242,7 +242,7 @@ jobs:
         if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
         with:
           gradle-version: ${{ inputs.gradle-version }}
-          arguments: -p platform-sdk release-${{ inputs.deployment-profile }} --scan
+          arguments: -p platform-sdk release${{ inputs.deployment-profile }} --scan
 
       - name: Commit Version Changes
         uses: EndBug/add-and-commit@v9
