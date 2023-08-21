@@ -117,7 +117,7 @@ class SerializationTest extends MerkleTestBase {
         final var v1 = version(1, 0, 0);
         final var originalTree = new MerkleHederaState(
                 (tree, state) -> {}, (evt, meta, provider) -> {}, (state, platform, dual, trigger, version) -> {});
-        final var originalRegistry = new MerkleSchemaRegistry(registry, FIRST_SERVICE);
+        final var originalRegistry = new MerkleSchemaRegistry(registry, FIRST_SERVICE, null);
         final var schemaV1 = createV1Schema();
         originalRegistry.register(schemaV1);
         originalRegistry.migrate(originalTree, null, v1, config);
@@ -126,7 +126,7 @@ class SerializationTest extends MerkleTestBase {
         originalTree.copy(); // make a fast copy because we can only write to disk an immutable copy
         CRYPTO.digestTreeSync(originalTree);
         final var serializedBytes = writeTree(originalTree, dir);
-        final var newRegistry = new MerkleSchemaRegistry(registry, FIRST_SERVICE);
+        final var newRegistry = new MerkleSchemaRegistry(registry, FIRST_SERVICE, null);
         newRegistry.register(schemaV1);
 
         // Register the MerkleHederaState so, when found in serialized bytes, it will register with

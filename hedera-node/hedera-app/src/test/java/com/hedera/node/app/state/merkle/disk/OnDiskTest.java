@@ -152,7 +152,7 @@ class OnDiskTest extends MerkleTestBase {
 
         // Before we can read the data back, we need to register the data types
         // I plan to deserialize.
-        final var r = new MerkleSchemaRegistry(registry, SERVICE_NAME);
+        final var r = new MerkleSchemaRegistry(registry, SERVICE_NAME, null);
         r.register(schema);
 
         // read it back now as our map and validate the data come back fine

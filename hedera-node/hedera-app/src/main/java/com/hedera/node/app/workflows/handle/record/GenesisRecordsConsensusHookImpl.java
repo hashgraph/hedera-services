@@ -135,11 +135,14 @@ public class GenesisRecordsConsensusHookImpl implements GenesisRecordsConsensusH
 
             final var accountId = requireNonNull(entry.getKey().accountId());
             recordBuilder.accountID(accountId);
-            if (recordMemo != null) recordBuilder.memo(recordMemo);
+            if (recordMemo != null) {
+                recordBuilder.memo(recordMemo);
+            }
 
             var txnBody = entry.getValue();
-            if (overrideAutoRenewPeriod != null)
+            if (overrideAutoRenewPeriod != null) {
                 txnBody.autoRenewPeriod(Duration.newBuilder().seconds(overrideAutoRenewPeriod));
+            }
             var txnBuilder =
                     Transaction.newBuilder().body(TransactionBody.newBuilder().cryptoCreateAccount(txnBody));
             recordBuilder.transaction(txnBuilder.build());

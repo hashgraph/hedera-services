@@ -94,11 +94,6 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
         this.genesisRecordsConsensusHook = genesisRecordsConsensusHook;
     }
 
-    public MerkleSchemaRegistry(
-            @NonNull final ConstructableRegistry constructableRegistry, @NonNull final String serviceName) {
-        this(constructableRegistry, serviceName, null);
-    }
-
     /**
      * {@inheritDoc}
      *
