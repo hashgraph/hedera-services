@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.benchmark.consensus;
 
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.test.fixtures.WeightGenerators;
 import com.swirlds.config.api.Configuration;
@@ -24,11 +25,10 @@ import com.swirlds.platform.ConsensusImpl;
 import com.swirlds.platform.config.DefaultConfiguration;
 import com.swirlds.platform.test.NoOpConsensusMetrics;
 import com.swirlds.platform.test.consensus.ConsensusTestDefinition;
-import com.swirlds.platform.test.event.IndexedEvent;
+import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import org.apache.commons.lang3.tuple.Pair;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -107,8 +107,8 @@ public class ConsensusBenchmark {
                 run.stream().findFirst().orElseThrow().getPrimaryResult().getScore();
 
         for (final Pair<String, Double> pair : resultComparison) {
-            final double diff = actualScore - pair.getRight();
-            System.out.printf("Compared to '%s': %+.2f%%%n", pair.getLeft(), (100 * diff) / pair.getRight());
+            final double diff = actualScore - pair.right();
+            System.out.printf("Compared to '%s': %+.2f%%%n", pair.left(), (100 * diff) / pair.right());
         }
     }
 }

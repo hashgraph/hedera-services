@@ -25,6 +25,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
@@ -36,7 +37,8 @@ import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsDis
 import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHandlerImpl;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
-import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.service.token.records.CryptoDeleteRecordBuilder;
+import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.config.ConfigProvider;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -55,7 +57,10 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
     private ConfigProvider configProvider;
 
     @Mock(strictness = Mock.Strictness.LENIENT)
-    private HandleContext handleContext;
+    private FinalizeContext context;
+
+    @Mock
+    private CryptoDeleteRecordBuilder recordBuilder;
 
     private StakingRewardsHandlerImpl subject;
     private StakePeriodManager stakePeriodManager;
@@ -63,8 +68,8 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
     private StakeInfoHelper stakeInfoHelper;
     private StakeRewardCalculatorImpl stakeRewardCalculator;
     private StakingRewardsHelper stakingRewardHelper;
-    private final Long node0Id = 0L;
-    private final Long node1Id = 1L;
+    protected final EntityNumber node0Id = EntityNumber.newBuilder().number(0L).build();
+    protected final EntityNumber node1Id = EntityNumber.newBuilder().number(1L).build();
     private final long stakingRewardAccountNum = 800L;
 
     @BeforeEach
@@ -73,9 +78,9 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         refreshWritableStores();
 
         given(configProvider.getConfiguration()).willReturn(versionedConfig);
-        given(handleContext.configuration()).willReturn(configuration);
-        given(handleContext.consensusNow()).willReturn(consensusInstant);
-        givenStoresAndConfig(handleContext);
+        given(context.configuration()).willReturn(configuration);
+        given(context.consensusTime()).willReturn(consensusInstant);
+        givenStoresAndConfig(context);
 
         stakingRewardHelper = new StakingRewardsHelper();
         stakePeriodManager = new StakePeriodManager(configProvider);
@@ -93,7 +98,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
 
         noStakeChanges();
 
-        final var rewards = subject.applyStakingRewards(handleContext);
+        final var rewards = subject.applyStakingRewards(context);
 
         assertThat(rewards).isEmpty();
         final var modifiedAccount = writableAccountStore.get(payerId);
@@ -114,7 +119,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
 
         randomStakeNodeChanges();
 
-        final var rewards = subject.applyStakingRewards(handleContext);
+        final var rewards = subject.applyStakingRewards(context);
 
         // earned zero rewards due to zero stake
         assertThat(rewards).hasSize(1).containsEntry(payerId, 0L);
@@ -128,8 +133,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
 
         final var expectedStakePeriodStart = stakePeriodManager.currentStakePeriod(consensusInstant);
         assertThat(stakedToMeAfter).isEqualTo(stakedToMeBefore);
-        assertThat(stakePeriodStartAfter).isNotEqualTo(stakePeriodStartBefore);
-        assertThat(stakePeriodStartAfter).isEqualTo(expectedStakePeriodStart);
+        assertThat(stakePeriodStartAfter).isNotEqualTo(stakePeriodStartBefore).isEqualTo(expectedStakePeriodStart);
         assertThat(stakeAtStartOfLastRewardedPeriodAfter).isEqualTo(stakeAtStartOfLastRewardedPeriodBefore);
     }
 
@@ -159,10 +163,10 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                 .atStartOfDay(ZoneOffset.UTC)
                 .toInstant();
 
-        given(handleContext.consensusNow()).willReturn(nextDayInstant);
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(context.consensusTime()).willReturn(nextDayInstant);
+        given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
-        subject.applyStakingRewards(handleContext);
+        subject.applyStakingRewards(context);
 
         final var payerAfter = writableAccountStore.get(payerId);
         final var node1Info = writableStakingInfoState.get(node1Id);
@@ -177,7 +181,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                 .withAccount(account)
                 .withBalance(newBalance)
                 .withStakeAtStartOfLastRewardPeriod(newBalance / 5)
-                .withStakedNodeId(node1Id)
+                .withStakedNodeId(node1Id.number())
                 .withStakedToMe(0)
                 .withStakePeriodStart(stakePeriodStart)
                 .withDeclineReward(false)
@@ -192,9 +196,9 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         // We use next stake period to trigger rewards.
         Instant nextDayInstant = originalInstant.plus(2, ChronoUnit.DAYS);
 
-        given(handleContext.consensusNow()).willReturn(nextDayInstant);
+        given(context.consensusTime()).willReturn(nextDayInstant);
 
-        subject.applyStakingRewards(handleContext);
+        subject.applyStakingRewards(context);
 
         final var node1Info = writableStakingInfoState.get(node1Id);
         // Since the node is rewarded in last period the unclaimed reward will be stakeAtStartOfLastRewardPeriod.
@@ -221,12 +225,12 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                 writableAccountStore.get(payerId).copyBuilder().stakedNodeId(0L).build());
 
         // We use next stake period to trigger rewards
-        given(handleContext.consensusNow())
+        given(context.consensusTime())
                 .willReturn(LocalDate.ofEpochDay(stakePeriodStart + 1)
                         .atStartOfDay(ZoneOffset.UTC)
                         .toInstant());
 
-        subject.applyStakingRewards(handleContext);
+        subject.applyStakingRewards(context);
 
         final var node1Info = writableStakingInfoState.get(node1Id);
         // Since the node is rewarded in last period and stakePeriodStart is the previous period
@@ -250,14 +254,14 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         // Change node, so to trigger rewards
         writableAccountStore.put(account.copyBuilder().stakedNodeId(0L).build());
 
-        given(handleContext.consensusNow()).willReturn(stakePeriodStartInstant);
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(context.consensusTime()).willReturn(stakePeriodStartInstant);
+        given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
-        subject.applyStakingRewards(handleContext);
+        subject.applyStakingRewards(context);
 
         final var node1Info = writableStakingInfoState.get(node1Id);
 
-        assertThat(node1Info.unclaimedStakeRewardStart()).isEqualTo(0);
+        assertThat(node1Info.unclaimedStakeRewardStart()).isZero();
     }
 
     @Test
@@ -277,14 +281,14 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         writableAccountStore.put(
                 writableAccountStore.get(payerId).copyBuilder().stakedNodeId(0L).build());
 
-        given(handleContext.consensusNow()).willReturn(originalInstant);
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(context.consensusTime()).willReturn(originalInstant);
+        given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
-        subject.applyStakingRewards(handleContext);
+        subject.applyStakingRewards(context);
 
         final var node1Info = writableStakingInfoState.get(node1Id);
 
-        assertThat(node1Info.unclaimedStakeRewardStart()).isEqualTo(0);
+        assertThat(node1Info.unclaimedStakeRewardStart()).isZero();
     }
 
     //    @Test
@@ -334,14 +338,14 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                 .tinybarBalance(2 * newBalance)
                 .build());
 
-        given(handleContext.consensusNow()).willReturn(stakePeriodStartInstant);
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(context.consensusTime()).willReturn(stakePeriodStartInstant);
+        given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
-        subject.applyStakingRewards(handleContext);
+        subject.applyStakingRewards(context);
 
         final var node1Info = writableStakingInfoState.get(node1Id);
 
-        assertThat(node1Info.unclaimedStakeRewardStart()).isEqualTo(0);
+        assertThat(node1Info.unclaimedStakeRewardStart()).isZero();
     }
 
     @Test
@@ -355,7 +359,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                 .withStakePeriodStart(stakePeriodStart)
                 .withStakedToMe(0L)
                 .withDeclineReward(false)
-                .withStakedNodeId(node1Id)
+                .withStakedNodeId(node1Id.number())
                 .withDeleted(false)
                 .build();
         final var ownerAccountBefore = new AccountCustomizer()
@@ -382,13 +386,13 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                 .stakedNodeId(0L)
                 .build());
 
-        given(handleContext.consensusNow())
+        given(context.consensusTime())
                 .willReturn(LocalDate.ofEpochDay(stakePeriodStart + 2)
                         .atStartOfDay(ZoneOffset.UTC)
                         .toInstant());
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
-        final var rewards = subject.applyStakingRewards(handleContext);
+        final var rewards = subject.applyStakingRewards(context);
 
         final var node1InfoAfter = writableStakingInfoState.get(node1Id);
         final var node0InfoAfter = writableStakingInfoState.get(node0Id);
@@ -407,7 +411,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         assertThat(node1InfoAfter.unclaimedStakeRewardStart())
                 .isEqualTo(node1InfoBefore.unclaimedStakeRewardStart() + accountBalance);
 
-        assertThat(node1Info.unclaimedStakeRewardStart()).isEqualTo(0);
+        assertThat(node1Info.unclaimedStakeRewardStart()).isZero();
     }
 
     @Test
@@ -432,24 +436,31 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                 .build();
         addToState(Map.of(payerId, payerAccountBefore, ownerId, ownerAccountBefore));
 
-        writableAccountStore.put(account.copyBuilder()
-                .tinybarBalance(accountBalance - HBARS_TO_TINYBARS)
+        writableAccountStore.put(payerAccountBefore
+                .copyBuilder()
+                .tinybarBalance(0)
                 .stakedNodeId(0L)
                 .build());
-        writableAccountStore.put(ownerAccount
+        writableAccountStore.put(ownerAccountBefore
                 .copyBuilder()
-                .tinybarBalance(ownerBalance + HBARS_TO_TINYBARS)
+                .tinybarBalance(ownerBalance + accountBalance)
                 .stakedNodeId(0L)
                 .build());
 
-        given(handleContext.consensusNow())
+        given(context.consensusTime())
                 .willReturn(LocalDate.ofEpochDay(stakePeriodStart + 2)
                         .atStartOfDay(ZoneOffset.UTC)
                         .toInstant());
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(context.userTransactionRecordBuilder(CryptoDeleteRecordBuilder.class))
+                .willReturn(recordBuilder);
+        given(recordBuilder.getNumberOfDeletedAccounts()).willReturn(1);
+        given(recordBuilder.getDeletedAccountBeneficiaryFor(payerId)).willReturn(ownerId);
 
-        // TODO: this will change once transfer to beneficiary is implemented
-        assertThatThrownBy(() -> subject.applyStakingRewards(handleContext)).isInstanceOf(IllegalStateException.class);
+        final var rewards = subject.applyStakingRewards(context);
+        assertThat(rewards).hasSize(1);
+        // because the transferId is owner for the deleted payer account
+        assertThat(rewards).containsEntry(ownerId, 178900L);
     }
 
     @Test
@@ -473,12 +484,12 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                 .tinybarBalance(accountBalance - HBARS_TO_TINYBARS)
                 .build());
 
-        given(handleContext.consensusNow())
+        given(context.consensusTime())
                 .willReturn(LocalDate.ofEpochDay(stakePeriodStart + 2)
                         .atStartOfDay(ZoneOffset.UTC)
                         .toInstant());
 
-        final var rewards = subject.applyStakingRewards(handleContext);
+        final var rewards = subject.applyStakingRewards(context);
 
         final var node1InfoAfter = writableStakingInfoState.get(node1Id);
 
@@ -486,7 +497,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
 
         assertThat(node1InfoAfter.stake()).isEqualTo(node1InfoBefore.stake());
         assertThat(node1InfoAfter.unclaimedStakeRewardStart()).isEqualTo(node1InfoBefore.unclaimedStakeRewardStart());
-        assertThat(node1Info.unclaimedStakeRewardStart()).isEqualTo(0);
+        assertThat(node1Info.unclaimedStakeRewardStart()).isZero();
 
         final var modifiedAccount = writableAccountStore.get(payerId);
         assertThat(modifiedAccount.tinybarBalance())
@@ -515,13 +526,13 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                 .tinybarBalance(accountBalance - HBARS_TO_TINYBARS)
                 .build());
 
-        given(handleContext.consensusNow())
+        given(context.consensusTime())
                 .willReturn(LocalDate.ofEpochDay(stakePeriodStart)
                         .atStartOfDay(ZoneOffset.UTC)
                         .toInstant());
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
-        final var rewards = subject.applyStakingRewards(handleContext);
+        final var rewards = subject.applyStakingRewards(context);
 
         final var node1InfoAfter = writableStakingInfoState.get(node1Id);
 
@@ -530,7 +541,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
 
         assertThat(node1InfoAfter.stake()).isEqualTo(node1InfoBefore.stake());
         assertThat(node1InfoAfter.unclaimedStakeRewardStart()).isEqualTo(node1InfoBefore.unclaimedStakeRewardStart());
-        assertThat(node1Info.unclaimedStakeRewardStart()).isEqualTo(0);
+        assertThat(node1Info.unclaimedStakeRewardStart()).isZero();
 
         final var modifiedAccount = writableAccountStore.get(payerId);
         assertThat(modifiedAccount.tinybarBalance()).isEqualTo(accountBalance - HBARS_TO_TINYBARS);
@@ -547,7 +558,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                 .withStakePeriodStart(stakePeriodStart)
                 .withDeclineReward(false)
                 .withStakedToMe(0L)
-                .withStakedNodeId(node1Id)
+                .withStakedNodeId(node1Id.number())
                 .withDeleted(false)
                 .build();
         addToState(Map.of(payerId, payerAccountBefore));
@@ -559,13 +570,13 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                 .tinybarBalance(accountBalance - HBARS_TO_TINYBARS)
                 .build());
 
-        given(handleContext.consensusNow())
+        given(context.consensusTime())
                 .willReturn(LocalDate.ofEpochDay(stakePeriodStart + 1)
                         .atStartOfDay(ZoneOffset.UTC)
                         .toInstant());
 
         // No rewards rewarded
-        final var rewards = subject.applyStakingRewards(handleContext);
+        final var rewards = subject.applyStakingRewards(context);
 
         final var node1InfoAfter = writableStakingInfoState.get(node1Id);
 
@@ -574,7 +585,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
 
         assertThat(node1InfoAfter.stake()).isEqualTo(node1InfoBefore.stake());
         assertThat(node1InfoAfter.unclaimedStakeRewardStart()).isEqualTo(node1InfoBefore.unclaimedStakeRewardStart());
-        assertThat(node1Info.unclaimedStakeRewardStart()).isEqualTo(0);
+        assertThat(node1Info.unclaimedStakeRewardStart()).isZero();
 
         final var modifiedAccount = writableAccountStore.get(payerId);
         assertThat(modifiedAccount.tinybarBalance()).isEqualTo(accountBalance - HBARS_TO_TINYBARS);
@@ -615,12 +626,12 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                 .stakedAccountId(ownerId)
                 .build());
 
-        given(handleContext.consensusNow())
+        given(context.consensusTime())
                 .willReturn(LocalDate.ofEpochDay(stakePeriodStart + 2)
                         .atStartOfDay(ZoneOffset.UTC)
                         .toInstant());
 
-        final var rewards = subject.applyStakingRewards(handleContext);
+        final var rewards = subject.applyStakingRewards(context);
 
         final var node1InfoAfter = writableStakingInfoState.get(node1Id);
 
@@ -641,22 +652,160 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         // Only worthwhile to update stakedPeriodStart for an account staking to a node
         assertThat(modifiedPayer.stakePeriodStart()).isEqualTo(stakePeriodStart);
     }
-    //
-    //    @Test
-    //    void rewardsUltimateBeneficiaryInsteadOfDeletedAccount() {
-    //        TODO: Need to add this test once implemented
-    //    }
-    //
-    //    @Test
-    //    void doesntTrackAnythingIfRedirectBeneficiaryDeclinedReward() {
-    //        TODO: Need to add this test once implemented
-    //    }
-    //
-    //    @Test
-    //    void failsHardIfMoreRedirectsThanDeletedEntitiesAreNeeded() {
-    //        TODO: Need to add this test once implemented
-    //    }
-    //
+
+    @Test
+    void rewardsUltimateBeneficiaryInsteadOfDeletedAccount() {
+        final var accountBalance = 555L * HBARS_TO_TINYBARS;
+        final var ownerBalance = 111L * HBARS_TO_TINYBARS;
+        final var payerAccountBefore = new AccountCustomizer()
+                .withAccount(account)
+                .withBalance(accountBalance)
+                .withStakeAtStartOfLastRewardPeriod(-1L)
+                .withStakePeriodStart(stakePeriodStart)
+                .withDeclineReward(false)
+                .withDeleted(true)
+                .build();
+        final var ownerAccountBefore = new AccountCustomizer()
+                .withAccount(ownerAccount)
+                .withBalance(ownerBalance)
+                .withStakeAtStartOfLastRewardPeriod(-1L)
+                .withStakePeriodStart(stakePeriodStart)
+                .withDeclineReward(false)
+                .withDeleted(false)
+                .build();
+        addToState(Map.of(payerId, payerAccountBefore, ownerId, ownerAccountBefore));
+
+        writableAccountStore.put(payerAccountBefore
+                .copyBuilder()
+                .tinybarBalance(0)
+                .stakedNodeId(0L)
+                .build());
+        writableAccountStore.put(ownerAccountBefore
+                .copyBuilder()
+                .tinybarBalance(ownerBalance + accountBalance)
+                .stakedNodeId(0L)
+                .build());
+
+        given(context.consensusTime())
+                .willReturn(LocalDate.ofEpochDay(stakePeriodStart + 2)
+                        .atStartOfDay(ZoneOffset.UTC)
+                        .toInstant());
+        given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(context.userTransactionRecordBuilder(CryptoDeleteRecordBuilder.class))
+                .willReturn(recordBuilder);
+        given(recordBuilder.getNumberOfDeletedAccounts()).willReturn(1);
+        given(recordBuilder.getDeletedAccountBeneficiaryFor(payerId)).willReturn(ownerId);
+
+        final var rewards = subject.applyStakingRewards(context);
+        assertThat(rewards).hasSize(1);
+        // because the transferId is owner for the deleted payer account
+        assertThat(rewards).containsEntry(ownerId, 178900L);
+    }
+
+    @Test
+    void doesntTrackAnythingIfRedirectBeneficiaryDeclinedReward() {
+        final var accountBalance = 555L * HBARS_TO_TINYBARS;
+        final var ownerBalance = 111L * HBARS_TO_TINYBARS;
+        final var payerAccountBefore = new AccountCustomizer()
+                .withAccount(account)
+                .withBalance(accountBalance)
+                .withStakeAtStartOfLastRewardPeriod(-1L)
+                .withStakePeriodStart(stakePeriodStart)
+                .withDeclineReward(false)
+                .withDeleted(true)
+                .build();
+        final var ownerAccountBefore = new AccountCustomizer()
+                .withAccount(ownerAccount)
+                .withBalance(ownerBalance)
+                .withStakeAtStartOfLastRewardPeriod(-1L)
+                .withStakePeriodStart(stakePeriodStart)
+                .withDeclineReward(true)
+                .withDeleted(false)
+                .build();
+        addToState(Map.of(payerId, payerAccountBefore, ownerId, ownerAccountBefore));
+
+        writableAccountStore.put(payerAccountBefore
+                .copyBuilder()
+                .tinybarBalance(0)
+                .stakedNodeId(0L)
+                .build());
+        writableAccountStore.put(ownerAccountBefore
+                .copyBuilder()
+                .tinybarBalance(ownerBalance + accountBalance)
+                .stakedNodeId(0L)
+                .build());
+
+        given(context.consensusTime())
+                .willReturn(LocalDate.ofEpochDay(stakePeriodStart + 2)
+                        .atStartOfDay(ZoneOffset.UTC)
+                        .toInstant());
+        given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(context.userTransactionRecordBuilder(CryptoDeleteRecordBuilder.class))
+                .willReturn(recordBuilder);
+        given(recordBuilder.getNumberOfDeletedAccounts()).willReturn(1);
+        given(recordBuilder.getDeletedAccountBeneficiaryFor(payerId)).willReturn(ownerId);
+
+        final var rewards = subject.applyStakingRewards(context);
+        // because the transferId is owner and it declined reward
+        assertThat(rewards).hasSize(0);
+    }
+
+    @Test
+    void failsHardIfMoreRedirectsThanDeletedEntitiesAreNeeded() {
+        final var accountBalance = 555L * HBARS_TO_TINYBARS;
+        final var ownerBalance = 111L * HBARS_TO_TINYBARS;
+        final var payerAccountBefore = new AccountCustomizer()
+                .withAccount(account)
+                .withBalance(accountBalance)
+                .withStakeAtStartOfLastRewardPeriod(-1L)
+                .withStakePeriodStart(stakePeriodStart)
+                .withDeclineReward(false)
+                .withDeleted(true)
+                .build();
+        final var ownerAccountBefore = new AccountCustomizer()
+                .withAccount(ownerAccount)
+                .withBalance(ownerBalance)
+                .withStakeAtStartOfLastRewardPeriod(-1L)
+                .withStakePeriodStart(stakePeriodStart)
+                .withDeclineReward(false)
+                .withDeleted(true)
+                .build();
+        final var spenderAccountBefore = new AccountCustomizer()
+                .withAccount(spenderAccount)
+                .withBalance(0L)
+                .withStakeAtStartOfLastRewardPeriod(-1L)
+                .withStakePeriodStart(stakePeriodStart)
+                .withDeclineReward(false)
+                .withDeleted(true)
+                .build();
+        addToState(Map.of(payerId, payerAccountBefore, ownerId, ownerAccountBefore, spenderId, spenderAccountBefore));
+
+        writableAccountStore.put(payerAccountBefore
+                .copyBuilder()
+                .tinybarBalance(0)
+                .stakedNodeId(0L)
+                .build());
+        writableAccountStore.put(ownerAccountBefore
+                .copyBuilder()
+                .tinybarBalance(ownerBalance + accountBalance)
+                .stakedNodeId(0L)
+                .build());
+
+        given(context.consensusTime())
+                .willReturn(LocalDate.ofEpochDay(stakePeriodStart + 2)
+                        .atStartOfDay(ZoneOffset.UTC)
+                        .toInstant());
+        given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(context.userTransactionRecordBuilder(CryptoDeleteRecordBuilder.class))
+                .willReturn(recordBuilder);
+
+        given(recordBuilder.getNumberOfDeletedAccounts()).willReturn(2);
+        given(recordBuilder.getDeletedAccountBeneficiaryFor(payerId)).willReturn(ownerId);
+        given(recordBuilder.getDeletedAccountBeneficiaryFor(ownerId)).willReturn(spenderId);
+
+        assertThatThrownBy(() -> subject.applyStakingRewards(context)).isInstanceOf(IllegalStateException.class);
+    }
+
     @Test
     void updatesStakedToMeSideEffects() {
         final var accountBalance = 55L * HBARS_TO_TINYBARS;
@@ -678,7 +827,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                 .withStakePeriodStart(stakePeriodStart - 2)
                 .withDeclineReward(false)
                 .withDeleted(false)
-                .withStakedNodeId(node0Id)
+                .withStakedNodeId(node0Id.number())
                 .withStakedToMe(accountBalance)
                 .build();
         addToState(Map.of(payerId, payerAccountBefore, ownerId, ownerAccountBefore));
@@ -690,14 +839,14 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                 .stakedAccountId(ownerId)
                 .build());
 
-        given(handleContext.consensusNow())
+        given(context.consensusTime())
                 .willReturn(LocalDate.ofEpochDay(stakePeriodStart)
                         .atStartOfDay(ZoneOffset.UTC)
                         .toInstant());
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
         final var originalPayer = writableAccountStore.get(payerId);
-        final var rewards = subject.applyStakingRewards(handleContext);
+        final var rewards = subject.applyStakingRewards(context);
 
         // even though only payer account has changed, since staked to me of owner changes,
         // it will trigger reward for owner
@@ -713,7 +862,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         assertThat(modifiedPayer.stakedToMe()).isEqualTo(originalPayer.stakedToMe());
         assertThat(modifiedPayer.stakePeriodStart()).isEqualTo(stakePeriodStart);
 
-        final var node0InfoAfter = writableStakingInfoStore.get(node0Id);
+        final var node0InfoAfter = writableStakingInfoStore.get(node0Id.number());
         assertThat(node0InfoAfter.stakeToReward()).isEqualTo(node0InfoBefore.stakeToReward() - HBARS_TO_TINYBARS);
         assertThat(node0InfoAfter.unclaimedStakeRewardStart()).isZero();
     }
@@ -739,7 +888,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                 .withStakePeriodStart(stakePeriodStart - 2)
                 .withDeclineReward(false)
                 .withDeleted(false)
-                .withStakedNodeId(node0Id)
+                .withStakedNodeId(node0Id.number())
                 .withStakedToMe(accountBalance)
                 .build();
         addToState(Map.of(payerId, payerAccountBefore, ownerId, ownerAccountBefore));
@@ -752,16 +901,16 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                 .tinybarBalance(stakingRewardAccount.tinybarBalance() + HBARS_TO_TINYBARS)
                 .build());
 
-        given(handleContext.consensusNow())
+        given(context.consensusTime())
                 .willReturn(LocalDate.ofEpochDay(stakePeriodStart)
                         .atStartOfDay(ZoneOffset.UTC)
                         .toInstant());
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
         final var originalPayer = writableAccountStore.get(payerId);
 
         // This should not change anything
-        final var rewards = subject.applyStakingRewards(handleContext);
+        final var rewards = subject.applyStakingRewards(context);
 
         // No rewards should be paid
         assertThat(rewards).isEmpty();
@@ -803,7 +952,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                 .withStakePeriodStart(stakePeriodStart - 2)
                 .withDeclineReward(false)
                 .withDeleted(false)
-                .withStakedNodeId(node0Id)
+                .withStakedNodeId(node0Id.number())
                 .withStakedToMe(accountBalance)
                 .build();
         addToState(Map.of(payerId, payerAccountBefore, ownerId, ownerAccountBefore));
@@ -811,21 +960,21 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         writableAccountStore.put(
                 account.copyBuilder().stakedAccountId(stakingRewardId).build());
 
-        given(handleContext.consensusNow())
+        given(context.consensusTime())
                 .willReturn(LocalDate.ofEpochDay(stakePeriodStart)
                         .atStartOfDay(ZoneOffset.UTC)
                         .toInstant());
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
         final var originalPayer = writableAccountStore.get(payerId);
-        final var rewards = subject.applyStakingRewards(handleContext);
+        final var rewards = subject.applyStakingRewards(context);
 
         assertThat(rewards).hasSize(1).containsEntry(ownerId, 6600L);
 
         final var modifiedPayer = writableAccountStore.get(payerId);
         final var modifiedOwner = writableAccountStore.get(ownerId);
         // Since payer is staked to reward account now, its balance should not add to stakedToMe of owner
-        assertThat(modifiedOwner.stakedToMe()).isEqualTo(0L);
+        assertThat(modifiedOwner.stakedToMe()).isZero();
         // stakePeriodStart is updated everytime when reward is applied
         assertThat(modifiedOwner.stakePeriodStart()).isEqualTo(stakePeriodStart - 1);
         // stakePeriodStart is not updated here
@@ -839,21 +988,21 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                 .stakedAccountId(treasuryId)
                 .declineReward(true)
                 .build());
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
     }
 
     private void randomStakeNodeChanges() {
         writableAccountStore.put(account.copyBuilder()
                 .tinybarBalance(100L)
                 .stakedNodeId(0L)
-                .declineReward(true)
+                .declineReward(false)
                 .build());
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
     }
 
     private void noStakeChanges() {
         writableAccountStore.put(account.copyBuilder().key(kycKey).build());
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
     }
 
     private void addToState(Map<AccountID, Account> idsToAccounts) {
@@ -868,11 +1017,11 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
 
         given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
         readableAccountStore = new ReadableAccountStoreImpl(readableStates);
-        given(handleContext.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
+        given(context.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
 
         given(writableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(writableAccounts);
         writableAccountStore = new WritableAccountStore(writableStates);
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
     }
 
     public static AccountCustomizer newBuilder() {

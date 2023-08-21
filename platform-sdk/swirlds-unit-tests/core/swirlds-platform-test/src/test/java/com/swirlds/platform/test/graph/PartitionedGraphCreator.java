@@ -21,7 +21,7 @@ import static com.swirlds.platform.test.graph.OtherParentMatrixFactory.createPar
 
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.test.event.emitter.EventEmitter;
-import com.swirlds.platform.test.event.generator.GraphGenerator;
+import com.swirlds.platform.test.fixtures.event.generator.GraphGenerator;
 import com.swirlds.platform.test.sync.SyncNode;
 import com.swirlds.platform.test.sync.SyncTestParams;
 import java.util.List;

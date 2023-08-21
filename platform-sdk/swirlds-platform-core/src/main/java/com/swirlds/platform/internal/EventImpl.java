@@ -62,7 +62,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.CountDownLatch;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /**
  * An internal platform event. It holds all the event data relevant to the platform. It implements the Event interface
@@ -330,9 +329,13 @@ public class EventImpl extends AbstractSerializableHashable
      */
     @Override
     public boolean equals(final Object o) {
-        if (this == o) return true;
+        if (this == o) {
+            return true;
+        }
 
-        if (o == null || getClass() != o.getClass()) return false;
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
 
         final EventImpl event = (EventImpl) o;
 
@@ -344,10 +347,7 @@ public class EventImpl extends AbstractSerializableHashable
      */
     @Override
     public int hashCode() {
-        return new HashCodeBuilder(17, 37)
-                .append(baseEvent)
-                .append(consensusData)
-                .toHashCode();
+        return Objects.hash(baseEvent, consensusData);
     }
 
     /**

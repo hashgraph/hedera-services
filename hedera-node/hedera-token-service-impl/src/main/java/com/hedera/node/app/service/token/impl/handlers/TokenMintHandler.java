@@ -32,8 +32,8 @@ import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.*;
-import com.hedera.node.app.service.token.impl.records.TokenMintRecordBuilder;
 import com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator;
+import com.hedera.node.app.service.token.records.TokenMintRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -226,7 +226,7 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
             @NonNull final Bytes meta,
             final long currentSerialNumber) {
         return Nft.newBuilder()
-                .id(NftID.newBuilder()
+                .nftId(NftID.newBuilder()
                         .tokenId(tokenId)
                         .serialNumber(currentSerialNumber)
                         .build())

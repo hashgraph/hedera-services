@@ -30,14 +30,17 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Answers.RETURNS_SELF;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.consensus.ConsensusMessageChunkInfo;
@@ -51,6 +54,9 @@ import com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessag
 import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.fees.FeeAccumulator;
+import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -78,6 +84,12 @@ class ConsensusSubmitMessageTest extends ConsensusTestBase {
     @Mock(answer = RETURNS_SELF)
     private ConsensusSubmitMessageRecordBuilder recordBuilder;
 
+    @Mock(answer = RETURNS_SELF)
+    private FeeCalculator feeCalculator;
+
+    @Mock
+    private FeeAccumulator feeAccumulator;
+
     private ConsensusSubmitMessageHandler subject;
 
     @BeforeEach
@@ -101,6 +113,11 @@ class ConsensusSubmitMessageTest extends ConsensusTestBase {
         given(handleContext.configuration()).willReturn(config);
         given(handleContext.recordBuilder(ConsensusSubmitMessageRecordBuilder.class))
                 .willReturn(recordBuilder);
+
+        lenient().when(handleContext.feeCalculator(any(SubType.class))).thenReturn(feeCalculator);
+        lenient().when(handleContext.feeAccumulator()).thenReturn(feeAccumulator);
+        lenient().when(feeCalculator.calculate()).thenReturn(Fees.FREE);
+        lenient().when(feeCalculator.legacyCalculate(any())).thenReturn(Fees.FREE);
     }
 
     @Test

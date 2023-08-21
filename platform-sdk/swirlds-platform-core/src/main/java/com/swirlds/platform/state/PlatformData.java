@@ -16,9 +16,11 @@
 
 package com.swirlds.platform.state;
 
+import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
@@ -36,8 +38,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.apache.commons.lang3.builder.ToStringStyle;
 
 /**
  * A collection of miscellaneous platform data.
@@ -60,7 +60,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
     /**
      * The round of this state. This state represents the handling of all transactions that have reached consensus in
      * all previous rounds. All transactions from this round will eventually be applied to this state. The first state
-     * (genesis state) has a round of 0 because the first round is round defined as round 1, and the genesis state is
+     * (genesis state) has a round of 0 because the first round is defined as round 1, and the genesis state is
      * before any transactions are handled.
      */
     private long round = GENESIS_ROUND;
@@ -317,7 +317,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
     }
 
     /**
-     * Get the running hash of all events that have been applied to this state since the begining of time.
+     * Get the running hash of all events that have been applied to this state since the beginning of time.
      *
      * @return a running hash of events
      */
@@ -326,7 +326,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
     }
 
     /**
-     * Set the running hash of all events that have been applied to this state since the begining of time.
+     * Set the running hash of all events that have been applied to this state since the beginning of time.
      *
      * @param hashEventsCons a running hash of events
      * @return this object
@@ -524,26 +524,23 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
      * critical attributes of this data object. The original use is during reconnect to produce useful information sent
      * to diagnostic event output.
      *
-     * @param addressBookHash A {@link Hash} of the current Address Book; helpful to validate that the addresses used to
-     *                        validate signatures match the expected set of valid addresses.
      * @return a {@link String} containing the core data from this object, in human-readable form.
      * @see PlatformState#getInfoString()
      */
-    public String getInfoString(final Hash addressBookHash) {
-        return new StringBuilder()
-                .append("Round = ")
-                .append(getRound())
-                .append(", number of consensus events = ")
-                .append(getNumEventsCons())
-                .append(", consensus timestamp = ")
-                .append(getConsensusTimestamp())
-                .append(", last timestamp = ")
-                .append(getLastTransactionTimestamp())
-                .append(", consensus Events running hash = ")
-                .append(getHashEventsCons())
-                .append(", address book hash = ")
-                .append(addressBookHash != null ? addressBookHash : "not provided")
-                .toString();
+    public String getInfoString() {
+        return new TextTable()
+                .setBordersEnabled(false)
+                .addRow("Round", round)
+                .addRow("Number of consensus events", numEventsCons)
+                .addRow("Consensus events running hash", hashEventsCons == null ? "null" : hashEventsCons.toMnemonic())
+                .addRow("Consensus timestamp", consensusTimestamp)
+                .addRow("Last timestamp", lastTransactionTimestamp)
+                .addRow("Rounds non-ancient", roundsNonAncient)
+                .addRow("Creation software version", creationSoftwareVersion)
+                .addRow("Epoch hash", epochHash == null ? "null" : epochHash.toMnemonic())
+                .addRow("Min gen info hash code", minGenInfo == null ? "null" : minGenInfo.hashCode())
+                .addRow("Events hash code", Arrays.hashCode(events))
+                .render();
     }
 
     /**
@@ -586,7 +583,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
      */
     @Override
     public String toString() {
-        return new ToStringBuilder(this, ToStringStyle.MULTI_LINE_STYLE)
+        return new ToStringBuilder(this)
                 .append("round", round)
                 .append("numEventsCons", numEventsCons)
                 .append("hashEventsCons", hashEventsCons)

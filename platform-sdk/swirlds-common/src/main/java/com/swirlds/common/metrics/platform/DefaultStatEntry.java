@@ -20,18 +20,15 @@ import static com.swirlds.common.metrics.Metric.ValueType.MAX;
 import static com.swirlds.common.metrics.Metric.ValueType.MIN;
 import static com.swirlds.common.metrics.Metric.ValueType.STD_DEV;
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
-import com.swirlds.common.config.singleton.ConfigurationHolder;
+import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.metrics.MetricConfig;
 import com.swirlds.common.metrics.StatEntry;
-import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
 import com.swirlds.common.metrics.statistics.StatsBuffered;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * Platform-implementation of {@link StatEntry}
@@ -57,6 +54,11 @@ public class DefaultStatEntry extends DefaultMetric implements StatEntry {
      */
     private final Supplier<Object> resetStatsStringSupplier;
 
+    /**
+     * the half life of the statistic, in seconds
+     */
+    private final double halfLife;
+
     @SuppressWarnings("unchecked")
     public DefaultStatEntry(final StatEntry.Config<?> config) {
         super(config);
@@ -65,9 +67,9 @@ public class DefaultStatEntry extends DefaultMetric implements StatEntry {
         this.reset = config.getReset();
         this.statsStringSupplier = (Supplier<Object>) config.getStatsStringSupplier();
         this.resetStatsStringSupplier = (Supplier<Object>) config.getResetStatsStringSupplier();
+        halfLife = config.getHalfLife();
         if (config.getInit() != null) {
-            final MetricsConfig metricsConfig = ConfigurationHolder.getConfigData(MetricsConfig.class);
-            config.getInit().apply(metricsConfig.halfLife());
+            config.getInit().apply(halfLife);
         }
     }
 
@@ -136,11 +138,10 @@ public class DefaultStatEntry extends DefaultMetric implements StatEntry {
      */
     @Override
     public void reset() {
-        final MetricsConfig metricsConfig = ConfigurationHolder.getConfigData(MetricsConfig.class);
         if (reset != null) {
-            reset.accept(metricsConfig.halfLife());
+            reset.accept(halfLife);
         } else if (buffered != null) {
-            buffered.reset(metricsConfig.halfLife());
+            buffered.reset(halfLife);
         }
     }
 
@@ -158,7 +159,7 @@ public class DefaultStatEntry extends DefaultMetric implements StatEntry {
      */
     @Override
     public String toString() {
-        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+        return new ToStringBuilder(this)
                 .appendSuper(super.toString())
                 .append("value", statsStringSupplier.get())
                 .toString();

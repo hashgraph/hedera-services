@@ -29,11 +29,11 @@ import java.util.List;
  */
 public record SingleTransactionRecord(
         @NonNull Transaction transaction,
-        @NonNull TransactionRecord record,
+        @NonNull TransactionRecord transactionRecord,
         @NonNull List<TransactionSidecarRecord> transactionSidecarRecords) {
     public SingleTransactionRecord {
         requireNonNull(transaction, "transaction must not be null");
-        requireNonNull(record, "record must not be null");
+        requireNonNull(transactionRecord, "record must not be null");
         requireNonNull(transactionSidecarRecords, "transactionSidecarRecords must not be null");
     }
 }

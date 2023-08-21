@@ -17,10 +17,14 @@
 package com.hedera.node.app.service.contract.impl.utils;
 
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
+import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.ContractLoginfo;
+import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.streams.ContractStateChange;
 import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.hapi.streams.StorageChange;
@@ -45,12 +49,48 @@ import org.hyperledger.besu.evm.log.LogsBloomFilter;
  */
 public class ConversionUtils {
     public static final long EVM_ADDRESS_LENGTH_AS_LONG = 20L;
-    public static final long MISSING_ENTITY_NUMBER = -1L;
     public static final int EVM_ADDRESS_LENGTH_AS_INT = 20;
     public static final int NUM_LONG_ZEROS = 12;
 
     private ConversionUtils() {
         throw new UnsupportedOperationException("Utility Class");
+    }
+
+    /**
+     * Given a validated {@link ContractCreateTransactionBody} and its pending id, returns the
+     * corresponding {@link CryptoCreateTransactionBody} to dispatch.
+     *
+     * @param pendingId the pending id
+     * @param body the {@link ContractCreateTransactionBody}
+     * @return the corresponding {@link CryptoCreateTransactionBody}
+     */
+    public static CryptoCreateTransactionBody accountCreationFor(
+            @NonNull final ContractID pendingId,
+            @Nullable final com.hedera.pbj.runtime.io.buffer.Bytes evmAddress,
+            @NonNull final ContractCreateTransactionBody body) {
+        requireNonNull(body);
+        requireNonNull(pendingId);
+        final var builder = CryptoCreateTransactionBody.newBuilder()
+                .maxAutomaticTokenAssociations(body.maxAutomaticTokenAssociations())
+                .declineReward(body.declineReward())
+                .memo(body.memo());
+        if (body.hasAutoRenewPeriod()) {
+            builder.autoRenewPeriod(body.autoRenewPeriodOrThrow());
+        }
+        if (body.hasStakedNodeId()) {
+            builder.stakedNodeId(body.stakedNodeIdOrThrow());
+        } else if (body.hasStakedAccountId()) {
+            builder.stakedAccountId(body.stakedAccountIdOrThrow());
+        }
+        if (body.hasAdminKey() && !isEmpty(body.adminKeyOrThrow())) {
+            builder.key(body.adminKeyOrThrow());
+        } else {
+            builder.key(Key.newBuilder().contractID(pendingId));
+        }
+        if (evmAddress != null) {
+            builder.alias(evmAddress);
+        }
+        return builder.build();
     }
 
     /**
@@ -65,6 +105,19 @@ public class ConversionUtils {
             pbjLogs.add(pbjLogFrom(log));
         }
         return pbjLogs;
+    }
+
+    /**
+     * Returns the 2-byte chain id as a byte array.
+     *
+     * @param chainId the chain id
+     * @return the chain id as a byte array
+     */
+    public static byte[] asChainIdBytes(final int chainId) {
+        final var bytes = new byte[2];
+        bytes[0] = (byte) (chainId >> 8);
+        bytes[1] = (byte) chainId;
+        return bytes;
     }
 
     /**
@@ -151,7 +204,7 @@ public class ConversionUtils {
     /**
      * Given a {@link MessageFrame}, returns the id number of the given address's Hedera id.
      *
-     * @param frame the {@link MessageFrame}
+     * @param frame   the {@link MessageFrame}
      * @param address the address to get the id number of
      * @return the id number of the given address's Hedera id
      */
@@ -173,12 +226,12 @@ public class ConversionUtils {
 
     /**
      * Given an EVM address (possibly long-zero), returns the number of the corresponding Hedera entity
-     * within the given {@link HandleHederaNativeOperations}; or {@link #MISSING_ENTITY_NUMBER} if the address is not long-zero
+     * within the given {@link HandleHederaNativeOperations}; or {@link HederaNativeOperations#MISSING_ENTITY_NUMBER} if the address is not long-zero
      * and does not correspond to a known Hedera entity.
      *
-     * @param address  the EVM address
+     * @param address       the EVM address
      * @param extFrameScope the {@link HandleHederaNativeOperations} to use for resolving aliases
-     * @return the number of the corresponding Hedera entity, or {@link #MISSING_ENTITY_NUMBER}
+     * @return the number of the corresponding Hedera entity, or {@link HederaNativeOperations#MISSING_ENTITY_NUMBER}
      */
     public static long maybeMissingNumberOf(
             @NonNull final Address address, @NonNull final HederaNativeOperations extFrameScope) {
@@ -195,8 +248,7 @@ public class ConversionUtils {
                     explicit[19]);
         } else {
             final var alias = aliasFrom(address);
-            final var maybeNumber = extFrameScope.resolveAlias(alias);
-            return (maybeNumber == null) ? MISSING_ENTITY_NUMBER : maybeNumber.number();
+            return extFrameScope.resolveAlias(alias);
         }
     }
 

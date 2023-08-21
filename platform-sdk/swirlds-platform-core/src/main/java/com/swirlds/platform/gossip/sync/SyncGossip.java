@@ -21,6 +21,7 @@ import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
 import com.swirlds.base.state.LifecyclePhase;
 import com.swirlds.base.time.Time;
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.context.PlatformContext;
@@ -79,7 +80,6 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * Sync gossip using the protocol negotiator.
@@ -260,6 +260,7 @@ public class SyncGossip extends AbstractGossip {
                                             reconnectMetrics,
                                             reconnectController,
                                             fallenBehindManager,
+                                            statusActionSubmitter,
                                             platformContext.getConfiguration()),
                                     new ReconnectProtocol(
                                             threadManager,

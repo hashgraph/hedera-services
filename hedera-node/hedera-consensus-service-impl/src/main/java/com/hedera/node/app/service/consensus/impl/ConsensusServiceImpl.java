@@ -17,11 +17,9 @@
 package com.hedera.node.app.service.consensus.impl;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.ConsensusService;
-import com.hedera.node.app.service.consensus.impl.codecs.EntityNumCodec;
-import com.hedera.node.app.service.mono.state.codec.CodecFactory;
-import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
@@ -48,16 +46,8 @@ public final class ConsensusServiceImpl implements ConsensusService {
             @NonNull
             @Override
             public Set<StateDefinition> statesToCreate() {
-                return Set.of(topicsDef());
+                return Set.of(StateDefinition.inMemory(TOPICS_KEY, TopicID.PROTOBUF, Topic.PROTOBUF));
             }
         };
-    }
-
-    private StateDefinition<EntityNum, Topic> topicsDef() {
-        final var keyCodec = new EntityNumCodec();
-
-        final var valueCodec = CodecFactory.newInMemoryCodec(Topic.PROTOBUF::parse, Topic.PROTOBUF::write);
-
-        return StateDefinition.inMemory(TOPICS_KEY, keyCodec, valueCodec);
     }
 }

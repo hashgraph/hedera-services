@@ -20,6 +20,8 @@ import static com.swirlds.demo.platform.fs.stresstest.proto.Activity.ActivityTyp
 import static java.lang.String.format;
 
 import com.google.protobuf.ByteString;
+import com.swirlds.base.utility.Pair;
+import com.swirlds.base.utility.Triple;
 import com.swirlds.demo.merkle.map.internal.ExpectedFCMFamily;
 import com.swirlds.demo.platform.PAYLOAD_TYPE;
 import com.swirlds.demo.platform.fs.stresstest.proto.Activity;
@@ -32,8 +34,6 @@ import com.swirlds.demo.virtualmerkle.config.VirtualMerkleConfig;
 import com.swirlds.demo.virtualmerkle.random.PTTRandom;
 import com.swirlds.merkle.map.test.pta.MapKey;
 import java.util.function.Supplier;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.commons.lang3.tuple.Triple;
 
 /**
  * This class builds the transactions for virtual merkle tests.
@@ -113,9 +113,9 @@ public class VirtualMerkleTransactionPool {
                     accountTransactionFactory.buildCreateAccountTransaction();
 
             return buildTransactionTriple(
-                    mapAndTransaction.getValue(),
+                    mapAndTransaction.value(),
                     generateType,
-                    mapAndTransaction.getKey(),
+                    mapAndTransaction.key(),
                     AccountTransactionFactory.getSizeAfterPadding());
         }
 
@@ -128,9 +128,9 @@ public class VirtualMerkleTransactionPool {
                     accountTransactionFactory.buildUpdateAccountTransaction(currentTransactionConfig.getHotspot());
 
             return buildTransactionTriple(
-                    mapAndTransaction.getValue(),
+                    mapAndTransaction.value(),
                     generateType,
-                    mapAndTransaction.getKey(),
+                    mapAndTransaction.key(),
                     AccountTransactionFactory.getSizeAfterPadding());
         }
 
@@ -139,9 +139,9 @@ public class VirtualMerkleTransactionPool {
                     accountTransactionFactory.buildDeleteAccountTransaction();
 
             return buildTransactionTriple(
-                    mapAndTransaction.getValue(),
+                    mapAndTransaction.value(),
                     generateType,
-                    mapAndTransaction.getKey(),
+                    mapAndTransaction.key(),
                     AccountTransactionFactory.getSizeAfterPadding());
         }
 

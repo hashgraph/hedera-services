@@ -283,7 +283,7 @@ public class ConsensusHashManager {
 
             logger.fatal(
                     EXCEPTION.getMarker(),
-                    new IssPayload(sb.toString(), round, selfHash.toString(), consensusHash.toString(), false));
+                    new IssPayload(sb.toString(), round, selfHash.toMnemonic(), consensusHash.toMnemonic(), false));
         }
 
         selfIssDispatcher.dispatch(round, selfHash, consensusHash);
@@ -311,7 +311,7 @@ public class ConsensusHashManager {
             hashFinder.writePartitionData(sb);
             writeSkippedLogCount(sb, skipCount);
 
-            logger.fatal(EXCEPTION.getMarker(), new IssPayload(sb.toString(), round, selfHash.toString(), "", true));
+            logger.fatal(EXCEPTION.getMarker(), new IssPayload(sb.toString(), round, selfHash.toMnemonic(), "", true));
         }
 
         catastrophicIssDispatcher.dispatch(round, selfHash);

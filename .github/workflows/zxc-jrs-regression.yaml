@@ -387,15 +387,18 @@ jobs:
             fi
 
             if [[ -n "${HEDERA_TESTS_ENABLED}" && "${HEDERA_TESTS_ENABLED}" = true ]]; then
-              SLACK_SUMMARY="hedera-gcp-${SLACK_BRANCH}-summary"
-              SLACK_RESULTS="hedera-gcp-${SLACK_BRANCH}-regression"
+              # Override for the develop branch
+              if [[ "${SLACK_BRANCH}" != "develop" ]]; then
+                SLACK_SUMMARY="hedera-gcp-${SLACK_BRANCH}-summary"
+                SLACK_RESULTS="hedera-gcp-${SLACK_BRANCH}-regression"
+              else
+                SLACK_SUMMARY="hedera-regression-summary"
+                SLACK_RESULTS="hedera-regression"
+              fi
             else
               SLACK_SUMMARY="platform-gcp-${SLACK_BRANCH}-summary"
               SLACK_RESULTS="platform-gcp-${SLACK_BRANCH}-regression"
             fi
-
-            echo "${SLACK_SUMMARY}"
-            echo "${SLACK_RESULTS}"
           fi
 
           if [[ -n "${SLACK_SUMMARY}" ]]; then

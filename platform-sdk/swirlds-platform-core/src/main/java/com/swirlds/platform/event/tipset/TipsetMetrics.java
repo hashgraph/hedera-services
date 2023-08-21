@@ -39,12 +39,11 @@ public class TipsetMetrics {
                     + "of 1.0 means that the event had the maximum possible advancement weight.");
     private final RunningAverageMetric tipsetAdvancementMetric;
 
-    private static final RunningAverageMetric.Config BULLY_SCORE_CONFIG = new RunningAverageMetric.Config(
-                    "platform", "bullyScore")
-            .withDescription("The score, based on tipset advancements, of how much of a 'bully' "
-                    + "this node is being to other nodes. Bullying is defined as refusing to use a "
-                    + "node's events as other parents.");
-    private final RunningAverageMetric bullyScoreMetric;
+    private static final RunningAverageMetric.Config SELFISHNESS_CONFIG = new RunningAverageMetric.Config(
+                    "platform", "selfishness")
+            .withDescription("The score, based on tipset advancements, of how much this node is being selfish. "
+                    + "Selfishness is defined as refusing to use another node's events as other parents.");
+    private final RunningAverageMetric selfishnessMetric;
 
     private final Map<NodeId, SpeedometerMetric> tipsetParentMetrics = new HashMap<>();
     private final Map<NodeId, SpeedometerMetric> pityParentMetrics = new HashMap<>();
@@ -58,7 +57,7 @@ public class TipsetMetrics {
 
         final Metrics metrics = platformContext.getMetrics();
         tipsetAdvancementMetric = metrics.getOrCreate(TIPSET_ADVANCEMENT_CONFIG);
-        bullyScoreMetric = metrics.getOrCreate(BULLY_SCORE_CONFIG);
+        selfishnessMetric = metrics.getOrCreate(SELFISHNESS_CONFIG);
 
         for (final Address address : addressBook) {
             final NodeId nodeId = address.getNodeId();
@@ -91,13 +90,13 @@ public class TipsetMetrics {
     }
 
     /**
-     * Get the metric used to track the bully score of this node.
+     * Get the metric used to track the selfishness score of this node.
      *
-     * @return the bully score metric
+     * @return the selfishness score metric
      */
     @NonNull
-    public RunningAverageMetric getBullyScoreMetric() {
-        return bullyScoreMetric;
+    public RunningAverageMetric getSelfishnessMetric() {
+        return selfishnessMetric;
     }
 
     /**

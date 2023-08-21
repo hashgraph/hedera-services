@@ -16,22 +16,13 @@
 
 package com.hedera.node.app.service.file.impl.base;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.FILE_DELETED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_ONLY;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
-import static com.hedera.node.app.spi.validation.Validations.mustExist;
 
-import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.ResponseType;
-import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
-import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.spi.workflows.QueryContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Objects;
 
 /**
  * Base class for file queries.
@@ -46,15 +37,5 @@ public abstract class FileQueryBase extends PaidQueryHandler {
     @Override
     public boolean needsAnswerOnlyCost(@NonNull ResponseType responseType) {
         return COST_ANSWER == responseType;
-    }
-
-    protected void validateFileExistence(@Nullable FileID fileID, @NonNull final QueryContext context)
-            throws PreCheckException {
-        final var fileStore = Objects.requireNonNull(context).createStore(ReadableFileStore.class);
-        final var file = fileStore.getFileMetadata(fileID);
-        mustExist(file, INVALID_FILE_ID);
-        if (file.deleted()) {
-            throw new PreCheckException(FILE_DELETED);
-        }
     }
 }

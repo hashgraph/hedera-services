@@ -16,17 +16,14 @@
 
 package com.swirlds.common.metrics.platform;
 
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
-
+import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.metrics.LegacyMetric;
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.MetricConfig;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
 import com.swirlds.common.metrics.statistics.StatsBuffered;
-import com.swirlds.common.utility.CommonUtils;
 import java.util.List;
 import java.util.Objects;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * Basic implementation of all platform-implementations of {@link Metric}
@@ -40,7 +37,7 @@ public abstract class DefaultMetric implements Metric, LegacyMetric {
     private final String format;
 
     DefaultMetric(MetricConfig<?, ?> config) {
-        CommonUtils.throwArgNull(config, "config");
+        Objects.requireNonNull(config, "config must not be null");
         this.category = config.getCategory();
         this.name = config.getName();
         this.description = config.getDescription();
@@ -116,8 +113,12 @@ public abstract class DefaultMetric implements Metric, LegacyMetric {
      */
     @Override
     public boolean equals(final Object other) {
-        if (this == other) return true;
-        if (other == null || getClass() != other.getClass()) return false;
+        if (this == other) {
+            return true;
+        }
+        if (other == null || getClass() != other.getClass()) {
+            return false;
+        }
         final DefaultMetric metric = (DefaultMetric) other;
         return category.equals(metric.category) && name.equals(metric.name);
     }
@@ -135,7 +136,7 @@ public abstract class DefaultMetric implements Metric, LegacyMetric {
      */
     @Override
     public String toString() {
-        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+        return new ToStringBuilder(this)
                 .append("category", category)
                 .append("name", name)
                 .append("description", description)

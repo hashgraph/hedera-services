@@ -30,6 +30,7 @@ import static com.swirlds.platform.state.address.AddressBookMetrics.registerAddr
 
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.time.Time;
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.EventConfig;
@@ -105,7 +106,7 @@ import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamSequencer;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import com.swirlds.platform.event.preconsensus.SyncPreconsensusEventWriter;
-import com.swirlds.platform.event.tipset.TipsetEventCreationManager;
+import com.swirlds.platform.event.tipset.AsyncTipsetEventCreationManager;
 import com.swirlds.platform.event.validation.AncientValidator;
 import com.swirlds.platform.event.validation.EventDeduplication;
 import com.swirlds.platform.event.validation.EventValidator;
@@ -161,8 +162,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -284,7 +283,7 @@ public class SwirldsPlatform implements Platform, Startable {
     /**
      * Creates new events using the tipset algorithm.
      */
-    private final TipsetEventCreationManager tipsetEventCreator;
+    private final AsyncTipsetEventCreationManager tipsetEventCreator;
 
     /**
      * The round of the most recent reconnect state received, or {@link com.swirlds.common.system.UptimeData#NO_ROUND}
@@ -659,9 +658,16 @@ public class SwirldsPlatform implements Platform, Startable {
             });
         }
 
+        final Clearable pauseEventCreation = () -> {
+            if (tipsetEventCreator != null) {
+                tipsetEventCreator.pauseEventCreation();
+            }
+        };
+
         clearAllPipelines = new LoggingClearables(
                 RECONNECT.getMarker(),
                 List.of(
+                        Pair.of(pauseEventCreation, "eventCreator"),
                         Pair.of(gossip, "gossip"),
                         Pair.of(preConsensusEventHandler, "preConsensusEventHandler"),
                         Pair.of(consensusRoundHandler, "consensusRoundHandler"),
@@ -917,6 +923,7 @@ public class SwirldsPlatform implements Platform, Startable {
         }
 
         gossip.resetFallenBehind();
+        tipsetEventCreator.resumeEventCreation();
         platformStatusManager.submitStatusAction(new ReconnectCompleteAction(signedState.getRound()));
     }
 

@@ -34,6 +34,7 @@ module com.swirlds.common {
     exports com.swirlds.common.merkle.impl.internal;
     exports com.swirlds.common.merkle.interfaces;
     exports com.swirlds.common.merkle.iterators;
+    exports com.swirlds.common.merkle.proof;
     exports com.swirlds.common.merkle.route;
     exports com.swirlds.common.merkle.synchronization;
     exports com.swirlds.common.merkle.synchronization.config;
@@ -91,7 +92,8 @@ module com.swirlds.common {
     exports com.swirlds.common.notification.internal to
             com.swirlds.common.test;
     exports com.swirlds.common.crypto.engine to
-            com.swirlds.common.test;
+            com.swirlds.common.test,
+            com.swirlds.common.test.fixtures;
 
     opens com.swirlds.common.crypto to
             com.fasterxml.jackson.databind;
@@ -113,6 +115,7 @@ module com.swirlds.common {
     exports com.swirlds.common.system.transaction.internal to
             com.swirlds.platform,
             com.swirlds.platform.test,
+            com.swirlds.platform.test.fixtures,
             com.swirlds.common.test,
             com.swirlds.common.test.fixtures;
 
@@ -151,7 +154,9 @@ module com.swirlds.common {
             com.swirlds.demo.platform,
             com.swirlds.jrs,
             com.swirlds.platform,
-            com.swirlds.platform.test;
+            com.swirlds.platform.test,
+            com.swirlds.gui;
+    exports com.swirlds.common.startup;
 
     requires transitive com.swirlds.base;
     requires com.swirlds.config;

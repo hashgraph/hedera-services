@@ -24,7 +24,6 @@ import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.valid
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.KeyList;
@@ -102,12 +101,12 @@ public class FileCreateHandler implements TransactionHandler {
                 expiry,
                 NA,
                 // Shard and realm will be ignored if num is NA
-                AccountID.newBuilder().shardNum(NA).realmNum(NA).accountNum(NA).build());
+                null);
 
         try {
             final var effectiveExpiryMeta =
                     handleContext.expiryValidator().resolveCreationAttempt(false, entityExpiryMeta);
-            builder.expirationTime(effectiveExpiryMeta.expiry());
+            builder.expirationSecond(effectiveExpiryMeta.expiry());
 
             handleContext.attributeValidator().validateMemo(fileCreateTransactionBody.memo());
             builder.memo(fileCreateTransactionBody.memo());

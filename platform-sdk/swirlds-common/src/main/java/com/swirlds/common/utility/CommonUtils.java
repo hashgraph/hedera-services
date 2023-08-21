@@ -28,6 +28,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import javax.sound.midi.MidiChannel;
@@ -259,7 +260,7 @@ public class CommonUtils {
      */
     @Deprecated(forRemoval = true)
     public static String throwArgBlank(final String arg, final String argName) {
-        throwArgNull(arg, argName);
+        Objects.requireNonNull(arg, argName);
         if (StringUtils.isBlank(arg)) {
             throw new IllegalArgumentException(String.format("The supplied argument '%s' cannot be blank!", argName));
         }

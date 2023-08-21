@@ -19,7 +19,6 @@ package com.hedera.node.app.service.token.impl.test;
 import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -44,28 +43,6 @@ class WritableAccountStoreTest extends CryptoHandlerTestBase {
     public void setUp() {
         super.setUp();
         resetStores();
-    }
-
-    @Test
-    void detectsPendingCreation() {
-        final var contractIdByNum = AccountID.newBuilder().accountNum(666).build();
-        writableAccounts.put(contractIdByNum, contractWith(contractIdByNum, 123));
-        assertTrue(writableStore.isNewlyCreated(contractIdByNum));
-    }
-
-    @Test
-    void nonexistentContractNotNewlyCreated() {
-        final var contractIdByNum = AccountID.newBuilder().accountNum(666).build();
-        assertFalse(writableStore.isNewlyCreated(contractIdByNum));
-    }
-
-    @Test
-    void extantContractNotNewlyCreated() {
-        final var beforeNonce = 123L;
-        final var contractIdByNum = AccountID.newBuilder().accountNum(666).build();
-        writableAccounts.put(contractIdByNum, contractWith(contractIdByNum, beforeNonce));
-        writableAccounts.commit();
-        assertFalse(writableStore.isNewlyCreated(contractIdByNum));
     }
 
     @Test
@@ -146,7 +123,7 @@ class WritableAccountStoreTest extends CryptoHandlerTestBase {
         assertThat(readaccount).isNotNull();
         assertThat(account).isEqualTo(readaccount);
         assertEquals(1, writableStore.sizeOfAliasesState());
-        assertEquals(Set.of(alias.alias()), writableStore.modifiedAliasesInState());
+        assertEquals(Set.of(edKeyAlias), writableStore.modifiedAliasesInState());
     }
 
     @Test

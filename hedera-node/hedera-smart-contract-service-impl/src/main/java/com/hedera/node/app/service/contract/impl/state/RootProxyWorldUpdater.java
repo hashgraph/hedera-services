@@ -22,14 +22,14 @@ import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.exec.failure.ResourceExhaustedException;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
-import com.hedera.node.app.service.contract.impl.infra.LegibleStorageManager;
+import com.hedera.node.app.service.contract.impl.infra.IterableStorageManager;
 import com.hedera.node.app.service.contract.impl.infra.RentCalculator;
 import com.hedera.node.app.service.contract.impl.infra.StorageSizeValidator;
 import com.hedera.node.config.data.ContractsConfig;
-import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import javax.inject.Inject;
 
 /**
@@ -42,7 +42,7 @@ import javax.inject.Inject;
 public class RootProxyWorldUpdater extends ProxyWorldUpdater {
     private final RentCalculator rentCalculator;
     private final ContractsConfig contractsConfig;
-    private final LegibleStorageManager storageManager;
+    private final IterableStorageManager storageManager;
     private final StorageSizeValidator storageSizeValidator;
 
     private boolean committed = false;
@@ -52,16 +52,16 @@ public class RootProxyWorldUpdater extends ProxyWorldUpdater {
     @Inject
     public RootProxyWorldUpdater(
             @NonNull final HederaOperations extWorldScope,
-            @NonNull final Configuration configuration,
+            @NonNull final ContractsConfig contractsConfig,
             @NonNull final EvmFrameStateFactory evmFrameStateFactory,
             @NonNull final RentCalculator rentCalculator,
-            @NonNull final LegibleStorageManager storageManager,
+            @NonNull final IterableStorageManager storageManager,
             @NonNull final StorageSizeValidator storageSizeValidator) {
         super(extWorldScope, evmFrameStateFactory, null);
-        this.contractsConfig = configuration.getConfigData(ContractsConfig.class);
-        this.storageManager = storageManager;
-        this.rentCalculator = rentCalculator;
-        this.storageSizeValidator = storageSizeValidator;
+        this.contractsConfig = Objects.requireNonNull(contractsConfig);
+        this.storageManager = Objects.requireNonNull(storageManager);
+        this.rentCalculator = Objects.requireNonNull(rentCalculator);
+        this.storageSizeValidator = Objects.requireNonNull(storageSizeValidator);
     }
 
     /**
@@ -84,7 +84,8 @@ public class RootProxyWorldUpdater extends ProxyWorldUpdater {
         // Charge rent for each increase in storage size
         chargeRentFor(sizeEffects);
         // "Rewrite" the pending storage changes to preserve per-contract linked lists
-        storageManager.rewrite(hederaOperations, changes, sizeEffects.sizeChanges(), hederaOperations.getStore());
+        storageManager.persistChanges(
+                hederaOperations, changes, sizeEffects.sizeChanges(), hederaOperations.getStore());
 
         // We now have an apparently valid change set, and want to capture some summary
         // information for the Hedera record

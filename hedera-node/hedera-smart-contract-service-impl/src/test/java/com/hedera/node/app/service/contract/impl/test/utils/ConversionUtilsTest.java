@@ -35,7 +35,6 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractLoginfo;
-import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.streams.ContractStateChange;
 import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.hapi.streams.StorageChange;
@@ -57,7 +56,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ConversionUtilsTest {
     @Mock
-    private HederaNativeOperations extFrameScope;
+    private HederaNativeOperations nativeOperations;
 
     @Test
     void numberedIdsRequireLongZeroAddress() {
@@ -81,7 +80,7 @@ class ConversionUtilsTest {
     void justReturnsNumberFromSmallLongZeroAddress() {
         final var smallNumber = 0x1234L;
         final var address = Address.fromHexString("0x1234");
-        final var actual = ConversionUtils.maybeMissingNumberOf(address, extFrameScope);
+        final var actual = ConversionUtils.maybeMissingNumberOf(address, nativeOperations);
         assertEquals(smallNumber, actual);
     }
 
@@ -89,22 +88,23 @@ class ConversionUtilsTest {
     void justReturnsNumberFromLargeLongZeroAddress() {
         final var largeNumber = 0x7fffffffffffffffL;
         final var address = Address.fromHexString("0x7fffffffffffffff");
-        final var actual = ConversionUtils.maybeMissingNumberOf(address, extFrameScope);
+        final var actual = ConversionUtils.maybeMissingNumberOf(address, nativeOperations);
         assertEquals(largeNumber, actual);
     }
 
     @Test
     void returnsZeroIfMissingAlias() {
         final var address = Address.fromHexString("0x010000000000000000");
-        final var actual = ConversionUtils.maybeMissingNumberOf(address, extFrameScope);
+        given(nativeOperations.resolveAlias(any())).willReturn(HederaNativeOperations.MISSING_ENTITY_NUMBER);
+        final var actual = ConversionUtils.maybeMissingNumberOf(address, nativeOperations);
         assertEquals(-1L, actual);
     }
 
     @Test
     void returnsGivenIfPresentAlias() {
-        given(extFrameScope.resolveAlias(any())).willReturn(new EntityNumber(0x1234L));
+        given(nativeOperations.resolveAlias(any())).willReturn(0x1234L);
         final var address = Address.fromHexString("0x010000000000000000");
-        final var actual = ConversionUtils.maybeMissingNumberOf(address, extFrameScope);
+        final var actual = ConversionUtils.maybeMissingNumberOf(address, nativeOperations);
         assertEquals(0x1234L, actual);
     }
 

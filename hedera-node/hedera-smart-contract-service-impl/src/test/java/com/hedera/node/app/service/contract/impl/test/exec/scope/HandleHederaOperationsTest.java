@@ -16,17 +16,44 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.scope;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.AN_ED25519_KEY;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_ACCOUNT_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.B_NEW_ACCOUNT_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CANONICAL_ALIAS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_LEDGER_CONFIG;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_ACCOUNT_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SOME_DURATION;
+import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthAccountCreationFromHapi;
+import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthContractCreationFromParent;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
+import com.hedera.hapi.node.contract.ContractNonceInfo;
+import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
 import com.hedera.node.app.service.contract.impl.state.WritableContractStateStore;
+import com.hedera.node.app.service.contract.impl.test.TestHelpers;
+import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.api.TokenServiceApi;
+import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,7 +66,13 @@ class HandleHederaOperationsTest {
     private HandleContext.SavepointStack savepointStack;
 
     @Mock
+    private TokenServiceApi tokenServiceApi;
+
+    @Mock
     private BlockRecordInfo blockRecordInfo;
+
+    @Mock
+    private ReadableAccountStore accountStore;
 
     @Mock
     private HandleContext context;
@@ -47,11 +80,14 @@ class HandleHederaOperationsTest {
     @Mock
     private WritableContractStateStore stateStore;
 
+    @Mock
+    private CryptoCreateRecordBuilder cryptoCreateRecordBuilder;
+
     private HandleHederaOperations subject;
 
     @BeforeEach
     void setUp() {
-        subject = new HandleHederaOperations(context);
+        subject = new HandleHederaOperations(DEFAULT_LEDGER_CONFIG, context);
     }
 
     @Test
@@ -95,87 +131,217 @@ class HandleHederaOperationsTest {
     }
 
     @Test
-    void peekNumberIsNotImplemented() {
-        assertThrows(AssertionError.class, subject::peekNextEntityNumber);
+    void peekNumberUsesContext() {
+        given(context.peekAtNewEntityNum()).willReturn(123L);
+        assertEquals(123L, subject.peekNextEntityNumber());
     }
 
     @Test
-    void useNumberIsNotImplemented() {
-        assertThrows(AssertionError.class, subject::useNextEntityNumber);
+    void useNumberUsesContext() {
+        given(context.newEntityNum()).willReturn(123L);
+        assertEquals(123L, subject.useNextEntityNumber());
     }
 
     @Test
-    void commitIsNotImplemented() {
-        assertThrows(AssertionError.class, subject::commit);
+    void commitIsNoopUntilSavepointExposesIt() {
+        assertDoesNotThrow(subject::commit);
     }
 
     @Test
-    void lazyCreationCostInGasNotImplemented() {
-        assertThrows(AssertionError.class, subject::lazyCreationCostInGas);
+    void lazyCreationCostInGasHardcoded() {
+        assertEquals(1L, subject.lazyCreationCostInGas());
     }
 
     @Test
-    void gasPriceInTinybarsNotImplemented() {
-        assertThrows(AssertionError.class, subject::gasPriceInTinybars);
+    void gasPriceInTinybarsHardcoded() {
+        assertEquals(1L, subject.gasPriceInTinybars());
     }
 
     @Test
-    void valueInTinybarsNotImplemented() {
-        assertThrows(AssertionError.class, () -> subject.valueInTinybars(1L));
+    void valueInTinybarsUsesOneToOneExchange() {
+        assertEquals(1L, subject.valueInTinybars(1L));
     }
 
     @Test
-    void collectFeeNotImplemented() {
-        assertThrows(AssertionError.class, () -> subject.collectFee(AccountID.DEFAULT, 1L));
+    void collectFeeStillTransfersAllToNetworkFunding() {
+        given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
+
+        subject.collectFee(TestHelpers.NON_SYSTEM_ACCOUNT_ID, 123L);
+
+        verify(tokenServiceApi)
+                .transferFromTo(
+                        TestHelpers.NON_SYSTEM_ACCOUNT_ID,
+                        AccountID.newBuilder()
+                                .accountNum(DEFAULT_LEDGER_CONFIG.fundingAccount())
+                                .build(),
+                        123L);
     }
 
     @Test
-    void refundFeeNotImplemented() {
-        assertThrows(AssertionError.class, () -> subject.refundFee(AccountID.DEFAULT, 1L));
+    void refundFeeStillTransfersAllFromNetworkFunding() {
+        given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
+
+        subject.refundFee(TestHelpers.NON_SYSTEM_ACCOUNT_ID, 123L);
+
+        verify(tokenServiceApi)
+                .transferFromTo(
+                        AccountID.newBuilder()
+                                .accountNum(DEFAULT_LEDGER_CONFIG.fundingAccount())
+                                .build(),
+                        TestHelpers.NON_SYSTEM_ACCOUNT_ID,
+                        123L);
     }
 
     @Test
-    void chargeStorageRentNotImplemented() {
-        assertThrows(AssertionError.class, () -> subject.chargeStorageRent(1L, 2L, true));
+    void chargeStorageRentIsNoop() {
+        assertDoesNotThrow(() -> subject.chargeStorageRent(1L, 2L, true));
     }
 
     @Test
-    void updateStorageMetadataNotImplemented() {
-        assertThrows(AssertionError.class, () -> subject.updateStorageMetadata(1L, Bytes.EMPTY, 2));
+    void updateStorageMetadataUsesApi() {
+        given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
+
+        subject.updateStorageMetadata(NON_SYSTEM_ACCOUNT_ID.accountNumOrThrow(), Bytes.EMPTY, 2);
+
+        verify(tokenServiceApi).updateStorageMetadata(NON_SYSTEM_ACCOUNT_ID, Bytes.EMPTY, 2);
     }
 
     @Test
-    void createContractNotImplemented() {
-        assertThrows(AssertionError.class, () -> subject.createContract(1L, 2L, 3L, Bytes.EMPTY));
+    void createContractWithParentDispatchesAsExpectedThenMarksCreated() {
+        final var parent = Account.newBuilder()
+                .key(Key.newBuilder().contractID(ContractID.newBuilder().contractNum(123L)))
+                .autoRenewAccountId(NON_SYSTEM_ACCOUNT_ID)
+                .stakedNodeId(3)
+                .declineReward(true)
+                .autoRenewSeconds(666L)
+                .maxAutoAssociations(321)
+                .memo("Something")
+                .build();
+        final var pendingId = ContractID.newBuilder().contractNum(666L).build();
+        final var synthContractCreation = synthContractCreationFromParent(pendingId, parent);
+        final var synthAccountCreation =
+                synthAccountCreationFromHapi(pendingId, CANONICAL_ALIAS, synthContractCreation);
+        final var synthTxn = TransactionBody.newBuilder()
+                .cryptoCreateAccount(synthAccountCreation)
+                .build();
+        given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
+        given(context.dispatchChildTransaction(synthTxn, CryptoCreateRecordBuilder.class))
+                .willReturn(cryptoCreateRecordBuilder);
+        given(cryptoCreateRecordBuilder.status()).willReturn(OK);
+        given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+        given(accountStore.getAccountById(NON_SYSTEM_ACCOUNT_ID)).willReturn(parent);
+
+        subject.createContract(666L, NON_SYSTEM_ACCOUNT_ID.accountNumOrThrow(), CANONICAL_ALIAS);
+
+        verify(context).dispatchChildTransaction(synthTxn, CryptoCreateRecordBuilder.class);
+        verify(tokenServiceApi)
+                .markAsContract(AccountID.newBuilder().accountNum(666L).build());
     }
 
     @Test
-    void deleteAliasedContractNotImplemented() {
-        assertThrows(AssertionError.class, () -> subject.deleteAliasedContract(Bytes.EMPTY));
+    void createContractWithBodyDispatchesThenMarksAsContract() {
+        final var someBody = ContractCreateTransactionBody.newBuilder()
+                .adminKey(AN_ED25519_KEY)
+                .autoRenewAccountId(NON_SYSTEM_ACCOUNT_ID)
+                .autoRenewPeriod(SOME_DURATION)
+                .build();
+        final var pendingId = ContractID.newBuilder().contractNum(666L).build();
+        final var synthTxn = TransactionBody.newBuilder()
+                .cryptoCreateAccount(synthAccountCreationFromHapi(pendingId, CANONICAL_ALIAS, someBody))
+                .build();
+        given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
+        given(context.dispatchChildTransaction(synthTxn, CryptoCreateRecordBuilder.class))
+                .willReturn(cryptoCreateRecordBuilder);
+        given(cryptoCreateRecordBuilder.status()).willReturn(OK);
+
+        subject.createContract(666L, someBody, CANONICAL_ALIAS);
+
+        verify(context).dispatchChildTransaction(synthTxn, CryptoCreateRecordBuilder.class);
+        verify(tokenServiceApi)
+                .markAsContract(AccountID.newBuilder().accountNum(666L).build());
     }
 
     @Test
-    void deleteUnaliasedContractNotImplemented() {
-        assertThrows(AssertionError.class, () -> subject.deleteUnaliasedContract(123L));
+    void createContractWithFailedDispatchNotImplemented() {
+        final var someBody = ContractCreateTransactionBody.newBuilder()
+                .adminKey(AN_ED25519_KEY)
+                .autoRenewAccountId(NON_SYSTEM_ACCOUNT_ID)
+                .autoRenewPeriod(SOME_DURATION)
+                .build();
+        final var pendingId = ContractID.newBuilder().contractNum(666L).build();
+        final var synthTxn = TransactionBody.newBuilder()
+                .cryptoCreateAccount(synthAccountCreationFromHapi(pendingId, CANONICAL_ALIAS, someBody))
+                .build();
+        given(context.dispatchChildTransaction(synthTxn, CryptoCreateRecordBuilder.class))
+                .willReturn(cryptoCreateRecordBuilder);
+        given(cryptoCreateRecordBuilder.status()).willReturn(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
+
+        assertThrows(AssertionError.class, () -> subject.createContract(666L, someBody, CANONICAL_ALIAS));
     }
 
     @Test
-    void getModifiedAccountNumbersNotImplemented() {
-        assertThrows(AssertionError.class, subject::getModifiedAccountNumbers);
+    void deleteUnaliasedContractUsesApi() {
+        given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
+        subject.deleteUnaliasedContract(CALLED_CONTRACT_ID.contractNumOrThrow());
+        verify(tokenServiceApi).deleteAndMaybeUnaliasContract(CALLED_CONTRACT_ID);
     }
 
     @Test
-    void createdContractIdsNotImplemented() {
-        assertThrows(AssertionError.class, subject::createdContractIds);
+    void deleteAliasedContractUsesApi() {
+        given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
+        subject.deleteAliasedContract(CANONICAL_ALIAS);
+        verify(tokenServiceApi)
+                .deleteAndMaybeUnaliasContract(
+                        ContractID.newBuilder().evmAddress(CANONICAL_ALIAS).build());
     }
 
     @Test
-    void updatedContractNoncesNotImplemented() {
-        assertThrows(AssertionError.class, subject::updatedContractNonces);
+    void getModifiedAccountNumbersIsNotActuallyNeeded() {
+        assertSame(Collections.emptyList(), subject.getModifiedAccountNumbers());
     }
 
     @Test
-    void getOriginalSlotsUsedNotImplemented() {
-        assertThrows(AssertionError.class, () -> subject.getOriginalSlotsUsed(1L));
+    void createdContractIdsUsesApi() {
+        given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
+        given(tokenServiceApi.modifiedAccountIds())
+                .willReturn(Set.of(B_NEW_ACCOUNT_ID, A_NEW_ACCOUNT_ID, NON_SYSTEM_ACCOUNT_ID));
+        final var expectedContractIds = List.of(
+                ContractID.newBuilder()
+                        .contractNum(A_NEW_ACCOUNT_ID.accountNumOrThrow())
+                        .build(),
+                ContractID.newBuilder()
+                        .contractNum(B_NEW_ACCOUNT_ID.accountNumOrThrow())
+                        .build(),
+                ContractID.newBuilder()
+                        .contractNum(NON_SYSTEM_ACCOUNT_ID.accountNumOrThrow())
+                        .build());
+        assertEquals(expectedContractIds, subject.createdContractIds());
+    }
+
+    @Test
+    void updatedContractNoncesUsesApi() {
+        given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
+        final var aNonceInfo = new ContractNonceInfo(
+                ContractID.newBuilder()
+                        .contractNum(A_NEW_ACCOUNT_ID.accountNumOrThrow())
+                        .build(),
+                1L);
+        final var bNonceInfo = new ContractNonceInfo(
+                ContractID.newBuilder()
+                        .contractNum(B_NEW_ACCOUNT_ID.accountNumOrThrow())
+                        .build(),
+                2L);
+        final var nNonceInfo = new ContractNonceInfo(
+                ContractID.newBuilder()
+                        .contractNum(NON_SYSTEM_ACCOUNT_ID.accountNumOrThrow())
+                        .build(),
+                3L);
+        given(tokenServiceApi.updatedContractNonces()).willReturn(List.of(bNonceInfo, nNonceInfo, aNonceInfo));
+        assertEquals(List.of(aNonceInfo, bNonceInfo, nNonceInfo), subject.updatedContractNonces());
+    }
+
+    @Test
+    void getOriginalSlotsUsedAlwaysReturnsZero() {
+        assertEquals(0, subject.getOriginalSlotsUsed(1L));
     }
 }

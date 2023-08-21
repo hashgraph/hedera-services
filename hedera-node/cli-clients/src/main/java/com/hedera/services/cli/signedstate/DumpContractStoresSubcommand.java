@@ -59,8 +59,13 @@ public class DumpContractStoresSubcommand {
     @NonNull
     final Path storePath;
 
+    @NonNull
     final EmitSummary emitSummary;
+
+    @NonNull
     final WithSlots withSlots;
+
+    @NonNull
     final Verbosity verbosity;
 
     DumpContractStoresSubcommand(
@@ -172,8 +177,8 @@ public class DumpContractStoresSubcommand {
             contractStorageVMap.extractVirtualMapData(
                     getStaticThreadManager(),
                     entry -> {
-                        final var contractKey = entry.getKey();
-                        final var iterableContractValue = entry.getValue();
+                        final var contractKey = entry.left();
+                        final var iterableContractValue = entry.right();
                         visitor.accept(contractKey, iterableContractValue);
                     },
                     THREAD_COUNT);

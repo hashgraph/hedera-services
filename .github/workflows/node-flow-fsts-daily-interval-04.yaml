@@ -62,9 +62,7 @@ jobs:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}
       hedera-tests-enabled: true
-      slack-results-channel: hedera-regression
-      slack-summary-channel: hedera-regression-summary
-      use-branch-for-slack-channel: false
+      use-branch-for-slack-channel: true
       panel-config: "configs/services/suites/daily/GCP-Daily-Services-Comp-3NReconnect-15N-4C.json"
     secrets:
       access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
@@ -83,9 +81,7 @@ jobs:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}
       hedera-tests-enabled: true
-      slack-results-channel: hedera-regression
-      slack-summary-channel: hedera-regression-summary
-      use-branch-for-slack-channel: false
+      use-branch-for-slack-channel: true
       panel-config: "configs/services/suites/daily/GCP-Daily-Services-Global-3NReconnect-15N-4C.json"
     secrets:
       access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
@@ -106,9 +102,7 @@ jobs:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}
       hedera-tests-enabled: true
-      slack-results-channel: hedera-regression
-      slack-summary-channel: hedera-regression-summary
-      use-branch-for-slack-channel: false
+      use-branch-for-slack-channel: true
       panel-config: "configs/services/suites/daily/GCP-Daily-Services-Comp-Restart-Performance-Hotspot-6N-6C.json"
     secrets:
       access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
@@ -127,9 +121,7 @@ jobs:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}
       hedera-tests-enabled: true
-      slack-results-channel: hedera-regression
-      slack-summary-channel: hedera-regression-summary
-      use-branch-for-slack-channel: false
+      use-branch-for-slack-channel: true
       panel-config: "configs/services/suites/daily/GCP-Daily-Services-Comp-Restart-Performance-Random-7N-7C.json"
     secrets:
       access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
@@ -147,9 +139,7 @@ jobs:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}
       hedera-tests-enabled: true
-      slack-results-channel: hedera-regression
-      slack-summary-channel: hedera-regression-summary
-      use-branch-for-slack-channel: false
+      use-branch-for-slack-channel: true
       panel-config: "configs/services/suites/weekly/GCP-Weekly-Services-Query-Restart-Performance-7N-7C.json"
     secrets:
       access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}

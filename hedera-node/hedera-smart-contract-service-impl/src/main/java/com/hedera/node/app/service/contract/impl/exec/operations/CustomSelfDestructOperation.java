@@ -43,7 +43,7 @@ import org.hyperledger.besu.evm.operation.SelfDestructOperation;
 /**
  * Hedera {@link SelfDestructOperation} that checks whether there is a Hedera-specific reason to halt
  * execution before proceeding with a self-destruct that uses
- * {@link ProxyWorldUpdater#tryTransferFromContract(Address, Address, long, boolean)}.
+ * {@link ProxyWorldUpdater#tryTransfer(Address, Address, long, boolean)}.
  * instead of direct {@link org.hyperledger.besu.evm.account.MutableAccount#setBalance(Wei)} calls to
  * ensure Hedera signing requirements are enforced.
  */
@@ -94,7 +94,7 @@ public class CustomSelfDestructOperation extends AbstractOperation {
             // This will enforce the Hedera signing requirements (while treating any Key{contractID=tbdAddress}
             // or Key{delegatable_contract_id=tbdAddress} keys on the beneficiary account as active); it could
             // also fail if the beneficiary is a token address
-            final var maybeReasonToHalt = proxyWorldUpdater.tryTransferFromContract(
+            final var maybeReasonToHalt = proxyWorldUpdater.tryTransfer(
                     tbdAddress, beneficiaryAddress, inheritance.toLong(), isDelegateCall(frame));
             if (maybeReasonToHalt.isPresent()) {
                 return new OperationResult(cost, maybeReasonToHalt.get());

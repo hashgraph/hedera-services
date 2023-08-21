@@ -77,7 +77,7 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
         given(component.contextTransactionProcessor()).willReturn(processor);
         given(handleContext.recordBuilder(ContractCreateRecordBuilder.class)).willReturn(recordBuilder);
         given(baseProxyWorldUpdater.getCreatedContractIds()).willReturn(List.of(CALLED_CONTRACT_ID));
-        final var expectedResult = SUCCESS_RESULT.asProtoResultForBase(baseProxyWorldUpdater);
+        final var expectedResult = SUCCESS_RESULT.asProtoResultOf(baseProxyWorldUpdater);
         final var expectedOutcome = new CallOutcome(expectedResult, SUCCESS_RESULT.finalStatus());
         given(processor.call()).willReturn(expectedOutcome);
 

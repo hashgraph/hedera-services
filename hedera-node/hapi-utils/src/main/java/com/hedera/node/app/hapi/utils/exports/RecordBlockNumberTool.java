@@ -43,9 +43,7 @@ import org.apache.logging.log4j.core.LoggerContext;
 public class RecordBlockNumberTool {
     private static final String LOG_CONFIG_PROPERTY = "logConfig";
     private static final String FILE_NAME_PROPERTY = "fileName";
-    private static final String DEST_DIR_PROPERTY = "destDir";
     private static final String DIR_PROPERTY = "dir";
-    private static final String HAPI_PROTOBUF_VERSION = "hapiProtoVersion";
 
     private static final Logger LOGGER = LogManager.getLogger(RecordBlockNumberTool.class);
     private static final Marker MARKER = MarkerManager.getMarker("BLOCK_NUMBER");
@@ -96,12 +94,19 @@ public class RecordBlockNumberTool {
         prevBlockNumber = currentBlockNumber;
     }
 
+    // Suppressing the warning that Optional.isEmpty is not called before using the Optional.
+    // In reality, it is called, Sonar just can't detect it.
+    // Ignoring also that we use generic exception instead of custom
+    @SuppressWarnings({"java:S3655", "java:S112"})
     private static void readRecordFile(final String recordFile) {
-        // extract latest app version from system property if available
-        final String appVersionString = System.getProperty(HAPI_PROTOBUF_VERSION);
         try {
             // parse record file
             final Pair<Integer, Optional<RecordStreamFile>> recordResult = readUncompressedRecordStreamFile(recordFile);
+
+            if (recordResult.getValue().isEmpty()) {
+                throw new RuntimeException("Record result is empty");
+            }
+
             final long blockNumber = recordResult.getValue().get().getBlockNumber();
 
             trackBlockNumber(blockNumber);
@@ -111,6 +116,8 @@ public class RecordBlockNumberTool {
         }
     }
 
+    // Suppressing the warning that we use generic exception instead of custom
+    @SuppressWarnings("java:S112")
     public static void main(final String[] args) {
         // register constructables and set settings
         try {
@@ -150,6 +157,8 @@ public class RecordBlockNumberTool {
      *
      * @param sourceDir the directory where the files to read are located
      */
+    // Suppressing the warning that we are declaring generic exception that is thrown
+    @SuppressWarnings("java:S1130")
     public static void readAllFiles(final String sourceDir) throws IOException {
         final File folder = new File(sourceDir);
         final File[] streamFiles = folder.listFiles(f -> f.getAbsolutePath().endsWith(RECORD_STREAM_EXTENSION));

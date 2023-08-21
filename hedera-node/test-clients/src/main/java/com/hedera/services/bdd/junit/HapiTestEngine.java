@@ -20,6 +20,9 @@ import static java.util.Objects.requireNonNull;
 import static org.junit.platform.commons.util.ReflectionUtils.HierarchyTraversalMode.TOP_DOWN;
 
 import com.hedera.node.app.Hedera;
+import com.hedera.node.config.data.AccountsConfig;
+import com.hedera.node.config.data.StakingConfig;
+import com.hedera.node.config.data.TokensConfig;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -300,6 +303,9 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                 System.setProperty("grpc.workflowsTlsPort", "0");
                 System.setProperty("hedera.workflows.enabled", "CryptoCreate");
                 System.setProperty("platformStatus.observingStatusDelay", "0");
+                // This setting is needed for a single node network to run correctly.
+                // This is by default set to 0 in platform code, which will not work for single node network.
+                System.setProperty("event.creation.maxCreationRate", "20");
 
                 final var factory = ServiceLoader.load(ConfigurationBuilderFactory.class);
                 final var configBuilder = factory.findFirst().orElseThrow().create();
@@ -319,7 +325,6 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                         .withConfigDataType(ChatterConfig.class)
                         .withConfigDataType(AddressBookConfig.class)
                         .withConfigDataType(VirtualMapConfig.class)
-                        .withConfigDataType(ConsensusConfig.class)
                         .withConfigDataType(ThreadConfig.class)
                         .withConfigDataType(DispatchConfiguration.class)
                         .withConfigDataType(MetricsConfig.class)
@@ -329,6 +334,11 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                         .withConfigDataType(SyncConfig.class)
                         .withConfigDataType(UptimeConfig.class)
                         .withConfigDataType(PlatformStatusConfig.class)
+                        // Configure all services configs
+                        .withConfigDataType(ConsensusConfig.class)
+                        .withConfigDataType(AccountsConfig.class)
+                        .withConfigDataType(TokensConfig.class)
+                        .withConfigDataType(StakingConfig.class)
                         // 2. Configure Settings
                         .withSource(new LegacyFileConfigSource(tmpDir.resolve("settings.txt")))
                         .withSource(SystemPropertiesConfigSource.getInstance())
@@ -397,6 +407,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                         new BasicSoftwareVersion(Long.MAX_VALUE), // App Version :TODO USE REAL VERSION NUMBER
                         initialSignedState,
                         new EmergencyRecoveryManager(
+                                platformContext.getConfiguration().getConfigData(StateConfig.class),
                                 (s, exitCode) -> {
                                     System.out.println("Asked to shutdownGrpcServer because of " + s);
                                     System.exit(exitCode.getExitCode());
@@ -461,8 +472,8 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
             // Also, If we encounter a scenario where tests in the same suite are interfering with each other we
             // can move this logic inside the after method in the MethodTestDescriptor class.
             // This way we will clean up the data after each test.
-            FileUtils.deleteDirectory(context.getSavedStateDirectory());
-            FileUtils.deleteDirectory(context.getEventsLogDir());
+            if (context.getSavedStateDirectory() != null) FileUtils.deleteDirectory(context.getSavedStateDirectory());
+            if (context.getEventsLogDir() != null) FileUtils.deleteDirectory(context.getEventsLogDir());
         }
 
         private boolean allTestsSkipped() {
@@ -498,7 +509,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
         public SkipResult shouldBeSkipped(HapiTestEngineExecutionContext context) {
             final var annotation = AnnotationSupport.findAnnotation(testMethod, Disabled.class);
             if (!AnnotationSupport.isAnnotated(testMethod, HapiTest.class)) {
-                return SkipResult.skip("No @HapiTest annotation");
+                return SkipResult.skip(testMethod.getName() + " No @HapiTest annotation");
             } else if (annotation.isPresent()) {
                 final var msg = annotation.get().value();
                 return SkipResult.skip(msg == null || msg.isBlank() ? "Disabled" : msg);

@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl.test.handlers.staking;
 
 import static com.hedera.node.app.service.token.impl.test.WritableStakingInfoStoreImplTest.NODE_ID_1;
 
+import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
@@ -36,11 +37,11 @@ class StakeInfoHelperTest {
 
     @BeforeEach
     void setUp() {
-        final var state = MapWritableKVState.<Long, StakingNodeInfo>builder(TokenServiceImpl.STAKING_INFO_KEY)
+        final var state = MapWritableKVState.<EntityNumber, StakingNodeInfo>builder(TokenServiceImpl.STAKING_INFO_KEY)
                 .value(
                         NODE_ID_1,
                         StakingNodeInfo.newBuilder()
-                                .nodeNumber(NODE_ID_1)
+                                .nodeNumber(NODE_ID_1.number())
                                 .stake(25)
                                 .stakeRewardStart(15)
                                 .unclaimedStakeRewardStart(5)
@@ -57,9 +58,9 @@ class StakeInfoHelperTest {
     void increaseUnclaimedStartToLargerThanCurrentStakeReward(int amount, int expectedResult) {
         assertUnclaimedStakeRewardStartPrecondition();
 
-        subject.increaseUnclaimedStakeRewards(NODE_ID_1, amount, store);
+        subject.increaseUnclaimedStakeRewards(NODE_ID_1.number(), amount, store);
 
-        final var savedStakeInfo = store.get(NODE_ID_1);
+        final var savedStakeInfo = store.get(NODE_ID_1.number());
         Assertions.assertThat(savedStakeInfo).isNotNull();
         // Case 1: The passed in amount, 20, is greater than the stake reward start, 15, so the unclaimed stake reward
         // value should be the current stake reward start value
@@ -69,7 +70,7 @@ class StakeInfoHelperTest {
     }
 
     private void assertUnclaimedStakeRewardStartPrecondition() {
-        final var existingStakeInfo = store.get(NODE_ID_1);
+        final var existingStakeInfo = store.get(NODE_ID_1.number());
         Assertions.assertThat(existingStakeInfo).isNotNull();
         Assertions.assertThat(existingStakeInfo.unclaimedStakeRewardStart()).isEqualTo(5);
     }
