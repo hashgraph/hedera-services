@@ -31,9 +31,13 @@ import com.hedera.node.app.spi.fixtures.util.LoggingSubject;
 import com.hedera.node.app.spi.fixtures.util.LoggingTarget;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.List;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 @ExtendWith(LogCaptureExtension.class)
 class ThrottleManagerTest {
@@ -92,10 +96,11 @@ class ThrottleManagerTest {
         assertEquals(ThrottleDefinitions.DEFAULT.throttleBuckets(), subject.throttleBuckets());
     }
 
-    @Test
-    void passingNullOnUpdate() {
+    @ParameterizedTest
+    @MethodSource("invalidArgumentsOnUpdateSource")
+    void invalidArgumentsOnUpdate(Bytes bytes) {
         // when
-        subject.update(null);
+        subject.update(bytes);
 
         // expect
         assertThat(logCaptor.warnLogs(), hasItems(startsWith("Unable to parse the throttle file")));
@@ -105,16 +110,9 @@ class ThrottleManagerTest {
         assertEquals(ThrottleDefinitions.DEFAULT.throttleBuckets(), subject.throttleBuckets());
     }
 
-    @Test
-    void passingInvalidBytesOnUpdate() {
-        // when
-        subject.update(Bytes.wrap(new byte[] {0x01}));
-
-        // expect
-        assertThat(logCaptor.warnLogs(), hasItems(startsWith("Unable to parse the throttle file")));
-
-        // default values are applied
-        assertEquals(ThrottleDefinitions.DEFAULT, subject.throttleDefinitions());
-        assertEquals(ThrottleDefinitions.DEFAULT.throttleBuckets(), subject.throttleBuckets());
+    private static Stream<Arguments> invalidArgumentsOnUpdateSource() {
+        return Stream.of(
+                null, Arguments.of(Bytes.wrap(new byte[] {0x01})) // invalid bytes
+                );
     }
 }
