@@ -24,6 +24,8 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SystemExitCode;
 import com.swirlds.common.system.state.notifications.IssNotification;
+import com.swirlds.common.system.status.StatusActionSubmitter;
+import com.swirlds.common.system.status.actions.CatastrophicFailureAction;
 import com.swirlds.common.utility.throttle.RateLimiter;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
 import com.swirlds.platform.components.state.output.IssConsumer;
@@ -54,11 +56,17 @@ public class IssHandler {
     private final NodeId selfId;
 
     /**
+     * Allows for submitting {@link com.swirlds.common.system.status.actions.PlatformStatusAction PlatformStatusActions}
+     */
+    private final StatusActionSubmitter statusActionSubmitter;
+
+    /**
      * Create an object responsible for handling ISS events.
      *
      * @param dispatchBuilder       builds dispatchers
      * @param stateConfig           settings for the state
      * @param selfId                the self ID of this node
+     * @param statusActionSubmitter the object to use to submit status actions
      * @param haltRequestedConsumer consumer to invoke when a system halt is desired
      * @param fatalErrorConsumer    consumer to invoke if a fatal error occurs
      * @param issConsumer           consumer to invoke if an ISS is detected
@@ -68,6 +76,7 @@ public class IssHandler {
             @NonNull final DispatchBuilder dispatchBuilder,
             @NonNull final StateConfig stateConfig,
             @NonNull final NodeId selfId,
+            @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final HaltRequestedConsumer haltRequestedConsumer,
             @NonNull final FatalErrorConsumer fatalErrorConsumer,
             @NonNull final IssConsumer issConsumer) {
@@ -83,6 +92,8 @@ public class IssHandler {
         this.issDumpRateLimiter = new RateLimiter(time, Duration.ofSeconds(stateConfig.secondsBetweenISSDumps()));
 
         this.selfId = Objects.requireNonNull(selfId, "selfId must not be null");
+
+        this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
     }
 
     /**
@@ -143,6 +154,8 @@ public class IssHandler {
             // don't take any action once halted
             return;
         }
+
+        statusActionSubmitter.submitStatusAction(new CatastrophicFailureAction());
 
         issConsumer.iss(round, IssNotification.IssType.SELF_ISS, selfId);
 
