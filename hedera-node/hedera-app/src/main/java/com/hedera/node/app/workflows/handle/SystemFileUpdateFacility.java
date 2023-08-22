@@ -19,6 +19,7 @@ package com.hedera.node.app.workflows.handle;
 import static com.hedera.node.app.service.file.impl.FileServiceImpl.BLOBS_KEY;
 import static java.util.Objects.requireNonNull;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -116,7 +117,8 @@ public class SystemFileUpdateFacility {
     }
 
     @NonNull
-    public static Bytes getFileContent(@NonNull final HederaState state, @NonNull final FileID fileID) {
+    @VisibleForTesting
+    static Bytes getFileContent(@NonNull final HederaState state, @NonNull final FileID fileID) {
         final var states = state.createReadableStates(FileService.NAME);
         final var filesMap = states.<FileID, File>get(BLOBS_KEY);
         final var file = filesMap.get(fileID);
