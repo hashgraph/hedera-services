@@ -14,7 +14,9 @@
         "target": {
           "limit": 100,
           "matchAny": false,
-          "tags": [],
+          "tags": [
+            "Platform"
+          ],
           "type": "dashboard"
         },
         "type": "dashboard"
