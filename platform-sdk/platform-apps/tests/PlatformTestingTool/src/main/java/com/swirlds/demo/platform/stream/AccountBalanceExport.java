@@ -22,7 +22,6 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.utility.StackTrace;
 import com.swirlds.demo.merkle.map.MapValueData;
 import com.swirlds.demo.platform.PlatformTestingToolState;
 import com.swirlds.merkle.map.MerkleMap;
@@ -242,10 +241,9 @@ public class AccountBalanceExport {
                 return newFileName;
             }
         } catch (IOException e) {
-            logger.error(
-                    "generateSigFile :: Fail to generate signature file for {}. Exception: {}",
-                    fileName,
-                    StackTrace.getStackTrace(e).toString());
+            final String message =
+                    "generateSigFile :: Fail to generate signature file for %s. Exception:".formatted(fileName);
+            logger.error(message, e);
             return null;
         }
     }
