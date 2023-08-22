@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.base.utility;
+package com.swirlds.common.utility;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.PrintWriter;

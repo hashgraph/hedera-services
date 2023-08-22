@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.base.utility;
+package com.swirlds.common.utility;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -29,7 +29,7 @@ class ExceptionUtilsTest {
 
         assertTrue(actualStackTrace.contains("java.lang.Exception: Sample exception"));
         assertTrue(actualStackTrace.contains(
-                "at com.swirlds.base.utility.ExceptionUtilsTest.getStackTrace(ExceptionUtilsTest.java"));
+                "at com.swirlds.common.utility.ExceptionUtilsTest.getStackTrace(ExceptionUtilsTest.java"));
     }
 
     @Test

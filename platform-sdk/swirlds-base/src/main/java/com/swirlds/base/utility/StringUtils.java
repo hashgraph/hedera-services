@@ -36,14 +36,8 @@ public class StringUtils {
      * @param cs the CharSequence to check, may be null
      * @return {@code true} if the CharSequence is empty or null
      */
-    public static boolean isBlank(@Nullable final CharSequence cs) {
-        final int strLen = cs == null ? 0 : cs.length();
-
-        if (strLen == 0) {
-            return true;
-        }
-
-        return cs.chars().allMatch(Character::isWhitespace);
+    public static boolean isBlank(@Nullable final String cs) {
+        return cs == null || cs.isBlank();
     }
 
     /**
@@ -52,24 +46,7 @@ public class StringUtils {
      * @param cs the CharSequence to check, may be null
      * @return {@code true} if the CharSequence is not empty and not null
      */
-    public static boolean isNotBlank(@Nullable final CharSequence cs) {
+    public static boolean isNotBlank(@Nullable final String cs) {
         return !isBlank(cs);
-    }
-
-    /**
-     * Aligns the given string to the left by padding it with the given character.
-     *
-     * @param str string to pad
-     * @param size size of the resulting string
-     * @param padChar character to pad with
-     *
-     * @return the padded string
-     */
-    public static String leftPad(final String str, final int size, final char padChar) {
-        if (str == null || size <= str.length()) {
-            return str;
-        }
-
-        return String.valueOf(padChar).repeat(size - str.length()) + str;
     }
 }

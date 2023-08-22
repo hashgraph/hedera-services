@@ -176,7 +176,6 @@ module com.swirlds.common {
     /* Utilities */
     requires io.github.classgraph;
     requires org.apache.commons.lang3;
-    requires org.apache.commons.codec;
 
     /* Jackson JSON */
     requires com.fasterxml.jackson.core;

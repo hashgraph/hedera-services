@@ -22,7 +22,7 @@ import static com.swirlds.common.units.UnitConstants.MEBIBYTES_TO_BYTES;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.JASPER_DB;
 
-import com.swirlds.base.utility.StringUtils;
+import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.jasperdb.KeyRange;
 import com.swirlds.jasperdb.collections.IndexedObject;
 import com.swirlds.jasperdb.collections.LongList;
@@ -171,7 +171,7 @@ public final class DataFileCommon {
             final String filePrefix, final Path dataFileDir, final int index, final Instant creationInstant) {
         return dataFileDir.resolve(filePrefix + "_"
                 + DATE_FORMAT.format(creationInstant) + "_"
-                + StringUtils.leftPad(Integer.toString(index), PRINTED_INDEX_FIELD_WIDTH, '_') + FILE_EXTENSION);
+                + CommonUtils.leftPad(Integer.toString(index), PRINTED_INDEX_FIELD_WIDTH, '_') + FILE_EXTENSION);
     }
 
     /**

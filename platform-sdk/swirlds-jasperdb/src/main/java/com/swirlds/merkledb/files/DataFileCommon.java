@@ -22,7 +22,7 @@ import static com.swirlds.common.units.UnitConstants.MEBIBYTES_TO_BYTES;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.MERKLE_DB;
 
-import com.swirlds.base.utility.StringUtils;
+import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.merkledb.KeyRange;
 import com.swirlds.merkledb.collections.IndexedObject;
 import com.swirlds.merkledb.collections.LongList;
@@ -153,7 +153,7 @@ public final class DataFileCommon {
                 + "_"
                 + DATE_FORMAT.format(creationInstant)
                 + "_"
-                + StringUtils.leftPad(Integer.toString(index), PRINTED_INDEX_FIELD_WIDTH, '_')
+                + CommonUtils.leftPad(Integer.toString(index), PRINTED_INDEX_FIELD_WIDTH, '_')
                 + FILE_EXTENSION);
     }
 

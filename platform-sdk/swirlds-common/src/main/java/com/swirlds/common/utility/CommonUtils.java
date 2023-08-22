@@ -42,8 +42,6 @@ import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
-import org.apache.commons.codec.DecoderException;
-import org.apache.commons.codec.binary.Hex;
 
 /**
  * Utility class for other operations
@@ -52,6 +50,11 @@ public class CommonUtils {
 
     /** the default charset used by swirlds */
     private static final Charset DEFAULT_CHARSET = StandardCharsets.UTF_8;
+
+    /** lower characters for hex conversion */
+    private static final char[] DIGITS_LOWER = {
+        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'
+    };
 
     /** used by beep() */
     private static Synthesizer synthesizer;
@@ -204,7 +207,17 @@ public class CommonUtils {
             return "null";
         }
         throwRangeInvalid("length", length, 0, bytes.length);
-        return new String(Hex.encodeHex(bytes, 0, length, true));
+
+        final char[] digits = DIGITS_LOWER;
+        final char[] out = new char[length << 1];
+
+        int j = 0;
+        for (int i = 0; i < length; i++) {
+            out[j++] = digits[(0xF0 & bytes[i]) >>> 4];
+            out[j++] = digits[0x0F & bytes[i]];
+        }
+
+        return new String(out);
     }
 
     /**
@@ -227,11 +240,31 @@ public class CommonUtils {
         if (string == null) {
             return null;
         }
-        try {
-            return Hex.decodeHex(string);
-        } catch (final DecoderException e) {
-            throw new IllegalArgumentException(e);
+
+        final int len = string.length();
+
+        if ((len & 0x01) != 0) {
+            throw new IllegalArgumentException("Odd number of characters.");
         }
+
+        final byte[] out = new byte[len >> 1];
+
+        int j = 0;
+        for (int i = 0; i < out.length; i++) {
+            int f = toDigit(string.charAt(j), j++) << 4;
+            f = f | toDigit(string.charAt(j), j++);
+            out[i] = (byte) (f & 0xFF);
+        }
+
+        return out;
+    }
+
+    private static int toDigit(final char ch, final int index) throws IllegalArgumentException {
+        final int digit = Character.digit(ch, 16);
+        if (digit == -1) {
+            throw new IllegalArgumentException("Illegal hexadecimal character " + ch + " at index " + index);
+        }
+        return digit;
     }
 
     /**
@@ -380,5 +413,36 @@ public class CommonUtils {
                 consumer.accept(t);
             }
         };
+    }
+
+    /**
+     * Returns a string representation of the given byte count in human readable format.
+     *
+     * @param bytes number of bytes
+     * @return human-readable string representation of the given byte count
+     */
+    public static String byteCountToDisplaySize(final long bytes) {
+        if (bytes < 1024) {
+            return bytes + " B";
+        }
+        final int z = (63 - Long.numberOfLeadingZeros(bytes)) / 10;
+        return String.format("%.1f %sB", (double) bytes / (1L << (z * 10)), " KMGTPE".charAt(z));
+    }
+
+    /**
+     * Aligns the given string to the left by padding it with the given character.
+     *
+     * @param str string to pad
+     * @param size size of the resulting string
+     * @param padChar character to pad with
+     *
+     * @return the padded string
+     */
+    public static String leftPad(final String str, final int size, final char padChar) {
+        if (str == null || size <= str.length()) {
+            return str;
+        }
+
+        return String.valueOf(padChar).repeat(size - str.length()) + str;
     }
 }

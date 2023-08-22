@@ -20,31 +20,21 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import java.util.stream.Stream;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class StringUtilsTest {
 
-    @Test
-    void leftPad() {
-        final String start = "123";
-
-        final String padded = StringUtils.leftPad(start, 5, '_');
-
-        assertEquals("__123", padded);
-    }
-
     @ParameterizedTest
     @MethodSource("provideStringsForIsBlank")
-    void isBlank(final CharSequence input, final boolean expected) {
+    void isBlank(final String input, final boolean expected) {
         assertEquals(expected, StringUtils.isBlank(input));
     }
 
     @ParameterizedTest
     @MethodSource("provideStringsForIsBlank")
-    void isNotBlank(final CharSequence input, final boolean expected) {
+    void isNotBlank(final String input, final boolean expected) {
         assertNotEquals(expected, StringUtils.isNotBlank(input));
     }
 

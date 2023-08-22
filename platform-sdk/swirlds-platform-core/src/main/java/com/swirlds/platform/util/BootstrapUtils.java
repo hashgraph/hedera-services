@@ -26,7 +26,6 @@ import static com.swirlds.platform.state.GenesisStateBuilder.buildGenesisState;
 import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
 import static com.swirlds.platform.state.signed.SignedStateFileReader.getSavedStateFiles;
 
-import com.swirlds.base.utility.ExceptionUtils;
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.EventConfig;
@@ -59,6 +58,7 @@ import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.status.PlatformStatusConfig;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.common.utility.ExceptionUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.source.ConfigSource;

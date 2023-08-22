@@ -16,13 +16,13 @@
 
 package com.swirlds.demo.platform.stream;
 
-import com.swirlds.base.utility.ExceptionUtils;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.utility.ExceptionUtils;
 import com.swirlds.demo.merkle.map.MapValueData;
 import com.swirlds.demo.platform.PlatformTestingToolState;
 import com.swirlds.merkle.map.MerkleMap;
