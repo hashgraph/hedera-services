@@ -121,23 +121,7 @@ extraJavaModuleInfo {
         exportAllPackages()
         // no dependencies
     }
-    module("org.apache.commons:commons-lang3", "org.apache.commons.lang3") {
-        exportAllPackages()
-        requireAllDefinedDependencies()
-    }
-    module("commons-codec:commons-codec", "org.apache.commons.codec") {
-        exportAllPackages()
-        requireAllDefinedDependencies()
-    }
-    module("commons-io:commons-io", "org.apache.commons.io") {
-        exportAllPackages()
-        // no dependencies
-    }
     module("org.apache.commons:commons-math3", "org.apache.commons.math3") {
-        exportAllPackages()
-        // no dependencies
-    }
-    module("org.apache.commons:commons-collections4", "org.apache.commons.collections4") {
         exportAllPackages()
         // no dependencies
     }

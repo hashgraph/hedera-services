@@ -16,9 +16,8 @@
 
 package com.swirlds.common.utility;
 
-import com.swirlds.common.units.DataUnit;
-import com.swirlds.common.units.Unit;
-import com.swirlds.common.units.Unit.SimplifiedQuantity;
+import static com.swirlds.common.units.DataUnit.UNIT_BYTES;
+
 import java.awt.Dialog;
 import java.awt.GraphicsEnvironment;
 import java.awt.Window;
@@ -54,7 +53,7 @@ public class CommonUtils {
 
     /** lower characters for hex conversion */
     private static final char[] DIGITS_LOWER = {
-        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'
+            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'
     };
 
     /** used by beep() */
@@ -131,7 +130,7 @@ public class CommonUtils {
     public static void click() {
         try {
             if (data == null) {
-                data = new byte[] {0, 127};
+                data = new byte[]{0, 127};
                 format = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 44100.0f, 16, 1, 2, 44100.0f, false);
                 clip = AudioSystem.getClip();
                 clip.open(format, data, 0, data.length);
@@ -407,10 +406,8 @@ public class CommonUtils {
      * @return human-readable string representation of the given byte count
      */
     public static String byteCountToDisplaySize(final long bytes) {
-        final SimplifiedQuantity<DataUnit> simplifiedQuantity = DataUnit.UNIT_BYTES.simplify(bytes);
-        final double quantity = simplifiedQuantity.quantity();
-        final Unit<?> unit = simplifiedQuantity.unit();
-
-        return unit.buildFormatter(quantity).setDecimalPlaces(1).render();
+        return UNIT_BYTES.buildFormatter(bytes)
+                .setDecimalPlaces(1)
+                .render();
     }
 }
