@@ -54,6 +54,9 @@ final class HederaTest {
     // genesis: seqStart comes from bootstrap props
     // genesis: results of createSpecialGenesisChildren
     // genesis: ... dagger ...
+    // genesis: initializeFeeManager
+    // genesis: initializeExchangeRateManager
+    // genesis: initializeThrottleManager
     // genesis: version info is saved in state (and committed)
     // genesis: other stuff?....
     // genesis: updateStakeDetails....?

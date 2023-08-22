@@ -20,7 +20,6 @@ import static com.swirlds.logging.LogMarker.RECONNECT;
 import static com.swirlds.platform.state.SwirldStateManagerUtils.fastCopy;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.config.TransactionConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
@@ -30,7 +29,7 @@ import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.platform.components.transaction.system.ConsensusSystemTransactionManager;
 import com.swirlds.platform.components.transaction.system.PreconsensusSystemTransactionManager;
-import com.swirlds.platform.eventhandling.EventTransactionPool;
+import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
@@ -78,7 +77,7 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
     /**
      * Contains self transactions to be included in the next event.
      */
-    private final EventTransactionPool transactionPool;
+    private final TransactionPool transactionPool;
 
     /**
      * Handle transactions by applying them to a state
@@ -153,10 +152,7 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
         Objects.requireNonNull(state);
         this.softwareVersion = Objects.requireNonNull(softwareVersion);
 
-        this.transactionPool = new EventTransactionPool(
-                platformContext.getMetrics(),
-                platformContext.getConfiguration().getConfigData(TransactionConfig.class),
-                inFreeze);
+        this.transactionPool = new TransactionPool(platformContext, inFreeze);
         this.transactionHandler = new TransactionHandler(selfId, stats);
         this.uptimeTracker =
                 new UptimeTracker(platformContext, addressBook, statusActionSubmitter, selfId, Time.getCurrent());
@@ -353,7 +349,7 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
     /**
      * {@inheritDoc}
      */
-    public EventTransactionPool getTransactionPool() {
+    public TransactionPool getTransactionPool() {
         return transactionPool;
     }
 }

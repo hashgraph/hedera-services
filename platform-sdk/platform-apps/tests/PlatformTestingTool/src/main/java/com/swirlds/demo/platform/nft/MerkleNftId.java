@@ -24,7 +24,6 @@ import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import java.io.IOException;
 import java.util.Objects;
-import org.apache.commons.lang3.builder.EqualsBuilder;
 
 /**
  * A unique identifier for an {@link Nft}.
@@ -140,21 +139,15 @@ public class MerkleNftId extends PartialMerkleLeaf implements MerkleLeaf {
      * {@inheritDoc}
      */
     @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
+    public boolean equals(final Object other) {
+        if (this == other) {
             return true;
         }
-
-        if (!(o instanceof MerkleNftId)) {
+        if (other == null || getClass() != other.getClass()) {
             return false;
         }
-
-        final MerkleNftId tokenId = (MerkleNftId) o;
-        return new EqualsBuilder()
-                .append(shardNum, tokenId.shardNum)
-                .append(realmNum, tokenId.realmNum)
-                .append(tokenNum, tokenId.tokenNum)
-                .isEquals();
+        final MerkleNftId that = (MerkleNftId) other;
+        return shardNum == that.shardNum && realmNum == that.realmNum && tokenNum == that.tokenNum;
     }
 
     /**

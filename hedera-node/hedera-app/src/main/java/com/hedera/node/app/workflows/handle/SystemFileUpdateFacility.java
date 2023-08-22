@@ -19,12 +19,14 @@ package com.hedera.node.app.workflows.handle;
 import static com.hedera.node.app.service.file.impl.FileServiceImpl.BLOBS_KEY;
 import static java.util.Objects.requireNonNull;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.throttle.ThrottleManager;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -43,14 +45,17 @@ public class SystemFileUpdateFacility {
     private static final Logger logger = LogManager.getLogger(SystemFileUpdateFacility.class);
 
     private final ConfigProviderImpl configProvider;
+    private final ThrottleManager throttleManager;
 
     /**
      * Creates a new instance of this class.
      *
      * @param configProvider the configuration provider
      */
-    public SystemFileUpdateFacility(@NonNull final ConfigProviderImpl configProvider) {
+    public SystemFileUpdateFacility(
+            @NonNull final ConfigProviderImpl configProvider, @NonNull final ThrottleManager throttleManager) {
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
+        this.throttleManager = requireNonNull(throttleManager, " throttleManager must not be null");
     }
 
     /**
@@ -99,9 +104,9 @@ public class SystemFileUpdateFacility {
             } else if (fileNum == config.hapiPermissions()) {
                 logger.error("Update of HAPI permissions not implemented");
             } else if (fileNum == config.throttleDefinitions()) {
-                logger.error("Update of throttle definitions not implemented");
+                throttleManager.update(getFileContent(state, fileID));
             } else if (fileNum == config.upgradeFileNumber()) {
-
+                logger.error("Update of file number not implemented");
             }
         } catch (final RuntimeException e) {
             logger.warn(
@@ -112,7 +117,8 @@ public class SystemFileUpdateFacility {
     }
 
     @NonNull
-    private static Bytes getFileContent(@NonNull final HederaState state, @NonNull final FileID fileID) {
+    @VisibleForTesting
+    static Bytes getFileContent(@NonNull final HederaState state, @NonNull final FileID fileID) {
         final var states = state.createReadableStates(FileService.NAME);
         final var filesMap = states.<FileID, File>get(BLOBS_KEY);
         final var file = filesMap.get(fileID);

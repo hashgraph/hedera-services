@@ -25,6 +25,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AutoAccountCreator;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
@@ -84,7 +85,7 @@ class AutoAccountCreatorTest extends StepsBase {
         assertThat(writableAccountStore.get(asAccount(tokenReceiver))).isNull();
         assertThat(writableAliases.get(ecKeyAlias)).isNull();
 
-        subject.create(ecKeyAlias, false);
+        subject.create(ecKeyAlias.value(), false);
 
         assertThat(writableAccountStore.modifiedAliasesInState()).hasSize(1);
         assertThat(writableAccountStore.modifiedAccountsInState()).hasSize(1);
@@ -112,7 +113,7 @@ class AutoAccountCreatorTest extends StepsBase {
         assertThat(writableAccountStore.get(asAccount(tokenReceiver))).isNull();
         assertThat(writableAliases.get(edKeyAlias)).isNull();
 
-        subject.create(edKeyAlias, false);
+        subject.create(edKeyAlias.value(), false);
 
         assertThat(writableAccountStore.modifiedAliasesInState()).hasSize(1);
         assertThat(writableAccountStore.modifiedAccountsInState()).hasSize(1);
@@ -124,7 +125,7 @@ class AutoAccountCreatorTest extends StepsBase {
     @Test
     // TODO: In end to end tests need to validate other fields set on auto created accounts
     void happyPathWithHollowAccountAliasInHbarTransfersWorks() {
-        final var address = Bytes.wrap(evmAddress);
+        final var address = new ProtoBytes(Bytes.wrap(evmAddress));
         given(handleContext.dispatchRemovableChildTransaction(any(), eq(CryptoCreateRecordBuilder.class)))
                 .will((invocation) -> {
                     final var copy =
@@ -141,7 +142,7 @@ class AutoAccountCreatorTest extends StepsBase {
         assertThat(writableAccountStore.get(asAccount(tokenReceiver))).isNull();
         assertThat(writableAliases.get(address)).isNull();
 
-        subject.create(address, false);
+        subject.create(address.value(), false);
 
         assertThat(writableAccountStore.modifiedAliasesInState()).hasSize(1);
         assertThat(writableAccountStore.modifiedAccountsInState()).hasSize(1);

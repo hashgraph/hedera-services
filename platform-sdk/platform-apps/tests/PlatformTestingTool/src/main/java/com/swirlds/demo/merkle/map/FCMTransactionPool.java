@@ -40,7 +40,7 @@ import com.swirlds.demo.merkle.map.internal.ExpectedFCMFamily;
 import com.swirlds.demo.platform.HotspotConfiguration;
 import com.swirlds.demo.platform.PAYLOAD_TYPE;
 import com.swirlds.demo.platform.PayloadConfig;
-import com.swirlds.demo.platform.TransactionPool;
+import com.swirlds.demo.platform.PttTransactionPool;
 import com.swirlds.demo.platform.TransactionSubmitter;
 import com.swirlds.demo.platform.fs.stresstest.proto.Activity;
 import com.swirlds.demo.platform.fs.stresstest.proto.AssortedAccount;
@@ -116,7 +116,7 @@ public class FCMTransactionPool implements FastCopyable {
     private int sequentialTypeIndex = 0;
     private long[] sequentialTestCount = null;
     private boolean doneWithGeneration = false;
-    private TransactionPool parentPool;
+    private PttTransactionPool parentPool;
 
     // Family of expectedMaps
     private final ExpectedFCMFamily expectedFCMFamily;
@@ -190,7 +190,7 @@ public class FCMTransactionPool implements FastCopyable {
             long myID,
             FCMConfig config,
             TransactionSubmitter submitter,
-            TransactionPool parentPool,
+            PttTransactionPool parentPool,
             ExpectedFCMFamily expectedFCMFamily,
             PayloadConfig payloadConfig) {
 

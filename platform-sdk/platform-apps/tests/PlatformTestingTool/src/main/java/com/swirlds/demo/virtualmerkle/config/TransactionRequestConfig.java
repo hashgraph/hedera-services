@@ -19,7 +19,6 @@ package com.swirlds.demo.virtualmerkle.config;
 import com.swirlds.demo.platform.HotspotConfiguration;
 import com.swirlds.demo.platform.PAYLOAD_TYPE;
 import java.util.Objects;
-import org.apache.commons.lang3.builder.EqualsBuilder;
 
 /**
  * This class has the responsibility to hold the {@code type} of a transaction and how many times
@@ -104,21 +103,15 @@ public final class TransactionRequestConfig {
     }
 
     @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
+    public boolean equals(final Object other) {
+        if (this == other) {
             return true;
         }
-
-        if (o == null || getClass() != o.getClass()) {
+        if (other == null || getClass() != other.getClass()) {
             return false;
         }
-
-        final TransactionRequestConfig that = (TransactionRequestConfig) o;
-
-        return new EqualsBuilder()
-                .append(amount, that.amount)
-                .append(type, that.type)
-                .isEquals();
+        final TransactionRequestConfig that = (TransactionRequestConfig) other;
+        return amount == that.amount && type == that.type;
     }
 
     @Override

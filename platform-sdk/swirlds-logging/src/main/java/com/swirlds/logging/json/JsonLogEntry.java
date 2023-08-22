@@ -23,7 +23,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.logging.payloads.LogPayload;
 import java.time.Instant;
-import org.apache.commons.lang3.builder.EqualsBuilder;
+import java.util.Objects;
 
 /**
  * A single entry in a json log file.
@@ -211,26 +211,26 @@ public class JsonLogEntry {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (!(o instanceof JsonLogEntry)) {
-            return false;
-        }
-
-        if (this == o) {
+    public boolean equals(final Object other) {
+        if (this == other) {
             return true;
         }
+        if (other == null || getClass() != other.getClass()) {
+            return false;
+        }
+        final JsonLogEntry that = (JsonLogEntry) other;
+        return Objects.equals(timestamp, that.timestamp)
+                && Objects.equals(thread, that.thread)
+                && Objects.equals(level, that.level)
+                && Objects.equals(loggerName, that.loggerName)
+                && Objects.equals(marker, that.marker)
+                && Objects.equals(exceptionType, that.exceptionType)
+                && Objects.equals(exceptionMessage, that.exceptionMessage)
+                && Objects.equals(payload, that.payload);
+    }
 
-        JsonLogEntry other = (JsonLogEntry) o;
-
-        return new EqualsBuilder()
-                .append(getTimestamp(), other.getTimestamp())
-                .append(getThread(), other.getThread())
-                .append(getLevel(), other.getLevel())
-                .append(getLoggerName(), other.getLoggerName())
-                .append(getMarker(), other.getMarker())
-                .append(getRawPayload(), other.getRawPayload())
-                .append(getExceptionType(), other.getExceptionType())
-                .append(getExceptionMessage(), other.getExceptionMessage())
-                .isEquals();
+    @Override
+    public int hashCode() {
+        return Objects.hash(timestamp, thread, level, loggerName, marker, exceptionType, exceptionMessage, payload);
     }
 }

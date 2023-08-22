@@ -30,7 +30,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.apache.commons.lang3.builder.EqualsBuilder;
 
 /**
  * A class which generates a TSV text grid with the results given. A header and a footer are also included.
@@ -232,20 +231,15 @@ public class GridGraph<X extends Comparable<X>, Y extends Comparable<Y>>
      * {@inheritDoc}
      */
     @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
+    public boolean equals(final Object other) {
+        if (this == other) {
             return true;
         }
-
-        if (o == null || getClass() != o.getClass()) {
+        if (other == null || getClass() != other.getClass()) {
             return false;
         }
-
-        final GridGraph<?, ?> gridGraph = (GridGraph<?, ?>) o;
-
-        return new EqualsBuilder()
-                .append(getGraphName(), gridGraph.getGraphName())
-                .isEquals();
+        final GridGraph<?, ?> gridGraph = (GridGraph<?, ?>) other;
+        return Objects.equals(graphName, gridGraph.graphName);
     }
 
     /**

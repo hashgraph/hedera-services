@@ -185,7 +185,7 @@ public class PlatformTestingToolMain implements SwirldMain {
     private static final int CLIENT_AMOUNT = 2;
     AppClient[] appClient = new AppClient[CLIENT_AMOUNT];
     /** generate different payload bytes according to config */
-    private TransactionPool transactionPool;
+    private PttTransactionPool pttTransactionPool;
 
     private SubmitConfig submitConfig;
     private PayloadConfig payloadConfig;
@@ -316,7 +316,7 @@ public class PlatformTestingToolMain implements SwirldMain {
         // decide the freeze time
         Instant startTime = Instant.now().plus(1, ChronoUnit.MINUTES);
 
-        byte[] freezeBytes = transactionPool.createFreezeTranByte(startTime);
+        byte[] freezeBytes = pttTransactionPool.createFreezeTranByte(startTime);
 
         if (!submitter.sendFreezeTran(platform, freezeBytes)) {
             logger.warn(DEMO_INFO.getMarker(), new CreateTransactionFailedPayload(FREEZE_TRANSACTION_TYPE));
@@ -329,7 +329,7 @@ public class PlatformTestingToolMain implements SwirldMain {
     private synchronized boolean subRoutine() {
 
         if (submittedPayloadTriple == null) { // if no pending payload
-            submittedPayloadTriple = transactionPool.transaction();
+            submittedPayloadTriple = pttTransactionPool.transaction();
         }
 
         if (submittedPayloadTriple != null) {
@@ -372,7 +372,8 @@ public class PlatformTestingToolMain implements SwirldMain {
         } else {
             // empty means no more transaction
             logger.info(LOGM_DEMO_INFO, "Stop generating transactions ");
-            submitter.sendTransaction(platform, transactionPool.createControlTranBytes(ControlType.ENTER_VALIDATION));
+            submitter.sendTransaction(
+                    platform, pttTransactionPool.createControlTranBytes(ControlType.ENTER_VALIDATION));
             logger.info(LOGM_DEMO_INFO, "node {} sent ENTER_VALIDATION Message", platform.getSelfId());
             noMoreTransaction = true;
             return false;
@@ -638,7 +639,7 @@ public class PlatformTestingToolMain implements SwirldMain {
                     // The instantiation of the transaction pool needs to be done after the
                     // virtualMerkleConfig receives the first ids to be used by the entities
                     // through calls to the setFirstAccountId and setFirstSmartContractId methods.
-                    transactionPool = new TransactionPool(
+                    pttTransactionPool = new PttTransactionPool(
                             platform,
                             platform.getSelfId().id(),
                             payloadConfig,
@@ -1124,7 +1125,7 @@ public class PlatformTestingToolMain implements SwirldMain {
                         consensusTime);
 
                 submitter.sendTransaction(
-                        platform, transactionPool.createControlTranBytes(ControlType.EXIT_VALIDATION));
+                        platform, pttTransactionPool.createControlTranBytes(ControlType.EXIT_VALIDATION));
 
                 logger.info(
                         LOGM_DEMO_QUORUM, "Sent EXIT_VALIDATION transaction  [ consensusTime = {} ]", consensusTime);
@@ -1175,7 +1176,7 @@ public class PlatformTestingToolMain implements SwirldMain {
         logger.info(
                 LOGM_DEMO_QUORUM, "Achieved Quorum on ENTER_SYNC transaction [ consensusTime = {} ]", consensusTime);
 
-        submitter.sendTransaction(platform, transactionPool.createControlTranBytes(ControlType.EXIT_SYNC));
+        submitter.sendTransaction(platform, pttTransactionPool.createControlTranBytes(ControlType.EXIT_SYNC));
 
         logger.info(LOGM_DEMO_QUORUM, "Sent EXIT_SYNC transaction  [ consensusTime = {} ]", consensusTime);
     }
