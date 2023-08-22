@@ -25,7 +25,6 @@ import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.merkle.map.test.pta.MapKey;
 import java.io.IOException;
 import java.util.Objects;
-import org.apache.commons.lang3.builder.EqualsBuilder;
 
 /**
  * This simulates an NFT token that Hedera uses for its token services.
@@ -199,21 +198,20 @@ public class Nft extends PartialMerkleLeaf implements Keyed<NftId>, MerkleLeaf {
      * {@inheritDoc}
      */
     @Override
-    public boolean equals(final Object obj) {
-        if (obj == null || obj.getClass() != Nft.class) {
+    public boolean equals(final Object other) {
+        if (this == other) {
+            return true;
+        }
+        if (other == null || getClass() != other.getClass()) {
             return false;
         }
-
-        final Nft that = (Nft) obj;
-
-        return new EqualsBuilder()
-                .append(this.getShardNum(), that.getShardNum())
-                .append(this.getRealmNum(), that.getRealmNum())
-                .append(this.getTokenNum(), that.getTokenNum())
-                .append(this.getMemo(), that.getMemo())
-                .append(this.getSerialNumber(), that.getSerialNumber())
-                .append(this.getMapKey(), that.getMapKey())
-                .isEquals();
+        final Nft nft = (Nft) other;
+        return shardNum == nft.shardNum
+                && realmNum == nft.realmNum
+                && tokenNum == nft.tokenNum
+                && Objects.equals(mapKey, nft.mapKey)
+                && Objects.equals(serialNumber, nft.serialNumber)
+                && Objects.equals(memo, nft.memo);
     }
 
     /**
