@@ -20,11 +20,16 @@ import static com.swirlds.common.formatting.StringFormattingUtils.formattedList;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static com.swirlds.logging.LogMarker.STARTUP;
 import static com.swirlds.platform.state.signed.SavedStateMetadataField.CONSENSUS_TIMESTAMP;
+import static com.swirlds.platform.state.signed.SavedStateMetadataField.EPOCH_HASH;
+import static com.swirlds.platform.state.signed.SavedStateMetadataField.EPOCH_HASH_MNEMONIC;
+import static com.swirlds.platform.state.signed.SavedStateMetadataField.HASH;
+import static com.swirlds.platform.state.signed.SavedStateMetadataField.HASH_MNEMONIC;
 import static com.swirlds.platform.state.signed.SavedStateMetadataField.MINIMUM_GENERATION_NON_ANCIENT;
 import static com.swirlds.platform.state.signed.SavedStateMetadataField.NODE_ID;
 import static com.swirlds.platform.state.signed.SavedStateMetadataField.NUMBER_OF_CONSENSUS_EVENTS;
 import static com.swirlds.platform.state.signed.SavedStateMetadataField.ROUND;
 import static com.swirlds.platform.state.signed.SavedStateMetadataField.RUNNING_EVENT_HASH;
+import static com.swirlds.platform.state.signed.SavedStateMetadataField.RUNNING_EVENT_HASH_MNEMONIC;
 import static com.swirlds.platform.state.signed.SavedStateMetadataField.SIGNING_NODES;
 import static com.swirlds.platform.state.signed.SavedStateMetadataField.SIGNING_WEIGHT_SUM;
 import static com.swirlds.platform.state.signed.SavedStateMetadataField.SOFTWARE_VERSION;
@@ -62,6 +67,8 @@ import org.apache.logging.log4j.Logger;
  *
  * @param round                       the round of the signed state, corresponds to
  *                                    {@link SavedStateMetadataField#ROUND}
+ * @param hash                        the root hash of the state
+ * @param hashMnemonic                the root hash of the state in mnemonic form
  * @param numberOfConsensusEvents     the number of consensus events, starting from genesis, that have been handled to
  *                                    create this state, corresponds to
  *                                    {@link SavedStateMetadataField#NUMBER_OF_CONSENSUS_EVENTS}
@@ -70,6 +77,7 @@ import org.apache.logging.log4j.Logger;
  * @param runningEventHash            the running hash of all events, starting from genesis, that have been handled to
  *                                    create this state, corresponds to
  *                                    {@link SavedStateMetadataField#RUNNING_EVENT_HASH}
+ * @param runningEventHashMnemonic    the mnemonic for the {@link #runningEventHash}
  * @param minimumGenerationNonAncient the minimum generation of non-ancient events after this state reached consensus,
  *                                    corresponds to {@link SavedStateMetadataField#MINIMUM_GENERATION_NON_ANCIENT}
  * @param softwareVersion             the application software version that created this state, corresponds to
@@ -84,19 +92,26 @@ import org.apache.logging.log4j.Logger;
  *                                    {@link SavedStateMetadataField#SIGNING_WEIGHT_SUM}
  * @param totalWeight                 the total weight of all nodes in the network, corresponds to
  *                                    {@link SavedStateMetadataField#TOTAL_WEIGHT}
+ * @param epochHash                   the epoch hash of the state, used by emergency recovery protocols
+ * @param epochHashMnemonic           the mnemonic for the {@link #epochHash}
  */
 public record SavedStateMetadata(
         @Nullable Long round,
+        @Nullable Hash hash,
+        @Nullable String hashMnemonic,
         @Nullable Long numberOfConsensusEvents,
         @Nullable Instant consensusTimestamp,
         @Nullable Hash runningEventHash,
+        @Nullable String runningEventHashMnemonic,
         @Nullable Long minimumGenerationNonAncient,
         @Nullable String softwareVersion,
         @Nullable Instant wallClockTime,
         @Nullable NodeId nodeId,
         @Nullable List<NodeId> signingNodes,
         @Nullable Long signingWeightSum,
-        @Nullable Long totalWeight) {
+        @Nullable Long totalWeight,
+        @Nullable Hash epochHash,
+        @Nullable String epochHashMnemonic) {
 
     /**
      * The standard file name for the saved state metadata file.
@@ -120,16 +135,21 @@ public record SavedStateMetadata(
         final Map<SavedStateMetadataField, String> data = parseStringMap(metadataFile);
         return new SavedStateMetadata(
                 parseLong(data, ROUND),
+                parseHash(data, HASH),
+                parseString(data, HASH_MNEMONIC),
                 parseLong(data, NUMBER_OF_CONSENSUS_EVENTS),
                 parseInstant(data, CONSENSUS_TIMESTAMP),
                 parseHash(data, RUNNING_EVENT_HASH),
+                parseString(data, RUNNING_EVENT_HASH_MNEMONIC),
                 parseLong(data, MINIMUM_GENERATION_NON_ANCIENT),
                 parseString(data, SOFTWARE_VERSION),
                 parseInstant(data, WALL_CLOCK_TIME),
                 parseNodeId(data),
                 parseNodeIdList(data, SIGNING_NODES),
                 parseLong(data, SIGNING_WEIGHT_SUM),
-                parseLong(data, TOTAL_WEIGHT));
+                parseLong(data, TOTAL_WEIGHT),
+                parseHash(data, EPOCH_HASH),
+                parseString(data, EPOCH_HASH_MNEMONIC));
     }
 
     /**
@@ -143,6 +163,7 @@ public record SavedStateMetadata(
     public static SavedStateMetadata create(
             @NonNull final SignedState signedState, @Nullable final NodeId selfId, @NonNull final Instant now) {
         Objects.requireNonNull(signedState, "signedState must not be null");
+        Objects.requireNonNull(signedState.getState().getHash(), "state must be hashed");
         Objects.requireNonNull(now, "now must not be null");
 
         final PlatformState platformState = signedState.getState().getPlatformState();
@@ -151,18 +172,25 @@ public record SavedStateMetadata(
         final List<NodeId> signingNodes = signedState.getSigSet().getSigningNodes();
         Collections.sort(signingNodes);
 
+        final Hash epochHash = platformData.getEpochHash();
+
         return new SavedStateMetadata(
                 signedState.getRound(),
+                signedState.getState().getHash(),
+                signedState.getState().getHash().toMnemonic(),
                 platformData.getNumEventsCons(),
                 signedState.getConsensusTimestamp(),
                 platformData.getHashEventsCons(),
+                platformData.getHashEventsCons().toMnemonic(),
                 platformData.getMinimumGenerationNonAncient(),
                 convertToString(platformData.getCreationSoftwareVersion()),
                 now,
                 selfId,
                 signingNodes,
                 signedState.getSigningWeight(),
-                platformState.getAddressBook().getTotalWeight());
+                platformState.getAddressBook().getTotalWeight(),
+                epochHash,
+                epochHash == null ? "null" : epochHash.toMnemonic());
     }
 
     /**
@@ -367,15 +395,16 @@ public record SavedStateMetadata(
     }
 
     /**
-     * Attempt to parse a hash from the data map.
+     * Attempt to parse a hash from the data map. Supports null.
      *
      * @param data  the data map
      * @param field the field to parse
      * @return the parsed hash, or null if the field is not present or the value is not a valid hash
      */
-    @SuppressWarnings("SameParameterValue")
-    private static Hash parseHash(
-            final Map<SavedStateMetadataField, String> data, final SavedStateMetadataField field) {
+    @Nullable
+    private static Hash parseHash( // TODO null test
+            @NonNull final Map<SavedStateMetadataField, String> data,
+            @NonNull final SavedStateMetadataField field) {
 
         if (!data.containsKey(field)) {
             logMissingField(field);
@@ -383,6 +412,11 @@ public record SavedStateMetadata(
         }
 
         final String value = data.get(field);
+
+        if (value.toLowerCase().equals("null")) {
+            return null;
+        }
+
         try {
             return new Hash(unhex(value));
         } catch (final IllegalArgumentException e) {
@@ -392,13 +426,50 @@ public record SavedStateMetadata(
     }
 
     /**
+     * Convert an object to a string, replacing newlines with "//". If the object is null, return "null".
+     *
+     * @param value the object to convert
+     * @return the string representation of the object
+     */
+    @NonNull
+    private static String toStringWithoutNewlines(@Nullable final Object value) {
+        return value == null ? "null" : value.toString().replace("\n", "//");
+    }
+
+    /**
      * Put a value into the data map if it is not null.
      */
     private static void putIfNotNull(
-            final Map<SavedStateMetadataField, String> map, final SavedStateMetadataField field, final Object value) {
+            @NonNull final Map<SavedStateMetadataField, String> map,
+            @Nullable final SavedStateMetadataField field, final Object value) {
         if (value != null) {
-            map.put(field, value.toString().replace("\n", "//"));
+            map.put(field, toStringWithoutNewlines(value));
         }
+    }
+
+    /**
+     * Put a value into the data map, throwing if the value is null.
+     */
+    private static void putRequireNonNull(
+            @NonNull final Map<SavedStateMetadataField, String> map,
+            @Nullable final SavedStateMetadataField field, final Object value) {
+        Objects.requireNonNull(value);
+        map.put(field, toStringWithoutNewlines(value));
+    }
+
+    /**
+     * Put a value into the data map, using the string "null" to represent a null value. This should only be used for
+     * fields where the parser is capable of interpreting "null" as a value.
+     *
+     * @param map   the map to put the value into
+     * @param field the field to put the value into
+     * @param value the value to put into the map
+     */
+    private static void putPossiblyNullObject(
+            @NonNull final Map<SavedStateMetadataField, String> map,
+            @Nullable final SavedStateMetadataField field, final Object value) {
+
+        map.put(field, toStringWithoutNewlines(value));
     }
 
     /**
@@ -407,18 +478,23 @@ public record SavedStateMetadata(
     private Map<SavedStateMetadataField, String> buildStringMap() {
         final Map<SavedStateMetadataField, String> map = new EnumMap<>(SavedStateMetadataField.class);
 
-        putIfNotNull(map, ROUND, round);
-        putIfNotNull(map, NUMBER_OF_CONSENSUS_EVENTS, numberOfConsensusEvents);
-        putIfNotNull(map, CONSENSUS_TIMESTAMP, consensusTimestamp);
-        putIfNotNull(map, RUNNING_EVENT_HASH, runningEventHash);
-        putIfNotNull(map, MINIMUM_GENERATION_NON_ANCIENT, minimumGenerationNonAncient);
-        putIfNotNull(map, SOFTWARE_VERSION, softwareVersion);
-        putIfNotNull(map, WALL_CLOCK_TIME, wallClockTime);
-        putIfNotNull(map, NODE_ID, nodeId);
+        putRequireNonNull(map, ROUND, round);
+        putRequireNonNull(map, HASH, hash);
+        putRequireNonNull(map, HASH_MNEMONIC, hashMnemonic);
+        putRequireNonNull(map, NUMBER_OF_CONSENSUS_EVENTS, numberOfConsensusEvents);
+        putRequireNonNull(map, CONSENSUS_TIMESTAMP, consensusTimestamp);
+        putRequireNonNull(map, RUNNING_EVENT_HASH, runningEventHash);
+        putRequireNonNull(map, RUNNING_EVENT_HASH_MNEMONIC, runningEventHashMnemonic);
+        putRequireNonNull(map, MINIMUM_GENERATION_NON_ANCIENT, minimumGenerationNonAncient);
+        putRequireNonNull(map, SOFTWARE_VERSION, softwareVersion);
+        putRequireNonNull(map, WALL_CLOCK_TIME, wallClockTime);
+        putRequireNonNull(map, NODE_ID, nodeId);
         final String signingNodesString = signingNodes == null ? null : formattedList(signingNodes.iterator());
         putIfNotNull(map, SIGNING_NODES, signingNodesString);
-        putIfNotNull(map, SIGNING_WEIGHT_SUM, signingWeightSum);
-        putIfNotNull(map, TOTAL_WEIGHT, totalWeight);
+        putRequireNonNull(map, SIGNING_WEIGHT_SUM, signingWeightSum);
+        putRequireNonNull(map, TOTAL_WEIGHT, totalWeight);
+        putPossiblyNullObject(map, EPOCH_HASH, epochHash);
+        putRequireNonNull(map, EPOCH_HASH_MNEMONIC, epochHashMnemonic);
 
         return map;
     }

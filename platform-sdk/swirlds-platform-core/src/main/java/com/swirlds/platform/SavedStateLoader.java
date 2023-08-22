@@ -25,6 +25,7 @@ import static com.swirlds.platform.state.signed.SignedStateFileReader.readStateF
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SystemExitCode;
 import com.swirlds.common.system.address.AddressBook;
@@ -65,11 +66,13 @@ public class SavedStateLoader {
     private final EmergencyRecoveryManager emergencyRecoveryManager;
 
     private final PlatformContext platformContext;
+    private final RecycleBin recycleBin;
 
     /**
      * Creates a new instance.
      *
      * @param platformContext          the platform context
+     * @param recycleBin               the recycle bin
      * @param shutdownRequestedTrigger a trigger capable of dispatching shutdown requests
      * @param addressBook              the address book used to validate the signed state
      * @param savedStateFiles          an array of saved state files to consider for loading, ordered from newest to
@@ -80,20 +83,23 @@ public class SavedStateLoader {
      */
     public SavedStateLoader(
             @NonNull final PlatformContext platformContext,
+            @NonNull final RecycleBin recycleBin,
             @NonNull final ShutdownRequestedTrigger shutdownRequestedTrigger,
             @NonNull final AddressBook addressBook,
             @Nullable final SavedStateInfo[] savedStateFiles,
             @NonNull final SoftwareVersion currentSoftwareVersion,
             @NonNull final Supplier<EmergencySignedStateValidator> emergencyStateValidator,
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
-        Objects.requireNonNull(shutdownRequestedTrigger, "shutdownRequestedTrigger");
-        Objects.requireNonNull(addressBook, "addressBook");
-        Objects.requireNonNull(currentSoftwareVersion, "currentSoftwareVersion");
-        Objects.requireNonNull(emergencyStateValidator, "emergencyStateValidator");
-        Objects.requireNonNull(emergencyStateValidator.get(), "emergencyStateValidator value");
-        Objects.requireNonNull(emergencyRecoveryManager, "emergencyRecoveryManager");
+
+        Objects.requireNonNull(shutdownRequestedTrigger);
+        Objects.requireNonNull(addressBook);
+        Objects.requireNonNull(currentSoftwareVersion);
+        Objects.requireNonNull(emergencyStateValidator);
+        Objects.requireNonNull(emergencyStateValidator.get());
+        Objects.requireNonNull(emergencyRecoveryManager);
 
         this.platformContext = Objects.requireNonNull(platformContext);
+        this.recycleBin = Objects.requireNonNull(recycleBin);
         this.shutdownRequestedTrigger = shutdownRequestedTrigger;
         this.addressBook = addressBook;
         this.savedStateFiles = savedStateFiles;
@@ -154,6 +160,8 @@ public class SavedStateLoader {
         }
     }
 
+    // TODO this function needs a rewrite!
+
     /**
      * Returns the most recent, compatible emergency signed state to load into the system at startup, if found.
      *
@@ -166,7 +174,9 @@ public class SavedStateLoader {
             return createNullReservation();
         }
 
-        for (final SavedStateInfo savedStateFile : savedStateFiles) {
+        for (int index = 0; index < savedStateFiles.length; index++) {
+            final SavedStateInfo savedStateFile = savedStateFiles[index];
+
             final SignedStateWithHashes stateWithHashes = readAndRehashState(platformContext, savedStateFile);
             try (final ReservedSignedState signedState = stateWithHashes.signedState) {
                 final Hash oldHash = stateWithHashes.oldHash;
@@ -192,6 +202,18 @@ public class SavedStateLoader {
                             STARTUP.getMarker(),
                             "Found signed state (round {}) on disk that is compatible with the emergency recovery state.",
                             signedState.get().getRound());
+                    if (index != 0) {
+                        // We are in emergency startup mode if we load any state other than the most recent state
+                        emergencyRecoveryManager.signalEmergencyStartup();
+
+                        // Recycle all states that are newer than the emergency state, so that if we reboot
+                        // we don't discard the PCES that we will build on top of the emergency state.
+                        for (int i = 0; i < index; i++) {
+                            logger.info(
+                                    STARTUP.getMarker(), "Recycling saved state: {}", savedStateFiles[i].stateFile());
+                            recycleBin.recycle(savedStateFiles[i].getDir());
+                        }
+                    }
                     return signedState.getAndReserve("SavedStateLoader.getEmergencySavedStateToLoad()");
                 } catch (final SignedStateInvalidException e) {
                     logger.info(
@@ -203,6 +225,11 @@ public class SavedStateLoader {
                 }
             }
         }
+
+        // If we did not find a state on disk that is compatible with the current epoch hash & round described
+        // in the emergency recovery file, we will need to get a state using emergency reconnect. This means
+        // we are in emergency startup mode.
+        emergencyRecoveryManager.signalEmergencyStartup();
 
         logger.info(
                 STARTUP.getMarker(),

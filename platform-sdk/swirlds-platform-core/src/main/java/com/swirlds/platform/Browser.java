@@ -376,6 +376,7 @@ public class Browser {
 
         final ReservedSignedState initialState = getInitialState(
                 platformContext,
+                recycleBin,
                 appMain,
                 mainClassName,
                 swirldName,

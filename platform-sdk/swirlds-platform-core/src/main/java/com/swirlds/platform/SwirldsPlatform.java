@@ -1010,7 +1010,7 @@ public class SwirldsPlatform implements Platform, Startable {
             final PreconsensusEventFileManager manager =
                     new PreconsensusEventFileManager(platformContext, Time.getCurrent(), recycleBin, selfId);
 
-            if (emergencyRecoveryManager.isEmergencyRecoveryFilePresent()) {
+            if (emergencyRecoveryManager.isInEmergencyStartupMode()) {
                 logger.info(
                         STARTUP.getMarker(),
                         "This node was started in emergency recovery mode, "

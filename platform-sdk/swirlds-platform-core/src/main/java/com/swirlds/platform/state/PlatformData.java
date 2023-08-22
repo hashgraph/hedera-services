@@ -30,6 +30,7 @@ import com.swirlds.common.system.events.EventSerializationOptions;
 import com.swirlds.common.utility.NonCryptographicHashing;
 import com.swirlds.platform.consensus.RoundCalculationUtils;
 import com.swirlds.platform.internal.EventImpl;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -466,6 +467,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
      *
      * @return the epoch hash of this state
      */
+    @Nullable
     public Hash getEpochHash() {
         return epochHash;
     }

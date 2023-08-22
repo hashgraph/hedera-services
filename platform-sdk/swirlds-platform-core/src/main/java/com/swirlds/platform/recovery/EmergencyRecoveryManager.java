@@ -39,9 +39,19 @@ public class EmergencyRecoveryManager {
     private volatile boolean emergencyStateRequired;
 
     /**
-     * @param stateConfig               the state configuration from the platform
-     * @param shutdownRequestedTrigger  a trigger that requests the platform to shut down
-     * @param emergencyRecoveryDir      the directory to look for an emergency recovery file in
+     * A "normal startup" is when a node comes online and the most recent state on disk is the state that is loaded into
+     * the system.
+     *
+     * <p>
+     * During emergency recovery, nodes sometimes need to load a state from disk that is not the most recent state, or
+     * they need to obtain a state using emergency reconnect.
+     */
+    private boolean emergencyStartup = false;
+
+    /**
+     * @param stateConfig              the state configuration from the platform
+     * @param shutdownRequestedTrigger a trigger that requests the platform to shut down
+     * @param emergencyRecoveryDir     the directory to look for an emergency recovery file in
      */
     public EmergencyRecoveryManager(
             @NonNull final StateConfig stateConfig,
@@ -54,12 +64,23 @@ public class EmergencyRecoveryManager {
     }
 
     /**
-     * Returns whether an emergency recovery file was present at node boot time.
-     *
-     * @return {@code true} if an emergency recovery file was present, {@code false} otherwise
+     * Signals that the node is starting up in emergency recovery mode. A node is considered to be in emergency recovery
+     * mode if it is required to load a state from disk that is not the most recent state (by round number), or if it is
+     * required to obtain a state using emergency reconnect.
      */
-    public boolean isEmergencyRecoveryFilePresent() {
-        return emergencyRecoveryFile != null;
+    public void signalEmergencyStartup() {
+        emergencyStartup = true;
+    }
+
+    /**
+     * Check if the node is in emergency startup mode. A node is considered to be in emergency startup mode if it is
+     * required to load a state from disk that is not the most recent state (by round number), or if it is required to
+     * obtain a state using emergency reconnect.
+     *
+     * @return {@code true} if the node is in emergency startup mode, {@code false} otherwise
+     */
+    public boolean isInEmergencyStartupMode() {
+        return emergencyStartup;
     }
 
     /**

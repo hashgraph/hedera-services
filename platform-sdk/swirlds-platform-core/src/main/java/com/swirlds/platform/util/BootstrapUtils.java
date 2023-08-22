@@ -46,6 +46,7 @@ import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.internal.ApplicationDefinition;
 import com.swirlds.common.io.config.RecycleBinConfig;
 import com.swirlds.common.io.config.TemporaryFileConfig;
+import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.prometheus.PrometheusConfig;
@@ -101,7 +102,8 @@ import com.swirlds.platform.uptime.UptimeConfig;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.awt.*;
+import java.awt.Dimension;
+import java.awt.GraphicsEnvironment;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -117,7 +119,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import javax.swing.*;
+import javax.swing.JFrame;
+import javax.swing.UIManager;
+import javax.swing.UnsupportedLookAndFeelException;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -446,8 +450,8 @@ public final class BootstrapUtils {
     }
 
     /**
-     * Create a copy of the initial signed state. There are currently data structures that become immutable after
-     * being hashed, and we need to make a copy to force it to become mutable again.
+     * Create a copy of the initial signed state. There are currently data structures that become immutable after being
+     * hashed, and we need to make a copy to force it to become mutable again.
      *
      * @param platformContext    the platform's context
      * @param initialSignedState the initial signed state
@@ -555,6 +559,7 @@ public final class BootstrapUtils {
      * Load the signed state from the disk if it is present.
      *
      * @param platformContext          the platform context
+     * @param recycleBin               the recycle bin
      * @param mainClassName            the name of the app's SwirldMain class.
      * @param swirldName               the name of the swirld to load the state for.
      * @param selfId                   the ID of the node to load the state for.
@@ -566,6 +571,7 @@ public final class BootstrapUtils {
     @NonNull
     public static ReservedSignedState getUnmodifiedSignedStateFromDisk(
             @NonNull final PlatformContext platformContext,
+            @NonNull final RecycleBin recycleBin,
             @NonNull final String mainClassName,
             @NonNull final String swirldName,
             @NonNull final NodeId selfId,
@@ -582,6 +588,7 @@ public final class BootstrapUtils {
         // time this class is used.
         final SavedStateLoader savedStateLoader = new SavedStateLoader(
                 platformContext,
+                recycleBin,
                 new Shutdown()::shutdown,
                 configAddressBook,
                 savedStateFiles,
@@ -605,6 +612,7 @@ public final class BootstrapUtils {
      * if no valid state is found on disk.
      *
      * @param platformContext          the platform context
+     * @param recycleBin               the recycle bin
      * @param appMain                  the app main
      * @param mainClassName            the name of the app's SwirldMain class
      * @param swirldName               the name of this swirld
@@ -616,6 +624,7 @@ public final class BootstrapUtils {
     @NonNull
     public static ReservedSignedState getInitialState(
             @NonNull final PlatformContext platformContext,
+            @NonNull final RecycleBin recycleBin,
             @NonNull final SwirldMain appMain,
             @NonNull final String mainClassName,
             @NonNull final String swirldName,
@@ -632,6 +641,7 @@ public final class BootstrapUtils {
 
         final ReservedSignedState loadedState = getUnmodifiedSignedStateFromDisk(
                 platformContext,
+                recycleBin,
                 mainClassName,
                 swirldName,
                 selfId,

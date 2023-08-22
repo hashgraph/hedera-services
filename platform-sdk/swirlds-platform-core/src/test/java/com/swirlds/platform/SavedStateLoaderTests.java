@@ -37,6 +37,7 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.TestRecycleBin;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.dispatch.triggers.control.ShutdownRequestedTrigger;
 import com.swirlds.platform.internal.SignedStateLoadingException;
@@ -124,6 +125,7 @@ public class SavedStateLoaderTests {
                 NullPointerException.class,
                 () -> new SavedStateLoader(
                         TestPlatformContextBuilder.create().build(),
+                        TestRecycleBin.getInstance(),
                         null,
                         addressBook,
                         new SavedStateInfo[0],
@@ -138,6 +140,7 @@ public class SavedStateLoaderTests {
                 NullPointerException.class,
                 () -> new SavedStateLoader(
                         TestPlatformContextBuilder.create().build(),
+                        TestRecycleBin.getInstance(),
                         null,
                         addressBook,
                         new SavedStateInfo[0],
@@ -151,6 +154,7 @@ public class SavedStateLoaderTests {
         assertDoesNotThrow(
                 () -> new SavedStateLoader(
                         TestPlatformContextBuilder.create().build(),
+                        TestRecycleBin.getInstance(),
                         shutdownTrigger,
                         addressBook,
                         new SavedStateInfo[0],
@@ -165,6 +169,7 @@ public class SavedStateLoaderTests {
                 NullPointerException.class,
                 () -> new SavedStateLoader(
                         TestPlatformContextBuilder.create().build(),
+                        TestRecycleBin.getInstance(),
                         shutdownTrigger,
                         addressBook,
                         new SavedStateInfo[0],
@@ -179,6 +184,7 @@ public class SavedStateLoaderTests {
                 NullPointerException.class,
                 () -> new SavedStateLoader(
                         TestPlatformContextBuilder.create().build(),
+                        TestRecycleBin.getInstance(),
                         shutdownTrigger,
                         addressBook,
                         new SavedStateInfo[0],
@@ -193,6 +199,7 @@ public class SavedStateLoaderTests {
                 NullPointerException.class,
                 () -> new SavedStateLoader(
                         TestPlatformContextBuilder.create().build(),
+                        TestRecycleBin.getInstance(),
                         shutdownTrigger,
                         addressBook,
                         new SavedStateInfo[0],
@@ -207,6 +214,7 @@ public class SavedStateLoaderTests {
                 NullPointerException.class,
                 () -> new SavedStateLoader(
                         TestPlatformContextBuilder.create().build(),
+                        TestRecycleBin.getInstance(),
                         shutdownTrigger,
                         addressBook,
                         new SavedStateInfo[0],
@@ -304,6 +312,7 @@ public class SavedStateLoaderTests {
     private void initSavedStateLoader(final SavedStateInfo[] stateInfos, final Configuration config) {
         savedStateLoader = new SavedStateLoader(
                 TestPlatformContextBuilder.create().withConfiguration(config).build(),
+                TestRecycleBin.getInstance(),
                 shutdownTrigger,
                 addressBook,
                 stateInfos,
