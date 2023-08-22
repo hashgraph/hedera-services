@@ -43,9 +43,7 @@ module com.swirlds.demo.platform {
     requires org.apache.logging.log4j.core;
     requires lazysodium.java;
     requires java.management;
-    requires org.apache.commons.lang3;
     requires org.apache.commons.math3;
-    requires org.apache.commons.io;
     requires com.swirlds.merkle.test;
     requires java.sql;
     requires com.swirlds.fchashmap;

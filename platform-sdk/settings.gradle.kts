@@ -104,11 +104,7 @@ dependencyResolutionManagement {
             version("bouncycastle-version", "1.70")
 
             // Apache Commons
-            version("commons-lang3-version", "3.12.0")
-            version("commons-io-version", "2.11.0")
-            version("commons-codec-version", "1.15")
             version("commons-math3-version", "3.6.1")
-            version("commons-collections4-version", "4.4")
 
             // Eclipse Commons
             version("eclipse-collections-version", "10.4.0")
@@ -157,15 +153,8 @@ dependencyResolutionManagement {
 
             // Define the individual libraries
             // Commons Bundle
-            library("commons-lang3", "org.apache.commons", "commons-lang3")
-                .versionRef("commons-lang3-version")
-            library("commons-io", "commons-io", "commons-io").versionRef("commons-io-version")
-            library("commons-codec", "commons-codec", "commons-codec")
-                .versionRef("commons-codec-version")
             library("commons-math3", "org.apache.commons", "commons-math3")
                 .versionRef("commons-math3-version")
-            library("commons-collections4", "org.apache.commons", "commons-collections4")
-                .versionRef("commons-collections4-version")
             // Eclipse Bundle
             library("eclipse-collections", "org.eclipse.collections", "eclipse-collections")
                 .versionRef("eclipse-collections-version")
