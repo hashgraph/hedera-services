@@ -50,7 +50,8 @@ public class StateSavedToDiskPayload extends AbstractLogPayload {
     public StateSavedToDiskPayload(
             final long round, final boolean freezeState, @NonNull final String reason, @NonNull final Path directory) {
 
-        super("Finished writing state for round " + round + " to disk. Reason: " + reason + ", directory: " + directory);
+        super("Finished writing state for round " + round + " to disk. Reason: " + reason + ", directory: "
+                + directory);
         this.round = round;
         this.freezeState = freezeState;
         this.reason = Objects.requireNonNull(reason);
