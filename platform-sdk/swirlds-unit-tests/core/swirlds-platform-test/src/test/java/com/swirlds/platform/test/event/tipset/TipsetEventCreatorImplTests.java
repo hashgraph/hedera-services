@@ -810,7 +810,7 @@ class TipsetEventCreatorImplTests {
         final NodeId nodeC = addressBook.getNodeId(2);
         final NodeId nodeD = addressBook.getNodeId(3);
         // Node 4 (E) is not in the address book.
-        final NodeId nodeE = new NodeId(4);
+        final NodeId nodeE = new NodeId(nodeD.id() + 1);
 
         // All nodes except for node 0 are fully mocked. This test is testing how node 0 behaves.
         final TipsetEventCreator eventCreator =
