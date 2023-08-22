@@ -303,6 +303,7 @@ public class SwirldsPlatform implements Platform, Startable {
      * @param mainClassName            the name of the app class inheriting from SwirldMain
      * @param swirldName               the name of the swirld being run
      * @param appVersion               the current version of the running application
+     * @param softwareUpgrade          true if a software upgrade occurred since the last run.
      * @param initialState             the initial state of the platform
      * @param previousAddressBook      the address book used before the restart, or null if this is the first one ever
      * @param emergencyRecoveryManager used in emergency recovery.
@@ -315,6 +316,7 @@ public class SwirldsPlatform implements Platform, Startable {
             @NonNull final String mainClassName,
             @NonNull final String swirldName,
             @NonNull final SoftwareVersion appVersion,
+            @NonNull final boolean softwareUpgrade,
             @NonNull final SignedState initialState,
             @Nullable final AddressBook previousAddressBook,
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
@@ -385,6 +387,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 wiring.wireAppCommunicationComponent(notificationEngine);
 
         preconsensusEventFileManager = buildPreconsensusEventFileManager(emergencyRecoveryManager);
+        clearPCESOnSoftwareUpgradeIfConfigured(softwareUpgrade, preconsensusEventFileManager);
         preconsensusEventWriter = components.add(buildPreconsensusEventWriter(preconsensusEventFileManager));
 
         stateManagementComponent = wiring.wireStateManagementComponent(
@@ -1177,5 +1180,28 @@ public class SwirldsPlatform implements Platform, Startable {
      */
     private boolean isLastEventBeforeRestart(final EventImpl event) {
         return event.isLastInRoundReceived() && swirldStateManager.isInFreezePeriod(event.getConsensusTimestamp());
+    }
+
+    /**
+     * Clears the preconsensus event stream if a software upgrade has occurred and the configuration specifies that
+     * the stream should be cleared on software upgrade.
+     *
+     * @param softwareUpgrade       true if a software upgrade has occurred
+     * @param fileManager           the preconsensus event file manager
+     * @throws UncheckedIOException if the required changes on software upgrade cannot be performed
+     */
+    public void clearPCESOnSoftwareUpgradeIfConfigured(
+            final boolean softwareUpgrade, @NonNull final PreconsensusEventFileManager fileManager) {
+        final boolean clearOnSoftwareUpgrade = platformContext
+                .getConfiguration()
+                .getConfigData(PreconsensusEventStreamConfig.class)
+                .clearOnSoftwareUpgrade();
+        if (softwareUpgrade && clearOnSoftwareUpgrade) {
+            try {
+                fileManager.clear();
+            } catch (final IOException e) {
+                throw new UncheckedIOException("Failed to clear the preconsensus event stream on software upgrade.", e);
+            }
+        }
     }
 }
