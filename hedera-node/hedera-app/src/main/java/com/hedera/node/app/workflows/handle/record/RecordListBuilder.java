@@ -163,9 +163,11 @@ public class RecordListBuilder {
 
         final var previousRecord = recordBuilders.get(childCount - 1);
         final var consensusNow = previousRecord.consensusNow().plusNanos(1L);
-        final var parentConsensusTimestamp =
-                childCount == 1 ? previousRecord.consensusNow() : previousRecord.parentConsensusTimestamp();
-        final var recordBuilder = new SingleTransactionRecordBuilderImpl(consensusNow, parentConsensusTimestamp);
+        final var parentConsensusTimestamp = userTransactionRecordBuilder().consensusNow();
+        final var recordBuilder = new SingleTransactionRecordBuilderImpl(consensusNow);
+        recordBuilder
+                .parentConsensus(parentConsensusTimestamp)
+                .exchangeRate(userTransactionRecordBuilder().exchangeRate());
         recordBuilders.add(recordBuilder);
         return recordBuilder;
     }

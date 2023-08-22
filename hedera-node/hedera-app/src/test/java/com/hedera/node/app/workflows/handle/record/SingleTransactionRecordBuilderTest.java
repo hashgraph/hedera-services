@@ -115,11 +115,11 @@ public class SingleTransactionRecordBuilderTest {
         final List<Long> serialNumbers = List.of(1L, 2L, 3L);
 
         SingleTransactionRecordBuilderImpl singleTransactionRecordBuilder =
-                new SingleTransactionRecordBuilderImpl(CONSENSUS_TIME, PARENT_CONSENSUS_TIME);
+                new SingleTransactionRecordBuilderImpl(CONSENSUS_TIME);
         assertEquals(CONSENSUS_TIME, singleTransactionRecordBuilder.consensusNow());
-        assertEquals(PARENT_CONSENSUS_TIME, singleTransactionRecordBuilder.parentConsensusTimestamp());
 
         singleTransactionRecordBuilder
+                .parentConsensus(PARENT_CONSENSUS_TIME)
                 .transaction(transaction)
                 .transactionBytes(transactionBytes)
                 .transactionID(transactionID)
@@ -163,6 +163,7 @@ public class SingleTransactionRecordBuilderTest {
         }
 
         SingleTransactionRecord singleTransactionRecord = singleTransactionRecordBuilder.build();
+        assertEquals(HapiUtils.asTimestamp(PARENT_CONSENSUS_TIME), singleTransactionRecord.transactionRecord().parentConsensusTimestamp());
         assertEquals(transaction, singleTransactionRecord.transaction());
 
         if (entropyOneOfType == TransactionRecord.EntropyOneOfType.PRNG_BYTES) {

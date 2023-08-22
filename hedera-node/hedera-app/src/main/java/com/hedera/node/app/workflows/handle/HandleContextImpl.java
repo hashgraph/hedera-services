@@ -28,10 +28,13 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.WritableEntityIdStore;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.UnknownHederaFunctionality;
@@ -435,16 +438,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             throw new IllegalArgumentException("A preceding transaction cannot have child transactions");
         }
 
-        // create a savepoint
-        stack.createSavepoint();
-
         // run the child-transaction
         dispatchSyntheticTxn(txBody, CHILD, childVerifier, childRecordBuilder);
-
-        // rollback if the child-transaction failed
-        if (childRecordBuilder.status() != ResponseCodeEnum.OK) {
-            stack.rollback();
-        }
 
         return castRecordBuilder(childRecordBuilder, recordBuilderClass);
     }
@@ -454,6 +449,19 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             @NonNull final TransactionCategory childCategory,
             @NonNull final HandleContextVerifier childVerifier,
             @NonNull final SingleTransactionRecordBuilderImpl childRecordBuilder) {
+        // Initialize record builder list
+        final var bodyBytes = TransactionBody.PROTOBUF.toBytes(txBody);
+        final var signedTransaction = SignedTransaction.newBuilder().bodyBytes(bodyBytes).build();
+        final var signedTransactionBytes = SignedTransaction.PROTOBUF.toBytes(signedTransaction);
+        final var transaction = Transaction.newBuilder().signedTransactionBytes(signedTransactionBytes).build();
+        final var transactionBytes = Bytes.wrap(PbjConverter.fromPbj(transaction).toByteArray());
+        final var transactionID = txBody.transactionID() != null ? txBody.transactionID() : TransactionID.DEFAULT;
+        childRecordBuilder
+                .transaction(transaction)
+                .transactionBytes(transactionBytes)
+                .transactionID(transactionID)
+                .memo(txBody.memo());
+
         try {
             // Synthetic transaction bodies do not have transaction ids, node account
             // ids, and so on; hence we don't need to validate them with the checker
@@ -494,6 +502,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
 
         try {
             dispatcher.dispatchHandle(childContext);
+            childRecordBuilder.status(ResponseCodeEnum.SUCCESS);
             childStack.commitFullStack();
         } catch (HandleException e) {
             childRecordBuilder.status(e.getStatus());

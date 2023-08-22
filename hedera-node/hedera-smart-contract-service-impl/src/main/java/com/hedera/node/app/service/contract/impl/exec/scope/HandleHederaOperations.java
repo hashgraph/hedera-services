@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthAccountCreationFromHapi;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthContractCreationFromParent;
 import static java.util.Objects.requireNonNull;
@@ -293,7 +294,7 @@ public class HandleHederaOperations implements HederaOperations {
         final var recordBuilder = context.dispatchChildTransaction(
                 TransactionBody.newBuilder().cryptoCreateAccount(body).build(), CryptoCreateRecordBuilder.class);
         // TODO - switch OK to SUCCESS once some status-setting responsibilities are clarified
-        if (recordBuilder.status() != OK) {
+        if (recordBuilder.status() != OK && recordBuilder.status() != SUCCESS) {
             throw new AssertionError("Not implemented");
         }
         // Then use the TokenService API to mark the created account as a contract
