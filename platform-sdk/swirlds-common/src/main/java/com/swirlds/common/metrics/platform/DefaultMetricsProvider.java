@@ -21,7 +21,6 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import com.sun.net.httpserver.HttpServer;
 import com.swirlds.base.state.Lifecycle;
 import com.swirlds.base.state.LifecyclePhase;
-import com.swirlds.base.utility.StringUtils;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.MetricsFactory;
@@ -127,10 +126,10 @@ public class DefaultMetricsProvider implements MetricsProvider, Lifecycle {
 
         if (!metricsConfig.disableMetricsOutput()) {
             final String folderName = metricsConfig.csvOutputFolder();
-            final Path folderPath = Path.of(StringUtils.isBlank(folderName) ? FileUtils.getUserDir() : folderName);
+            final Path folderPath = Path.of(folderName.isBlank() ? FileUtils.getUserDir() : folderName);
 
             // setup LegacyCsvWriter
-            if (StringUtils.isNotBlank(metricsConfig.csvFileName())) {
+            if (!metricsConfig.csvFileName().isBlank()) {
                 final LegacyCsvWriter legacyCsvWriter = new LegacyCsvWriter(nodeId, folderPath, configuration);
                 snapshotService.subscribe(legacyCsvWriter::handleSnapshots);
             }

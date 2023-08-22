@@ -16,7 +16,6 @@
 
 package com.swirlds.common.utility;
 
-import com.swirlds.base.utility.StringUtils;
 import java.awt.Dialog;
 import java.awt.GraphicsEnvironment;
 import java.awt.Window;
@@ -287,13 +286,13 @@ public class CommonUtils {
      *
      * @param arg     the argument checked
      * @param argName the name of the argument
-     * @see StringUtils#isBlank(String)
+     * @see String#isBlank()
      * @deprecated use {@link com.swirlds.base.ArgumentUtils#throwArgBlank(String, String)} instead
      */
     @Deprecated(forRemoval = true)
     public static String throwArgBlank(final String arg, final String argName) {
         Objects.requireNonNull(arg, argName);
-        if (StringUtils.isBlank(arg)) {
+        if (arg.isBlank()) {
             throw new IllegalArgumentException(String.format("The supplied argument '%s' cannot be blank!", argName));
         }
         return arg;
@@ -385,7 +384,7 @@ public class CommonUtils {
      * @return the original value if not null or an empty string if null.
      */
     public static String nullToBlank(final String value) {
-        return (value == null) ? StringUtils.EMPTY : value;
+        return (value == null) ? "" : value;
     }
 
     /**

@@ -16,7 +16,6 @@
 
 package com.swirlds.common.utility;
 
-import com.swirlds.base.utility.StringUtils;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -35,7 +34,7 @@ public final class SemanticVersion implements Comparable<SemanticVersion>, SelfS
     /**
      * Constant value representing a zero version number.
      */
-    public static final SemanticVersion ZERO = new SemanticVersion(0, 0, 0, StringUtils.EMPTY, StringUtils.EMPTY);
+    public static final SemanticVersion ZERO = new SemanticVersion(0, 0, 0, "", "");
 
     /**
      * Constant value representing an ASCII period.
