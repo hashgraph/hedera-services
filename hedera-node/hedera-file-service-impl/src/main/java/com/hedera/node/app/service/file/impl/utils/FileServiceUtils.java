@@ -82,7 +82,7 @@ public class FileServiceUtils {
 
         final var fileConfig = context.configuration().getConfigData(FilesConfig.class);
 
-        // TODO we should still check if upgrade file exist after modularization is done otherwise E2E test is failing.
+        // @future('8172'): check if upgrade file exist after modularization is done
         FileMetadata fileMeta = null;
         if (fileId.fileNum() != fileConfig.upgradeFileNumber()) {
             fileMeta = fileStore.getFileMetadata(fileId);
