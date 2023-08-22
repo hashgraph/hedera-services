@@ -75,5 +75,4 @@ public record EventConfig(
         @ConfigProperty(defaultValue = "true") boolean enableEventStreaming,
         @ConfigProperty(defaultValue = "true") boolean asyncPrehandle,
         @ConfigProperty(defaultValue = "8") int prehandlePoolSize,
-        @ConfigProperty(defaultValue = "true") boolean forceUseOfOrphanBuffer) {
-}
+        @ConfigProperty(defaultValue = "true") boolean forceUseOfOrphanBuffer) {}

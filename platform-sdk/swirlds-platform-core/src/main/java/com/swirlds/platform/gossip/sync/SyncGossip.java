@@ -203,8 +203,7 @@ public class SyncGossip extends AbstractGossip {
                 shadowgraphExecutor,
                 // don't send or receive init bytes if running sync as a protocol. the negotiator handles this
                 false,
-                () -> {
-                });
+                () -> {});
 
         clearAllInternalPipelines = new LoggingClearables(
                 RECONNECT.getMarker(),
