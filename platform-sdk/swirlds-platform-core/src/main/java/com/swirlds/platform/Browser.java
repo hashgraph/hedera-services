@@ -403,7 +403,7 @@ public class Browser {
                 // modifying the address book.
                 state.getPlatformState()
                         .setAddressBook(
-                                addressBookInitializer.getInitialAddressBook().copy());
+                                addressBookInitializer.getCurrentAddressBook().copy());
             }
 
             GuiModel.getInstance().setPlatformName(nodeId, platformName);
@@ -419,6 +419,7 @@ public class Browser {
                     swirldName,
                     appVersion,
                     initialState.get(),
+                    addressBookInitializer.getPreviousAddressBook(),
                     emergencyRecoveryManager);
             new InfoMember(infoSwirld, platform);
             return platform;

@@ -19,7 +19,7 @@ package com.swirlds.platform.event.tipset.rules;
 import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.platform.StartUpEventFrozenManager;
-import com.swirlds.platform.eventhandling.EventTransactionPool;
+import com.swirlds.platform.eventhandling.TransactionPool;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.function.Supplier;
@@ -30,7 +30,7 @@ import java.util.function.Supplier;
 public class TipsetPlatformStatusRule implements TipsetEventCreationRule {
 
     private final Supplier<PlatformStatus> platformStatusSupplier;
-    private final EventTransactionPool transactionPool;
+    private final TransactionPool transactionPool;
 
     // Note: this will eventually be handled by platform statuses
     private final StartUpEventFrozenManager startUpEventFrozenManager;
@@ -44,7 +44,7 @@ public class TipsetPlatformStatusRule implements TipsetEventCreationRule {
      */
     public TipsetPlatformStatusRule(
             @NonNull final Supplier<PlatformStatus> platformStatusSupplier,
-            @NonNull final EventTransactionPool transactionPool,
+            @NonNull final TransactionPool transactionPool,
             @NonNull final StartUpEventFrozenManager startUpEventFrozenManager) {
 
         this.platformStatusSupplier = Objects.requireNonNull(platformStatusSupplier);
@@ -65,7 +65,7 @@ public class TipsetPlatformStatusRule implements TipsetEventCreationRule {
         }
 
         if (currentStatus == PlatformStatus.FREEZING) {
-            return transactionPool.numSignatureTransEvent() > 0;
+            return transactionPool.hasBufferedSignatureTransactions();
         }
 
         if (currentStatus != PlatformStatus.ACTIVE && currentStatus != PlatformStatus.CHECKING) {

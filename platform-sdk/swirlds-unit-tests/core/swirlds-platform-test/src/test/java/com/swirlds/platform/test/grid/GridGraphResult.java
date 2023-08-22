@@ -20,7 +20,6 @@ import java.io.PrintWriter;
 import java.util.Arrays;
 import java.util.Objects;
 import org.apache.commons.lang3.builder.CompareToBuilder;
-import org.apache.commons.lang3.builder.EqualsBuilder;
 
 /**
  * A class which defines a single result in GridGraph.
@@ -169,21 +168,15 @@ public class GridGraphResult<X extends Comparable<X>, Y extends Comparable<Y>>
     }
 
     @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
+    public boolean equals(final Object other) {
+        if (this == other) {
             return true;
         }
-
-        if (o == null || getClass() != o.getClass()) {
+        if (other == null || getClass() != other.getClass()) {
             return false;
         }
-
-        final GridGraphResult<?, ?> that = (GridGraphResult<?, ?>) o;
-
-        return new EqualsBuilder()
-                .append(getX(), that.getX())
-                .append(getY(), that.getY())
-                .isEquals();
+        final GridGraphResult<?, ?> that = (GridGraphResult<?, ?>) other;
+        return Objects.equals(x, that.x) && Objects.equals(y, that.y);
     }
 
     @Override

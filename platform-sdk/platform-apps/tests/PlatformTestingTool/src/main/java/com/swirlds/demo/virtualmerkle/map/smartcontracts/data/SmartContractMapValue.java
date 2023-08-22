@@ -23,7 +23,6 @@ import com.swirlds.virtualmap.VirtualValue;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import org.apache.commons.lang3.builder.EqualsBuilder;
 
 /**
  * This is the value of a key value pair from a smart contract.
@@ -136,18 +135,15 @@ public final class SmartContractMapValue implements VirtualValue {
      * {@inheritDoc}
      */
     @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
+    public boolean equals(final Object other) {
+        if (this == other) {
             return true;
         }
-
-        if (o == null || getClass() != o.getClass()) {
+        if (other == null || getClass() != other.getClass()) {
             return false;
         }
-
-        final SmartContractMapValue that = (SmartContractMapValue) o;
-
-        return new EqualsBuilder().append(value, that.value).isEquals();
+        final SmartContractMapValue that = (SmartContractMapValue) other;
+        return Arrays.equals(value, that.value);
     }
 
     public byte[] getValue() {
