@@ -32,7 +32,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.common.config.EventConfig;
-import com.swirlds.common.config.TransactionConfig;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.system.EventCreationRuleResponse;
@@ -43,15 +43,16 @@ import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.components.EventCreationRules;
-import com.swirlds.platform.eventhandling.EventTransactionPool;
+import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.gossip.FallenBehindManagerImpl;
 import com.swirlds.platform.gossip.sync.SyncManagerImpl;
+import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.network.RandomGraph;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.test.framework.config.TestConfigBuilder;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.util.List;
 import java.util.Random;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -71,7 +72,7 @@ public class SyncManagerTest {
         public DummyHashgraph hashgraph;
         public AddressBook addressBook;
         public NodeId selfId;
-        public EventTransactionPool eventTransactionPool;
+        public TransactionPool transactionPool;
         public SwirldStateManager swirldStateManager;
         public RandomGraph connectionGraph;
         public SyncManagerImpl syncManager;
@@ -88,13 +89,13 @@ public class SyncManagerTest {
             startUpEventFrozenManager = mock(StartUpEventFrozenManager.class);
             final Random random = getRandomPrintSeed();
             hashgraph = new DummyHashgraph(random, 0);
-            final TransactionConfig transactionConfig =
-                    new TestConfigBuilder().getOrCreateConfig().getConfigData(TransactionConfig.class);
-            eventTransactionPool = spy(new EventTransactionPool(new NoOpMetrics(), transactionConfig, null));
+            final PlatformContext platformContext =
+                    TestPlatformContextBuilder.create().build();
+
+            transactionPool = spy(new TransactionPool(platformContext, null));
 
             this.swirldStateManager = swirldStateManager;
 
-            doReturn(0).when(eventTransactionPool).numTransForEvent();
             doReturn(false).when(swirldStateManager).isInFreezePeriod(any());
 
             this.addressBook = hashgraph.getAddressBook();
@@ -145,14 +146,6 @@ public class SyncManagerTest {
                             reconnectConfig),
                     eventConfig);
         }
-    }
-
-    @BeforeAll
-    static void beforeAll() {
-        new TestConfigBuilder()
-                .withValue("sync.maxIncomingSyncsInc", 10)
-                .withValue("sync.maxOutgoingSyncs", 10)
-                .getOrCreateConfig();
     }
 
     /**

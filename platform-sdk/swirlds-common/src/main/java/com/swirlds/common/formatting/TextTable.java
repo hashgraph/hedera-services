@@ -136,7 +136,7 @@ public class TextTable {
             final List<String> rowString = new ArrayList<>();
 
             for (final Object o : row) {
-                rowString.add(o.toString());
+                rowString.add(o == null ? "null" : o.toString());
             }
 
             rows.add(rowString);
@@ -162,7 +162,7 @@ public class TextTable {
         }
 
         for (final Object o : elements) {
-            row.add(o.toString());
+            row.add(o == null ? "null" : o.toString());
         }
 
         return this;

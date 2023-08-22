@@ -37,6 +37,7 @@ import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
@@ -76,7 +77,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * The default implementation of {@link HandleContext}.
  */
-public class HandleContextImpl implements HandleContext {
+public class HandleContextImpl implements HandleContext, FeeContext {
     private static final Logger logger = LogManager.getLogger(HandleContextImpl.class);
 
     private final TransactionBody txBody;
