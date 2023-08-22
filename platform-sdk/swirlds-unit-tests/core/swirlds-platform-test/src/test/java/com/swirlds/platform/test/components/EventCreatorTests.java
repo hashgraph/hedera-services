@@ -40,12 +40,11 @@ import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.components.EventCreationRules;
-import com.swirlds.platform.components.EventHandler;
 import com.swirlds.platform.components.EventMapper;
-import com.swirlds.platform.components.transaction.TransactionPool;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.creation.AncientParentsRule;
+import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.event.EventMocks;
@@ -78,13 +77,8 @@ class EventCreatorTests {
     private static final Supplier<GraphGenerations> defaultGenerationsSupplier = () -> defaultGenerations;
 
     private static final TransactionSupplier defaultTransactionSupplier = () -> new SwirldTransaction[0];
-    private static final EventHandler noOpEventHandler = (event) -> {};
 
     static final TransactionPool defaultTransactionPool = mock(TransactionPool.class);
-
-    static {
-        when(defaultTransactionPool.numTransForEvent()).thenReturn(0);
-    }
 
     static final EventCreationRules defaultThrottles = new EventCreationRules(List.of());
 

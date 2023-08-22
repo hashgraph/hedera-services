@@ -26,13 +26,13 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
-import com.swirlds.platform.components.transaction.TransactionPool;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.event.SelfEventStorage;
 import com.swirlds.platform.event.creation.AncientParentsRule;
 import com.swirlds.platform.event.tipset.EventCreationConfig;
+import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -221,7 +221,7 @@ public class EventCreator {
      * Check if there are signature transactions waiting to be inserted into an event during a freeze
      */
     protected boolean hasSignatureTransactionsWhileFrozen() {
-        return transactionPool.numSignatureTransEvent() > 0 && inFreeze.getAsBoolean();
+        return transactionPool.hasBufferedSignatureTransactions() && inFreeze.getAsBoolean();
     }
 
     /**
