@@ -789,7 +789,7 @@ class TipsetEventCreatorImplTests {
     }
 
     /**
-     * Event from nodes not in the address book should not be used as parents for creating new events. 
+     * Event from nodes not in the address book should not be used as parents for creating new events.
      */
     @Test
     @DisplayName("Not Registering Events From NodeIds Not In AddressBook")
