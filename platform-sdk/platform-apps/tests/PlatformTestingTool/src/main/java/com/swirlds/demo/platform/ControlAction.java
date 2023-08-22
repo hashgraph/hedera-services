@@ -59,7 +59,7 @@ public class ControlAction implements SelfSerializable {
             return false;
         }
         final ControlAction that = (ControlAction) other;
-        return Objects.equals(timestamp, that.timestamp) && type == that.type;
+        return type == that.type;
     }
 
     @Override
