@@ -27,6 +27,7 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.DaggerHederaInjectionComponent;
 import com.hedera.node.app.HederaInjectionComponent;
 import com.hedera.node.app.config.ConfigProviderImpl;
+import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.info.SelfNodeInfoImpl;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.spi.info.SelfNodeInfo;
@@ -86,19 +87,21 @@ class IngestComponentTest {
                         SemanticVersion.newBuilder().major(2).build()));
 
         final var configProvider = new ConfigProviderImpl(false);
+        final var exchangeRateManager = new ExchangeRateManager();
         app = DaggerHederaInjectionComponent.builder()
                 .initTrigger(InitTrigger.GENESIS)
                 .platform(platform)
                 .crypto(CryptographyHolder.get())
                 .bootstrapProps(new BootstrapProperties())
                 .configuration(configProvider)
-                .systemFileUpdateFacility(new SystemFileUpdateFacility(configProvider))
+                .systemFileUpdateFacility(new SystemFileUpdateFacility(configProvider, exchangeRateManager))
                 .self(selfNodeInfo)
                 .initialHash(new Hash())
                 .maxSignedTxnSize(1024)
                 .currentPlatformStatus(() -> PlatformStatus.ACTIVE)
                 .servicesRegistry(Set::of)
                 .instantSource(InstantSource.system())
+                .exchangeRateManager(exchangeRateManager)
                 .build();
     }
 

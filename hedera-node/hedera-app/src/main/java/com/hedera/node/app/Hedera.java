@@ -26,6 +26,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.node.app.config.ConfigProviderImpl;
+import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.info.CurrentPlatformStatusImpl;
 import com.hedera.node.app.info.SelfNodeInfoImpl;
@@ -143,6 +144,8 @@ public final class Hedera implements SwirldMain {
     private Platform platform;
     /** The configuration for this node */
     private ConfigProviderImpl configProvider;
+    /** The exchange rate manager */
+    private ExchangeRateManager exchangeRateManager;
     /**
      * Dependencies managed by Dagger. Set during state initialization. The mono-service requires this object, but none
      * of the rest of the system (and particularly the modular implementation) uses it directly. Rather, it is created
@@ -588,6 +591,9 @@ public final class Hedera implements SwirldMain {
         this.configProvider = new ConfigProviderImpl(true);
         logConfiguration();
 
+        logger.info("Initializing ExchangeRateManager");
+        exchangeRateManager = new ExchangeRateManager();
+
         // Create all the nodes in the merkle tree for all the services
         onMigrate(state, null);
 
@@ -927,7 +933,8 @@ public final class Hedera implements SwirldMain {
             daggerApp = com.hedera.node.app.DaggerHederaInjectionComponent.builder()
                     .initTrigger(trigger)
                     .configuration(configProvider)
-                    .systemFileUpdateFacility(new SystemFileUpdateFacility(configProvider))
+                    .exchangeRateManager(exchangeRateManager)
+                    .systemFileUpdateFacility(new SystemFileUpdateFacility(configProvider, exchangeRateManager))
                     .self(SelfNodeInfoImpl.of(nodeAddress, version))
                     .initialHash(initialHash)
                     .platform(platform)

@@ -19,10 +19,12 @@ package com.hedera.node.app.workflows.handle;
 import static com.hedera.node.app.service.file.impl.FileServiceImpl.BLOBS_KEY;
 import static java.util.Objects.requireNonNull;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.config.ConfigProviderImpl;
+import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.config.data.FilesConfig;
@@ -43,14 +45,17 @@ public class SystemFileUpdateFacility {
     private static final Logger logger = LogManager.getLogger(SystemFileUpdateFacility.class);
 
     private final ConfigProviderImpl configProvider;
+    private final ExchangeRateManager exchangeRateManager;
 
     /**
      * Creates a new instance of this class.
      *
      * @param configProvider the configuration provider
      */
-    public SystemFileUpdateFacility(@NonNull final ConfigProviderImpl configProvider) {
+    public SystemFileUpdateFacility(
+            @NonNull final ConfigProviderImpl configProvider, ExchangeRateManager exchangeRateManager) {
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
+        this.exchangeRateManager = requireNonNull(exchangeRateManager, "exchangeRateManager must not be null");
     }
 
     /**
@@ -93,7 +98,7 @@ public class SystemFileUpdateFacility {
             } else if (fileNum == config.feeSchedules()) {
                 logger.error("Update of fee schedules not implemented");
             } else if (fileNum == config.exchangeRates()) {
-                logger.error("Update of exchange rates not implemented");
+                exchangeRateManager.update(getFileContent(state, fileID));
             } else if (fileNum == config.networkProperties()) {
                 configProvider.update(getFileContent(state, fileID));
             } else if (fileNum == config.hapiPermissions()) {
@@ -112,7 +117,8 @@ public class SystemFileUpdateFacility {
     }
 
     @NonNull
-    private static Bytes getFileContent(@NonNull final HederaState state, @NonNull final FileID fileID) {
+    @VisibleForTesting
+    static Bytes getFileContent(@NonNull final HederaState state, @NonNull final FileID fileID) {
         final var states = state.createReadableStates(FileService.NAME);
         final var filesMap = states.<FileID, File>get(BLOBS_KEY);
         final var file = filesMap.get(fileID);
