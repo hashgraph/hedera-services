@@ -3,6 +3,8 @@ module com.swirlds.logging {
     exports com.swirlds.logging.json;
     exports com.swirlds.logging.payloads;
 
+    requires com.swirlds.base;
+
     /* Logging Libraries */
     requires org.apache.logging.log4j;
 
