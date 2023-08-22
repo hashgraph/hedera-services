@@ -287,7 +287,7 @@ public class CommonUtils {
      *
      * @param arg     the argument checked
      * @param argName the name of the argument
-     * @see StringUtils#isBlank(CharSequence)
+     * @see StringUtils#isBlank(String)
      * @deprecated use {@link com.swirlds.base.ArgumentUtils#throwArgBlank(String, String)} instead
      */
     @Deprecated(forRemoval = true)
