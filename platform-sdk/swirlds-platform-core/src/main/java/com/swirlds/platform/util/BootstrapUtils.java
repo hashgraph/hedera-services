@@ -58,7 +58,7 @@ import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.status.PlatformStatusConfig;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.common.utility.ExceptionUtils;
+import com.swirlds.common.utility.StackTrace;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.source.ConfigSource;
@@ -410,7 +410,7 @@ public final class BootstrapUtils {
             CommonUtils.tellUserConsolePopup(
                     "ERROR",
                     "ERROR: There are problems starting class " + appDefinition.getMainClassName() + "\n"
-                            + ExceptionUtils.getStackTrace(e));
+                            + StackTrace.getStackTrace(e));
             logger.error(EXCEPTION.getMarker(), "Problems with class {}", appDefinition.getMainClassName(), e);
             throw new RuntimeException("Problems with class " + appDefinition.getMainClassName(), e);
         }

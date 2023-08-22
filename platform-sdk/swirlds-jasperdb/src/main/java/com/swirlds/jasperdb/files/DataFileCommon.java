@@ -16,13 +16,13 @@
 
 package com.swirlds.jasperdb.files;
 
+import static com.swirlds.common.formatting.HorizontalAlignment.ALIGNED_RIGHT;
 import static com.swirlds.common.units.UnitConstants.GIBIBYTES_TO_BYTES;
 import static com.swirlds.common.units.UnitConstants.KIBIBYTES_TO_BYTES;
 import static com.swirlds.common.units.UnitConstants.MEBIBYTES_TO_BYTES;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.JASPER_DB;
 
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.jasperdb.KeyRange;
 import com.swirlds.jasperdb.collections.IndexedObject;
 import com.swirlds.jasperdb.collections.LongList;
@@ -171,7 +171,7 @@ public final class DataFileCommon {
             final String filePrefix, final Path dataFileDir, final int index, final Instant creationInstant) {
         return dataFileDir.resolve(filePrefix + "_"
                 + DATE_FORMAT.format(creationInstant) + "_"
-                + CommonUtils.leftPad(Integer.toString(index), PRINTED_INDEX_FIELD_WIDTH, '_') + FILE_EXTENSION);
+                + ALIGNED_RIGHT.pad(Integer.toString(index), '_', PRINTED_INDEX_FIELD_WIDTH) + FILE_EXTENSION);
     }
 
     /**

@@ -16,13 +16,13 @@
 
 package com.swirlds.merkledb.files;
 
+import static com.swirlds.common.formatting.HorizontalAlignment.ALIGNED_RIGHT;
 import static com.swirlds.common.units.UnitConstants.GIBIBYTES_TO_BYTES;
 import static com.swirlds.common.units.UnitConstants.KIBIBYTES_TO_BYTES;
 import static com.swirlds.common.units.UnitConstants.MEBIBYTES_TO_BYTES;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.MERKLE_DB;
 
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.merkledb.KeyRange;
 import com.swirlds.merkledb.collections.IndexedObject;
 import com.swirlds.merkledb.collections.LongList;
@@ -153,7 +153,7 @@ public final class DataFileCommon {
                 + "_"
                 + DATE_FORMAT.format(creationInstant)
                 + "_"
-                + CommonUtils.leftPad(Integer.toString(index), PRINTED_INDEX_FIELD_WIDTH, '_')
+                + ALIGNED_RIGHT.pad(Integer.toString(index), '_', PRINTED_INDEX_FIELD_WIDTH)
                 + FILE_EXTENSION);
     }
 

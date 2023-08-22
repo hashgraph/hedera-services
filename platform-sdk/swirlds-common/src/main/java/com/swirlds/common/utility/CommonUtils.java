@@ -16,6 +16,9 @@
 
 package com.swirlds.common.utility;
 
+import com.swirlds.common.units.DataUnit;
+import com.swirlds.common.units.Unit;
+import com.swirlds.common.units.Unit.SimplifiedQuantity;
 import java.awt.Dialog;
 import java.awt.GraphicsEnvironment;
 import java.awt.Window;
@@ -30,7 +33,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import javax.sound.midi.MidiChannel;
 import javax.sound.midi.MidiSystem;
 import javax.sound.midi.Synthesizer;
@@ -350,22 +352,6 @@ public class CommonUtils {
     }
 
     /**
-     * Convert an int to a byte array, little endian.
-     *
-     * @param value the int to convert
-     * @return the byte array
-     */
-    public static byte[] intToBytes(final int value) {
-        final byte[] dst = new byte[Integer.BYTES];
-
-        for (int i = 0; i < Integer.BYTES; i++) {
-            final int shift = i * 8;
-            dst[i] = (byte) (0xff & (value >> shift));
-        }
-        return dst;
-    }
-
-    /**
      * Joins multiple lists into a single list
      *
      * @param lists the lists to join
@@ -374,7 +360,7 @@ public class CommonUtils {
      */
     @SafeVarargs
     public static <T> List<T> joinLists(final List<T>... lists) {
-        return Arrays.stream(lists).flatMap(Collection::stream).collect(Collectors.toList());
+        return Arrays.stream(lists).flatMap(Collection::stream).toList();
     }
 
     /**
@@ -421,27 +407,10 @@ public class CommonUtils {
      * @return human-readable string representation of the given byte count
      */
     public static String byteCountToDisplaySize(final long bytes) {
-        if (bytes < 1024) {
-            return bytes + " B";
-        }
-        final int z = (63 - Long.numberOfLeadingZeros(bytes)) / 10;
-        return String.format("%.1f %sB", (double) bytes / (1L << (z * 10)), " KMGTPE".charAt(z));
-    }
+        final SimplifiedQuantity<DataUnit> simplifiedQuantity = DataUnit.UNIT_BYTES.simplify(bytes);
+        final double quantity = simplifiedQuantity.quantity();
+        final Unit<?> unit = simplifiedQuantity.unit();
 
-    /**
-     * Aligns the given string to the left by padding it with the given character.
-     *
-     * @param str string to pad
-     * @param size size of the resulting string
-     * @param padChar character to pad with
-     *
-     * @return the padded string
-     */
-    public static String leftPad(final String str, final int size, final char padChar) {
-        if (str == null || size <= str.length()) {
-            return str;
-        }
-
-        return String.valueOf(padChar).repeat(size - str.length()) + str;
+        return unit.buildFormatter(quantity).setDecimalPlaces(1).render();
     }
 }

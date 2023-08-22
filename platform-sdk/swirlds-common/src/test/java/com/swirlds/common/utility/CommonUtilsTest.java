@@ -16,6 +16,7 @@
 
 package com.swirlds.common.utility;
 
+import static com.swirlds.common.formatting.HorizontalAlignment.ALIGNED_RIGHT;
 import static com.swirlds.common.utility.CommonUtils.byteCountToDisplaySize;
 import static com.swirlds.common.utility.CommonUtils.hex;
 import static com.swirlds.common.utility.CommonUtils.unhex;
@@ -25,11 +26,13 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.stream.Stream;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class CommonUtilsTest {
@@ -140,32 +143,31 @@ class CommonUtilsTest {
     }
 
     @ParameterizedTest
-    @CsvSource({
-        "0, 0 B",
-        "512, 512 B",
-        "1023, 1023 B",
-        "1024, 1.0 KB",
-        "1536, 1.5 KB",
-        "1048576, 1.0 MB",
-        "1572864, 1.5 MB",
-        "1073741824, 1.0 GB",
-        "1610612736, 1.5 GB",
-        "1099511627776, 1.0 TB",
-        "1649267441664, 1.5 TB",
-        "1125899906842624, 1.0 PB",
-        "1688849860263936, 1.5 PB",
-        "1152921504606846976, 1.0 EB",
-        "1729382256910270464, 1.5 EB"
-    })
+    @MethodSource("byteCountToDisplaySizeProvider")
     void testByteCountToDisplaySize(final long inputBytes, final String expectedOutput) {
         assertEquals(expectedOutput, byteCountToDisplaySize(inputBytes));
+    }
+
+    static Stream<Arguments> byteCountToDisplaySizeProvider() {
+        return Stream.of(
+                Arguments.of(0L, "0.0 b"),
+                Arguments.of(1L, "1.0 B"),
+                Arguments.of(2L, "2.0 B"),
+                Arguments.of(1023L, "1,023.0 B"),
+                Arguments.of(1024L, "1.0 KB"),
+                Arguments.of(1025L, "1.0 KB"),
+                Arguments.of(1024L * 1024L, "1.0 MB"),
+                Arguments.of(1024L * 1024L * 1024L, "1.0 GB"),
+                Arguments.of(1024L * 1024L * 1024L * 1024L, "1.0 TB"),
+                Arguments.of(1024L * 1024L * 1024L * 1024L * 1024L, "1.0 PB"),
+                Arguments.of(1024L * 1024L * 1024L * 1024L * 1024L * 1024L, "1,024.0 PB"));
     }
 
     @Test
     void leftPad() {
         final String start = "123";
 
-        final String padded = CommonUtils.leftPad(start, 5, '_');
+        final String padded = ALIGNED_RIGHT.pad(start, '_', 5);
 
         assertEquals("__123", padded);
     }
