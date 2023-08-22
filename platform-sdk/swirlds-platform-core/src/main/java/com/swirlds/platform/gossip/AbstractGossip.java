@@ -88,7 +88,6 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
     private static final Logger logger = LogManager.getLogger(AbstractGossip.class);
 
     private LifecyclePhase lifecyclePhase = LifecyclePhase.NOT_STARTED;
-    private final ThreadConfig threadConfig;
 
     protected final PlatformContext platformContext;
     protected final AddressBook addressBook;
@@ -167,7 +166,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
         this.syncMetrics = Objects.requireNonNull(syncMetrics);
         Objects.requireNonNull(time);
 
-        threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
+        final ThreadConfig threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
         criticalQuorum = buildCriticalQuorum();
         eventObserverDispatcher.addObserver(criticalQuorum);
 

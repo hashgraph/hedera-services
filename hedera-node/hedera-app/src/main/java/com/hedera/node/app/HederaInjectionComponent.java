@@ -26,6 +26,7 @@ import com.hedera.node.app.fees.FeesInjectionModule;
 import com.hedera.node.app.grpc.GrpcInjectionModule;
 import com.hedera.node.app.grpc.GrpcServerManager;
 import com.hedera.node.app.info.CurrentPlatformStatus;
+import com.hedera.node.app.info.FileNumbersModule;
 import com.hedera.node.app.info.InfoInjectionModule;
 import com.hedera.node.app.metrics.MetricsInjectionModule;
 import com.hedera.node.app.platform.PlatformModule;
@@ -83,7 +84,8 @@ import javax.inject.Singleton;
             BlockRecordInjectionModule.class,
             ThrottleInjectionModule.class,
             SolvencyInjectionModule.class,
-            PlatformModule.class
+            PlatformModule.class,
+            FileNumbersModule.class
         })
 public interface HederaInjectionComponent {
     /* Needed by ServicesState */

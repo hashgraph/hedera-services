@@ -247,17 +247,13 @@ public final class CryptoStatic {
     }
 
     /**
-     * check whether the given signature is valid
-     *
-     * @param data
-     * 		the data that was signed
-     * @param signature
-     * 		the claimed signature of that data
-     * @param publicKey
-     * 		the claimed public key used to generate that signature
-     * @return true if the signature is valid
+     * See {@link SignatureVerifier#verifySignature(byte[], byte[], PublicKey)}
      */
-    public static boolean verifySignature(byte[] data, byte[] signature, PublicKey publicKey) {
+    public static boolean verifySignature(
+            @NonNull byte[] data, @NonNull byte[] signature, @NonNull PublicKey publicKey) {
+        Objects.requireNonNull(data);
+        Objects.requireNonNull(signature);
+        Objects.requireNonNull(publicKey);
         try {
             final Signature sig = Signature.getInstance(CryptoConstants.SIG_TYPE2, CryptoConstants.SIG_PROVIDER);
             sig.initVerify(publicKey);

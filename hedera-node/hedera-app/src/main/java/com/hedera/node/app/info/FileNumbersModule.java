@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,15 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.components.transaction;
+package com.hedera.node.app.info;
 
-import com.swirlds.common.system.EventCreationRule;
+import com.hedera.node.app.spi.numbers.HederaFileNumbers;
+import dagger.Binds;
+import dagger.Module;
 
-public interface TransactionPool extends EventCreationRule {
-    /**
-     * @return the number of user transactions in the pool
-     */
-    int numTransForEvent();
+@Module
+public interface FileNumbersModule {
 
-    /**
-     * @return the number of state signature transactions in the pool
-     */
-    int numSignatureTransEvent();
+    @Binds
+    HederaFileNumbers fileConfigProvider(HederaFileNumbersImpl fileProviderImpl);
 }

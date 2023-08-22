@@ -50,10 +50,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.TransactionID;
-import com.hedera.hapi.node.contract.ContractCallTransactionBody;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.EthereumTransactionBody;
 import com.hedera.hapi.node.state.common.EntityNumber;
@@ -67,7 +65,6 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -112,37 +109,22 @@ public class AssortedOpsXTest extends AbstractContractXTest {
     }
 
     private TransactionBody synthDeterministicDeploy() {
-        return callTransaction(ONE_HBAR, ASSORTED_OPS_CONTRACT_ID, DEPLOY_DETERMINISTIC_CHILD.encodeCallWithArgs(SALT));
+        return createCallTransactionBody(
+                MISC_PAYER_ID, ONE_HBAR, ASSORTED_OPS_CONTRACT_ID, DEPLOY_DETERMINISTIC_CHILD.encodeCallWithArgs(SALT));
     }
 
     private TransactionBody synthGoldbergesqueDeploy() {
-        return callTransaction(2 * ONE_HBAR, ASSORTED_OPS_CONTRACT_ID, DEPLOY_GOLDBERGESQUE.encodeCallWithArgs(SALT));
+        return createCallTransactionBody(
+                MISC_PAYER_ID, 2 * ONE_HBAR, ASSORTED_OPS_CONTRACT_ID, DEPLOY_GOLDBERGESQUE.encodeCallWithArgs(SALT));
     }
 
     private TransactionBody synthVacateAddress() {
-        return callTransaction(0, FINALIZED_AND_DESTRUCTED_CONTRACT_ID, VACATE_ADDRESS.encodeCallWithArgs());
+        return createCallTransactionBody(
+                MISC_PAYER_ID, 0, FINALIZED_AND_DESTRUCTED_CONTRACT_ID, VACATE_ADDRESS.encodeCallWithArgs());
     }
 
     private TransactionBody synthTakeFive() {
-        return callTransaction(0, ASSORTED_OPS_CONTRACT_ID, TAKE_FIVE.encodeCallWithArgs());
-    }
-
-    private TransactionBody callTransaction(
-            final long value, @NonNull final ContractID contractId, @NonNull final ByteBuffer encoded) {
-        return TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder().accountID(MISC_PAYER_ID))
-                .contractCall(callWithParams(value, contractId, encoded))
-                .build();
-    }
-
-    private ContractCallTransactionBody callWithParams(
-            final long value, @NonNull final ContractID contractId, @NonNull final ByteBuffer encoded) {
-        return ContractCallTransactionBody.newBuilder()
-                .functionParameters(Bytes.wrap(encoded.array()))
-                .contractID(contractId)
-                .amount(value)
-                .gas(GAS_TO_OFFER)
-                .build();
+        return createCallTransactionBody(MISC_PAYER_ID, 0, ASSORTED_OPS_CONTRACT_ID, TAKE_FIVE.encodeCallWithArgs());
     }
 
     @Override

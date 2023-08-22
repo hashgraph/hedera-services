@@ -43,7 +43,6 @@ module com.swirlds.platform {
     exports com.swirlds.platform.network.communication;
     exports com.swirlds.platform.network.protocol;
     exports com.swirlds.platform.network.topology;
-    exports com.swirlds.platform.network.unidirectional;
     exports com.swirlds.platform.recovery;
     exports com.swirlds.platform.state;
     exports com.swirlds.platform.stats;

@@ -61,11 +61,11 @@ import org.apache.logging.log4j.MarkerManager;
 /**
  * Provides pre-generated random transactions that are optionally pre-signed with Ed25519 signatures.
  */
-public class TransactionPool implements FastCopyable {
+public class PttTransactionPool implements FastCopyable {
     /**
      * use this for all logging, as controlled by the optional data/log4j2.xml file
      */
-    private static final Logger logger = LogManager.getLogger(TransactionPool.class);
+    private static final Logger logger = LogManager.getLogger(PttTransactionPool.class);
 
     private static final Marker MARKER = MarkerManager.getMarker("DEMO_INFO");
     private static final Marker ERROR = MarkerManager.getMarker("EXCEPTION");
@@ -105,7 +105,7 @@ public class TransactionPool implements FastCopyable {
     private boolean needToSubmitFreezeTx = false;
     private boolean issTransactionSent = false;
 
-    private TransactionPool(final TransactionPool sourcePool) {
+    private PttTransactionPool(final PttTransactionPool sourcePool) {
         this.virtualMerkleTransactionPool = sourcePool.virtualMerkleTransactionPool;
         this.fcmTransactionPool = sourcePool.fcmTransactionPool.copy();
         this.platform = sourcePool.platform;
@@ -141,7 +141,7 @@ public class TransactionPool implements FastCopyable {
      * @param myName
      * 		this node name
      */
-    public TransactionPool(
+    public PttTransactionPool(
             final Platform platform,
             final long myID,
             final PayloadConfig config,
@@ -184,7 +184,7 @@ public class TransactionPool implements FastCopyable {
         signingProviderMap.put(AppTransactionSignatureType.ED25519, new ED25519SigningProvider());
     }
 
-    public TransactionPool(
+    public PttTransactionPool(
             final Platform platform,
             final long myID,
             final PayloadConfig config,
@@ -471,9 +471,9 @@ public class TransactionPool implements FastCopyable {
     }
 
     @Override
-    public TransactionPool copy() {
+    public PttTransactionPool copy() {
         throwIfImmutable();
-        return new TransactionPool(this);
+        return new PttTransactionPool(this);
     }
 
     /**
