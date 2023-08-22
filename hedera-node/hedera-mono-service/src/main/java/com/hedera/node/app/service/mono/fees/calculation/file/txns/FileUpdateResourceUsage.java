@@ -66,7 +66,6 @@ public class FileUpdateResourceUsage implements TxnResourceUsageEstimator {
     }
 
     public FeeData usageGiven(final TransactionBody txn, final SigValueObj svo, final File file) {
-        final var op = txn.getFileUpdate();
         final var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
         if (file != null) {
             final var contents = file.getContents();

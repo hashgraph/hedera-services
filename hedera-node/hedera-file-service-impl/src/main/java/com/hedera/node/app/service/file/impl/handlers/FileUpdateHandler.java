@@ -63,7 +63,6 @@ public class FileUpdateHandler implements TransactionHandler {
 
     @Inject
     public FileUpdateHandler(final FileOpsUsage fileOpsUsage) {
-        // Exists for injection
         this.fileOpsUsage = fileOpsUsage;
     }
 

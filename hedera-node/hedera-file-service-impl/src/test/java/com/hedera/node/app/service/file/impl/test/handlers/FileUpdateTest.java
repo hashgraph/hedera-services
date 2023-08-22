@@ -114,7 +114,7 @@ class FileUpdateTest extends FileTestBase {
     protected FileOpsUsage fileOpsUsage;
 
     @Mock(strictness = Mock.Strictness.LENIENT)
-    FeeCalculator feeCalculator;
+    protected FeeCalculator feeCalculator;
 
     @Mock(strictness = Mock.Strictness.LENIENT)
     private FeeAccumulator feeAccumulator;

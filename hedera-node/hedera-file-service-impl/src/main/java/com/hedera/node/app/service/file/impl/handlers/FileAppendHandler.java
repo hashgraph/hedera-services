@@ -59,7 +59,9 @@ public class FileAppendHandler implements TransactionHandler {
     private static final Logger logger = LogManager.getLogger(FileAppendHandler.class);
 
     @Inject
-    public FileAppendHandler() {}
+    public FileAppendHandler() {
+        // Exists for injection
+    }
 
     /**
      * This method is called during the pre-handle workflow.
