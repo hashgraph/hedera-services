@@ -17,6 +17,7 @@
 package com.swirlds.platform;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.platform.state.signed.SavedStateMetadataField.WALL_CLOCK_TIME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -55,124 +56,148 @@ import org.junit.jupiter.api.io.TempDir;
 @DisplayName("SignedStateMetadata Tests")
 class SavedStateMetadataTests {
 
-    // TODO
+    /**
+     * Temporary directory provided by JUnit
+     */
+    @TempDir
+    Path testDirectory;
 
-//    /**
-//     * Temporary directory provided by JUnit
-//     */
-//    @TempDir
-//    Path testDirectory;
-//
-//    /**
-//     * Serialize a metadata file then deserialize it and return the result.
-//     */
-//    private SavedStateMetadata serializeDeserialize(final SavedStateMetadata metadata) throws IOException {
-//        final Path path = testDirectory.resolve("metadata.txt");
-//        metadata.write(path);
-//        final SavedStateMetadata deserialized = SavedStateMetadata.parse(path);
-//        Files.delete(path);
-//        return deserialized;
-//    }
-//
-//    /** generates a random non-negative node id. */
-//    private NodeId generateRandomNodeId(@NonNull final Random random) {
-//        Objects.requireNonNull(random, "random must not be null");
-//        return new NodeId(random.nextLong(Long.MAX_VALUE));
-//    }
-//
-//    @Test
-//    @DisplayName("Random Data Test")
-//    void randomDataTest() throws IOException {
-//        final Random random = getRandomPrintSeed();
-//
-//        final long round = random.nextLong();
-//        final long numberOfConsensusEvents = random.nextLong();
-//        final Instant timestamp = RandomUtils.randomInstant(random);
-//        final Hash runningEventHash = RandomUtils.randomHash(random);
-//        final long minimumGenerationNonAncient = random.nextLong();
-//        final SoftwareVersion softwareVersion = new BasicSoftwareVersion(random.nextLong());
-//        final Instant wallClockTime = RandomUtils.randomInstant(random);
-//        final NodeId nodeId = generateRandomNodeId(random);
-//        final List<NodeId> signingNodes = new ArrayList<>();
-//        for (int i = 0; i < random.nextInt(1, 10); i++) {
-//            signingNodes.add(generateRandomNodeId(random));
-//        }
-//        final long signingWeightSum = random.nextLong();
-//        final long totalWeight = random.nextLong();
-//
-//        final SavedStateMetadata metadata = new SavedStateMetadata(
-//                round,
-//                numberOfConsensusEvents,
-//                timestamp,
-//                runningEventHash,
-//                minimumGenerationNonAncient,
-//                softwareVersion.toString(),
-//                wallClockTime,
-//                nodeId,
-//                signingNodes,
-//                signingWeightSum,
-//                totalWeight);
-//
-//        final SavedStateMetadata deserialized = serializeDeserialize(metadata);
-//
-//        assertEquals(round, deserialized.round());
-//        assertEquals(numberOfConsensusEvents, deserialized.numberOfConsensusEvents());
-//        assertEquals(timestamp, deserialized.consensusTimestamp());
-//        assertEquals(runningEventHash, deserialized.runningEventHash());
-//        assertEquals(minimumGenerationNonAncient, deserialized.minimumGenerationNonAncient());
-//        assertEquals(softwareVersion.toString(), deserialized.softwareVersion());
-//        assertEquals(wallClockTime, deserialized.wallClockTime());
-//        assertEquals(nodeId, deserialized.nodeId());
-//        assertEquals(signingNodes, deserialized.signingNodes());
-//        assertEquals(signingWeightSum, deserialized.signingWeightSum());
-//        assertEquals(totalWeight, deserialized.totalWeight());
-//    }
-//
-//    @Test
-//    @DisplayName("Random Data Empty ListTest")
-//    void randomDataEmptyListTest() throws IOException {
-//        final Random random = getRandomPrintSeed();
-//
-//        final long round = random.nextLong();
-//        final long numberOfConsensusEvents = random.nextLong();
-//        final Instant timestamp = RandomUtils.randomInstant(random);
-//        final Hash runningEventHash = RandomUtils.randomHash(random);
-//        final long minimumGenerationNonAncient = random.nextLong();
-//        final SoftwareVersion softwareVersion = new BasicSoftwareVersion(random.nextLong());
-//        final Instant wallClockTime = RandomUtils.randomInstant(random);
-//        final NodeId nodeId = generateRandomNodeId(random);
-//        final List<NodeId> signingNodes = new ArrayList<>();
-//        final long signingWeightSum = random.nextLong();
-//        final long totalWeight = random.nextLong();
-//
-//        final SavedStateMetadata metadata = new SavedStateMetadata(
-//                round,
-//                numberOfConsensusEvents,
-//                timestamp,
-//                runningEventHash,
-//                minimumGenerationNonAncient,
-//                softwareVersion.toString(),
-//                wallClockTime,
-//                nodeId,
-//                signingNodes,
-//                signingWeightSum,
-//                totalWeight);
-//
-//        final SavedStateMetadata deserialized = serializeDeserialize(metadata);
-//
-//        assertEquals(round, deserialized.round());
-//        assertEquals(numberOfConsensusEvents, deserialized.numberOfConsensusEvents());
-//        assertEquals(timestamp, deserialized.consensusTimestamp());
-//        assertEquals(runningEventHash, deserialized.runningEventHash());
-//        assertEquals(minimumGenerationNonAncient, deserialized.minimumGenerationNonAncient());
-//        assertEquals(softwareVersion.toString(), deserialized.softwareVersion());
-//        assertEquals(wallClockTime, deserialized.wallClockTime());
-//        assertEquals(nodeId, deserialized.nodeId());
-//        assertEquals(signingNodes, deserialized.signingNodes());
-//        assertEquals(signingWeightSum, deserialized.signingWeightSum());
-//        assertEquals(totalWeight, deserialized.totalWeight());
-//    }
-//
+    /**
+     * Serialize a metadata file then deserialize it and return the result.
+     */
+    private SavedStateMetadata serializeDeserialize(final SavedStateMetadata metadata) throws IOException {
+        final Path path = testDirectory.resolve("metadata.txt");
+        metadata.write(path);
+        final SavedStateMetadata deserialized = SavedStateMetadata.parse(path);
+        Files.delete(path);
+        return deserialized;
+    }
+
+    /** generates a random non-negative node id. */
+    private NodeId generateRandomNodeId(@NonNull final Random random) {
+        Objects.requireNonNull(random, "random must not be null");
+        return new NodeId(random.nextLong(Long.MAX_VALUE));
+    }
+
+    @Test
+    @DisplayName("Random Data Test")
+    void randomDataTest() throws IOException {
+        final Random random = getRandomPrintSeed();
+
+        final long round = random.nextLong();
+        final Hash hash = randomHash(random);
+        final long numberOfConsensusEvents = random.nextLong();
+        final Instant timestamp = RandomUtils.randomInstant(random);
+        final Hash runningEventHash = randomHash(random);
+        final long minimumGenerationNonAncient = random.nextLong();
+        final SoftwareVersion softwareVersion = new BasicSoftwareVersion(random.nextLong());
+        final Instant wallClockTime = RandomUtils.randomInstant(random);
+        final NodeId nodeId = generateRandomNodeId(random);
+        final List<NodeId> signingNodes = new ArrayList<>();
+        for (int i = 0; i < random.nextInt(1, 10); i++) {
+            signingNodes.add(generateRandomNodeId(random));
+        }
+        final long signingWeightSum = random.nextLong();
+        final long totalWeight = random.nextLong();
+        final Hash epochHash = random.nextBoolean() ? randomHash(random) : null;
+        final String epochHashString = epochHash == null ? "null" : epochHash.toMnemonic();
+
+        final SavedStateMetadata metadata = new SavedStateMetadata(
+                round,
+                hash,
+                hash.toMnemonic(),
+                numberOfConsensusEvents,
+                timestamp,
+                runningEventHash,
+                runningEventHash.toMnemonic(),
+                minimumGenerationNonAncient,
+                softwareVersion.toString(),
+                wallClockTime,
+                nodeId,
+                signingNodes,
+                signingWeightSum,
+                totalWeight,
+                epochHash,
+                epochHashString);
+
+        final SavedStateMetadata deserialized = serializeDeserialize(metadata);
+
+        assertEquals(round, deserialized.round());
+        assertEquals(hash, deserialized.hash());
+        assertEquals(hash.toMnemonic(), deserialized.hashMnemonic());
+        assertEquals(numberOfConsensusEvents, deserialized.numberOfConsensusEvents());
+        assertEquals(timestamp, deserialized.consensusTimestamp());
+        assertEquals(runningEventHash, deserialized.runningEventHash());
+        assertEquals(runningEventHash.toMnemonic(), deserialized.runningEventHashMnemonic());
+        assertEquals(minimumGenerationNonAncient, deserialized.minimumGenerationNonAncient());
+        assertEquals(softwareVersion.toString(), deserialized.softwareVersion());
+        assertEquals(wallClockTime, deserialized.wallClockTime());
+        assertEquals(nodeId, deserialized.nodeId());
+        assertEquals(signingNodes, deserialized.signingNodes());
+        assertEquals(signingWeightSum, deserialized.signingWeightSum());
+        assertEquals(totalWeight, deserialized.totalWeight());
+        assertEquals(epochHash, deserialized.epochHash());
+        assertEquals(epochHashString, deserialized.epochHashMnemonic());
+    }
+
+    @Test
+    @DisplayName("Random Data Empty ListTest")
+    void randomDataEmptyListTest() throws IOException {
+        final Random random = getRandomPrintSeed();
+
+        final long round = random.nextLong();
+        final Hash hash = randomHash(random);
+        final long numberOfConsensusEvents = random.nextLong();
+        final Instant timestamp = RandomUtils.randomInstant(random);
+        final Hash runningEventHash = randomHash(random);
+        final long minimumGenerationNonAncient = random.nextLong();
+        final SoftwareVersion softwareVersion = new BasicSoftwareVersion(random.nextLong());
+        final Instant wallClockTime = RandomUtils.randomInstant(random);
+        final NodeId nodeId = generateRandomNodeId(random);
+        final List<NodeId> signingNodes = new ArrayList<>();
+        final long signingWeightSum = random.nextLong();
+        final long totalWeight = random.nextLong();
+        final Hash epochHash = random.nextBoolean() ? randomHash(random) : null;
+        final String epochHashString = epochHash == null ? "null" : epochHash.toMnemonic();
+
+        final SavedStateMetadata metadata = new SavedStateMetadata(
+                round,
+                hash,
+                hash.toMnemonic(),
+                numberOfConsensusEvents,
+                timestamp,
+                runningEventHash,
+                runningEventHash.toMnemonic(),
+                minimumGenerationNonAncient,
+                softwareVersion.toString(),
+                wallClockTime,
+                nodeId,
+                signingNodes,
+                signingWeightSum,
+                totalWeight,
+                epochHash,
+                epochHashString);
+
+        final SavedStateMetadata deserialized = serializeDeserialize(metadata);
+
+        assertEquals(round, deserialized.round());
+        assertEquals(hash, deserialized.hash());
+        assertEquals(hash.toMnemonic(), deserialized.hashMnemonic());
+        assertEquals(numberOfConsensusEvents, deserialized.numberOfConsensusEvents());
+        assertEquals(timestamp, deserialized.consensusTimestamp());
+        assertEquals(runningEventHash, deserialized.runningEventHash());
+        assertEquals(runningEventHash.toMnemonic(), deserialized.runningEventHashMnemonic());
+        assertEquals(minimumGenerationNonAncient, deserialized.minimumGenerationNonAncient());
+        assertEquals(softwareVersion.toString(), deserialized.softwareVersion());
+        assertEquals(wallClockTime, deserialized.wallClockTime());
+        assertEquals(nodeId, deserialized.nodeId());
+        assertEquals(signingNodes, deserialized.signingNodes());
+        assertEquals(signingWeightSum, deserialized.signingWeightSum());
+        assertEquals(totalWeight, deserialized.totalWeight());
+        assertEquals(epochHash, deserialized.epochHash());
+        assertEquals(epochHashString, deserialized.epochHashMnemonic());
+    }
+
 //    @Test
 //    @DisplayName("Random Data Some Missing Test")
 //    void randomDataSomeMissingTest() throws IOException {
@@ -201,7 +226,7 @@ class SavedStateMetadataTests {
 //
 //        final Hash runningEventHash;
 //        if (random.nextBoolean()) {
-//            runningEventHash = RandomUtils.randomHash(random);
+//            runningEventHash = randomHash(random);
 //        } else {
 //            runningEventHash = null;
 //        }
@@ -321,7 +346,7 @@ class SavedStateMetadataTests {
 //        final long round = random.nextLong();
 //        final long numberOfConsensusEvents = random.nextLong();
 //        final Instant timestamp = RandomUtils.randomInstant(random);
-//        final Hash runningEventHash = RandomUtils.randomHash(random);
+//        final Hash runningEventHash = randomHash(random);
 //        final long minimumGenerationNonAncient = random.nextLong();
 //        final Instant wallClockTime = RandomUtils.randomInstant(random);
 //        final NodeId nodeId = generateRandomNodeId(random);
@@ -378,7 +403,7 @@ class SavedStateMetadataTests {
 //        final long round = random.nextLong();
 //        final long numberOfConsensusEvents = random.nextLong();
 //        final Instant timestamp = RandomUtils.randomInstant(random);
-//        final Hash runningEventHash = RandomUtils.randomHash(random);
+//        final Hash runningEventHash = randomHash(random);
 //        final long minimumGenerationNonAncient = random.nextLong();
 //        final SoftwareVersion softwareVersion = new BasicSoftwareVersion(random.nextLong());
 //        final Instant wallClockTime = RandomUtils.randomInstant(random);
