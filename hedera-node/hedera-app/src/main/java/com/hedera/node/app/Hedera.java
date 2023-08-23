@@ -25,6 +25,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.FileID;
+import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.ids.EntityIdService;
@@ -83,6 +84,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -810,17 +812,9 @@ public final class Hedera implements SwirldMain {
 
     private void initializeFeeManager(@NonNull final HederaState state) {
         logger.info("Initializing fee schedules");
-        final var readableFileStore = new ReadableStoreFactory(state).getStore(ReadableFileStore.class);
-        final var hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
         final var filesConfig = configProvider.getConfiguration().getConfigData(FilesConfig.class);
         final var fileNum = filesConfig.feeSchedules();
-        final var fileId = FileID.newBuilder()
-                .fileNum(fileNum)
-                .shardNum(hederaConfig.shard())
-                .realmNum(hederaConfig.realm())
-                .build();
-
-        final var fileOpt = readableFileStore.getFileLeaf(fileId);
+        final Optional<File> fileOpt = getFileFromStorage(state, fileNum);
         fileOpt.ifPresent(file -> {
             final var fileData = file.contents();
             daggerApp.feeManager().update(fileData);
@@ -830,17 +824,9 @@ public final class Hedera implements SwirldMain {
 
     private void initializeExchangeRateManager(@NonNull final HederaState state) {
         logger.info("Initializing exchange rates");
-        final var readableFileStore = new ReadableStoreFactory(state).getStore(ReadableFileStore.class);
-        final var hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
         final var filesConfig = configProvider.getConfiguration().getConfigData(FilesConfig.class);
         final var fileNum = filesConfig.exchangeRates();
-        final var fileId = FileID.newBuilder()
-                .fileNum(fileNum)
-                .shardNum(hederaConfig.shard())
-                .realmNum(hederaConfig.realm())
-                .build();
-
-        final var fileOpt = readableFileStore.getFileLeaf(fileId);
+        final var fileOpt = getFileFromStorage(state, fileNum);
         fileOpt.ifPresent(file -> {
             final var fileData = file.contents();
             daggerApp.exchangeRateManager().update(fileData);
@@ -850,22 +836,25 @@ public final class Hedera implements SwirldMain {
 
     private void initializeThrottleManager(@NonNull final HederaState state) {
         logger.info("Initializing throttles");
-        final var readableFileStore = new ReadableStoreFactory(state).getStore(ReadableFileStore.class);
-        final var hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
         final var filesConfig = configProvider.getConfiguration().getConfigData(FilesConfig.class);
         final var fileNum = filesConfig.throttleDefinitions();
-        final var fileId = FileID.newBuilder()
-                .fileNum(fileNum)
-                .shardNum(hederaConfig.shard())
-                .realmNum(hederaConfig.realm())
-                .build();
-
-        final var fileOpt = readableFileStore.getFileLeaf(fileId);
+        final var fileOpt = getFileFromStorage(state, fileNum);
         fileOpt.ifPresent(file -> {
             final var fileData = file.contents();
             daggerApp.throttleManager().update(fileData);
         });
         logger.info("Throttles initialized");
+    }
+
+    private Optional<File> getFileFromStorage(HederaState state, long fileNum) {
+        final var readableFileStore = new ReadableStoreFactory(state).getStore(ReadableFileStore.class);
+        final var hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
+        final var fileId = FileID.newBuilder()
+                .fileNum(fileNum)
+                .shardNum(hederaConfig.shard())
+                .realmNum(hederaConfig.realm())
+                .build();
+        return readableFileStore.getFileLeaf(fileId);
     }
 
     /*==================================================================================================================
