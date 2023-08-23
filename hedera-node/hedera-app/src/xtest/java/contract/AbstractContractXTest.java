@@ -16,6 +16,8 @@
 
 package contract;
 
+import static com.hedera.node.app.hapi.utils.sysfiles.serdes.FeesJsonToProtoSerde.loadFeeScheduleFromJson;
+
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
@@ -56,6 +58,7 @@ import com.swirlds.common.metrics.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.reflect.InvocationTargetException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
@@ -89,6 +92,7 @@ public abstract class AbstractContractXTest {
 
     @Test
     void scenarioPasses() {
+        setupFeeManager();
         setupInitialStates();
 
         handleAndCommitScenarioTransactions();
@@ -115,7 +119,7 @@ public abstract class AbstractContractXTest {
 
     protected abstract Map<FileID, File> initialFiles();
 
-    protected abstract Map<Bytes, AccountID> initialAliases();
+    protected abstract Map<ProtoBytes, AccountID> initialAliases();
 
     protected abstract Map<AccountID, Account> initialAccounts();
 
@@ -185,6 +189,22 @@ public abstract class AbstractContractXTest {
 
     protected Address addressOf(@NonNull final Bytes address) {
         return Address.wrap(Address.toChecksumAddress(new BigInteger(1, address.toByteArray())));
+    }
+
+    private void setupFeeManager() {
+        try {
+            var feeSchedule = loadFeeScheduleFromJson("feeSchedules.json");
+            Bytes feeScheduleBytes = Bytes.wrap(feeSchedule.toByteArray());
+            scaffoldingComponent.feeManager().update(feeScheduleBytes);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } catch (InvocationTargetException e) {
+            throw new RuntimeException(e);
+        } catch (NoSuchMethodException e) {
+            throw new RuntimeException(e);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private void setupInitialStates() {

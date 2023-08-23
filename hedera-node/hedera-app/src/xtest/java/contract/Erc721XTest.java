@@ -227,11 +227,11 @@ public class Erc721XTest extends AbstractContractXTest {
     }
 
     @Override
-    protected Map<Bytes, AccountID> initialAliases() {
-        final var aliases = new HashMap<Bytes, AccountID>();
-        aliases.put(TOKEN_TREASURY_ADDRESS, TOKEN_TREASURY_ID);
-        aliases.put(COUNTERPARTY_ADDRESS, COUNTERPARTY_ID);
-        aliases.put(OPERATOR_ADDRESS, OPERATOR_ID);
+    protected Map<ProtoBytes, AccountID> initialAliases() {
+        final var aliases = new HashMap<ProtoBytes, AccountID>();
+        aliases.put(ProtoBytes.newBuilder().value(TOKEN_TREASURY_ADDRESS).build(), TOKEN_TREASURY_ID);
+        aliases.put(ProtoBytes.newBuilder().value(COUNTERPARTY_ADDRESS).build(), COUNTERPARTY_ID);
+        aliases.put(ProtoBytes.newBuilder().value(OPERATOR_ADDRESS).build(), OPERATOR_ID);
         return aliases;
     }
 

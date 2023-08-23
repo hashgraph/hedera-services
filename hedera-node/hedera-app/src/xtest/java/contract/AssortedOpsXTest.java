@@ -89,7 +89,7 @@ public class AssortedOpsXTest extends AbstractContractXTest {
 
     private TransactionBody synthCreateTxn() {
         return TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder().accountID(MISC_PAYER_ID))
+                .transactionID(TransactionID.newBuilder().accountID(RELAYER_ID))
                 .contractCreateInstance(ContractCreateTransactionBody.newBuilder()
                         .autoRenewPeriod(STANDARD_AUTO_RENEW_PERIOD)
                         .fileID(ASSORTED_OPS_INITCODE_FILE_ID)
@@ -144,10 +144,10 @@ public class AssortedOpsXTest extends AbstractContractXTest {
     }
 
     @Override
-    protected Map<Bytes, AccountID> initialAliases() {
-        final var aliases = new HashMap<Bytes, AccountID>();
-        aliases.put(SENDER_ALIAS, SENDER_ID);
-        aliases.put(SENDER_ADDRESS, SENDER_ID);
+    protected Map<ProtoBytes, AccountID> initialAliases() {
+        final var aliases = new HashMap<ProtoBytes, AccountID>();
+        aliases.put(ProtoBytes.newBuilder().value(SENDER_ALIAS).build(), SENDER_ID);
+        aliases.put(ProtoBytes.newBuilder().value(SENDER_ADDRESS).build(), SENDER_ID);
         return aliases;
     }
 
