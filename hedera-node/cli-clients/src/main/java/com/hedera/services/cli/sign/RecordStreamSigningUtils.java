@@ -51,15 +51,12 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Utility class for signing record stream files
  */
+@SuppressWarnings("java:S106") // Suppressing the usage of System.out.println instead of a logger
 public class RecordStreamSigningUtils {
-
-    private static final Logger log = LogManager.getLogger(RecordStreamSigningUtils.class);
 
     /**
      * Hidden constructor
@@ -109,8 +106,8 @@ public class RecordStreamSigningUtils {
             final var recordFile = streamFileToSign.toFile();
             final int version = getRecordStreamVersion(recordFile);
             if (version != SUPPORTED_STREAM_FILE_VERSION) {
-                log.error(
-                        "signRecordStreamFile :: Failed to sign file [{}] with unsupported version [{}]%n",
+                System.err.printf(
+                        "signRecordStreamFile :: Failed to sign file [%s] with unsupported version [%s]%n",
                         streamFileToSign.getFileName(), version);
                 return false;
             }
@@ -122,16 +119,15 @@ public class RecordStreamSigningUtils {
             SignatureFile.Builder signatureFile = createSignatureFile(keyPair);
             generateSigRecordStreamFile(signatureFileDestination.toFile(), signatureFile);
 
-            log.info("Generated signature file: {}", signatureFileDestination);
+            System.out.println("Generated signature file: " + signatureFileDestination);
 
             return true;
         } catch (final SignatureException | InvalidKeyException | InvalidProtobufVersionException | IOException e) {
-            log.error("signRecordStreamFile :: Failed to sign file [{}] with exception : [{}]%n", streamFileToSign, e);
+            System.err.printf("signRecordStreamFile :: Failed to sign file [%s]", streamFileToSign);
             return false;
         } catch (final NoSuchAlgorithmException | NoSuchProviderException e) {
-            log.error(
-                    "signRecordStreamFile :: Irrecoverable error encountered when signing [{}] with exception : [{}]%n",
-                    streamFileToSign, e);
+            System.err.printf(
+                    "signRecordStreamFile :: Irrecoverable error encountered when signing [%s]", streamFileToSign);
             throw new RuntimeException("Irrecoverable error encountered", e);
         }
     }
@@ -148,8 +144,8 @@ public class RecordStreamSigningUtils {
             }
 
         } catch (final IOException e) {
-            log.error(
-                    "getRecordStreamVersion :: Failed to read record stream version from file [{}] with exception : [{}]%n",
+            System.err.printf(
+                    "getRecordStreamVersion :: Failed to read record stream version from file [%s] with exception : [%s]%n",
                     recordFile.getAbsolutePath(), e);
             throw e;
         }
@@ -172,13 +168,13 @@ public class RecordStreamSigningUtils {
                     Integer.parseInt(versions[2]),
                 };
             } catch (final NumberFormatException e) {
-                log.error(
-                        "createFileHeader :: Error when parsing protobuf version string  [{}] with exception : [{}]%n",
+                System.err.printf(
+                        "createFileHeader :: Error when parsing protobuf version string  [%s] with exception : [%s]%n",
                         hapiVersion, e);
                 throw new InvalidProtobufVersionException("Invalid hapi version string: " + hapiVersion);
             }
         } else {
-            log.error("createFileHeader :: Error when parsing protobuf version string [{}]%n", hapiVersion);
+            System.err.printf("createFileHeader :: Error when parsing protobuf version string [%s]%n", hapiVersion);
             throw new InvalidProtobufVersionException("Invalid hapi version string: " + hapiVersion);
         }
     }
@@ -196,8 +192,8 @@ public class RecordStreamSigningUtils {
             output.write(RecordStreamType.getInstance().getSigFileHeader()[0]);
             signatureFile.build().writeTo(output);
         } catch (final IOException e) {
-            log.error(
-                    "generateSigRecordStreamFile :: Failed to generate signature file for [{}] with exception : [{}]%n",
+            System.err.printf(
+                    "generateSigRecordStreamFile :: Failed to generate signature file for [%s] with exception : [%s]%n",
                     filePath.getAbsolutePath(), e);
             throw e;
         }
@@ -226,43 +222,43 @@ public class RecordStreamSigningUtils {
                     final byte[] serializedBytes = f.get().toByteArray();
 
                     // update stream digest
-                    log.info("Writing file header [{}]%n", Arrays.toString(fileHeader));
+                    System.out.printf("Writing file header [%s]%n", Arrays.toString(fileHeader));
                     for (final int value : fileHeader) {
                         dosMeta.writeInt(value);
                     }
-                    log.info("Writing start running hash [{}]%n", hex(startRunningHash));
+                    System.out.printf("Writing start running hash [%s]%n", hex(startRunningHash));
                     dosMeta.write(startRunningHash);
-                    log.info("Writing end running hash [{}]%n", hex(endRunningHash));
+                    System.out.printf("Writing end running hash [%s]%n", hex(endRunningHash));
                     dosMeta.write(endRunningHash);
-                    log.info("Writing block number [{}]%n", blockNumber);
+                    System.out.printf("Writing block number [%s]%n", blockNumber);
                     dosMeta.writeLong(blockNumber);
                     dosMeta.flush();
 
                     // update meta digest
-                    log.info("Writing version [{}]%n", version);
+                    System.out.printf("Writing version [%s]%n", version);
                     dos.writeInt(version);
-                    log.info(
-                            "Writing serializedBytes [{}]%n",
+                    System.out.printf(
+                            "Writing serializedBytes [%s]%n",
                             hex(serializedBytes).substring(0, 32));
                     dos.write(serializedBytes);
                     dos.flush();
                 } else {
-                    log.error(
-                            "outputStreamDigest :: Failed to parse record file [{}] with exception : [{}]%n",
+                    System.err.printf(
+                            "outputStreamDigest :: Failed to parse record file [%s] with exception : [%s]%n",
                             recordFile, "RecordStreamFile does not have startObjectRunningHash");
 
                     throw new IOException("RecordStreamFile does not have startObjectRunningHash");
                 }
             } else {
-                log.error(
-                        "outputStreamDigest :: Failed to parse record file [{}] with exception : [{}]%n",
+                System.err.printf(
+                        "outputStreamDigest :: Failed to parse record file [%s] with exception : [%s]%n",
                         recordFile, "RecordStreamFile is empty");
                 throw new IOException("RecordStreamFile is empty");
             }
 
         } catch (final IOException e) {
-            log.error(
-                    "outputStreamDigest :: Got IOException when output steam digest [{}] with exception : [{}]%n",
+            System.err.printf(
+                    "outputStreamDigest :: Got IOException when output steam digest [%s] with exception : [%s]%n",
                     recordFile, e);
             throw e;
         }
@@ -273,7 +269,7 @@ public class RecordStreamSigningUtils {
             streamDigest = MessageDigest.getInstance(DigestType.SHA_384.algorithmName());
             metadataStreamDigest = MessageDigest.getInstance(DigestType.SHA_384.algorithmName());
         } catch (final NoSuchAlgorithmException e) {
-            log.error("initRecordDigest :: Failed to get message digest with exception : [{}]%n", e.toString());
+            System.err.printf("initRecordDigest :: Failed to get message digest with exception : [%s]%n", e);
             throw e;
         }
     }
