@@ -135,8 +135,8 @@ public final class DataFileWriter<D> {
      * @throws IOException if I/O error(s) occurred
      */
     private void moveMmapBuffer(final int currentMmapPos) throws IOException {
-        try (FileChannel channel = FileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE)) {
-            MappedByteBuffer newMap =
+        try (final FileChannel channel = FileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE)) {
+            final MappedByteBuffer newMap =
                     channel.map(MapMode.READ_WRITE, mmapPositionInFile + currentMmapPos, MMAP_BUF_SIZE);
             verifyMmapCorrectness(newMap);
             closeMmapBuffer();
@@ -152,7 +152,7 @@ public final class DataFileWriter<D> {
      *
      * @param newMap the mapped byte buffer to verify
      */
-    private static void verifyMmapCorrectness(MappedByteBuffer newMap) throws IOException {
+    private static void verifyMmapCorrectness(final MappedByteBuffer newMap) throws IOException {
         // theoretically it's possible, we should check it
         if(newMap == null) {
             throw new IOException("Failed to map file channel to memory");
@@ -161,7 +161,7 @@ public final class DataFileWriter<D> {
         try {
             newMap.put(MMAP_BUF_SIZE - 1, (byte) -1);
             if (newMap.get(MMAP_BUF_SIZE - 1) != -1) throw new IOException("Fatal error when creating mmap. Possibly,  out of disk memory.");
-        } catch (Error e) {
+        } catch (final Error e) {
             throw new IOException(e);
         }
     }

@@ -157,11 +157,6 @@ public final class DataFileCommon {
                 + FILE_EXTENSION);
     }
 
-    /** Get the path for a lock file for a given data file path */
-    static Path getLockFilePath(final Path dataFilePath) {
-        return dataFilePath.resolveSibling(dataFilePath.getFileName().toString() + ".lock");
-    }
-
     /**
      * Get the packed data location from file index and byte offset.
      *
@@ -223,11 +218,7 @@ public final class DataFileCommon {
             return false;
         }
         final String fileName = path.getFileName().toString();
-        final boolean validFile = fileName.startsWith(filePrefix) && fileName.endsWith(FILE_EXTENSION);
-        if (!validFile) {
-            return false;
-        }
-        return !Files.exists(getLockFilePath(path));
+        return fileName.startsWith(filePrefix) && fileName.endsWith(FILE_EXTENSION);
     }
 
     /**
