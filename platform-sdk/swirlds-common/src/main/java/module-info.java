@@ -156,6 +156,7 @@ module com.swirlds.common {
             com.swirlds.platform,
             com.swirlds.platform.test,
             com.swirlds.gui;
+    exports com.swirlds.common.startup;
 
     requires transitive com.swirlds.base;
     requires com.swirlds.config;

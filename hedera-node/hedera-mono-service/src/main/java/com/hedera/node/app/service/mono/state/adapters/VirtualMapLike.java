@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.mono.state.adapters;
 
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
@@ -25,7 +26,6 @@ import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualMapMigration;
 import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
-import org.apache.commons.lang3.tuple.Pair;
 
 public interface VirtualMapLike<K extends VirtualKey, V extends VirtualValue> {
     void registerMetrics(Metrics metrics);

@@ -440,11 +440,11 @@ public class FeeBuilder {
                 : 0;
     }
 
-    protected long calculateRBS(final TransactionBody txBody) {
+    protected static long calculateRBS(final TransactionBody txBody) {
         return getBaseTransactionRecordSize(txBody) * RECEIPT_STORAGE_TIME_SEC;
     }
 
-    protected long calculateBPT() {
+    protected static long calculateBPT() {
         return BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE;
     }
 }

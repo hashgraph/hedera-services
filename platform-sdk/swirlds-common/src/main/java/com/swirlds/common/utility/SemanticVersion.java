@@ -25,7 +25,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.CompareToBuilder;
-import org.apache.commons.lang3.builder.EqualsBuilder;
 
 /**
  * A standard representation of a semantic version number.
@@ -163,22 +162,19 @@ public final class SemanticVersion implements Comparable<SemanticVersion>, SelfS
      * {@inheritDoc}
      */
     @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
+    public boolean equals(final Object other) {
+        if (this == other) {
             return true;
         }
-
-        if (!(o instanceof final SemanticVersion that)) {
+        if (other == null || getClass() != other.getClass()) {
             return false;
         }
-
-        return new EqualsBuilder()
-                .append(major, that.major)
-                .append(minor, that.minor)
-                .append(patch, that.patch)
-                .append(prerelease, that.prerelease)
-                .append(build, that.build)
-                .isEquals();
+        final SemanticVersion that = (SemanticVersion) other;
+        return major == that.major
+                && minor == that.minor
+                && patch == that.patch
+                && Objects.equals(prerelease, that.prerelease)
+                && Objects.equals(build, that.build);
     }
 
     /**

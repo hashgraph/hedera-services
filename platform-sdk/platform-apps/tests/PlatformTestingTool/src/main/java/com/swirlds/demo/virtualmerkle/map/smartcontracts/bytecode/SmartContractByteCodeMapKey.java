@@ -22,7 +22,6 @@ import com.swirlds.virtualmap.VirtualLongKey;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
-import org.apache.commons.lang3.builder.EqualsBuilder;
 
 /**
  * This class holds the key to find the bytecode for a smart contract.
@@ -114,18 +113,15 @@ public final class SmartContractByteCodeMapKey implements VirtualLongKey {
      * {@inheritDoc}
      */
     @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
+    public boolean equals(final Object other) {
+        if (this == other) {
             return true;
         }
-
-        if (o == null || getClass() != o.getClass()) {
+        if (other == null || getClass() != other.getClass()) {
             return false;
         }
-
-        final SmartContractByteCodeMapKey that = (SmartContractByteCodeMapKey) o;
-
-        return new EqualsBuilder().append(contractId, that.contractId).isEquals();
+        final SmartContractByteCodeMapKey that = (SmartContractByteCodeMapKey) other;
+        return contractId == that.contractId;
     }
 
     /**

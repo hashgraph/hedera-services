@@ -43,7 +43,6 @@ module com.swirlds.platform {
     exports com.swirlds.platform.network.communication;
     exports com.swirlds.platform.network.protocol;
     exports com.swirlds.platform.network.topology;
-    exports com.swirlds.platform.network.unidirectional;
     exports com.swirlds.platform.recovery;
     exports com.swirlds.platform.state;
     exports com.swirlds.platform.stats;
@@ -103,8 +102,7 @@ module com.swirlds.platform {
             com.swirlds.platform.test;
     exports com.swirlds.platform.reconnect.emergency to
             com.swirlds.platform.test;
-    exports com.swirlds.platform.recovery.events to
-            com.hedera.node.services.cli,
+    exports com.swirlds.platform.recovery.internal to
             com.swirlds.platform.test;
     exports com.swirlds.platform.uptime to
             com.swirlds.config.impl;

@@ -64,6 +64,7 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
         // The transaction cannot set the admin key unless the transaction was signed by that key
         if (op.hasAdminKey()) {
             context.requireKeyOrThrow(op.adminKey(), BAD_ENCODING);
+            //  context.requireKeyOrThrow(op.adminKey(), INVALID_ADMIN_KEY); ref #7770
         }
 
         // If an account is to be used for auto-renewal, then the account must exist and the transaction

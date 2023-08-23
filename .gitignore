@@ -1075,3 +1075,6 @@ hedera-node/hapi/checkouts.bin
 !platform-sdk/**/src/test/resources/**/*.evts_sig
 *.dtmp
 *.bkp
+
+### CI Pipeline Created Files
+gha-creds-*.json

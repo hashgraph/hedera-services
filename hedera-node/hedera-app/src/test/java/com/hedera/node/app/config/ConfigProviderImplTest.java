@@ -17,8 +17,11 @@
 package com.hedera.node.app.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.hedera.hapi.node.base.ServicesConfigurationList;
+import com.hedera.hapi.node.base.Setting;
 import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.nio.charset.StandardCharsets;
@@ -179,7 +182,10 @@ class ConfigProviderImplTest {
     void testUpdateProvidesConfigProperty() {
         // given
         final var configProvider = new ConfigProviderImpl(true);
-        final Bytes bytes = Bytes.wrap("update.test=789".getBytes(StandardCharsets.UTF_8));
+        final ServicesConfigurationList servicesConfigurationList = ServicesConfigurationList.newBuilder()
+                .nameValue(Setting.newBuilder().name("update.test").value("789").build())
+                .build();
+        final Bytes bytes = ServicesConfigurationList.PROTOBUF.toBytes(servicesConfigurationList);
 
         // when
         configProvider.update(bytes);
@@ -195,12 +201,12 @@ class ConfigProviderImplTest {
     void testUpdateProvidesConfigProperties() {
         // given
         final var configProvider = new ConfigProviderImpl(true);
-        final StringBuilder sb = new StringBuilder("update.test1=789")
-                .append(System.lineSeparator())
-                .append("update.test2=abc")
-                .append(System.lineSeparator())
-                .append("# update.test3=COMMENT");
-        final Bytes bytes = Bytes.wrap(sb.toString().getBytes(StandardCharsets.UTF_8));
+        final ServicesConfigurationList servicesConfigurationList = ServicesConfigurationList.newBuilder()
+                .nameValue(
+                        Setting.newBuilder().name("update.test1").value("789").build(),
+                        Setting.newBuilder().name("update.test2").value("abc").build())
+                .build();
+        final Bytes bytes = ServicesConfigurationList.PROTOBUF.toBytes(servicesConfigurationList);
 
         // when
         configProvider.update(bytes);
@@ -214,6 +220,7 @@ class ConfigProviderImplTest {
         assertThat(value2).isEqualTo("abc");
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Test
     void testUpdateWithNullBytes() {
         // given
@@ -230,6 +237,6 @@ class ConfigProviderImplTest {
         final Bytes bytes = Bytes.wrap("\\uxxxx".getBytes(StandardCharsets.UTF_8));
 
         // then
-        assertThatThrownBy(() -> configProvider.update(bytes)).isInstanceOf(IllegalArgumentException.class);
+        assertThatCode(() -> configProvider.update(bytes)).doesNotThrowAnyException();
     }
 }

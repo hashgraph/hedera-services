@@ -49,6 +49,8 @@ on:
         default: "Release"
 
     secrets:
+      access-token:
+        required: true
       gpg-key-contents:
         required: false
       gpg-key-passphrase:
@@ -80,6 +82,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
         with:
+          token: ${{ secrets.access-token }}
           fetch-depth: 0
 
       - name: Install Semantic Version Tools
@@ -231,6 +234,7 @@ jobs:
           author_email: ${{ secrets.git-user-email }}
           commit: --signoff --gpg-sign
           message: "[Automated Maven Central Release] Platform SDK v${{ inputs.new-version }}"
+          remove: ${{ steps.google-auth.outputs.credentials_file_path }}
 
 #      - name: Cache SDK Release Archives
 #        id: archive-cache

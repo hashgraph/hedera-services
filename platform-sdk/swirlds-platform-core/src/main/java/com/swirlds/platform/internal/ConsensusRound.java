@@ -16,11 +16,9 @@
 
 package com.swirlds.platform.internal;
 
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
-
+import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.events.ConsensusEvent;
-import com.swirlds.platform.EventImpl;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.util.iterator.TypedIterator;
@@ -30,8 +28,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * A consensus round with all its events.
@@ -180,20 +176,15 @@ public class ConsensusRound implements Round {
     }
 
     @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
+    public boolean equals(final Object other) {
+        if (this == other) {
             return true;
         }
-
-        if (o == null || getClass() != o.getClass()) {
+        if (other == null || getClass() != other.getClass()) {
             return false;
         }
-
-        final ConsensusRound round = (ConsensusRound) o;
-
-        return new EqualsBuilder()
-                .append(consensusEvents, round.consensusEvents)
-                .isEquals();
+        final ConsensusRound that = (ConsensusRound) other;
+        return Objects.equals(consensusEvents, that.consensusEvents);
     }
 
     /**
@@ -210,7 +201,7 @@ public class ConsensusRound implements Round {
 
     @Override
     public String toString() {
-        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+        return new ToStringBuilder(this)
                 .append("round", roundNum)
                 .append("consensus events", EventUtils.toShortStrings(consensusEvents))
                 .toString();

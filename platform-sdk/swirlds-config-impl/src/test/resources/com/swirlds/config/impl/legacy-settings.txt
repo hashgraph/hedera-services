@@ -6,7 +6,6 @@
 # All other values are true.
 #######################################################################################
 
-maxOutgoingSyncs,          1
 state.saveStatePeriod,     0
 showInternalStats,         1
 useLoopbackIp,             false
