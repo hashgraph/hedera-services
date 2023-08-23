@@ -104,12 +104,20 @@ public class DumpContractBytecodesSubcommand {
                 contractsWithBytecode.contracts().size();
         int totalUniqueContractsPresentInFileStore = totalContractsPresentInFileStore;
 
-        if (uniqify == DumpStateCommand.Uniqify.YES) {
+        if (uniqify == Uniqify.YES) {
             r = uniqifyContracts(contractsWithBytecode, zeroLengthContracts);
             contractsWithBytecode = r.getLeft();
             zeroLengthContracts = r.getRight();
             totalUniqueContractsPresentInFileStore =
                     contractsWithBytecode.contracts().size();
+        }
+
+        if (verbosity == Verbosity.VERBOSE) {
+            if (uniqify == Uniqify.YES)
+                System.out.printf(
+                        "=== %d contracts (%d unique) ===%n",
+                        totalContractsRegisteredWithAccounts, totalUniqueContractsPresentInFileStore);
+            else System.out.printf("=== %d contracts ===%n", totalContractsRegisteredWithAccounts);
         }
 
         final var sb = new StringBuilder(estimateReportSize(contractsWithBytecode));
@@ -126,7 +134,8 @@ public class DumpContractBytecodesSubcommand {
         }
         appendFormattedContractLines(sb, contractsWithBytecode);
 
-        if (verbosity == Verbosity.VERBOSE) System.out.printf("=== Have %d byte report%n", sb.length());
+        if (verbosity == Verbosity.VERBOSE)
+            System.out.printf("=== contract bytecode report is %d bytes%n", sb.length());
 
         writeReportToFile(sb.toString());
     }
@@ -139,9 +148,7 @@ public class DumpContractBytecodesSubcommand {
         // Make a swag based on how many contracts there are plus bytecode size - each line has not just the bytecode
         // but the list of contract ids, so the estimated size of the file accounts for the bytecodes (as hex) and the
         // contract ids (as decimal)
-        int reportSizeEstimate = contracts.registeredContractsCount() * 20 + totalBytecodeSize * 2;
-        if (verbosity == Verbosity.VERBOSE) System.out.printf("=== Estimating %d byte report%n", reportSizeEstimate);
-        return reportSizeEstimate;
+        return contracts.registeredContractsCount() * 20 + totalBytecodeSize * 2;
     }
 
     void writeReportToFile(@NonNull String report) {
