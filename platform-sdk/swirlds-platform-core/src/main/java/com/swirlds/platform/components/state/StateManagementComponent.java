@@ -22,10 +22,7 @@ import com.swirlds.platform.components.common.output.RoundAppliedToStateConsumer
 import com.swirlds.platform.components.common.output.SignedStateToLoadConsumer;
 import com.swirlds.platform.components.state.query.LatestSignedStateProvider;
 import com.swirlds.platform.state.iss.ConsensusHashManager;
-import com.swirlds.platform.state.signed.ReservedSignedState;
-import com.swirlds.platform.state.signed.SignedStateFinder;
-import com.swirlds.platform.state.signed.SignedStateInfo;
-import com.swirlds.platform.state.signed.SignedStateManager;
+import com.swirlds.platform.state.signed.*;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -77,6 +74,14 @@ public interface StateManagementComponent
      */
     @Deprecated
     List<SignedStateInfo> getSignedStateInfo();
+
+    /**
+     * Dump the latest immutable state if it is available.
+     *
+     * @param reason   the reason why the state is being dumped
+     * @param blocking if true then block until the state dump is complete
+     */
+    void dumpLatestImmutableState(@NonNull StateToDiskReason reason, boolean blocking);
 
     /**
      * Get the consensus timestamp of the first state ingested by the signed state manager. Useful for computing the

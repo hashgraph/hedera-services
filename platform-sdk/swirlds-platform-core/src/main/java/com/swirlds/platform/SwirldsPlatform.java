@@ -140,10 +140,7 @@ import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.iss.ConsensusHashManager;
-import com.swirlds.platform.state.signed.ReservedSignedState;
-import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.state.signed.SignedStateManager;
-import com.swirlds.platform.state.signed.SourceOfSignedState;
+import com.swirlds.platform.state.signed.*;
 import com.swirlds.platform.stats.StatConstructor;
 import com.swirlds.platform.system.Shutdown;
 import com.swirlds.platform.threading.PauseAndLoad;
@@ -1067,6 +1064,8 @@ public class SwirldsPlatform implements Platform, Startable {
         components.start();
         Optional.of(tipsetEventCreator).ifPresent(Startable::start);
         replayPreconsensusEvents();
+        stateManagementComponent.dumpLatestImmutableState(StateToDiskReason.PCES_RECOVERY_DONE, true);
+
     }
 
     /**

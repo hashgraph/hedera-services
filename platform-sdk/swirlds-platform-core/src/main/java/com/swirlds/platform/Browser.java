@@ -52,9 +52,7 @@ import com.swirlds.common.metrics.MetricsProvider;
 import com.swirlds.common.metrics.platform.DefaultMetricsProvider;
 import com.swirlds.common.startup.CommandLineArgs;
 import com.swirlds.common.startup.Log4jSetup;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.SoftwareVersion;
-import com.swirlds.common.system.SwirldMain;
+import com.swirlds.common.system.*;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
@@ -266,6 +264,11 @@ public class Browser {
         // init appMains
         for (final NodeId nodeId : nodesToRun) {
             appMains.get(nodeId).init(platforms.get(nodeId), nodeId);
+        }
+
+        if (commandLineArgs.pcesRecovery()) {
+            platforms.values().forEach(SwirldsPlatform::performPcesRecovery);
+            SystemExitUtils.exitSystem(SystemExitCode.NO_ERROR, "PCES recovery done");
         }
 
         // build app threads

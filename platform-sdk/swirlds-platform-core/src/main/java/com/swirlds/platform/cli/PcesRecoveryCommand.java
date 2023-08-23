@@ -19,12 +19,12 @@ import java.util.Set;
 )
 @SubcommandOf(PlatformCli.class)
 public class PcesRecoveryCommand extends AbstractCommand {
-	@CommandLine.Parameters(description = "The node ID ", index = "0")
+	@CommandLine.Parameters(description = "The node ID to run in recovery mode", index = "0")
 	private long nodeId;
 
 	@Override
 	public Integer call() throws IOException, InterruptedException {
-		Browser.launch(new CommandLineArgs(Set.of(new NodeId(nodeId)), false));
+		Browser.launch(new CommandLineArgs(Set.of(new NodeId(nodeId)), true));
 		return null;
 	}
 }

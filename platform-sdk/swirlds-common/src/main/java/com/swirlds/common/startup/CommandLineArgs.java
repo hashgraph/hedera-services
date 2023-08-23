@@ -26,7 +26,7 @@ import java.util.Set;
  *
  * @param localNodesToStart the set of nodes to start on this machine
  */
-public record CommandLineArgs(@NonNull Set<NodeId> localNodesToStart, @NonNull boolean pcesRecovery) {
+public record CommandLineArgs(@NonNull Set<NodeId> localNodesToStart, boolean pcesRecovery) {
     /** The command line option to start a set of nodes on this machine */
     public static final String OPTION_LOCAL = "-local";
     /** When set, the platform will perform a PCES recovery and shut down */
