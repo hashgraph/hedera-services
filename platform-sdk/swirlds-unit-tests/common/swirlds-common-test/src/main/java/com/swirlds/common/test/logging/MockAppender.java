@@ -45,7 +45,10 @@ public class MockAppender extends AbstractAppender {
     public void append(LogEvent event) {
         if (isStarted()) {
             messages.add(String.format(
-                    "%s - %s", event.getLevel(), event.getMessage().getFormattedMessage()));
+                    "%s - %s - %s",
+                    event.getMarker().getName(),
+                    event.getLevel(),
+                    event.getMessage().getFormattedMessage()));
         }
     }
 

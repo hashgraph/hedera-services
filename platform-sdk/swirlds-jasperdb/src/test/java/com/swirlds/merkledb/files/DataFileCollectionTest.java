@@ -788,7 +788,7 @@ class DataFileCollectionTest {
                             return false;
                         }
                         assertEquals(
-                                "INFO - Failed to copy data item 0 / 0 due to thread interruption",
+                                "MERKLE_DB - INFO - Failed to copy data item 0 / 0 due to thread interruption",
                                 mockAppender.get(0));
                         return true;
                     },
