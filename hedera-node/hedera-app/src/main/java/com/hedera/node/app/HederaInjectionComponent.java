@@ -154,6 +154,9 @@ public interface HederaInjectionComponent {
         Builder systemFileUpdateFacility(SystemFileUpdateFacility systemFileUpdateFacility);
 
         @BindsInstance
+        Builder exchangeRateManager(ExchangeRateManager exchangeRateManager);
+
+        @BindsInstance
         Builder maxSignedTxnSize(@MaxSignedTxnSize final int maxSignedTxnSize);
 
         @BindsInstance
