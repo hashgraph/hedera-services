@@ -780,11 +780,6 @@ class DataFileCollectionTest {
         try {
             assertEventuallyTrue(
                     () -> {
-                        try {
-                            Thread.sleep(100);
-                        } catch (InterruptedException e) {
-                            throw new RuntimeException(e);
-                        }
                         if (!closedByInterruptFromCompaction.get()) {
                             return false;
                         }

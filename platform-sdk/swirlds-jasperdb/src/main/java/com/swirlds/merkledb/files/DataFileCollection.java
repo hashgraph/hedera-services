@@ -450,7 +450,7 @@ public class DataFileCollection<D> implements Snapshotable {
                     index.putIfEqual(path, dataLocation, newLocation);
                 } catch (final ClosedByInterruptException e) {
                     logger.info(
-                            EXCEPTION.getMarker(),
+                            MERKLE_DB.getMarker(),
                             "Failed to copy data item {} / {} due to thread interruption",
                             fileIndex,
                             fileOffset,
