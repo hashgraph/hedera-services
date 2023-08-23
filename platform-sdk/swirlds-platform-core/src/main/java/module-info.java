@@ -105,7 +105,7 @@ module com.swirlds.platform {
     exports com.swirlds.platform.recovery.internal to
             com.swirlds.platform.test;
     exports com.swirlds.platform.uptime to
-            com.swirlds.config.impl;
+            com.swirlds.config.impl, com.swirlds.common;
     exports com.swirlds.platform.gossip.sync.config to
             com.swirlds.config.impl;
     exports com.swirlds.platform.event.tipset to
