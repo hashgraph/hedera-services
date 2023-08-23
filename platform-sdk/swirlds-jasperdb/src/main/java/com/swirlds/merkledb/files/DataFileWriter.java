@@ -138,11 +138,31 @@ public final class DataFileWriter<D> {
         try (FileChannel channel = FileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE)) {
             MappedByteBuffer newMap =
                     channel.map(MapMode.READ_WRITE, mmapPositionInFile + currentMmapPos, MMAP_BUF_SIZE);
-            if (newMap != null) {
-                closeMmapBuffer();
-                writingMmap = newMap;
-                mmapPositionInFile += currentMmapPos;
-            }
+            verifyMmapCorrectness(newMap);
+            closeMmapBuffer();
+            writingMmap = newMap;
+            mmapPositionInFile += currentMmapPos;
+        }
+    }
+
+    /**
+     * This method addresses the fact that the mapped byte buffer doesn't have the same safeguards
+     * as the regular FileChannel. It's possible to create a mapped byte buffer even if there is not enough
+     * disk space to map it. This code is trying to identify this situation and throw an exception.
+     *
+     * @param newMap the mapped byte buffer to verify
+     */
+    private static void verifyMmapCorrectness(MappedByteBuffer newMap) throws IOException {
+        // theoretically it's possible, we should check it
+        if(newMap == null) {
+            throw new IOException("Failed to map file channel to memory");
+        }
+        // The idea is to force this mapping to happen. By default, actual mapping happens lazily.
+        try {
+            newMap.put(MMAP_BUF_SIZE - 1, (byte) -1);
+            if (newMap.get(MMAP_BUF_SIZE - 1) != -1) throw new IOException("Fatal error when creating mmap. Possibly,  out of disk memory.");
+        } catch (Error e) {
+            throw new IOException(e);
         }
     }
 
