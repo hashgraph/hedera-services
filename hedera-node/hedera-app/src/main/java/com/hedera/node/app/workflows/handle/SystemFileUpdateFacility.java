@@ -55,7 +55,7 @@ public class SystemFileUpdateFacility {
      * @param configProvider the configuration provider
      */
     public SystemFileUpdateFacility(
-            @NonNull final ConfigProviderImpl configProvider, 
+            @NonNull final ConfigProviderImpl configProvider,
             @NonNull final ThrottleManager throttleManager,
             @NonNull final ExchangeRateManager exchangeRateManager) {
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");

@@ -94,7 +94,8 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
         final var txBody = simpleCryptoTransfer().body();
 
         // then
-        assertThatThrownBy(() -> new SystemFileUpdateFacility(null, null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new SystemFileUpdateFacility(null, null, null))
+                .isInstanceOf(NullPointerException.class);
 
         assertThatThrownBy(() -> subject.handleTxBody(null, txBody)).isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> subject.handleTxBody(state, null)).isInstanceOf(NullPointerException.class);
@@ -169,7 +170,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
         final var fileNum = config.exchangeRates();
         final var fileID = FileID.newBuilder().fileNum(fileNum).build();
         final var txBody = TransactionBody.newBuilder()
-            .fileAppend(FileAppendTransactionBody.newBuilder().fileID(fileID));
+                .fileAppend(FileAppendTransactionBody.newBuilder().fileID(fileID));
         files.put(fileID, File.newBuilder().contents(FILE_BYTES).build());
 
         // when

@@ -89,7 +89,8 @@ class IngestComponentTest {
                 .crypto(CryptographyHolder.get())
                 .bootstrapProps(new BootstrapProperties())
                 .configuration(configProvider)
-                .systemFileUpdateFacility(new SystemFileUpdateFacility(configProvider, throttleManager, exchangeRateManager))
+                .systemFileUpdateFacility(
+                        new SystemFileUpdateFacility(configProvider, throttleManager, exchangeRateManager))
                 .throttleManager(throttleManager)
                 .self(selfNodeInfo)
                 .initialHash(new Hash())

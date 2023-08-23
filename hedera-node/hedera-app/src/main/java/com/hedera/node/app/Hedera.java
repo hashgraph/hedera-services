@@ -962,7 +962,8 @@ public final class Hedera implements SwirldMain {
                     .configuration(configProvider)
                     .throttleManager(throttleManager)
                     .exchangeRateManager(exchangeRateManager)
-                    .systemFileUpdateFacility(new SystemFileUpdateFacility(configProvider, throttleManager, exchangeRateManager))
+                    .systemFileUpdateFacility(
+                            new SystemFileUpdateFacility(configProvider, throttleManager, exchangeRateManager))
                     .self(SelfNodeInfoImpl.of(nodeAddress, version))
                     .initialHash(initialHash)
                     .platform(platform)
