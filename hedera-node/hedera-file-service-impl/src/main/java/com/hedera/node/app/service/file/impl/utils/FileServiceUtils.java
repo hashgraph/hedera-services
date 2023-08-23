@@ -28,6 +28,7 @@ import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.FileMetadata;
 import com.hedera.node.app.service.file.ReadableFileStore;
@@ -114,6 +115,34 @@ public class FileServiceUtils {
                 for (final Key key : fileKeyList.keys()) {
                     context.requireKey(key);
                 }
+            }
+        }
+
+        if (transactionKeys != null && transactionKeys.hasKeys()) {
+            for (final Key key : transactionKeys.keys()) {
+                context.requireKey(key);
+            }
+        }
+    }
+
+    /**
+     * The function validates the keys and adds them to the context.
+     *
+     * @param file file that will be checked for required keys
+     * @param transactionKeys transaction keys that add to context for required keys.
+     * @param context the prehandle context for the transaction.
+     */
+    public static void validateAndAddRequiredKeysForDelete(
+            @Nullable final File file,
+            @Nullable final KeyList transactionKeys,
+            @NonNull final PreHandleContext context) {
+        if (file != null) {
+            KeyList fileKeyList = file.keys();
+
+            if (fileKeyList != null && fileKeyList.hasKeys()) {
+                ThresholdKey syntheticKey =
+                        ThresholdKey.newBuilder().threshold(1).keys(fileKeyList).build();
+                context.requireKey(Key.newBuilder().thresholdKey(syntheticKey).build());
             }
         }
 
