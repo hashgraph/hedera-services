@@ -28,7 +28,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
-import org.apache.commons.lang3.builder.EqualsBuilder;
 
 /**
  * A consensus round with all its events.
@@ -177,20 +176,15 @@ public class ConsensusRound implements Round {
     }
 
     @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
+    public boolean equals(final Object other) {
+        if (this == other) {
             return true;
         }
-
-        if (o == null || getClass() != o.getClass()) {
+        if (other == null || getClass() != other.getClass()) {
             return false;
         }
-
-        final ConsensusRound round = (ConsensusRound) o;
-
-        return new EqualsBuilder()
-                .append(consensusEvents, round.consensusEvents)
-                .isEquals();
+        final ConsensusRound that = (ConsensusRound) other;
+        return Objects.equals(consensusEvents, that.consensusEvents);
     }
 
     /**

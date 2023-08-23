@@ -229,6 +229,7 @@ public final class GossipFactory {
                         eventMapper,
                         eventIntakeMetrics,
                         syncMetrics,
+                        eventLinker,
                         statusActionSubmitter,
                         loadReconnectState,
                         clearAllPipelinesForReconnect);
