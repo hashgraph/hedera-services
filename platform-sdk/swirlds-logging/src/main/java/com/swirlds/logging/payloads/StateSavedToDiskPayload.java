@@ -17,6 +17,8 @@
 package com.swirlds.logging.payloads;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.nio.file.Path;
 import java.util.Objects;
 
@@ -79,6 +81,7 @@ public class StateSavedToDiskPayload extends AbstractLogPayload {
      *
      * @return the reason for writing the state to disk
      */
+    @Nullable
     public String getReason() {
         return reason;
     }
@@ -88,6 +91,7 @@ public class StateSavedToDiskPayload extends AbstractLogPayload {
      *
      * @return the directory where the state was written
      */
+    @Nullable
     public Path getDirectory() {
         return directory;
     }
