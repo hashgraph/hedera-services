@@ -202,19 +202,17 @@ public class CommonUtils {
      * @param length the length of the array to convert to hex
      * @return a {@link String} containing the lowercase hexadecimal representation of the byte array
      */
+    @SuppressWarnings("java:S127")
     public static String hex(final byte[] bytes, final int length) {
         if (bytes == null) {
             return "null";
         }
         throwRangeInvalid("length", length, 0, bytes.length);
 
-        final char[] digits = DIGITS_LOWER;
         final char[] out = new char[length << 1];
-
-        int j = 0;
-        for (int i = 0; i < length; i++) {
-            out[j++] = digits[(0xF0 & bytes[i]) >>> 4];
-            out[j++] = digits[0x0F & bytes[i]];
+        for (int i = 0, j = 0; i < length; i++) {
+            out[j++] = DIGITS_LOWER[(0xF0 & bytes[i]) >>> 4];
+            out[j++] = DIGITS_LOWER[0x0F & bytes[i]];
         }
 
         return new String(out);
@@ -236,12 +234,14 @@ public class CommonUtils {
      * @param string the hexadecimal string to be converted
      * @return an array of bytes
      */
+    @SuppressWarnings("java:S127")
     public static byte[] unhex(final String string) {
         if (string == null) {
             return null;
         }
 
-        final int len = string.length();
+        final char[] data = string.toCharArray();
+        final int len = data.length;
 
         if ((len & 0x01) != 0) {
             throw new IllegalArgumentException("Odd number of characters.");
@@ -249,10 +249,11 @@ public class CommonUtils {
 
         final byte[] out = new byte[len >> 1];
 
-        int j = 0;
-        for (int i = 0; i < out.length; i++) {
-            int f = toDigit(string.charAt(j), j++) << 4;
-            f = f | toDigit(string.charAt(j), j++);
+        for (int i = 0, j = 0; j < len; i++) {
+            int f = toDigit(data[j], j) << 4;
+            j++;
+            f = f | toDigit(data[j], j);
+            j++;
             out[i] = (byte) (f & 0xFF);
         }
 
