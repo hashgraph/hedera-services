@@ -131,8 +131,6 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
         this.softwareVersion = Objects.requireNonNull(softwareVersion);
         this.addressBook = Objects.requireNonNull(addressBook);
 
-        Objects.requireNonNull(addressBook);
-
         final EventCreationConfig eventCreationConfig =
                 platformContext.getConfiguration().getConfigData(EventCreationConfig.class);
 
