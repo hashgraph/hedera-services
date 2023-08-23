@@ -126,7 +126,9 @@ public class FileServiceUtils {
     }
 
     /**
-     * The function validates the keys and adds them to the context.
+     * The function is unique for File delete Pre-handle validates the keys.
+     * Then it wraps the file Keylist into thresholds adds them to the context.
+     * In addition, it add the transaction keys to the context.
      *
      * @param file file that will be checked for required keys
      * @param transactionKeys transaction keys that add to context for required keys.
