@@ -314,81 +314,100 @@ class SavedStateMetadataTests {
 //        assertEquals(signingWeightSum, deserialized.signingWeightSum());
 //        assertEquals(totalWeight, deserialized.totalWeight());
 //    }
-//
-//    @Test
-//    @DisplayName("Signing Nodes Sorted Test")
-//    void signingNodesSortedTest() {
-//        final SignedState signedState = mock(SignedState.class);
-//        final SigSet sigSet = mock(SigSet.class);
-//        final State state = mock(State.class);
-//        final PlatformState platformState = mock(PlatformState.class);
-//        final PlatformData platformData = mock(PlatformData.class);
-//        final AddressBook addressBook = mock(AddressBook.class);
-//
-//        when(signedState.getState()).thenReturn(state);
-//        when(state.getPlatformState()).thenReturn(platformState);
-//        when(platformState.getAddressBook()).thenReturn(addressBook);
-//        when(platformState.getPlatformData()).thenReturn(platformData);
-//        when(signedState.getSigSet()).thenReturn(sigSet);
-//        when(sigSet.getSigningNodes())
-//                .thenReturn(new ArrayList<>(List.of(new NodeId(3L), new NodeId(1L), new NodeId(2L))));
-//
-//        final SavedStateMetadata metadata = SavedStateMetadata.create(signedState, new NodeId(1234), Instant.now());
-//
-//        assertEquals(List.of(new NodeId(1L), new NodeId(2L), new NodeId(3L)), metadata.signingNodes());
-//    }
-//
-//    @Test
-//    @DisplayName("Handle Newlines Elegantly Test")
-//    void handleNewlinesElegantlyTest() throws IOException {
-//        final Random random = getRandomPrintSeed();
-//
-//        final long round = random.nextLong();
-//        final long numberOfConsensusEvents = random.nextLong();
-//        final Instant timestamp = RandomUtils.randomInstant(random);
-//        final Hash runningEventHash = randomHash(random);
-//        final long minimumGenerationNonAncient = random.nextLong();
-//        final Instant wallClockTime = RandomUtils.randomInstant(random);
-//        final NodeId nodeId = generateRandomNodeId(random);
-//        final List<NodeId> signingNodes = new ArrayList<>();
-//        for (int i = 0; i < random.nextInt(1, 10); i++) {
-//            signingNodes.add(generateRandomNodeId(random));
-//        }
-//        final long signingWeightSum = random.nextLong();
-//        final long totalWeight = random.nextLong();
-//
-//        final SavedStateMetadata metadata = new SavedStateMetadata(
-//                round,
-//                numberOfConsensusEvents,
-//                timestamp,
-//                runningEventHash,
-//                minimumGenerationNonAncient,
-//                "why\nare\nthere\nnewlines\nhere\nplease\nstop\n",
-//                wallClockTime,
-//                nodeId,
-//                signingNodes,
-//                signingWeightSum,
-//                totalWeight);
-//
-//        final SavedStateMetadata deserialized = serializeDeserialize(metadata);
-//
-//        assertEquals(round, deserialized.round());
-//        assertEquals(numberOfConsensusEvents, deserialized.numberOfConsensusEvents());
-//        assertEquals(timestamp, deserialized.consensusTimestamp());
-//        assertEquals(runningEventHash, deserialized.runningEventHash());
-//        assertEquals(minimumGenerationNonAncient, deserialized.minimumGenerationNonAncient());
-//        assertEquals("why//are//there//newlines//here//please//stop//", deserialized.softwareVersion());
-//        assertEquals(wallClockTime, deserialized.wallClockTime());
-//        assertEquals(nodeId, deserialized.nodeId());
-//        assertEquals(signingNodes, deserialized.signingNodes());
-//        assertEquals(signingWeightSum, deserialized.signingWeightSum());
-//        assertEquals(totalWeight, deserialized.totalWeight());
-//    }
-//
-//    private interface FileUpdater {
-//        String createNewFileString(final String fileString, SavedStateMetadata metadata) throws IOException;
-//    }
-//
+
+    @Test
+    @DisplayName("Signing Nodes Sorted Test")
+    void signingNodesSortedTest() {
+        final Random random = getRandomPrintSeed();
+
+        final SignedState signedState = mock(SignedState.class);
+        final SigSet sigSet = mock(SigSet.class);
+        final State state = mock(State.class);
+        when(state.getHash()).thenReturn(randomHash(random));
+        final PlatformState platformState = mock(PlatformState.class);
+        final PlatformData platformData = mock(PlatformData.class);
+        when(platformData.getHashEventsCons()).thenReturn(randomHash(random));
+        final AddressBook addressBook = mock(AddressBook.class);
+
+        when(signedState.getState()).thenReturn(state);
+        when(state.getPlatformState()).thenReturn(platformState);
+        when(platformState.getAddressBook()).thenReturn(addressBook);
+        when(platformState.getPlatformData()).thenReturn(platformData);
+        when(signedState.getSigSet()).thenReturn(sigSet);
+        when(sigSet.getSigningNodes())
+                .thenReturn(new ArrayList<>(List.of(new NodeId(3L), new NodeId(1L), new NodeId(2L))));
+
+        final SavedStateMetadata metadata = SavedStateMetadata.create(signedState, new NodeId(1234), Instant.now());
+
+        assertEquals(List.of(new NodeId(1L), new NodeId(2L), new NodeId(3L)), metadata.signingNodes());
+    }
+
+    @Test
+    @DisplayName("Handle Newlines Elegantly Test")
+    void handleNewlinesElegantlyTest() throws IOException {
+        final Random random = getRandomPrintSeed();
+
+        final long round = random.nextLong();
+        final Hash hash = randomHash(random);
+        final String hashMnemonic = hash.toMnemonic();
+        final long numberOfConsensusEvents = random.nextLong();
+        final Instant timestamp = RandomUtils.randomInstant(random);
+        final Hash runningEventHash = randomHash(random);
+        final String runningEventHashMnemonic = runningEventHash.toMnemonic();
+        final long minimumGenerationNonAncient = random.nextLong();
+        final Instant wallClockTime = RandomUtils.randomInstant(random);
+        final NodeId nodeId = generateRandomNodeId(random);
+        final List<NodeId> signingNodes = new ArrayList<>();
+        for (int i = 0; i < random.nextInt(1, 10); i++) {
+            signingNodes.add(generateRandomNodeId(random));
+        }
+        final long signingWeightSum = random.nextLong();
+        final long totalWeight = random.nextLong();
+        final Hash epochHash = random.nextBoolean() ? randomHash(random) : null;
+        final String epochHashString = epochHash == null ? "null" : epochHash.toMnemonic();
+
+        final SavedStateMetadata metadata = new SavedStateMetadata(
+                round,
+                hash,
+                hashMnemonic,
+                numberOfConsensusEvents,
+                timestamp,
+                runningEventHash,
+                runningEventHashMnemonic,
+                minimumGenerationNonAncient,
+                "why\nare\nthere\nnewlines\nhere\nplease\nstop\n",
+                wallClockTime,
+                nodeId,
+                signingNodes,
+                signingWeightSum,
+                totalWeight,
+                epochHash,
+                epochHashString);
+
+        final SavedStateMetadata deserialized = serializeDeserialize(metadata);
+
+        assertEquals(round, deserialized.round());
+        assertEquals(hash, deserialized.hash());
+        assertEquals(hashMnemonic, deserialized.hashMnemonic());
+        assertEquals(numberOfConsensusEvents, deserialized.numberOfConsensusEvents());
+        assertEquals(timestamp, deserialized.consensusTimestamp());
+        assertEquals(runningEventHash, deserialized.runningEventHash());
+        assertEquals(runningEventHashMnemonic, deserialized.runningEventHashMnemonic());
+        assertEquals(minimumGenerationNonAncient, deserialized.minimumGenerationNonAncient());
+        assertEquals("why//are//there//newlines//here//please//stop//", deserialized.softwareVersion());
+        assertEquals(wallClockTime, deserialized.wallClockTime());
+        assertEquals(nodeId, deserialized.nodeId());
+        assertEquals(signingNodes, deserialized.signingNodes());
+        assertEquals(signingWeightSum, deserialized.signingWeightSum());
+        assertEquals(totalWeight, deserialized.totalWeight());
+        assertEquals(epochHash, deserialized.epochHash());
+        assertEquals(epochHashString, deserialized.epochHashMnemonic());
+    }
+
+    private interface FileUpdater {
+        String createNewFileString(final String fileString, SavedStateMetadata metadata) throws IOException;
+    }
+
 //    /**
 //     * Test the parsing of a mal-formatted file
 //     *

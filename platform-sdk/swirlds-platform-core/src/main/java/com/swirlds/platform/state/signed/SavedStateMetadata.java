@@ -61,14 +61,6 @@ import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-// A note to platform engineers maintaining this code:
-//
-// It is safe to add new fields to this class, but all new
-// fields must be @Nullable during migration. After states
-// in production environments have been migrated and the
-// state files on disk have the new fields, then it is ok
-// to change the fields to @NonNull or to primitives.
-
 /**
  * Metadata about a saved state. Fields in this record may be null if they are not present in the metadata file. All
  * fields in this record will be null if the metadata file is missing.
@@ -119,7 +111,15 @@ public record SavedStateMetadata(
         long signingWeightSum,
         long totalWeight,
         @Nullable Hash epochHash,
-        @NonNull String epochHashMnemonic) {
+        @Nullable String epochHashMnemonic) {
+
+    // A note to engineers maintaining this code:
+    //
+    // It is safe to add new fields to this class, but all new
+    // fields must be @Nullable and optional. After states
+    // in production environments have been migrated and the
+    // state files on disk have the new fields, then it is ok
+    // to change the fields @NonNull/primitive and required.
 
     /**
      * The standard file name for the saved state metadata file.
@@ -129,7 +129,7 @@ public record SavedStateMetadata(
     /**
      * Use this constant for the node ID if the thing writing the state is not a node.
      */
-    public static final NodeId NO_NODE_ID = null;
+    public static final NodeId NO_NODE_ID = new NodeId(Long.MAX_VALUE);
 
     private static final Logger logger = LogManager.getLogger(SavedStateMetadata.class);
 
