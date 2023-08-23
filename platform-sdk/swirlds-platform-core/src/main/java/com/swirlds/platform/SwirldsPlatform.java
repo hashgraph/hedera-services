@@ -386,8 +386,7 @@ public class SwirldsPlatform implements Platform, Startable {
         final AppCommunicationComponent appCommunicationComponent =
                 wiring.wireAppCommunicationComponent(notificationEngine);
 
-        preconsensusEventFileManager = buildPreconsensusEventFileManager(emergencyRecoveryManager);
-        clearPCESOnSoftwareUpgradeIfConfigured(softwareUpgrade, preconsensusEventFileManager);
+        preconsensusEventFileManager = buildPreconsensusEventFileManager(softwareUpgrade, emergencyRecoveryManager);
         preconsensusEventWriter = components.add(buildPreconsensusEventWriter(preconsensusEventFileManager));
 
         stateManagementComponent = wiring.wireStateManagementComponent(
@@ -1008,7 +1007,7 @@ public class SwirldsPlatform implements Platform, Startable {
      */
     @NonNull
     private PreconsensusEventFileManager buildPreconsensusEventFileManager(
-            @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
+            final boolean softwareUpgrade, @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
         try {
             final PreconsensusEventFileManager manager =
                     new PreconsensusEventFileManager(platformContext, Time.getCurrent(), recycleBin, selfId);
@@ -1021,6 +1020,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 manager.clear();
             }
 
+            clearPCESOnSoftwareUpgradeIfConfigured(softwareUpgrade, manager);
             return manager;
         } catch (final IOException e) {
             throw new UncheckedIOException("unable load preconsensus files", e);
@@ -1198,6 +1198,9 @@ public class SwirldsPlatform implements Platform, Startable {
                 .clearOnSoftwareUpgrade();
         if (softwareUpgrade && clearOnSoftwareUpgrade) {
             try {
+                logger.info(
+                        STARTUP.getMarker(),
+                        "Clearing the preconsensus event stream on software upgrade.");
                 fileManager.clear();
             } catch (final IOException e) {
                 throw new UncheckedIOException("Failed to clear the preconsensus event stream on software upgrade.", e);
