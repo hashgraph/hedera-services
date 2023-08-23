@@ -28,7 +28,6 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.config.VersionedConfigImpl;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
-import com.hedera.node.app.info.HederaFileNumbersImpl;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.records.impl.BlockRecordManagerImpl;
 import com.hedera.node.app.records.impl.BlockRecordStreamProducer;
@@ -48,7 +47,6 @@ import com.hedera.node.app.spi.fixtures.info.FakeNetworkInfo;
 import com.hedera.node.app.spi.fixtures.numbers.FakeHederaNumbers;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.info.SelfNodeInfo;
-import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
@@ -183,12 +181,6 @@ public interface ScaffoldingModule {
     @Singleton
     static ConfigProvider provideConfigProvider(@NonNull final Configuration configuration) {
         return () -> new VersionedConfigImpl(configuration, 1L);
-    }
-
-    @Provides
-    @Singleton
-    static HederaFileNumbers provideHederaFileNumbers(@NonNull final ConfigProvider configProvider) {
-        return new HederaFileNumbersImpl(configProvider);
     }
 
     @Provides
