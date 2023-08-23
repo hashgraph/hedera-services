@@ -123,11 +123,13 @@ public class RecordStreamSigningUtils {
 
             return true;
         } catch (final SignatureException | InvalidKeyException | InvalidProtobufVersionException | IOException e) {
-            System.err.printf("signRecordStreamFile :: Failed to sign file [%s]", streamFileToSign);
+            System.err.printf(
+                    "signRecordStreamFile :: Failed to sign file [%s] with exception : [%s]%n", streamFileToSign, e);
             return false;
         } catch (final NoSuchAlgorithmException | NoSuchProviderException e) {
             System.err.printf(
-                    "signRecordStreamFile :: Irrecoverable error encountered when signing [%s]", streamFileToSign);
+                    "signRecordStreamFile :: Irrecoverable error encountered when signing [%s] with exception : [%s]%n",
+                    streamFileToSign, e);
             throw new RuntimeException("Irrecoverable error encountered", e);
         }
     }

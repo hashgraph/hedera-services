@@ -76,13 +76,11 @@ public class AccountBalanceSigningUtils {
 
             return true;
         } catch (final SignatureException | InvalidKeyException | IOException e) {
-            System.err.printf(
-                    "signAccountBalanceFile :: Failed to sign file [%s] with exception : [%s]%n", streamFileToSign, e);
+            System.err.printf("signAccountBalanceFile :: Failed to sign file [%s]", streamFileToSign);
             return false;
         } catch (final NoSuchAlgorithmException | NoSuchProviderException e) {
             System.err.printf(
-                    "signAccountBalanceFile :: Irrecoverable error encountered when signing [%s] with exception : [%s]%n",
-                    streamFileToSign, e);
+                    "signAccountBalanceFile :: Irrecoverable error encountered when signing [%s]", streamFileToSign);
             throw new RuntimeException("signAccountBalanceFile :: Irrecoverable error encountered", e);
         }
     }
