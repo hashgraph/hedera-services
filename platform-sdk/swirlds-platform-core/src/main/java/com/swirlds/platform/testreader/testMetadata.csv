@@ -32,7 +32,7 @@ CryptoInvalidAccounts, Crypto-Perf-Invalid-Accounts-5k-30m, services, https://ww
 DynamicFreeze, FCM-DynamicFreeze-2.5k-40m, platform, https://www.notion.so/swirldslabs/DynamicFreeze-FCM-DynamicFreeze-2-5k-40m-c600f224f4164170822795f2deac07c9
 DynamicFreeze, FCMFCQ-DynamicFreeze-1k-35m, platform, https://www.notion.so/swirldslabs/DynamicFreeze-FCMFCQ-DynamicFreeze-1k-35m-c28b9437015e4c37b471b43d41770080
 
-FCM, FCM-Query-2.5k-110m, platform, https://www.notion.so/swirldslabs/FCM-FCM-Query-2-5k-110m-6003e1b021c84c5282a63ed059caca2f
+FCM, FCM-Query-2k-110m, platform, https://www.notion.so/swirldslabs/FCM-FCM-Query-2-5k-110m-6003e1b021c84c5282a63ed059caca2f
 
 FCMFCQ, FCMFCQ-Basic-3k-120m, platform, https://www.notion.so/swirldslabs/FCMFCQ-FCMFCQ-Basic-3k-120m-00720f04bd78427c8d23dd06a965f5b4
 FCMFCQ, FCMFCQ-Basic-ECDSA-1.5k-50m, platform, https://www.notion.so/swirldslabs/FCMFCQ-FCMFCQ-Basic-ECDSA-1-5k-50m-ee4a3ed27bce434097a72bed54822238
