@@ -977,7 +977,9 @@ public class SwirldsPlatform implements Platform, Startable {
         Objects.requireNonNull(isDuplicateChecks);
         final ParentFinder parentFinder = new ParentFinder(shadowGraph::hashgraphEvent);
         final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
-        if (chatterConfig.useChatter()) {
+        final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
+
+        if (chatterConfig.useChatter() || eventConfig.forceUseOfOrphanBuffer()) {
             final OrphanBufferingLinker orphanBuffer = new OrphanBufferingLinker(
                     platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
                     parentFinder,
@@ -987,10 +989,6 @@ public class SwirldsPlatform implements Platform, Startable {
                             .withDescription("the number of events without parents buffered")
                             .withFormat("%d"));
 
-            // when using chatter an event could be an orphan, in this case it will be stored in the orphan set
-            // when its parents are found, or become ancient, it will move to the shadowgraph
-            // non-orphans are also stored in the shadowgraph
-            // to dedupe, we need to check both
             isDuplicateChecks.add(orphanBuffer::isOrphan);
 
             return orphanBuffer;
