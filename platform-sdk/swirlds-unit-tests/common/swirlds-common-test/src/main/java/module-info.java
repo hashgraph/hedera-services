@@ -18,4 +18,5 @@ open module com.swirlds.common.test {
     requires lazysodium.java;
     requires static com.github.spotbugs.annotations;
     requires com.swirlds.common.test.fixtures;
+    requires org.apache.logging.log4j.core;
 }
