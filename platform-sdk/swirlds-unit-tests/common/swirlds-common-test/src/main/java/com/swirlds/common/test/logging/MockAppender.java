@@ -16,6 +16,7 @@
 
 package com.swirlds.common.test.logging;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.logging.log4j.core.LogEvent;
@@ -37,12 +38,15 @@ import org.apache.logging.log4j.core.appender.AbstractAppender;
 public class MockAppender extends AbstractAppender {
     private final List<String> messages = new CopyOnWriteArrayList<>();
 
-    public MockAppender(String name) {
+    public MockAppender(@NonNull final String name) {
         super("MockAppender-" + name, null, null, true, null);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public void append(LogEvent event) {
+    public void append(@NonNull final LogEvent event) {
         if (isStarted()) {
             messages.add(String.format(
                     "%s - %s - %s",
@@ -52,18 +56,33 @@ public class MockAppender extends AbstractAppender {
         }
     }
 
+    /**
+     * Get the number of captured log messages.
+     * @return the number of captured log messages
+     */
     public int size() {
         return messages.size();
     }
 
+    /**
+     * Clear previously captured the log messages.
+     */
     public void clear() {
         messages.clear();
     }
 
-    public String get(int index) {
+    /**
+     * Get the log message at the specified index.
+     * @param index the index of the message
+     * @return the log message
+     */
+    public String get(final int index) {
         return messages.get(index);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void stop() {
         messages.clear();
