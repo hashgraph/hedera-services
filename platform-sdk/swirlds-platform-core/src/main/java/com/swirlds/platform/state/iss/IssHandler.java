@@ -240,6 +240,8 @@ public class IssHandler {
             return;
         }
 
+        statusActionSubmitter.submitStatusAction(new CatastrophicFailureAction());
+
         issConsumer.iss(round, IssNotification.IssType.CATASTROPHIC_ISS, null);
 
         if (stateConfig.haltOnAnyIss() || stateConfig.haltOnCatastrophicIss()) {
