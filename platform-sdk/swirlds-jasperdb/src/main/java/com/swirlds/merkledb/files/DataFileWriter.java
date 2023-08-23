@@ -51,6 +51,8 @@ public final class DataFileWriter<D> {
 
     /** Mapped buffer size */
     private static final int MMAP_BUF_SIZE = PAGE_SIZE * 1024 * 4;
+    /** A value to write to verify a newly created mapped buffer */
+    public static final int PROBE_VALUE = 42;
 
     /**
      * The current mapped byte buffer used for writing. When overflowed, it is released, and another
@@ -154,13 +156,15 @@ public final class DataFileWriter<D> {
      */
     private static void verifyMmapCorrectness(final MappedByteBuffer newMap) throws IOException {
         // theoretically it's possible, we should check it
-        if(newMap == null) {
+        if (newMap == null) {
             throw new IOException("Failed to map file channel to memory");
         }
         // The idea is to force this mapping to happen. By default, actual mapping happens lazily.
         try {
-            newMap.put(MMAP_BUF_SIZE - 1, (byte) -1);
-            if (newMap.get(MMAP_BUF_SIZE - 1) != -1) throw new IOException("Fatal error when creating mmap. Possibly,  out of disk memory.");
+            newMap.put(MMAP_BUF_SIZE - 1, (byte) PROBE_VALUE);
+            if (newMap.get(MMAP_BUF_SIZE - 1) != PROBE_VALUE) {
+                throw new IOException("Fatal error when creating mmap. Possibly, out of disk memory.");
+            }
         } catch (final Error e) {
             throw new IOException(e);
         }
