@@ -18,7 +18,6 @@ package com.swirlds.logging.payloads;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.nio.file.Path;
 import java.util.Objects;
 
