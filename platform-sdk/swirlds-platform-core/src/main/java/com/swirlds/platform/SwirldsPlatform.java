@@ -158,6 +158,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -1054,16 +1055,20 @@ public class SwirldsPlatform implements Platform, Startable {
 
         metrics.start();
 
-        if (tipsetEventCreator != null) {
-            // The event creator is intentionally started before replaying the preconsensus event stream.
-            // This prevents the event creator's intake queue from filling up and blocking. Note that
-            // this component won't actually create events until the platform has the appropriate status.
-            tipsetEventCreator.start();
-        }
+        // The event creator is intentionally started before replaying the preconsensus event stream.
+        // This prevents the event creator's intake queue from filling up and blocking. Note that
+        // this component won't actually create events until the platform has the appropriate status.
+        Optional.of(tipsetEventCreator).ifPresent(Startable::start);
 
         replayPreconsensusEvents();
         configureStartupEventFreeze();
         gossip.start();
+    }
+
+    public void performPcesRecovery(){
+        components.start();
+        Optional.of(tipsetEventCreator).ifPresent(Startable::start);
+        replayPreconsensusEvents();
     }
 
     /**
