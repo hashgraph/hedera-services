@@ -24,7 +24,6 @@ import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.Objects;
 import org.apache.commons.lang3.builder.CompareToBuilder;
-import org.apache.commons.lang3.builder.EqualsBuilder;
 
 /**
  * A type which holds and renders the results of a single test
@@ -128,18 +127,15 @@ public class GridTest<X extends Comparable<X>, Y extends Comparable<Y>>
      * {@inheritDoc}
      */
     @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
+    public boolean equals(final Object other) {
+        if (this == other) {
             return true;
         }
-
-        if (o == null || getClass() != o.getClass()) {
+        if (other == null || getClass() != other.getClass()) {
             return false;
         }
-
-        final GridTest<?, ?> gridTest = (GridTest<?, ?>) o;
-
-        return new EqualsBuilder().append(getTestName(), gridTest.getTestName()).isEquals();
+        final GridTest<?, ?> gridTest = (GridTest<?, ?>) other;
+        return Objects.equals(testName, gridTest.testName);
     }
 
     /**

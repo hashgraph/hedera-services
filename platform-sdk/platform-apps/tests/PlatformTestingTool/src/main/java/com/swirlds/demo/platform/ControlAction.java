@@ -24,7 +24,6 @@ import com.swirlds.demo.platform.fs.stresstest.proto.ControlType;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Objects;
-import org.apache.commons.lang3.builder.EqualsBuilder;
 
 public class ControlAction implements SelfSerializable {
     private static final long CLASS_ID = 0x9d36e40b51de36fdL;
@@ -52,18 +51,15 @@ public class ControlAction implements SelfSerializable {
     }
 
     @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
+    public boolean equals(final Object other) {
+        if (this == other) {
             return true;
         }
-
-        if (o == null || getClass() != o.getClass()) {
+        if (other == null || getClass() != other.getClass()) {
             return false;
         }
-
-        final ControlAction that = (ControlAction) o;
-
-        return new EqualsBuilder().append(type, that.type).isEquals();
+        final ControlAction that = (ControlAction) other;
+        return type == that.type;
     }
 
     @Override

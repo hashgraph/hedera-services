@@ -34,6 +34,7 @@ import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.spi.fixtures.TransactionFactory;
+import com.hedera.node.app.throttle.ThrottleManager;
 import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.converter.LongPairConverter;
 import com.hedera.node.config.data.FilesConfig;
@@ -65,6 +66,9 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
     private SystemFileUpdateFacility subject;
 
     @Mock
+    private ThrottleManager throttleManager;
+
+    @Mock
     private ExchangeRateManager exchangeRateManager;
 
     @BeforeEach
@@ -80,7 +84,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
                 .getOrCreateConfig();
         when(configProvider.getConfiguration()).thenReturn(new VersionedConfigImpl(config, 1L));
 
-        subject = new SystemFileUpdateFacility(configProvider, exchangeRateManager);
+        subject = new SystemFileUpdateFacility(configProvider, throttleManager, exchangeRateManager);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -138,6 +142,25 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
     }
 
     @Test
+    void throttleMangerUpdatedOnFileUpdate() {
+        // given
+        final var configuration = configProvider.getConfiguration();
+        final var config = configuration.getConfigData(FilesConfig.class);
+
+        final var fileNum = config.throttleDefinitions();
+        final var fileID = FileID.newBuilder().fileNum(fileNum).build();
+        final var txBody = TransactionBody.newBuilder()
+                .fileAppend(FileAppendTransactionBody.newBuilder().fileID(fileID));
+        files.put(fileID, File.newBuilder().contents(FILE_BYTES).build());
+
+        // when
+        subject.handleTxBody(state, txBody.build());
+
+        // then
+        verify(throttleManager, times(1)).update(SystemFileUpdateFacility.getFileContent(state, fileID));
+    }
+
+    @Test
     void exchangeRateManagerUpdatedOnFileUpdate() {
         // given
         final var configuration = configProvider.getConfiguration();
@@ -146,7 +169,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
         final var fileNum = config.exchangeRates();
         final var fileID = FileID.newBuilder().fileNum(fileNum).build();
         final var txBody = TransactionBody.newBuilder()
-                .fileAppend(FileAppendTransactionBody.newBuilder().fileID(fileID));
+            .fileAppend(FileAppendTransactionBody.newBuilder().fileID(fileID));
         files.put(fileID, File.newBuilder().contents(FILE_BYTES).build());
 
         // when
