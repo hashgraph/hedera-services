@@ -215,8 +215,16 @@ public class AssortedOpsXTest extends AbstractContractXTest {
 
     @Override
     protected void assertExpectedAliases(@NonNull final ReadableKVState<ProtoBytes, AccountID> aliases) {
-        assertEquals(POINTLESS_INTERMEDIARY_ID, aliases.get(ProtoBytes.newBuilder().value(POINTLESS_INTERMEDIARY_ADDRESS).build()));
-        assertEquals(RUBE_GOLDBERG_CHILD_ID, aliases.get(ProtoBytes.newBuilder().value(DETERMINISTIC_CHILD_ADDRESS).build()));
+        assertEquals(
+                POINTLESS_INTERMEDIARY_ID,
+                aliases.get(ProtoBytes.newBuilder()
+                        .value(POINTLESS_INTERMEDIARY_ADDRESS)
+                        .build()));
+        assertEquals(
+                RUBE_GOLDBERG_CHILD_ID,
+                aliases.get(ProtoBytes.newBuilder()
+                        .value(DETERMINISTIC_CHILD_ADDRESS)
+                        .build()));
     }
 
     @Override
