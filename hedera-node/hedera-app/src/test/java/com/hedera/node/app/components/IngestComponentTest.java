@@ -27,6 +27,7 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.DaggerHederaInjectionComponent;
 import com.hedera.node.app.HederaInjectionComponent;
 import com.hedera.node.app.config.ConfigProviderImpl;
+import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.info.SelfNodeInfoImpl;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.throttle.ThrottleManager;
@@ -81,13 +82,15 @@ class IngestComponentTest {
 
         final var configProvider = new ConfigProviderImpl(false);
         final var throttleManager = new ThrottleManager();
+        final var exchangeRateManager = new ExchangeRateManager();
         app = DaggerHederaInjectionComponent.builder()
                 .initTrigger(InitTrigger.GENESIS)
                 .platform(platform)
                 .crypto(CryptographyHolder.get())
                 .bootstrapProps(new BootstrapProperties())
                 .configuration(configProvider)
-                .systemFileUpdateFacility(new SystemFileUpdateFacility(configProvider, throttleManager))
+                .systemFileUpdateFacility(
+                        new SystemFileUpdateFacility(configProvider, throttleManager, exchangeRateManager))
                 .throttleManager(throttleManager)
                 .self(selfNodeInfo)
                 .initialHash(new Hash())
@@ -95,6 +98,7 @@ class IngestComponentTest {
                 .currentPlatformStatus(() -> PlatformStatus.ACTIVE)
                 .servicesRegistry(Set::of)
                 .instantSource(InstantSource.system())
+                .exchangeRateManager(exchangeRateManager)
                 .build();
     }
 
