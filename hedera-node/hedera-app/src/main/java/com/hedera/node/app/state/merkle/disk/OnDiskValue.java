@@ -99,15 +99,15 @@ public class OnDiskValue<V> implements VirtualValue {
     }
 
     public int serializeReturningWrittenBytes(@NonNull ByteBuffer byteBuffer) throws IOException {
-        int initPos = byteBuffer.position();
         final var output = BufferedData.wrap(byteBuffer);
+        final var initPos = output.position();
         output.skip(Integer.BYTES);
         codec.write(value, output);
         final var pos = output.position();
         output.position(initPos);
-        output.writeInt((int) pos - initPos - Integer.BYTES);
+        output.writeInt((int) (pos - initPos - Integer.BYTES));
         output.position(pos);
-        return (int) pos - initPos;
+        return (int) (pos - initPos);
     }
 
     /** {@inheritDoc} */

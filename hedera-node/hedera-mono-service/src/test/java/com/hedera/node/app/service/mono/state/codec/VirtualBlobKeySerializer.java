@@ -28,7 +28,7 @@ public class VirtualBlobKeySerializer implements KeySerializer<VirtualBlobKey> {
 
     @Override
     public int getSerializedSize() {
-        return 0;
+        return VirtualBlobKey.sizeInBytes();
     }
 
     @Override

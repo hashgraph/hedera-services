@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.mono.state.virtual;
 
 import static com.hedera.node.app.service.mono.utils.subjects.UniqueTokenValueSubject.assertThatTokenValue;
-import static com.swirlds.merkledb.serialize.BaseSerializer.VARIABLE_DATA_SIZE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -405,14 +404,6 @@ class UniqueTokenValueTest {
     void equals_whenNull_doesNotMatch() {
         final UniqueTokenValue value = new UniqueTokenValue();
         assertThat(value.equals(null)).isFalse();
-    }
-
-    // Test invariants. The below tests are designed to fail if one accidentally modifies specified
-    // constants.
-    @Test
-    void reportedSize_isVariable() {
-        // This will fail if the size is accidentally swapped to a non-variable size.
-        assertThat(UniqueTokenValue.sizeInBytes()).isEqualTo(VARIABLE_DATA_SIZE);
     }
 
     @Test

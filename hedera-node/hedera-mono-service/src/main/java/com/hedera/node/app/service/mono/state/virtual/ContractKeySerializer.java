@@ -84,7 +84,7 @@ public class ContractKeySerializer implements KeySerializer<ContractKey> {
      * @param byteBuffer Output stream to write to
      */
     @Override
-    public int serialize(ContractKey contractKey, ByteBuffer byteBuffer) throws IOException {
+    public int serialize(final ContractKey contractKey, final ByteBuffer byteBuffer) throws IOException {
         Objects.requireNonNull(contractKey);
         Objects.requireNonNull(byteBuffer);
         return contractKey.serializeReturningBytesWritten(byteBuffer);

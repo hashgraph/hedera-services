@@ -138,7 +138,7 @@ public class ScheduleEqualityVirtualValue extends PartialMerkleLeaf
         serializeReturningBytesWritten(out);
     }
 
-    public int serializeReturningBytesWritten(ByteBuffer out) {
+    int serializeReturningBytesWritten(ByteBuffer out) {
         int bytesWritten = 0;
         out.putInt(ids.size());
         bytesWritten += Integer.BYTES;

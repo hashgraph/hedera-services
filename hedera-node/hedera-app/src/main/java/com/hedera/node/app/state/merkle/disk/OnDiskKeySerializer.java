@@ -41,7 +41,8 @@ import java.util.Objects;
  */
 public final class OnDiskKeySerializer<K> implements KeySerializer<OnDiskKey<K>> {
     /**
-     * This is a hint for virtual maps, but isn't actually useful. We just pick some size.
+     * This is a hint for virtual maps, it's the best guess as of now. Should be revisited later
+     * based on the information about real mainnet entities.
      */
     private static final int TYPICAL_SIZE = 256;
 

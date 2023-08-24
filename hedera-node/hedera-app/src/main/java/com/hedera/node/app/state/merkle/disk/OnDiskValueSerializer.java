@@ -31,7 +31,7 @@ import java.util.Objects;
  */
 public final class OnDiskValueSerializer<V> implements ValueSerializer<OnDiskValue<V>> {
     @Deprecated(forRemoval = true)
-    private static final long CLASS_ID = 0x3992113882234885L;
+    private static final long CLASS_ID = 0x3992113882234886L;
 
     private static final long DATA_VERSION = 1;
     private final StateMetadata<?, V> md;
