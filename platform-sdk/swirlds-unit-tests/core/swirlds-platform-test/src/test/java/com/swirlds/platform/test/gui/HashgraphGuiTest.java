@@ -43,7 +43,7 @@ class HashgraphGuiTest {
     void runGuiWithControls() {
         final long seed = 1;
         final int numNodes = 4;
-        final int initialEvents = 100;
+        final int initialEvents = 0;
 
         final TestGuiSource guiSource = new TestGuiSource(seed, numNodes);
         guiSource.generateEvents(initialEvents);

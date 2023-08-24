@@ -104,7 +104,10 @@ public class ConsensusRound implements Round {
         lastEvent = consensusEvents.isEmpty() ? null : consensusEvents.get(consensusEvents.size() - 1);
         // FUTURE WORK: once we properly handle rounds with no events, we need to define the consensus timestamp of a
         // round with no events as 1 nanosecond later than the previous round.
-        consensusTimestamp = consensusEvents.get(consensusEvents.size() - 1).getLastTransTime();
+
+        //TODO fix this
+        //consensusTimestamp = consensusEvents.get(consensusEvents.size() - 1).getLastTransTime();
+        consensusTimestamp = snapshot.minConsensusTimestamp();
     }
 
     /**
