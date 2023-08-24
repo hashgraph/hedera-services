@@ -62,9 +62,11 @@ public class FileSystemUndeleteHandler implements TransactionHandler {
 
         final var transactionBody = context.body().systemUndeleteOrThrow();
         final var fileStore = context.createStore(ReadableFileStore.class);
-        preValidate(transactionBody.fileID(), fileStore, context, true);
+        final var transactionFileId = transactionBody.fileID();
+        requireNonNull(transactionFileId);
+        preValidate(transactionFileId, fileStore, context, true);
 
-        var file = fileStore.getFileLeaf(transactionBody.fileID());
+        var file = fileStore.getFileLeaf(transactionFileId);
         validateAndAddRequiredKeys(file, null, context);
     }
 

@@ -151,6 +151,7 @@ public class FileGetInfoHandler extends FileQueryBase {
                         file.deleted());
             }
         } else {
+            requireNonNull(fileID);
             meta = fileStore.getFileMetadata(fileID);
         }
 
