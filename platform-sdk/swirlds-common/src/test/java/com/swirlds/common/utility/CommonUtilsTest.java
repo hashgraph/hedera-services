@@ -19,6 +19,7 @@ package com.swirlds.common.utility;
 import static com.swirlds.common.formatting.HorizontalAlignment.ALIGNED_RIGHT;
 import static com.swirlds.common.utility.CommonUtils.byteCountToDisplaySize;
 import static com.swirlds.common.utility.CommonUtils.hex;
+import static com.swirlds.common.utility.CommonUtils.intToBytes;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -170,5 +171,20 @@ class CommonUtilsTest {
         final String padded = ALIGNED_RIGHT.pad(start, '_', 5);
 
         assertEquals("__123", padded);
+    }
+
+    @ParameterizedTest
+    @MethodSource("intToBytesParameters")
+    void testIntToBytes(final int value, final byte[] expected) {
+        assertArrayEquals(expected, intToBytes(value));
+    }
+
+    private static Stream<Arguments> intToBytesParameters() {
+        return Stream.of(
+                Arguments.of(0, new byte[] {0, 0, 0, 0}),
+                Arguments.of(16843009, new byte[] {1, 1, 1, 1}),
+                Arguments.of(-1, new byte[] {-1, -1, -1, -1}),
+                Arguments.of(Integer.MAX_VALUE, new byte[] {-1, -1, -1, 127}),
+                Arguments.of(Integer.MIN_VALUE, new byte[] {0, 0, 0, -128}));
     }
 }

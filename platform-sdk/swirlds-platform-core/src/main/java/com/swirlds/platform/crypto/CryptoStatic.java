@@ -24,7 +24,7 @@ import com.swirlds.common.crypto.CryptographyException;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.utility.ByteUtils;
+import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.logging.LogMarker;
 import com.swirlds.platform.state.address.AddressBookNetworkUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -431,7 +431,7 @@ public final class CryptoStatic {
             futures.put(
                     nodeId,
                     threadPool.submit(() -> KeysAndCerts.generate(
-                            name, masterKeyClone, swirldIdClone, ByteUtils.intToByteArray(memId), publicStores)));
+                            name, masterKeyClone, swirldIdClone, CommonUtils.intToBytes(memId), publicStores)));
         }
         final Map<NodeId, KeysAndCerts> keysAndCerts = futuresToMap(futures);
         // After the keys have been generated or loaded, they are then copied to the address book

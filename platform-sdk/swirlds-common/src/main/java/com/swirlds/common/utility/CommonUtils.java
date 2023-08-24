@@ -260,6 +260,22 @@ public class CommonUtils {
         return out;
     }
 
+    /**
+     * Convert an int to a byte array, little endian.
+     *
+     * @param value the int to convert
+     * @return the byte array
+     */
+    public static byte[] intToBytes(final int value) {
+        final byte[] dst = new byte[Integer.BYTES];
+
+        for (int i = 0; i < Integer.BYTES; i++) {
+            final int shift = i * 8;
+            dst[i] = (byte) (0xff & (value >> shift));
+        }
+        return dst;
+    }
+
     private static int toDigit(final char ch, final int index) throws IllegalArgumentException {
         final int digit = Character.digit(ch, 16);
         if (digit == -1) {
