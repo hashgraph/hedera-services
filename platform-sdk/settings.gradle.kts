@@ -236,7 +236,7 @@ dependencyResolutionManagement {
             // List of bundles provided for us. When applicable, favor using these over individual
             // libraries.
             bundle("junit", listOf("junit-jupiter", "junit-jupiter-api", "junit-jupiter-params"))
-            bundle("mocking", listOf("mockito-core", "mockito-junit"))
+            bundle("mocking", listOf("mockito-core", "mockito-junit", "mockito-inline"))
             bundle("utils", listOf("awaitility", "assertj-core", "truth"))
 
             // Define the individual libraries
@@ -250,6 +250,8 @@ dependencyResolutionManagement {
 
             // Mocking Bundle
             library("mockito-core", "org.mockito", "mockito-core").versionRef("mockito-version")
+            // to enable mocking of final classes
+            library("mockito-inline", "org.mockito", "mockito-inline").versionRef("mockito-version")
             library("mockito-junit", "org.mockito", "mockito-junit-jupiter")
                 .versionRef("mockito-version")
 

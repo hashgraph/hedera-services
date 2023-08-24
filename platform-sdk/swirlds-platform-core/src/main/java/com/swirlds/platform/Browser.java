@@ -418,6 +418,7 @@ public class Browser {
                     mainClassName,
                     swirldName,
                     appVersion,
+                    softwareUpgrade,
                     initialState.get(),
                     addressBookInitializer.getPreviousAddressBook(),
                     emergencyRecoveryManager);
