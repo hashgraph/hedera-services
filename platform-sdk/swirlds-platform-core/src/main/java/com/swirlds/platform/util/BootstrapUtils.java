@@ -69,7 +69,7 @@ import com.swirlds.logging.payloads.NodeAddressMismatchPayload;
 import com.swirlds.logging.payloads.SavedStateLoadedPayload;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.platform.JVMPauseDetectorThread;
-import com.swirlds.platform.SavedStateLoader;
+import com.swirlds.platform.LegacySavedStateLoader;
 import com.swirlds.platform.ThreadDumpGenerator;
 import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.config.ThreadConfig;
@@ -586,7 +586,7 @@ public final class BootstrapUtils {
 
         // We can't send a "real" dispatcher for shutdown, since the dispatcher will not have been started by the
         // time this class is used.
-        final SavedStateLoader savedStateLoader = new SavedStateLoader(
+        final LegacySavedStateLoader savedStateLoader = new LegacySavedStateLoader(
                 platformContext,
                 recycleBin,
                 new Shutdown()::shutdown,

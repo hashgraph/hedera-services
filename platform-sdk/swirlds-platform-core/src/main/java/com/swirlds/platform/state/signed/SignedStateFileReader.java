@@ -55,7 +55,7 @@ public final class SignedStateFileReader {
     private SignedStateFileReader() {}
 
     /**
-     * Looks for saved state files locally and returns an array of them sorted from newest to oldest
+     * Looks for saved state files locally and returns a list of them sorted from newest to oldest
      *
      * @param mainClassName
      * 		the name of the main app class

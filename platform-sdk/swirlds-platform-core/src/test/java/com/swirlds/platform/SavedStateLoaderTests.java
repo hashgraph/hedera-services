@@ -80,7 +80,7 @@ public class SavedStateLoaderTests {
     private ShutdownRequestedTrigger shutdownTrigger;
     private EmergencySignedStateValidator emergencyValidator;
     private EmergencyRecoveryManager emergencyRecoveryManager;
-    private SavedStateLoader savedStateLoader;
+    private LegacySavedStateLoader savedStateLoader;
     private final StateConfig stateConfig =
             new TestConfigBuilder().getOrCreateConfig().getConfigData(StateConfig.class);
 
@@ -124,7 +124,7 @@ public class SavedStateLoaderTests {
     private void testNullShutdownTrigger() {
         assertThrows(
                 NullPointerException.class,
-                () -> new SavedStateLoader(
+                () -> new LegacySavedStateLoader(
                         TestPlatformContextBuilder.create().build(),
                         TestRecycleBin.getInstance(),
                         null,
@@ -139,7 +139,7 @@ public class SavedStateLoaderTests {
     private void testNullAddressBook() {
         assertThrows(
                 NullPointerException.class,
-                () -> new SavedStateLoader(
+                () -> new LegacySavedStateLoader(
                         TestPlatformContextBuilder.create().build(),
                         TestRecycleBin.getInstance(),
                         null,
@@ -153,7 +153,7 @@ public class SavedStateLoaderTests {
 
     private void testNullSavedStateInfos() {
         assertDoesNotThrow(
-                () -> new SavedStateLoader(
+                () -> new LegacySavedStateLoader(
                         TestPlatformContextBuilder.create().build(),
                         TestRecycleBin.getInstance(),
                         shutdownTrigger,
@@ -168,7 +168,7 @@ public class SavedStateLoaderTests {
     private void testNullVersion() {
         assertThrows(
                 NullPointerException.class,
-                () -> new SavedStateLoader(
+                () -> new LegacySavedStateLoader(
                         TestPlatformContextBuilder.create().build(),
                         TestRecycleBin.getInstance(),
                         shutdownTrigger,
@@ -183,7 +183,7 @@ public class SavedStateLoaderTests {
     private void testNullEmergencyValidatorSupplier() {
         assertThrows(
                 NullPointerException.class,
-                () -> new SavedStateLoader(
+                () -> new LegacySavedStateLoader(
                         TestPlatformContextBuilder.create().build(),
                         TestRecycleBin.getInstance(),
                         shutdownTrigger,
@@ -198,7 +198,7 @@ public class SavedStateLoaderTests {
     private void testNullEmergencyValidatorValue() {
         assertThrows(
                 NullPointerException.class,
-                () -> new SavedStateLoader(
+                () -> new LegacySavedStateLoader(
                         TestPlatformContextBuilder.create().build(),
                         TestRecycleBin.getInstance(),
                         shutdownTrigger,
@@ -213,7 +213,7 @@ public class SavedStateLoaderTests {
     private void testNullEmergencyRecoveryManager() {
         assertThrows(
                 NullPointerException.class,
-                () -> new SavedStateLoader(
+                () -> new LegacySavedStateLoader(
                         TestPlatformContextBuilder.create().build(),
                         TestRecycleBin.getInstance(),
                         shutdownTrigger,
@@ -311,7 +311,7 @@ public class SavedStateLoaderTests {
     }
 
     private void initSavedStateLoader(final List<SavedStateInfo> stateInfos, final Configuration config) {
-        savedStateLoader = new SavedStateLoader(
+        savedStateLoader = new LegacySavedStateLoader(
                 TestPlatformContextBuilder.create().withConfiguration(config).build(),
                 TestRecycleBin.getInstance(),
                 shutdownTrigger,

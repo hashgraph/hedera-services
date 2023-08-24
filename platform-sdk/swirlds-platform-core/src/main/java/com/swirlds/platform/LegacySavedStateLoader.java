@@ -49,10 +49,10 @@ import org.apache.logging.log4j.Logger;
 /**
  * Loads the appropriate saved state from disk to be ingested into the system at startup.
  */
-public class SavedStateLoader {
+public class LegacySavedStateLoader {
 
     /** use this for all logging, as controlled by the optional data/log4j2.xml file */
-    private static final Logger logger = LogManager.getLogger(SavedStateLoader.class);
+    private static final Logger logger = LogManager.getLogger(LegacySavedStateLoader.class);
     /** A list of saved states to consider for loading, ordered from newest to oldest */
     private final List<SavedStateInfo> savedStateFiles;
 
@@ -82,7 +82,7 @@ public class SavedStateLoader {
      * @param emergencyStateValidator  a supplier of an emergency state validator
      * @param emergencyRecoveryManager the emergency recovery manager
      */
-    public SavedStateLoader(
+    public LegacySavedStateLoader(
             @NonNull final PlatformContext platformContext,
             @NonNull final RecycleBin recycleBin,
             @NonNull final ShutdownRequestedTrigger shutdownRequestedTrigger,

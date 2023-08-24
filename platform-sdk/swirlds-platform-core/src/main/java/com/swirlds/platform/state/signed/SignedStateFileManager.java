@@ -482,7 +482,7 @@ public class SignedStateFileManager implements Startable {
 
             final SavedStateInfo savedStateInfo = savedStates.get(index);
             try {
-                deleteDirectoryAndLog(savedStateInfo.stateFile());
+                deleteDirectoryAndLog(savedStateInfo.getDirectory());
             } catch (final IOException e) {
                 // Intentionally ignored, deleteDirectoryAndLog will log any exceptions that happen
             }

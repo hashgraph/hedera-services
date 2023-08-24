@@ -123,7 +123,7 @@ public record StateConfig(
         @ConfigProperty(defaultValue = "false") boolean debugStackTracesEnabled,
         @ConfigProperty(defaultValue = "false") boolean requireStateLoad,
         @ConfigProperty(defaultValue = "emergencyRecovery.yaml") String emergencyStateFileName,
-        @ConfigProperty(defaultValue = "true") boolean checkSignedStateFromDisk,
+        @ConfigProperty(defaultValue = "true") boolean checkSignedStateFromDisk, // TODO is this really necessary?
         @ConfigProperty(defaultValue = "1") int signedStateFreq) {
 
     /**
