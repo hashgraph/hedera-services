@@ -55,6 +55,7 @@ import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.AppTestBase;
 import com.hedera.node.app.config.VersionedConfigImpl;
+import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.file.impl.handlers.FileGetInfoHandler;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.stats.HapiOpCounters;
@@ -131,6 +132,9 @@ class QueryWorkflowImplTest extends AppTestBase {
     @Mock(strictness = LENIENT)
     private RecordCache recordCache;
 
+    @Mock(strictness = LENIENT)
+    private BlockRecordManager blockRecordManager;
+
     private Query query;
     private Transaction payment;
     private TransactionBody txBody;
@@ -191,7 +195,8 @@ class QueryWorkflowImplTest extends AppTestBase {
                 dispatcher,
                 queryParser,
                 configProvider,
-                recordCache);
+                recordCache,
+                blockRecordManager);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -206,7 +211,8 @@ class QueryWorkflowImplTest extends AppTestBase {
                         dispatcher,
                         queryParser,
                         configProvider,
-                        recordCache))
+                        recordCache,
+                        blockRecordManager))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -217,7 +223,8 @@ class QueryWorkflowImplTest extends AppTestBase {
                         dispatcher,
                         queryParser,
                         configProvider,
-                        recordCache))
+                        recordCache,
+                        blockRecordManager))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -228,7 +235,8 @@ class QueryWorkflowImplTest extends AppTestBase {
                         dispatcher,
                         queryParser,
                         configProvider,
-                        recordCache))
+                        recordCache,
+                        blockRecordManager))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -239,7 +247,8 @@ class QueryWorkflowImplTest extends AppTestBase {
                         dispatcher,
                         queryParser,
                         configProvider,
-                        recordCache))
+                        recordCache,
+                        blockRecordManager))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -250,7 +259,8 @@ class QueryWorkflowImplTest extends AppTestBase {
                         dispatcher,
                         queryParser,
                         configProvider,
-                        recordCache))
+                        recordCache,
+                        blockRecordManager))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -261,7 +271,8 @@ class QueryWorkflowImplTest extends AppTestBase {
                         null,
                         queryParser,
                         configProvider,
-                        recordCache))
+                        recordCache,
+                        blockRecordManager))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -272,7 +283,8 @@ class QueryWorkflowImplTest extends AppTestBase {
                         dispatcher,
                         null,
                         configProvider,
-                        recordCache))
+                        recordCache,
+                        blockRecordManager))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -283,7 +295,8 @@ class QueryWorkflowImplTest extends AppTestBase {
                         dispatcher,
                         queryParser,
                         null,
-                        recordCache))
+                        recordCache,
+                        blockRecordManager))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -294,7 +307,8 @@ class QueryWorkflowImplTest extends AppTestBase {
                         dispatcher,
                         queryParser,
                         configProvider,
-                        null))
+                        null,
+                        blockRecordManager))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -392,7 +406,8 @@ class QueryWorkflowImplTest extends AppTestBase {
                 localDispatcher,
                 queryParser,
                 configProvider,
-                recordCache);
+                recordCache,
+                blockRecordManager);
 
         // then
         assertThatThrownBy(() -> workflow.handleQuery(requestBuffer, responseBuffer))

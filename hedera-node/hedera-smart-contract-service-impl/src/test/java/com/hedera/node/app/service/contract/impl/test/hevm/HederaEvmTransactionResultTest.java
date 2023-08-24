@@ -188,4 +188,22 @@ class HederaEvmTransactionResultTest {
 
         assertNull(result.stateChanges());
     }
+
+    @Test
+    void QueryResultOnSuccess() {
+        given(frame.getGasPrice()).willReturn(WEI_NETWORK_GAS_PRICE);
+        given(frame.getLogs()).willReturn(BESU_LOGS);
+        given(frame.getOutputData()).willReturn(pbjToTuweniBytes(OUTPUT_DATA));
+
+        final var result = HederaEvmTransactionResult.successFrom(
+                GAS_LIMIT / 2, SENDER_ID, CALLED_CONTRACT_ID, CALLED_CONTRACT_EVM_ADDRESS, frame);
+        final var queryResult = result.asQueryResultOf();
+        assertEquals(GAS_LIMIT / 2, queryResult.gasUsed());
+        assertEquals(bloomForAll(BESU_LOGS), queryResult.bloom());
+        assertEquals(OUTPUT_DATA, queryResult.contractCallResult());
+        assertNull(queryResult.errorMessage());
+        assertNull(queryResult.senderId());
+        assertEquals(CALLED_CONTRACT_ID, queryResult.contractID());
+        assertEquals(pbjLogsFrom(BESU_LOGS), queryResult.logInfo());
+    }
 }

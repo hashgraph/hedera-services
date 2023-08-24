@@ -91,6 +91,24 @@ public record HederaEvmTransactionResult(
     }
 
     /**
+     * Converts this result to a {@link ContractFunctionResult} for a transaction based on the given
+     * {@link RootProxyWorldUpdater} and maybe {@link EthTxData}.
+     *
+     * @param ethTxData the Ethereum transaction data if relevant
+     * @param updater   the world updater
+     * @return the result
+     */
+    public ContractFunctionResult asQueryResultOf() {
+        if (haltReason != null) {
+            throw new AssertionError("Not implemented");
+        } else if (revertReason != null) {
+            throw new AssertionError("Not implemented");
+        } else {
+            return asSuccessResultForQuery();
+        }
+    }
+
+    /**
      * Returns the final status of this transaction result.
      *
      * @return the status
@@ -223,6 +241,17 @@ public record HederaEvmTransactionResult(
                 .evmAddress(recipientEvmAddressIfCreatedIn(createdIds))
                 .contractNonces(updater.getUpdatedContractNonces())
                 .errorMessage(null);
+    }
+
+    private ContractFunctionResult asSuccessResultForQuery() {
+        return ContractFunctionResult.newBuilder()
+                .gasUsed(gasUsed)
+                .bloom(bloomForAll(logs))
+                .contractCallResult(output)
+                .contractID(recipientId)
+                .logInfo(pbjLogsFrom(logs))
+                .errorMessage(null)
+                .build();
     }
 
     private @Nullable Bytes recipientEvmAddressIfCreatedIn(@NonNull final List<ContractID> contractIds) {

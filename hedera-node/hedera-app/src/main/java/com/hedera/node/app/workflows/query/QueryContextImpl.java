@@ -19,6 +19,7 @@ package com.hedera.node.app.workflows.query;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.transaction.Query;
+import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
@@ -34,6 +35,7 @@ public class QueryContextImpl implements QueryContext {
     private final Query query;
     private final Configuration configuration;
     private final RecordCache recordCache;
+    private final BlockRecordInfo blockRecordInfo;
 
     /**
      * Constructor of {@code QueryContextImpl}.
@@ -47,11 +49,13 @@ public class QueryContextImpl implements QueryContext {
             @NonNull final ReadableStoreFactory storeFactory,
             @NonNull final Query query,
             @NonNull final Configuration configuration,
-            @NonNull final RecordCache recordCache) {
+            @NonNull final RecordCache recordCache,
+            @NonNull final BlockRecordInfo blockRecordInfo) {
         this.storeFactory = requireNonNull(storeFactory, "The supplied argument 'storeFactory' cannot be null!");
         this.query = requireNonNull(query, "The supplied argument 'query' cannot be null!");
         this.configuration = requireNonNull(configuration, "The supplied argument 'configuration' cannot be null!");
         this.recordCache = requireNonNull(recordCache, "The supplied argument 'recordCache' cannot be null!");
+        this.blockRecordInfo = blockRecordInfo;
     }
 
     @Override
@@ -76,5 +80,11 @@ public class QueryContextImpl implements QueryContext {
     @Override
     public RecordCache recordCache() {
         return recordCache;
+    }
+
+    @NonNull
+    @Override
+    public BlockRecordInfo blockRecordInfo() {
+        return blockRecordInfo;
     }
 }
