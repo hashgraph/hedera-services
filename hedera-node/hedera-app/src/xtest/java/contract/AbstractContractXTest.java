@@ -16,8 +16,6 @@
 
 package contract;
 
-import static com.hedera.node.app.hapi.utils.sysfiles.serdes.FeesJsonToProtoSerde.loadFeeScheduleFromJson;
-
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
@@ -58,7 +56,6 @@ import com.swirlds.common.metrics.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.lang.reflect.InvocationTargetException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
@@ -192,19 +189,8 @@ public abstract class AbstractContractXTest {
     }
 
     private void setupFeeManager() {
-        try {
-            var feeSchedule = loadFeeScheduleFromJson("feeSchedules.json");
-            Bytes feeScheduleBytes = Bytes.wrap(feeSchedule.toByteArray());
-            scaffoldingComponent.feeManager().update(feeScheduleBytes);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        } catch (InvocationTargetException e) {
-            throw new RuntimeException(e);
-        } catch (NoSuchMethodException e) {
-            throw new RuntimeException(e);
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
+        var feeScheduleBytes = resourceAsBytes("feeSchedules.bin");
+        scaffoldingComponent.feeManager().update(feeScheduleBytes);
     }
 
     private void setupInitialStates() {
