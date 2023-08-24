@@ -1069,12 +1069,11 @@ public class SwirldsPlatform implements Platform, Startable {
      *     <li>Saves the last state produces by this replay to disk</li>
      * </ul>
      */
-    public void performPcesRecovery(){
+    public void performPcesRecovery() {
         components.start();
         Optional.of(tipsetEventCreator).ifPresent(Startable::start);
         replayPreconsensusEvents();
         stateManagementComponent.dumpLatestImmutableState(StateToDiskReason.PCES_RECOVERY_DONE, true);
-
     }
 
     /**
