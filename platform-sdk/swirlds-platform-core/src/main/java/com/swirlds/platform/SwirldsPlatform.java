@@ -1198,9 +1198,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 .clearOnSoftwareUpgrade();
         if (softwareUpgrade && clearOnSoftwareUpgrade) {
             try {
-                logger.info(
-                        STARTUP.getMarker(),
-                        "Clearing the preconsensus event stream on software upgrade.");
+                logger.info(STARTUP.getMarker(), "Clearing the preconsensus event stream on software upgrade.");
                 fileManager.clear();
             } catch (final IOException e) {
                 throw new UncheckedIOException("Failed to clear the preconsensus event stream on software upgrade.", e);
