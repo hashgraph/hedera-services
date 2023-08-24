@@ -168,7 +168,6 @@ public final class StartupStateLoader {
         return state;
     }
 
-
     /**
      * Create a copy of the initial signed state. There are currently data structures that become immutable after being
      * hashed, and we need to make a copy to force it to become mutable again.
@@ -251,12 +250,12 @@ public final class StartupStateLoader {
 
         if (state != null
                 && emergencyRecoveryManager.isInHashEpoch(
-                state.get().getState().getHash(),
-                state.get()
-                        .getState()
-                        .getPlatformState()
-                        .getPlatformData()
-                        .getEpochHash())) {
+                        state.get().getState().getHash(),
+                        state.get()
+                                .getState()
+                                .getPlatformState()
+                                .getPlatformData()
+                                .getEpochHash())) {
             emergencyRecoveryManager.emergencyStateLoaded();
         }
 

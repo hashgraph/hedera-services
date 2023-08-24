@@ -170,8 +170,7 @@ public class PreconsensusEventFileManager {
      * @return the directory where event files are stored
      */
     private static Path getDatabaseDirectory(
-            @NonNull final PlatformContext platformContext,
-            @NonNull final NodeId selfId) {
+            @NonNull final PlatformContext platformContext, @NonNull final NodeId selfId) {
 
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
         final PreconsensusEventStreamConfig preconsensusEventStreamConfig =

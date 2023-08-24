@@ -1178,7 +1178,7 @@ public class SwirldsPlatform implements Platform, Startable {
      * @param softwareUpgrade       true if a software upgrade has occurred
      * @throws UncheckedIOException if the required changes on software upgrade cannot be performed
      */
-    public void clearPCESOnSoftwareUpgradeIfConfigured( final boolean softwareUpgrade) {
+    public void clearPCESOnSoftwareUpgradeIfConfigured(final boolean softwareUpgrade) {
         final boolean clearOnSoftwareUpgrade = platformContext
                 .getConfiguration()
                 .getConfigData(PreconsensusEventStreamConfig.class)

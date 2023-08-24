@@ -22,7 +22,6 @@ import static com.swirlds.common.system.SystemExitCode.NODE_ADDRESS_MISMATCH;
 import static com.swirlds.common.system.SystemExitUtils.exitSystem;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
-import static com.swirlds.platform.state.GenesisStateBuilder.buildGenesisState;
 
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.ConsensusConfig;
@@ -39,12 +38,10 @@ import com.swirlds.common.config.sources.LegacyFileConfigSource;
 import com.swirlds.common.config.sources.ThreadCountPropertyConfigSource;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.internal.ApplicationDefinition;
 import com.swirlds.common.io.config.RecycleBinConfig;
 import com.swirlds.common.io.config.TemporaryFileConfig;
-import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.prometheus.PrometheusConfig;
@@ -65,7 +62,6 @@ import com.swirlds.fchashmap.config.FCHashMapConfig;
 import com.swirlds.gui.WindowConfig;
 import com.swirlds.jasperdb.config.JasperDbConfig;
 import com.swirlds.logging.payloads.NodeAddressMismatchPayload;
-import com.swirlds.logging.payloads.SavedStateLoadedPayload;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.platform.JVMPauseDetectorThread;
 import com.swirlds.platform.ThreadDumpGenerator;
@@ -86,12 +82,8 @@ import com.swirlds.platform.health.clock.OSClockSpeedSourceChecker;
 import com.swirlds.platform.health.entropy.OSEntropyChecker;
 import com.swirlds.platform.health.filesystem.OSFileSystemChecker;
 import com.swirlds.platform.network.Network;
-import com.swirlds.platform.recovery.EmergencyRecoveryManager;
-import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.address.AddressBookNetworkUtils;
-import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.state.signed.StartupStateLoader;
 import com.swirlds.platform.swirldapp.AppLoaderException;
 import com.swirlds.platform.swirldapp.SwirldAppLoader;
 import com.swirlds.platform.uptime.UptimeConfig;
@@ -247,7 +239,7 @@ public final class BootstrapUtils {
      */
     public static void setupBrowserWindow()
             throws UnsupportedLookAndFeelException, ClassNotFoundException, InstantiationException,
-            IllegalAccessException {
+                    IllegalAccessException {
         // discover the inset size and set the look and feel
         if (!GraphicsEnvironment.isHeadless()) {
             UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
@@ -294,9 +286,9 @@ public final class BootstrapUtils {
 
             return (SwirldMain) constructor.newInstance();
         } catch (final ClassNotFoundException
-                       | InstantiationException
-                       | IllegalAccessException
-                       | InvocationTargetException e) {
+                | InstantiationException
+                | IllegalAccessException
+                | InvocationTargetException e) {
             throw new RuntimeException(e);
         }
     }
