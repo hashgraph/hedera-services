@@ -290,7 +290,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      *
      * @param signedState the newly complete signed state
      */
-    private void stateHasEnoughSignatures(final @NonNull SignedState signedState) {
+    private void stateHasEnoughSignatures(@NonNull final SignedState signedState) {
         if (signedState.isStateToSave()) {
             signedStateFileManager.saveSignedStateToDisk(signedState, false);
         }
@@ -301,7 +301,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      *
      * @param signedState the signed state that lacks signatures
      */
-    private void stateLacksSignatures(final @NonNull SignedState signedState) {
+    private void stateLacksSignatures(@NonNull final SignedState signedState) {
         if (signedState.isStateToSave()) {
             signedStateFileManager.saveSignedStateToDisk(signedState, true);
         }

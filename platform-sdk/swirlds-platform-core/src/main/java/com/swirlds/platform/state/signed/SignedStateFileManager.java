@@ -370,7 +370,9 @@ public class SignedStateFileManager implements Startable {
      * @param stateLacksSignatures true if the state lacks signatures, false otherwise
      * @return true if the state will be written to disk, false otherwise
      */
-    public boolean saveSignedStateToDisk(final SignedState signedState, final boolean stateLacksSignatures) {
+    public boolean saveSignedStateToDisk(@NonNull final SignedState signedState, final boolean stateLacksSignatures) {
+        Objects.requireNonNull(signedState);
+
         return saveSignedStateToDisk(
                 signedState,
                 getSignedStateDir(signedState.getRound()),
