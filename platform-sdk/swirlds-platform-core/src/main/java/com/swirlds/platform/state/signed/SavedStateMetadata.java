@@ -139,7 +139,7 @@ public record SavedStateMetadata(
      * @param metadataFile the file to parse
      * @return the signed state metadata
      */
-    public static SavedStateMetadata parse(final Path metadataFile) {
+    public static SavedStateMetadata parse(final Path metadataFile) throws IOException {
         final Map<SavedStateMetadataField, String> data = parseStringMap(metadataFile);
         return new SavedStateMetadata(
                 parsePrimitiveLong(data, ROUND),
@@ -289,8 +289,8 @@ public record SavedStateMetadata(
      *
      * @param field the missing field
      */
-    private static void throwMissingRequiredField(@NonNull final SavedStateMetadataField field) {
-        throw new IllegalStateException("Signed state metadata file is missing required field: " + field);
+    private static void throwMissingRequiredField(@NonNull final SavedStateMetadataField field) throws IOException {
+        throw new IOException("Signed state metadata file is missing required field: " + field);
     }
 
     /**
@@ -301,9 +301,10 @@ public record SavedStateMetadata(
      * @param e     the exception
      */
     private static void throwInvalidRequiredField(
-            @NonNull final SavedStateMetadataField field, @NonNull final String value, @NonNull final Exception e) {
+            @NonNull final SavedStateMetadataField field, @NonNull final String value, @NonNull final Exception e)
+            throws IOException {
 
-        throw new IllegalStateException(
+        throw new IOException(
                 "Signed state metadata file has an invalid value for required field %s: %s ".formatted(field, value),
                 e);
     }
@@ -342,7 +343,7 @@ public record SavedStateMetadata(
      * @return the parsed long, or null if the field is not present or the value is not a valid long
      */
     private static long parsePrimitiveLong(
-            final Map<SavedStateMetadataField, String> data, final SavedStateMetadataField field) {
+            final Map<SavedStateMetadataField, String> data, final SavedStateMetadataField field) throws IOException {
 
         if (!data.containsKey(field)) {
             throwMissingRequiredField(field);
@@ -387,7 +388,7 @@ public record SavedStateMetadata(
     @SuppressWarnings("SameParameterValue")
     @NonNull
     private static String parseNonNullString(
-            final Map<SavedStateMetadataField, String> data, final SavedStateMetadataField field) {
+            final Map<SavedStateMetadataField, String> data, final SavedStateMetadataField field) throws IOException {
 
         if (!data.containsKey(field)) {
             throwMissingRequiredField(field);
@@ -433,7 +434,7 @@ public record SavedStateMetadata(
      */
     @NonNull
     private static Instant parseNonNullInstant(
-            final Map<SavedStateMetadataField, String> data, final SavedStateMetadataField field) {
+            final Map<SavedStateMetadataField, String> data, final SavedStateMetadataField field) throws IOException {
 
         if (!data.containsKey(field)) {
             throwMissingRequiredField(field);
@@ -459,7 +460,8 @@ public record SavedStateMetadata(
     @SuppressWarnings("SameParameterValue")
     @NonNull
     private static List<NodeId> parseNodeIdList(
-            @NonNull final Map<SavedStateMetadataField, String> data, @NonNull final SavedStateMetadataField field) {
+            @NonNull final Map<SavedStateMetadataField, String> data, @NonNull final SavedStateMetadataField field)
+            throws IOException {
 
         if (!data.containsKey(field)) {
             throwMissingRequiredField(field);
@@ -526,7 +528,8 @@ public record SavedStateMetadata(
     @SuppressWarnings("SameParameterValue")
     @NonNull
     private static Hash parseNonNullHash(
-            @NonNull final Map<SavedStateMetadataField, String> data, @NonNull final SavedStateMetadataField field) {
+            @NonNull final Map<SavedStateMetadataField, String> data, @NonNull final SavedStateMetadataField field)
+            throws IOException {
 
         if (!data.containsKey(field)) {
             throwMissingRequiredField(field);

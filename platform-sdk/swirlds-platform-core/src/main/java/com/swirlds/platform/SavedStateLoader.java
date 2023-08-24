@@ -40,6 +40,7 @@ import com.swirlds.platform.state.signed.SignedStateInvalidException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
@@ -52,8 +53,8 @@ public class SavedStateLoader {
 
     /** use this for all logging, as controlled by the optional data/log4j2.xml file */
     private static final Logger logger = LogManager.getLogger(SavedStateLoader.class);
-    /** An array of saved states to consider for loading, ordered from newest to oldest */
-    private final SavedStateInfo[] savedStateFiles;
+    /** A list of saved states to consider for loading, ordered from newest to oldest */
+    private final List<SavedStateInfo> savedStateFiles;
 
     private final AddressBook addressBook;
     /** Triggers a system shutdown request */
@@ -75,7 +76,7 @@ public class SavedStateLoader {
      * @param recycleBin               the recycle bin
      * @param shutdownRequestedTrigger a trigger capable of dispatching shutdown requests
      * @param addressBook              the address book used to validate the signed state
-     * @param savedStateFiles          an array of saved state files to consider for loading, ordered from newest to
+     * @param savedStateFiles          a list of saved state files to consider for loading, ordered from newest to
      *                                 oldest
      * @param currentSoftwareVersion   the current software version
      * @param emergencyStateValidator  a supplier of an emergency state validator
@@ -86,7 +87,7 @@ public class SavedStateLoader {
             @NonNull final RecycleBin recycleBin,
             @NonNull final ShutdownRequestedTrigger shutdownRequestedTrigger,
             @NonNull final AddressBook addressBook,
-            @Nullable final SavedStateInfo[] savedStateFiles,
+            @Nullable final List<SavedStateInfo> savedStateFiles,
             @NonNull final SoftwareVersion currentSoftwareVersion,
             @NonNull final Supplier<EmergencySignedStateValidator> emergencyStateValidator,
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
@@ -107,7 +108,7 @@ public class SavedStateLoader {
         this.emergencyStateValidator = emergencyStateValidator;
         this.emergencyRecoveryManager = emergencyRecoveryManager;
 
-        if (savedStateFiles == null || savedStateFiles.length == 0) {
+        if (savedStateFiles == null || savedStateFiles.isEmpty()) {
             logger.info(STARTUP.getMarker(), "No saved states were found on disk");
         } else {
             final StringBuilder sb = new StringBuilder();
@@ -174,8 +175,8 @@ public class SavedStateLoader {
             return createNullReservation();
         }
 
-        for (int index = 0; index < savedStateFiles.length; index++) {
-            final SavedStateInfo savedStateFile = savedStateFiles[index];
+        for (int index = 0; index < savedStateFiles.size(); index++) {
+            final SavedStateInfo savedStateFile = savedStateFiles.get(index);
 
             final SignedStateWithHashes stateWithHashes = readAndRehashState(platformContext, savedStateFile);
             try (final ReservedSignedState signedState = stateWithHashes.signedState) {
@@ -210,8 +211,8 @@ public class SavedStateLoader {
                         // we don't discard the PCES that we will build on top of the emergency state.
                         for (int i = 0; i < index; i++) {
                             logger.info(
-                                    STARTUP.getMarker(), "Recycling saved state: {}", savedStateFiles[i].stateFile());
-                            recycleBin.recycle(savedStateFiles[i].getDir());
+                                    STARTUP.getMarker(), "Recycling saved state: {}", savedStateFiles.get(i).stateFile());
+                            recycleBin.recycle(savedStateFiles.get(i).getDirectory());
                         }
                     }
                     return signedState.getAndReserve("SavedStateLoader.getEmergencySavedStateToLoad()");
@@ -285,7 +286,7 @@ public class SavedStateLoader {
             throws IOException, SignedStateLoadingException {
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
 
-        if (savedStateFiles == null || savedStateFiles.length == 0) {
+        if (savedStateFiles == null || savedStateFiles.isEmpty()) {
             if (stateConfig.requireStateLoad()) {
                 throw new SignedStateLoadingException("No saved states found on disk!");
             } else {
@@ -294,7 +295,7 @@ public class SavedStateLoader {
         }
 
         for (final SavedStateInfo savedStateFile : savedStateFiles) {
-            if (savedStateFile.round() <= maxRound) {
+            if (savedStateFile.metadata().round() <= maxRound) {
                 final SignedStateWithHashes stateWithHashes = readAndRehashState(platformContext, savedStateFile);
 
                 if (stateConfig.checkSignedStateFromDisk()) {

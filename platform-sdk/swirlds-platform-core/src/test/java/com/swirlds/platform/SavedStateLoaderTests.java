@@ -46,6 +46,7 @@ import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.SavedStateInfo;
+import com.swirlds.platform.state.signed.SavedStateMetadata;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateFileWriter;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
@@ -128,7 +129,7 @@ public class SavedStateLoaderTests {
                         TestRecycleBin.getInstance(),
                         null,
                         addressBook,
-                        new SavedStateInfo[0],
+                        List.of(),
                         version,
                         () -> emergencyValidator,
                         emergencyRecoveryManager),
@@ -143,7 +144,7 @@ public class SavedStateLoaderTests {
                         TestRecycleBin.getInstance(),
                         null,
                         addressBook,
-                        new SavedStateInfo[0],
+                        List.of(),
                         version,
                         () -> emergencyValidator,
                         emergencyRecoveryManager),
@@ -157,7 +158,7 @@ public class SavedStateLoaderTests {
                         TestRecycleBin.getInstance(),
                         shutdownTrigger,
                         addressBook,
-                        new SavedStateInfo[0],
+                        List.of(),
                         version,
                         () -> emergencyValidator,
                         emergencyRecoveryManager),
@@ -172,7 +173,7 @@ public class SavedStateLoaderTests {
                         TestRecycleBin.getInstance(),
                         shutdownTrigger,
                         addressBook,
-                        new SavedStateInfo[0],
+                        List.of(),
                         null,
                         () -> emergencyValidator,
                         emergencyRecoveryManager),
@@ -187,7 +188,7 @@ public class SavedStateLoaderTests {
                         TestRecycleBin.getInstance(),
                         shutdownTrigger,
                         addressBook,
-                        new SavedStateInfo[0],
+                        List.of(),
                         version,
                         null,
                         emergencyRecoveryManager),
@@ -202,7 +203,7 @@ public class SavedStateLoaderTests {
                         TestRecycleBin.getInstance(),
                         shutdownTrigger,
                         addressBook,
-                        new SavedStateInfo[0],
+                        List.of(),
                         version,
                         () -> null,
                         emergencyRecoveryManager),
@@ -217,7 +218,7 @@ public class SavedStateLoaderTests {
                         TestRecycleBin.getInstance(),
                         shutdownTrigger,
                         addressBook,
-                        new SavedStateInfo[0],
+                        List.of(),
                         version,
                         () -> emergencyValidator,
                         null),
@@ -228,10 +229,10 @@ public class SavedStateLoaderTests {
     @DisplayName("Emergency Saved State Load - Null/Empty Saved State List")
     void testEmergencyLoadNullAndEmptySavedStateFiles() {
         testEmergencySavedStateLoadWithBadValue(null);
-        testEmergencySavedStateLoadWithBadValue(new SavedStateInfo[0]);
+        testEmergencySavedStateLoadWithBadValue(List.of());
     }
 
-    private void testEmergencySavedStateLoadWithBadValue(final SavedStateInfo[] savedStateInfos) {
+    private void testEmergencySavedStateLoadWithBadValue(final List<SavedStateInfo> savedStateInfos) {
         writeEmergencyFile(5L);
         init(savedStateInfos, prepareConfiguration());
         final SignedState stateToLoad =
@@ -254,7 +255,7 @@ public class SavedStateLoaderTests {
 
         // Write states to disk, starting with round 5
         final List<SignedState> statesOnDisk = writeStatesToDisk(r, numStateToWrite);
-        final SavedStateInfo[] stateInfos = toStateInfos(statesOnDisk);
+        final List<SavedStateInfo> stateInfos = toStateInfos(statesOnDisk);
 
         writeEmergencyFile(10L);
 
@@ -295,7 +296,7 @@ public class SavedStateLoaderTests {
         verifyNonEmergencySignedStateReturned(statesOnDisk.get(3), stateToLoad);
     }
 
-    private void init(final SavedStateInfo[] stateInfos, final Configuration config) {
+    private void init(final List<SavedStateInfo> stateInfos, final Configuration config) {
         resetCounters();
         initEmergencyRecoveryManager();
         initSavedStateLoader(stateInfos, config);
@@ -309,7 +310,7 @@ public class SavedStateLoaderTests {
         }
     }
 
-    private void initSavedStateLoader(final SavedStateInfo[] stateInfos, final Configuration config) {
+    private void initSavedStateLoader(final List<SavedStateInfo> stateInfos, final Configuration config) {
         savedStateLoader = new SavedStateLoader(
                 TestPlatformContextBuilder.create().withConfiguration(config).build(),
                 TestRecycleBin.getInstance(),
@@ -329,10 +330,10 @@ public class SavedStateLoaderTests {
     @DisplayName("Saved State Load - Null/Empty Saved State List")
     void testLoadEmptyAndNullSavedStateFiles() {
         testSavedStateLoadWithBadValue(null);
-        testSavedStateLoadWithBadValue(new SavedStateInfo[0]);
+        testSavedStateLoadWithBadValue(List.of());
     }
 
-    private void testSavedStateLoadWithBadValue(final SavedStateInfo[] savedStateInfos) {
+    private void testSavedStateLoadWithBadValue(final List<SavedStateInfo> savedStateInfos) {
         requireStateLoad = false;
         init(savedStateInfos, prepareConfiguration());
         final SignedState stateToLoad =
@@ -355,7 +356,7 @@ public class SavedStateLoaderTests {
         final Random r = RandomUtils.getRandomPrintSeed();
         final List<SignedState> statesOnDisk = writeStatesToDisk(r, numStateToWrite);
 
-        final SavedStateInfo[] stateInfos = toStateInfos(statesOnDisk);
+        final List<SavedStateInfo> stateInfos = toStateInfos(statesOnDisk);
         checkSignedStateFromDisk = true;
         init(stateInfos, prepareConfiguration());
 
@@ -414,11 +415,12 @@ public class SavedStateLoaderTests {
         emergencyValidator = mock(EmergencySignedStateValidator.class);
     }
 
-    private SavedStateInfo[] toStateInfos(final List<SignedState> signedState) {
+    private List<SavedStateInfo> toStateInfos(final List<SignedState> signedState) {
         return signedState.stream()
-                .map(ss -> new SavedStateInfo(ss.getRound(), getStateFile(ss.getRound())))
-                .toList()
-                .toArray(new SavedStateInfo[0]);
+                .map(ss -> new SavedStateInfo(
+                        getStateFile(ss.getRound()),
+                        SavedStateMetadata.create(ss, new NodeId(0), Instant.now())))
+                .toList();
     }
 
     private void assertHashesMatch(final SignedState expected, final SignedState actual, final String msg) {

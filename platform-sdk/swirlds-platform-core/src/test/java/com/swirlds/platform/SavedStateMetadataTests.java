@@ -18,9 +18,20 @@ package com.swirlds.platform;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
+import static com.swirlds.platform.state.signed.SavedStateMetadataField.CONSENSUS_TIMESTAMP;
+import static com.swirlds.platform.state.signed.SavedStateMetadataField.MINIMUM_GENERATION_NON_ANCIENT;
+import static com.swirlds.platform.state.signed.SavedStateMetadataField.NODE_ID;
+import static com.swirlds.platform.state.signed.SavedStateMetadataField.NUMBER_OF_CONSENSUS_EVENTS;
+import static com.swirlds.platform.state.signed.SavedStateMetadataField.ROUND;
+import static com.swirlds.platform.state.signed.SavedStateMetadataField.RUNNING_EVENT_HASH;
+import static com.swirlds.platform.state.signed.SavedStateMetadataField.SIGNING_NODES;
+import static com.swirlds.platform.state.signed.SavedStateMetadataField.SIGNING_WEIGHT_SUM;
+import static com.swirlds.platform.state.signed.SavedStateMetadataField.SOFTWARE_VERSION;
+import static com.swirlds.platform.state.signed.SavedStateMetadataField.TOTAL_WEIGHT;
 import static com.swirlds.platform.state.signed.SavedStateMetadataField.WALL_CLOCK_TIME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -408,139 +419,137 @@ class SavedStateMetadataTests {
         String createNewFileString(final String fileString, SavedStateMetadata metadata) throws IOException;
     }
 
-//    /**
-//     * Test the parsing of a mal-formatted file
-//     *
-//     * @param random        a source of randomness
-//     * @param fileUpdater   updates a file in some way
-//     * @param invalidFields the fields expected to be invalid in the mal-formatted file
-//     */
-//    private void testMalFormedFile(
-//            final Random random, final FileUpdater fileUpdater, final Set<SavedStateMetadataField> invalidFields)
-//            throws IOException {
-//
-//        final long round = random.nextLong();
-//        final long numberOfConsensusEvents = random.nextLong();
-//        final Instant timestamp = RandomUtils.randomInstant(random);
-//        final Hash runningEventHash = randomHash(random);
-//        final long minimumGenerationNonAncient = random.nextLong();
-//        final SoftwareVersion softwareVersion = new BasicSoftwareVersion(random.nextLong());
-//        final Instant wallClockTime = RandomUtils.randomInstant(random);
-//        final NodeId nodeId = generateRandomNodeId(random);
-//        final List<NodeId> signingNodes = new ArrayList<>();
-//        for (int i = 0; i < random.nextInt(1, 10); i++) {
-//            signingNodes.add(generateRandomNodeId(random));
-//        }
-//        final long signingWeightSum = random.nextLong();
-//        final long totalWeight = random.nextLong();
-//
-//        final SavedStateMetadata metadata = new SavedStateMetadata(
-//                round,
-//                numberOfConsensusEvents,
-//                timestamp,
-//                runningEventHash,
-//                minimumGenerationNonAncient,
-//                softwareVersion.toString(),
-//                wallClockTime,
-//                nodeId,
-//                signingNodes,
-//                signingWeightSum,
-//                totalWeight);
-//
-//        final Path path = testDirectory.resolve("metadata.txt");
-//        metadata.write(path);
-//
-//        final String fileString = new String(Files.readAllBytes(path));
-//        final String brokenString = fileUpdater.createNewFileString(fileString, metadata);
-//        Files.delete(path);
-//        if (brokenString != null) {
-//            Files.write(path, brokenString.getBytes());
-//        }
-//
-//        final SavedStateMetadata deserialized = SavedStateMetadata.parse(path);
-//
-//        if (brokenString != null) {
-//            Files.delete(path);
-//        }
-//
-//        if (invalidFields.contains(SavedStateMetadataField.ROUND)) {
-//            assertNull(deserialized.round());
-//        } else {
-//            assertEquals(round, deserialized.round());
-//        }
-//
-//        if (invalidFields.contains(SavedStateMetadataField.NUMBER_OF_CONSENSUS_EVENTS)) {
-//            assertNull(deserialized.numberOfConsensusEvents());
-//        } else {
-//            assertEquals(numberOfConsensusEvents, deserialized.numberOfConsensusEvents());
-//        }
-//
-//        if (invalidFields.contains(SavedStateMetadataField.CONSENSUS_TIMESTAMP)) {
-//            assertNull(deserialized.consensusTimestamp());
-//        } else {
-//            assertEquals(timestamp, deserialized.consensusTimestamp());
-//        }
-//
-//        if (invalidFields.contains(SavedStateMetadataField.RUNNING_EVENT_HASH)) {
-//            assertNull(deserialized.runningEventHash());
-//        } else {
-//            assertEquals(runningEventHash, deserialized.runningEventHash());
-//        }
-//
-//        if (invalidFields.contains(SavedStateMetadataField.MINIMUM_GENERATION_NON_ANCIENT)) {
-//            assertNull(deserialized.minimumGenerationNonAncient());
-//        } else {
-//            assertEquals(minimumGenerationNonAncient, deserialized.minimumGenerationNonAncient());
-//        }
-//
-//        if (invalidFields.contains(SavedStateMetadataField.SOFTWARE_VERSION)) {
-//            assertNull(deserialized.softwareVersion());
-//        } else {
-//            assertEquals(softwareVersion.toString(), deserialized.softwareVersion());
-//        }
-//
-//        if (invalidFields.contains(SavedStateMetadataField.WALL_CLOCK_TIME)) {
-//            assertNull(deserialized.wallClockTime());
-//        } else {
-//            assertEquals(wallClockTime, deserialized.wallClockTime());
-//        }
-//
-//        if (invalidFields.contains(SavedStateMetadataField.NODE_ID)) {
-//            assertNull(deserialized.nodeId());
-//        } else {
-//            assertEquals(nodeId, deserialized.nodeId());
-//        }
-//
-//        if (invalidFields.contains(SavedStateMetadataField.SIGNING_NODES)) {
-//            assertNull(deserialized.signingNodes());
-//        } else {
-//            assertEquals(signingNodes, deserialized.signingNodes());
-//        }
-//
-//        if (invalidFields.contains(SavedStateMetadataField.SIGNING_WEIGHT_SUM)) {
-//            assertNull(deserialized.signingWeightSum());
-//        } else {
-//            assertEquals(signingWeightSum, deserialized.signingWeightSum());
-//        }
-//
-//        if (invalidFields.contains(SavedStateMetadataField.TOTAL_WEIGHT)) {
-//            assertNull(deserialized.totalWeight());
-//        } else {
-//            assertEquals(totalWeight, deserialized.totalWeight());
-//        }
-//    }
-//
-//    @Test
-//    @DisplayName("Empty File Test")
-//    void emptyFileTest() throws IOException {
-//        final Random random = getRandomPrintSeed();
-//
-//        final Set<SavedStateMetadataField> allFields =
-//                Arrays.stream(SavedStateMetadataField.values()).collect(Collectors.toSet());
-//
-//        testMalFormedFile(random, (s, m) -> "", allFields);
-//    }
-//
+    private final Set<SavedStateMetadataField> requiredFields = Set.of(
+            ROUND,
+            NUMBER_OF_CONSENSUS_EVENTS,
+            CONSENSUS_TIMESTAMP,
+            RUNNING_EVENT_HASH,
+            MINIMUM_GENERATION_NON_ANCIENT,
+            SOFTWARE_VERSION,
+            WALL_CLOCK_TIME,
+            NODE_ID,
+            SIGNING_NODES,
+            SIGNING_WEIGHT_SUM,
+            TOTAL_WEIGHT);
+
+    /**
+     * Test the parsing of a mal-formatted file
+     *
+     * @param random        a source of randomness
+     * @param fileUpdater   updates a file in some way
+     * @param invalidFields the fields expected to be invalid in the mal-formatted file
+     */
+    private void testMalformedFile(
+            final Random random, final FileUpdater fileUpdater, final Set<SavedStateMetadataField> invalidFields)
+            throws IOException {
+
+        final long round = random.nextLong();
+        final Hash hash = randomHash(random);
+        final long numberOfConsensusEvents = random.nextLong();
+        final Instant timestamp = RandomUtils.randomInstant(random);
+        final Hash runningEventHash = randomHash(random);
+        final long minimumGenerationNonAncient = random.nextLong();
+        final SoftwareVersion softwareVersion = new BasicSoftwareVersion(random.nextLong());
+        final Instant wallClockTime = RandomUtils.randomInstant(random);
+        final NodeId nodeId = generateRandomNodeId(random);
+        final List<NodeId> signingNodes = new ArrayList<>();
+        for (int i = 0; i < random.nextInt(1, 10); i++) {
+            signingNodes.add(generateRandomNodeId(random));
+        }
+        final long signingWeightSum = random.nextLong();
+        final long totalWeight = random.nextLong();
+        final Hash epochHash = randomHash(random);
+
+        final SavedStateMetadata metadata = new SavedStateMetadata(
+                round,
+                hash,
+                hash.toMnemonic(),
+                numberOfConsensusEvents,
+                timestamp,
+                runningEventHash,
+                runningEventHash.toMnemonic(),
+                minimumGenerationNonAncient,
+                softwareVersion.toString(),
+                wallClockTime,
+                nodeId,
+                signingNodes,
+                signingWeightSum,
+                totalWeight,
+                epochHash,
+                epochHash.toMnemonic());
+
+        final Path path = testDirectory.resolve("metadata.txt");
+        metadata.write(path);
+
+        final String fileString = new String(Files.readAllBytes(path));
+        final String brokenString = fileUpdater.createNewFileString(fileString, metadata);
+        Files.delete(path);
+        if (brokenString != null) {
+            Files.write(path, brokenString.getBytes());
+        }
+
+        for (final SavedStateMetadataField field : invalidFields) {
+            if (requiredFields.contains(field)) {
+                assertThrows(IOException.class, () -> SavedStateMetadata.parse(path));
+                return;
+            }
+        }
+
+        final SavedStateMetadata deserialized = SavedStateMetadata.parse(path);
+
+        if (brokenString != null) {
+            Files.delete(path);
+        }
+
+        assertEquals(round, deserialized.round());
+        if (invalidFields.contains(SavedStateMetadataField.HASH)) {
+            assertNull(deserialized.hash());
+        } else {
+            assertEquals(hash, deserialized.hash());
+        }
+        if (invalidFields.contains(SavedStateMetadataField.HASH_MNEMONIC)) {
+            assertNull(deserialized.hashMnemonic());
+        } else {
+            assertEquals(hash.toMnemonic(), deserialized.hashMnemonic());
+        }
+        assertEquals(numberOfConsensusEvents, deserialized.numberOfConsensusEvents());
+        assertEquals(timestamp, deserialized.consensusTimestamp());
+        assertEquals(runningEventHash, deserialized.runningEventHash());
+        if (invalidFields.contains(SavedStateMetadataField.RUNNING_EVENT_HASH_MNEMONIC)) {
+            assertNull(deserialized.runningEventHashMnemonic());
+        } else {
+            assertEquals(runningEventHash.toMnemonic(), deserialized.runningEventHashMnemonic());
+        }
+        assertEquals(minimumGenerationNonAncient, deserialized.minimumGenerationNonAncient());
+        assertEquals(softwareVersion.toString(), deserialized.softwareVersion());
+        assertEquals(wallClockTime, deserialized.wallClockTime());
+        assertEquals(nodeId, deserialized.nodeId());
+        assertEquals(signingNodes, deserialized.signingNodes());
+        assertEquals(signingWeightSum, deserialized.signingWeightSum());
+        assertEquals(totalWeight, deserialized.totalWeight());
+        if (invalidFields.contains(SavedStateMetadataField.EPOCH_HASH)) {
+            assertNull(deserialized.epochHash());
+        } else {
+            assertEquals(epochHash, deserialized.epochHash());
+        }
+        if (invalidFields.contains(SavedStateMetadataField.EPOCH_HASH_MNEMONIC)) {
+            assertNull(deserialized.epochHashMnemonic());
+        } else {
+            assertEquals(epochHash.toMnemonic(), deserialized.epochHashMnemonic());
+        }
+    }
+
+    @Test
+    @DisplayName("Empty File Test")
+    void emptyFileTest() throws IOException {
+        final Random random = getRandomPrintSeed();
+
+        final Set<SavedStateMetadataField> allFields =
+                Arrays.stream(SavedStateMetadataField.values()).collect(Collectors.toSet());
+
+        testMalformedFile(random, (s, m) -> "", allFields);
+    }
+
 //    @Test
 //    @DisplayName("Non-Existent File Test")
 //    void nonExistentFileFileTest() throws IOException {
