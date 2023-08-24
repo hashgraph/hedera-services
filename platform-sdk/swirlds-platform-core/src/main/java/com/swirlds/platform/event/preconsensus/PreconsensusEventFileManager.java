@@ -608,22 +608,6 @@ public class PreconsensusEventFileManager {
         updateFileSizeMetrics();
     }
 
-    // TODO get rid of the class method
-
-    /**
-     * Delete all files in the stream.
-     */
-    public void clear() throws IOException {
-        // Delete files in reverse order so that if we crash in the
-        // middle of clearing we leave a consistent stream behind.
-        while (files.size() > 0) {
-            final PreconsensusEventFile file = files.removeLast();
-            file.deleteFile(databaseDirectory, recycleBin);
-        }
-        totalFileByteCount = 0;
-        updateFileSizeMetrics();
-    }
-
     /**
      * Delete all files in the preconsensus event stream. If this method is called, it must be called before a
      * {@link PreconsensusEventFileManager} is instantiated. Any manager open when this method is called will be
