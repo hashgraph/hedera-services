@@ -114,6 +114,7 @@ public class SingleTransactionRecordBuilderImpl
     // fields needed for TransactionRecord
     private final Instant consensusNow;
     private Instant parentConsensus;
+    private TransactionID transactionID;
     private List<TokenTransferList> tokenTransferLists = new LinkedList<>();
     private List<AssessedCustomFee> assessedCustomFees = new LinkedList<>();
     private List<TokenAssociation> automaticTokenAssociations = new LinkedList<>();
@@ -173,6 +174,7 @@ public class SingleTransactionRecordBuilderImpl
                 parentConsensus != null ? HapiUtils.asTimestamp(parentConsensus) : null;
 
         final var transactionRecord = transactionRecordBuilder
+                .transactionID(transactionID)
                 .receipt(transactionReceipt)
                 .transactionHash(transactionHash)
                 .consensusTimestamp(consensusTimestamp)
@@ -242,6 +244,15 @@ public class SingleTransactionRecordBuilderImpl
     }
 
     /**
+     * Gets the {@link TransactionID} that is currently set.
+     *
+     * @return the {@link TransactionID}
+     */
+    public TransactionID transactionID() {
+        return transactionID;
+    }
+
+    /**
      * Sets the transaction ID.
      *
      * @param transactionID the transaction ID
@@ -249,8 +260,7 @@ public class SingleTransactionRecordBuilderImpl
      */
     @NonNull
     public SingleTransactionRecordBuilderImpl transactionID(@NonNull final TransactionID transactionID) {
-        requireNonNull(transactionID, "transactionID must not be null");
-        transactionRecordBuilder.transactionID(transactionID);
+        this.transactionID = requireNonNull(transactionID, "transactionID must not be null");
         return this;
     }
 

@@ -28,7 +28,6 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.Transaction;
-import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.FeeManager;
@@ -455,12 +454,16 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         final var signedTransactionBytes = SignedTransaction.PROTOBUF.toBytes(signedTransaction);
         final var transaction = Transaction.newBuilder().signedTransactionBytes(signedTransactionBytes).build();
         final var transactionBytes = Bytes.wrap(PbjConverter.fromPbj(transaction).toByteArray());
-        final var transactionID = txBody.transactionID() != null ? txBody.transactionID() : TransactionID.DEFAULT;
         childRecordBuilder
                 .transaction(transaction)
                 .transactionBytes(transactionBytes)
-                .transactionID(transactionID)
                 .memo(txBody.memo());
+
+        // Set the transactionId if provided
+        final var transactionID = txBody.transactionID();
+        if (transactionID != null) {
+            childRecordBuilder.transactionID(transactionID);
+        }
 
         try {
             // Synthetic transaction bodies do not have transaction ids, node account
