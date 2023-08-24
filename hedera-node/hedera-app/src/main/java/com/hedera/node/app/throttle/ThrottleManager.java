@@ -36,6 +36,7 @@ public class ThrottleManager {
     private static final ThrottleDefinitions DEFAULT_THROTTLE_DEFINITIONS = ThrottleDefinitions.DEFAULT;
 
     private ThrottleDefinitions throttleDefinitions;
+    private com.hederahashgraph.api.proto.java.ThrottleDefinitions throttleDefinitionsProto;
     private List<ThrottleBucket> throttleBuckets;
 
     public ThrottleManager() {
@@ -53,6 +54,8 @@ public class ThrottleManager {
         // Parse the throttle file. If we cannot parse it, we just continue with whatever our previous rate was.
         try {
             throttleDefinitions = ThrottleDefinitions.PROTOBUF.parse(bytes.toReadableSequentialData());
+            throttleDefinitionsProto =
+                    com.hederahashgraph.api.proto.java.ThrottleDefinitions.parseFrom(bytes.toByteArray());
         } catch (final Exception e) {
             // Not being able to parse the throttle file is not fatal, and may happen if the throttle file
             // was too big for a single file update for example.
@@ -84,5 +87,9 @@ public class ThrottleManager {
     @NonNull
     public ThrottleDefinitions throttleDefinitions() {
         return throttleDefinitions;
+    }
+
+    public com.hederahashgraph.api.proto.java.ThrottleDefinitions throttleDefinitionsProto() {
+        return throttleDefinitionsProto;
     }
 }

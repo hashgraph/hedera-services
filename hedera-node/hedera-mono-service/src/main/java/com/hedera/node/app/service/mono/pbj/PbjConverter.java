@@ -32,6 +32,7 @@ import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.Fraction;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SemanticVersion;
@@ -42,6 +43,7 @@ import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.network.NetworkGetExecutionTimeQuery;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
+import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.FixedFee;
@@ -1464,6 +1466,20 @@ public final class PbjConverter {
         if (fixedFee != null) {
             builder.setAmount(fixedFee.amount());
             builder.setDenominatingTokenId(fromPbj(fixedFee.denominatingTokenId()));
+        }
+        return builder.build();
+    }
+
+    @NonNull
+    public static com.hederahashgraph.api.proto.java.File fromPbj(@Nullable File file) {
+        var builder = com.hederahashgraph.api.proto.java.File.newBuilder();
+        if (file != null) {
+            builder.setFileId(fromPbj(file.fileId()));
+            builder.setExpirationSecond(file.expirationSecond());
+            builder.setKeys(pbjToProto(file.keys(), KeyList.class, com.hederahashgraph.api.proto.java.KeyList.class));
+            builder.setContents(ByteString.copyFrom(file.contents().toByteArray()));
+            builder.setMemo(file.memo());
+            builder.setDeleted(file.deleted());
         }
         return builder.build();
     }

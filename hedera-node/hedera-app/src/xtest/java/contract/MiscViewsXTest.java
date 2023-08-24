@@ -48,6 +48,7 @@ import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
 import com.hedera.hapi.node.state.token.Nft;
@@ -228,7 +229,7 @@ public class MiscViewsXTest extends AbstractContractXTest {
             @NotNull ReadableKVState<AccountID, Account> accounts) {}
 
     @Override
-    protected void assertExpectedAliases(@NotNull ReadableKVState<Bytes, AccountID> aliases) {}
+    protected void assertExpectedAliases(@NotNull ReadableKVState<ProtoBytes, AccountID> aliases) {}
 
     @Override
     protected void assertExpectedAccounts(@NotNull ReadableKVState<AccountID, Account> accounts) {}
