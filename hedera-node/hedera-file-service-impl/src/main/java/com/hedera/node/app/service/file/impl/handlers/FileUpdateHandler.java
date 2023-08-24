@@ -83,7 +83,7 @@ public class FileUpdateHandler implements TransactionHandler {
         preValidate(transactionBody.fileID(), fileStore, context, false);
 
         var file = fileStore.getFileLeaf(transactionBody.fileID());
-        validateAndAddRequiredKeys(file.orElse(null), transactionBody.keys(), context);
+        validateAndAddRequiredKeys(file, transactionBody.keys(), context);
     }
 
     @Override

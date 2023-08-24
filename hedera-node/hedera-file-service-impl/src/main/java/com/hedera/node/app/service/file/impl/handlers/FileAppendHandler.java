@@ -80,7 +80,7 @@ public class FileAppendHandler implements TransactionHandler {
         preValidate(transactionBody.fileID(), fileStore, context, false);
 
         var file = fileStore.getFileLeaf(transactionBody.fileID());
-        validateAndAddRequiredKeys(file.orElse(null), null, context);
+        validateAndAddRequiredKeys(file, null, context);
     }
 
     @Override
