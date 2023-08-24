@@ -418,8 +418,7 @@ public class SavedStateLoaderTests {
     private List<SavedStateInfo> toStateInfos(final List<SignedState> signedState) {
         return signedState.stream()
                 .map(ss -> new SavedStateInfo(
-                        getStateFile(ss.getRound()),
-                        SavedStateMetadata.create(ss, new NodeId(0), Instant.now())))
+                        getStateFile(ss.getRound()), SavedStateMetadata.create(ss, new NodeId(0), Instant.now())))
                 .toList();
     }
 

@@ -182,9 +182,8 @@ public class SignedStateFileManager implements Startable {
 
         final List<SavedStateInfo> savedStates = getSavedStateFiles(mainClassName, selfId, swirldName);
         if (!savedStates.isEmpty()) {
-            minimumGenerationNonAncientForOldestState = savedStates.get(savedStates.size() - 1)
-                    .metadata()
-                    .minimumGenerationNonAncient();
+            minimumGenerationNonAncientForOldestState =
+                    savedStates.get(savedStates.size() - 1).metadata().minimumGenerationNonAncient();
             minimumGenerationNonAncientConsumer.newMinimumGenerationNonAncient(
                     minimumGenerationNonAncientForOldestState);
         }
@@ -491,7 +490,8 @@ public class SignedStateFileManager implements Startable {
 
         // Keep the minimum generation non-ancient for the oldest state up to date
         if (index >= 0) {
-            final SavedStateMetadata oldestStateMetadata = savedStates.get(index).metadata();
+            final SavedStateMetadata oldestStateMetadata =
+                    savedStates.get(index).metadata();
 
             final long oldestStateMinimumGeneration = oldestStateMetadata.minimumGenerationNonAncient();
             if (minimumGenerationNonAncientForOldestState < oldestStateMinimumGeneration) {

@@ -30,7 +30,6 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.logging.LogMarker;
 import com.swirlds.platform.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedInputStream;
@@ -100,14 +99,12 @@ public final class SignedStateFileReader {
                         metadata = SavedStateMetadata.parse(metdataPath);
                     } catch (final IOException e) {
                         logger.error(
-                                EXCEPTION.getMarker(),
-                                "Unable to read saved state metadata file '{}'",
-                                metdataPath);
+                                EXCEPTION.getMarker(), "Unable to read saved state metadata file '{}'", metdataPath);
                         continue;
                     }
 
                     savedStates.put(round, new SavedStateInfo(stateFile, metadata));
-                    
+
                 } catch (final NumberFormatException e) {
                     logger.warn(
                             EXCEPTION.getMarker(),

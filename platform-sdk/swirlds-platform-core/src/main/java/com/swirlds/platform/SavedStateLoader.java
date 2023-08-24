@@ -211,7 +211,9 @@ public class SavedStateLoader {
                         // we don't discard the PCES that we will build on top of the emergency state.
                         for (int i = 0; i < index; i++) {
                             logger.info(
-                                    STARTUP.getMarker(), "Recycling saved state: {}", savedStateFiles.get(i).stateFile());
+                                    STARTUP.getMarker(),
+                                    "Recycling saved state: {}",
+                                    savedStateFiles.get(i).stateFile());
                             recycleBin.recycle(savedStateFiles.get(i).getDirectory());
                         }
                     }

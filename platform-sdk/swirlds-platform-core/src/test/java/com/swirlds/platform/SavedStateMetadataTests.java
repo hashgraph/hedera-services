@@ -19,11 +19,15 @@ package com.swirlds.platform;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.platform.state.signed.SavedStateMetadataField.CONSENSUS_TIMESTAMP;
+import static com.swirlds.platform.state.signed.SavedStateMetadataField.EPOCH_HASH;
+import static com.swirlds.platform.state.signed.SavedStateMetadataField.HASH;
+import static com.swirlds.platform.state.signed.SavedStateMetadataField.HASH_MNEMONIC;
 import static com.swirlds.platform.state.signed.SavedStateMetadataField.MINIMUM_GENERATION_NON_ANCIENT;
 import static com.swirlds.platform.state.signed.SavedStateMetadataField.NODE_ID;
 import static com.swirlds.platform.state.signed.SavedStateMetadataField.NUMBER_OF_CONSENSUS_EVENTS;
 import static com.swirlds.platform.state.signed.SavedStateMetadataField.ROUND;
 import static com.swirlds.platform.state.signed.SavedStateMetadataField.RUNNING_EVENT_HASH;
+import static com.swirlds.platform.state.signed.SavedStateMetadataField.RUNNING_EVENT_HASH_MNEMONIC;
 import static com.swirlds.platform.state.signed.SavedStateMetadataField.SIGNING_NODES;
 import static com.swirlds.platform.state.signed.SavedStateMetadataField.SIGNING_WEIGHT_SUM;
 import static com.swirlds.platform.state.signed.SavedStateMetadataField.SOFTWARE_VERSION;
@@ -209,123 +213,6 @@ class SavedStateMetadataTests {
         assertEquals(epochHashString, deserialized.epochHashMnemonic());
     }
 
-//    @Test
-//    @DisplayName("Random Data Some Missing Test")
-//    void randomDataSomeMissingTest() throws IOException {
-//        final Random random = getRandomPrintSeed();
-//
-//        final Long round;
-//        if (random.nextBoolean()) {
-//            round = random.nextLong();
-//        } else {
-//            round = null;
-//        }
-//
-//        final Long numberOfConsensusEvents;
-//        if (random.nextBoolean()) {
-//            numberOfConsensusEvents = random.nextLong();
-//        } else {
-//            numberOfConsensusEvents = null;
-//        }
-//
-//        final Instant timestamp;
-//        if (random.nextBoolean()) {
-//            timestamp = RandomUtils.randomInstant(random);
-//        } else {
-//            timestamp = null;
-//        }
-//
-//        final Hash runningEventHash;
-//        if (random.nextBoolean()) {
-//            runningEventHash = randomHash(random);
-//        } else {
-//            runningEventHash = null;
-//        }
-//
-//        final Long minimumGenerationNonAncient;
-//        if (random.nextBoolean()) {
-//            minimumGenerationNonAncient = random.nextLong();
-//        } else {
-//            minimumGenerationNonAncient = null;
-//        }
-//
-//        final SoftwareVersion softwareVersion;
-//        if (random.nextBoolean()) {
-//            softwareVersion = new BasicSoftwareVersion(random.nextLong());
-//        } else {
-//            softwareVersion = null;
-//        }
-//
-//        final Instant wallClockTime;
-//        if (random.nextBoolean()) {
-//            wallClockTime = RandomUtils.randomInstant(random);
-//        } else {
-//            wallClockTime = null;
-//        }
-//
-//        final NodeId nodeId;
-//        if (random.nextBoolean()) {
-//            nodeId = generateRandomNodeId(random);
-//        } else {
-//            nodeId = null;
-//        }
-//
-//        final List<NodeId> signingNodes;
-//        if (random.nextBoolean()) {
-//            signingNodes = new ArrayList<>();
-//            for (int i = 0; i < random.nextInt(1, 100); i++) {
-//                signingNodes.add(generateRandomNodeId(random));
-//            }
-//        } else {
-//            signingNodes = null;
-//        }
-//
-//        final Long signingWeightSum;
-//        if (random.nextBoolean()) {
-//            signingWeightSum = random.nextLong();
-//        } else {
-//            signingWeightSum = null;
-//        }
-//
-//        final Long totalWeight;
-//        if (random.nextBoolean()) {
-//            totalWeight = random.nextLong();
-//        } else {
-//            totalWeight = null;
-//        }
-//
-//        final SavedStateMetadata metadata = new SavedStateMetadata(
-//                round,
-//                numberOfConsensusEvents,
-//                timestamp,
-//                runningEventHash,
-//                minimumGenerationNonAncient,
-//                softwareVersion == null ? null : softwareVersion.toString(),
-//                wallClockTime,
-//                nodeId,
-//                signingNodes,
-//                signingWeightSum,
-//                totalWeight);
-//
-//        final SavedStateMetadata deserialized = serializeDeserialize(metadata);
-//
-//        assertEquals(round, deserialized.round());
-//        assertEquals(numberOfConsensusEvents, deserialized.numberOfConsensusEvents());
-//        assertEquals(timestamp, deserialized.consensusTimestamp());
-//        assertEquals(runningEventHash, deserialized.runningEventHash());
-//        assertEquals(minimumGenerationNonAncient, deserialized.minimumGenerationNonAncient());
-//        if (softwareVersion == null) {
-//            assertNull(deserialized.softwareVersion());
-//        } else {
-//            assertEquals(softwareVersion.toString(), deserialized.softwareVersion());
-//        }
-//        assertEquals(wallClockTime, deserialized.wallClockTime());
-//        assertEquals(nodeId, deserialized.nodeId());
-//        assertEquals(signingNodes, deserialized.signingNodes());
-//        assertEquals(signingWeightSum, deserialized.signingWeightSum());
-//        assertEquals(totalWeight, deserialized.totalWeight());
-//    }
-
     @Test
     @DisplayName("Signing Nodes Sorted Test")
     void signingNodesSortedTest() {
@@ -507,7 +394,7 @@ class SavedStateMetadataTests {
         } else {
             assertEquals(hash, deserialized.hash());
         }
-        if (invalidFields.contains(SavedStateMetadataField.HASH_MNEMONIC)) {
+        if (invalidFields.contains(HASH_MNEMONIC)) {
             assertNull(deserialized.hashMnemonic());
         } else {
             assertEquals(hash.toMnemonic(), deserialized.hashMnemonic());
@@ -515,7 +402,7 @@ class SavedStateMetadataTests {
         assertEquals(numberOfConsensusEvents, deserialized.numberOfConsensusEvents());
         assertEquals(timestamp, deserialized.consensusTimestamp());
         assertEquals(runningEventHash, deserialized.runningEventHash());
-        if (invalidFields.contains(SavedStateMetadataField.RUNNING_EVENT_HASH_MNEMONIC)) {
+        if (invalidFields.contains(RUNNING_EVENT_HASH_MNEMONIC)) {
             assertNull(deserialized.runningEventHashMnemonic());
         } else {
             assertEquals(runningEventHash.toMnemonic(), deserialized.runningEventHashMnemonic());
@@ -527,7 +414,7 @@ class SavedStateMetadataTests {
         assertEquals(signingNodes, deserialized.signingNodes());
         assertEquals(signingWeightSum, deserialized.signingWeightSum());
         assertEquals(totalWeight, deserialized.totalWeight());
-        if (invalidFields.contains(SavedStateMetadataField.EPOCH_HASH)) {
+        if (invalidFields.contains(EPOCH_HASH)) {
             assertNull(deserialized.epochHash());
         } else {
             assertEquals(epochHash, deserialized.epochHash());
@@ -550,134 +437,173 @@ class SavedStateMetadataTests {
         testMalformedFile(random, (s, m) -> "", allFields);
     }
 
-//    @Test
-//    @DisplayName("Non-Existent File Test")
-//    void nonExistentFileFileTest() throws IOException {
-//        final Random random = getRandomPrintSeed();
-//
-//        final Set<SavedStateMetadataField> allFields =
-//                Arrays.stream(SavedStateMetadataField.values()).collect(Collectors.toSet());
-//
-//        testMalFormedFile(random, (s, m) -> null, allFields);
-//    }
-//
-//    @Test
-//    @DisplayName("Invalid Field Test")
-//    void invalidFieldTest() throws IOException {
-//        final Random random = getRandomPrintSeed();
-//        testMalFormedFile(
-//                random,
-//                (s, m) -> s.replace(SavedStateMetadataField.ROUND.toString(), "NOT_A_REAL_FIELD"),
-//                Set.of(SavedStateMetadataField.ROUND));
-//    }
-//
-//    @Test
-//    @DisplayName("Invalid Long Test")
-//    void invalidLongTest() throws IOException {
-//        final Random random = getRandomPrintSeed();
-//        testMalFormedFile(
-//                random,
-//                (s, m) -> s.replace(m.nodeId().toString(), "NOT_A_REAL_LONG"),
-//                Set.of(SavedStateMetadataField.NODE_ID));
-//    }
-//
-//    @Test
-//    @DisplayName("Invalid Instant Test")
-//    void invalidInstantTest() throws IOException {
-//        final Random random = getRandomPrintSeed();
-//        testMalFormedFile(
-//                random,
-//                (s, m) -> s.replace(m.wallClockTime().toString(), "NOT_A_REAL_TIME"),
-//                Set.of(SavedStateMetadataField.WALL_CLOCK_TIME));
-//    }
-//
-//    @Test
-//    @DisplayName("Invalid Long List Test")
-//    void invalidLongListTest() throws IOException {
-//        final Random random = getRandomPrintSeed();
-//        testMalFormedFile(
-//                random,
-//                (s, m) -> {
-//                    final StringBuilder sb = new StringBuilder();
-//
-//                    for (final String line : s.split("\n")) {
-//                        if (line.contains(SavedStateMetadataField.SIGNING_NODES.toString())) {
-//                            sb.append(SavedStateMetadataField.SIGNING_NODES + ": 1,2,3,4,herpderp,6,7,8\n");
-//                        } else {
-//                            sb.append(line).append("\n");
-//                        }
-//                    }
-//
-//                    return sb.toString();
-//                },
-//                Set.of(SavedStateMetadataField.SIGNING_NODES));
-//
-//        testMalFormedFile(
-//                random,
-//                (s, m) -> {
-//                    final StringBuilder sb = new StringBuilder();
-//
-//                    for (final String line : s.split("\n")) {
-//                        if (line.contains(SavedStateMetadataField.SIGNING_NODES.toString())) {
-//                            sb.append(SavedStateMetadataField.SIGNING_NODES + ": 1,2,3,4,,6,7,8\n");
-//                        } else {
-//                            sb.append(line).append("\n");
-//                        }
-//                    }
-//
-//                    return sb.toString();
-//                },
-//                Set.of(SavedStateMetadataField.SIGNING_NODES));
-//
-//        // Whitespace in list shouldn't hurt anything
-//        testMalFormedFile(random, (s, m) -> s.replace(",", "   ,   "), Set.of());
-//    }
-//
-//    @Test
-//    @DisplayName("Line Missing Colon Test")
-//    void lineMissingColonTest() throws IOException {
-//        final Random random = getRandomPrintSeed();
-//        testMalFormedFile(
-//                random,
-//                (s, m) -> s.replace(
-//                        SavedStateMetadataField.WALL_CLOCK_TIME + ":",
-//                        SavedStateMetadataField.WALL_CLOCK_TIME.toString()),
-//                Set.of(SavedStateMetadataField.WALL_CLOCK_TIME));
-//    }
-//
-//    @Test
-//    @DisplayName("Invalid Hash Test")
-//    void invalidHashTest() throws IOException {
-//        final Random random = getRandomPrintSeed();
-//        testMalFormedFile(
-//                random,
-//                (s, m) -> s.replace(m.runningEventHash().toString(), "NOT_A_REAL_HASH"),
-//                Set.of(SavedStateMetadataField.RUNNING_EVENT_HASH));
-//    }
-//
-//    @Test
-//    @DisplayName("Extra Whitespace Test")
-//    void extraWhitespaceTest() throws IOException {
-//        final Random random = getRandomPrintSeed();
-//        testMalFormedFile(
-//                random,
-//                (s, m) -> {
-//                    final StringBuilder sb = new StringBuilder();
-//
-//                    for (final String line : s.split("\n")) {
-//                        if (line.contains(SavedStateMetadataField.WALL_CLOCK_TIME.toString())) {
-//                            sb.append("   \t ")
-//                                    .append(WALL_CLOCK_TIME)
-//                                    .append("  \t   :  \t    ")
-//                                    .append(m.wallClockTime())
-//                                    .append("   \t\n");
-//                        } else {
-//                            sb.append(line).append("\n");
-//                        }
-//                    }
-//
-//                    return sb.toString();
-//                },
-//                Set.of());
-//    }
+    @Test
+    @DisplayName("Non-Existent File Test")
+    void nonExistentFileFileTest() throws IOException {
+        final Random random = getRandomPrintSeed();
+
+        final Set<SavedStateMetadataField> allFields =
+                Arrays.stream(SavedStateMetadataField.values()).collect(Collectors.toSet());
+
+        testMalformedFile(random, (s, m) -> null, allFields);
+    }
+
+    @Test
+    @DisplayName("Invalid Field Test")
+    void invalidFieldTest() throws IOException {
+        final Random random = getRandomPrintSeed();
+        testMalformedFile(
+                random,
+                (s, m) -> s.replace(SavedStateMetadataField.ROUND.toString(), "NOT_A_REAL_FIELD"),
+                Set.of(SavedStateMetadataField.ROUND));
+    }
+
+    @Test
+    @DisplayName("Invalid Long Test")
+    void invalidLongTest() throws IOException {
+        final Random random = getRandomPrintSeed();
+        testMalformedFile(
+                random,
+                (s, m) -> s.replace(m.nodeId().toString(), "NOT_A_REAL_LONG"),
+                Set.of(SavedStateMetadataField.NODE_ID));
+    }
+
+    @Test
+    @DisplayName("Invalid Instant Test")
+    void invalidInstantTest() throws IOException {
+        final Random random = getRandomPrintSeed();
+        testMalformedFile(
+                random,
+                (s, m) -> s.replace(m.wallClockTime().toString(), "NOT_A_REAL_TIME"),
+                Set.of(SavedStateMetadataField.WALL_CLOCK_TIME));
+    }
+
+    @Test
+    @DisplayName("Invalid Long List Test")
+    void invalidLongListTest() throws IOException {
+        final Random random = getRandomPrintSeed();
+        testMalformedFile(
+                random,
+                (s, m) -> {
+                    final StringBuilder sb = new StringBuilder();
+
+                    for (final String line : s.split("\n")) {
+                        if (line.contains(SavedStateMetadataField.SIGNING_NODES.toString())) {
+                            sb.append(SavedStateMetadataField.SIGNING_NODES + ": 1,2,3,4,herpderp,6,7,8\n");
+                        } else {
+                            sb.append(line).append("\n");
+                        }
+                    }
+
+                    return sb.toString();
+                },
+                Set.of(SavedStateMetadataField.SIGNING_NODES));
+
+        testMalformedFile(
+                random,
+                (s, m) -> {
+                    final StringBuilder sb = new StringBuilder();
+
+                    for (final String line : s.split("\n")) {
+                        if (line.contains(SavedStateMetadataField.SIGNING_NODES.toString())) {
+                            sb.append(SavedStateMetadataField.SIGNING_NODES + ": 1,2,3,4,,6,7,8\n");
+                        } else {
+                            sb.append(line).append("\n");
+                        }
+                    }
+
+                    return sb.toString();
+                },
+                Set.of(SavedStateMetadataField.SIGNING_NODES));
+
+        // Whitespace in list shouldn't hurt anything
+        testMalformedFile(random, (s, m) -> s.replace(",", "   ,   "), Set.of());
+    }
+
+    @Test
+    @DisplayName("Line Missing Colon Test")
+    void lineMissingColonTest() throws IOException {
+        final Random random = getRandomPrintSeed();
+        testMalformedFile(
+                random,
+                (s, m) -> s.replace(
+                        SavedStateMetadataField.WALL_CLOCK_TIME + ":",
+                        SavedStateMetadataField.WALL_CLOCK_TIME.toString()),
+                Set.of(SavedStateMetadataField.WALL_CLOCK_TIME));
+    }
+
+    @Test
+    @DisplayName("Invalid Hash Test")
+    void invalidHashTest() throws IOException {
+        final Random random = getRandomPrintSeed();
+        testMalformedFile(
+                random,
+                (s, m) -> s.replace(m.runningEventHash().toString(), "NOT_A_REAL_HASH"),
+                Set.of(SavedStateMetadataField.RUNNING_EVENT_HASH));
+    }
+
+    @Test
+    @DisplayName("Extra Whitespace Test")
+    void extraWhitespaceTest() throws IOException {
+        final Random random = getRandomPrintSeed();
+        testMalformedFile(
+                random,
+                (s, m) -> {
+                    final StringBuilder sb = new StringBuilder();
+
+                    for (final String line : s.split("\n")) {
+                        if (line.contains(SavedStateMetadataField.WALL_CLOCK_TIME.toString())) {
+                            sb.append("   \t ")
+                                    .append(WALL_CLOCK_TIME)
+                                    .append("  \t   :  \t    ")
+                                    .append(m.wallClockTime())
+                                    .append("   \t\n");
+                        } else {
+                            sb.append(line).append("\n");
+                        }
+                    }
+
+                    return sb.toString();
+                },
+                Set.of());
+    }
+
+    @Test
+    @DisplayName("Missing Data Test")
+    void missingDataTestTest() throws IOException {
+        final Random random = getRandomPrintSeed();
+        testMalformedFile(random, (s, m) -> s.replace(ROUND.name(), "notARealKey"), Set.of(ROUND));
+        testMalformedFile(random, (s, m) -> s.replace("\n" + HASH.name() + ":", "\nnotARealKey:"), Set.of(HASH));
+        testMalformedFile(
+                random, (s, m) -> s.replace("\n" + HASH_MNEMONIC.name(), "\nnotARealKey"), Set.of(HASH_MNEMONIC));
+        testMalformedFile(
+                random,
+                (s, m) -> s.replace(NUMBER_OF_CONSENSUS_EVENTS.name(), "notARealKey"),
+                Set.of(NUMBER_OF_CONSENSUS_EVENTS));
+        testMalformedFile(
+                random, (s, m) -> s.replace(CONSENSUS_TIMESTAMP.name(), "notARealKey"), Set.of(CONSENSUS_TIMESTAMP));
+        testMalformedFile(
+                random, (s, m) -> s.replace(RUNNING_EVENT_HASH.name(), "notARealKey"), Set.of(RUNNING_EVENT_HASH));
+        testMalformedFile(
+                random,
+                (s, m) -> s.replace(RUNNING_EVENT_HASH_MNEMONIC.name(), "notARealKey"),
+                Set.of(RUNNING_EVENT_HASH_MNEMONIC));
+        testMalformedFile(
+                random,
+                (s, m) -> s.replace(MINIMUM_GENERATION_NON_ANCIENT.name(), "notARealKey"),
+                Set.of(MINIMUM_GENERATION_NON_ANCIENT));
+        testMalformedFile(
+                random, (s, m) -> s.replace(SOFTWARE_VERSION.name(), "notARealKey"), Set.of(SOFTWARE_VERSION));
+        testMalformedFile(random, (s, m) -> s.replace(WALL_CLOCK_TIME.name(), "notARealKey"), Set.of(WALL_CLOCK_TIME));
+        testMalformedFile(random, (s, m) -> s.replace(NODE_ID.name(), "notARealKey"), Set.of(NODE_ID));
+        testMalformedFile(random, (s, m) -> s.replace(SIGNING_NODES.name(), "notARealKey"), Set.of(SIGNING_NODES));
+        testMalformedFile(
+                random, (s, m) -> s.replace(SIGNING_WEIGHT_SUM.name(), "notARealKey"), Set.of(SIGNING_WEIGHT_SUM));
+        testMalformedFile(random, (s, m) -> s.replace(TOTAL_WEIGHT.name(), "notARealKey"), Set.of(TOTAL_WEIGHT));
+        testMalformedFile(random, (s, m) -> s.replace("\n" + EPOCH_HASH.name(), "\nnotARealKey"), Set.of(EPOCH_HASH));
+        testMalformedFile(
+                random,
+                (s, m) -> s.replace(SavedStateMetadataField.EPOCH_HASH_MNEMONIC.name(), "notARealKey"),
+                Set.of(SavedStateMetadataField.EPOCH_HASH_MNEMONIC));
+    }
 }
