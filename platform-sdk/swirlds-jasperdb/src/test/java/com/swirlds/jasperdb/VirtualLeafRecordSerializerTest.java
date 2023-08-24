@@ -16,14 +16,14 @@
 
 package com.swirlds.jasperdb;
 
+import static com.swirlds.common.test.fixtures.RandomUtils.nextInt;
+import static com.swirlds.common.test.fixtures.RandomUtils.nextLong;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomString;
 import static com.swirlds.jasperdb.ExampleFixedSizeVirtualValue.RANDOM_BYTES;
 import static com.swirlds.jasperdb.VirtualLeafRecordSerializer.ClassVersion.ORIGINAL;
 import static com.swirlds.jasperdb.VirtualLeafRecordSerializer.ClassVersion.REMOVED_LEAF_HASHES;
 import static com.swirlds.jasperdb.files.DataFileCommon.VARIABLE_DATA_SIZE;
 import static com.swirlds.jasperdb.utilities.HashTools.DEFAULT_DIGEST;
-import static org.apache.commons.lang3.RandomUtils.nextInt;
-import static org.apache.commons.lang3.RandomUtils.nextLong;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.common.constructable.ConstructableRegistry;

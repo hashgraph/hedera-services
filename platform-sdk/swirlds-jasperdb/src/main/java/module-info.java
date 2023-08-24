@@ -38,7 +38,6 @@ open module com.swirlds.jasperdb {
     requires com.swirlds.common;
     requires com.swirlds.logging;
     requires com.swirlds.virtualmap;
-    requires org.apache.commons.lang3;
     requires org.eclipse.collections.impl;
     requires org.eclipse.collections.api;
     requires org.apache.logging.log4j;
