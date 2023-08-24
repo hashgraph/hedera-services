@@ -329,10 +329,6 @@ public class HandleWorkflow {
             } else {
                 feeAccumulator.charge(payer, fees);
                 try {
-                    // TODO: check if transaction is exempt from throttling
-                    //        if (txnAccessor.throttleExempt()) {
-                    //            return false;
-                    //        }
                     if (!isPayerThrottleExempt && networkUtilizationManager.wasLastTxnGasThrottled()) {
                         // Refund the service fees already charged to the payer, because the user-submitted transaction
                         // was fully valid but network capacity was unavailable to satisfy it.
