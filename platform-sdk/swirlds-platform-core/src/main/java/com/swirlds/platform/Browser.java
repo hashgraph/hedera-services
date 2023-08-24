@@ -26,9 +26,9 @@ import static com.swirlds.platform.gui.internal.BrowserWindowManager.getStateHie
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.moveBrowserWindowToFront;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.setStateHierarchy;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.showBrowserWindow;
+import static com.swirlds.platform.state.signed.StartupStateLoader.getInitialState;
 import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
-import static com.swirlds.platform.util.BootstrapUtils.getInitialState;
 import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.loadPathsConfig;
 import static com.swirlds.platform.util.BootstrapUtils.loadSwirldMains;

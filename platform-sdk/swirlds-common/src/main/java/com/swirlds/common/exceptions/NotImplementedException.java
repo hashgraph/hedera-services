@@ -14,15 +14,9 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.info;
+package com.swirlds.common.exceptions;
 
-import com.hedera.node.app.spi.numbers.HederaFileNumbers;
-import dagger.Binds;
-import dagger.Module;
-
-@Module
-public interface FileNumbersModule {
-
-    @Binds
-    HederaFileNumbers fileConfigProvider(HederaFileNumbersImpl fileProviderImpl);
-}
+/**
+ * This exception is thrown when a method is not implemented.
+ */
+public class NotImplementedException extends RuntimeException {}

@@ -57,6 +57,7 @@ import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.status.PlatformStatusConfig;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.common.utility.StackTrace;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.source.ConfigSource;
@@ -117,7 +118,6 @@ import java.util.Set;
 import javax.swing.JFrame;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -247,7 +247,7 @@ public final class BootstrapUtils {
      */
     public static void setupBrowserWindow()
             throws UnsupportedLookAndFeelException, ClassNotFoundException, InstantiationException,
-                    IllegalAccessException {
+            IllegalAccessException {
         // discover the inset size and set the look and feel
         if (!GraphicsEnvironment.isHeadless()) {
             UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
@@ -294,9 +294,9 @@ public final class BootstrapUtils {
 
             return (SwirldMain) constructor.newInstance();
         } catch (final ClassNotFoundException
-                | InstantiationException
-                | IllegalAccessException
-                | InvocationTargetException e) {
+                       | InstantiationException
+                       | IllegalAccessException
+                       | InvocationTargetException e) {
             throw new RuntimeException(e);
         }
     }
@@ -406,7 +406,7 @@ public final class BootstrapUtils {
             CommonUtils.tellUserConsolePopup(
                     "ERROR",
                     "ERROR: There are problems starting class " + appDefinition.getMainClassName() + "\n"
-                            + ExceptionUtils.getStackTrace(e));
+                            + StackTrace.getStackTrace(e));
             logger.error(EXCEPTION.getMarker(), "Problems with class {}", appDefinition.getMainClassName(), e);
             throw new RuntimeException("Problems with class " + appDefinition.getMainClassName(), e);
         }
@@ -442,27 +442,6 @@ public final class BootstrapUtils {
         } catch (final IOException | RuntimeException e) {
             logger.error(STARTUP.getMarker(), "Failed to write settingsUsed to file {}", settingsUsedPath, e);
         }
-    }
-
-    /**
-     * Create a copy of the initial signed state. There are currently data structures that become immutable after being
-     * hashed, and we need to make a copy to force it to become mutable again.
-     *
-     * @param platformContext    the platform's context
-     * @param initialSignedState the initial signed state
-     * @return a copy of the initial signed state
-     */
-    public static @NonNull ReservedSignedState copyInitialSignedState(
-            @NonNull final PlatformContext platformContext, @NonNull final SignedState initialSignedState) {
-        Objects.requireNonNull(platformContext);
-        Objects.requireNonNull(initialSignedState);
-
-        final State stateCopy = initialSignedState.getState().copy();
-        final SignedState signedStateCopy =
-                new SignedState(platformContext, stateCopy, "Browser create new copy of initial state");
-        signedStateCopy.setSigSet(initialSignedState.getSigSet());
-
-        return signedStateCopy.reserve("Browser copied initial state");
     }
 
     /**
@@ -547,66 +526,6 @@ public final class BootstrapUtils {
             return appMains;
         } catch (final Exception ex) {
             throw new RuntimeException("Error loading SwirldMains", ex);
-        }
-    }
-
-    /**
-     * Get the initial state to be used by this node. May return a state loaded from disk, or may return a genesis state
-     * if no valid state is found on disk.
-     *
-     * @param platformContext          the platform context
-     * @param recycleBin               the recycle bin
-     * @param appMain                  the app main
-     * @param mainClassName            the name of the app's SwirldMain class
-     * @param swirldName               the name of this swirld
-     * @param selfId                   the node id of this node
-     * @param configAddressBook        the address book from config.txt
-     * @param emergencyRecoveryManager the emergency recovery manager
-     * @return the initial state to be used by this node
-     */
-    @NonNull
-    public static ReservedSignedState getInitialState(
-            @NonNull final PlatformContext platformContext,
-            @NonNull final RecycleBin recycleBin,
-            @NonNull final SwirldMain appMain,
-            @NonNull final String mainClassName,
-            @NonNull final String swirldName,
-            @NonNull final NodeId selfId,
-            @NonNull final AddressBook configAddressBook,
-            @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
-
-        Objects.requireNonNull(platformContext);
-        Objects.requireNonNull(mainClassName);
-        Objects.requireNonNull(swirldName);
-        Objects.requireNonNull(selfId);
-        Objects.requireNonNull(configAddressBook);
-        Objects.requireNonNull(emergencyRecoveryManager);
-
-        final ReservedSignedState loadedState = StartupStateLoader.loadState(
-                platformContext,
-                recycleBin,
-                selfId,
-                mainClassName,
-                swirldName,
-                appMain.getSoftwareVersion(),
-                emergencyRecoveryManager);
-
-        try (loadedState) {
-            if (loadedState.isNotNull()) {
-                logger.info(
-                        STARTUP.getMarker(),
-                        new SavedStateLoadedPayload(
-                                loadedState.get().getRound(), loadedState.get().getConsensusTimestamp()));
-
-                return copyInitialSignedState(platformContext, loadedState.get());
-            }
-        }
-
-        final ReservedSignedState genesisState =
-                buildGenesisState(platformContext, configAddressBook, appMain.getSoftwareVersion(), appMain.newState());
-
-        try (genesisState) {
-            return copyInitialSignedState(platformContext, genesisState.get());
         }
     }
 }

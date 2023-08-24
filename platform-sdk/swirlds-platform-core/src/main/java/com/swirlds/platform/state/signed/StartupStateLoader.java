@@ -19,6 +19,7 @@ package com.swirlds.platform.state.signed;
 import static com.swirlds.common.merkle.utility.MerkleUtils.rehashTree;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
+import static com.swirlds.platform.state.GenesisStateBuilder.buildGenesisState;
 import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
 import static com.swirlds.platform.state.signed.SignedStateFileReader.getSavedStateFiles;
 import static com.swirlds.platform.state.signed.SignedStateFileReader.readStateFile;
@@ -29,6 +30,9 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
+import com.swirlds.common.system.SwirldMain;
+import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.logging.payloads.SavedStateLoadedPayload;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.state.State;
@@ -36,17 +40,78 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.List;
+import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * A utility for loading saved states from disk.
+ * Utilities for loading the state at startup time.
  */
 public final class StartupStateLoader {
 
     private static final Logger logger = LogManager.getLogger(StartupStateLoader.class);
 
     private StartupStateLoader() {}
+
+    /**
+     * Get the initial state to be used by this node. May return a state loaded from disk, or may return a genesis state
+     * if no valid state is found on disk.
+     *
+     * @param platformContext          the platform context
+     * @param recycleBin               the recycle bin
+     * @param appMain                  the app main
+     * @param mainClassName            the name of the app's SwirldMain class
+     * @param swirldName               the name of this swirld
+     * @param selfId                   the node id of this node
+     * @param configAddressBook        the address book from config.txt
+     * @param emergencyRecoveryManager the emergency recovery manager
+     * @return the initial state to be used by this node
+     */
+    @NonNull
+    public static ReservedSignedState getInitialState(
+            @NonNull final PlatformContext platformContext,
+            @NonNull final RecycleBin recycleBin,
+            @NonNull final SwirldMain appMain,
+            @NonNull final String mainClassName,
+            @NonNull final String swirldName,
+            @NonNull final NodeId selfId,
+            @NonNull final AddressBook configAddressBook,
+            @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
+
+        Objects.requireNonNull(platformContext);
+        Objects.requireNonNull(mainClassName);
+        Objects.requireNonNull(swirldName);
+        Objects.requireNonNull(selfId);
+        Objects.requireNonNull(configAddressBook);
+        Objects.requireNonNull(emergencyRecoveryManager);
+
+        final ReservedSignedState loadedState = StartupStateLoader.loadState(
+                platformContext,
+                recycleBin,
+                selfId,
+                mainClassName,
+                swirldName,
+                appMain.getSoftwareVersion(),
+                emergencyRecoveryManager);
+
+        try (loadedState) {
+            if (loadedState.isNotNull()) {
+                logger.info(
+                        STARTUP.getMarker(),
+                        new SavedStateLoadedPayload(
+                                loadedState.get().getRound(), loadedState.get().getConsensusTimestamp()));
+
+                return copyInitialSignedState(platformContext, loadedState.get());
+            }
+        }
+
+        final ReservedSignedState genesisState =
+                buildGenesisState(platformContext, configAddressBook, appMain.getSoftwareVersion(), appMain.newState());
+
+        try (genesisState) {
+            return copyInitialSignedState(platformContext, genesisState.get());
+        }
+    }
 
     /**
      * Looks at the states on disk, chooses one to load, and then loads the chosen state.
@@ -100,6 +165,28 @@ public final class StartupStateLoader {
         }
 
         return state;
+    }
+
+
+    /**
+     * Create a copy of the initial signed state. There are currently data structures that become immutable after being
+     * hashed, and we need to make a copy to force it to become mutable again.
+     *
+     * @param platformContext    the platform's context
+     * @param initialSignedState the initial signed state
+     * @return a copy of the initial signed state
+     */
+    public static @NonNull ReservedSignedState copyInitialSignedState(
+            @NonNull final PlatformContext platformContext, @NonNull final SignedState initialSignedState) {
+        Objects.requireNonNull(platformContext);
+        Objects.requireNonNull(initialSignedState);
+
+        final State stateCopy = initialSignedState.getState().copy();
+        final SignedState signedStateCopy =
+                new SignedState(platformContext, stateCopy, "Browser create new copy of initial state");
+        signedStateCopy.setSigSet(initialSignedState.getSigSet());
+
+        return signedStateCopy.reserve("Browser copied initial state");
     }
 
     /**
@@ -163,12 +250,12 @@ public final class StartupStateLoader {
 
         if (state != null
                 && emergencyRecoveryManager.isInHashEpoch(
-                        state.get().getState().getHash(),
-                        state.get()
-                                .getState()
-                                .getPlatformState()
-                                .getPlatformData()
-                                .getEpochHash())) {
+                state.get().getState().getHash(),
+                state.get()
+                        .getState()
+                        .getPlatformState()
+                        .getPlatformData()
+                        .getEpochHash())) {
             emergencyRecoveryManager.emergencyStateLoaded();
         }
 

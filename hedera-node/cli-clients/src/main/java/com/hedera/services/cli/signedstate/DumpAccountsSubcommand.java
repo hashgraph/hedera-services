@@ -99,7 +99,7 @@ public class DumpAccountsSubcommand {
     void doit() {
         final var accountsStore = state.getAccounts();
         System.out.printf(
-                "=== %d accounts %s%n", accountsStore.size(), accountsStore.areOnDisk() ? "on disk" : "in memory");
+                "=== %d accounts (%s)%n", accountsStore.size(), accountsStore.areOnDisk() ? "on disk" : "in memory");
 
         final var accountsArr = gatherAccounts(accountsStore);
 
@@ -131,7 +131,7 @@ public class DumpAccountsSubcommand {
             throw new UncheckedIOException(ex); // CLI program: Java will print the exception + stacktrace
         }
 
-        System.out.printf("=== report is %d bytes%n", reportSize[0]);
+        System.out.printf("=== accounts report is %d bytes%n", reportSize[0]);
         System.out.printf("=== fields with exceptions: %s%n", String.join(",", fieldsWithExceptions));
     }
 
@@ -378,7 +378,7 @@ public class DumpAccountsSubcommand {
                 Field.of("fungibleTokenAllowances", a::getFungibleTokenAllowances, doWithBuilder(sb, ThingsToStrings::toStringOfMapFcLong)),
                 Field.of("headNftKey", a::getHeadNftKey, doWithBuilder(sb, ThingsToStrings::toStringOfEntityNumPair)),
                 Field.of("latestAssociation", a::getLatestAssociation, doWithBuilder(sb, ThingsToStrings::toStringOfEntityNumPair)),
-                Field.of("memo", a::getMemo, s -> { if (s.isEmpty()) return false; sb.append(ThingsToStrings.quoteForCsv(s)); return true; }),
+                Field.of("memo", a::getMemo, s -> { if (s.isEmpty()) return false; sb.append(ThingsToStrings.quoteForCsv(FIELD_SEPARATOR,  s)); return true; }),
                 Field.of("proxy", a::getProxy, doWithBuilder(sb, ThingsToStrings::toStringOfEntityId))
         ).sorted(Comparator.comparing(Field::name)).toList();
     }
