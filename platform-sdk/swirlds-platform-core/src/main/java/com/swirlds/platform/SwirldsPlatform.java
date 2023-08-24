@@ -1060,6 +1060,15 @@ public class SwirldsPlatform implements Platform, Startable {
         gossip.start();
     }
 
+    /**
+     * Performs a PCES recovery:
+     * <ul>
+     *     <li>Starts all components for handling events</li>
+     *     <li>Does not start gossip</li>
+     *     <li>Replays events from PCES, reaches consensus on them and handles them</li>
+     *     <li>Saves the last state produces by this replay to disk</li>
+     * </ul>
+     */
     public void performPcesRecovery(){
         components.start();
         Optional.of(tipsetEventCreator).ifPresent(Startable::start);
