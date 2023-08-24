@@ -155,11 +155,10 @@ public class SingleTransactionRecordBuilderImpl
      * @return the transaction record
      */
     public SingleTransactionRecord build() {
-        final var transactionReceipt =
-                transactionReceiptBuilder
-                        .exchangeRate(exchangeRate)
-                        .serialNumbers(serialNumbers)
-                        .build();
+        final var transactionReceipt = transactionReceiptBuilder
+                .exchangeRate(exchangeRate)
+                .serialNumbers(serialNumbers)
+                .build();
 
         final Bytes transactionHash;
         try {

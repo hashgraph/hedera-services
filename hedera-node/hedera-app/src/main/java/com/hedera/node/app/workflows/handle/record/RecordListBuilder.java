@@ -83,9 +83,7 @@ public class RecordListBuilder {
      * @return all child record builders
      */
     public List<SingleTransactionRecordBuilderImpl> childRecordBuilders() {
-        return childRecordBuilders != null
-                ? Collections.unmodifiableList(childRecordBuilders)
-                : List.of();
+        return childRecordBuilders != null ? Collections.unmodifiableList(childRecordBuilders) : List.of();
     }
 
     /**
@@ -109,10 +107,9 @@ public class RecordListBuilder {
         }
 
         final var parentConsensusTimestamp = userTxnRecordBuilder.consensusNow();
-        final var consensusNow = parentConsensusTimestamp
-                .minusNanos(maxRecords - precedingCount);
-        final var recordBuilder = new SingleTransactionRecordBuilderImpl(consensusNow)
-                .exchangeRate(userTxnRecordBuilder.exchangeRate());
+        final var consensusNow = parentConsensusTimestamp.minusNanos(maxRecords - precedingCount);
+        final var recordBuilder =
+                new SingleTransactionRecordBuilderImpl(consensusNow).exchangeRate(userTxnRecordBuilder.exchangeRate());
 
         precedingTxnRecordBuilders.add(recordBuilder);
         return recordBuilder;
@@ -171,9 +168,7 @@ public class RecordListBuilder {
         }
 
         final var parentConsensusTimestamp = userTxnRecordBuilder.consensusNow();
-        final var previousRecord = childCount == 0
-                ? userTxnRecordBuilder
-                : childRecordBuilders.get(childCount - 1);
+        final var previousRecord = childCount == 0 ? userTxnRecordBuilder : childRecordBuilders.get(childCount - 1);
         final var consensusNow = previousRecord.consensusNow().plusNanos(1L);
         final var recordBuilder = new SingleTransactionRecordBuilderImpl(consensusNow)
                 .parentConsensus(parentConsensusTimestamp)
@@ -202,7 +197,8 @@ public class RecordListBuilder {
         final var children = childRecordBuilders.subList(index, childRecordBuilders.size());
         for (final var it = children.iterator(); it.hasNext(); ) {
             final SingleTransactionRecordBuilderImpl childRecordBuilder = it.next();
-            if (removableChildTxnRecordBuilders != null && removableChildTxnRecordBuilders.contains(childRecordBuilder)) {
+            if (removableChildTxnRecordBuilders != null
+                    && removableChildTxnRecordBuilders.contains(childRecordBuilder)) {
                 it.remove();
                 removableChildTxnRecordBuilders.remove(childRecordBuilder);
             } else {
@@ -226,15 +222,13 @@ public class RecordListBuilder {
         if (precedingTxnRecordBuilders != null) {
             prepareBuilders(precedingTxnRecordBuilders);
             recordStream = Stream.concat(
-                    precedingTxnRecordBuilders.stream().map(SingleTransactionRecordBuilderImpl::build),
-                    recordStream);
+                    precedingTxnRecordBuilders.stream().map(SingleTransactionRecordBuilderImpl::build), recordStream);
         }
 
         if (childRecordBuilders != null) {
             prepareBuilders(childRecordBuilders);
             recordStream = Stream.concat(
-                    recordStream,
-                    childRecordBuilders.stream().map(SingleTransactionRecordBuilderImpl::build));
+                    recordStream, childRecordBuilders.stream().map(SingleTransactionRecordBuilderImpl::build));
         }
 
         return new Result(userTxnRecord, recordStream);
@@ -244,7 +238,9 @@ public class RecordListBuilder {
         int nextNonce = 0;
         for (final var recordBuilder : recordBuilders) {
             if (recordBuilder.transactionID() == null) {
-                final var transactionID = userTxnRecordBuilder.transactionID().copyBuilder()
+                final var transactionID = userTxnRecordBuilder
+                        .transactionID()
+                        .copyBuilder()
                         .nonce(nextNonce++)
                         .build();
                 recordBuilder.transactionID(transactionID);

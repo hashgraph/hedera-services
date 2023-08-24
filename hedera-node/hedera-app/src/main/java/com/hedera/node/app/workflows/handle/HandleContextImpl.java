@@ -450,10 +450,14 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             @NonNull final SingleTransactionRecordBuilderImpl childRecordBuilder) {
         // Initialize record builder list
         final var bodyBytes = TransactionBody.PROTOBUF.toBytes(txBody);
-        final var signedTransaction = SignedTransaction.newBuilder().bodyBytes(bodyBytes).build();
+        final var signedTransaction =
+                SignedTransaction.newBuilder().bodyBytes(bodyBytes).build();
         final var signedTransactionBytes = SignedTransaction.PROTOBUF.toBytes(signedTransaction);
-        final var transaction = Transaction.newBuilder().signedTransactionBytes(signedTransactionBytes).build();
-        final var transactionBytes = Bytes.wrap(PbjConverter.fromPbj(transaction).toByteArray());
+        final var transaction = Transaction.newBuilder()
+                .signedTransactionBytes(signedTransactionBytes)
+                .build();
+        final var transactionBytes =
+                Bytes.wrap(PbjConverter.fromPbj(transaction).toByteArray());
         childRecordBuilder
                 .transaction(transaction)
                 .transactionBytes(transactionBytes)

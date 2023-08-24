@@ -163,7 +163,9 @@ public class SingleTransactionRecordBuilderTest {
         }
 
         SingleTransactionRecord singleTransactionRecord = singleTransactionRecordBuilder.build();
-        assertEquals(HapiUtils.asTimestamp(PARENT_CONSENSUS_TIME), singleTransactionRecord.transactionRecord().parentConsensusTimestamp());
+        assertEquals(
+                HapiUtils.asTimestamp(PARENT_CONSENSUS_TIME),
+                singleTransactionRecord.transactionRecord().parentConsensusTimestamp());
         assertEquals(transaction, singleTransactionRecord.transaction());
 
         if (entropyOneOfType == TransactionRecord.EntropyOneOfType.PRNG_BYTES) {
