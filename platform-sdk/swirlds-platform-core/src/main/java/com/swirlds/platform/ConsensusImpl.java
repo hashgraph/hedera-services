@@ -20,6 +20,7 @@ import static com.swirlds.logging.LogMarker.CONSENSUS_VOTING;
 import static com.swirlds.logging.LogMarker.STARTUP;
 
 import com.swirlds.common.config.ConsensusConfig;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.utility.Threshold;
 import com.swirlds.platform.consensus.AncestorSearch;
@@ -574,7 +575,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus,
         long yesWeight = 0; // total weight of all members voting yes
         long noWeight = 0; // total weight of all members voting yes
         for (final EventImpl w : stronglySeen) {
-            final long weight = addressBook.getAddress(w.getCreatorId()).getWeight();
+            final long weight = getWeight(w.getCreatorId());
             if (w.getVote(candidateWitness)) {
                 yesWeight += weight;
             } else {
@@ -988,7 +989,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus,
                     long weight = 0;
                     for (int m3 = 0; m3 < numMembers; m3++) {
                         if (seeThru(x, mm, m3) == st) { // only count intermediates that see the canonical witness
-                            weight += addressBook.getAddress(addressBook.getNodeId(m3)).getWeight();
+                            weight += getWeight(m3);
                         }
                     }
                     if (Threshold.SUPER_MAJORITY.isSatisfiedBy(weight, totalWeight)) { // strongly see supermajority of
@@ -1089,7 +1090,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus,
         int numStronglySeen = 0;
         for (int m = 0; m < numMembers; m++) {
             if (timedStronglySeeP(x, m) != null) {
-                weight += addressBook.getAddress(addressBook.getNodeId(m)).getWeight();
+                weight += getWeight(m);
                 numStronglySeen++;
             }
         }
@@ -1185,5 +1186,16 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus,
      */
     private EventImpl firstSee(final EventImpl x, final long m) {
         return firstSelfWitnessS(lastSee(x, m));
+    }
+
+    private long getWeight(final NodeId nodeId) {
+        if (!addressBook.contains(nodeId)) {
+            return 0;
+        }
+        return addressBook.getAddress(nodeId).getWeight();
+    }
+
+    private long getWeight(final int nodeIndex) {
+        return getWeight(addressBook.getNodeId(nodeIndex));
     }
 }
