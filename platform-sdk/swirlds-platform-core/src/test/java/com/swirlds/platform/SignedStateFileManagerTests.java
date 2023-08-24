@@ -207,7 +207,7 @@ class SignedStateFileManagerTests {
                 mock(StatusActionSubmitter.class));
         manager.start();
 
-        manager.saveSignedStateToDisk(signedState);
+        manager.saveSignedStateToDisk(signedState, false);
 
         completeBeforeTimeout(() -> latch.await(), Duration.ofSeconds(1), "latch did not complete on time");
 
@@ -326,11 +326,11 @@ class SignedStateFileManagerTests {
         if (stateIndex < queueSize + 1) {
             // Note that it's actually queueSize + 1. This is because one state will have been removed
             // from the queue for handling.
-            assertTrue(manager.saveSignedStateToDisk(state), "queue should have capacity");
+            assertTrue(manager.saveSignedStateToDisk(state, false), "queue should have capacity");
 
             assertEquals(1, state.getReservationCount(), "the state should have an extra reservation");
         } else {
-            assertFalse(manager.saveSignedStateToDisk(state), "queue should be full");
+            assertFalse(manager.saveSignedStateToDisk(state, false), "queue should be full");
             assertEquals(-1, state.getReservationCount(), "incorrect reservation count");
         }
 
@@ -526,7 +526,7 @@ class SignedStateFileManagerTests {
                         "timestamp should be after the boundary");
 
                 savedStates.add(signedState);
-                manager.saveSignedStateToDisk(signedState);
+                manager.saveSignedStateToDisk(signedState, false);
 
                 assertEventuallyDoesNotThrow(
                         () -> {
@@ -653,7 +653,7 @@ class SignedStateFileManagerTests {
             final SignedState signedState =
                     new RandomSignedStateGenerator(random).setRound(round).build();
             states.add(signedState);
-            manager.saveSignedStateToDisk(signedState);
+            manager.saveSignedStateToDisk(signedState, false);
 
             // Verify that the states we want to be on disk are still on disk
             for (int i = 1; i <= statesOnDisk; i++) {

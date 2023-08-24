@@ -33,7 +33,6 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.status.PlatformStatusGetter;
 import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.logging.payloads.InsufficientSignaturesPayload;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
 import com.swirlds.platform.components.common.query.PrioritySystemTransactionSubmitter;
 import com.swirlds.platform.components.state.output.IssConsumer;
@@ -291,9 +290,9 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      *
      * @param signedState the newly complete signed state
      */
-    private void stateHasEnoughSignatures(final SignedState signedState) {
+    private void stateHasEnoughSignatures(final @NonNull SignedState signedState) {
         if (signedState.isStateToSave()) {
-            signedStateFileManager.saveSignedStateToDisk(signedState);
+            signedStateFileManager.saveSignedStateToDisk(signedState, false);
         }
     }
 
@@ -302,30 +301,9 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      *
      * @param signedState the signed state that lacks signatures
      */
-    private void stateLacksSignatures(final SignedState signedState) {
+    private void stateLacksSignatures(final @NonNull SignedState signedState) {
         if (signedState.isStateToSave()) {
-            final long previousCount =
-                    signedStateMetrics.getTotalUnsignedDiskStatesMetric().get();
-            signedStateMetrics.getTotalUnsignedDiskStatesMetric().increment();
-            final long newCount =
-                    signedStateMetrics.getTotalUnsignedDiskStatesMetric().get();
-
-            if (newCount <= previousCount) {
-                logger.error(EXCEPTION.getMarker(), "Metric for total unsigned disk states not updated");
-            }
-
-            logger.error(
-                    EXCEPTION.getMarker(),
-                    new InsufficientSignaturesPayload(
-                            ("state written to disk for round %d did not have enough signatures. "
-                                            + "Collected signatures representing %d/%d weight. "
-                                            + "Total unsigned disk states so far: %d.")
-                                    .formatted(
-                                            signedState.getRound(),
-                                            signedState.getSigningWeight(),
-                                            signedState.getAddressBook().getTotalWeight(),
-                                            newCount)));
-            signedStateFileManager.saveSignedStateToDisk(signedState);
+            signedStateFileManager.saveSignedStateToDisk(signedState, true);
         }
     }
 

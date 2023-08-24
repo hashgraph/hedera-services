@@ -24,7 +24,6 @@ import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 import static com.swirlds.platform.state.signed.SignedStateFileReader.getSavedStateFiles;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.getSignedStateDirectory;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.getSignedStatesBaseDirectory;
-import static com.swirlds.platform.state.signed.SignedStateFileWriter.writeSignedStateToDisk;
 import static com.swirlds.platform.state.signed.StateToDiskReason.FIRST_ROUND_AFTER_GENESIS;
 import static com.swirlds.platform.state.signed.StateToDiskReason.FREEZE_STATE;
 import static com.swirlds.platform.state.signed.StateToDiskReason.PERIODIC_SNAPSHOT;
@@ -42,6 +41,7 @@ import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.interrupt.Uninterruptable;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.logging.payloads.InsufficientSignaturesPayload;
 import com.swirlds.platform.components.state.output.MinimumGenerationNonAncientConsumer;
 import com.swirlds.platform.components.state.output.StateToDiskAttemptConsumer;
 import com.swirlds.platform.config.ThreadConfig;
@@ -217,6 +217,74 @@ public class SignedStateFileManager implements Startable {
     }
 
     /**
+     * Method to be called when a state has been successfully written to disk.
+     *
+     * @param reservedState the state that was written to disk
+     * @param directory     the directory where the state was written
+     * @param start         the nano start time of the state writing process
+     */
+    private void stateWrittenToDisk(
+            @NonNull final SignedState reservedState, @NonNull final Path directory, final long start) {
+
+        final long round = reservedState.getRound();
+        if (round > latestSavedStateRound.get()) {
+            latestSavedStateRound.set(round);
+        }
+
+        metrics.getWriteStateToDiskTimeMetric().update(TimeUnit.NANOSECONDS.toMillis(time.nanoTime() - start));
+        statusActionSubmitter.submitStatusAction(new StateWrittenToDiskAction(round));
+        stateToDiskAttemptConsumer.stateToDiskAttempt(reservedState, directory, true);
+    }
+
+    /**
+     * Checks whether a given state should be saved to disk
+     *
+     * @param reservedState        the state to potentially be saved
+     * @param outOfBand            whether this state save attempt is out-of-band
+     * @param stateLacksSignatures whether the state lacks signatures
+     * @return true if the state should be saved, false otherwise
+     */
+    private boolean shouldStateBeSaved(
+            final @NonNull SignedState reservedState, final boolean outOfBand, final boolean stateLacksSignatures) {
+
+        if (outOfBand) {
+            // states being saved out-of-band are exempt from the hasStateBeenSavedToDisk() check,
+            // and should always be saved
+            return true;
+        }
+
+        if (reservedState.hasStateBeenSavedToDisk()) {
+            logger.info(
+                    STATE_TO_DISK.getMarker(),
+                    "Not saving signed state for round {} to disk because it has already been saved.",
+                    reservedState.getRound());
+
+            return false;
+        } else {
+            if (stateLacksSignatures) {
+                metrics.getTotalUnsignedDiskStatesMetric().increment();
+                final long newCount = metrics.getTotalUnsignedDiskStatesMetric().get();
+
+                logger.error(
+                        EXCEPTION.getMarker(),
+                        new InsufficientSignaturesPayload(
+                                ("State written to disk for round %d did not have enough signatures. "
+                                                + "Collected signatures representing %d/%d weight. "
+                                                + "Total unsigned disk states so far: %d.")
+                                        .formatted(
+                                                reservedState.getRound(),
+                                                reservedState.getSigningWeight(),
+                                                reservedState.getAddressBook().getTotalWeight(),
+                                                newCount)));
+            }
+
+            reservedState.stateSavedToDisk();
+
+            return true;
+        }
+    }
+
+    /**
      * <p>
      * Notifies the platform that the signed state is complete, the platform will then write it to a file.
      * </p>
@@ -226,13 +294,14 @@ public class SignedStateFileManager implements Startable {
      * reservation when the state has been fully written to disk (or if state saving fails).
      * </p>
      *
-     * @param signedState      the signed state to be written
-     * @param directory        the directory where the signed state will be written
-     * @param reason           the reason this state is being written to disk
-     * @param finishedCallback a function that is called after state writing is complete. Is passed true if writing
-     *                         succeeded, else is passed false.
-     * @param outOfBand        true if this state is being written out of band, false otherwise
-     * @param configuration    the configuration of the platform
+     * @param signedState          the signed state to be written
+     * @param directory            the directory where the signed state will be written
+     * @param reason               the reason this state is being written to disk
+     * @param finishedCallback     a function that is called after state writing is complete. Is passed true if writing
+     *                             succeeded, else is passed false.
+     * @param outOfBand            true if this state is being written out of band, false otherwise
+     * @param stateLacksSignatures true if the state lacks signatures, false otherwise
+     * @param configuration        the configuration of the platform
      * @return true if it will be written to disk, false otherwise
      */
     private boolean saveSignedStateToDisk(
@@ -241,6 +310,7 @@ public class SignedStateFileManager implements Startable {
             @Nullable final StateToDiskReason reason,
             @Nullable final Consumer<Boolean> finishedCallback,
             final boolean outOfBand,
+            final boolean stateLacksSignatures,
             @NonNull final Configuration configuration) {
 
         Objects.requireNonNull(directory);
@@ -252,35 +322,13 @@ public class SignedStateFileManager implements Startable {
         final boolean accepted = taskQueue.offer(() -> {
             final long start = time.nanoTime();
             boolean success = false;
-            final long round = reservedSignedState.get().getRound();
+
             try (reservedSignedState) {
                 try {
-                    boolean stateAlreadySaved = false;
-
-                    // states being saved out-of-band are exempt from the hasStateBeenSavedToDisk() check
-                    if (!outOfBand) {
-                        if (signedState.hasStateBeenSavedToDisk()) {
-                            logger.info(
-                                    STATE_TO_DISK.getMarker(),
-                                    "Not saving signed state for round {} to disk because it has already been saved.",
-                                    signedState.getRound());
-
-                            stateAlreadySaved = true;
-                        } else {
-                            signedState.stateSavedToDisk();
-                        }
-                    }
-
-                    if (!stateAlreadySaved) {
-                        writeSignedStateToDisk(selfId, directory, reservedSignedState.get(), reason, configuration);
-                        if (round > latestSavedStateRound.get()) {
-                            latestSavedStateRound.set(round);
-                        }
-                        metrics.getWriteStateToDiskTimeMetric()
-                                .update(TimeUnit.NANOSECONDS.toMillis(time.nanoTime() - start));
-
-                        statusActionSubmitter.submitStatusAction(new StateWrittenToDiskAction(round));
-                        stateToDiskAttemptConsumer.stateToDiskAttempt(reservedSignedState.get(), directory, true);
+                    if (shouldStateBeSaved(reservedSignedState.get(), outOfBand, stateLacksSignatures)) {
+                        SignedStateFileWriter.writeSignedStateToDisk(
+                                selfId, directory, reservedSignedState.get(), reason, configuration);
+                        stateWrittenToDisk(reservedSignedState.get(), directory, start);
 
                         success = true;
                     }
@@ -289,7 +337,7 @@ public class SignedStateFileManager implements Startable {
                     logger.error(
                             EXCEPTION.getMarker(),
                             "Unable to write signed state to disk for round {} to {}.",
-                            round,
+                            reservedSignedState.get().getRound(),
                             directory,
                             e);
                 } finally {
@@ -318,11 +366,11 @@ public class SignedStateFileManager implements Startable {
     /**
      * Save a signed state to disk. This method will be called periodically under standard operations.
      *
-     * @param signedState the signed state to be written to disk.
-     *
+     * @param signedState          the signed state to be written to disk.
+     * @param stateLacksSignatures true if the state lacks signatures, false otherwise
      * @return true if the state will be written to disk, false otherwise
      */
-    public boolean saveSignedStateToDisk(final SignedState signedState) {
+    public boolean saveSignedStateToDisk(final SignedState signedState, final boolean stateLacksSignatures) {
         return saveSignedStateToDisk(
                 signedState,
                 getSignedStateDir(signedState.getRound()),
@@ -333,6 +381,7 @@ public class SignedStateFileManager implements Startable {
                     }
                 },
                 false,
+                stateLacksSignatures,
                 configuration);
     }
 
@@ -362,6 +411,7 @@ public class SignedStateFileManager implements Startable {
                 reason,
                 success -> latch.countDown(),
                 true,
+                false,
                 configuration);
 
         if (blocking) {
