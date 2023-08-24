@@ -56,9 +56,6 @@ public class ReadableFileStoreImpl extends FileStore implements ReadableFileStor
      */
     public @Nullable FileMetadata getFileMetadata(@Nullable final FileID id) {
         final var file = getFileLeaf(id);
-        if (file == null) {
-            return null;
-        }
         return file == null ? null : FileStore.fileMetaFrom(file);
     }
 
