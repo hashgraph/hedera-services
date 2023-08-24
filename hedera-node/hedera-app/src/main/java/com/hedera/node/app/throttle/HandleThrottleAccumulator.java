@@ -58,6 +58,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
@@ -73,15 +75,23 @@ public class HandleThrottleAccumulator {
     private static final Logger log = LogManager.getLogger(HandleThrottleAccumulator.class);
     private static final Set<HederaFunctionality> CONSENSUS_THROTTLED_FUNCTIONS =
             EnumSet.of(CONTRACT_CALL_LOCAL, CONTRACT_CALL, CONTRACT_CREATE, ETHEREUM_TRANSACTION);
+    private static final int CAPACITY_SPLIT = 1;
     private final ConfigProvider configProvider;
+    private final ThrottleManager throttleManager;
     private EnumMap<HederaFunctionality, ThrottleReqsManager> functionReqs = new EnumMap<>(HederaFunctionality.class);
     private static final int UNKNOWN_NUM_IMPLICIT_CREATIONS = -1;
     private boolean lastTxnWasGasThrottled;
     private GasLimitDeterministicThrottle gasThrottle;
+    private List<DeterministicThrottle> activeThrottles = Collections.emptyList();
 
     @Inject
-    public HandleThrottleAccumulator(@NonNull final ConfigProvider configProvider) {
+    public HandleThrottleAccumulator(
+            @NonNull final ConfigProvider configProvider, @NonNull ThrottleManager throttleManager) {
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
+        this.throttleManager = requireNonNull(throttleManager, "throttleManager must not be null");
+        this.rebuildFor(this.throttleManager
+                .throttleDefinitions()); // TODO: this will initialize it, but we still need to rebuild during runtime
+        // as throttle defs change
     }
 
     public boolean shouldThrottle(@NonNull TransactionInfo txnInfo, Instant t, HederaState state) {
@@ -97,6 +107,14 @@ public class HandleThrottleAccumulator {
 
     public void leakUnusedGasPreviouslyReserved(long value) {
         gasThrottle.leakUnusedGasPreviouslyReserved(value);
+    }
+
+    public List<DeterministicThrottle> allActiveThrottles() {
+        return activeThrottles;
+    }
+
+    public boolean wasLastTxnGasThrottled() {
+        return lastTxnWasGasThrottled;
     }
 
     private boolean shouldThrottleTxn(
@@ -145,14 +163,14 @@ public class HandleThrottleAccumulator {
     }
 
     private void reclaimLastAllowedUse() {
-        //        activeThrottles.forEach(DeterministicThrottle::reclaimLastAllowedUse);
+        activeThrottles.forEach(DeterministicThrottle::reclaimLastAllowedUse);
         if (gasThrottle != null) {
             gasThrottle.reclaimLastAllowedUse();
         }
     }
 
     private void resetLastAllowedUse() {
-        //        activeThrottles.forEach(DeterministicThrottle::resetLastAllowedUse);
+        activeThrottles.forEach(DeterministicThrottle::resetLastAllowedUse);
         if (gasThrottle != null) {
             gasThrottle.resetLastAllowedUse();
         }
@@ -332,11 +350,8 @@ public class HandleThrottleAccumulator {
         return manager == null || !manager.allReqsMetAt(now, n, ONE_TO_ONE);
     }
 
-    // TODO: implement the logic for parsing the throttle defs to be used
     public void rebuildFor(@NonNull ThrottleDefinitions defs) {
-        final var capacitySplit = 1;
-        //        calculateThrottles(defs, capacitySplitSource.getAsInt());
-        //        List<DeterministicThrottle> newActiveThrottles = new ArrayList<>();
+        List<DeterministicThrottle> newActiveThrottles = new ArrayList<>();
         EnumMap<HederaFunctionality, List<Pair<DeterministicThrottle, Integer>>> reqLists =
                 new EnumMap<>(HederaFunctionality.class);
 
@@ -348,14 +363,14 @@ public class HandleThrottleAccumulator {
                         bucket.throttleGroups().stream()
                                 .map(this::hapiGroupFromPbj)
                                 .toList());
-                var mapping = utilThrottleBucket.asThrottleMapping(capacitySplit);
+                var mapping = utilThrottleBucket.asThrottleMapping(CAPACITY_SPLIT);
                 var throttle = mapping.getLeft();
                 var reqs = mapping.getRight();
                 for (var req : reqs) {
                     reqLists.computeIfAbsent(req.getLeft(), ignore -> new ArrayList<>())
                             .add(Pair.of(throttle, req.getRight()));
                 }
-                //                newActiveThrottles.add(throttle);
+                newActiveThrottles.add(throttle);
             } catch (IllegalStateException badBucket) {
                 log.error("When constructing bucket '{}' from state: {}", bucket.name(), badBucket.getMessage());
             }
@@ -364,8 +379,9 @@ public class HandleThrottleAccumulator {
         reqLists.forEach((function, reqs) -> newFunctionReqs.put(function, new ThrottleReqsManager(reqs)));
 
         functionReqs = newFunctionReqs;
-        //        activeThrottles = newActiveThrottles;
-        //        logResolvedDefinitions();
+        activeThrottles = newActiveThrottles;
+
+        logResolvedDefinitions(CAPACITY_SPLIT);
     }
 
     private ThrottleGroup<HederaFunctionality> hapiGroupFromPbj(
@@ -373,8 +389,23 @@ public class HandleThrottleAccumulator {
         return new ThrottleGroup<>(pbjThrottleGroup.milliOpsPerSec(), pbjThrottleGroup.operations());
     }
 
-    public boolean wasLastTxnGasThrottled() {
-        return lastTxnWasGasThrottled;
+    private void logResolvedDefinitions(int capacitySplit) {
+        var sb = new StringBuilder(
+                "Resolved handle throttles (after splitting capacity " + capacitySplit + " ways) - \n");
+        functionReqs.entrySet().stream()
+                .sorted(Comparator.comparing(entry -> entry.getKey().toString()))
+                .forEach(entry -> {
+                    var function = entry.getKey();
+                    var manager = entry.getValue();
+                    sb.append("  ")
+                            .append(function)
+                            .append(": ")
+                            .append(manager.currentUsage()) // use current usage instead of the package private
+                            // asReadableRequirements(), otherwise we need to make it public as
+                            // well
+                            .append("\n");
+                });
+        log.info("{}", () -> sb.toString().trim());
     }
 
     //    @Override
