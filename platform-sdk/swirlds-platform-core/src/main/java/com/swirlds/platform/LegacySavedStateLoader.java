@@ -125,7 +125,7 @@ public class LegacySavedStateLoader {
      * Stores a signed state read from disk along with its original hash and it's recalculated hash. These hashes could
      * be different if a migration was performed.
      */
-    private record SignedStateWithHashes(
+    public record SignedStateWithHashes(
             @NonNull ReservedSignedState signedState, @NonNull Hash oldHash, @NonNull Hash newHash) {
 
         /**
@@ -310,7 +310,7 @@ public class LegacySavedStateLoader {
         return createNullReservation();
     }
 
-    private static SignedStateWithHashes readAndRehashState(
+    public static SignedStateWithHashes readAndRehashState(
             @NonNull final PlatformContext platformContext, @NonNull final SavedStateInfo file) throws IOException {
 
         logger.info(STARTUP.getMarker(), "Loading signed state from disk: {}", file.stateFile());
