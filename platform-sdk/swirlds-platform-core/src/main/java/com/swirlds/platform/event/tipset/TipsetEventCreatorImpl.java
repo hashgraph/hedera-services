@@ -69,6 +69,9 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
     private final ChildlessEventTracker childlessOtherEventTracker;
     private final TransactionSupplier transactionSupplier;
     private final SoftwareVersion softwareVersion;
+    /** The address book for the current network. */
+    private final AddressBook addressBook;
+
     private final int networkSize;
 
     /**
@@ -126,8 +129,7 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
         this.selfId = Objects.requireNonNull(selfId);
         this.transactionSupplier = Objects.requireNonNull(transactionSupplier);
         this.softwareVersion = Objects.requireNonNull(softwareVersion);
-
-        Objects.requireNonNull(addressBook);
+        this.addressBook = Objects.requireNonNull(addressBook);
 
         final EventCreationConfig eventCreationConfig =
                 platformContext.getConfiguration().getConfigData(EventCreationConfig.class);
@@ -152,6 +154,9 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
     public void registerEvent(@NonNull final EventImpl event) {
 
         final NodeId eventCreator = event.getHashedData().getCreatorId();
+        if (!addressBook.contains(eventCreator)) {
+            return;
+        }
         final boolean selfEvent = eventCreator.equals(selfId);
 
         if (selfEvent) {
