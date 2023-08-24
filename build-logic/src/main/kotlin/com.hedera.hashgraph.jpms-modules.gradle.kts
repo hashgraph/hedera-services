@@ -50,9 +50,7 @@ extraJavaModuleInfo {
     module("io.grpc:grpc-netty", "grpc.netty") {
         exportAllPackages()
         requireAllDefinedDependencies()
-        dependencies {
-            requires("java.logging")
-        }
+        requires("java.logging")
     }
     module("io.grpc:grpc-stub", "grpc.stub") {
         exportAllPackages()
@@ -73,9 +71,7 @@ extraJavaModuleInfo {
     module("io.grpc:grpc-protobuf-lite", "grpc.protobuf.lite") {
         exportAllPackages()
         requireAllDefinedDependencies()
-        dependencies {
-            requires("com.google.protobuf")
-        }
+        requires("com.google.protobuf")
     }
     module("javax.annotation:javax.annotation-api", "java.annotation") {
         exportAllPackages()
