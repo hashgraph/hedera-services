@@ -16,9 +16,11 @@
 
 package com.swirlds.common.io.utility;
 
+import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.test.framework.config.TestConfigBuilder;
@@ -81,7 +83,7 @@ class RecycleBinTests {
     @Test
     @DisplayName("Recycle File Test")
     void recycleFileTest() throws IOException {
-        final RecycleBin recycleBin = RecycleBin.create(configuration, new NodeId(0));
+        final RecycleBinImpl recycleBin = new RecycleBinImpl(configuration, getStaticThreadManager(), Time.getCurrent(), new NodeId(0));
 
         final Path path1 = testDirectory.resolve("file1.txt");
         writeFile(path1, "file1");
@@ -111,7 +113,8 @@ class RecycleBinTests {
                 testDirectory.resolve("swirlds-recycle-bin").resolve("0").resolve("file3.txt");
         validateFile(recycledPath3, "file3");
 
-        recycleBin.clear();
+        // TODO
+//        recycleBin.clear();
 
         assertFalse(Files.exists(recycledPath1));
         assertFalse(Files.exists(recycledPath2));
@@ -121,7 +124,7 @@ class RecycleBinTests {
     @Test
     @DisplayName("Recycle Directory Test")
     void recycleDirectoryTest() throws IOException {
-        final RecycleBin recycleBin = RecycleBin.create(configuration, new NodeId(0));
+        final RecycleBinImpl recycleBin = new RecycleBinImpl(configuration, getStaticThreadManager(), Time.getCurrent(), new NodeId(0));
 
         final Path directory = testDirectory.resolve("foo/bar/baz");
         Files.createDirectories(directory);
@@ -161,7 +164,8 @@ class RecycleBinTests {
                 .resolve("file3.txt");
         validateFile(recycledPath3, "file3");
 
-        recycleBin.clear();
+        // TODO
+//        recycleBin.clear();
 
         assertFalse(Files.exists(recycledPath1));
         assertFalse(Files.exists(recycledPath2));
@@ -171,7 +175,7 @@ class RecycleBinTests {
     @Test
     @DisplayName("Recycle Non-Existent File Test")
     void recycleNonExistentFileTest() throws IOException {
-        final RecycleBin recycleBin = RecycleBin.create(configuration, new NodeId(0));
+        final RecycleBinImpl recycleBin = new RecycleBinImpl(configuration, getStaticThreadManager(), Time.getCurrent(), new NodeId(0));
 
         final Path path = testDirectory.resolve("file.txt");
         recycleBin.recycle(path);
@@ -184,7 +188,7 @@ class RecycleBinTests {
     @Test
     @DisplayName("Recycle Duplicate File Test")
     void recycleDuplicateFileTest() throws IOException {
-        final RecycleBin recycleBin = RecycleBin.create(configuration, new NodeId(0));
+        final RecycleBinImpl recycleBin = new RecycleBinImpl(configuration, getStaticThreadManager(), Time.getCurrent(), new NodeId(0));
 
         final Path path = testDirectory.resolve("file.txt");
         final Path recycledPath =
@@ -205,7 +209,7 @@ class RecycleBinTests {
         assertFalse(Files.exists(path));
         validateFile(recycledPath, "baz");
 
-        recycleBin.clear();
+//        recycleBin.clear(); TODO
         assertFalse(Files.exists(recycledPath));
     }
 }

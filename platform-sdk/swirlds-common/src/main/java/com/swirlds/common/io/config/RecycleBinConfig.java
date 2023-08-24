@@ -22,15 +22,21 @@ import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
+import java.time.Duration;
 
 /**
  * Configuration for the {@link com.swirlds.common.io.utility.RecycleBin} class.
  *
- * @param recycleBinPath the directory where recycled files are stored, relative to the saved state directory defined by
- *                       {@link StateConfig#savedStateDirectory()}.
+ * @param maximumFileAge   the maximum age of a file in the recycle bin before it is deleted
+ * @param collectionPeriod the period between recycle bin collection runs
+ * @param recycleBinPath   the directory where recycled files are stored, relative to the saved state directory defined
+ *                         by {@link StateConfig#savedStateDirectory()}.
  */
 @ConfigData("recycleBin")
-public record RecycleBinConfig(@ConfigProperty(defaultValue = "swirlds-recycle-bin") String recycleBinPath) {
+public record RecycleBinConfig(
+        @ConfigProperty(defaultValue = "7d") Duration maximumFileAge,
+        @ConfigProperty(defaultValue = "1d") Duration collectionPeriod,
+        @ConfigProperty(defaultValue = "swirlds-recycle-bin") String recycleBinPath) {
 
     /**
      * Returns the real path to the recycle bin.

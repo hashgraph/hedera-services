@@ -16,7 +16,9 @@
 
 package com.swirlds.common.io.utility;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -45,20 +47,4 @@ public interface RecycleBin {
      */
     void recycle(@NonNull Path path) throws IOException;
 
-    /**
-     * Delete all recycled files.
-     */
-    void clear() throws IOException;
-
-    /**
-     * Create a new recycle bin.
-     *
-     * @param configuration the configuration object
-     * @param selfId        the ID of this node
-     * @throws IOException if the recycle bin directory could not be created
-     */
-    static RecycleBin create(@NonNull final Configuration configuration, @NonNull final NodeId selfId)
-            throws IOException {
-        return new RecycleBinImpl(configuration, selfId);
-    }
 }
