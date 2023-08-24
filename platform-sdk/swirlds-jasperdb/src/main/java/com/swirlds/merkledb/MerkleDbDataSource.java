@@ -1418,7 +1418,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
             logger.info(MERKLE_DB.getMarker(), "[{}] Finished compaction", tableName);
             return true;
         } catch (final InterruptedException | ClosedByInterruptException e) {
-            logger.info(MERKLE_DB.getMarker(), "Interrupted while merging, this is allowed.");
+            logger.info(MERKLE_DB.getMarker(), "Interrupted while merging, this is allowed.", e);
             Thread.currentThread().interrupt();
             return false;
         } catch (final Throwable e) {

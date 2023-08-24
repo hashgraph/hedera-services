@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,9 @@
  * limitations under the License.
  */
 
-plugins {
-    id("com.swirlds.platform.conventions")
-    `java-library`
-    id("com.swirlds.platform.maven-publish")
-    id("org.gradle.java-test-fixtures")
-}
+package com.swirlds.common.exceptions;
 
-dependencies {
-    api(project(":swirlds-base"))
-    implementation(project(":swirlds-common"))
-    implementation(project(":swirlds-logging"))
-    compileOnly(libs.spotbugs.annotations)
-}
+/**
+ * This exception is thrown when a method is not implemented.
+ */
+public class NotImplementedException extends RuntimeException {}

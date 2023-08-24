@@ -91,6 +91,7 @@ import org.junit.jupiter.api.io.TempDir;
 @SuppressWarnings("ALL")
 class VirtualMapTests extends VirtualTestBase {
 
+    public static final String ATTACH_LISTENER_THREAD_NAME = "Attach Listener";
     /**
      * Temporary directory provided by JUnit
      */
@@ -152,7 +153,7 @@ class VirtualMapTests extends VirtualTestBase {
         }
 
         for (final String threadName : currentThreadNames) {
-            if (!threadNames.contains(threadName)) {
+            if (!threadNames.contains(threadName) && !threadName.equals(ATTACH_LISTENER_THREAD_NAME)) {
                 createdThreads.add(threadName);
             }
         }
