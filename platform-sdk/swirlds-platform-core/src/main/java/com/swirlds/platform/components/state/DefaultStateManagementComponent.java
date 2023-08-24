@@ -268,6 +268,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
                 dispatchBuilder,
                 stateConfig,
                 selfId,
+                statusActionSubmitter,
                 haltRequestedConsumer,
                 fatalErrorConsumer,
                 issConsumer);
