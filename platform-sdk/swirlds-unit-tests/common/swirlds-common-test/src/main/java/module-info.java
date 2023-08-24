@@ -11,7 +11,6 @@ open module com.swirlds.common.test {
     requires com.swirlds.common;
     requires org.bouncycastle.provider;
     requires org.junit.jupiter.api;
-    requires org.apache.commons.lang3;
     requires java.scripting;
     requires org.apache.logging.log4j;
     requires com.fasterxml.jackson.databind;
