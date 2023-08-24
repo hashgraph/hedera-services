@@ -51,9 +51,6 @@ public final class DataFileWriter<D> {
 
     /** Mapped buffer size */
     private static final int MMAP_BUF_SIZE = PAGE_SIZE * 1024 * 4;
-    /** A value to write to verify a newly created mapped buffer */
-    public static final int PROBE_VALUE = 42;
-
     /**
      * The current mapped byte buffer used for writing. When overflowed, it is released, and another
      * buffer is mapped from the file channel.
