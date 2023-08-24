@@ -12,7 +12,6 @@ open module com.swirlds.merkle.test {
     requires org.junit.jupiter.api;
     requires org.apache.logging.log4j;
     requires org.apache.logging.log4j.core;
-    requires org.apache.commons.lang3;
     requires com.fasterxml.jackson.annotation;
     requires com.fasterxml.jackson.databind;
     requires com.fasterxml.jackson.core;

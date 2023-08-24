@@ -74,6 +74,7 @@ module com.hedera.node.app.service.mono {
             com.hedera.node.app.service.mono.test.fixtures,
             com.hedera.node.app;
     exports com.hedera.node.app.service.mono.files to
+            com.hedera.node.services.cli,
             com.hedera.node.app.service.mono.test.fixtures,
             com.hedera.node.app,
             com.hedera.node.app.service.file.impl;
