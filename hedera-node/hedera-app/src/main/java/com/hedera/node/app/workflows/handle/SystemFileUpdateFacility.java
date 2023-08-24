@@ -24,6 +24,7 @@ import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.config.ConfigProviderImpl;
+import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.ThrottleManager;
@@ -46,6 +47,7 @@ public class SystemFileUpdateFacility {
 
     private final ConfigProviderImpl configProvider;
     private final ThrottleManager throttleManager;
+    private final ExchangeRateManager exchangeRateManager;
 
     /**
      * Creates a new instance of this class.
@@ -53,9 +55,12 @@ public class SystemFileUpdateFacility {
      * @param configProvider the configuration provider
      */
     public SystemFileUpdateFacility(
-            @NonNull final ConfigProviderImpl configProvider, @NonNull final ThrottleManager throttleManager) {
+            @NonNull final ConfigProviderImpl configProvider,
+            @NonNull final ThrottleManager throttleManager,
+            @NonNull final ExchangeRateManager exchangeRateManager) {
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
         this.throttleManager = requireNonNull(throttleManager, " throttleManager must not be null");
+        this.exchangeRateManager = requireNonNull(exchangeRateManager, "exchangeRateManager must not be null");
     }
 
     /**
@@ -98,7 +103,7 @@ public class SystemFileUpdateFacility {
             } else if (fileNum == config.feeSchedules()) {
                 logger.error("Update of fee schedules not implemented");
             } else if (fileNum == config.exchangeRates()) {
-                logger.error("Update of exchange rates not implemented");
+                exchangeRateManager.update(getFileContent(state, fileID));
             } else if (fileNum == config.networkProperties()) {
                 configProvider.update(getFileContent(state, fileID));
             } else if (fileNum == config.hapiPermissions()) {
