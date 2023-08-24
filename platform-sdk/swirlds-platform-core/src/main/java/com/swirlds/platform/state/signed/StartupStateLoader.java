@@ -16,22 +16,22 @@
 
 package com.swirlds.platform.state.signed;
 
+import static com.swirlds.common.merkle.utility.MerkleUtils.rehashTree;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
-import static com.swirlds.platform.LegacySavedStateLoader.readAndRehashState;
 import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
 import static com.swirlds.platform.state.signed.SignedStateFileReader.getSavedStateFiles;
+import static com.swirlds.platform.state.signed.SignedStateFileReader.readStateFile;
 
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
-import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.platform.LegacySavedStateLoader;
-import com.swirlds.platform.LegacySavedStateLoader.SignedStateWithHashes;
-import com.swirlds.platform.reconnect.emergency.EmergencySignedStateValidator;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
+import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
+import com.swirlds.platform.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -42,14 +42,65 @@ import org.apache.logging.log4j.Logger;
 /**
  * A utility for loading saved states from disk.
  */
-public final class SavedStateLoader {
+public final class StartupStateLoader {
 
-    private static final Logger logger = LogManager.getLogger(LegacySavedStateLoader.class);
+    private static final Logger logger = LogManager.getLogger(StartupStateLoader.class);
 
-    // TODO does this need to be a stand alone utility?
-    //  perhaps move other state related startup logic to this class or something
+    private StartupStateLoader() {}
 
-    private SavedStateLoader() {}
+    /**
+     * Looks at the states on disk, chooses one to load, and then loads the chosen state.
+     *
+     * @param platformContext          the platform context
+     * @param recycleBin               the recycle bin
+     * @param selfId                   the ID of this node
+     * @param mainClassName            the name of the main class
+     * @param swirldName               the name of the swirld
+     * @param currentSoftwareVersion   the current software version
+     * @param emergencyRecoveryManager the emergency recovery manager
+     * @return a reserved signed state (wrapped state will be null if no state could be loaded)
+     */
+    @NonNull
+    public static ReservedSignedState loadState(
+            @NonNull final PlatformContext platformContext,
+            @NonNull final RecycleBin recycleBin,
+            @NonNull final NodeId selfId,
+            @NonNull final String mainClassName,
+            @NonNull final String swirldName,
+            @NonNull final SoftwareVersion currentSoftwareVersion,
+            @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
+
+        final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
+        final String actualMainClassName = stateConfig.getMainClassName(mainClassName);
+
+        final List<SavedStateInfo> savedStateFiles = getSavedStateFiles(actualMainClassName, selfId, swirldName);
+        logStatesFound(savedStateFiles);
+
+        if (savedStateFiles.isEmpty()) {
+            // No states were found on disk.
+            return createNullReservation();
+        }
+
+        final boolean emergencyStateRequired = emergencyRecoveryManager.isEmergencyStateRequired();
+
+        final ReservedSignedState state;
+        if (emergencyStateRequired) {
+            state = loadEmergencyState(
+                    platformContext, currentSoftwareVersion, savedStateFiles, emergencyRecoveryManager);
+        } else {
+            state = loadLatestState(platformContext, currentSoftwareVersion, savedStateFiles);
+        }
+
+        final long loadedRound = state.isNull() ? -1 : state.get().getRound();
+        final boolean statesRecycled = cleanupUnusedStates(recycleBin, savedStateFiles, loadedRound);
+
+        if (statesRecycled && emergencyStateRequired) {
+            // TODO is there a better way?
+            emergencyRecoveryManager.preconsensusEventStreamCleanupRequired();
+        }
+
+        return state;
+    }
 
     /**
      * Log the states that were discovered on disk.
@@ -69,57 +120,59 @@ public final class SavedStateLoader {
         logger.info(STARTUP.getMarker(), sb.toString());
     }
 
-    // TODO fix javadocs
-
     /**
-     * Looks at the states on disk, chooses one to load, and then loads the chosen state..
+     * Load the latest state that is compatible with the emergency recovery file.
      *
      * @param platformContext          the platform context
-     * @param recycleBin               the recycle bin
-     * @param addressBook              the address book used to validate the signed state (if necessary) // TODO
-     * @param currentSoftwareVersion   the current software version // TODO
-     * @param emergencyStateValidator  an emergency state validator
+     * @param currentSoftwareVersion   the current software version
+     * @param savedStateFiles          the saved states to try
      * @param emergencyRecoveryManager the emergency recovery manager
-     * @return a reserved signed state (wrapped state will be null if no state could be loaded)
+     * @return the loaded state
      */
     @NonNull
-    public ReservedSignedState loadState(
+    private static ReservedSignedState loadEmergencyState(
             @NonNull final PlatformContext platformContext,
-            @NonNull final RecycleBin recycleBin,
-            @NonNull final AddressBook addressBook,
-            @NonNull final NodeId selfId,
-            @NonNull final String mainClassName,
-            @NonNull final String swirldName,
             @NonNull final SoftwareVersion currentSoftwareVersion,
-            @NonNull final EmergencySignedStateValidator emergencyStateValidator,
+            @NonNull final List<SavedStateInfo> savedStateFiles,
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
 
-        final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
-        final String actualMainClassName = stateConfig.getMainClassName(mainClassName);
+        final EmergencyRecoveryFile recoveryFile = emergencyRecoveryManager.getEmergencyRecoveryFile();
+        logger.info(
+                STARTUP.getMarker(),
+                "Loading state in emergency recovery mode. " + "Epoch hash = {}, recovery round = {}",
+                recoveryFile.hash(),
+                recoveryFile.hash());
 
-        // Files are sorted from most recent to least recent by round number.
-        final List<SavedStateInfo> savedStateFiles = getSavedStateFiles(actualMainClassName, selfId, swirldName);
-        logStatesFound(savedStateFiles);
+        ReservedSignedState state = null;
+        for (final SavedStateInfo savedStateFile : savedStateFiles) {
+            if (!emergencyRecoveryManager.isStateSuitableForStartup(savedStateFile)) {
+                continue;
+            }
 
-        if (savedStateFiles.isEmpty()) {
-            // No states were found on disk.
-            return createNullReservation();
+            try {
+                state = loadState(platformContext, currentSoftwareVersion, savedStateFile);
+                break;
+            } catch (final IOException e) {
+                logger.error(
+                        EXCEPTION.getMarker(),
+                        "Failed to load saved state from file: {}",
+                        savedStateFile.stateFile(),
+                        e);
+            }
         }
 
-        final ReservedSignedState state = emergencyRecoveryManager.isEmergencyStateRequired()
-                ? loadEmergencyState()
-                : loadLatestState(platformContext, currentSoftwareVersion, savedStateFiles);
+        if (state != null
+                && emergencyRecoveryManager.isInHashEpoch(
+                        state.get().getState().getHash(),
+                        state.get()
+                                .getState()
+                                .getPlatformState()
+                                .getPlatformData()
+                                .getEpochHash())) {
+            emergencyRecoveryManager.emergencyStateLoaded();
+        }
 
-        final long loadedRound = state.isNull() ? -1 : state.get().getRound();
-        cleanupUnusedStates(recycleBin, savedStateFiles, loadedRound);
-
-        return state;
-    }
-
-    @NonNull
-    private ReservedSignedState loadEmergencyState() {
-        // TODO
-        return null;
+        return state == null ? createNullReservation() : state;
     }
 
     /**
@@ -131,10 +184,12 @@ public final class SavedStateLoader {
      * @param savedStateFiles        the saved states to try
      * @return the loaded state
      */
-    private ReservedSignedState loadLatestState(
+    private static ReservedSignedState loadLatestState(
             @NonNull final PlatformContext platformContext,
             @NonNull final SoftwareVersion currentSoftwareVersion,
             @NonNull final List<SavedStateInfo> savedStateFiles) {
+
+        logger.info(STARTUP.getMarker(), "Loading latest state from disk.");
 
         for (final SavedStateInfo savedStateFile : savedStateFiles) {
             try {
@@ -160,16 +215,29 @@ public final class SavedStateLoader {
      * @return the loaded state, will be fully hashed
      */
     @NonNull
-    private ReservedSignedState loadState(
+    private static ReservedSignedState loadState(
             @NonNull final PlatformContext platformContext,
             @NonNull final SoftwareVersion currentSoftwareVersion,
             @NonNull final SavedStateInfo savedStateFile)
             throws IOException {
 
-        final SignedStateWithHashes stateWithHashes = readAndRehashState(platformContext, savedStateFile);
-        final SoftwareVersion loadedVersion = stateWithHashes.getVersion();
+        logger.info(STARTUP.getMarker(), "Loading signed state from disk: {}", savedStateFile.stateFile());
+        final DeserializedSignedState deserializedSignedState =
+                readStateFile(platformContext, savedStateFile.stateFile());
+        final State state = deserializedSignedState.reservedSignedState().get().getState();
 
-        if (!stateWithHashes.oldHash().equals(stateWithHashes.newHash())) {
+        final Hash oldHash = deserializedSignedState.originalHash();
+        final Hash newHash = rehashTree(state);
+
+        final SoftwareVersion loadedVersion = deserializedSignedState
+                .reservedSignedState()
+                .get()
+                .getState()
+                .getPlatformState()
+                .getPlatformData()
+                .getCreationSoftwareVersion();
+
+        if (!oldHash.equals(newHash)) {
             if (loadedVersion.equals(currentSoftwareVersion)) {
                 logger.warn(
                         STARTUP.getMarker(),
@@ -190,7 +258,7 @@ public final class SavedStateLoader {
             }
         }
 
-        return stateWithHashes.signedState();
+        return deserializedSignedState.reservedSignedState();
     }
 
     /**
@@ -199,12 +267,14 @@ public final class SavedStateLoader {
      *
      * @param savedStateFiles the states that were found on disk
      * @param loadedRound     the round number of the state that was loaded, or -1 if no state was loaded
+     * @return true if states were recycled, false if no states were recycled
      */
-    private void cleanupUnusedStates(
+    private static boolean cleanupUnusedStates(
             @NonNull final RecycleBin recycleBin,
             @NonNull final List<SavedStateInfo> savedStateFiles,
             final long loadedRound) {
 
+        boolean statesRecycled = false;
         for (final SavedStateInfo savedStateFile : savedStateFiles) {
             if (savedStateFile.metadata().round() > loadedRound) {
                 logger.warn(
@@ -216,11 +286,13 @@ public final class SavedStateLoader {
                         loadedRound);
 
                 try {
+                    statesRecycled = true;
                     recycleBin.recycle(savedStateFile.getDirectory());
                 } catch (final IOException e) {
                     throw new UncheckedIOException("unable to recycle state file", e);
                 }
             }
         }
+        return statesRecycled;
     }
 }

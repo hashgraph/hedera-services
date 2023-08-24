@@ -23,8 +23,6 @@ import static com.swirlds.common.system.SystemExitUtils.exitSystem;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
 import static com.swirlds.platform.state.GenesisStateBuilder.buildGenesisState;
-import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
-import static com.swirlds.platform.state.signed.SignedStateFileReader.getSavedStateFiles;
 
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.ConsensusConfig;
@@ -69,7 +67,6 @@ import com.swirlds.logging.payloads.NodeAddressMismatchPayload;
 import com.swirlds.logging.payloads.SavedStateLoadedPayload;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.platform.JVMPauseDetectorThread;
-import com.swirlds.platform.LegacySavedStateLoader;
 import com.swirlds.platform.ThreadDumpGenerator;
 import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.config.ThreadConfig;
@@ -88,16 +85,14 @@ import com.swirlds.platform.health.clock.OSClockSpeedSourceChecker;
 import com.swirlds.platform.health.entropy.OSEntropyChecker;
 import com.swirlds.platform.health.filesystem.OSFileSystemChecker;
 import com.swirlds.platform.network.Network;
-import com.swirlds.platform.reconnect.emergency.EmergencySignedStateValidator;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.address.AddressBookNetworkUtils;
 import com.swirlds.platform.state.signed.ReservedSignedState;
-import com.swirlds.platform.state.signed.SavedStateInfo;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.state.signed.StartupStateLoader;
 import com.swirlds.platform.swirldapp.AppLoaderException;
 import com.swirlds.platform.swirldapp.SwirldAppLoader;
-import com.swirlds.platform.system.Shutdown;
 import com.swirlds.platform.uptime.UptimeConfig;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -556,58 +551,6 @@ public final class BootstrapUtils {
     }
 
     /**
-     * Load the signed state from the disk if it is present.
-     *
-     * @param platformContext          the platform context
-     * @param recycleBin               the recycle bin
-     * @param mainClassName            the name of the app's SwirldMain class.
-     * @param swirldName               the name of the swirld to load the state for.
-     * @param selfId                   the ID of the node to load the state for.
-     * @param appVersion               the version of the app to use for emergency recovery.
-     * @param configAddressBook        the address book to use for emergency recovery.
-     * @param emergencyRecoveryManager the emergency recovery manager to use for emergency recovery.
-     * @return the signed state loaded from disk.
-     */
-    @NonNull
-    public static ReservedSignedState getUnmodifiedSignedStateFromDisk(
-            @NonNull final PlatformContext platformContext,
-            @NonNull final RecycleBin recycleBin,
-            @NonNull final String mainClassName,
-            @NonNull final String swirldName,
-            @NonNull final NodeId selfId,
-            @NonNull final SoftwareVersion appVersion,
-            @NonNull final AddressBook configAddressBook,
-            @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
-
-        final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
-        final String actualMainClassName = stateConfig.getMainClassName(mainClassName);
-
-        final List<SavedStateInfo> savedStateFiles = getSavedStateFiles(actualMainClassName, selfId, swirldName);
-
-        // We can't send a "real" dispatcher for shutdown, since the dispatcher will not have been started by the
-        // time this class is used.
-        final LegacySavedStateLoader savedStateLoader = new LegacySavedStateLoader(
-                platformContext,
-                recycleBin,
-                new Shutdown()::shutdown,
-                configAddressBook,
-                savedStateFiles,
-                appVersion,
-                () -> new EmergencySignedStateValidator(
-                        stateConfig, emergencyRecoveryManager.getEmergencyRecoveryFile()),
-                emergencyRecoveryManager);
-        try {
-            return savedStateLoader.getSavedStateToLoad();
-        } catch (final Exception e) {
-            logger.error(EXCEPTION.getMarker(), "Signed state not loaded from disk:", e);
-            if (stateConfig.requireStateLoad()) {
-                exitSystem(SystemExitCode.SAVED_STATE_NOT_LOADED);
-            }
-        }
-        return createNullReservation();
-    }
-
-    /**
      * Get the initial state to be used by this node. May return a state loaded from disk, or may return a genesis state
      * if no valid state is found on disk.
      *
@@ -639,14 +582,13 @@ public final class BootstrapUtils {
         Objects.requireNonNull(configAddressBook);
         Objects.requireNonNull(emergencyRecoveryManager);
 
-        final ReservedSignedState loadedState = getUnmodifiedSignedStateFromDisk(
+        final ReservedSignedState loadedState = StartupStateLoader.loadState(
                 platformContext,
                 recycleBin,
+                selfId,
                 mainClassName,
                 swirldName,
-                selfId,
                 appMain.getSoftwareVersion(),
-                configAddressBook,
                 emergencyRecoveryManager);
 
         try (loadedState) {

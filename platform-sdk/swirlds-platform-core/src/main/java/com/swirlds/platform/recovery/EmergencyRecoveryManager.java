@@ -20,11 +20,17 @@ import static com.swirlds.common.system.SystemExitCode.EMERGENCY_RECOVERY_ERROR;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
 import com.swirlds.common.config.StateConfig;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.dispatch.triggers.control.ShutdownRequestedTrigger;
+import com.swirlds.platform.reconnect.emergency.EmergencySignedStateValidator;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
+import com.swirlds.platform.state.signed.SavedStateInfo;
+import com.swirlds.platform.state.signed.SavedStateMetadata;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -33,20 +39,18 @@ import org.apache.logging.log4j.Logger;
  */
 public class EmergencyRecoveryManager {
     private static final Logger logger = LogManager.getLogger(EmergencyRecoveryManager.class);
+
     private final ShutdownRequestedTrigger shutdownRequestedTrigger;
     private final EmergencyRecoveryFile emergencyRecoveryFile;
     private final StateConfig stateConfig;
     private volatile boolean emergencyStateRequired;
 
+    private final EmergencySignedStateValidator stateValidator;
+
     /**
-     * A "normal startup" is when a node comes online and the most recent state on disk is the state that is loaded into
-     * the system.
-     *
-     * <p>
-     * During emergency recovery, nodes sometimes need to load a state from disk that is not the most recent state, or
-     * they need to obtain a state using emergency reconnect.
+     * If true, we need to clear the preconsensus event stream.
      */
-    private boolean emergencyStartup = false;
+    private boolean preconsensusEventStreamCleanupRequired = false;
 
     /**
      * @param stateConfig              the state configuration from the platform
@@ -57,30 +61,26 @@ public class EmergencyRecoveryManager {
             @NonNull final StateConfig stateConfig,
             @NonNull final ShutdownRequestedTrigger shutdownRequestedTrigger,
             @NonNull final Path emergencyRecoveryDir) {
+
         this.stateConfig = stateConfig;
         this.shutdownRequestedTrigger = shutdownRequestedTrigger;
         this.emergencyRecoveryFile = readEmergencyRecoveryFile(emergencyRecoveryDir);
+        stateValidator = new EmergencySignedStateValidator(stateConfig, emergencyRecoveryFile);
         emergencyStateRequired = emergencyRecoveryFile != null;
     }
 
     /**
-     * Signals that the node is starting up in emergency recovery mode. A node is considered to be in emergency recovery
-     * mode if it is required to load a state from disk that is not the most recent state (by round number), or if it is
-     * required to obtain a state using emergency reconnect.
+     * Signal that we need to clear the preconsensus event stream.
      */
-    public void signalEmergencyStartup() {
-        emergencyStartup = true;
+    public void preconsensusEventStreamCleanupRequired() {
+        preconsensusEventStreamCleanupRequired = true;
     }
 
     /**
-     * Check if the node is in emergency startup mode. A node is considered to be in emergency startup mode if it is
-     * required to load a state from disk that is not the most recent state (by round number), or if it is required to
-     * obtain a state using emergency reconnect.
-     *
-     * @return {@code true} if the node is in emergency startup mode, {@code false} otherwise
+     * Check if the preconsensus event stream should be cleared as a result of an emergency recovery.
      */
-    public boolean isInEmergencyStartupMode() {
-        return emergencyStartup;
+    public boolean shouldPreconsensusEventStreamBeCleared() {
+        return preconsensusEventStreamCleanupRequired;
     }
 
     /**
@@ -107,6 +107,48 @@ public class EmergencyRecoveryManager {
      */
     public EmergencyRecoveryFile getEmergencyRecoveryFile() {
         return emergencyRecoveryFile;
+    }
+
+    // TODO tests
+
+    /**
+     * Check if a state is in the hash epoch defined by the emergency recovery file.
+     *
+     * @param stateHash      the hash of the state in question
+     * @param stateHashEpoch the epoch hash of the state in question
+     * @return {@code true} if the state is in the hash epoch, {@code false} otherwise
+     */
+    public boolean isInHashEpoch(@NonNull final Hash stateHash, @Nullable final Hash stateHashEpoch) {
+
+        if (emergencyRecoveryFile == null) {
+            throw new IllegalStateException("Emergency recovery file is not present");
+        }
+
+        return stateHash.equals(emergencyRecoveryFile.hash())
+                || Objects.equals(stateHashEpoch, emergencyRecoveryFile.hash());
+    }
+
+    /**
+     * Check if a given state file on disk is compatible with the emergency recovery file.
+     *
+     * @param candidateState the state file to check
+     * @return {@code true} if the state file is compatible, {@code false} otherwise
+     */
+    public boolean isStateSuitableForStartup(@NonNull final SavedStateInfo candidateState) {
+        if (emergencyRecoveryFile == null) {
+            throw new IllegalStateException("Emergency recovery file is not present");
+        }
+
+        if (candidateState.metadata().hash() == null
+                || candidateState.metadata().epochHash() == null) {
+            // This state was created with an old version of the metadata, do not consider it.
+            // Any state written with the current software version will have a non-null value for this field.
+            return false;
+        }
+
+        final SavedStateMetadata metadata = candidateState.metadata();
+
+        return isInHashEpoch(metadata.hash(), metadata.epochHash()) || metadata.round() < emergencyRecoveryFile.round();
     }
 
     private EmergencyRecoveryFile readEmergencyRecoveryFile(final Path dir) {
