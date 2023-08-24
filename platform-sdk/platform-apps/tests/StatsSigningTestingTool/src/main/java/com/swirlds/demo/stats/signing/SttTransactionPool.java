@@ -41,12 +41,12 @@ import org.apache.logging.log4j.Logger;
 /**
  * Provides pre-generated random transactions that are optionally pre-signed.
  */
-final class TransactionPool {
+final class SttTransactionPool {
 
     /**
      * use this for all logging, as controlled by the optional data/log4j2.xml file
      */
-    private static final Logger logger = LogManager.getLogger(TransactionPool.class);
+    private static final Logger logger = LogManager.getLogger(SttTransactionPool.class);
 
     /**
      * the array of transactions
@@ -88,7 +88,7 @@ final class TransactionPool {
      * @throws IllegalArgumentException
      * 		if the {@code poolSize} or the {@code transactionSize} parameters are less than one (1)
      */
-    TransactionPool(
+    SttTransactionPool(
             @NonNull final NodeId nodeId,
             final int poolSize,
             final int transactionSize,

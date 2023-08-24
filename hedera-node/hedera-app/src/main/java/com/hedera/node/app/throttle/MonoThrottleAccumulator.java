@@ -21,6 +21,7 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.throttling.FunctionalityThrottling;
 import com.hedera.node.app.service.mono.throttling.annotations.HapiThrottle;
@@ -39,11 +40,16 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class MonoThrottleAccumulator implements ThrottleAccumulator {
+
     private final FunctionalityThrottling hapiThrottling;
 
     @Inject
-    public MonoThrottleAccumulator(@HapiThrottle final FunctionalityThrottling hapiThrottling) {
+    public MonoThrottleAccumulator(
+            @HapiThrottle final FunctionalityThrottling hapiThrottling, ThrottleManager throttleManager) {
         this.hapiThrottling = hapiThrottling;
+
+        // adding the throttle definition configuration
+        this.hapiThrottling.rebuildFor(ThrottleDefinitions.fromProto(throttleManager.throttleDefinitionsProto()));
     }
 
     @Override

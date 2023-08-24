@@ -65,6 +65,11 @@ public class DumpStateCommand extends AbstractCommand {
         ELIDED_DEFAULT_FIELDS
     }
 
+    enum KeyDetails {
+        DEEP,
+        SHALLOW
+    }
+
     // We want to open the signed state file only once but run a bunch of dumps against it
     // (because it takes a long time to open the signed state file).  So we can specify
     // more than one of these subcommands on the single command line.  But we don't get
@@ -171,6 +176,35 @@ public class DumpStateCommand extends AbstractCommand {
                 lowLimit,
                 highLimit,
                 doCsv ? Format.CSV : Format.ELIDED_DEFAULT_FIELDS,
+                parent.verbosity);
+        finish();
+    }
+
+    @Command(name = "files")
+    void files(
+            @Option(
+                            names = {"--files"},
+                            arity = "1",
+                            description = "Output file for files dump")
+                    @NonNull
+                    final Path filesPath,
+            @Option(
+                            names = {"--deep-keys"},
+                            arity = "0..1",
+                            description = "Whether to fully dump keys or not")
+                    final boolean doDeepKeys,
+            @Option(
+                            names = {"-s", "--summary"},
+                            description = "Emit a summary line")
+                    final boolean emitSummary) {
+        Objects.requireNonNull(filesPath);
+        init();
+        System.out.println("=== files ===");
+        DumpFilesSubcommand.doit(
+                parent.signedState,
+                filesPath,
+                doDeepKeys ? KeyDetails.DEEP : KeyDetails.SHALLOW,
+                emitSummary ? EmitSummary.YES : EmitSummary.NO,
                 parent.verbosity);
         finish();
     }

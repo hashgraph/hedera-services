@@ -39,10 +39,8 @@ import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.gossip.chatter.ChatterGossip;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
-import com.swirlds.platform.gossip.sync.LegacySyncGossip;
 import com.swirlds.platform.gossip.sync.SingleNodeSyncGossip;
 import com.swirlds.platform.gossip.sync.SyncGossip;
-import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.observers.EventObserverDispatcher;
@@ -152,7 +150,6 @@ public final class GossipFactory {
         Objects.requireNonNull(clearAllPipelinesForReconnect);
 
         final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
-        final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
 
         if (chatterConfig.useChatter()) {
             logger.info(STARTUP.getMarker(), "Using ChatterGossip");
@@ -183,7 +180,7 @@ public final class GossipFactory {
                     statusActionSubmitter,
                     loadReconnectState,
                     clearAllPipelinesForReconnect);
-        } else if (syncConfig.syncAsProtocolEnabled()) {
+        } else {
             if (addressBook.getSize() == 1) {
                 logger.info(STARTUP.getMarker(), "Using SingleNodeSyncGossip");
                 return new SingleNodeSyncGossip(
@@ -232,35 +229,11 @@ public final class GossipFactory {
                         eventMapper,
                         eventIntakeMetrics,
                         syncMetrics,
+                        eventLinker,
                         statusActionSubmitter,
                         loadReconnectState,
                         clearAllPipelinesForReconnect);
             }
-        } else {
-            logger.info(STARTUP.getMarker(), "Using LegacySyncGossip");
-            return new LegacySyncGossip(
-                    platformContext,
-                    threadManager,
-                    time,
-                    crypto,
-                    addressBook,
-                    selfId,
-                    appVersion,
-                    shadowGraph,
-                    consensusRef,
-                    intakeQueue,
-                    freezeManager,
-                    startUpEventFrozenManager,
-                    swirldStateManager,
-                    stateManagementComponent,
-                    eventIntakeLambda,
-                    eventObserverDispatcher,
-                    eventMapper,
-                    eventIntakeMetrics,
-                    syncMetrics,
-                    statusActionSubmitter,
-                    loadReconnectState,
-                    clearAllPipelinesForReconnect);
         }
     }
 }

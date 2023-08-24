@@ -23,10 +23,12 @@ import com.hedera.node.app.service.mono.state.submerkle.FcTokenAllowanceId;
 import com.hedera.node.app.service.mono.state.virtual.ContractKey;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
+import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.common.crypto.CryptographyHolder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
+import java.security.InvalidKeyException;
 import java.util.Arrays;
 import java.util.HexFormat;
 import java.util.Map;
@@ -37,13 +39,15 @@ import java.util.stream.Collectors;
 
 public class ThingsToStrings {
 
-    private static final Pattern quotesNeeded = Pattern.compile("[\"\n;]");
-
+    /** Quotes a string to be a valid field in a CSV (comma-separated file), as defined in RFC-4180
+     * (https://datatracker.ietf.org/doc/html/rfc4180) _except_ that we allow the field separator to
+     * be something other than "," (e.g., ";", if we have a lot of fields that contain embedded ",").
+     */
     @NonNull
-    public static String quoteForCsv(@Nullable String s) {
+    public static String quoteForCsv(@NonNull final String fieldSeparator, @Nullable String s) {
         if (s == null) s = "";
         s = s.replace("\"", "\"\""); // quote double-quotes
-        if (quotesNeeded.matcher(s).find()) s = '"' + s + '"';
+        if (Pattern.compile("[\"\r\n" + fieldSeparator + "]").matcher(s).find()) s = '"' + s + '"';
         return s;
     }
 
@@ -103,6 +107,58 @@ public class ThingsToStrings {
 
         sb.append(Arrays.stream(ints).mapToObj(Integer::toString).collect(Collectors.joining(",", "(", ")")));
         return true;
+    }
+
+    public static boolean toStructureSummaryOfJKey(@NonNull final StringBuilder sb, @Nullable final JKey jkey) {
+        if (jkey == null || jkey.isEmpty()) return false;
+        try {
+            final var key = JKey.mapJKey(jkey);
+            if (null == key) return false; // This is some kind of _invalid_ key; should it say so somehow?
+            sb.append("Key[");
+            toStructureSummaryOfKey(sb, key);
+            sb.append("]");
+        } catch (InvalidKeyException unknown) {
+            sb.append("<invalid-key>");
+        }
+        return true;
+    }
+
+    public static void toStructureSummaryOfKey(@NonNull final StringBuilder sb, @NonNull final Key key) {
+        switch (key.getKeyCase()) {
+            case CONTRACTID -> sb.append("CID");
+            case ED25519 -> sb.append("ED");
+            case RSA_3072 -> sb.append("RSA-3072");
+            case ECDSA_384 -> sb.append("ECDSA-384");
+            case THRESHOLDKEY -> {
+                final var tk = key.getThresholdKey();
+                final var th = tk.getThreshold();
+                final var kl = tk.getKeys();
+                final var n = kl.getKeysCount();
+                sb.append("TH[");
+                sb.append(th);
+                sb.append("-of-");
+                sb.append(n);
+                for (int i = 0; i < n; i++) {
+                    sb.append(",");
+                    toStructureSummaryOfKey(sb, kl.getKeys(i));
+                }
+                sb.append("]");
+            }
+            case KEYLIST -> {
+                final var kl = key.getKeyList();
+                final var n = kl.getKeysCount();
+                sb.append("KL[#");
+                sb.append(key.getKeyList().getKeysCount());
+                for (int i = 0; i < n; i++) {
+                    sb.append(",");
+                    toStructureSummaryOfKey(sb, kl.getKeys(i));
+                }
+                sb.append("]");
+            }
+            case ECDSA_SECP256K1 -> sb.append("EC");
+            case DELEGATABLE_CONTRACT_ID -> sb.append("dCID");
+            case KEY_NOT_SET -> sb.append("MISSING-KEY");
+        }
     }
 
     /** Writes a cryptographic hash of the actual key */

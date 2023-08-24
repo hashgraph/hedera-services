@@ -27,19 +27,18 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.DaggerHederaInjectionComponent;
 import com.hedera.node.app.HederaInjectionComponent;
 import com.hedera.node.app.config.ConfigProviderImpl;
+import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.info.SelfNodeInfoImpl;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
-import com.hedera.node.app.spi.info.SelfNodeInfo;
+import com.hedera.node.app.throttle.ThrottleManager;
 import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.app.workflows.handle.SystemFileUpdateFacility;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.InitTrigger;
-import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.config.api.Configuration;
@@ -53,6 +52,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class IngestComponentTest {
+
     @Mock
     private Platform platform;
 
@@ -62,11 +62,7 @@ class IngestComponentTest {
     @Mock
     private Metrics metrics;
 
-    @Mock
-    private Cryptography cryptography;
-
     private HederaInjectionComponent app;
-    private SelfNodeInfo selfNodeInfo;
 
     @BeforeEach
     void setUp() {
@@ -75,8 +71,7 @@ class IngestComponentTest {
         lenient().when(platformContext.getConfiguration()).thenReturn(configuration);
         when(platform.getContext()).thenReturn(platformContext);
 
-        final var selfNodeId = new NodeId(1L);
-        selfNodeInfo = new SelfNodeInfoImpl(
+        final var selfNodeInfo = new SelfNodeInfoImpl(
                 1L,
                 AccountID.newBuilder().accountNum(1001).build(),
                 false,
@@ -86,19 +81,24 @@ class IngestComponentTest {
                         SemanticVersion.newBuilder().major(2).build()));
 
         final var configProvider = new ConfigProviderImpl(false);
+        final var throttleManager = new ThrottleManager();
+        final var exchangeRateManager = new ExchangeRateManager();
         app = DaggerHederaInjectionComponent.builder()
                 .initTrigger(InitTrigger.GENESIS)
                 .platform(platform)
                 .crypto(CryptographyHolder.get())
                 .bootstrapProps(new BootstrapProperties())
                 .configuration(configProvider)
-                .systemFileUpdateFacility(new SystemFileUpdateFacility(configProvider))
+                .systemFileUpdateFacility(
+                        new SystemFileUpdateFacility(configProvider, throttleManager, exchangeRateManager))
+                .throttleManager(throttleManager)
                 .self(selfNodeInfo)
                 .initialHash(new Hash())
                 .maxSignedTxnSize(1024)
                 .currentPlatformStatus(() -> PlatformStatus.ACTIVE)
                 .servicesRegistry(Set::of)
                 .instantSource(InstantSource.system())
+                .exchangeRateManager(exchangeRateManager)
                 .build();
     }
 

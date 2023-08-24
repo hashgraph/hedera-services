@@ -31,7 +31,7 @@
 	  "5,  C2C_LATENCY"
 	],
 	"systemMetric": "TRANS_PER_SECOND_PER_NODE",
-	"metricThreshold": 2500.0,
+	"metricThreshold": 2000.0,
 	"_comment1": "pause after submit defined amount of transactions",
 	"pauseAfter": 0,
 	"pauseSeconds": 30,
@@ -48,22 +48,22 @@
 	"sequentials": [
 	  {
 		"sequentialType": "TYPE_FCM_CREATE",
-		"sequentialAmount": 2500000,
+		"sequentialAmount": 2000000,
 		"sequentialSize": 100
 	  },
 	  {
 		"sequentialType": "TYPE_FCM_UPDATE",
-		"sequentialAmount": 5000000,
+		"sequentialAmount": 4000000,
 		"sequentialSize": 100
 	  },
 	  {
 		"sequentialType": "TYPE_FCM_TRANSFER",
-		"sequentialAmount": 5000000,
+		"sequentialAmount": 4000000,
 		"sequentialSize": 100
 	  },
 	  {
 		"sequentialType": "TYPE_FCM_DELETE",
-		"sequentialAmount": 2500000,
+		"sequentialAmount": 2000000,
 		"sequentialSize": 100
 	  }
 	]
