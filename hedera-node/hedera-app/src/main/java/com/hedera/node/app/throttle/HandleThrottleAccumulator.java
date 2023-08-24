@@ -16,7 +16,11 @@
 
 package com.hedera.node.app.throttle;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
+import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL_LOCAL;
+import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_CREATE;
+import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
 import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.populateEthTxData;
 import static com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ScaleFactor.ONE_TO_ONE;
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
@@ -33,9 +37,11 @@ import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.token.TokenMintTransactionBody;
 import com.hedera.hapi.node.transaction.ThrottleDefinitions;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleBucket;
 import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleGroup;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
+import com.hedera.node.app.hapi.utils.throttles.GasLimitDeterministicThrottle;
 import com.hedera.node.app.service.mono.throttling.ThrottleReqsManager;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.state.HederaState;
@@ -43,6 +49,7 @@ import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.AutoCreationConfig;
+import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.LazyCreationConfig;
 import com.hedera.node.config.data.TokensConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -52,7 +59,9 @@ import java.math.BigInteger;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.tuple.Pair;
@@ -62,9 +71,13 @@ import org.apache.logging.log4j.Logger;
 @Singleton
 public class HandleThrottleAccumulator {
     private static final Logger log = LogManager.getLogger(HandleThrottleAccumulator.class);
+    private static final Set<HederaFunctionality> CONSENSUS_THROTTLED_FUNCTIONS =
+            EnumSet.of(CONTRACT_CALL_LOCAL, CONTRACT_CALL, CONTRACT_CREATE, ETHEREUM_TRANSACTION);
     private final ConfigProvider configProvider;
     private EnumMap<HederaFunctionality, ThrottleReqsManager> functionReqs = new EnumMap<>(HederaFunctionality.class);
     private static final int UNKNOWN_NUM_IMPLICIT_CREATIONS = -1;
+    private boolean lastTxnWasGasThrottled;
+    private GasLimitDeterministicThrottle gasThrottle;
 
     @Inject
     public HandleThrottleAccumulator(@NonNull final ConfigProvider configProvider) {
@@ -72,15 +85,18 @@ public class HandleThrottleAccumulator {
     }
 
     public boolean shouldThrottle(@NonNull TransactionInfo txnInfo, Instant t, HederaState state) {
-        // TODO: additional implementation to throttle by gas
-        //        resetLastAllowedUse();
-        //        lastTxnWasGasThrottled = false;
+        resetLastAllowedUse();
+        lastTxnWasGasThrottled = false;
         if (shouldThrottleTxn(txnInfo, t, state)) {
-            //  reclaimLastAllowedUse();
+            reclaimLastAllowedUse();
             return true;
         }
 
         return false;
+    }
+
+    public void leakUnusedGasPreviouslyReserved(long value) {
+        gasThrottle.leakUnusedGasPreviouslyReserved(value);
     }
 
     private boolean shouldThrottleTxn(
@@ -88,17 +104,24 @@ public class HandleThrottleAccumulator {
         final var function = txnInfo.functionality();
         final var configuration = configProvider.getConfiguration();
 
-        // TODO: check if transaction is exempt from throttling
-        //        if (txnAccessor.throttleExempt()) {
-        //            return false;
-        //        }
+        // TODO: probably not best to recreate the gasThrottle for every txn, we can do it similar to mono which is when
+        // the config is updated
+        long capacity;
+        final var contractsConfig = configuration.getConfigData(ContractsConfig.class);
+        if (contractsConfig.throttleThrottleByGas() && contractsConfig.maxGasPerSec() == 0) {
+            log.warn("Consensus gas throttling enabled, but limited to 0 gas/sec");
+        }
 
-        // TODO: check if gas is exhausted
-        //        final var tmp = txnAccessor.getGasLimitForContractTx();
-        //        if (isGasExhausted(function, now, tmp)) {
-        //            lastTxnWasGasThrottled = true;
-        //            return true;
-        //        }
+        capacity = contractsConfig.maxGasPerSec();
+        gasThrottle = new GasLimitDeterministicThrottle(capacity);
+
+        // TODO: in mono we pass: () -> getSpanMapAccessor().getEthTxDataMeta(this) as 3rd param to
+        // getGasLimitForContractTx as third param, should we do something similar here?
+        final var txGasLimit = getGasLimitForContractTx(txnInfo.txBody(), txnInfo.functionality());
+        if (isGasExhausted(function, now, txGasLimit, configuration)) {
+            lastTxnWasGasThrottled = true;
+            return true;
+        }
 
         ThrottleReqsManager manager;
         if ((manager = functionReqs.get(function)) == null) {
@@ -121,14 +144,43 @@ public class HandleThrottleAccumulator {
         };
     }
 
-    //    private boolean isGasExhausted(
-    //            final com.hederahashgraph.api.proto.java.HederaFunctionality function, final Instant now, long
-    // txGasLimit) {
-    //        return false;
-    //                return dynamicProperties.shouldThrottleByGas()
-    //                        && isGasThrottled(function)
-    //                        && (gasThrottle == null || !gasThrottle.allow(now, txGasLimit));
-    //    }
+    private void reclaimLastAllowedUse() {
+        //        activeThrottles.forEach(DeterministicThrottle::reclaimLastAllowedUse);
+        if (gasThrottle != null) {
+            gasThrottle.reclaimLastAllowedUse();
+        }
+    }
+
+    private void resetLastAllowedUse() {
+        //        activeThrottles.forEach(DeterministicThrottle::resetLastAllowedUse);
+        if (gasThrottle != null) {
+            gasThrottle.resetLastAllowedUse();
+        }
+    }
+
+    private long getGasLimitForContractTx(final TransactionBody txn, final HederaFunctionality function) {
+        return switch (function) {
+            case CONTRACT_CREATE -> txn.contractCreateInstance().gas();
+            case CONTRACT_CALL -> txn.contractCall().gas();
+            case ETHEREUM_TRANSACTION -> EthTxData.populateEthTxData(
+                            txn.ethereumTransaction().ethereumData().toByteArray())
+                    .gasLimit();
+            default -> 0L;
+        };
+    }
+
+    private boolean isGasExhausted(
+            final HederaFunctionality function, final Instant now, long txGasLimit, Configuration configuration) {
+        final var shouldThrottleByGas =
+                configuration.getConfigData(ContractsConfig.class).throttleThrottleByGas();
+        return shouldThrottleByGas
+                && isGasThrottled(function)
+                && (gasThrottle == null || !gasThrottle.allow(now, txGasLimit));
+    }
+
+    private static boolean isGasThrottled(final HederaFunctionality function) {
+        return CONSENSUS_THROTTLED_FUNCTIONS.contains(function);
+    }
 
     private boolean shouldThrottleMint(
             ThrottleReqsManager manager,
@@ -319,6 +371,10 @@ public class HandleThrottleAccumulator {
     private ThrottleGroup<HederaFunctionality> hapiGroupFromPbj(
             com.hedera.hapi.node.transaction.ThrottleGroup pbjThrottleGroup) {
         return new ThrottleGroup<>(pbjThrottleGroup.milliOpsPerSec(), pbjThrottleGroup.operations());
+    }
+
+    public boolean wasLastTxnGasThrottled() {
+        return lastTxnWasGasThrottled;
     }
 
     //    @Override

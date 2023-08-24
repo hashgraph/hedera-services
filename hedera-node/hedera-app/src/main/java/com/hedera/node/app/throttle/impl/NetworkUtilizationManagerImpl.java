@@ -39,7 +39,7 @@ public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager 
     }
 
     @Override
-    public boolean screenForAvailableCapacity() { // TODO: Implement
-        return false;
+    public boolean wasLastTxnGasThrottled() {
+        return handleThrottling.wasLastTxnGasThrottled();
     }
 }

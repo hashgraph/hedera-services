@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.handle;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
@@ -66,6 +67,7 @@ import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfiguration;
+import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.system.Round;
@@ -311,9 +313,11 @@ public class HandleWorkflow {
 
             // Run all pre-checks
             final var preCheckResult = runPreChecks(consensusNow, verifier, preHandleResult);
-            // TODO: apply throttles after successfull signatures verification
-            networkUtilizationManager.trackTxn(transactionInfo, consensusNow, state);
-            // if (networkUtilization.screenForAvailableCapacity()) { ...
+            final var isPayerThrottleExempt = throttleExempt(payer, configuration);
+            if (!isPayerThrottleExempt) {
+                networkUtilizationManager.trackTxn(transactionInfo, consensusNow, state);
+            }
+
             if (preCheckResult.status() != SO_FAR_SO_GOOD) {
                 if (preHandleResult.status() == NODE_DUE_DILIGENCE_FAILURE) {
                     payer = creator.accountId();
@@ -325,9 +329,37 @@ public class HandleWorkflow {
             } else {
                 feeAccumulator.charge(payer, fees);
                 try {
+                    // TODO: check if transaction is exempt from throttling
+                    //        if (txnAccessor.throttleExempt()) {
+                    //            return false;
+                    //        }
+                    if (!isPayerThrottleExempt && networkUtilizationManager.wasLastTxnGasThrottled()) {
+                        // Refund the service fees already charged to the payer, because the user-submitted transaction
+                        // was fully valid but network capacity was unavailable to satisfy it.
+                        final var serviceFee = new Fees(0L, 0L, fees.serviceFee());
+                        feeAccumulator.refund(payer, serviceFee);
+                        throw new HandleException(CONSENSUS_GAS_EXHAUSTED);
+                    }
+
                     // Dispatch the transaction to the handler
                     dispatcher.dispatchHandle(context);
                     recordBuilder.status(SUCCESS);
+
+                    // TODO: after transaction is successfully handled update the throttles and congestion multipliers
+                    //                    if (isGasThrottled(op) && txnCtx.hasContractResult()) {
+                    //                        final var gasUsed = txnCtx.getGasUsedForContractTxn();
+                    //                        gasUsedThisConsSec += gasUsed;
+                    //                        if (dynamicProperties.shouldThrottleByGas()) {
+                    //                            final var excessAmount = txnCtx.accessor().getGasLimitForContractTx()
+                    // - gasUsed;
+                    //                            handleThrottling.leakUnusedGasPreviouslyReserved(txnCtx.accessor(),
+                    // excessAmount);
+                    //                        }
+                    //                    }
+                    //
+                    //                    final var networkCtxNow = networkCtx.get();
+                    //                    networkCtxNow.syncThrottling(handleThrottling);
+                    //                    networkCtxNow.syncMultiplierSources(multiplierSources);
                 } catch (final HandleException e) {
                     rollback(e.getStatus(), stack, recordListBuilder);
                     feeAccumulator.charge(payer, fees);
@@ -356,6 +388,16 @@ public class HandleWorkflow {
         blockRecordManager.endUserTransaction(recordListResult.recordStream(), state);
 
         return txBody;
+    }
+
+    private boolean throttleExempt(@NonNull AccountID accountID, Configuration configuration) {
+        final var maxThrottleExemptNum =
+                configuration.getConfigData(AccountsConfig.class).lastThrottleExempt();
+        if (accountID != null) {
+            final var accountNum = accountID.accountNum();
+            return 1L <= accountNum && accountNum <= maxThrottleExemptNum;
+        }
+        return false;
     }
 
     @NonNull

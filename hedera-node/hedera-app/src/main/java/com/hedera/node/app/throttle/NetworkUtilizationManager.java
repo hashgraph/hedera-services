@@ -24,5 +24,5 @@ import java.time.Instant;
 public interface NetworkUtilizationManager {
     void trackTxn(@NonNull final TransactionInfo txnInfo, Instant consensusTime, HederaState state);
 
-    boolean screenForAvailableCapacity();
+    boolean wasLastTxnGasThrottled();
 }
