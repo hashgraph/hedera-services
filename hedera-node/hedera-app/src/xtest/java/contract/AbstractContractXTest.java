@@ -89,6 +89,7 @@ public abstract class AbstractContractXTest {
 
     @Test
     void scenarioPasses() {
+        setupFeeManager();
         setupInitialStates();
 
         handleAndCommitScenarioTransactions();
@@ -115,7 +116,7 @@ public abstract class AbstractContractXTest {
 
     protected abstract Map<FileID, File> initialFiles();
 
-    protected abstract Map<Bytes, AccountID> initialAliases();
+    protected abstract Map<ProtoBytes, AccountID> initialAliases();
 
     protected abstract Map<AccountID, Account> initialAccounts();
 
@@ -185,6 +186,11 @@ public abstract class AbstractContractXTest {
 
     protected Address addressOf(@NonNull final Bytes address) {
         return Address.wrap(Address.toChecksumAddress(new BigInteger(1, address.toByteArray())));
+    }
+
+    private void setupFeeManager() {
+        var feeScheduleBytes = resourceAsBytes("feeSchedules.bin");
+        scaffoldingComponent.feeManager().update(feeScheduleBytes);
     }
 
     private void setupInitialStates() {
