@@ -120,19 +120,11 @@ public class PreconsensusEventFileManager {
 
         final PreconsensusEventStreamConfig preconsensusEventStreamConfig =
                 platformContext.getConfiguration().getConfigData(PreconsensusEventStreamConfig.class);
-        final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
 
         this.time = time;
         this.metrics = new PreconsensusEventMetrics(platformContext.getMetrics());
-
         minimumRetentionPeriod = preconsensusEventStreamConfig.minimumRetentionPeriod();
-
-        final Path savedStateDirectory = stateConfig.savedStateDirectory();
-
-        this.databaseDirectory = savedStateDirectory
-                .resolve(preconsensusEventStreamConfig.databaseDirectory())
-                .resolve(Long.toString(selfId.id()));
-
+        databaseDirectory = getDatabaseDirectory(platformContext, selfId);
         this.recycleBin = Objects.requireNonNull(recycleBin);
 
         if (!Files.exists(databaseDirectory)) {
@@ -168,6 +160,27 @@ public class PreconsensusEventFileManager {
             metrics.getPreconsensusEventFileOldestSeconds().set(0);
         }
         updateFileSizeMetrics();
+    }
+
+    /**
+     * Get the directory where event files are stored.
+     *
+     * @param platformContext the platform context for this node
+     * @param selfId          the ID of this node
+     * @return the directory where event files are stored
+     */
+    private static Path getDatabaseDirectory(
+            @NonNull final PlatformContext platformContext,
+            @NonNull final NodeId selfId) {
+
+        final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
+        final PreconsensusEventStreamConfig preconsensusEventStreamConfig =
+                platformContext.getConfiguration().getConfigData(PreconsensusEventStreamConfig.class);
+
+        final Path savedStateDirectory = stateConfig.savedStateDirectory();
+        return savedStateDirectory
+                .resolve(preconsensusEventStreamConfig.databaseDirectory())
+                .resolve(Long.toString(selfId.id()));
     }
 
     /**
@@ -595,6 +608,8 @@ public class PreconsensusEventFileManager {
         updateFileSizeMetrics();
     }
 
+    // TODO get rid of the class method
+
     /**
      * Delete all files in the stream.
      */
@@ -607,6 +622,26 @@ public class PreconsensusEventFileManager {
         }
         totalFileByteCount = 0;
         updateFileSizeMetrics();
+    }
+
+    /**
+     * Delete all files in the preconsensus event stream. If this method is called, it must be called before a
+     * {@link PreconsensusEventFileManager} is instantiated. Any manager open when this method is called will be
+     * corrupted.
+     *
+     * @param platformContext the platform context for this node
+     * @param recycleBin      can remove files in a way that allows them to be possibly recovered for debugging
+     * @param selfId          the ID of this node
+     */
+    public static void clear(
+            @NonNull final PlatformContext platformContext,
+            @NonNull final RecycleBin recycleBin,
+            @NonNull final NodeId selfId) {
+        try {
+            recycleBin.recycle(getDatabaseDirectory(platformContext, selfId));
+        } catch (final IOException e) {
+            throw new UncheckedIOException("unable to recycle preconsensus event files", e);
+        }
     }
 
     /**

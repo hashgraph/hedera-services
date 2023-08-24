@@ -45,13 +45,6 @@ public class EmergencyRecoveryManager {
     private final StateConfig stateConfig;
     private volatile boolean emergencyStateRequired;
 
-    private final EmergencySignedStateValidator stateValidator;
-
-    /**
-     * If true, we need to clear the preconsensus event stream.
-     */
-    private boolean preconsensusEventStreamCleanupRequired = false;
-
     /**
      * @param stateConfig              the state configuration from the platform
      * @param shutdownRequestedTrigger a trigger that requests the platform to shut down
@@ -65,22 +58,7 @@ public class EmergencyRecoveryManager {
         this.stateConfig = stateConfig;
         this.shutdownRequestedTrigger = shutdownRequestedTrigger;
         this.emergencyRecoveryFile = readEmergencyRecoveryFile(emergencyRecoveryDir);
-        stateValidator = new EmergencySignedStateValidator(stateConfig, emergencyRecoveryFile);
         emergencyStateRequired = emergencyRecoveryFile != null;
-    }
-
-    /**
-     * Signal that we need to clear the preconsensus event stream.
-     */
-    public void preconsensusEventStreamCleanupRequired() {
-        preconsensusEventStreamCleanupRequired = true;
-    }
-
-    /**
-     * Check if the preconsensus event stream should be cleared as a result of an emergency recovery.
-     */
-    public boolean shouldPreconsensusEventStreamBeCleared() {
-        return preconsensusEventStreamCleanupRequired;
     }
 
     /**

@@ -33,6 +33,7 @@ import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.logging.payloads.SavedStateLoadedPayload;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventFileManager;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.state.State;
@@ -160,8 +161,8 @@ public final class StartupStateLoader {
         final boolean statesRecycled = cleanupUnusedStates(recycleBin, savedStateFiles, loadedRound);
 
         if (statesRecycled && emergencyStateRequired) {
-            // TODO is there a better way?
-            emergencyRecoveryManager.preconsensusEventStreamCleanupRequired();
+            logger.warn(STARTUP.getMarker(), "Clearing preconsensus event stream for emergency recovery.");
+            PreconsensusEventFileManager.clear(platformContext, recycleBin, selfId);
         }
 
         return state;
@@ -366,7 +367,7 @@ public final class StartupStateLoader {
             if (savedStateFile.metadata().round() > loadedRound) {
                 logger.warn(
                         STARTUP.getMarker(),
-                        "Recycling state file {} since it from round {}, "
+                        "Recycling state file {} since it is from round {} "
                                 + "which is later than the round of the state being loaded ({}).",
                         savedStateFile.stateFile(),
                         savedStateFile.metadata().round(),

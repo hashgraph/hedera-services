@@ -384,7 +384,7 @@ public class SwirldsPlatform implements Platform, Startable {
         final AppCommunicationComponent appCommunicationComponent =
                 wiring.wireAppCommunicationComponent(notificationEngine);
 
-        preconsensusEventFileManager = buildPreconsensusEventFileManager(emergencyRecoveryManager);
+        preconsensusEventFileManager = buildPreconsensusEventFileManager();
         preconsensusEventWriter = components.add(buildPreconsensusEventWriter(preconsensusEventFileManager));
 
         stateManagementComponent = wiring.wireStateManagementComponent(
@@ -1004,21 +1004,9 @@ public class SwirldsPlatform implements Platform, Startable {
      * Build the preconsensus event file manager.
      */
     @NonNull
-    private PreconsensusEventFileManager buildPreconsensusEventFileManager(
-            @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
+    private PreconsensusEventFileManager buildPreconsensusEventFileManager() {
         try {
-            final PreconsensusEventFileManager manager =
-                    new PreconsensusEventFileManager(platformContext, Time.getCurrent(), recycleBin, selfId);
-
-            if (emergencyRecoveryManager.shouldPreconsensusEventStreamBeCleared()) {
-                logger.info(
-                        STARTUP.getMarker(),
-                        "This node was started in emergency recovery mode, "
-                                + "clearing the preconsensus event stream.");
-                manager.clear();
-            }
-
-            return manager;
+            return new PreconsensusEventFileManager(platformContext, Time.getCurrent(), recycleBin, selfId);
         } catch (final IOException e) {
             throw new UncheckedIOException("unable load preconsensus files", e);
         }
