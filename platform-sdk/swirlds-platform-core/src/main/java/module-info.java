@@ -143,9 +143,6 @@ module com.swirlds.platform {
     /* JavaFX Libraries */
     requires javafx.base;
 
-    /* Apache Commons */
-    requires org.apache.commons.lang3;
-
     /* Logging Libraries */
     requires org.apache.logging.log4j;
     requires org.apache.logging.log4j.core;

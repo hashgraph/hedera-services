@@ -14,7 +14,6 @@ open module com.swirlds.merkle {
     requires com.swirlds.fcqueue;
     requires com.swirlds.fchashmap;
     requires org.apache.logging.log4j;
-    requires org.apache.commons.lang3;
     requires java.sql;
     requires static com.github.spotbugs.annotations;
 }

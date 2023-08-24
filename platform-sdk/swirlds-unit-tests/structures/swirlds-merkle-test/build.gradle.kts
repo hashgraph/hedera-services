@@ -35,7 +35,6 @@ dependencies {
     implementation(testFixtures(project(":swirlds-common")))
     implementation(testLibs.junit.jupiter.api)
 
-    testImplementation(libs.commons.io)
     testImplementation(testLibs.bundles.junit)
     testImplementation(testFixtures(project(":swirlds-common")))
 }

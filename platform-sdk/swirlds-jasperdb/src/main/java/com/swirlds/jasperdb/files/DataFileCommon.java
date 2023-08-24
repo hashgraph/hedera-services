@@ -16,6 +16,7 @@
 
 package com.swirlds.jasperdb.files;
 
+import static com.swirlds.common.formatting.HorizontalAlignment.ALIGNED_RIGHT;
 import static com.swirlds.common.units.UnitConstants.GIBIBYTES_TO_BYTES;
 import static com.swirlds.common.units.UnitConstants.KIBIBYTES_TO_BYTES;
 import static com.swirlds.common.units.UnitConstants.MEBIBYTES_TO_BYTES;
@@ -45,7 +46,6 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -171,7 +171,7 @@ public final class DataFileCommon {
             final String filePrefix, final Path dataFileDir, final int index, final Instant creationInstant) {
         return dataFileDir.resolve(filePrefix + "_"
                 + DATE_FORMAT.format(creationInstant) + "_"
-                + StringUtils.leftPad(Integer.toString(index), PRINTED_INDEX_FIELD_WIDTH, '_') + FILE_EXTENSION);
+                + ALIGNED_RIGHT.pad(Integer.toString(index), '_', PRINTED_INDEX_FIELD_WIDTH) + FILE_EXTENSION);
     }
 
     /**
@@ -388,9 +388,9 @@ public final class DataFileCommon {
         logger.info(
                 JASPER_DB.getMarker(),
                 """
-						[{}] Merged {} files into {} files in {} seconds. Read at {} Written at {}
-						        filesToMerge = {} allMergeableFiles = {}
-						        allFilesAfter = {}""",
+                        [{}] Merged {} files into {} files in {} seconds. Read at {} Written at {}
+                                filesToMerge = {} allMergeableFiles = {}
+                                allFilesAfter = {}""",
                 storeName,
                 formatSizeBytes(filesToMergeSize),
                 formatSizeBytes(mergedFilesCreatedSize),
