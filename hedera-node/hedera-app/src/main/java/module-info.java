@@ -82,7 +82,9 @@ module com.hedera.node.app {
     exports com.hedera.node.app.workflows.handle to
             com.hedera.node.app.test.fixtures;
     exports com.hedera.node.app.state.merkle.queue to
-            com.swirlds.common, com.swirlds.platform;
+            com.swirlds.common,
+            com.swirlds.platform;
     exports com.hedera.node.app.version to
-            com.swirlds.common, com.swirlds.platform;
+            com.swirlds.common,
+            com.swirlds.platform;
 }
