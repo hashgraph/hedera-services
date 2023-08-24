@@ -237,50 +237,91 @@ public class SignedStateFileManager implements Startable {
     }
 
     /**
-     * Checks whether a given state should be saved to disk
+     * Method to be called when a state is being written to disk in-band, but it lacks signatures.
      *
-     * @param reservedState        the state to potentially be saved
-     * @param outOfBand            whether this state save attempt is out-of-band
-     * @param stateLacksSignatures whether the state lacks signatures
-     * @return true if the state should be saved, false otherwise
+     * @param reservedState the state being written to disk
      */
-    private boolean shouldStateBeSaved(
-            final @NonNull SignedState reservedState, final boolean outOfBand, final boolean stateLacksSignatures) {
+    private void stateLacksSignatures(@NonNull final SignedState reservedState) {
+        metrics.getTotalUnsignedDiskStatesMetric().increment();
+        final long newCount = metrics.getTotalUnsignedDiskStatesMetric().get();
 
-        if (outOfBand) {
-            // states being saved out-of-band are exempt from the hasStateBeenSavedToDisk() check,
-            // and should always be saved
-            return true;
-        }
+        logger.error(
+                EXCEPTION.getMarker(),
+                new InsufficientSignaturesPayload(("State written to disk for round %d did not have enough signatures. "
+                                + "Collected signatures representing %d/%d weight. "
+                                + "Total unsigned disk states so far: %d.")
+                        .formatted(
+                                reservedState.getRound(),
+                                reservedState.getSigningWeight(),
+                                reservedState.getAddressBook().getTotalWeight(),
+                                newCount)));
+    }
 
-        if (reservedState.hasStateBeenSavedToDisk()) {
-            logger.info(
-                    STATE_TO_DISK.getMarker(),
-                    "Not saving signed state for round {} to disk because it has already been saved.",
-                    reservedState.getRound());
+    /**
+     * Create an element that can be offered to the {@link #taskQueue}
+     *
+     * @param reservedSignedState  the reserved signed state to be written to disk
+     * @param directory            the directory where the signed state will be written
+     * @param reason               the reason this state is being written to disk
+     * @param finishedCallback     a function that is called after state writing is complete
+     * @param outOfBand            whether this state has been requested to be written out of band
+     * @param stateLacksSignatures whether the state being written lacks signatures
+     */
+    private void createTaskQueueElement(
+            @NonNull final ReservedSignedState reservedSignedState,
+            @NonNull final Path directory,
+            @Nullable final StateToDiskReason reason,
+            @Nullable final Consumer<Boolean> finishedCallback,
+            final boolean outOfBand,
+            final boolean stateLacksSignatures) {
 
-            return false;
-        } else {
-            if (stateLacksSignatures) {
-                metrics.getTotalUnsignedDiskStatesMetric().increment();
-                final long newCount = metrics.getTotalUnsignedDiskStatesMetric().get();
+        final long start = time.nanoTime();
+        boolean success = false;
 
+        try (reservedSignedState) {
+            try {
+                final boolean writeStateToDisk;
+                if (outOfBand) {
+                    // states requested to be written out of band are always written to disk
+                    writeStateToDisk = true;
+                } else {
+                    if (reservedSignedState.get().hasStateBeenSavedToDisk()) {
+                        logger.info(
+                                STATE_TO_DISK.getMarker(),
+                                "Not saving signed state for round {} to disk because it has already been saved.",
+                                reservedSignedState.get().getRound());
+
+                        writeStateToDisk = false;
+                    } else {
+                        writeStateToDisk = true;
+
+                        if (stateLacksSignatures) {
+                            stateLacksSignatures(reservedSignedState.get());
+                        }
+                    }
+                }
+
+                if (writeStateToDisk) {
+                    SignedStateFileWriter.writeSignedStateToDisk(
+                            selfId, directory, reservedSignedState.get(), reason, configuration);
+                    stateWrittenToDisk(reservedSignedState.get(), directory, start);
+
+                    success = true;
+                }
+            } catch (final Throwable e) {
+                stateToDiskAttemptConsumer.stateToDiskAttempt(reservedSignedState.get(), directory, false);
                 logger.error(
                         EXCEPTION.getMarker(),
-                        new InsufficientSignaturesPayload(
-                                ("State written to disk for round %d did not have enough signatures. "
-                                                + "Collected signatures representing %d/%d weight. "
-                                                + "Total unsigned disk states so far: %d.")
-                                        .formatted(
-                                                reservedState.getRound(),
-                                                reservedState.getSigningWeight(),
-                                                reservedState.getAddressBook().getTotalWeight(),
-                                                newCount)));
+                        "Unable to write signed state to disk for round {} to {}.",
+                        reservedSignedState.get().getRound(),
+                        directory,
+                        e);
+            } finally {
+                if (finishedCallback != null) {
+                    finishedCallback.accept(success);
+                }
+                metrics.getStateToDiskTimeMetric().update(TimeUnit.NANOSECONDS.toMillis(time.nanoTime() - start));
             }
-
-            reservedState.stateSavedToDisk();
-
-            return true;
         }
     }
 
@@ -319,45 +360,20 @@ public class SignedStateFileManager implements Startable {
         final ReservedSignedState reservedSignedState =
                 signedState.reserve("SignedStateFileManager.saveSignedStateToDisk()");
 
-        final boolean accepted = taskQueue.offer(() -> {
-            final long start = time.nanoTime();
-            boolean success = false;
-
-            try (reservedSignedState) {
-                try {
-                    if (shouldStateBeSaved(reservedSignedState.get(), outOfBand, stateLacksSignatures)) {
-                        SignedStateFileWriter.writeSignedStateToDisk(
-                                selfId, directory, reservedSignedState.get(), reason, configuration);
-                        stateWrittenToDisk(reservedSignedState.get(), directory, start);
-
-                        success = true;
-                    }
-                } catch (final Throwable e) {
-                    stateToDiskAttemptConsumer.stateToDiskAttempt(reservedSignedState.get(), directory, false);
-                    logger.error(
-                            EXCEPTION.getMarker(),
-                            "Unable to write signed state to disk for round {} to {}.",
-                            reservedSignedState.get().getRound(),
-                            directory,
-                            e);
-                } finally {
-                    if (finishedCallback != null) {
-                        finishedCallback.accept(success);
-                    }
-                    metrics.getStateToDiskTimeMetric().update(TimeUnit.NANOSECONDS.toMillis(time.nanoTime() - start));
-                }
-            }
-        });
+        final boolean accepted = taskQueue.offer(() -> createTaskQueueElement(
+                reservedSignedState, directory, reason, finishedCallback, outOfBand, stateLacksSignatures));
 
         if (!accepted) {
             if (finishedCallback != null) {
                 finishedCallback.accept(false);
             }
+
             logger.error(
                     STATE_TO_DISK.getMarker(),
                     "Unable to save signed state to disk for round {} due to backlog of "
                             + "operations in the SignedStateManager task queue.",
                     reservedSignedState.get().getRound());
+
             reservedSignedState.close();
         }
         return accepted;
