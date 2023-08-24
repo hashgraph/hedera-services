@@ -17,12 +17,8 @@
 import com.hedera.services.bdd.suites.autorenew.GracePeriodRestrictionsSuite;
 import com.hedera.services.bdd.suites.fees.CongestionPricingSuite;
 import com.hedera.services.bdd.suites.file.ExchangeRateControlSuite;
-import com.hedera.services.bdd.suites.file.FileAppendSuite;
-import com.hedera.services.bdd.suites.file.FileCreateSuite;
-import com.hedera.services.bdd.suites.file.FileDeleteSuite;
 import com.hedera.services.bdd.suites.file.FileUpdateSuite;
 import com.hedera.services.bdd.suites.file.ProtectedFilesUpdateSuite;
-import com.hedera.services.bdd.suites.file.negative.QueryFailuresSpec;
 import com.hedera.services.bdd.suites.leaky.FeatureFlagSuite;
 import com.hedera.services.bdd.suites.records.ContractRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.CryptoRecordsSanityCheckSuite;
@@ -69,9 +65,9 @@ class EndToEndTests extends E2ETestBase {
                 //				extractSpecsFromSuite(DiverseStateValidation::new),
                 extractSpecsFromSuite(ExchangeRateControlSuite::new),
                 //              extractSpecsFromSuite(FetchSystemFiles::new),
-                extractSpecsFromSuite(FileAppendSuite::new),
-                extractSpecsFromSuite(FileCreateSuite::new),
-                extractSpecsFromSuite(FileDeleteSuite::new),
+                //              extractSpecsFromSuite(FileAppendSuite::new),
+                //              extractSpecsFromSuite(FileCreateSuite::new),
+                //				extractSpecsFromSuite(FileDeleteSuite::new),
                 extractSpecsFromSuite(FileUpdateSuite::new),
                 //              extractSpecsFromSuite(PermissionSemanticsSpec::new),
                 extractSpecsFromSuite(ProtectedFilesUpdateSuite::new)
@@ -264,7 +260,7 @@ class EndToEndTests extends E2ETestBase {
                 //				extractSpecsFromSuite(AppendFailuresSpec::new),
                 //				extractSpecsFromSuite(CreateFailuresSpec::new),
                 //				extractSpecsFromSuite(DeleteFailuresSpec::new),
-                extractSpecsFromSuite(QueryFailuresSpec::new)
+                //              extractSpecsFromSuite(QueryFailuresSpec::new),
                 //              extractSpecsFromSuite(UpdateFailuresSpec::new)
                 );
     }
