@@ -134,9 +134,9 @@ public class SystemFileUpdateFacility {
             }
         } catch (final RuntimeException e) {
             logger.warn(
-                "Exception while calling updater for file {}. " + "If the file is incomplete, this is expected.",
-                fileID,
-                e);
+                    "Exception while calling updater for file {}. " + "If the file is incomplete, this is expected.",
+                    fileID,
+                    e);
         }
     }
 
@@ -147,8 +147,8 @@ public class SystemFileUpdateFacility {
     }
 
     private void checkForMissingExpectedOperations(
-        com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions defs,
-        SingleTransactionRecordBuilderImpl recordBuilder) {
+            com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions defs,
+            SingleTransactionRecordBuilderImpl recordBuilder) {
         Set<HederaFunctionality> customizedOps = new HashSet<>();
         for (var bucket : defs.getBuckets()) {
             for (var group : bucket.getThrottleGroups()) {
@@ -161,8 +161,8 @@ public class SystemFileUpdateFacility {
     }
 
     private void checkForZeroOpsPerSec(
-        com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions defs,
-        SingleTransactionRecordBuilderImpl recordBuilder) {
+            com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions defs,
+            SingleTransactionRecordBuilderImpl recordBuilder) {
         for (var bucket : defs.getBuckets()) {
             for (var group : bucket.getThrottleGroups()) {
                 if (group.impliedMilliOpsPerSec() == 0) {

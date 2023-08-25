@@ -116,7 +116,7 @@ public class FileUpdateHandler implements TransactionHandler {
 
         final var fees = handleContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> {
             return new FileUpdateResourceUsage(fileOpsUsage)
-                .usageGiven(fromPbj(handleContext.body()), sigValueObj, fromPbj(file));
+                    .usageGiven(fromPbj(handleContext.body()), sigValueObj, fromPbj(file));
         });
 
         // TODO: check if the file is system and don't change. Or maybe this should be here?
