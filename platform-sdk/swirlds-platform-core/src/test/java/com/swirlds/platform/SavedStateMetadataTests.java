@@ -600,7 +600,8 @@ class SavedStateMetadataTests {
         testMalformedFile(
                 random, (s, m) -> s.replace(SIGNING_WEIGHT_SUM.name(), "notARealKey"), Set.of(SIGNING_WEIGHT_SUM));
         testMalformedFile(random, (s, m) -> s.replace(TOTAL_WEIGHT.name(), "notARealKey"), Set.of(TOTAL_WEIGHT));
-        testMalformedFile(random, (s, m) -> s.replace("\n" + EPOCH_HASH.name(), "\nnotARealKey"), Set.of(EPOCH_HASH));
+        testMalformedFile(
+                random, (s, m) -> s.replace("\n" + EPOCH_HASH.name() + ":", "\nnotARealKey:"), Set.of(EPOCH_HASH));
         testMalformedFile(
                 random,
                 (s, m) -> s.replace(SavedStateMetadataField.EPOCH_HASH_MNEMONIC.name(), "notARealKey"),
