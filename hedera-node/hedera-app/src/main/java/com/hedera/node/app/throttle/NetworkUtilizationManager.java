@@ -25,4 +25,6 @@ public interface NetworkUtilizationManager {
     void trackTxn(@NonNull final TransactionInfo txnInfo, Instant consensusTime, HederaState state);
 
     boolean wasLastTxnGasThrottled();
+
+    void trackFeePayments(Instant consensusNow, HederaState state);
 }

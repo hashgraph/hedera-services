@@ -16,15 +16,27 @@
 
 package com.hedera.node.app.throttle.impl;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
+
+import com.hedera.hapi.node.base.SignatureMap;
+import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.HandleThrottleAccumulator;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.workflows.TransactionInfo;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import javax.inject.Inject;
 
 public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager {
+    // Used to update network utilization after a user-submitted transaction fails the signature
+    // validity
+    // screen; the stand-in is a CryptoTransfer because it best reflects the work done charging fees
+    static final TransactionInfo STAND_IN_CRYPTO_TRANSFER = new TransactionInfo(
+            Transaction.DEFAULT, TransactionBody.DEFAULT, SignatureMap.DEFAULT, Bytes.EMPTY, CRYPTO_TRANSFER);
+
     private final HandleThrottleAccumulator handleThrottling;
 
     @Inject
@@ -34,6 +46,15 @@ public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager 
 
     @Override
     public void trackTxn(@NonNull final TransactionInfo txnInfo, Instant consensusTime, HederaState state) {
+        track(txnInfo, consensusTime, state);
+    }
+
+    @Override
+    public void trackFeePayments(Instant consensusNow, HederaState state) {
+        track(STAND_IN_CRYPTO_TRANSFER, consensusNow, state);
+    }
+
+    private void track(@NonNull TransactionInfo txnInfo, Instant consensusTime, HederaState state) {
         handleThrottling.shouldThrottle(txnInfo, consensusTime, state);
         // TODO:       multiplierSources.updateMultiplier(accessor, now);
     }

@@ -319,6 +319,12 @@ public class HandleWorkflow {
             }
 
             if (preCheckResult.status() != SO_FAR_SO_GOOD) {
+                final var sigVerificationFailed = preCheckResult.responseCodeEnum() == INVALID_SIGNATURE;
+                if (sigVerificationFailed) {
+                    // If the signature status isn't ok, only work done will be fee charging
+                    networkUtilizationManager.trackFeePayments(consensusNow, state);
+                }
+
                 if (preHandleResult.status() == NODE_DUE_DILIGENCE_FAILURE) {
                     payer = creator.accountId();
                 }
