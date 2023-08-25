@@ -17,6 +17,7 @@
 package com.swirlds.platform.consensus;
 
 import com.swirlds.common.config.ConsensusConfig;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.logging.LogMarker;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.MinGenInfo;
@@ -37,15 +38,18 @@ public class ConsensusRounds {
     private final ConsensusConfig config;
     /** stores the minimum generation for all decided and non-expired rounds */
     private final SequentialRingBuffer<MinGenInfo> minGenStorage;
+    /** the only address book currently, until address book changes are implemented */
+    private final AddressBook addressBook;
     /** The maximum round created of all the known witnesses */
     private long maxRoundCreated = ConsensusConstants.ROUND_UNDEFINED;
     /** The round we are currently voting on */
     private final ElectionRound electionRound = new ElectionRound();
 
     /** Constructs an empty object */
-    public ConsensusRounds(final ConsensusConfig config, final SequentialRingBuffer<MinGenInfo> minGenStorage) {
+    public ConsensusRounds(final ConsensusConfig config, final SequentialRingBuffer<MinGenInfo> minGenStorage, final AddressBook addressBook) {
         this.config = config;
         this.minGenStorage = minGenStorage;
+        this.addressBook = addressBook;
         reset();
     }
 
@@ -81,11 +85,13 @@ public class ConsensusRounds {
 
         // theorem says this witness can't be famous if round R+2 exists
         // if this is true, we immediately mark this witness as not famous without any elections
-        if (maxRoundCreated >= witness.getRoundCreated() + 2) {
+        // also, if the witness is not in the AB, we decide that it's not famous
+        if (maxRoundCreated >= witness.getRoundCreated() + 2 || !addressBook.contains(witness.getCreatorId())) {
             witness.setFamous(false);
             witness.setFameDecided(true);
             return;
         }
+
         // the theorem doesn't apply, so we can't decide yet, so elections are needed
         electionRound.addWitness(witness);
     }

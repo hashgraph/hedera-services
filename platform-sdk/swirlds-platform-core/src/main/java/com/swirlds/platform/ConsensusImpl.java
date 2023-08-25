@@ -200,7 +200,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus,
         // until we implement address book changes, we will just use the use this address book
         this.addressBook = addressBook;
 
-        this.rounds = new ConsensusRounds(config, getStorage());
+        this.rounds = new ConsensusRounds(config, getStorage(), addressBook);
     }
 
     /**
@@ -900,7 +900,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus,
         sp = selfParent(x);
 
         for (int mm = 0; mm < numMembers; mm++) {
-            if (addressBook.getIndexOfNodeId(x.getCreatorId()) == mm) {
+            if (isIndex(x, mm)) {
                 x.setLastSee(mm, x);
             } else if (sp == null && op == null) {
                 x.setLastSee(mm, null);
@@ -928,14 +928,14 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus,
      * @param m2 the creator of z, the intermediate event through which x sees y
      * @return the event y that is created by m and seen by x through an event by m2
      */
-    private EventImpl seeThru(final EventImpl x, final long m, final long m2) {
+    private EventImpl seeThru(final EventImpl x, final int m, final int m2) {
         if (x == null) {
             return null;
         }
         if (notRelevantForConsensus(x)) {
             return null;
         }
-        if (m == m2 && m2 == addressBook.getIndexOfNodeId(x.getCreatorId())) {
+        if (m == m2 && isIndex(x, m2)) {
             return firstSelfWitnessS(selfParent(x));
         }
         return firstSee(lastSee(x, m2), m);
@@ -1197,5 +1197,12 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus,
 
     private long getWeight(final int nodeIndex) {
         return getWeight(addressBook.getNodeId(nodeIndex));
+    }
+
+    private boolean isIndex(final EventImpl e, final int index){
+        if (!addressBook.contains(e.getCreatorId())) {
+            return false;
+        }
+        return addressBook.getIndexOfNodeId(e.getCreatorId()) == index;
     }
 }
