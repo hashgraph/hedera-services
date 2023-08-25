@@ -264,7 +264,7 @@ public class SignedStateFileManager implements Startable {
     }
 
     /**
-     * Create an element that can be offered to the {@link #taskQueue}
+     * A save state task to be offered to the {@link #taskQueue}
      *
      * @param reservedSignedState  the reserved signed state to be written to disk
      * @param directory            the directory where the signed state will be written
@@ -273,7 +273,7 @@ public class SignedStateFileManager implements Startable {
      * @param outOfBand            whether this state has been requested to be written out of band
      * @param stateLacksSignatures whether the state being written lacks signatures
      */
-    private void createTaskQueueElement(
+    private void saveStateTask(
             @NonNull final ReservedSignedState reservedSignedState,
             @NonNull final Path directory,
             @Nullable final StateToDiskReason reason,
@@ -362,7 +362,7 @@ public class SignedStateFileManager implements Startable {
         final ReservedSignedState reservedSignedState =
                 signedState.reserve("SignedStateFileManager.saveSignedStateToDisk()");
 
-        final boolean accepted = taskQueue.offer(() -> createTaskQueueElement(
+        final boolean accepted = taskQueue.offer(() -> saveStateTask(
                 reservedSignedState, directory, reason, finishedCallback, outOfBand, stateLacksSignatures));
 
         if (!accepted) {
@@ -431,6 +431,7 @@ public class SignedStateFileManager implements Startable {
                 reason,
                 success -> latch.countDown(),
                 true,
+                // this value will be ignored, since this is an out-of-band write
                 false,
                 configuration);
 
