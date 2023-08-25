@@ -42,11 +42,10 @@ import java.time.Duration;
 import java.util.function.Supplier;
 
 /**
- * This demo collects statistics on the running of the network and consensus systems. It writes them to the
- * screen, and also saves them to disk in a comma separated value (.csv) file. Optionally, it can also put a
- * sequence number into each transaction, and check if any are lost, or delayed too long. Each transaction
- * is 100 random bytes. So StatsSigningDemoState.handleTransaction doesn't actually do anything, other than the
- * optional sequence number check.
+ * This demo collects statistics on the running of the network and consensus systems. It writes them to the screen, and
+ * also saves them to disk in a comma separated value (.csv) file. Optionally, it can also put a sequence number into
+ * each transaction, and check if any are lost, or delayed too long. Each transaction is 100 random bytes. So
+ * StatsSigningDemoState.handleTransaction doesn't actually do anything, other than the optional sequence number check.
  */
 public class StressTestingToolState extends PartialMerkleLeaf implements SwirldState, MerkleLeaf {
     private static final long CLASS_ID = 0x79900efa3127b6eL;
@@ -88,7 +87,9 @@ public class StressTestingToolState extends PartialMerkleLeaf implements SwirldS
      */
     @Override
     public void preHandle(final Event event) {
-        busyWait(configSupplier.get().preHandleTime());
+        if (configSupplier.get() != null) {
+            busyWait(configSupplier.get().preHandleTime());
+        }
     }
 
     /**
@@ -158,8 +159,7 @@ public class StressTestingToolState extends PartialMerkleLeaf implements SwirldS
     }
 
     /**
-     * The version history of this class.
-     * Versions that have been released must NEVER be given a different value.
+     * The version history of this class. Versions that have been released must NEVER be given a different value.
      */
     private static class ClassVersion {
         public static final int NO_ADDRESS_BOOK_IN_STATE = 4;
