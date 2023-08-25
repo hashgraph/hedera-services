@@ -38,6 +38,7 @@ import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.List;
@@ -241,27 +242,37 @@ public final class StartupStateLoader {
                 continue;
             }
 
-            try {
-                state = loadState(platformContext, currentSoftwareVersion, savedStateFile);
+            state = loadState(platformContext, recycleBin, currentSoftwareVersion, savedStateFile);
+            if (state != null) {
                 break;
-            } catch (final IOException e) {
-                logger.error(
-                        EXCEPTION.getMarker(),
-                        "Failed to load saved state from file: {}",
-                        savedStateFile.stateFile(),
-                        e);
             }
         }
 
-        if (state != null
-                && emergencyRecoveryManager.isInHashEpoch(
-                        state.get().getState().getHash(),
-                        state.get()
-                                .getState()
-                                .getPlatformState()
-                                .getPlatformData()
-                                .getEpochHash())) {
-            emergencyRecoveryManager.emergencyStateLoaded();
+        // TODO should this be collapsed into a helper function?
+        if (state == null) {
+            logger.warn(
+                    STARTUP.getMarker(),
+                    "No state on disk met the criteria for emergency recovery, starting from genesis. "
+                            + "This node will need to receive a state through an emergency reconnect.");
+            state = createNullReservation();
+        } else {
+            final boolean inHashEpoch = emergencyRecoveryManager.isInHashEpoch(
+                    state.get().getState().getHash(),
+                    state.get().getState().getPlatformState().getPlatformData().getEpochHash());
+
+            if (inHashEpoch) {
+                logger.info(
+                        STARTUP.getMarker(),
+                        "Loaded state is in the correct hash epoch, "
+                                + "this node will not need to receive a state through an emergency reconnect.");
+
+                emergencyRecoveryManager.emergencyStateLoaded();
+            } else {
+                logger.warn(
+                        STARTUP.getMarker(),
+                        "Loaded state is not in the correct hash epoch, "
+                                + "this node will need to receive a state through an emergency reconnect.");
+            }
         }
 
         if (shouldClearPreconsensusStream) {
@@ -269,7 +280,7 @@ public final class StartupStateLoader {
             PreconsensusEventFileManager.clear(platformContext, recycleBin, selfId);
         }
 
-        return state == null ? createNullReservation() : state;
+        return state;
     }
 
     /**
@@ -286,7 +297,15 @@ public final class StartupStateLoader {
             @NonNull final SavedStateInfo savedStateFile) {
 
         final boolean isStateSuitable = emergencyRecoveryManager.isStateSuitableForStartup(savedStateFile);
-        if (!isStateSuitable) {
+
+        if (isStateSuitable) {
+            logger.info(
+                    STARTUP.getMarker(),
+                    "State file {} meets the criteria for emergency recovery. " + "State hash: {}, state round: {}",
+                    savedStateFile.stateFile(),
+                    savedStateFile.metadata().hash(),
+                    savedStateFile.metadata().round());
+        } else {
             logger.warn(
                     STARTUP.getMarker(),
                     "State file {} does not meet the criteria for emergency recovery. "
@@ -324,44 +343,49 @@ public final class StartupStateLoader {
         logger.info(STARTUP.getMarker(), "Loading latest state from disk.");
 
         for (final SavedStateInfo savedStateFile : savedStateFiles) {
-            try {
-                return loadState(platformContext, currentSoftwareVersion, savedStateFile);
-            } catch (final IOException e) {
-                logger.error(
-                        EXCEPTION.getMarker(),
-                        "Failed to load saved state from file: {}",
-                        savedStateFile.stateFile(),
-                        e);
-
-                try {
-                    recycleBin.recycle(savedStateFile.getDirectory());
-                } catch (final IOException ee) {
-                    throw new UncheckedIOException("unable to recycle state file", ee);
-                }
+            final ReservedSignedState state =
+                    loadState(platformContext, recycleBin, currentSoftwareVersion, savedStateFile);
+            if (state != null) {
+                return state;
             }
         }
 
+        logger.warn(STARTUP.getMarker(), "No valid saved states were found on disk. Starting from genesis.");
         return createNullReservation();
     }
 
     /**
-     * Load the requested state.
+     * Load the requested state. If state can not be loaded, recycle the invalid state file and return null.
      *
      * @param platformContext        the platform context
+     * @param recycleBin             the recycle bin
      * @param currentSoftwareVersion the current software version
      * @param savedStateFile         the state to load
-     * @return the loaded state, will be fully hashed
+     * @return the loaded state, or null if the state could not be loaded. Will be fully hashed if non-null.
      */
-    @NonNull
+    @Nullable
     private static ReservedSignedState loadState(
             @NonNull final PlatformContext platformContext,
+            @NonNull final RecycleBin recycleBin,
             @NonNull final SoftwareVersion currentSoftwareVersion,
-            @NonNull final SavedStateInfo savedStateFile)
-            throws IOException {
+            @NonNull final SavedStateInfo savedStateFile) {
 
         logger.info(STARTUP.getMarker(), "Loading signed state from disk: {}", savedStateFile.stateFile());
-        final DeserializedSignedState deserializedSignedState =
-                readStateFile(platformContext, savedStateFile.stateFile());
+
+        final DeserializedSignedState deserializedSignedState;
+        try {
+            deserializedSignedState = readStateFile(platformContext, savedStateFile.stateFile());
+        } catch (final IOException e) {
+            logger.error(EXCEPTION.getMarker(), "unable to load state file {}", savedStateFile.stateFile(), e);
+            try {
+                // TODO setting if we should crash or recycle
+                recycleBin.recycle(savedStateFile.getDirectory());
+            } catch (final IOException ee) {
+                throw new UncheckedIOException("unable to recycle state", ee);
+            }
+            return null;
+        }
+
         final State state = deserializedSignedState.reservedSignedState().get().getState();
 
         final Hash oldHash = deserializedSignedState.originalHash();
@@ -375,25 +399,25 @@ public final class StartupStateLoader {
                 .getPlatformData()
                 .getCreationSoftwareVersion();
 
-        if (!oldHash.equals(newHash)) {
-            if (loadedVersion.equals(currentSoftwareVersion)) {
-                logger.warn(
-                        STARTUP.getMarker(),
-                        "The saved state file {} was created with the current version of the software, "
-                                + "but the state hash has changed. Unless the state was intentionally modified, "
-                                + "this good indicator that there may be a bug.",
-                        savedStateFile.stateFile());
-            } else {
-                logger.warn(
-                        STARTUP.getMarker(),
-                        "The saved state file {} was created with version {}, which is different than the "
-                                + "current version {}. The hash of the loaded state is different than the hash of the "
-                                + "state when it was first created, which is not abnormal if there have been data "
-                                + "migrations.",
-                        savedStateFile.stateFile(),
-                        loadedVersion,
-                        currentSoftwareVersion);
-            }
+        if (oldHash.equals(newHash)) {
+            logger.info(STARTUP.getMarker(), "Loaded state's hash is the same as when it was saved.");
+        } else if (loadedVersion.equals(currentSoftwareVersion)) {
+            logger.error(
+                    EXCEPTION.getMarker(),
+                    "The saved state file {} was created with the current version of the software, "
+                            + "but the state hash has changed. Unless the state was intentionally modified, "
+                            + "this good indicator that there is probably a bug.",
+                    savedStateFile.stateFile());
+        } else {
+            logger.warn(
+                    STARTUP.getMarker(),
+                    "The saved state file {} was created with version {}, which is different than the "
+                            + "current version {}. The hash of the loaded state is different than the hash of the "
+                            + "state when it was first created, which is not abnormal if there have been data "
+                            + "migrations.",
+                    savedStateFile.stateFile(),
+                    loadedVersion,
+                    currentSoftwareVersion);
         }
 
         return deserializedSignedState.reservedSignedState();
