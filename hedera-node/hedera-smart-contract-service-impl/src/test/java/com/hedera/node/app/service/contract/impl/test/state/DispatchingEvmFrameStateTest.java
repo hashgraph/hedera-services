@@ -45,8 +45,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.contract.Bytecode;
@@ -640,7 +640,9 @@ class DispatchingEvmFrameStateTest {
     void extantAccountIsHollowOnlyIfHasAnEmptyKey() {
         given(nativeOperations.resolveAlias(Bytes.wrap(EVM_ADDRESS.toArrayUnsafe())))
                 .willReturn(ACCOUNT_NUM);
-        givenWellKnownAccount(accountWith(ACCOUNT_NUM).key(Key.newBuilder().keyList(KeyList.DEFAULT)));
+        givenWellKnownAccount(accountWith(ACCOUNT_NUM)
+                .key(Key.newBuilder()
+                        .contractID(ContractID.newBuilder().contractNum(1).build())));
         assertTrue(subject.isHollowAccount(EVM_ADDRESS));
     }
 
