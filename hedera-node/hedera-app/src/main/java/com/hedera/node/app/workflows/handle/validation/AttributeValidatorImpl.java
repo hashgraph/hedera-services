@@ -91,7 +91,7 @@ public class AttributeValidatorImpl implements AttributeValidator {
                 context.configuration().getConfigData(EntitiesConfig.class).maxLifetime();
         final var now = context.consensusNow().getEpochSecond();
         final var expiryGivenMaxLifetime = now + maxEntityLifetime;
-        validateTrue(expiry > now && expiry <= expiryGivenMaxLifetime, INVALID_EXPIRATION_TIME);
+        validateTrue(expiry >= now && expiry <= expiryGivenMaxLifetime, INVALID_EXPIRATION_TIME);
     }
 
     /**

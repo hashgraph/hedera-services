@@ -17,6 +17,7 @@
 package com.hedera.node.app.workflows.prehandle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hedera.node.app.spi.HapiUtils.isHollow;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
@@ -171,6 +172,10 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             // so later during the handle phase. Technically, we could still try to gather and verify the other
             // signatures, but that might be tricky and complicated with little gain. So just throw.
             return preHandleFailure(creator, null, PAYER_ACCOUNT_NOT_FOUND, txInfo, null, null);
+        } else if (payerAccount.deleted()) {
+            // this check is not guaranteed, it should be checked again in handle phase. If the payer account is
+            // deleted, we skip the signature verification.
+            return preHandleFailure(creator, null, PAYER_ACCOUNT_DELETED, txInfo, null, null);
         }
 
         // Bootstrap the expanded signature pairs by grabbing all prefixes that are "full" keys already

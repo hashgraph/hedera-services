@@ -103,7 +103,7 @@ class AttributeValidatorImplTest {
     void rejectsAnyNonFutureExpiry() {
         final var now = 1_234_567L;
         given(context.consensusNow()).willReturn(Instant.ofEpochSecond(now));
-        assertThatThrownBy(() -> subject.validateExpiry(now))
+        assertThatThrownBy(() -> subject.validateExpiry(now - 1))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(INVALID_EXPIRATION_TIME));
     }

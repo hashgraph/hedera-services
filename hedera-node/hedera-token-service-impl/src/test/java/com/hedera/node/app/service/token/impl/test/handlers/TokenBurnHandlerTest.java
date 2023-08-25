@@ -443,7 +443,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
             final var updatedTreasuryRel = writableTokenRelStore.get(ACCOUNT_1339, TOKEN_123);
             Assertions.assertThat(updatedTreasuryRel.balance()).isEqualTo(1);
             final var updatedTreasuryAcct = writableAccountStore.get(ACCOUNT_1339);
-            Assertions.assertThat(updatedTreasuryAcct.numberTreasuryTitles()).isEqualTo(1);
+            Assertions.assertThat(updatedTreasuryAcct.numberTreasuryTitles()).isEqualTo(2);
             // There is still a positive balance in the treasury account, so its positive balances shouldn't change
             Assertions.assertThat(updatedTreasuryAcct.numberPositiveBalances()).isEqualTo(1);
         }
@@ -481,7 +481,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
             final var updatedTreasuryAcct = writableAccountStore.get(ACCOUNT_1339);
             // The treasury account is still listed as the treasury for the token, so its number of treasury titles
             // shouldn't decrease
-            Assertions.assertThat(updatedTreasuryAcct.numberTreasuryTitles()).isEqualTo(1);
+            Assertions.assertThat(updatedTreasuryAcct.numberTreasuryTitles()).isEqualTo(2);
             // There is no balance left in the treasury account, so its positive balances should be reduced
             Assertions.assertThat(updatedTreasuryAcct.numberPositiveBalances()).isZero();
         }
@@ -746,7 +746,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
 
             subject.handle(context);
             final var treasuryAcct = writableAccountStore.get(ACCOUNT_1339);
-            Assertions.assertThat(treasuryAcct.numberTreasuryTitles()).isEqualTo(1);
+            Assertions.assertThat(treasuryAcct.numberTreasuryTitles()).isEqualTo(2);
             // The treasury still owns at least one of the NFTs, so its positive balances shouldn't change
             Assertions.assertThat(treasuryAcct.numberPositiveBalances()).isEqualTo(1);
             Assertions.assertThat(treasuryAcct.numberOwnedNfts()).isEqualTo(1);
@@ -807,7 +807,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
             subject.handle(context);
             final var treasuryAcct = writableAccountStore.get(ACCOUNT_1339);
             Assertions.assertThat(treasuryAcct).isNotNull();
-            Assertions.assertThat(treasuryAcct.numberTreasuryTitles()).isEqualTo(1);
+            Assertions.assertThat(treasuryAcct.numberTreasuryTitles()).isEqualTo(2);
             // The treasury no longer owns any NFTs, so its positive balances should decrease by 1
             Assertions.assertThat(treasuryAcct.numberPositiveBalances()).isZero();
             Assertions.assertThat(treasuryAcct.numberOwnedNfts()).isZero();
@@ -868,7 +868,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
             subject.handle(context);
             final var treasuryAcct = writableAccountStore.get(ACCOUNT_1339);
             Assertions.assertThat(treasuryAcct).isNotNull();
-            Assertions.assertThat(treasuryAcct.numberTreasuryTitles()).isEqualTo(1);
+            Assertions.assertThat(treasuryAcct.numberTreasuryTitles()).isEqualTo(2);
             // The treasury no longer owns any NFTs, so its positive balances should decrease by 1
             Assertions.assertThat(treasuryAcct.numberPositiveBalances()).isZero();
             final var treasuryRel = writableTokenRelStore.get(ACCOUNT_1339, TOKEN_123);

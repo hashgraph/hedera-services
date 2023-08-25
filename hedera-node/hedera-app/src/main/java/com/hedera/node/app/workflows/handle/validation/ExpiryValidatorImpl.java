@@ -74,7 +74,7 @@ public class ExpiryValidatorImpl implements ExpiryValidator {
         context.attributeValidator().validateExpiry(effectiveExpiry);
 
         // Even if the effective expiry is valid, we still also require any explicit auto-renew period to be valid
-        if (creationMeta.hasAutoRenewPeriod()) {
+        if (creationMeta.hasAutoRenewPeriod() && creationMeta.autoRenewPeriod() != 0) {
             context.attributeValidator().validateAutoRenewPeriod(creationMeta.autoRenewPeriod());
         }
         return new ExpiryMeta(effectiveExpiry, creationMeta.autoRenewPeriod(), creationMeta.autoRenewAccountId());
