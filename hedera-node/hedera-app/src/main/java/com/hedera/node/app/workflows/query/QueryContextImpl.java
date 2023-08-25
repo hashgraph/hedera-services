@@ -55,7 +55,8 @@ public class QueryContextImpl implements QueryContext {
         this.query = requireNonNull(query, "The supplied argument 'query' cannot be null!");
         this.configuration = requireNonNull(configuration, "The supplied argument 'configuration' cannot be null!");
         this.recordCache = requireNonNull(recordCache, "The supplied argument 'recordCache' cannot be null!");
-        this.blockRecordInfo = blockRecordInfo;
+        this.blockRecordInfo =
+                requireNonNull(blockRecordInfo, "The supplied argument 'blockRecordInfo' cannot be null!");
     }
 
     @Override

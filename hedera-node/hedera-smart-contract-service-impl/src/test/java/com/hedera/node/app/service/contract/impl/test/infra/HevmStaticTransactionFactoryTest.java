@@ -26,9 +26,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractCallLocalQuery;
 import com.hedera.hapi.node.transaction.Query;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.infra.HevmStaticTransactionFactory;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Consumer;
@@ -52,11 +56,42 @@ class HevmStaticTransactionFactoryTest {
     }
 
     @Test
-    void fromQueryWorks() {
+    void fromQueryWorkWithSender() {
         final var query = Query.newBuilder()
                 .contractCallLocal(callLocalWith(b -> {
                     b.gas(21_000L);
                     b.senderId(SENDER_ID);
+                    b.contractID(CALLED_CONTRACT_ID);
+                    b.functionParameters(CALL_DATA);
+                }))
+                .build();
+        var transaction = subject.fromHapiQuery(query);
+        assertThat(transaction.senderId()).isEqualTo(SENDER_ID);
+        assertThat(transaction.relayerId()).isNull();
+        assertThat(transaction.contractId()).isEqualTo(CALLED_CONTRACT_ID);
+        assertThat(transaction.nonce()).isEqualTo(-1);
+        assertThat(transaction.payload()).isEqualTo(CALL_DATA);
+        assertThat(transaction.chainId()).isNull();
+        assertThat(transaction.value()).isZero();
+        assertThat(transaction.gasLimit()).isEqualTo(21_000L);
+        assertThat(transaction.offeredGasPrice()).isEqualTo(1L);
+        assertThat(transaction.maxGasAllowance()).isZero();
+        assertThat(transaction.hapiCreation()).isNull();
+    }
+
+    @Test
+    void fromQueryWorkWithNoSender() {
+        final var transactionID =
+                TransactionID.newBuilder().accountID(SENDER_ID).build();
+        final var txBody =
+                TransactionBody.newBuilder().transactionID(transactionID).build();
+        final var payment = Transaction.newBuilder().body(txBody).build();
+        final var queryHeader = QueryHeader.newBuilder().payment(payment).build();
+
+        final var query = Query.newBuilder()
+                .contractCallLocal(callLocalWith(b -> {
+                    b.gas(21_000L);
+                    b.header(queryHeader);
                     b.contractID(CALLED_CONTRACT_ID);
                     b.functionParameters(CALL_DATA);
                 }))
