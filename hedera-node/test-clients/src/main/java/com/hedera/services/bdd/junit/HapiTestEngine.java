@@ -406,6 +406,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                         "Hedera", // swirld name
                         new BasicSoftwareVersion(Long.MAX_VALUE), // App Version :TODO USE REAL VERSION NUMBER
                         initialSignedState,
+                        new AddressBook(),
                         new EmergencyRecoveryManager(
                                 platformContext.getConfiguration().getConfigData(StateConfig.class),
                                 (s, exitCode) -> {
