@@ -295,6 +295,8 @@ public class SignedStateFileManager implements Startable {
                     } else {
                         writeStateToDisk = true;
 
+                        reservedSignedState.get().stateSavedToDisk();
+
                         if (stateLacksSignatures) {
                             stateLacksSignatures(reservedSignedState.get());
                         }
