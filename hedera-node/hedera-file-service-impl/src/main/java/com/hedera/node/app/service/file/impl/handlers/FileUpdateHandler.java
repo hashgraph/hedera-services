@@ -116,17 +116,18 @@ public class FileUpdateHandler implements TransactionHandler {
 
         final var fees = handleContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> {
             return new FileUpdateResourceUsage(fileOpsUsage)
-                    .usageGiven(fromPbj(handleContext.body()), sigValueObj, fromPbj(file));
+                .usageGiven(fromPbj(handleContext.body()), sigValueObj, fromPbj(file));
         });
 
-        handleContext.feeAccumulator().charge(handleContext.payer(), fees);
+        // TODO: check if the file is system and don't change. Or maybe this should be here?
+        // handleContext.feeAccumulator().charge(handleContext.payer(), fees);
 
         // First validate this file is mutable; and the pending mutations are allowed
         // TODO: add or condition for privilege accounts from context
         validateFalse(file.keys() == null, UNAUTHORIZED);
 
         validateMaybeNewMemo(handleContext.attributeValidator(), fileUpdate);
-        validateExpirationTime(fileUpdate, file, handleContext);
+        // validateExpirationTime(fileUpdate, file, handleContext);
 
         // Now we apply the mutations to a builder
         final var builder = new File.Builder();
