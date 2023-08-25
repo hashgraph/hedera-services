@@ -42,7 +42,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -154,6 +157,8 @@ public class RecycleBinImpl implements RecycleBin, Startable, Stoppable {
     private void cleanup() {
         final Instant now = time.now();
 
+        final AtomicInteger deletedCount = new AtomicInteger();
+
         try (final Locked ignored = lock.lock()) {
             try (final Stream<Path> stream = Files.list(recycleBinPath)) {
                 stream.forEach(path -> {
@@ -163,8 +168,8 @@ public class RecycleBinImpl implements RecycleBin, Startable, Stoppable {
                         final Duration age = Duration.between(lastModified, now);
 
                         if (CompareTo.isGreaterThan(age, maximumFileAge)) {
-                            logger.info(STARTUP.getMarker(), "Deleting file in recycle bin: {}", path);
                             deleteDirectory(path);
+                            deletedCount.incrementAndGet();
                             recycledFileCount--;
                         }
                     } catch (final IOException e) {
@@ -177,6 +182,8 @@ public class RecycleBinImpl implements RecycleBin, Startable, Stoppable {
             }
             recycledFileCountMetric.set(recycledFileCount);
         }
+
+        logger.info(STARTUP.getMarker(), "Deleted {} files from the recycle bin.", deletedCount.get());
     }
 
     /**
