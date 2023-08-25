@@ -29,6 +29,7 @@ import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusMetrics;
 import com.swirlds.platform.state.signed.SignedState;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.ArrayDeque;
@@ -1087,6 +1088,17 @@ public class ConsensusImpl implements Consensus {
         return addressBook;
     }
 
+    /**
+     * Checks if the event has the same index and the one provided.
+     *
+     * @param e the event to check for euqality to index
+     * @param index the index to check for equality to the event's index
+     * @return true if the event has the same index as the one provided, false otherwise
+     */
+    private boolean hasIndex(@NonNull final EventImpl e, final int index) {
+        return addressBook.contains(e.getCreatorId()) && addressBook.getIndexOfNodeId(e.getCreatorId()) == index;
+    }
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Functions from SWIRLDS-TR-2020-01, verified by Coq proof
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1146,8 +1158,7 @@ public class ConsensusImpl implements Consensus {
         sp = x.getSelfParent();
 
         for (int mm = 0; mm < numMembers; mm++) {
-            final int xCreatorIdIndex = addressBook.getIndexOfNodeId(x.getCreatorId());
-            if (xCreatorIdIndex == mm) {
+            if (hasIndex(x, mm)) {
                 x.setLastSee(mm, x);
             } else if (sp == null && op == null) {
                 x.setLastSee(mm, null);
@@ -1183,8 +1194,7 @@ public class ConsensusImpl implements Consensus {
         if (x == null) {
             return null;
         }
-        final int creatorIndex = addressBook.getIndexOfNodeId(x.getCreatorId());
-        if (m == m2 && m2 == creatorIndex) {
+        if (m == m2 && hasIndex(x, m2)) {
             return firstSelfWitnessS(x.getSelfParent());
         }
         return firstSee(lastSee(x, m2), m);

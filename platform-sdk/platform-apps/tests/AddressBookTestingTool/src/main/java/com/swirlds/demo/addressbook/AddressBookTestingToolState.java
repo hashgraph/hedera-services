@@ -637,8 +637,8 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
     }
 
     /**
-     * Checks if the new address book contains a proper subset of the addresses in the old address book and that the
-     * nextNodeId value of the new address book is the same.  Variation in weight value is ignored for the comparison.
+     * Checks if the new address book contains a proper subset of the node ids in the old address book and that the
+     * nextNodeId value of the new address book is the same.
      *
      * @param newAddressBook The new address book
      * @param oldAddressBook The old address book
@@ -655,8 +655,8 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
             }
             missingCount++;
         }
-        final int containingSize = newAddressBook.getSize();
-        final int containedSize = oldAddressBook.getSize();
+        final int newSize = newAddressBook.getSize();
+        final int oldSize = oldAddressBook.getSize();
         final boolean atLeastOneNodeRemoved = missingCount > 0;
         if (!atLeastOneNodeRemoved) {
             logger.error(
@@ -664,7 +664,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
                     "The new address book does not have at least one node removed. {}",
                     StackTrace.getStackTrace());
         }
-        final boolean sizesCorrespond = missingCount == containingSize - containedSize;
+        final boolean sizesCorrespond = missingCount == oldSize - newSize;
         if (!sizesCorrespond) {
             logger.error(
                     EXCEPTION.getMarker(),
@@ -682,8 +682,8 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
     }
 
     /**
-     * Checks if the new address book contains at least all the addresses in the old address book and that the
-     * nextNodeId value of the new address book is larger.  Variation in weight value is ignored for the comparison.
+     * Checks if the old address book contains a proper subset of node ids in the new address book and that the
+     * nextNodeId value of the new address book is larger.
      *
      * @param newAddressBook The new address book
      * @param oldAddressBook The old address book
