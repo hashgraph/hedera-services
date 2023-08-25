@@ -30,7 +30,10 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
+import com.swirlds.common.system.InitTrigger;
+import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.Round;
+import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.events.Event;
@@ -54,7 +57,7 @@ public class StressTestingToolState extends PartialMerkleLeaf implements SwirldS
     private long runningSum = 0;
 
     /** supplies the app config */
-    public static Supplier<StressTestingToolConfig> configSupplier;
+    public StressTestingToolConfig config;
 
     @SuppressWarnings("unused")
     public StressTestingToolState() {}
@@ -62,6 +65,7 @@ public class StressTestingToolState extends PartialMerkleLeaf implements SwirldS
     private StressTestingToolState(@NonNull final StressTestingToolState sourceState) {
         super(sourceState);
         runningSum = sourceState.runningSum;
+        config = sourceState.config;
         setImmutable(false);
         sourceState.setImmutable(true);
     }
@@ -75,14 +79,20 @@ public class StressTestingToolState extends PartialMerkleLeaf implements SwirldS
         return new StressTestingToolState(this);
     }
 
+    public void init(
+            final Platform platform,
+            final SwirldDualState swirldDualState,
+            final InitTrigger trigger,
+            final SoftwareVersion previousSoftwareVersion) {
+        this.config = platform.getContext().getConfiguration().getConfigData(StressTestingToolConfig.class);
+    }
+
     /**
      * {@inheritDoc}
      */
     @Override
     public void preHandle(final Event event) {
-        if (configSupplier.get() != null) {
-            busyWait(configSupplier.get().preHandleTime());
-        }
+        busyWait(config.preHandleTime());
     }
 
     /**
@@ -96,10 +106,7 @@ public class StressTestingToolState extends PartialMerkleLeaf implements SwirldS
 
     private void handleTransaction(final ConsensusTransaction trans) {
         runningSum += ByteUtils.byteArrayToLong(trans.getContents(), 0);
-
-        if (configSupplier.get() != null) {
-            busyWait(configSupplier.get().handleTime());
-        }
+        busyWait(config.handleTime());
     }
 
     @SuppressWarnings("all")

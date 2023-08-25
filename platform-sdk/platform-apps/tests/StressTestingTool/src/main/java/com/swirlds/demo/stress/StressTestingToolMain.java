@@ -132,8 +132,6 @@ public class StressTestingToolMain implements SwirldMain {
         this.platform = platform;
         final StressTestingToolConfig config =
                 platform.getContext().getConfiguration().getConfigData(StressTestingToolConfig.class);
-        configHolder.set(config);
-        StressTestingToolState.configSupplier = configHolder::get;
         expectedTPS = config.transPerSecToCreate()
                 / (double) platform.getAddressBook().getSize();
 
@@ -234,7 +232,6 @@ public class StressTestingToolMain implements SwirldMain {
 
     @Override
     public SwirldState newState() {
-        StressTestingToolState.configSupplier = configHolder::get;
         return new StressTestingToolState();
     }
 
