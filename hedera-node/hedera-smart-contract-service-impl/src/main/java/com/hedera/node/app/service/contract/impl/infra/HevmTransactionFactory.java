@@ -282,13 +282,12 @@ public class HevmTransactionFactory {
         if (body.hasInitcode()) {
             return body.initcode();
         } else {
-            final var maybeInitcode = fileStore.getFileLeaf(body.fileIDOrElse(FileID.DEFAULT));
-            validateTrue(maybeInitcode.isPresent(), INVALID_FILE_ID);
-            final var initcode = maybeInitcode.get();
-            validateFalse(initcode.deleted(), FILE_DELETED);
-            validateTrue(initcode.contents().length() > 0, CONTRACT_FILE_EMPTY);
+            final var initCode = fileStore.getFileLeaf(body.fileIDOrElse(FileID.DEFAULT));
+            validateFalse(initCode == null, INVALID_FILE_ID);
+            validateFalse(initCode.deleted(), FILE_DELETED);
+            validateTrue(initCode.contents().length() > 0, CONTRACT_FILE_EMPTY);
             try {
-                return Bytes.fromHex(new String(initcode.contents().toByteArray())
+                return Bytes.fromHex(new String(initCode.contents().toByteArray())
                         + body.constructorParameters().toHex());
             } catch (Exception ignore) {
                 throw new HandleException(ERROR_DECODING_BYTESTRING);

@@ -24,11 +24,13 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.transaction.ExchangeRate;
+import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.config.VersionedConfigImpl;
+import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
-import com.hedera.node.app.info.HederaFileNumbersImpl;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.records.impl.BlockRecordManagerImpl;
 import com.hedera.node.app.records.impl.BlockRecordStreamProducer;
@@ -48,7 +50,6 @@ import com.hedera.node.app.spi.fixtures.info.FakeNetworkInfo;
 import com.hedera.node.app.spi.fixtures.numbers.FakeHederaNumbers;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.info.SelfNodeInfo;
-import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
@@ -187,8 +188,15 @@ public interface ScaffoldingModule {
 
     @Provides
     @Singleton
-    static HederaFileNumbers provideHederaFileNumbers(@NonNull final ConfigProvider configProvider) {
-        return new HederaFileNumbersImpl(configProvider);
+    static ExchangeRateManager provideExchangeRateManager() {
+        final var exchangeRateManager = new ExchangeRateManager();
+        final ExchangeRate.Builder someRate =
+                ExchangeRate.newBuilder().hbarEquiv(1).centEquiv(1);
+        final var onlyCurrentRates =
+                ExchangeRateSet.newBuilder().currentRate(someRate).build();
+
+        exchangeRateManager.update(ExchangeRateSet.PROTOBUF.toBytes(onlyCurrentRates));
+        return exchangeRateManager;
     }
 
     @Provides

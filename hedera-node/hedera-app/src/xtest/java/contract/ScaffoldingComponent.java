@@ -17,6 +17,7 @@
 package contract;
 
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -71,4 +72,6 @@ public interface ScaffoldingComponent {
     WorkingStateAccessor workingStateAccessor();
 
     Function<TransactionBody, HandleContext> contextFactory();
+
+    FeeManager feeManager();
 }

@@ -84,7 +84,6 @@ import java.security.NoSuchAlgorithmException;
 import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.Locale;
-import java.util.Optional;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -814,11 +813,11 @@ public final class Hedera implements SwirldMain {
         logger.info("Initializing fee schedules");
         final var filesConfig = configProvider.getConfiguration().getConfigData(FilesConfig.class);
         final var fileNum = filesConfig.feeSchedules();
-        final Optional<File> fileOpt = getFileFromStorage(state, fileNum);
-        fileOpt.ifPresent(file -> {
+        final File file = getFileFromStorage(state, fileNum);
+        if (file != null) {
             final var fileData = file.contents();
             daggerApp.feeManager().update(fileData);
-        });
+        }
         logger.info("Fee schedule initialized");
     }
 
@@ -826,11 +825,11 @@ public final class Hedera implements SwirldMain {
         logger.info("Initializing exchange rates");
         final var filesConfig = configProvider.getConfiguration().getConfigData(FilesConfig.class);
         final var fileNum = filesConfig.exchangeRates();
-        final var fileOpt = getFileFromStorage(state, fileNum);
-        fileOpt.ifPresent(file -> {
+        final var file = getFileFromStorage(state, fileNum);
+        if (file != null) {
             final var fileData = file.contents();
             daggerApp.exchangeRateManager().update(fileData);
-        });
+        }
         logger.info("Exchange rates initialized");
     }
 
@@ -838,15 +837,15 @@ public final class Hedera implements SwirldMain {
         logger.info("Initializing throttles");
         final var filesConfig = configProvider.getConfiguration().getConfigData(FilesConfig.class);
         final var fileNum = filesConfig.throttleDefinitions();
-        final var fileOpt = getFileFromStorage(state, fileNum);
-        fileOpt.ifPresent(file -> {
+        final var file = getFileFromStorage(state, fileNum);
+        if (file != null) {
             final var fileData = file.contents();
             daggerApp.throttleManager().update(fileData);
-        });
+        }
         logger.info("Throttles initialized");
     }
 
-    private Optional<File> getFileFromStorage(HederaState state, long fileNum) {
+    private File getFileFromStorage(HederaState state, long fileNum) {
         final var readableFileStore = new ReadableStoreFactory(state).getStore(ReadableFileStore.class);
         final var hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
         final var fileId = FileID.newBuilder()

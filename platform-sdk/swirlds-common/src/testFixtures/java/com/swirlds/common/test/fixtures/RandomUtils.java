@@ -120,4 +120,107 @@ public class RandomUtils {
             return new ResettableRandom(seed);
         }
     }
+
+    /**
+     * Returns a random int within 0 - Integer.MAX_VALUE
+     * <p>
+     * Extracted from {@code org.apache.commons.lang3.RandomUtils#nextInt()}
+     *
+     * @return the random integer
+     * @see #nextInt(int, int)
+     */
+    public static int nextInt() {
+        return nextInt(0, Integer.MAX_VALUE);
+    }
+
+    /**
+     * Returns a random integer within the specified range.
+     * <p>
+     * Extracted from {@code org.apache.commons.lang3.RandomUtils#nextInt(int, int)}
+     *
+     * @param startInclusive
+     *            the smallest value that can be returned, must be non-negative
+     * @param endExclusive
+     *            the upper bound (not included)
+     * @throws IllegalArgumentException
+     *             if {@code startInclusive > endExclusive} or if
+     *             {@code startInclusive} is negative
+     * @return the random integer
+     */
+    public static int nextInt(final int startInclusive, final int endExclusive) {
+        if (endExclusive < startInclusive) {
+            throw new IllegalArgumentException("Start value must be smaller or equal to end value.");
+        }
+        if (startInclusive < 0) {
+            throw new IllegalArgumentException("Both range values must be non-negative.");
+        }
+
+        if (startInclusive == endExclusive) {
+            return startInclusive;
+        }
+
+        return startInclusive + RANDOM.nextInt(endExclusive - startInclusive);
+    }
+
+    /**
+     * Returns a random long within the specified range.
+     * <p>
+     * Extracted from {@code org.apache.commons.lang3.RandomUtils#nextLong(long, long)}
+     *
+     * @param startInclusive
+     *            the smallest value that can be returned, must be non-negative
+     * @param endExclusive
+     *            the upper bound (not included)
+     * @throws IllegalArgumentException
+     *             if {@code startInclusive > endExclusive} or if
+     *             {@code startInclusive} is negative
+     * @return the random long
+     */
+    public static long nextLong(final long startInclusive, final long endExclusive) {
+        if (endExclusive < startInclusive) {
+            throw new IllegalArgumentException("Start value must be smaller or equal to end value.");
+        }
+        if (startInclusive < 0) {
+            throw new IllegalArgumentException("Both range values must be non-negative.");
+        }
+
+        if (startInclusive == endExclusive) {
+            return startInclusive;
+        }
+
+        return startInclusive + nextLong(endExclusive - startInclusive);
+    }
+
+    /**
+     * Generates a {@code long} value between 0 (inclusive) and the specified
+     * value (exclusive).
+     * <p>
+     * Extracted from {@code org.apache.commons.lang3.RandomUtils#nextLong(long)}
+     *
+     * @param n Bound on the random number to be returned.  Must be positive.
+     * @return a random {@code long} value between 0 (inclusive) and {@code n}
+     * (exclusive).
+     */
+    private static long nextLong(final long n) {
+        long bits;
+        long val;
+        do {
+            bits = RANDOM.nextLong() >>> 1;
+            val = bits % n;
+        } while (bits - val + (n - 1) < 0);
+
+        return val;
+    }
+
+    /**
+     * Returns a random long within 0 - Long.MAX_VALUE
+     * <p>
+     * Extracted from {@code org.apache.commons.lang3.RandomUtils#nextLong()}
+     *
+     * @return the random long
+     * @see #nextLong(long, long)
+     */
+    public static long nextLong() {
+        return nextLong(Long.MAX_VALUE);
+    }
 }

@@ -27,7 +27,6 @@ import com.hedera.node.app.spi.state.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
-import java.util.Optional;
 
 /**
  * Provides read-only methods for interacting with the underlying data storage mechanisms for
@@ -57,10 +56,10 @@ public class ReadableFileStoreImpl extends FileStore implements ReadableFileStor
      */
     public @Nullable FileMetadata getFileMetadata(@Nullable final FileID id) {
         final var file = getFileLeaf(id);
-        return file.map(FileStore::fileMetaFrom).orElse(null);
+        return file == null ? null : FileStore.fileMetaFrom(file);
     }
 
-    public @Nullable Optional<File> getFileLeaf(@Nullable FileID id) {
-        return Optional.ofNullable(fileState.get(id));
+    public @Nullable File getFileLeaf(@Nullable FileID id) {
+        return fileState.get(id);
     }
 }
