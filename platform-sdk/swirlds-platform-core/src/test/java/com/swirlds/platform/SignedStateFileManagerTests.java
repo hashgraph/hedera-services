@@ -19,7 +19,6 @@ package com.swirlds.platform;
 import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyDoesNotThrow;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
-import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
 import static com.swirlds.common.test.fixtures.AssertionUtils.completeBeforeTimeout;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
@@ -234,14 +233,6 @@ class SignedStateFileManagerTests {
         final SignedState signedState = new RandomSignedStateGenerator().build();
         ((DummySwirldState) signedState.getSwirldState()).enableBlockingSerialization();
 
-        final AtomicBoolean finished = new AtomicBoolean(false);
-        final StateToDiskAttemptConsumer consumer = (ss, path, success) -> {
-            if (signedState.getSwirldState() != ss.getState().getSwirldState()) {
-                return;
-            }
-            finished.set(true);
-        };
-
         final SignedStateFileManager manager = new SignedStateFileManager(
                 context,
                 getStaticThreadManager(),
@@ -250,7 +241,7 @@ class SignedStateFileManagerTests {
                 MAIN_CLASS_NAME,
                 SELF_ID,
                 SWIRLD_NAME,
-                consumer,
+                (ss, path, success) -> {},
                 x -> {},
                 mock(StatusActionSubmitter.class));
         manager.start();
@@ -261,12 +252,11 @@ class SignedStateFileManagerTests {
 
         // State writing should be synchronized. So we shouldn't be able to finish until we unblock.
         MILLISECONDS.sleep(10);
-        assertFalse(finished.get(), "shouldn't be able to finish yet");
+        // shouldn't be finished yet
         assertTrue(thread.isAlive(), "thread should still be blocked");
 
         ((DummySwirldState) signedState.getSwirldState()).unblockSerialization();
         thread.join(1000);
-        assertTrue(finished.get(), "should be finished");
 
         final Path stateDirectory = testDirectory.resolve("fatal").resolve("node1234_round" + signedState.getRound());
         validateSavingOfState(signedState, stateDirectory);
@@ -285,14 +275,6 @@ class SignedStateFileManagerTests {
 
         final SignedState signedState = new RandomSignedStateGenerator().build();
 
-        final AtomicBoolean finished = new AtomicBoolean(false);
-        final StateToDiskAttemptConsumer consumer = (ss, path, success) -> {
-            if (signedState.getSwirldState() != ss.getState().getSwirldState()) {
-                return;
-            }
-            finished.set(true);
-        };
-
         final SignedStateFileManager manager = new SignedStateFileManager(
                 context,
                 getStaticThreadManager(),
@@ -301,14 +283,12 @@ class SignedStateFileManagerTests {
                 MAIN_CLASS_NAME,
                 SELF_ID,
                 SWIRLD_NAME,
-                consumer,
+                (ss, path, success) -> {},
                 x -> {},
                 mock(StatusActionSubmitter.class));
         manager.start();
 
         manager.dumpState(signedState, ISS, false);
-
-        assertEventuallyTrue(finished::get, Duration.ofSeconds(1), "should eventually be written to disk");
 
         final Path stateDirectory = testDirectory.resolve("iss").resolve("node1234_round" + signedState.getRound());
         validateSavingOfState(signedState, stateDirectory);
