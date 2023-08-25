@@ -94,8 +94,6 @@ public record HederaEvmTransactionResult(
      * Converts this result to a {@link ContractFunctionResult} for a transaction based on the given
      * {@link RootProxyWorldUpdater} and maybe {@link EthTxData}.
      *
-     * @param ethTxData the Ethereum transaction data if relevant
-     * @param updater   the world updater
      * @return the result
      */
     public ContractFunctionResult asQueryResultOf() {

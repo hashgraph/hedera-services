@@ -30,7 +30,6 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractCallLocalQuery;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.node.app.service.contract.impl.infra.HevmStaticTransactionFactory;
-import com.hedera.node.app.service.token.ReadableAccountStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Consumer;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -43,16 +42,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class HevmStaticTransactionFactoryTest {
     @Mock
-    private ReadableAccountStore accountStore;
-
-    @Mock
     private GasCalculator gasCalculator;
 
     private HevmStaticTransactionFactory subject;
 
     @BeforeEach
     void setUp() {
-        subject = new HevmStaticTransactionFactory(DEFAULT_CONTRACTS_CONFIG, gasCalculator, accountStore);
+        subject = new HevmStaticTransactionFactory(DEFAULT_CONTRACTS_CONFIG, gasCalculator);
     }
 
     @Test
@@ -72,10 +68,10 @@ class HevmStaticTransactionFactoryTest {
         assertThat(transaction.nonce()).isEqualTo(-1);
         assertThat(transaction.payload()).isEqualTo(CALL_DATA);
         assertThat(transaction.chainId()).isNull();
-        assertThat(transaction.value()).isEqualTo(0L);
+        assertThat(transaction.value()).isZero();
         assertThat(transaction.gasLimit()).isEqualTo(21_000L);
         assertThat(transaction.offeredGasPrice()).isEqualTo(1L);
-        assertThat(transaction.maxGasAllowance()).isEqualTo(0L);
+        assertThat(transaction.maxGasAllowance()).isZero();
         assertThat(transaction.hapiCreation()).isNull();
     }
 

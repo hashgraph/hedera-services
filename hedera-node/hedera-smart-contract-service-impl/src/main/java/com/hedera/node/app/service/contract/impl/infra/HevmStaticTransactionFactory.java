@@ -26,7 +26,6 @@ import com.hedera.hapi.node.contract.ContractCallLocalQuery;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.node.app.service.contract.impl.annotations.QueryScope;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
-import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.config.data.ContractsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
@@ -37,16 +36,12 @@ public class HevmStaticTransactionFactory {
     private static final long INTRINSIC_GAS_LOWER_BOUND = 21_000L;
     private final ContractsConfig contractsConfig;
     private final GasCalculator gasCalculator;
-    private final ReadableAccountStore accountStore;
 
     @Inject
     public HevmStaticTransactionFactory(
-            @NonNull final ContractsConfig contractsConfig,
-            @NonNull final GasCalculator gasCalculator,
-            @NonNull final ReadableAccountStore accountStore) {
+            @NonNull final ContractsConfig contractsConfig, @NonNull final GasCalculator gasCalculator) {
         this.contractsConfig = contractsConfig;
         this.gasCalculator = gasCalculator;
-        this.accountStore = accountStore;
     }
 
     /**

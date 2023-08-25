@@ -26,10 +26,8 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.QueryScope;
 import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.ResultStatus;
-import com.hedera.node.app.spi.workflows.QueryContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Objects;
 import javax.inject.Inject;
 
 /**
@@ -41,12 +39,9 @@ import javax.inject.Inject;
  */
 @QueryScope
 public class QuerySystemContractOperations implements SystemContractOperations {
-    private final QueryContext context;
 
     @Inject
-    public QuerySystemContractOperations(@NonNull final QueryContext context) {
-        this.context = Objects.requireNonNull(context);
-    }
+    public QuerySystemContractOperations() {}
 
     /**
      * {@inheritDoc}

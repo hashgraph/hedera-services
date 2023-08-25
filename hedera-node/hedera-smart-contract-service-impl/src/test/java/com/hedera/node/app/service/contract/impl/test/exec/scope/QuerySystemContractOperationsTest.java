@@ -37,7 +37,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class QuerySystemContractOperationsTest {
+class QuerySystemContractOperationsTest {
     @Mock
     private QueryContext context;
 
@@ -60,7 +60,7 @@ public class QuerySystemContractOperationsTest {
 
     @BeforeEach
     void setUp() {
-        subject = new QuerySystemContractOperations(context);
+        subject = new QuerySystemContractOperations();
     }
 
     @Test
