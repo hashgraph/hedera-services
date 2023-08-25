@@ -134,7 +134,11 @@ public class RecycleBinImpl implements RecycleBin, Startable, Stoppable {
             final Path recyclePath = recycleBinPath.resolve(fileName);
 
             if (Files.exists(recyclePath)) {
-                Files.delete(recyclePath);
+                logger.info(
+                        STARTUP.getMarker(),
+                        "File with the name '{}' already exists in the recycle bin, deleting previous copy.",
+                        fileName);
+                deleteDirectory(recyclePath);
             } else {
                 recycledFileCount++;
                 recycledFileCountMetric.set(recycledFileCount);
