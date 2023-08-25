@@ -73,7 +73,6 @@ import com.hedera.node.config.data.TraceabilityConfig;
 import com.hedera.node.config.data.UpgradeConfig;
 import com.hedera.node.config.data.UtilPrngConfig;
 import com.hedera.node.config.data.VersionConfig;
-import com.hedera.node.config.data.VirtualdatasourceConfig;
 import com.hedera.node.config.sources.PropertyConfigSource;
 import com.hedera.node.config.sources.SettingsConfigSource;
 import com.hedera.node.config.validation.EmulatesMapValidator;
@@ -199,7 +198,6 @@ public class ConfigProviderImpl implements ConfigProvider {
                 .withConfigDataType(UpgradeConfig.class)
                 .withConfigDataType(UtilPrngConfig.class)
                 .withConfigDataType(VersionConfig.class)
-                .withConfigDataType(VirtualdatasourceConfig.class)
                 .withConverter(new CongestionMultipliersConverter())
                 .withConverter(new EntityScaleFactorsConverter())
                 .withConverter(new EntityTypeConverter())

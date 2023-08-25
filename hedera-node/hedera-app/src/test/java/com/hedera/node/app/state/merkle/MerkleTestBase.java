@@ -84,18 +84,12 @@ public class MerkleTestBase extends StateTestBase {
     public static final String SECOND_SERVICE = "Second-Service";
     public static final String UNKNOWN_SERVICE = "Bogus-Service";
 
-    /**
-     * A TEST ONLY {@link Codec} to be used with String data types
-     */
+    /** A TEST ONLY {@link Codec} to be used with String data types */
     public static final Codec<String> STRING_CODEC = TestStringCodec.SINGLETON;
-    /**
-     * A TEST ONLY {@link Codec} to be used with Long data types
-     */
+    /** A TEST ONLY {@link Codec} to be used with Long data types */
     public static final Codec<Long> LONG_CODEC = TestLongCodec.SINGLETON;
 
-    /**
-     * Used by some tests that need to hash
-     */
+    /** Used by some tests that need to hash */
     protected static final MerkleCryptography CRYPTO = MerkleCryptoFactory.getInstance();
 
     // These longs are used with the "space" k/v state
@@ -144,9 +138,7 @@ public class MerkleTestBase extends StateTestBase {
     protected StateMetadata<String, String> countryMetadata;
     protected SingletonNode<String> countrySingleton;
 
-    /**
-     * Sets up the "Fruit" merkle map, label, and metadata.
-     */
+    /** Sets up the "Fruit" merkle map, label, and metadata. */
     protected void setupFruitMerkleMap() {
         fruitLabel = StateUtils.computeLabel(FIRST_SERVICE, FRUIT_STATE_KEY);
         fruitMerkleMap = createMerkleMap(fruitLabel);
@@ -156,9 +148,7 @@ public class MerkleTestBase extends StateTestBase {
                 StateDefinition.inMemory(FRUIT_STATE_KEY, STRING_CODEC, STRING_CODEC));
     }
 
-    /**
-     * Sets up the "Fruit" virtual map, label, and metadata.
-     */
+    /** Sets up the "Fruit" virtual map, label, and metadata. */
     protected void setupFruitVirtualMap() {
         fruitVirtualLabel = StateUtils.computeLabel(FIRST_SERVICE, FRUIT_STATE_KEY);
         fruitVirtualMetadata = new StateMetadata<>(
@@ -168,9 +158,7 @@ public class MerkleTestBase extends StateTestBase {
         fruitVirtualMap = createVirtualMap(fruitVirtualLabel, fruitVirtualMetadata);
     }
 
-    /**
-     * Sets up the "Animal" merkle map, label, and metadata.
-     */
+    /** Sets up the "Animal" merkle map, label, and metadata. */
     protected void setupAnimalMerkleMap() {
         animalLabel = StateUtils.computeLabel(FIRST_SERVICE, ANIMAL_STATE_KEY);
         animalMerkleMap = createMerkleMap(animalLabel);
@@ -180,9 +168,7 @@ public class MerkleTestBase extends StateTestBase {
                 StateDefinition.inMemory(ANIMAL_STATE_KEY, STRING_CODEC, STRING_CODEC));
     }
 
-    /**
-     * Sets up the "Space" merkle map, label, and metadata.
-     */
+    /** Sets up the "Space" merkle map, label, and metadata. */
     protected void setupSpaceMerkleMap() {
         spaceLabel = StateUtils.computeLabel(SECOND_SERVICE, SPACE_STATE_KEY);
         spaceMerkleMap = createMerkleMap(spaceLabel);
@@ -204,9 +190,7 @@ public class MerkleTestBase extends StateTestBase {
         steamQueue = new QueueNode<>(steamMetadata);
     }
 
-    /**
-     * Sets up the {@link #registry}, ready to be used for serialization tests
-     */
+    /** Sets up the {@link #registry}, ready to be used for serialization tests */
     protected void setupConstructableRegistry() {
         // Unfortunately, we need to configure the ConstructableRegistry for serialization tests and
         // even for basic usage of the MerkleMap (it uses it internally to make copies of internal
@@ -229,9 +213,7 @@ public class MerkleTestBase extends StateTestBase {
         }
     }
 
-    /**
-     * Creates a new arbitrary merkle map with the given label.
-     */
+    /** Creates a new arbitrary merkle map with the given label. */
     protected <K extends Comparable<K>, V> MerkleMap<InMemoryKey<K>, InMemoryValue<K, V>> createMerkleMap(
             String label) {
         final var map = new MerkleMap<InMemoryKey<K>, InMemoryValue<K, V>>();
@@ -239,9 +221,7 @@ public class MerkleTestBase extends StateTestBase {
         return map;
     }
 
-    /**
-     * Creates a new arbitrary virtual map with the given label, storageDir, and metadata
-     */
+    /** Creates a new arbitrary virtual map with the given label, storageDir, and metadata */
     @SuppressWarnings("unchecked")
     protected VirtualMap<OnDiskKey<String>, OnDiskValue<String>> createVirtualMap(
             String label, StateMetadata<String, String> md) {
@@ -284,9 +264,7 @@ public class MerkleTestBase extends StateTestBase {
         return null;
     }
 
-    /**
-     * A convenience method for creating {@link SemanticVersion}.
-     */
+    /** A convenience method for creating {@link SemanticVersion}. */
     protected SemanticVersion version(int major, int minor, int patch) {
         return SemanticVersion.newBuilder()
                 .major(major)
@@ -295,9 +273,7 @@ public class MerkleTestBase extends StateTestBase {
                 .build();
     }
 
-    /**
-     * A convenience method for adding a k/v pair to a merkle map
-     */
+    /** A convenience method for adding a k/v pair to a merkle map */
     protected void add(
             MerkleMap<InMemoryKey<String>, InMemoryValue<String, String>> map,
             StateMetadata<String, String> md,
@@ -308,9 +284,7 @@ public class MerkleTestBase extends StateTestBase {
         map.put(k, new InMemoryValue<>(md, k, value));
     }
 
-    /**
-     * A convenience method for adding a k/v pair to a virtual map
-     */
+    /** A convenience method for adding a k/v pair to a virtual map */
     protected void add(
             VirtualMap<OnDiskKey<String>, OnDiskValue<String>> map,
             StateMetadata<String, String> md,
@@ -320,9 +294,7 @@ public class MerkleTestBase extends StateTestBase {
         map.put(k, new OnDiskValue<>(md, value));
     }
 
-    /**
-     * A convenience method used to serialize a merkle tree
-     */
+    /** A convenience method used to serialize a merkle tree */
     protected byte[] writeTree(@NonNull final MerkleNode tree, @NonNull final Path tempDir) throws IOException {
         final var byteOutputStream = new ByteArrayOutputStream();
         try (final var out = new MerkleDataOutputStream(byteOutputStream)) {
@@ -331,9 +303,7 @@ public class MerkleTestBase extends StateTestBase {
         return byteOutputStream.toByteArray();
     }
 
-    /**
-     * A convenience method used to deserialize a merkle tree
-     */
+    /** A convenience method used to deserialize a merkle tree */
     protected <T extends MerkleNode> T parseTree(@NonNull final byte[] state, @NonNull final Path tempDir)
             throws IOException {
         final var byteInputStream = new ByteArrayInputStream(state);

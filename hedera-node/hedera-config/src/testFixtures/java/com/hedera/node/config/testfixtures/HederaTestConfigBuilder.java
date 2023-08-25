@@ -68,7 +68,6 @@ import com.hedera.node.config.data.TraceabilityConfig;
 import com.hedera.node.config.data.UpgradeConfig;
 import com.hedera.node.config.data.UtilPrngConfig;
 import com.hedera.node.config.data.VersionConfig;
-import com.hedera.node.config.data.VirtualdatasourceConfig;
 import com.hedera.node.config.validation.EmulatesMapValidator;
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.EventConfig;
@@ -178,7 +177,6 @@ public final class HederaTestConfigBuilder {
                 .withConfigDataType(UpgradeConfig.class)
                 .withConfigDataType(UtilPrngConfig.class)
                 .withConfigDataType(VersionConfig.class)
-                .withConfigDataType(VirtualdatasourceConfig.class)
                 .withConverter(new CongestionMultipliersConverter())
                 .withConverter(new EntityScaleFactorsConverter())
                 .withConverter(new EntityTypeConverter())
