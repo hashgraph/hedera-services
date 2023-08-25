@@ -63,8 +63,7 @@ public class FileSystemDeleteHandler implements TransactionHandler {
 
         final var transactionBody = context.body().systemDeleteOrThrow();
         final var fileStore = context.createStore(ReadableFileStore.class);
-        final var transactionFileId = transactionBody.fileID();
-        requireNonNull(transactionFileId);
+        final var transactionFileId = requireNonNull(transactionBody.fileID());
         preValidate(transactionFileId, fileStore, context, true);
 
         var file = fileStore.getFileLeaf(transactionFileId);

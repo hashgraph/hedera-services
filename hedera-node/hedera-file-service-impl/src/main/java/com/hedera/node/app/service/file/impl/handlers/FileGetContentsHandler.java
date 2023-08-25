@@ -105,7 +105,6 @@ public class FileGetContentsHandler extends FileQueryBase {
      */
     private @Nullable Optional<FileContents> contentFile(
             @NonNull final FileID fileID, @NonNull final ReadableFileStore fileStore) {
-        requireNonNull(fileID);
         final var meta = fileStore.getFileMetadata(fileID);
         if (meta == null) {
             return Optional.empty();

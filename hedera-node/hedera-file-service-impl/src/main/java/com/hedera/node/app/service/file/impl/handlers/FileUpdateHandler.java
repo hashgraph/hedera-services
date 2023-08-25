@@ -80,8 +80,7 @@ public class FileUpdateHandler implements TransactionHandler {
         requireNonNull(context);
         final var transactionBody = context.body().fileUpdateOrThrow();
         final var fileStore = context.createStore(ReadableFileStore.class);
-        final var transactionFileId = transactionBody.fileID();
-        requireNonNull(transactionFileId);
+        final var transactionFileId = requireNonNull(transactionBody.fileID());
         preValidate(transactionFileId, fileStore, context, false);
 
         var file = fileStore.getFileLeaf(transactionFileId);
