@@ -389,11 +389,8 @@ public class HandleWorkflow {
     private boolean throttleExempt(@NonNull AccountID accountID, Configuration configuration) {
         final var maxThrottleExemptNum =
                 configuration.getConfigData(AccountsConfig.class).lastThrottleExempt();
-        if (accountID != null) {
-            final var accountNum = accountID.accountNum();
-            return 1L <= accountNum && accountNum <= maxThrottleExemptNum;
-        }
-        return false;
+        final var accountNum = accountID.accountNum();
+        return 1L <= accountNum && accountNum <= maxThrottleExemptNum;
     }
 
     @NonNull
