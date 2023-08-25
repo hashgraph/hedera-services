@@ -16,10 +16,6 @@
 
 package com.swirlds.common.io.utility;
 
-import com.swirlds.base.time.Time;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -46,5 +42,4 @@ public interface RecycleBin {
      * @param path the file or directory to recycle
      */
     void recycle(@NonNull Path path) throws IOException;
-
 }

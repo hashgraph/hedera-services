@@ -63,8 +63,8 @@ public class RecycleBinImpl implements RecycleBin, Startable, Stoppable {
 
     private final AutoClosableLock lock = Locks.createAutoLock();
 
-    private static final IntegerGauge.Config RECYLED_FILE_COUNT_CONFIG = new IntegerGauge.Config("platform",
-            "recycled-file-count")
+    private static final IntegerGauge.Config RECYLED_FILE_COUNT_CONFIG = new IntegerGauge.Config(
+                    "platform", "recycled-file-count")
             .withDescription("The number of files/directories in the recycle bin, non recursive.");
     private final IntegerGauge recycledFileCountMetric;
 
@@ -81,7 +81,8 @@ public class RecycleBinImpl implements RecycleBin, Startable, Stoppable {
             @NonNull final Metrics metrics,
             @NonNull final ThreadManager threadManager,
             @NonNull final Time time,
-            @NonNull final NodeId selfId) throws IOException {
+            @NonNull final NodeId selfId)
+            throws IOException {
 
         Objects.requireNonNull(selfId);
         Objects.requireNonNull(threadManager);
@@ -91,7 +92,7 @@ public class RecycleBinImpl implements RecycleBin, Startable, Stoppable {
         final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
 
         maximumFileAge = recycleBinConfig.maximumFileAge();
-        recycleBinPath = recycleBinConfig.getRecycleBinPath(stateConfig, selfId);
+        recycleBinPath = recycleBinConfig.getStorageLocation(stateConfig, selfId);
         Files.createDirectories(recycleBinPath);
         recycledFileCount = countRecycledFiles(recycleBinPath);
 
@@ -153,7 +154,8 @@ public class RecycleBinImpl implements RecycleBin, Startable, Stoppable {
             try (final Stream<Path> stream = Files.list(recycleBinPath)) {
                 stream.forEach(path -> {
                     try {
-                        final Instant lastModified = Files.getLastModifiedTime(path).toInstant();
+                        final Instant lastModified =
+                                Files.getLastModifiedTime(path).toInstant();
                         final Duration age = Duration.between(lastModified, now);
 
                         if (CompareTo.isGreaterThan(age, maximumFileAge)) {

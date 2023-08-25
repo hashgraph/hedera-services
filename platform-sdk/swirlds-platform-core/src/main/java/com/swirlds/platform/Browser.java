@@ -47,7 +47,6 @@ import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.internal.ApplicationDefinition;
-import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.io.utility.RecycleBinImpl;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.MetricsProvider;
@@ -369,6 +368,7 @@ public class Browser {
 
         final RecycleBinImpl recycleBin = new RecycleBinImpl(
                 configuration,
+                metricsProvider.createGlobalMetrics(),
                 getStaticThreadManager(),
                 Time.getCurrent(),
                 nodeId);

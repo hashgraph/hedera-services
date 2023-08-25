@@ -16,6 +16,8 @@
 
 package com.swirlds.common.io.config;
 
+import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
+
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.config.api.ConfigData;
@@ -45,7 +47,8 @@ public record RecycleBinConfig(
      * @param selfId      the ID of this node
      * @return the location where recycle bin files are stored
      */
-    public Path getRecycleBinPath(@NonNull final StateConfig stateConfig, @NonNull final NodeId selfId) {
-        return stateConfig.savedStateDirectory().resolve(recycleBinPath()).resolve(Long.toString(selfId.id()));
+    public Path getStorageLocation(@NonNull final StateConfig stateConfig, @NonNull final NodeId selfId) {
+        return getAbsolutePath(
+                stateConfig.savedStateDirectory().resolve(recycleBinPath()).resolve(Long.toString(selfId.id())));
     }
 }

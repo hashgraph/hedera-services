@@ -808,7 +808,7 @@ class PreconsensusEventFileManagerTests {
         final RecycleBinConfig recycleBinConfig =
                 platformContext.getConfiguration().getConfigData(RecycleBinConfig.class);
 
-        final Path recycleBinDirectory = recycleBinConfig.getRecycleBinPath(stateConfig, new NodeId(0));
+        final Path recycleBinDirectory = recycleBinConfig.getStorageLocation(stateConfig, new NodeId(0));
 
         final Set<Path> recycledFiles = new HashSet<>();
         try (final Stream<Path> stream = Files.walk(recycleBinDirectory)) {
@@ -874,10 +874,15 @@ class PreconsensusEventFileManagerTests {
         }
 
         final PlatformContext platformContext = buildContext();
-        final RecycleBin recycleBin = new RecycleBinImpl(platformContext.getConfiguration(), getStaticThreadManager(), Time.getCurrent(), new NodeId(0));
+        final RecycleBin recycleBin = new RecycleBinImpl(
+                platformContext.getConfiguration(),
+                new NoOpMetrics(),
+                getStaticThreadManager(),
+                Time.getCurrent(),
+                new NodeId(0));
 
-        final PreconsensusEventFileManager manager =
-                new PreconsensusEventFileManager(platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0));
+        final PreconsensusEventFileManager manager = new PreconsensusEventFileManager(
+                platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0));
 
         // Don't try to fix discontinuities, we should see all files
         assertIteratorEquality(
@@ -953,7 +958,12 @@ class PreconsensusEventFileManagerTests {
 
         final PlatformContext platformContext = buildContext();
 
-        final RecycleBin recycleBin = new RecycleBinImpl(platformContext.getConfiguration(), getStaticThreadManager(), Time.getCurrent(), new NodeId(0));
+        final RecycleBin recycleBin = new RecycleBinImpl(
+                platformContext.getConfiguration(),
+                new NoOpMetrics(),
+                getStaticThreadManager(),
+                Time.getCurrent(),
+                new NodeId(0));
 
         final PreconsensusEventFileManager manager =
                 new PreconsensusEventFileManager(platformContext, Time.getCurrent(), recycleBin, new NodeId(0));
@@ -1048,8 +1058,12 @@ class PreconsensusEventFileManagerTests {
 
         final PlatformContext platformContext = buildContext();
 
-        final RecycleBin recycleBin = new RecycleBinImpl(platformContext.getConfiguration(), getStaticThreadManager(), Time.getCurrent(), new NodeId(0));
-
+        final RecycleBin recycleBin = new RecycleBinImpl(
+                platformContext.getConfiguration(),
+                new NoOpMetrics(),
+                getStaticThreadManager(),
+                Time.getCurrent(),
+                new NodeId(0));
 
         final PreconsensusEventFileManager manager =
                 new PreconsensusEventFileManager(platformContext, Time.getCurrent(), recycleBin, new NodeId(0));
@@ -1124,7 +1138,12 @@ class PreconsensusEventFileManagerTests {
 
         final PlatformContext platformContext = buildContext();
 
-        final RecycleBin recycleBin = new RecycleBinImpl(platformContext.getConfiguration(), getStaticThreadManager(), Time.getCurrent(), new NodeId(0));
+        final RecycleBin recycleBin = new RecycleBinImpl(
+                platformContext.getConfiguration(),
+                new NoOpMetrics(),
+                getStaticThreadManager(),
+                Time.getCurrent(),
+                new NodeId(0));
 
         final PreconsensusEventFileManager manager =
                 new PreconsensusEventFileManager(platformContext, Time.getCurrent(), recycleBin, new NodeId(0));
