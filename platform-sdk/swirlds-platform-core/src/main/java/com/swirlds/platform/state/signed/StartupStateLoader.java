@@ -152,17 +152,14 @@ public final class StartupStateLoader {
         final ReservedSignedState state;
         if (emergencyStateRequired) {
             state = loadEmergencyState(
-                    platformContext, currentSoftwareVersion, savedStateFiles, emergencyRecoveryManager);
+                    platformContext,
+                    recycleBin,
+                    selfId,
+                    currentSoftwareVersion,
+                    savedStateFiles,
+                    emergencyRecoveryManager);
         } else {
-            state = loadLatestState(platformContext, currentSoftwareVersion, savedStateFiles);
-        }
-
-        final long loadedRound = state.isNull() ? -1 : state.get().getRound();
-        final boolean statesRecycled = cleanupUnusedStates(recycleBin, savedStateFiles, loadedRound);
-
-        if (statesRecycled && emergencyStateRequired) {
-            logger.warn(STARTUP.getMarker(), "Clearing preconsensus event stream for emergency recovery.");
-            PreconsensusEventFileManager.clear(platformContext, recycleBin, selfId);
+            state = loadLatestState(platformContext, recycleBin, currentSoftwareVersion, savedStateFiles);
         }
 
         return state;
@@ -211,6 +208,7 @@ public final class StartupStateLoader {
      * Load the latest state that is compatible with the emergency recovery file.
      *
      * @param platformContext          the platform context
+     * @param recycleBin               the recycle bin
      * @param currentSoftwareVersion   the current software version
      * @param savedStateFiles          the saved states to try
      * @param emergencyRecoveryManager the emergency recovery manager
@@ -219,6 +217,8 @@ public final class StartupStateLoader {
     @NonNull
     private static ReservedSignedState loadEmergencyState(
             @NonNull final PlatformContext platformContext,
+            @NonNull final RecycleBin recycleBin,
+            @NonNull final NodeId selfId,
             @NonNull final SoftwareVersion currentSoftwareVersion,
             @NonNull final List<SavedStateInfo> savedStateFiles,
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
@@ -226,13 +226,18 @@ public final class StartupStateLoader {
         final EmergencyRecoveryFile recoveryFile = emergencyRecoveryManager.getEmergencyRecoveryFile();
         logger.info(
                 STARTUP.getMarker(),
-                "Loading state in emergency recovery mode. " + "Epoch hash = {}, recovery round = {}",
+                "Loading state in emergency recovery mode. Epoch hash: {}, round: {}. ",
                 recoveryFile.hash(),
-                recoveryFile.hash());
+                recoveryFile.round());
+
+        boolean shouldClearPreconsensusStream = false;
 
         ReservedSignedState state = null;
         for (final SavedStateInfo savedStateFile : savedStateFiles) {
-            if (!emergencyRecoveryManager.isStateSuitableForStartup(savedStateFile)) {
+            boolean suitableForRecovery = processStateForRecovery(recycleBin, emergencyRecoveryManager, savedStateFile);
+
+            if (!suitableForRecovery) {
+                shouldClearPreconsensusStream = true;
                 continue;
             }
 
@@ -259,7 +264,45 @@ public final class StartupStateLoader {
             emergencyRecoveryManager.emergencyStateLoaded();
         }
 
+        if (shouldClearPreconsensusStream) {
+            logger.warn(STARTUP.getMarker(), "Clearing preconsensus event stream for emergency recovery.");
+            PreconsensusEventFileManager.clear(platformContext, recycleBin, selfId);
+        }
+
         return state == null ? createNullReservation() : state;
+    }
+
+    /**
+     * Check if a state is suitable for emergency recovery. If it is not suitable, recycle the state.
+     *
+     * @param recycleBin               the recycle bin
+     * @param emergencyRecoveryManager decides if a state is suitable for emergency recovery
+     * @param savedStateFile           the state to check
+     * @return true if the state is suitable for emergency recovery, false otherwise
+     */
+    private static boolean processStateForRecovery(
+            @NonNull final RecycleBin recycleBin,
+            @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
+            @NonNull final SavedStateInfo savedStateFile) {
+
+        final boolean isStateSuitable = emergencyRecoveryManager.isStateSuitableForStartup(savedStateFile);
+        if (isStateSuitable) {
+            logger.warn(
+                    STARTUP.getMarker(),
+                    "State file {} does not meet the criteria for emergency recovery. "
+                            + "State hash: {}, state round: {}",
+                    savedStateFile.stateFile(),
+                    savedStateFile.metadata().hash(),
+                    savedStateFile.metadata().round());
+
+            try {
+                recycleBin.recycle(savedStateFile.getDirectory());
+            } catch (final IOException e) {
+                throw new UncheckedIOException("unable to recycle state file", e);
+            }
+        }
+
+        return isStateSuitable;
     }
 
     /**
@@ -267,12 +310,14 @@ public final class StartupStateLoader {
      * state is found or there are no more states to try.
      *
      * @param platformContext        the platform context
+     * @param recycleBin             the recycle bin
      * @param currentSoftwareVersion the current software version
      * @param savedStateFiles        the saved states to try
      * @return the loaded state
      */
     private static ReservedSignedState loadLatestState(
             @NonNull final PlatformContext platformContext,
+            @NonNull final RecycleBin recycleBin,
             @NonNull final SoftwareVersion currentSoftwareVersion,
             @NonNull final List<SavedStateInfo> savedStateFiles) {
 
@@ -287,6 +332,12 @@ public final class StartupStateLoader {
                         "Failed to load saved state from file: {}",
                         savedStateFile.stateFile(),
                         e);
+
+                try {
+                    recycleBin.recycle(savedStateFile.getDirectory());
+                } catch (final IOException ee) {
+                    throw new UncheckedIOException("unable to recycle state file", ee);
+                }
             }
         }
 
@@ -346,40 +397,5 @@ public final class StartupStateLoader {
         }
 
         return deserializedSignedState.reservedSignedState();
-    }
-
-    /**
-     * When we load a state from disk, it is illegal to have states with a higher round number on disk. Clean up those
-     * states.
-     *
-     * @param savedStateFiles the states that were found on disk
-     * @param loadedRound     the round number of the state that was loaded, or -1 if no state was loaded
-     * @return true if states were recycled, false if no states were recycled
-     */
-    private static boolean cleanupUnusedStates(
-            @NonNull final RecycleBin recycleBin,
-            @NonNull final List<SavedStateInfo> savedStateFiles,
-            final long loadedRound) {
-
-        boolean statesRecycled = false;
-        for (final SavedStateInfo savedStateFile : savedStateFiles) {
-            if (savedStateFile.metadata().round() > loadedRound) {
-                logger.warn(
-                        STARTUP.getMarker(),
-                        "Recycling state file {} since it is from round {} "
-                                + "which is later than the round of the state being loaded ({}).",
-                        savedStateFile.stateFile(),
-                        savedStateFile.metadata().round(),
-                        loadedRound);
-
-                try {
-                    statesRecycled = true;
-                    recycleBin.recycle(savedStateFile.getDirectory());
-                } catch (final IOException e) {
-                    throw new UncheckedIOException("unable to recycle state file", e);
-                }
-            }
-        }
-        return statesRecycled;
     }
 }
