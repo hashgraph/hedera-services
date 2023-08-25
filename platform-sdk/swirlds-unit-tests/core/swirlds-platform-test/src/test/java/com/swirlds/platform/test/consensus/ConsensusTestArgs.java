@@ -174,6 +174,8 @@ public class ConsensusTestArgs {
     }
 
     public static Stream<Arguments> nodeRemoveTestParams() {
-        return Stream.of(Arguments.of(new ConsensusTestParams(4, RANDOM, RANDOM_WEIGHT_DESC)));
+        return Stream.of(Arguments.of(new ConsensusTestParams(4, RANDOM, RANDOM_WEIGHT_DESC,
+                // with this seed a round gets decided with no judges
+                7085319341771708856L)));
     }
 }

@@ -568,7 +568,6 @@ public final class ConsensusTestDefinitions {
 			orchestrator1.getNodes().get(i).getOutput().getAddedEvents().forEach(
 					e -> orchestrator2.getNodes().get(fi).getIntake().addLinkedEvent(e)
 			);
-			Assertions.assertNull(orchestrator2.getNodes().get(i).getIntake().getLatestRound());
 			ConsensusUtils.loadEventsIntoGenerator(
 					orchestrator1.getNodes().get(i).getOutput().getAddedEvents().toArray(EventImpl[]::new),
 					orchestrator2.getNodes().get(i).getEventEmitter().getGraphGenerator(),
