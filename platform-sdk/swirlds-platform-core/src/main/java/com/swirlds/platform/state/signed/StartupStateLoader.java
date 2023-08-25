@@ -269,6 +269,9 @@ public final class StartupStateLoader {
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
             @NonNull final SavedStateInfo savedStateFile) {
 
+        // TODO remove this
+        logger.info(STARTUP.getMarker(), "potential state metadata: {}", savedStateFile.metadata());
+
         final boolean isStateSuitable = emergencyRecoveryManager.isStateSuitableForStartup(savedStateFile);
 
         if (isStateSuitable) {
