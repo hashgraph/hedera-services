@@ -291,8 +291,11 @@ public class HandleHederaOperations implements HederaOperations {
 
     private void dispatchAndMarkCreation(final long number, @NonNull final CryptoCreateTransactionBody body) {
         // Create the contract account by dispatching a synthetic HAPI transaction
+        // TODO - implement proper signature VerificationAssistant
         final var recordBuilder = context.dispatchChildTransaction(
-                TransactionBody.newBuilder().cryptoCreateAccount(body).build(), CryptoCreateRecordBuilder.class);
+                TransactionBody.newBuilder().cryptoCreateAccount(body).build(),
+                CryptoCreateRecordBuilder.class,
+                key -> true);
         // TODO - switch OK to SUCCESS once some status-setting responsibilities are clarified
         if (recordBuilder.status() != OK && recordBuilder.status() != SUCCESS) {
             throw new AssertionError("Not implemented");
