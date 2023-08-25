@@ -128,30 +128,47 @@ public class SystemFileUpdateFacility {
                 logger.error("Update of HAPI permissions not implemented");
             } else if (fileNum == config.throttleDefinitions()) {
                 throttleManager.update(getFileContent(state, fileID));
-                checkForMissingExpectedOperations(recordBuilder);
+                throttleValidations(recordBuilder);
             } else if (fileNum == config.upgradeFileNumber()) {
                 logger.error("Update of file number not implemented");
             }
         } catch (final RuntimeException e) {
             logger.warn(
-                    "Exception while calling updater for file {}. " + "If the file is incomplete, this is expected.",
-                    fileID,
-                    e);
+                "Exception while calling updater for file {}. " + "If the file is incomplete, this is expected.",
+                fileID,
+                e);
         }
     }
 
-    private void checkForMissingExpectedOperations(SingleTransactionRecordBuilderImpl recordBuilder) {
+    private void throttleValidations(SingleTransactionRecordBuilderImpl recordBuilder) {
         final var defs = toPojo.apply(throttleManager.throttleDefinitionsProto());
+        checkForMissingExpectedOperations(defs, recordBuilder);
+        checkForZeroOpsPerSec(defs, recordBuilder);
+    }
 
+    private void checkForMissingExpectedOperations(
+        com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions defs,
+        SingleTransactionRecordBuilderImpl recordBuilder) {
         Set<HederaFunctionality> customizedOps = new HashSet<>();
         for (var bucket : defs.getBuckets()) {
             for (var group : bucket.getThrottleGroups()) {
                 customizedOps.addAll(group.getOperations());
             }
         }
-
         if (!expectedOps.equals(EnumSet.copyOf(customizedOps))) {
             recordBuilder.status(ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION);
+        }
+    }
+
+    private void checkForZeroOpsPerSec(
+        com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions defs,
+        SingleTransactionRecordBuilderImpl recordBuilder) {
+        for (var bucket : defs.getBuckets()) {
+            for (var group : bucket.getThrottleGroups()) {
+                if (group.impliedMilliOpsPerSec() == 0) {
+                    recordBuilder.status(ResponseCodeEnum.THROTTLE_GROUP_HAS_ZERO_OPS_PER_SEC);
+                }
+            }
         }
     }
 
