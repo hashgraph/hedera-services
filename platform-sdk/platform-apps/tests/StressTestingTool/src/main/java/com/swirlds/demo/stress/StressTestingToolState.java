@@ -57,9 +57,7 @@ public class StressTestingToolState extends PartialMerkleLeaf implements SwirldS
     public static Supplier<StressTestingToolConfig> configSupplier;
 
     @SuppressWarnings("unused")
-    public StressTestingToolState() {
-
-    }
+    public StressTestingToolState() {}
 
     private StressTestingToolState(@NonNull final StressTestingToolState sourceState) {
         super(sourceState);
