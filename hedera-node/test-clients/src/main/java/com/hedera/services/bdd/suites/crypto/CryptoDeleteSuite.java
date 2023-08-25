@@ -112,7 +112,7 @@ public class CryptoDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec canQueryForRecordsWithDeletedPayers() {
+    private HapiSpec canQueryForRecordsWithDeletedPayers() {
         final var stillQueryableTxn = "stillQueryableTxn";
         return defaultHapiSpec("CanQueryForRecordsWithDeletedPayers")
                 .given(cryptoCreate(ACCOUNT_TO_BE_DELETED))
