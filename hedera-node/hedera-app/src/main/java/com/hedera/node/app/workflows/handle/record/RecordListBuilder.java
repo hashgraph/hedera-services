@@ -186,7 +186,7 @@ public class RecordListBuilder {
     public void revertChildRecordBuilders(@NonNull final SingleTransactionRecordBuilderImpl recordBuilder) {
         requireNonNull(recordBuilder, "recordBuilder must not be null");
         if (childRecordBuilders == null) {
-            return;
+            childRecordBuilders = new ArrayList<>();
         }
         final int index;
         if (recordBuilder == userTxnRecordBuilder) {
