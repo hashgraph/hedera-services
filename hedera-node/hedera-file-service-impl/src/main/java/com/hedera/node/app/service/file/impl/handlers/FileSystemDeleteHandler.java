@@ -66,7 +66,7 @@ public class FileSystemDeleteHandler implements TransactionHandler {
         preValidate(transactionBody.fileID(), fileStore, context, true);
 
         var file = fileStore.getFileLeaf(transactionBody.fileID());
-        validateAndAddRequiredKeys(file.orElse(null), null, context);
+        validateAndAddRequiredKeys(file, null, context);
     }
 
     @Override

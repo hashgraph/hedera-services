@@ -25,7 +25,9 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.FileID;
+import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.config.ConfigProviderImpl;
+import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.info.CurrentPlatformStatusImpl;
 import com.hedera.node.app.info.SelfNodeInfoImpl;
@@ -52,6 +54,7 @@ import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
+import com.hedera.node.app.throttle.ThrottleManager;
 import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.handle.SystemFileUpdateFacility;
@@ -143,6 +146,10 @@ public final class Hedera implements SwirldMain {
     private Platform platform;
     /** The configuration for this node */
     private ConfigProviderImpl configProvider;
+    /** The throttle manager for parsing the throttle definition file */
+    private ThrottleManager throttleManager;
+    /** The exchange rate manager */
+    private ExchangeRateManager exchangeRateManager;
     /**
      * Dependencies managed by Dagger. Set during state initialization. The mono-service requires this object, but none
      * of the rest of the system (and particularly the modular implementation) uses it directly. Rather, it is created
@@ -588,6 +595,12 @@ public final class Hedera implements SwirldMain {
         this.configProvider = new ConfigProviderImpl(true);
         logConfiguration();
 
+        logger.info("Initializing ThrottleManager");
+        this.throttleManager = new ThrottleManager();
+
+        logger.info("Initializing ExchangeRateManager");
+        exchangeRateManager = new ExchangeRateManager();
+
         // Create all the nodes in the merkle tree for all the services
         onMigrate(state, null);
 
@@ -596,6 +609,7 @@ public final class Hedera implements SwirldMain {
 
         initializeFeeManager(state);
         initializeExchangeRateManager(state);
+        initializeThrottleManager(state);
 
         // Store the version in state
         // TODO Who is responsible for saving this in the tree? I assumed it went into dual state... not sensible!
@@ -797,42 +811,49 @@ public final class Hedera implements SwirldMain {
 
     private void initializeFeeManager(@NonNull final HederaState state) {
         logger.info("Initializing fee schedules");
-        final var readableFileStore = new ReadableStoreFactory(state).getStore(ReadableFileStore.class);
-        final var hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
         final var filesConfig = configProvider.getConfiguration().getConfigData(FilesConfig.class);
         final var fileNum = filesConfig.feeSchedules();
-        final var fileId = FileID.newBuilder()
-                .fileNum(fileNum)
-                .shardNum(hederaConfig.shard())
-                .realmNum(hederaConfig.realm())
-                .build();
-
-        final var fileOpt = readableFileStore.getFileLeaf(fileId);
-        fileOpt.ifPresent(file -> {
+        final File file = getFileFromStorage(state, fileNum);
+        if (file != null) {
             final var fileData = file.contents();
             daggerApp.feeManager().update(fileData);
-        });
+        }
         logger.info("Fee schedule initialized");
     }
 
     private void initializeExchangeRateManager(@NonNull final HederaState state) {
         logger.info("Initializing exchange rates");
-        final var readableFileStore = new ReadableStoreFactory(state).getStore(ReadableFileStore.class);
-        final var hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
         final var filesConfig = configProvider.getConfiguration().getConfigData(FilesConfig.class);
         final var fileNum = filesConfig.exchangeRates();
+        final var file = getFileFromStorage(state, fileNum);
+        if (file != null) {
+            final var fileData = file.contents();
+            daggerApp.exchangeRateManager().update(fileData);
+        }
+        logger.info("Exchange rates initialized");
+    }
+
+    private void initializeThrottleManager(@NonNull final HederaState state) {
+        logger.info("Initializing throttles");
+        final var filesConfig = configProvider.getConfiguration().getConfigData(FilesConfig.class);
+        final var fileNum = filesConfig.throttleDefinitions();
+        final var file = getFileFromStorage(state, fileNum);
+        if (file != null) {
+            final var fileData = file.contents();
+            daggerApp.throttleManager().update(fileData);
+        }
+        logger.info("Throttles initialized");
+    }
+
+    private File getFileFromStorage(HederaState state, long fileNum) {
+        final var readableFileStore = new ReadableStoreFactory(state).getStore(ReadableFileStore.class);
+        final var hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
         final var fileId = FileID.newBuilder()
                 .fileNum(fileNum)
                 .shardNum(hederaConfig.shard())
                 .realmNum(hederaConfig.realm())
                 .build();
-
-        final var fileOpt = readableFileStore.getFileLeaf(fileId);
-        fileOpt.ifPresent(file -> {
-            final var fileData = file.contents();
-            daggerApp.exchangeRateManager().update(fileData);
-        });
-        logger.info("Exchange rates initialized");
+        return readableFileStore.getFileLeaf(fileId);
     }
 
     /*==================================================================================================================
@@ -927,7 +948,10 @@ public final class Hedera implements SwirldMain {
             daggerApp = com.hedera.node.app.DaggerHederaInjectionComponent.builder()
                     .initTrigger(trigger)
                     .configuration(configProvider)
-                    .systemFileUpdateFacility(new SystemFileUpdateFacility(configProvider))
+                    .throttleManager(throttleManager)
+                    .exchangeRateManager(exchangeRateManager)
+                    .systemFileUpdateFacility(
+                            new SystemFileUpdateFacility(configProvider, throttleManager, exchangeRateManager))
                     .self(SelfNodeInfoImpl.of(nodeAddress, version))
                     .initialHash(initialHash)
                     .platform(platform)
