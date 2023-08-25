@@ -41,7 +41,9 @@ import javax.inject.Inject;
 public class QuerySystemContractOperations implements SystemContractOperations {
 
     @Inject
-    public QuerySystemContractOperations() {}
+    public QuerySystemContractOperations() {
+        // Dagger
+    }
 
     /**
      * {@inheritDoc}
