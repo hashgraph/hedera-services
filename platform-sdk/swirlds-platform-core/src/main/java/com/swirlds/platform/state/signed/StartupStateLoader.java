@@ -286,7 +286,7 @@ public final class StartupStateLoader {
             @NonNull final SavedStateInfo savedStateFile) {
 
         final boolean isStateSuitable = emergencyRecoveryManager.isStateSuitableForStartup(savedStateFile);
-        if (isStateSuitable) {
+        if (!isStateSuitable) {
             logger.warn(
                     STARTUP.getMarker(),
                     "State file {} does not meet the criteria for emergency recovery. "
