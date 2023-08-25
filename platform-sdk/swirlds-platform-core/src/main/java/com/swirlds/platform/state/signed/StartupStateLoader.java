@@ -235,10 +235,11 @@ public final class StartupStateLoader {
 
         ReservedSignedState state = null;
         for (final SavedStateInfo savedStateFile : savedStateFiles) {
-            boolean suitableForRecovery = processStateForRecovery(recycleBin, emergencyRecoveryManager, savedStateFile);
+            boolean suitableForRecovery = isSuitableInitialRecoveryState(emergencyRecoveryManager, savedStateFile);
 
             if (!suitableForRecovery) {
                 shouldClearPreconsensusStream = true;
+                recycleState(recycleBin, savedStateFile);
                 continue;
             }
 
@@ -247,14 +248,67 @@ public final class StartupStateLoader {
                 break;
             }
         }
+        ;
 
-        // TODO should this be collapsed into a helper function?
+        if (shouldClearPreconsensusStream) {
+            logger.warn(STARTUP.getMarker(), "Clearing preconsensus event stream for emergency recovery.");
+            PreconsensusEventFileManager.clear(platformContext, recycleBin, selfId);
+        }
+
+        return processRecoveryState(emergencyRecoveryManager, state);
+    }
+
+    /**
+     * Check if a state is a suitable initial state for emergency recovery.
+     *
+     * @param emergencyRecoveryManager decides if a state is suitable for emergency recovery
+     * @param savedStateFile           the state to check
+     * @return true if the state is suitable to be an initial state for emergency recovery, false otherwise
+     */
+    private static boolean isSuitableInitialRecoveryState(
+            @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
+            @NonNull final SavedStateInfo savedStateFile) {
+
+        final boolean isStateSuitable = emergencyRecoveryManager.isStateSuitableForStartup(savedStateFile);
+
+        if (isStateSuitable) {
+            logger.info(
+                    STARTUP.getMarker(),
+                    "State file {} meets the criteria to be an initial state during emergency recovery. "
+                            + "State hash: {}, state round: {}",
+                    savedStateFile.stateFile(),
+                    savedStateFile.metadata().hash(),
+                    savedStateFile.metadata().round());
+        } else {
+            logger.warn(
+                    STARTUP.getMarker(),
+                    "State file {} does not meet the criteria to be an initial state during emergency recovery. "
+                            + "State hash: {}, state round: {}",
+                    savedStateFile.stateFile(),
+                    savedStateFile.metadata().hash(),
+                    savedStateFile.metadata().round());
+        }
+
+        return isStateSuitable;
+    }
+
+    /**
+     * Once we have decided which state will be our initial state, do some additional logging and processing.
+     *
+     * @param emergencyRecoveryManager the emergency recovery manager
+     * @param state                    the state that will be our initial state (null if we are starting from genesis)
+     * @return the state that will be our initial state (converts null genesis state to a non-null wrapper)
+     */
+    @NonNull
+    private static ReservedSignedState processRecoveryState(
+            @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
+            @Nullable ReservedSignedState state) {
         if (state == null) {
             logger.warn(
                     STARTUP.getMarker(),
                     "No state on disk met the criteria for emergency recovery, starting from genesis. "
                             + "This node will need to receive a state through an emergency reconnect.");
-            state = createNullReservation();
+            return createNullReservation();
         } else {
             final boolean inHashEpoch = emergencyRecoveryManager.isInHashEpoch(
                     state.get().getState().getHash(),
@@ -273,55 +327,8 @@ public final class StartupStateLoader {
                         "Loaded state is not in the correct hash epoch, "
                                 + "this node will need to receive a state through an emergency reconnect.");
             }
+            return state;
         }
-
-        if (shouldClearPreconsensusStream) {
-            logger.warn(STARTUP.getMarker(), "Clearing preconsensus event stream for emergency recovery.");
-            PreconsensusEventFileManager.clear(platformContext, recycleBin, selfId);
-        }
-
-        return state;
-    }
-
-    /**
-     * Check if a state is suitable for emergency recovery. If it is not suitable, recycle the state.
-     *
-     * @param recycleBin               the recycle bin
-     * @param emergencyRecoveryManager decides if a state is suitable for emergency recovery
-     * @param savedStateFile           the state to check
-     * @return true if the state is suitable for emergency recovery, false otherwise
-     */
-    private static boolean processStateForRecovery(
-            @NonNull final RecycleBin recycleBin,
-            @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
-            @NonNull final SavedStateInfo savedStateFile) {
-
-        final boolean isStateSuitable = emergencyRecoveryManager.isStateSuitableForStartup(savedStateFile);
-
-        if (isStateSuitable) {
-            logger.info(
-                    STARTUP.getMarker(),
-                    "State file {} meets the criteria for emergency recovery. " + "State hash: {}, state round: {}",
-                    savedStateFile.stateFile(),
-                    savedStateFile.metadata().hash(),
-                    savedStateFile.metadata().round());
-        } else {
-            logger.warn(
-                    STARTUP.getMarker(),
-                    "State file {} does not meet the criteria for emergency recovery. "
-                            + "State hash: {}, state round: {}",
-                    savedStateFile.stateFile(),
-                    savedStateFile.metadata().hash(),
-                    savedStateFile.metadata().round());
-
-            try {
-                recycleBin.recycle(savedStateFile.getDirectory());
-            } catch (final IOException e) {
-                throw new UncheckedIOException("unable to recycle state file", e);
-            }
-        }
-
-        return isStateSuitable;
     }
 
     /**
@@ -377,12 +384,8 @@ public final class StartupStateLoader {
             deserializedSignedState = readStateFile(platformContext, savedStateFile.stateFile());
         } catch (final IOException e) {
             logger.error(EXCEPTION.getMarker(), "unable to load state file {}", savedStateFile.stateFile(), e);
-            try {
-                // TODO setting if we should crash or recycle
-                recycleBin.recycle(savedStateFile.getDirectory());
-            } catch (final IOException ee) {
-                throw new UncheckedIOException("unable to recycle state", ee);
-            }
+            // TODO setting if we should crash or recycle
+            recycleState(recycleBin, savedStateFile);
             return null;
         }
 
@@ -421,5 +424,20 @@ public final class StartupStateLoader {
         }
 
         return deserializedSignedState.reservedSignedState();
+    }
+
+    /**
+     * Recycle a state.
+     *
+     * @param recycleBin the recycle bin
+     * @param stateInfo  the state to recycle
+     */
+    private static void recycleState(@NonNull final RecycleBin recycleBin, @NonNull final SavedStateInfo stateInfo) {
+        logger.warn(STARTUP.getMarker(), "Moving state {} to the recycle bin.", stateInfo.stateFile());
+        try {
+            recycleBin.recycle(stateInfo.getDirectory());
+        } catch (final IOException ee) {
+            throw new UncheckedIOException("unable to recycle state", ee);
+        }
     }
 }
