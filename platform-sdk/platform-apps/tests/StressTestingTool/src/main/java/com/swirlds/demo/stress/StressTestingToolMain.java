@@ -234,7 +234,8 @@ public class StressTestingToolMain implements SwirldMain {
 
     @Override
     public SwirldState newState() {
-        return new StressTestingToolState(configHolder::get);
+        StressTestingToolState.configSupplier = configHolder::get;
+        return new StressTestingToolState();
     }
 
     /**

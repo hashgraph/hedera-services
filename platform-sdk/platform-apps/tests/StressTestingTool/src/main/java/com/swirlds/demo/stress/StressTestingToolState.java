@@ -54,21 +54,16 @@ public class StressTestingToolState extends PartialMerkleLeaf implements SwirldS
     private long runningSum = 0;
 
     /** supplies the app config */
-    private final Supplier<StressTestingToolConfig> configSupplier;
+    public static Supplier<StressTestingToolConfig> configSupplier;
 
     @SuppressWarnings("unused")
     public StressTestingToolState() {
-        this(() -> null);
-    }
 
-    public StressTestingToolState(@NonNull final Supplier<StressTestingToolConfig> configSupplier) {
-        this.configSupplier = configSupplier;
     }
 
     private StressTestingToolState(@NonNull final StressTestingToolState sourceState) {
         super(sourceState);
         runningSum = sourceState.runningSum;
-        configSupplier = sourceState.configSupplier;
         setImmutable(false);
         sourceState.setImmutable(true);
     }
@@ -104,7 +99,9 @@ public class StressTestingToolState extends PartialMerkleLeaf implements SwirldS
     private void handleTransaction(final ConsensusTransaction trans) {
         runningSum += ByteUtils.byteArrayToLong(trans.getContents(), 0);
 
-        busyWait(configSupplier.get().handleTime());
+        if (configSupplier.get() != null) {
+            busyWait(configSupplier.get().handleTime());
+        }
     }
 
     @SuppressWarnings("all")
