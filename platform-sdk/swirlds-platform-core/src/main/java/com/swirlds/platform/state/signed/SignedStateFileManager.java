@@ -218,6 +218,8 @@ public class SignedStateFileManager implements Startable {
 
     /**
      * Method to be called when a state has been successfully written to disk.
+     * <p>
+     * This method shouldn't be called if the state was written out of band.
      *
      * @param reservedState the state that was written to disk
      * @param directory     the directory where the state was written
@@ -234,10 +236,14 @@ public class SignedStateFileManager implements Startable {
         metrics.getWriteStateToDiskTimeMetric().update(TimeUnit.NANOSECONDS.toMillis(time.nanoTime() - start));
         statusActionSubmitter.submitStatusAction(new StateWrittenToDiskAction(round));
         stateToDiskAttemptConsumer.stateToDiskAttempt(reservedState, directory, true);
+
+        reservedState.stateSavedToDisk();
     }
 
     /**
      * Method to be called when a state is being written to disk in-band, but it lacks signatures.
+     * <p>
+     * This method shouldn't be called if the state was written out of band.
      *
      * @param reservedState the state being written to disk
      */
@@ -280,35 +286,29 @@ public class SignedStateFileManager implements Startable {
 
         try (reservedSignedState) {
             try {
-                final boolean writeStateToDisk;
                 if (outOfBand) {
                     // states requested to be written out of band are always written to disk
-                    writeStateToDisk = true;
+                    SignedStateFileWriter.writeSignedStateToDisk(
+                            selfId, directory, reservedSignedState.get(), reason, configuration);
+
+                    success = true;
                 } else {
                     if (reservedSignedState.get().hasStateBeenSavedToDisk()) {
                         logger.info(
                                 STATE_TO_DISK.getMarker(),
                                 "Not saving signed state for round {} to disk because it has already been saved.",
                                 reservedSignedState.get().getRound());
-
-                        writeStateToDisk = false;
                     } else {
-                        writeStateToDisk = true;
-
-                        reservedSignedState.get().stateSavedToDisk();
-
                         if (stateLacksSignatures) {
                             stateLacksSignatures(reservedSignedState.get());
                         }
+
+                        SignedStateFileWriter.writeSignedStateToDisk(
+                                selfId, directory, reservedSignedState.get(), reason, configuration);
+                        stateWrittenToDisk(reservedSignedState.get(), directory, start);
+
+                        success = true;
                     }
-                }
-
-                if (writeStateToDisk) {
-                    SignedStateFileWriter.writeSignedStateToDisk(
-                            selfId, directory, reservedSignedState.get(), reason, configuration);
-                    stateWrittenToDisk(reservedSignedState.get(), directory, start);
-
-                    success = true;
                 }
             } catch (final Throwable e) {
                 stateToDiskAttemptConsumer.stateToDiskAttempt(reservedSignedState.get(), directory, false);
