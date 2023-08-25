@@ -195,17 +195,11 @@ public class HandleWorkflow {
             @NonNull final ConsensusEvent platformEvent,
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction platformTxn) {
-
         // Get the consensus timestamp
         final Instant consensusNow = platformTxn.getConsensusTimestamp();
 
         // handle user transaction
         final var txBody = handleUserTransaction(consensusNow, state, platformEvent, creator, platformTxn);
-
-        // Notify responsible facility if system-file was uploaded
-        if (txBody != null) {
-            systemFileUpdateFacility.handleTxBody(state, txBody);
-        }
 
         // TODO: handle long scheduled transactions
 
@@ -337,6 +331,11 @@ public class HandleWorkflow {
 
         // Commit all state changes
         stack.commitFullStack();
+
+        // Notify responsible facility if system-file was uploaded
+        if (txBody != null) {
+            systemFileUpdateFacility.handleTxBody(state, txBody, recordBuilder);
+        }
 
         // store all records at once
         final var recordListResult = recordListBuilder.build();

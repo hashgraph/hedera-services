@@ -21,17 +21,26 @@ import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.base.FileID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
+import com.hedera.node.app.hapi.utils.sysfiles.validation.ExpectedCustomThrottles;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.ThrottleManager;
+import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -44,6 +53,10 @@ import org.apache.logging.log4j.Logger;
 public class SystemFileUpdateFacility {
 
     private static final Logger logger = LogManager.getLogger(SystemFileUpdateFacility.class);
+    private static final Set<HederaFunctionality> expectedOps = ExpectedCustomThrottles.ACTIVE_OPS;
+    private static final Function<
+                    ThrottleDefinitions, com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions>
+            toPojo = com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions::fromProto;
 
     private final ConfigProviderImpl configProvider;
     private final ThrottleManager throttleManager;
@@ -70,9 +83,14 @@ public class SystemFileUpdateFacility {
      * @param state the current state (the updated file content needs to be committed to the state)
      * @param txBody the transaction body
      */
-    public void handleTxBody(@NonNull final HederaState state, @NonNull final TransactionBody txBody) {
+    public void handleTxBody(
+            @NonNull final HederaState state,
+            @NonNull final TransactionBody txBody,
+            // TODO: export
+            @NonNull SingleTransactionRecordBuilderImpl recordBuilder) {
         requireNonNull(state, "state must not be null");
         requireNonNull(txBody, "txBody must not be null");
+        requireNonNull(recordBuilder, "recordBuilder must not be null");
 
         // Try to extract the file ID from the transaction body, if it is FileUpdate or FileAppend.
         final FileID fileID;
@@ -110,6 +128,7 @@ public class SystemFileUpdateFacility {
                 logger.error("Update of HAPI permissions not implemented");
             } else if (fileNum == config.throttleDefinitions()) {
                 throttleManager.update(getFileContent(state, fileID));
+                checkForMissingExpectedOperations(recordBuilder);
             } else if (fileNum == config.upgradeFileNumber()) {
                 logger.error("Update of file number not implemented");
             }
@@ -118,6 +137,21 @@ public class SystemFileUpdateFacility {
                     "Exception while calling updater for file {}. " + "If the file is incomplete, this is expected.",
                     fileID,
                     e);
+        }
+    }
+
+    private void checkForMissingExpectedOperations(SingleTransactionRecordBuilderImpl recordBuilder) {
+        final var defs = toPojo.apply(throttleManager.throttleDefinitionsProto());
+
+        Set<HederaFunctionality> customizedOps = new HashSet<>();
+        for (var bucket : defs.getBuckets()) {
+            for (var group : bucket.getThrottleGroups()) {
+                customizedOps.addAll(group.getOperations());
+            }
+        }
+
+        if (!expectedOps.equals(EnumSet.copyOf(customizedOps))) {
+            recordBuilder.status(ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION);
         }
     }
 
