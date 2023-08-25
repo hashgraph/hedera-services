@@ -156,7 +156,7 @@ public class BaseTokenHandler {
         copyToken.totalSupply(newTotalSupply);
         copyTreasuryRel.balance(newTreasuryBalance);
 
-        // also need to update this
+        // We also need to update the Titles count on the copy
         copyTreasuryAccount.numberTreasuryTitles(treasuryAccount.numberTreasuryTitles() + 1);
 
         // put the changed token, treasury account and treasury relation
