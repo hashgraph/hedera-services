@@ -64,7 +64,7 @@ public final class PTTRandom {
      * @return A random {@code int} from the interval [0,upper)
      */
     public int nextInt(final int upper) {
-        return random.nextInt(0, upper - 1);
+        return random.nextInt(0, upper);
     }
 
     /**
@@ -89,10 +89,10 @@ public final class PTTRandom {
      * @return A random {@code long} from the interval [lower,upper)
      */
     public long nextLong(final long lower, final long upper) {
-        if (lower == upper || lower == upper - 1) {
+        if (lower == upper) {
             return lower;
         }
-        return random.nextLong(lower, upper - 1);
+        return random.nextLong(lower, upper);
     }
 
     /**
@@ -114,9 +114,9 @@ public final class PTTRandom {
      * @return A random {@code int} value from the interval [lower, upper)
      */
     public int nextInt(final int lower, final int upper) {
-        if (lower == upper - 1) {
+        if (lower == upper) {
             return lower;
         }
-        return random.nextInt(lower, upper - 1);
+        return random.nextInt(lower, upper);
     }
 }
