@@ -236,7 +236,8 @@ class HandleHederaOperationsTest {
 
         subject.createContract(666L, NON_SYSTEM_ACCOUNT_ID.accountNumOrThrow(), CANONICAL_ALIAS);
 
-        verify(context).dispatchChildTransaction(eq(synthTxn), eq(CryptoCreateRecordBuilder.class), any(Predicate.class));
+        verify(context)
+                .dispatchChildTransaction(eq(synthTxn), eq(CryptoCreateRecordBuilder.class), any(Predicate.class));
         verify(tokenServiceApi)
                 .markAsContract(AccountID.newBuilder().accountNum(666L).build());
     }
@@ -259,7 +260,8 @@ class HandleHederaOperationsTest {
 
         subject.createContract(666L, someBody, CANONICAL_ALIAS);
 
-        verify(context).dispatchChildTransaction(eq(synthTxn), eq(CryptoCreateRecordBuilder.class), any(Predicate.class));
+        verify(context)
+                .dispatchChildTransaction(eq(synthTxn), eq(CryptoCreateRecordBuilder.class), any(Predicate.class));
         verify(tokenServiceApi)
                 .markAsContract(AccountID.newBuilder().accountNum(666L).build());
     }

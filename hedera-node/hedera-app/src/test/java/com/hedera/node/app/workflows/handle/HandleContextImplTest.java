@@ -763,27 +763,29 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             final var context = createContext(txBody, TransactionCategory.USER);
 
             // then
-            assertThatThrownBy(() -> context.dispatchPrecedingTransaction(null, SingleTransactionRecordBuilder.class, VERIFIER_CALLBACK))
+            assertThatThrownBy(() -> context.dispatchPrecedingTransaction(
+                            null, SingleTransactionRecordBuilder.class, VERIFIER_CALLBACK))
                     .isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() -> context.dispatchPrecedingTransaction(txBody, null, VERIFIER_CALLBACK))
                     .isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() -> context.dispatchPrecedingTransaction(txBody, SingleTransactionRecordBuilder.class, null))
+            assertThatThrownBy(() ->
+                            context.dispatchPrecedingTransaction(txBody, SingleTransactionRecordBuilder.class, null))
                     .isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() -> context.dispatchChildTransaction(null, SingleTransactionRecordBuilder.class,
-                    VERIFIER_CALLBACK))
+            assertThatThrownBy(() -> context.dispatchChildTransaction(
+                            null, SingleTransactionRecordBuilder.class, VERIFIER_CALLBACK))
                     .isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() -> context.dispatchChildTransaction(txBody, null, VERIFIER_CALLBACK))
                     .isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() -> context.dispatchChildTransaction(txBody, SingleTransactionRecordBuilder.class, (Predicate<Key>) null))
+            assertThatThrownBy(() -> context.dispatchChildTransaction(
+                            txBody, SingleTransactionRecordBuilder.class, (Predicate<Key>) null))
                     .isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(
-                    () -> context.dispatchRemovableChildTransaction(null, SingleTransactionRecordBuilder.class,
-                            VERIFIER_CALLBACK))
+            assertThatThrownBy(() -> context.dispatchRemovableChildTransaction(
+                            null, SingleTransactionRecordBuilder.class, VERIFIER_CALLBACK))
                     .isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() -> context.dispatchRemovableChildTransaction(txBody, null, VERIFIER_CALLBACK))
                     .isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(
-                    () -> context.dispatchRemovableChildTransaction(txBody, SingleTransactionRecordBuilder.class, (Predicate<Key>) null))
+            assertThatThrownBy(() -> context.dispatchRemovableChildTransaction(
+                            txBody, SingleTransactionRecordBuilder.class, (Predicate<Key>) null))
                     .isInstanceOf(NullPointerException.class);
         }
 

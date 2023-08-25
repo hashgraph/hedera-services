@@ -69,8 +69,7 @@ class DelegateHandleContextVerifierTest {
     @SuppressWarnings("ConstantConditions")
     @Test
     void testMethodsWithInvalidArguments() {
-        assertThatThrownBy(() -> new DelegateHandleContextVerifier(null))
-                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new DelegateHandleContextVerifier(null)).isInstanceOf(NullPointerException.class);
 
         assertThatThrownBy(() -> subject.verificationFor((Key) null)).isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> subject.verificationFor(null, childCallback)).isInstanceOf(NullPointerException.class);

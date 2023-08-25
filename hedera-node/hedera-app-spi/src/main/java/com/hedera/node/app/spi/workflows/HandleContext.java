@@ -319,9 +319,7 @@ public interface HandleContext {
      */
     @NonNull
     <T> T dispatchPrecedingTransaction(
-            @NonNull TransactionBody txBody,
-            @NonNull Class<T> recordBuilderClass,
-            @NonNull Predicate<Key> verifier);
+            @NonNull TransactionBody txBody, @NonNull Class<T> recordBuilderClass, @NonNull Predicate<Key> verifier);
 
     /**
      * @deprecated Use {@link #dispatchPrecedingTransaction(TransactionBody, Class, Predicate)} instead.
@@ -329,9 +327,9 @@ public interface HandleContext {
     @Deprecated(forRemoval = true)
     @NonNull
     default <T> T dispatchPrecedingTransaction(@NonNull TransactionBody txBody, @NonNull Class<T> recordBuilderClass) {
-        return dispatchPrecedingTransaction(txBody, recordBuilderClass, key -> verificationFor(key).passed());
+        return dispatchPrecedingTransaction(
+                txBody, recordBuilderClass, key -> verificationFor(key).passed());
     }
-
 
     /**
      * Dispatches a child transaction.
@@ -361,9 +359,7 @@ public interface HandleContext {
      */
     @NonNull
     <T> T dispatchChildTransaction(
-            @NonNull TransactionBody txBody,
-            @NonNull Class<T> recordBuilderClass,
-            @NonNull Predicate<Key> callback);
+            @NonNull TransactionBody txBody, @NonNull Class<T> recordBuilderClass, @NonNull Predicate<Key> callback);
 
     /**
      * @deprecated Use {@link #dispatchChildTransaction(TransactionBody, Class, Predicate)} instead.
@@ -399,9 +395,7 @@ public interface HandleContext {
      */
     @NonNull
     <T> T dispatchRemovableChildTransaction(
-            @NonNull TransactionBody txBody,
-            @NonNull Class<T> recordBuilderClass,
-            @NonNull Predicate<Key> callback);
+            @NonNull TransactionBody txBody, @NonNull Class<T> recordBuilderClass, @NonNull Predicate<Key> callback);
 
     /**
      * @deprecated Use {@link #dispatchRemovableChildTransaction(TransactionBody, Class, Predicate)} instead.
@@ -412,7 +406,8 @@ public interface HandleContext {
             @NonNull TransactionBody txBody,
             @NonNull Class<T> recordBuilderClass,
             @NonNull VerificationAssistant callback) {
-        return dispatchRemovableChildTransaction(txBody, recordBuilderClass, key -> callback.test(key, verificationFor(key)));
+        return dispatchRemovableChildTransaction(
+                txBody, recordBuilderClass, key -> callback.test(key, verificationFor(key)));
     }
 
     /**

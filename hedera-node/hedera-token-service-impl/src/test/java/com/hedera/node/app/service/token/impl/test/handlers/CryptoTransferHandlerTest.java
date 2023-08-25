@@ -234,7 +234,8 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         refreshWritableStores();
         givenStoresAndConfig(handleContext);
 
-        given(handleContext.dispatchRemovableChildTransaction(any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class)))
+        given(handleContext.dispatchRemovableChildTransaction(
+                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class)))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
@@ -263,7 +264,8 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         writableTokenStore.put(nonFungibleToken.copyBuilder().kycKey((Key) null).build());
         givenStoresAndConfig(handleContext);
 
-        given(handleContext.dispatchRemovableChildTransaction(any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class)))
+        given(handleContext.dispatchRemovableChildTransaction(
+                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class)))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
@@ -333,7 +335,8 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         refreshWritableStores();
         givenStoresAndConfig(handleContext);
 
-        given(handleContext.dispatchRemovableChildTransaction(any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class)))
+        given(handleContext.dispatchRemovableChildTransaction(
+                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class)))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
@@ -378,7 +381,8 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         refreshWritableStores();
         givenStoresAndConfig(handleContext);
 
-        given(handleContext.dispatchRemovableChildTransaction(any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class)))
+        given(handleContext.dispatchRemovableChildTransaction(
+                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class)))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();

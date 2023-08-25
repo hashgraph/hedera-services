@@ -90,38 +90,37 @@ public class DelegateHandleContextVerifier implements HandleContextVerifier {
      */
     @NonNull
     private static SignatureVerification doVerification(
-            @NonNull final Key key,
-            @NonNull final Predicate<Key> primitiveVerifier) {
-        final var result = switch (key.key().kind()) {
-            case KEY_LIST -> {
-                final var keys = key.keyListOrThrow().keysOrElse(emptyList());
-                for (final var childKey : keys) {
-                    if (doVerification(childKey, primitiveVerifier).failed()) {
+            @NonNull final Key key, @NonNull final Predicate<Key> primitiveVerifier) {
+        final var result =
+                switch (key.key().kind()) {
+                    case KEY_LIST -> {
+                        final var keys = key.keyListOrThrow().keysOrElse(emptyList());
+                        for (final var childKey : keys) {
+                            if (doVerification(childKey, primitiveVerifier).failed()) {
+                                yield false;
+                            }
+                        }
+                        yield true;
+                    }
+                    case THRESHOLD_KEY -> {
+                        final var thresholdKey = key.thresholdKeyOrThrow();
+                        final var keyList = thresholdKey.keysOrElse(KeyList.DEFAULT);
+                        final var keys = keyList.keysOrElse(emptyList());
+                        final var threshold = thresholdKey.threshold();
+                        final var clampedThreshold = Math.max(1, Math.min(threshold, keys.size()));
+                        var passed = 0;
+                        for (final var childKey : keys) {
+                            if (doVerification(childKey, primitiveVerifier).passed()) {
+                                passed++;
+                                if (passed >= clampedThreshold) {
+                                    yield true;
+                                }
+                            }
+                        }
                         yield false;
                     }
-                }
-                yield true;
-            }
-            case THRESHOLD_KEY -> {
-                final var thresholdKey = key.thresholdKeyOrThrow();
-                final var keyList = thresholdKey.keysOrElse(KeyList.DEFAULT);
-                final var keys = keyList.keysOrElse(emptyList());
-                final var threshold = thresholdKey.threshold();
-                final var clampedThreshold = Math.max(1, Math.min(threshold, keys.size()));
-                var passed = 0;
-                for (final var childKey : keys) {
-                    if (doVerification(childKey, primitiveVerifier).passed()) {
-                        passed++;
-                        if (passed >= clampedThreshold) {
-                            yield true;
-                        }
-                    }
-                }
-                yield false;
-            }
-            default -> primitiveVerifier.test(key);
-        };
+                    default -> primitiveVerifier.test(key);
+                };
         return result ? passedVerification(key) : failedVerification(key);
     }
-
 }

@@ -123,7 +123,8 @@ public class AutoAccountCreator {
         //        accountStore.put(payerCopy.copyBuilder().build());
 
         // TODO: Check if this is the correct verifier
-        final Predicate<Key> verifier = key -> handleContext.verificationFor(key).passed();
+        final Predicate<Key> verifier =
+                key -> handleContext.verificationFor(key).passed();
 
         final var childRecord = handleContext.dispatchRemovableChildTransaction(
                 syntheticCreation.memo(memo).build(), CryptoCreateRecordBuilder.class, verifier);
