@@ -16,7 +16,9 @@
 
 package com.swirlds.common.io.utility;
 
+import static com.swirlds.common.io.utility.FileUtils.deleteDirectory;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.LogMarker.STARTUP;
 
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.io.config.RecycleBinConfig;
@@ -75,7 +77,11 @@ class RecycleBinImpl implements RecycleBin {
             final Path recyclePath = recycleBinPath.resolve(fileName);
 
             if (Files.exists(recyclePath)) {
-                Files.delete(recyclePath);
+                logger.info(
+                        STARTUP.getMarker(),
+                        "File with the name '{}' already exists in the recycle bin, deleting previous copy.",
+                        fileName);
+                deleteDirectory(recyclePath);
             }
 
             Files.move(path, recyclePath);
