@@ -16,24 +16,28 @@
 
 package com.swirlds.demo.virtualmerkle.random;
 
-import java.util.Random;
+import org.apache.commons.math3.random.RandomDataGenerator;
 
 /**
- * The {@code PTTRandom} class provides a set of methods for generating random numbers.
- * It aims to offer additional utility methods not present in the standard {@link java.util.Random} class.
- * However, there are some differences and assumptions compared to {@code java.util.Random}.
- * <p>
- * Always refer to method-specific documentation for more detailed information on their functionalities and assumptions.
+ * Reasons why we are using a third-party generator:
+ * The API from Random to generate and accept long values uses 48 bits.
+ * The API from Random does not generate longs inside an interval.
+ * The ThreadLocalRandom does not accept a seed.
+ *
+ * Reasons why this wrapper was created:
+ * Methods that accept an interval like {@link RandomDataGenerator#nextLong(long, long)} throw if {@code lower == upper}.
+ * Methods that accept an interval include the upper limit as a possible outcome.
+ * There is no nextByte method inside the {@link RandomDataGenerator} class.
  */
 public final class PTTRandom {
 
-    private final Random random;
+    private final RandomDataGenerator random;
 
     /**
      * Create a new {@link PTTRandom} instance.
      */
     public PTTRandom() {
-        this.random = new Random();
+        this.random = new RandomDataGenerator();
     }
 
     /**
@@ -44,7 +48,8 @@ public final class PTTRandom {
      * 		The seed used to generate random values.
      */
     public PTTRandom(final long seed) {
-        this.random = new Random(seed);
+        this.random = new RandomDataGenerator();
+        random.reSeed(seed);
     }
 
     /**
@@ -53,7 +58,7 @@ public final class PTTRandom {
      * @return a random {@code double} value from the open interval (0,1).
      */
     public double nextDouble() {
-        return random.nextDouble();
+        return random.nextUniform(0, 1);
     }
 
     /**

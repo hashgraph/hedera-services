@@ -103,6 +103,9 @@ dependencyResolutionManagement {
             version("lazysodium-version", "5.1.1")
             version("bouncycastle-version", "1.70")
 
+            // Apache Commons
+            version("commons-math3-version", "3.6.1")
+
             // Eclipse Commons
             version("eclipse-collections-version", "10.4.0")
 
@@ -149,6 +152,9 @@ dependencyResolutionManagement {
             bundle("picocli", listOf("picocli"))
 
             // Define the individual libraries
+            // Commons Bundle
+            library("commons-math3", "org.apache.commons", "commons-math3")
+                .versionRef("commons-math3-version")
             // Eclipse Bundle
             library("eclipse-collections", "org.eclipse.collections", "eclipse-collections")
                 .versionRef("eclipse-collections-version")
