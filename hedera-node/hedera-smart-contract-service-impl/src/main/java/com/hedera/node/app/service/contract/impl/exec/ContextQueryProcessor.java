@@ -46,7 +46,6 @@ import javax.inject.Inject;
 public class ContextQueryProcessor implements Callable<CallOutcome> {
     private final QueryContext context;
     private final Configuration configuration;
-    private final ContractsConfig contractsConfig;
     private final HederaEvmContext hederaEvmContext;
     private final ActionSidecarContentTracer tracer;
     private final ProxyWorldUpdater worldUpdater;
@@ -58,7 +57,6 @@ public class ContextQueryProcessor implements Callable<CallOutcome> {
     public ContextQueryProcessor(
             @NonNull final QueryContext context,
             @NonNull final Configuration configuration,
-            @NonNull final ContractsConfig contractsConfig,
             @NonNull final HederaEvmContext hederaEvmContext,
             @NonNull final ActionSidecarContentTracer tracer,
             @NonNull final ProxyWorldUpdater worldUpdater,
@@ -71,7 +69,6 @@ public class ContextQueryProcessor implements Callable<CallOutcome> {
         this.processors = Objects.requireNonNull(processors);
         this.worldUpdater = Objects.requireNonNull(worldUpdater);
         this.configuration = Objects.requireNonNull(configuration);
-        this.contractsConfig = Objects.requireNonNull(contractsConfig);
         this.hederaEvmContext = Objects.requireNonNull(hederaEvmContext);
         this.hevmStaticTransactionFactory = Objects.requireNonNull(hevmStaticTransactionFactory);
     }
@@ -81,6 +78,7 @@ public class ContextQueryProcessor implements Callable<CallOutcome> {
         // Try to translate the HAPI operation to a Hedera EVM transaction, throw HandleException on failure
         final var hevmTransaction = hevmStaticTransactionFactory.fromHapiQuery(context.query());
 
+        final var contractsConfig = configuration.getConfigData(ContractsConfig.class);
         // Get the appropriate processor for the EVM version
         final var processor = processors.get(EVM_VERSIONS.get(contractsConfig.evmVersion()));
 

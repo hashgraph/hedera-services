@@ -27,10 +27,16 @@ import com.hedera.hapi.node.transaction.Query;
 import com.hedera.node.app.service.contract.impl.annotations.QueryScope;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
 import com.hedera.node.config.data.ContractsConfig;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
+/**
+ * A factory that creates a {@link HederaEvmTransaction} for static calls.
+ * Used for handling the {@link ContractCallLocalQuery} flow.
+ * Hevm in {@link HevmStaticTransactionFactory} is abbreviated for Hedera EVM.
+ */
 @QueryScope
 public class HevmStaticTransactionFactory {
     private static final long INTRINSIC_GAS_LOWER_BOUND = 21_000L;
@@ -39,8 +45,8 @@ public class HevmStaticTransactionFactory {
 
     @Inject
     public HevmStaticTransactionFactory(
-            @NonNull final ContractsConfig contractsConfig, @NonNull final GasCalculator gasCalculator) {
-        this.contractsConfig = contractsConfig;
+            @NonNull final Configuration configuration, @NonNull final GasCalculator gasCalculator) {
+        this.contractsConfig = configuration.getConfigData(ContractsConfig.class);
         this.gasCalculator = gasCalculator;
     }
 

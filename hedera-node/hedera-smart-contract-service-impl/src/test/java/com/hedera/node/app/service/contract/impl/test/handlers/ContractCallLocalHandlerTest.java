@@ -101,7 +101,7 @@ class ContractCallLocalHandlerTest {
     }
 
     @Test
-    void validatePositiveTest() throws PreCheckException {
+    void validatePositiveTest() {
         // given
         given(context.query()).willReturn(query);
         given(query.contractCallLocalOrThrow()).willReturn(contractCallLocalQuery);
@@ -114,7 +114,7 @@ class ContractCallLocalHandlerTest {
     }
 
     @Test
-    void validateFailsIfNoContractIdTest() throws PreCheckException {
+    void validateFailsIfNoContractIdTest() {
         // given
         given(context.query()).willReturn(query);
         given(query.contractCallLocalOrThrow()).willReturn(contractCallLocalQuery);
@@ -125,7 +125,7 @@ class ContractCallLocalHandlerTest {
     }
 
     @Test
-    void validateFailsIfNoContractTest() throws PreCheckException {
+    void validateFailsIfNoContractTest() {
         // given
         given(context.query()).willReturn(query);
         given(query.contractCallLocalOrThrow()).willReturn(contractCallLocalQuery);
@@ -138,7 +138,7 @@ class ContractCallLocalHandlerTest {
     }
 
     @Test
-    void validateFailsIfContractDeletedTest() throws PreCheckException {
+    void validateFailsIfContractDeletedTest() {
         // given
         given(context.query()).willReturn(query);
         given(query.contractCallLocalOrThrow()).willReturn(contractCallLocalQuery);

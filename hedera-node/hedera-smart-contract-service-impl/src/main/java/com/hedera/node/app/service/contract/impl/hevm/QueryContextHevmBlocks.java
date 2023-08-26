@@ -30,7 +30,7 @@ import org.hyperledger.besu.evm.frame.BlockValues;
 
 /**
  * A {@link HederaEvmBlocks} implementation that uses the {@link HandleContext} to get
- * block information.
+ * block information. Hevm in {@link QueryContextHevmBlocks} is abbreviated for Hedera EVM.
  */
 @QueryScope
 public class QueryContextHevmBlocks implements HederaEvmBlocks {

@@ -80,7 +80,6 @@ class ContextQueryProcessorTest {
         final var subject = new ContextQueryProcessor(
                 context,
                 CONFIGURATION,
-                contractsConfig,
                 hederaEvmContext,
                 tracer,
                 proxyWorldUpdater,

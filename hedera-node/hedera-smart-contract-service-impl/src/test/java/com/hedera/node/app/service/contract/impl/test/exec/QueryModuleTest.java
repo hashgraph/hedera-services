@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.contract.impl.exec.EvmActionTracer;
-import com.hedera.node.app.service.contract.impl.exec.QueryConfigModule;
 import com.hedera.node.app.service.contract.impl.exec.QueryModule;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations;
@@ -33,6 +32,7 @@ import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.swirlds.config.api.Configuration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -58,11 +58,14 @@ class QueryModuleTest {
     @Mock
     private ReadableAccountStore readableAccountStore;
 
+    @Mock
+    private Configuration config;
+
     @Test
     void providesExpectedConfig() {
         final var config = HederaTestConfigBuilder.create().getOrCreateConfig();
         given(context.configuration()).willReturn(config);
-        assertSame(config, QueryConfigModule.provideConfiguration(context));
+        assertSame(config, QueryModule.provideConfiguration(context));
     }
 
     @Test
@@ -92,8 +95,8 @@ class QueryModuleTest {
     }
 
     @Test
-    void providesExpectedReadableAccountStore() {
-        given(context.createStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
-        assertInstanceOf(ReadableAccountStore.class, QueryModule.provideReadableAccountStore(context));
+    void providesExpectedConfiguration() {
+        given(context.configuration()).willReturn(config);
+        assertSame(config, QueryModule.provideConfiguration(context));
     }
 }
