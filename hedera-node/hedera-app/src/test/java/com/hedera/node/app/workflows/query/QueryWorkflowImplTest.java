@@ -195,8 +195,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                 dispatcher,
                 queryParser,
                 configProvider,
-                recordCache,
-                blockRecordManager);
+                recordCache);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -211,8 +210,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                         dispatcher,
                         queryParser,
                         configProvider,
-                        recordCache,
-                        blockRecordManager))
+                        recordCache))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -223,8 +221,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                         dispatcher,
                         queryParser,
                         configProvider,
-                        recordCache,
-                        blockRecordManager))
+                        recordCache))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -235,8 +232,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                         dispatcher,
                         queryParser,
                         configProvider,
-                        recordCache,
-                        blockRecordManager))
+                        recordCache))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -247,8 +243,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                         dispatcher,
                         queryParser,
                         configProvider,
-                        recordCache,
-                        blockRecordManager))
+                        recordCache))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -259,8 +254,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                         dispatcher,
                         queryParser,
                         configProvider,
-                        recordCache,
-                        blockRecordManager))
+                        recordCache))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -271,8 +265,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                         null,
                         queryParser,
                         configProvider,
-                        recordCache,
-                        blockRecordManager))
+                        recordCache))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -283,8 +276,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                         dispatcher,
                         null,
                         configProvider,
-                        recordCache,
-                        blockRecordManager))
+                        recordCache))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -295,20 +287,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                         dispatcher,
                         queryParser,
                         null,
-                        recordCache,
-                        blockRecordManager))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new QueryWorkflowImpl(
-                        stateAccessor,
-                        throttleAccumulator,
-                        submissionManager,
-                        queryChecker,
-                        ingestChecker,
-                        dispatcher,
-                        queryParser,
-                        configProvider,
-                        null,
-                        blockRecordManager))
+                        recordCache))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -406,8 +385,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                 localDispatcher,
                 queryParser,
                 configProvider,
-                recordCache,
-                blockRecordManager);
+                recordCache);
 
         // then
         assertThatThrownBy(() -> workflow.handleQuery(requestBuffer, responseBuffer))
