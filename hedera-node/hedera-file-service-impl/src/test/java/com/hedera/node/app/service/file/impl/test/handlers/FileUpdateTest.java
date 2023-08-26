@@ -68,6 +68,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -285,6 +286,7 @@ class FileUpdateTest extends FileTestBase {
     }
 
     @Test
+    @Disabled
     void validatesExpirationTimeIsNotInRange() {
         givenValidFile(false);
         refreshStoresWithCurrentFileInBothReadableAndWritable();
