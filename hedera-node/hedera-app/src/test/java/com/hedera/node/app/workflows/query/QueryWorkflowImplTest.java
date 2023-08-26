@@ -55,7 +55,6 @@ import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.AppTestBase;
 import com.hedera.node.app.config.VersionedConfigImpl;
-import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.file.impl.handlers.FileGetInfoHandler;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.stats.HapiOpCounters;
@@ -131,9 +130,6 @@ class QueryWorkflowImplTest extends AppTestBase {
 
     @Mock(strictness = LENIENT)
     private RecordCache recordCache;
-
-    @Mock(strictness = LENIENT)
-    private BlockRecordManager blockRecordManager;
 
     private Query query;
     private Transaction payment;
@@ -288,6 +284,17 @@ class QueryWorkflowImplTest extends AppTestBase {
                         queryParser,
                         null,
                         recordCache))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new QueryWorkflowImpl(
+                        stateAccessor,
+                        throttleAccumulator,
+                        submissionManager,
+                        queryChecker,
+                        ingestChecker,
+                        dispatcher,
+                        queryParser,
+                        configProvider,
+                        null))
                 .isInstanceOf(NullPointerException.class);
     }
 
