@@ -101,20 +101,20 @@ public class DumpFilesSubcommand {
 
         if (verbosity == Verbosity.VERBOSE) System.out.printf("=== %d data files ===%n", allFiles.size());
 
-        final var reportSize = new int[1];
+        int reportSize;
         try (@NonNull final var writer = new Writer(filesPath)) {
             if (EmitSummary.YES == emitSummary) reportSummary(writer, fileSummary, allFiles);
             if (EmitSummary.YES == emitSummary) reportFileSizes(writer, allFiles);
             reportFileContents(writer, allFiles);
             if (keyDetails.contains(KeyDetails.STRUCTURE)) reportOnKeyStructure(writer, allFiles);
             if (keyDetails.contains(KeyDetails.STRUCTURE_WITH_IDS)) reportOnKeyIds(writer, allFiles);
-            reportSize[0] = writer.getSize();
+            reportSize = writer.getSize();
         } catch (final RuntimeException ex) {
             System.err.printf("*** Exception when writing to '%s':%n", filesPath);
             throw ex;
         }
 
-        if (verbosity == Verbosity.VERBOSE) System.out.printf("=== files report is %d bytes%n", reportSize[0]);
+        if (verbosity == Verbosity.VERBOSE) System.out.printf("=== files report is %d bytes%n", reportSize);
     }
 
     /** Holds summaries of how many files of each type there are in the store, also how many are missing content. */
