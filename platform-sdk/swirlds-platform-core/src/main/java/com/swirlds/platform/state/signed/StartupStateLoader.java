@@ -265,7 +265,13 @@ public final class StartupStateLoader {
     }
 
     /**
-     * Check if a state is a suitable initial state for emergency recovery.
+     * Check if a state is a suitable initial state for emergency recovery. A suitable state satisfies at least one of
+     * these conditions:
+     * <ul>
+     *     <li>The state's root hash matches the exact epoch hash</li>
+     *     <li>The state has a matching epoch hash</li>
+     *     <li>The state's round is less than the recovery round</li>
+     * </ul>
      *
      * @param emergencyRecoveryManager decides if a state is suitable for emergency recovery
      * @param savedStateFile           the state to check
@@ -274,9 +280,6 @@ public final class StartupStateLoader {
     private static boolean isSuitableInitialRecoveryState(
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
             @NonNull final SavedStateInfo savedStateFile) {
-
-        // TODO remove this
-        logger.info(STARTUP.getMarker(), "potential state metadata: {}", savedStateFile.metadata());
 
         final boolean isStateSuitable = emergencyRecoveryManager.isStateSuitableForStartup(savedStateFile);
 
