@@ -41,7 +41,7 @@ public class ThrottleDefValidationSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(ThrottleDefValidationSuite.class);
 
-    private static final String defaultCongestionMultipliers =
+    private static final String DEFAULT_CONGESTION_MULTIPLIERS =
             HapiSpecSetup.getDefaultNodeProps().get("fees.percentCongestionMultipliers");
 
     public static void main(String... args) {
@@ -55,10 +55,11 @@ public class ThrottleDefValidationSuite extends HapiSuite {
             throttleUpdateRejectsMultiGroupAssignment(),
             throttleUpdateWithZeroGroupOpsPerSecFails(),
             updateWithMissingTokenMintGetsWarning(),
-            ensureDefaultsRestored(),
+            ensureDefaultsRestored()
         });
     }
 
+    // @HapiTest failing due to charging fees not calculated properly
     private HapiSpec updateWithMissingTokenMintGetsWarning() {
         var missingMintThrottles = protoDefsFromResource("testSystemFiles/throttles-sans-mint.json");
 
@@ -84,9 +85,10 @@ public class ThrottleDefValidationSuite extends HapiSuite {
                         fileUpdate(APP_PROPERTIES)
                                 .payingWith(EXCHANGE_RATE_CONTROL)
                                 .overridingProps(
-                                        Map.of("fees.percentCongestionMultipliers", defaultCongestionMultipliers)));
+                                        Map.of("fees.percentCongestionMultipliers", DEFAULT_CONGESTION_MULTIPLIERS)));
     }
 
+    // @HapiTest failing due to charging fees not calculated properly
     private HapiSpec throttleUpdateWithZeroGroupOpsPerSecFails() {
         var zeroOpsPerSecThrottles = protoDefsFromResource("testSystemFiles/zero-ops-group.json");
 
@@ -99,6 +101,7 @@ public class ThrottleDefValidationSuite extends HapiSuite {
                         .hasKnownStatus(THROTTLE_GROUP_HAS_ZERO_OPS_PER_SEC));
     }
 
+    // @HapiTest failing due to charging fees not calculated properly
     private HapiSpec throttleUpdateRejectsMultiGroupAssignment() {
         var multiGroupThrottles = protoDefsFromResource("testSystemFiles/duplicated-operation.json");
 
@@ -111,6 +114,7 @@ public class ThrottleDefValidationSuite extends HapiSuite {
                         .hasKnownStatus(OPERATION_REPEATED_IN_BUCKET_GROUPS));
     }
 
+    // Fails due to not having the authorization logic in place
     private HapiSpec throttleDefsRejectUnauthorizedPayers() {
         return defaultHapiSpec("ThrottleDefsRejectUnauthorizedPayers")
                 .given(

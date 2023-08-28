@@ -114,13 +114,16 @@ public class FileUpdateHandler implements TransactionHandler {
         final var file = maybeFile.get();
         validateFalse(file.deleted(), FILE_DELETED);
 
-        final var fees = handleContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> {
-            return new FileUpdateResourceUsage(fileOpsUsage)
-                    .usageGiven(fromPbj(handleContext.body()), sigValueObj, fromPbj(file));
-        });
+        // Feature: This is not working as expected. This should be reworked and added support for a system file or
+        // privileged users. When this is done we can turn on the following tests in  ThrottleDefValidationSuite -
+        // updateWithMissingTokenMintGetsWarning, throttleUpdateWithZeroGroupOpsPerSecFails, and
+        // throttleUpdateRejectsMultiGroupAssignment
+        final var fees = handleContext
+                .feeCalculator(SubType.DEFAULT)
+                .legacyCalculate(sigValueObj -> new FileUpdateResourceUsage(fileOpsUsage)
+                        .usageGiven(fromPbj(handleContext.body()), sigValueObj, fromPbj(file)));
 
-        // TODO: check if the file is system and don't change. Or maybe this should be here?
-        // handleContext.feeAccumulator().charge(handleContext.payer(), fees);
+        handleContext.feeAccumulator().charge(handleContext.payer(), fees);
 
         // First validate this file is mutable; and the pending mutations are allowed
         // TODO: add or condition for privilege accounts from context
