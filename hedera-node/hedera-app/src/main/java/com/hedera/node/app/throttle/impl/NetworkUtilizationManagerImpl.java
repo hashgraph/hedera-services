@@ -17,10 +17,12 @@
 package com.hedera.node.app.throttle.impl;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.fees.congestion.MonoMultiplierSources;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.HandleThrottleAccumulator;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
@@ -39,9 +41,14 @@ public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager 
 
     private final HandleThrottleAccumulator handleThrottling;
 
+    private final MonoMultiplierSources multiplierSources;
+
     @Inject
-    public NetworkUtilizationManagerImpl(@NonNull final HandleThrottleAccumulator handleThrottling) {
-        this.handleThrottling = handleThrottling;
+    public NetworkUtilizationManagerImpl(
+            @NonNull final HandleThrottleAccumulator handleThrottling,
+            @NonNull final MonoMultiplierSources genericFeeMultiplier) {
+        this.handleThrottling = requireNonNull(handleThrottling, "handleThrottling must not be null");
+        this.multiplierSources = requireNonNull(genericFeeMultiplier, "multiplierSources must not be null");
     }
 
     @Override
@@ -56,7 +63,7 @@ public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager 
 
     private void track(@NonNull TransactionInfo txnInfo, Instant consensusTime, HederaState state) {
         handleThrottling.shouldThrottle(txnInfo, consensusTime, state);
-        // TODO:       multiplierSources.updateMultiplier(accessor, now);
+        multiplierSources.updateMultiplier(consensusTime);
     }
 
     @Override

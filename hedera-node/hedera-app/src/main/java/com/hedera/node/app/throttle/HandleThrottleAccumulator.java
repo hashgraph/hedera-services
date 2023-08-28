@@ -113,6 +113,14 @@ public class HandleThrottleAccumulator {
         return activeThrottles;
     }
 
+    public List<DeterministicThrottle> activeThrottlesFor(HederaFunctionality function) {
+        ThrottleReqsManager manager;
+        if ((manager = functionReqs.get(function)) == null) {
+            return Collections.emptyList();
+        }
+        return manager.managedThrottles();
+    }
+
     public boolean wasLastTxnGasThrottled() {
         return lastTxnWasGasThrottled;
     }
@@ -406,6 +414,10 @@ public class HandleThrottleAccumulator {
                             .append("\n");
                 });
         log.info("{}", () -> sb.toString().trim());
+    }
+
+    public GasLimitDeterministicThrottle gasLimitThrottle() {
+        return gasThrottle;
     }
 
     //    @Override
