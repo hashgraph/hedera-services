@@ -95,12 +95,12 @@ public class DelegateHandleContextVerifier implements HandleContextVerifier {
                 switch (key.key().kind()) {
                     case KEY_LIST -> {
                         final var keys = key.keyListOrThrow().keysOrElse(emptyList());
+                        boolean failed = keys.isEmpty(); // an empty keyList fails by definition
                         for (final var childKey : keys) {
-                            if (doVerification(childKey, primitiveVerifier).failed()) {
-                                yield false;
-                            }
+                            failed |=
+                                    doVerification(childKey, primitiveVerifier).failed();
                         }
-                        yield true;
+                        yield !failed;
                     }
                     case THRESHOLD_KEY -> {
                         final var thresholdKey = key.thresholdKeyOrThrow();
@@ -112,12 +112,9 @@ public class DelegateHandleContextVerifier implements HandleContextVerifier {
                         for (final var childKey : keys) {
                             if (doVerification(childKey, primitiveVerifier).passed()) {
                                 passed++;
-                                if (passed >= clampedThreshold) {
-                                    yield true;
-                                }
                             }
                         }
-                        yield false;
+                        yield passed >= clampedThreshold;
                     }
                     default -> primitiveVerifier.test(key);
                 };
