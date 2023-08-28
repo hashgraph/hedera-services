@@ -10,7 +10,6 @@ sync.syncProtocolPermitCount,                  17
                                           #           State           #
                                           #############################
 
-jasperDb.iteratorInputBufferBytes,             16777216
 merkleDb.iteratorInputBufferBytes,             16777216
 merkleDb.hashesRamToDiskThreshold,             8388608
 state.checkSignedStateFromDisk,                true
