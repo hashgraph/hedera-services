@@ -19,50 +19,17 @@ import net.swiftzer.semver.SemVer
 
 plugins {
     id("lifecycle-base")
+    id("com.hedera.hashgraph.root")
     id("com.hedera.hashgraph.repositories")
     id("com.hedera.hashgraph.spotless-conventions")
     id("com.hedera.hashgraph.spotless-kotlin-conventions")
     id("lazy.zoo.gradle.git-data-plugin")
 }
 
-spotless { kotlinGradle { target("build-logic/**/*.gradle.kts") } }
-
 // This is for configuring the umbrella build - i.e. the root of the repository, which can
 // be used to build everything.
-// Because builds are kept as independent as possible, even if they includeBuild each other,
-// you can not do things like './gradlew assemble' to run assemble on all projects.
-// You have to explicitly make lifecycle tasks available and link them (via dependsOn) to the
-// corresponding lifecycle tasks in the other builds.
-// https://docs.gradle.org/current/userguide/structuring_software_products_details.html#using_an_umbrella_build
 
-tasks.register("checkAllModuleInfo")
-
-configureLifecycleTask("clean")
-
-configureLifecycleTask("assemble")
-
-configureLifecycleTask("check")
-
-configureLifecycleTask("build")
-
-configureLifecycleTask("spotlessCheck")
-
-configureLifecycleTask("spotlessApply")
-
-configureLifecycleTask("checkAllModuleInfo")
-
-fun configureLifecycleTask(taskName: String) {
-    tasks.named(taskName) {
-        dependsOn(
-            gradle.includedBuilds
-                // Not this build
-                .filter { it.projectDir != projectDir }
-                // Not the build-logic build
-                .filter { it.name != "build-logic" }
-                .map { build -> build.task(":${taskName}") }
-        )
-    }
-}
+spotless { kotlinGradle { target("build-logic/**/*.gradle.kts") } }
 
 tasks.register("githubVersionSummary") {
     group = "github"

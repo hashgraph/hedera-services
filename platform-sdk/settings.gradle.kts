@@ -64,7 +64,19 @@ include(":swirlds-platform-test", "swirlds-unit-tests/core/swirlds-platform-test
 
 include(":swirlds-merkle-test", "swirlds-unit-tests/structures/swirlds-merkle-test")
 
+includeAllBuilds("platform-apps/demos")
+
+includeAllBuilds("platform-apps/tests")
+
 fun include(name: String, path: String) {
     include(name)
     project(name).projectDir = File(rootDir, path)
+}
+
+fun includeAllBuilds(containingFolder: String) {
+    File(rootDir, containingFolder).listFiles()?.forEach { folder ->
+        if (File(folder, "settings.gradle.kts").exists()) {
+            includeBuild(folder.path)
+        }
+    }
 }

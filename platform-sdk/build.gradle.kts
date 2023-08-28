@@ -31,19 +31,9 @@ tasks.register<JavaExec>("run") {
     jvmArgs = listOf("-agentlib:jdwp=transport=dt_socket,address=8888,server=y,suspend=n")
     maxHeapSize = "8g"
 
-    dependsOn(":swirlds:copyLib")
-    dependsOn(":swirlds:copyApp")
-    dependsOn(
-        gradle.parent
-            ?.includedBuilds
-            ?.filter {
-                it.projectDir.parentFile.name == "demos" || it.projectDir.parentFile.name == "tests"
-            }
-            ?.map { build ->
-                build.task(":copyLib")
-                build.task(":copyApp")
-            }
-    )
+    // Running ':assemble' (root project) before, will trigger the assemble, and with that
+    // copyLib/copyApp, of all projects that provide an application.
+    dependsOn(tasks.assemble)
 }
 
 val cleanRun =

@@ -21,15 +21,3 @@ plugins { id("com.hedera.hashgraph.settings") }
 includeBuild("platform-sdk")
 
 includeBuild("hedera-node")
-
-includeAllBuilds("platform-sdk/platform-apps/demos")
-
-includeAllBuilds("platform-sdk/platform-apps/tests")
-
-fun includeAllBuilds(containingFolder: String) {
-    File(containingFolder).listFiles()?.forEach { folder ->
-        if (File(folder, "settings.gradle.kts").exists()) {
-            includeBuild(folder.path)
-        }
-    }
-}

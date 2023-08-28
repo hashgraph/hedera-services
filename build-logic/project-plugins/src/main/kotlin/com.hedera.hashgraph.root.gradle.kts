@@ -23,9 +23,11 @@ plugins {
 }
 
 // Lifecycle task configuration:
-// Link the lifecycle tasks in the root project to the corresponding lifecycle tasks in the
-// subprojects. This is needed to complete the umbrella build lifecycle task setup.
-// See setup in: com.hedera.hashgraph.umbrella.gradle.kts
+// Because builds are kept as independent as possible, even if they includeBuild each other,
+// you can not do things like './gradlew assemble' to run assemble on all projects.
+// You have to explicitly make lifecycle tasks available and link them (via dependsOn) to the
+// corresponding lifecycle tasks in the other builds.
+// https://docs.gradle.org/current/userguide/structuring_software_products_details.html#using_an_umbrella_build
 
 tasks.register("checkAllModuleInfo")
 
@@ -45,6 +47,20 @@ configureLifecycleTask("checkAllModuleInfo")
 
 fun configureLifecycleTask(taskName: String) {
     tasks.named(taskName) {
+        // Link the lifecycle tasks in the root project to the corresponding lifecycle tasks in the
+        // root projects of all included builds.
+        dependsOn(
+            gradle.includedBuilds
+                // Not this build
+                .filter { it.projectDir != projectDir }
+                // Not the build-logic build
+                .filter { it.name != "build-logic" }
+                // Not the depependency-versions build
+                .filter { it.name != "hedera-dependency-versions" }
+                .map { build -> build.task(":${taskName}") }
+        )
+        // Link the lifecycle tasks in the root project to the corresponding lifecycle tasks in the
+        // subprojects.
         dependsOn(subprojects.map { subproject -> ":${subproject.name}:${taskName}" })
     }
 }
