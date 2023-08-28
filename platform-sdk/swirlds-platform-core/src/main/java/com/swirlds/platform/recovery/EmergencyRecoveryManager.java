@@ -18,6 +18,7 @@ package com.swirlds.platform.recovery;
 
 import static com.swirlds.common.system.SystemExitCode.EMERGENCY_RECOVERY_ERROR;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.LogMarker.STARTUP;
 
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.crypto.Hash;
@@ -116,15 +117,13 @@ public class EmergencyRecoveryManager {
             throw new IllegalStateException("Emergency recovery file is not present");
         }
 
-        if (candidateState.metadata().hash() == null
-                || candidateState.metadata().epochHash() == null) {
+        if (candidateState.metadata().hash() == null) {
             // This state was created with an old version of the metadata, do not consider it.
             // Any state written with the current software version will have a non-null value for this field.
             return false;
         }
 
         final SavedStateMetadata metadata = candidateState.metadata();
-
         return isInHashEpoch(metadata.hash(), metadata.epochHash()) || metadata.round() < emergencyRecoveryFile.round();
     }
 
