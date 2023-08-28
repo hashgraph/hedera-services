@@ -64,7 +64,6 @@ import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.source.ConfigSource;
 import com.swirlds.fchashmap.config.FCHashMapConfig;
 import com.swirlds.gui.WindowConfig;
-import com.swirlds.jasperdb.config.JasperDbConfig;
 import com.swirlds.logging.payloads.NodeAddressMismatchPayload;
 import com.swirlds.logging.payloads.SavedStateLoadedPayload;
 import com.swirlds.merkledb.config.MerkleDbConfig;
@@ -192,7 +191,6 @@ public final class BootstrapUtils {
                 .withConfigDataType(TemporaryFileConfig.class)
                 .withConfigDataType(ReconnectConfig.class)
                 .withConfigDataType(FCHashMapConfig.class)
-                .withConfigDataType(JasperDbConfig.class)
                 .withConfigDataType(MerkleDbConfig.class)
                 .withConfigDataType(ChatterConfig.class)
                 .withConfigDataType(AddressBookConfig.class)
