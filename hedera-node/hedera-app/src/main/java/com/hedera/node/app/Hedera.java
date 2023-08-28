@@ -26,6 +26,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.ids.EntityIdService;
@@ -172,16 +173,36 @@ public final class Hedera implements SwirldMain {
         this.constructableRegistry = requireNonNull(constructableRegistry);
 
         // Print welcome message
+        logger.info(
+                """
+
+                                ---------------
+                            -----------------------
+                          ---------##-----##---------
+                        -----------##-----##-----------            _   _              _                      \s
+                        -----------#########-----------           | | | |   ___    __| |   ___   _ __    __ _\s
+                        -----------##-----##-----------           | |_| |  / _ \\  / _` |  / _ \\ | '__|  / _` |
+                        -----------#########-----------           |  _  | |  __/ | (_| | |  __/ | |    | (_| |
+                        -----------##-----##-----------           |_| |_|  \\___|  \\__,_|  \\___| |_|     \\__,_|
+                          ---------##-----##---------                                                        \s
+                            -----------------------
+                                ---------------
+                        """);
         logger.info("Welcome to Hedera! Developed with love by the Open Source Community. "
                 + "https://github.com/hashgraph/hedera-services");
 
-        // Let the user know which mode they are starting in (DEV vs. TEST vs. PROD)
-        final var bootstrapConfig = new ConfigProviderImpl(false).getConfiguration();
+        // Load the bootstrap configuration. These config values are NOT stored in state, so we don't need to have
+        // state up and running for getting their values. We use this bootstrap config only in this constructor.
+        final var bootstrapConfig = new BootstrapConfigProviderImpl().configuration();
+
+        // Let the user know which mode they are starting in (DEV vs. TEST vs. PROD).
+        // NOTE: This bootstrapConfig is not entirely satisfactory. We probably need an alternative...
         final var hederaConfig = bootstrapConfig.getConfigData(HederaConfig.class);
         final var activeProfile = Profile.valueOf(hederaConfig.activeProfile());
         logger.info("Starting in {} mode", activeProfile);
 
-        // Read the software version
+        // Read the software version. In addition to logging, we will use this software version to determine whether
+        // we need to migrate the state to a newer release, and to determine which schemas to execute.
         logger.debug("Loading Software Version");
         final var versionConfig = bootstrapConfig.getConfigData(VersionConfig.class);
         version = new HederaSoftwareVersion(versionConfig.hapiVersion(), versionConfig.servicesVersion());
@@ -191,7 +212,7 @@ public final class Hedera implements SwirldMain {
                 () -> HapiUtils.toString(version.getServicesVersion()));
 
         // Create all the service implementations
-        logger.info("Registering schemas for services");
+        logger.info("Registering services");
         // FUTURE: Use the service loader framework to load these services!
         this.servicesRegistry = new ServicesRegistryImpl(Set.of(
                 new ConsensusServiceImpl(),
@@ -206,9 +227,8 @@ public final class Hedera implements SwirldMain {
                 new BlockRecordService(),
                 new EntityIdService()));
 
-        // Register MerkleHederaState with the ConstructableRegistry, so we can use a constructor
-        // OTHER THAN the default constructor to make sure it has the config and other info
-        // it needs to be created correctly.
+        // Register MerkleHederaState with the ConstructableRegistry, so we can use a constructor OTHER THAN the default
+        // constructor to make sure it has the config and other info it needs to be created correctly.
         try {
             logger.debug("Register MerkleHederaState with ConstructableRegistry");
             constructableRegistry.registerConstructable(
