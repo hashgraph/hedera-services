@@ -522,6 +522,17 @@ public class SyntheticTxnFactory {
                 .setAutoRenewPeriod(Duration.newBuilder().setSeconds(THREE_MONTHS_IN_SECONDS));
     }
 
+    /**
+     * Given information about node stakes and staking reward rates for an ending period, initializes a
+     * transaction builder with a {@link NodeStakeUpdateTransactionBody} that summarizes this information.
+     *
+     * @param stakingPeriodEnd the last nanosecond of the staking period being described
+     * @param nodeStakes the stakes of each node at that time
+     * @param properties the properties of the network at that time
+     * @param totalStakedRewardStart the total staked reward at the start of the period
+     * @param maxPerHbarRewardRate the maximum reward rate per hbar for the period (per HIP-782)
+     * @return the transaction builder with the {@code NodeStakeUpdateTransactionBody} set
+     */
     public TransactionBody.Builder nodeStakeUpdate(
             @NonNull final Timestamp stakingPeriodEnd,
             @NonNull final List<NodeStake> nodeStakes,

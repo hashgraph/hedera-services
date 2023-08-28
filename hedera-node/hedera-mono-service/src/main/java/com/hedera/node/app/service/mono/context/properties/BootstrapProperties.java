@@ -193,7 +193,6 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_FEES_NODE_REWARD_PERCENT;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_FEES_STAKING_REWARD_PERCENT;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_IS_ENABLED;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_MAX_STAKE_REWARDED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_NODE_MAX_TO_MIN_STAKE_RATIOS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_PERIOD_MINS;
@@ -534,7 +533,6 @@ public final class BootstrapProperties implements PropertySource {
             STAKING_FEES_STAKING_REWARD_PERCENT,
             STAKING_NODE_MAX_TO_MIN_STAKE_RATIOS,
             STAKING_IS_ENABLED,
-            STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR,
             STAKING_REQUIRE_MIN_STAKE_TO_REWARD,
             STAKING_PER_HBAR_REWARD_RATE,
             STAKING_START_THRESH,
@@ -808,7 +806,6 @@ public final class BootstrapProperties implements PropertySource {
             entry(SCHEDULING_WHITE_LIST, AS_FUNCTIONS),
             entry(STAKING_NODE_MAX_TO_MIN_STAKE_RATIOS, AS_NODE_STAKE_RATIOS),
             entry(STAKING_IS_ENABLED, AS_BOOLEAN),
-            entry(STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR, AS_LONG),
             entry(STATS_ENTITY_UTILS_GAUGE_UPDATE_INTERVAL_MS, AS_LONG),
             entry(STATS_HAPI_OPS_SPEEDOMETER_UPDATE_INTERVAL_MS, AS_LONG),
             entry(STATS_THROTTLE_UTILS_GAUGE_UPDATE_INTERVAL_MS, AS_LONG),

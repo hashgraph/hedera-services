@@ -113,7 +113,6 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_FEES_NODE_REWARD_PERCENT;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_FEES_STAKING_REWARD_PERCENT;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_IS_ENABLED;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_MAX_STAKE_REWARDED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_NODE_MAX_TO_MIN_STAKE_RATIOS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_PER_HBAR_REWARD_RATE;
@@ -270,7 +269,6 @@ public class GlobalDynamicProperties implements EvmProperties {
     private int stakingRewardPercent;
     private boolean contractAutoAssociationsEnabled;
     private boolean stakingEnabled;
-    private long maxDailyStakeRewardThPerH;
     private int recordFileVersion;
     private int recordSignatureFileVersion;
     private long maxNumAccounts;
@@ -422,7 +420,6 @@ public class GlobalDynamicProperties implements EvmProperties {
         nodeRewardPercent = properties.getIntProperty(STAKING_FEES_NODE_REWARD_PERCENT);
         stakingRewardPercent = properties.getIntProperty(STAKING_FEES_STAKING_REWARD_PERCENT);
         contractAutoAssociationsEnabled = properties.getBooleanProperty(CONTRACTS_ALLOW_AUTO_ASSOCIATIONS);
-        maxDailyStakeRewardThPerH = properties.getLongProperty(STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR);
         stakingEnabled = properties.getBooleanProperty(STAKING_IS_ENABLED);
         recordFileVersion = properties.getIntProperty(HEDERA_RECORD_STREAM_RECORD_FILE_VERSION);
         recordSignatureFileVersion = properties.getIntProperty(HEDERA_RECORD_STREAM_SIG_FILE_VERSION);
@@ -832,10 +829,6 @@ public class GlobalDynamicProperties implements EvmProperties {
 
     public boolean isStakingEnabled() {
         return stakingEnabled;
-    }
-
-    public long maxDailyStakeRewardThPerH() {
-        return maxDailyStakeRewardThPerH;
     }
 
     public int recordFileVersion() {

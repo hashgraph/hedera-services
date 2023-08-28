@@ -297,7 +297,7 @@ public class EndOfStakingPeriodCalculator {
      * the effective per-hbar reward rate for the period.
      *
      * @param stakedToReward the amount of hbars staked to reward at the start of the ending period
-     * @return the per-period reward rate (total tinybars awarded)
+     * @return the per-hbar reward rate for the period
      */
     @VisibleForTesting
     long perHbarRewardRateForEndingPeriod(final long stakedToReward) {
