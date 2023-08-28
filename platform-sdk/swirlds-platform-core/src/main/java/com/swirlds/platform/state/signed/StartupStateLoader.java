@@ -236,14 +236,14 @@ public final class StartupStateLoader {
                 recoveryFile.hash().toMnemonic(),
                 recoveryFile.round());
 
-        boolean shouldClearPreconsensusStream = false;
-
+        boolean latestStateIgnored = false;
         ReservedSignedState state = null;
         for (final SavedStateInfo savedStateFile : savedStateFiles) {
-            boolean suitableForRecovery = isSuitableInitialRecoveryState(emergencyRecoveryManager, savedStateFile);
+            final boolean suitableForRecovery =
+                    isSuitableInitialRecoveryState(emergencyRecoveryManager, savedStateFile);
 
             if (!suitableForRecovery) {
-                shouldClearPreconsensusStream = true;
+                latestStateIgnored = true;
                 recycleState(recycleBin, savedStateFile);
                 continue;
             }
@@ -254,12 +254,14 @@ public final class StartupStateLoader {
             }
         }
 
-        if (shouldClearPreconsensusStream) {
+        final boolean inHashEpoch = isInHashEpoch(emergencyRecoveryManager, state);
+
+        if (latestStateIgnored || !inHashEpoch) {
             logger.warn(STARTUP.getMarker(), "Clearing preconsensus event stream for emergency recovery.");
             PreconsensusEventFileManager.clear(platformContext, recycleBin, selfId);
         }
 
-        return processRecoveryState(emergencyRecoveryManager, state);
+        return processRecoveryState(emergencyRecoveryManager, state, inHashEpoch);
     }
 
     /**
@@ -310,50 +312,67 @@ public final class StartupStateLoader {
     }
 
     /**
+     * Check if a provided state is in the hash epoch that is specified by the emergency recovery file.
+     *
+     * @param emergencyRecoveryManager the emergency recovery manager
+     * @param state                    the state to check, may be null
+     * @return true if the state is in the hash epoch, false otherwise. Null states are not in the hash epoch.
+     */
+    private static boolean isInHashEpoch(
+            @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
+            @Nullable final ReservedSignedState state) {
+
+        if (state == null || state.isNull()) {
+            return false;
+        }
+
+        return emergencyRecoveryManager.isInHashEpoch(
+                state.get().getState().getHash(),
+                state.get().getState().getPlatformState().getPlatformData().getEpochHash());
+    }
+
+    /**
      * Once we have decided which state will be our initial state, do some additional logging and processing.
      *
      * @param emergencyRecoveryManager the emergency recovery manager
      * @param state                    the state that will be our initial state (null if we are starting from genesis)
+     * @param inHashEpoch              true if the state is in the hash epoch, false otherwise
      * @return the state that will be our initial state (converts null genesis state to a non-null wrapper)
      */
     @NonNull
     private static ReservedSignedState processRecoveryState(
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
-            @Nullable final ReservedSignedState state) {
+            @Nullable final ReservedSignedState state,
+            final boolean inHashEpoch) {
         if (state == null) {
             logger.warn(
                     STARTUP.getMarker(),
                     "No state on disk met the criteria for emergency recovery, starting from genesis. "
                             + "This node will need to receive a state through an emergency reconnect.");
             return createNullReservation();
+        } else if (inHashEpoch) {
+            logger.info(
+                    STARTUP.getMarker(),
+                    "Loaded state is in the correct hash epoch, "
+                            + "this node will not need to receive a state through an emergency reconnect.");
+
+            // Ensure that the next round created has the proper epoch hash.
+            state.get()
+                    .getState()
+                    .getPlatformState()
+                    .getPlatformData()
+                    .setNextEpochHash(
+                            emergencyRecoveryManager.getEmergencyRecoveryFile().hash());
+
+            // Signal that an emergency reconnect is not needed.
+            emergencyRecoveryManager.emergencyStateLoaded();
+
+            return state;
         } else {
-            final boolean inHashEpoch = emergencyRecoveryManager.isInHashEpoch(
-                    state.get().getState().getHash(),
-                    state.get().getState().getPlatformState().getPlatformData().getEpochHash());
-
-            if (inHashEpoch) {
-                logger.info(
-                        STARTUP.getMarker(),
-                        "Loaded state is in the correct hash epoch, "
-                                + "this node will not need to receive a state through an emergency reconnect.");
-
-                // Ensure that the next round created has the proper epoch hash.
-                state.get()
-                        .getState()
-                        .getPlatformState()
-                        .getPlatformData()
-                        .setNextEpochHash(emergencyRecoveryManager
-                                .getEmergencyRecoveryFile()
-                                .hash());
-
-                // Signal that an emergency reconnect is not needed.
-                emergencyRecoveryManager.emergencyStateLoaded();
-            } else {
-                logger.warn(
-                        STARTUP.getMarker(),
-                        "Loaded state is not in the correct hash epoch, "
-                                + "this node will need to receive a state through an emergency reconnect.");
-            }
+            logger.warn(
+                    STARTUP.getMarker(),
+                    "Loaded state is not in the correct hash epoch, "
+                            + "this node will need to receive a state through an emergency reconnect.");
             return state;
         }
     }
