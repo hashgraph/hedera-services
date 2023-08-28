@@ -528,7 +528,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
      * @see PlatformState#getInfoString()
      */
     public String getInfoString() {
-        return new TextTable()
+        final String dataTable = new TextTable()
                 .setBordersEnabled(false)
                 .addRow("Round", round)
                 .addRow("Number of consensus events", numEventsCons)
@@ -541,6 +541,11 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
                 .addRow("Min gen info hash code", minGenInfo == null ? "null" : minGenInfo.hashCode())
                 .addRow("Events hash code", Arrays.hashCode(events))
                 .render();
+
+        // the unabbreviated running hash is printed separately because it is too long to fit into the table, which
+        // doesn't
+        // support wrapping well
+        return dataTable + "Consensus events running hash (unabbreviated): " + hashEventsCons;
     }
 
     /**

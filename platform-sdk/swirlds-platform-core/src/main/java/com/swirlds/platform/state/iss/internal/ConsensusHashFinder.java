@@ -240,6 +240,7 @@ public class ConsensusHashFinder {
                 .append(".\n");
         if (consensusHash != null) {
             sb.append("Consensus hash: ").append(consensusHash.toMnemonic()).append("\n");
+            sb.append("Consensus hash (unabbreviated): ").append(consensusHash).append("\n");
         }
 
         final List<HashPartition> partitions = new ArrayList<>(partitionMap.size());

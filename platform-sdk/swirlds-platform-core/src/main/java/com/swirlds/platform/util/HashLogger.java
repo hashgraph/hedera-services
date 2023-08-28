@@ -138,6 +138,10 @@ public class HashLogger {
                 .setDepth(stateConfig.debugHashDepth())
                 .render();
         return MESSAGE_FACTORY.newMessage(
-                "[node-{}] Information for hash stream:\n{}\n{}\n", nodeId, platformInfo, hashInfo);
+                "[node-{}] Information for hash stream (round = {}):\n{}\n{}\n",
+                nodeId,
+                signedState.getRound(),
+                platformInfo,
+                hashInfo);
     }
 }

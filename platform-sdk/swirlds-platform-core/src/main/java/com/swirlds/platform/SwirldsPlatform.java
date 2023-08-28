@@ -763,11 +763,17 @@ public class SwirldsPlatform implements Platform, Startable {
         // If our hash changes as a result of the new address book then our old signatures may become invalid.
         signedState.pruneInvalidSignatures();
 
+        // the merkle tree visualizer prints mnemonic hashes, which are good for most cases
+        // just in case, we print the unabbreviated root hash here as well
+        final String fullRootHashLine =
+                "Root hash (unabbreviated): " + signedState.getState().getHash();
+
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
         logger.info(
                 STARTUP.getMarker(),
-                "The platform is using the following initial state:\n{}\n{}",
+                "The platform is using the following initial state:\n{}\n{}\n\n{}",
                 signedState.getState().getPlatformState().getInfoString(),
+                fullRootHashLine,
                 new MerkleTreeVisualizer(signedState.getState())
                         .setDepth(stateConfig.debugHashDepth())
                         .render());
