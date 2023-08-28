@@ -18,6 +18,10 @@ name: "Node: Deploy Preview"
 on:
   workflow_dispatch:
     inputs:
+      tag-to-deploy:
+        description: "Version/Tag to Deploy (eg: v0.41.0 or 0.41.1):"
+        type: string
+        required: true
       dry-run-enabled:
         description: "Perform Dry Run"
         type: boolean
@@ -38,10 +42,7 @@ on:
         type: string
         required: false
         default: "wrapper"
-      tag-to-deploy:
-        description: "Tag to Deploy:"
-        type: string
-        required: true
+
 
 defaults:
   run:
