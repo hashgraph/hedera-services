@@ -229,6 +229,37 @@ class EndOfStakingPeriodCalculatorTest {
     }
 
     @Test
+    void zeroWholeHbarsStakedCaseWorks() {
+        final var consensusTime = Instant.now();
+        final var balance_800 = 100_000_000_000L;
+        final var account_800 = mock(MerkleAccount.class);
+
+        given(dynamicProperties.isStakingEnabled()).willReturn(true);
+        given(dynamicProperties.sumOfConsensusWeights()).willReturn(500);
+        given(dynamicProperties.maxStakeRewarded()).willReturn(Long.MAX_VALUE);
+        // Total period rewards for this test is 100 tinybars, and there are 10 hbar staked;
+        // so the reward rate is 100 / 10 = 10 tinybars per hbar
+        given(dynamicProperties.stakingPerHbarRewardRate()).willReturn(10L);
+        given(properties.getLongProperty(ACCOUNTS_STAKING_REWARD_ACCOUNT)).willReturn(stakingRewardAccount);
+        given(accounts.get(EntityNum.fromInt(800))).willReturn(account_800);
+        given(account_800.getBalance()).willReturn(balance_800);
+        given(stakingInfos.keySet()).willReturn(Set.of(nodeNum1, nodeNum2, nodeNum3));
+        stakingInfo1.setStakeRewardStart(0);
+        given(stakingInfos.getForModify(nodeNum1)).willReturn(stakingInfo1);
+        stakingInfo2.setStakeRewardStart(0);
+        given(stakingInfos.getForModify(nodeNum2)).willReturn(stakingInfo2);
+        stakingInfo3.setStakeRewardStart(0);
+        given(stakingInfos.getForModify(nodeNum3)).willReturn(stakingInfo3);
+        given(merkleNetworkContext.getTotalStakedRewardStart()).willReturn(0L);
+
+        subject.updateNodes(consensusTime);
+
+        assertArrayEquals(new long[] {6, 6, 5}, stakingInfo1.getRewardSumHistory());
+        assertArrayEquals(new long[] {1, 1, 1}, stakingInfo2.getRewardSumHistory());
+        assertArrayEquals(new long[] {3, 3, 1}, stakingInfo3.getRewardSumHistory());
+    }
+
+    @Test
     void calculatesMidnightTimeCorrectly() {
         final var consensusSecs = 1653660350L;
         final var consensusNanos = 12345L;
