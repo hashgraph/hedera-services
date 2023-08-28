@@ -121,8 +121,12 @@ public final class OnDiskKeySerializer<K>
     @Override
     public OnDiskKey<K> deserialize(@NonNull final ByteBuffer byteBuffer, final long ignored) throws IOException {
         final var buff = BufferedData.wrap(byteBuffer);
-        buff.skip(4); // skip the length we wrote
+        final var len = buff.readInt();
+        final var pos = buff.position();
+        final var oldLimit = buff.limit();
+        buff.limit(pos + len);
         final var k = codec.parse(buff);
+        buff.limit(oldLimit);
         Objects.requireNonNull(k);
         return new OnDiskKey<>(md, k);
     }

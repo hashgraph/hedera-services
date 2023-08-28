@@ -29,9 +29,12 @@ import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
+import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
+import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.ResultStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
@@ -83,6 +86,11 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
     protected final HederaOperations hederaOperations;
 
     /**
+     * Operations which are needed by system contracts.
+     */
+    protected final SystemContractOperations systemContractOperations;
+
+    /**
      * If our {@code CreateOperation}s used the addresses prescribed by the {@code CREATE} and
      * {@code CREATE2} specs, they would not need Hedera state and thus not need to call into
      * their frame's {@link ProxyWorldUpdater}. Similarly, if a {@link ProxyWorldUpdater}
@@ -106,10 +114,12 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
 
     public ProxyWorldUpdater(
             @NonNull final HederaOperations hederaOperations,
+            @NonNull final SystemContractOperations systemContractOperations,
             @NonNull final EvmFrameStateFactory evmFrameStateFactory,
             @Nullable final WorldUpdater parent) {
         this.parent = parent;
         this.hederaOperations = requireNonNull(hederaOperations);
+        this.systemContractOperations = requireNonNull(systemContractOperations);
         this.evmFrameStateFactory = requireNonNull(evmFrameStateFactory);
         this.evmFrameState = evmFrameStateFactory.get();
     }
@@ -153,9 +163,9 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
         return pbjToTuweniBytes(hederaOperations.entropy());
     }
 
-    @Nullable
     @Override
-    public HederaEvmAccount getHederaAccount(@NonNull ContractID contractId) {
+    public @Nullable HederaEvmAccount getHederaAccount(@NonNull final ContractID contractId) {
+        requireNonNull(contractId);
         final Address address;
         if (contractId.hasEvmAddress()) {
             address = pbjToBesuAddress(contractId.evmAddressOrThrow());
@@ -171,11 +181,13 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
 
     @Override
     public void collectFee(@NonNull final AccountID payerId, final long amount) {
+        requireNonNull(payerId);
         hederaOperations.collectFee(payerId, amount);
     }
 
     @Override
     public void refundFee(@NonNull final AccountID payerId, final long amount) {
+        requireNonNull(payerId);
         hederaOperations.refundFee(payerId, amount);
     }
 
@@ -183,12 +195,9 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      * {@inheritDoc}
      */
     @Override
-    public Optional<ExceptionalHaltReason> tryTransferFromContract(
-            @NonNull final Address sendingContract,
-            @NonNull final Address recipient,
-            final long amount,
-            final boolean delegateCall) {
-        return evmFrameState.tryTransfer(sendingContract, recipient, amount, delegateCall);
+    public Optional<ExceptionalHaltReason> tryTransfer(
+            @NonNull final Address from, @NonNull final Address to, final long amount, final boolean delegateCall) {
+        return evmFrameState.tryTransfer(from, to, amount, delegateCall);
     }
 
     /**
@@ -224,6 +233,14 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
     public Address setupTopLevelCreate(@NonNull ContractCreateTransactionBody body) {
         setupPendingCreation(null, requireNonNull(body), null);
         return requireNonNull(pendingCreation).address();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void setupTopLevelLazyCreate(@NonNull final Address alias) {
+        setupPendingCreation(null, null, requireNonNull(alias));
     }
 
     /**
@@ -298,11 +315,12 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
             throw new IllegalStateException(CANNOT_CREATE + address + " without a pending creation");
         }
         final var number = getValidatedCreationNumber(address, balance, pendingCreation);
-        if (pendingCreation.isTopLevel()) {
-            hederaOperations.createContract(number, pendingCreation.body(), nonce, pendingCreation.aliasIfApplicable());
+        if (pendingCreation.isHapiCreation()) {
+            hederaOperations.createContract(
+                    number, requireNonNull(pendingCreation.body()), pendingCreation.aliasIfApplicable());
         } else {
             hederaOperations.createContract(
-                    number, pendingCreation.parentNumber(), nonce, pendingCreation.aliasIfApplicable());
+                    number, pendingCreation.parentNumber(), pendingCreation.aliasIfApplicable());
         }
         return evmFrameState.getMutableAccount(pendingCreation.address());
     }
@@ -354,7 +372,16 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      */
     @Override
     public @NonNull ProxyWorldUpdater updater() {
-        return new ProxyWorldUpdater(hederaOperations.begin(), evmFrameStateFactory, this);
+        final var child =
+                new ProxyWorldUpdater(hederaOperations.begin(), systemContractOperations, evmFrameStateFactory, this);
+        // Hand off any pending creation to the child updater; this a bit of a hack, but
+        // lets the TransactionProcessor client code "flow" as naturally as possible,
+        // without need to defer setting up creation until the initial frame is built
+        // (since its updater will be a child of the RootProxyWorldUpdater)
+        if (this.pendingCreation != null) {
+            child.pendingCreation = this.pendingCreation;
+        }
+        return child;
     }
 
     /**
@@ -387,6 +414,15 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
     @Override
     public @NonNull Collection<Address> getDeletedAccountAddresses() {
         throw new UnsupportedOperationException();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void externalizeSystemContractResults(
+            @NonNull final ContractFunctionResult result, final ResultStatus status) {
+        systemContractOperations.externalizeResult(result, status);
     }
 
     private long getValidatedCreationNumber(

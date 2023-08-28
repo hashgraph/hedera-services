@@ -16,8 +16,7 @@
 
 package com.swirlds.common.crypto;
 
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
-
+import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.internal.HashUtils;
 import com.swirlds.common.io.exceptions.BadIOException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -30,7 +29,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Objects;
 import java.util.concurrent.Future;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * Encapsulates a cryptographic signature along with the public key to use during verification. In order to maintain the
@@ -980,7 +978,7 @@ public class TransactionSignature implements Comparable<TransactionSignature> {
 
     @Override
     public String toString() {
-        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+        return new ToStringBuilder(this)
                 .append("contents", Arrays.toString(contents))
                 .append("expandedPublicKey", Arrays.toString(expandedPublicKey))
                 .append("messageOffset", messageOffset)

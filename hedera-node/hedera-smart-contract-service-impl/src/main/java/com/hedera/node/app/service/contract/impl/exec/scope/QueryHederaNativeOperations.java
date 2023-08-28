@@ -87,30 +87,6 @@ public class QueryHederaNativeOperations implements HederaNativeOperations {
     }
 
     /**
-     * Refuses to collect fees.
-     *
-     * @param payerNumber the number of the entity to collect fees from
-     * @param amount          the amount of fees to collect
-     * @throws UnsupportedOperationException always
-     */
-    @Override
-    public void collectFee(final long payerNumber, final long amount) {
-        throw new UnsupportedOperationException("Cannot collect fees in query context");
-    }
-
-    /**
-     * Refuses to refund fees.
-     *
-     * @param payerNumber the number of the entity to refund fees to
-     * @param amount          the amount of fees to collect
-     * @throws UnsupportedOperationException always
-     */
-    @Override
-    public void refundFee(final long payerNumber, final long amount) {
-        throw new UnsupportedOperationException("Cannot refund fees in query context");
-    }
-
-    /**
      * Refuses to transfer value.
      *
      * @param amount           the amount to transfer

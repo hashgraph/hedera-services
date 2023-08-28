@@ -17,17 +17,13 @@
 package com.hedera.node.app.service.contract.impl.test.state;
 
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONFIG;
-import static com.hedera.node.app.service.contract.impl.test.state.ProxyWorldUpdaterTest.NEXT_NUMBER;
-import static com.hedera.node.app.service.contract.impl.test.state.ProxyWorldUpdaterTest.SOME_EVM_ADDRESS;
-import static org.hyperledger.besu.datatypes.Address.ALTBN128_ADD;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.contract.ContractNonceInfo;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
+import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations;
 import com.hedera.node.app.service.contract.impl.infra.IterableStorageManager;
 import com.hedera.node.app.service.contract.impl.infra.RentCalculator;
 import com.hedera.node.app.service.contract.impl.infra.StorageSizeValidator;
@@ -44,7 +40,6 @@ import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import org.apache.tuweni.units.bigints.UInt256;
-import org.hyperledger.besu.evm.account.EvmAccount;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
@@ -81,10 +76,10 @@ class RootProxyWorldUpdaterTest {
     private HederaOperations hederaOperations;
 
     @Mock
-    private ContractStateStore store;
+    private SystemContractOperations systemContractOperations;
 
     @Mock
-    private EvmAccount mutableAccount;
+    private ContractStateStore store;
 
     private RootProxyWorldUpdater subject;
 
@@ -93,22 +88,6 @@ class RootProxyWorldUpdaterTest {
         givenSubjectWith(HederaTestConfigBuilder.create().getOrCreateConfig());
         assertThrows(IllegalStateException.class, subject::getUpdatedContractNonces);
         assertThrows(IllegalStateException.class, subject::getCreatedContractIds);
-    }
-
-    @Test
-    void handsOffPendingCreationToChild() {
-        givenSubjectWith(DEFAULT_CONFIG);
-        given(hederaOperations.begin()).willReturn(hederaOperations);
-        given(hederaOperations.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
-        given(evmFrameState.getIdNumber(ALTBN128_ADD))
-                .willReturn(ALTBN128_ADD.toBigInteger().longValueExact());
-
-        subject.setupInternalAliasedCreate(ALTBN128_ADD, SOME_EVM_ADDRESS);
-        final var pendingCreation = subject.getPendingCreation();
-        final var updater = subject.updater();
-
-        assertSame(pendingCreation, updater.getPendingCreation());
-        assertNull(subject.getPendingCreation());
     }
 
     @Test
@@ -156,6 +135,7 @@ class RootProxyWorldUpdaterTest {
     private void givenSubjectWith(@NonNull final Configuration configuration) {
         subject = new RootProxyWorldUpdater(
                 hederaOperations,
+                systemContractOperations,
                 configuration.getConfigData(ContractsConfig.class),
                 () -> evmFrameState,
                 rentCalculator,

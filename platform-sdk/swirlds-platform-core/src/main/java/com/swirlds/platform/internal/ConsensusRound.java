@@ -16,8 +16,7 @@
 
 package com.swirlds.platform.internal;
 
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
-
+import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
@@ -30,7 +29,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /** A consensus round with events and all other relevant data. */
 public class ConsensusRound implements Round {
@@ -202,6 +200,18 @@ public class ConsensusRound implements Round {
         return lastEvent;
     }
 
+    @Override
+    public boolean equals(final Object other) {
+        if (this == other) {
+            return true;
+        }
+        if (other == null || getClass() != other.getClass()) {
+            return false;
+        }
+        final ConsensusRound that = (ConsensusRound) other;
+        return Objects.equals(consensusEvents, that.consensusEvents);
+    }
+
     /**
      * @return the event that, when added to the hashgraph, caused this round to reach consensus
      */
@@ -210,8 +220,13 @@ public class ConsensusRound implements Round {
     }
 
     @Override
+    public int hashCode() {
+        return Objects.hash(consensusEvents);
+    }
+
+    @Override
     public String toString() {
-        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+        return new ToStringBuilder(this)
                 .append("round", roundNum)
                 .append("consensus events", EventUtils.toShortStrings(consensusEvents))
                 .toString();

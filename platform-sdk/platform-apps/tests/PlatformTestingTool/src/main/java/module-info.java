@@ -18,7 +18,7 @@ module com.swirlds.demo.platform {
     requires com.swirlds.common.test;
     requires com.swirlds.merkle;
     requires com.swirlds.virtualmap;
-    requires com.swirlds.jasperdb;
+    requires com.swirlds.merkledb;
 
     exports com.swirlds.demo.platform.fs.stresstest.proto to
             com.google.protobuf,
@@ -43,9 +43,6 @@ module com.swirlds.demo.platform {
     requires org.apache.logging.log4j.core;
     requires lazysodium.java;
     requires java.management;
-    requires org.apache.commons.lang3;
-    requires commons.math3;
-    requires org.apache.commons.io;
     requires com.swirlds.merkle.test;
     requires java.sql;
     requires com.swirlds.fchashmap;

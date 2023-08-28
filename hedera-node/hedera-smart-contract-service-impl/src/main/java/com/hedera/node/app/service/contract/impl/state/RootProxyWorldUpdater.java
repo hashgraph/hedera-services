@@ -22,6 +22,7 @@ import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.exec.failure.ResourceExhaustedException;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
+import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations;
 import com.hedera.node.app.service.contract.impl.infra.IterableStorageManager;
 import com.hedera.node.app.service.contract.impl.infra.RentCalculator;
 import com.hedera.node.app.service.contract.impl.infra.StorageSizeValidator;
@@ -31,7 +32,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import javax.inject.Inject;
-import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
  * A {@link ProxyWorldUpdater} that enforces several Hedera-specific checks and actions before
@@ -53,32 +53,17 @@ public class RootProxyWorldUpdater extends ProxyWorldUpdater {
     @Inject
     public RootProxyWorldUpdater(
             @NonNull final HederaOperations extWorldScope,
+            @NonNull final SystemContractOperations systemContractOperations,
             @NonNull final ContractsConfig contractsConfig,
             @NonNull final EvmFrameStateFactory evmFrameStateFactory,
             @NonNull final RentCalculator rentCalculator,
             @NonNull final IterableStorageManager storageManager,
             @NonNull final StorageSizeValidator storageSizeValidator) {
-        super(extWorldScope, evmFrameStateFactory, null);
+        super(extWorldScope, systemContractOperations, evmFrameStateFactory, null);
         this.contractsConfig = Objects.requireNonNull(contractsConfig);
         this.storageManager = Objects.requireNonNull(storageManager);
         this.rentCalculator = Objects.requireNonNull(rentCalculator);
         this.storageSizeValidator = Objects.requireNonNull(storageSizeValidator);
-    }
-
-    /**
-     * Customizes the standard behavior by "handing off" any {@link PendingCreation} to the child updater,
-     * since the root updater won't actually be associated to the initial {@link MessageFrame}.
-     *
-     * @return the child updater with any {@link PendingCreation} "handed off"
-     */
-    @Override
-    public @NonNull ProxyWorldUpdater updater() {
-        final var child = super.updater();
-        if (this.pendingCreation != null) {
-            child.pendingCreation = this.pendingCreation;
-            this.pendingCreation = null;
-        }
-        return child;
     }
 
     /**

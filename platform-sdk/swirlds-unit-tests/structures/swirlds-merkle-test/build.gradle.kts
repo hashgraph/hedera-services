@@ -16,7 +16,7 @@
 
 plugins {
     id("com.swirlds.platform.conventions")
-    id("com.swirlds.platform.library")
+    `java-library`
 }
 
 dependencies {
@@ -35,7 +35,6 @@ dependencies {
     implementation(testFixtures(project(":swirlds-common")))
     implementation(testLibs.junit.jupiter.api)
 
-    testImplementation(libs.commons.io)
     testImplementation(testLibs.bundles.junit)
     testImplementation(testFixtures(project(":swirlds-common")))
 }

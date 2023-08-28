@@ -173,9 +173,9 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
             info.receiverSigRequired(account.receiverSigRequired());
             info.deleted(account.deleted());
             info.memo(account.memo());
-            info.autoRenewPeriod(Duration.newBuilder().seconds(account.autoRenewSecs()));
+            info.autoRenewPeriod(Duration.newBuilder().seconds(account.autoRenewSeconds()));
             info.balance(account.tinybarBalance());
-            info.expirationTime(Timestamp.newBuilder().seconds(account.expiry()));
+            info.expirationTime(Timestamp.newBuilder().seconds(account.expirationSecond()));
             info.contractAccountID(getContractAccountId(account, account.alias()));
             info.ownedNfts(account.numberOwnedNfts());
             info.maxAutomaticTokenAssociations(account.maxAutoAssociations());
@@ -261,7 +261,7 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
         }
         // If we can recover an Ethereum EOA address from the account key, we should return that
         final var evmAddress = tryAddressRecovery(account.key(), EthSigsUtils::recoverAddressFromPubKey);
-        if (evmAddress != null && evmAddress.length == EVM_ADDRESS_LEN) {
+        if (evmAddress.length == EVM_ADDRESS_LEN) {
             return Bytes.wrap(evmAddress).toHex();
         } else {
             return hex(asEvmAddress(account.accountIdOrThrow().accountNumOrThrow()));
@@ -289,7 +289,7 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
                 }
             }
         }
-        return null;
+        return new byte[0];
     }
 
     /**

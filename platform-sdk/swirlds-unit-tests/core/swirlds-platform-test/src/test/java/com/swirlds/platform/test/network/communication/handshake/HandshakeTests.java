@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.test.network.communication.handshake;
 
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -30,7 +31,6 @@ import com.swirlds.platform.network.communication.handshake.VersionCompareHandsh
 import com.swirlds.platform.network.protocol.ProtocolRunnable;
 import com.swirlds.platform.test.sync.ConnectionFactory;
 import java.io.IOException;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -45,8 +45,8 @@ class HandshakeTests {
         final ProtocolRunnable handshakeLogs = new VersionCompareHandshake(ourVersion, false);
         final Pair<Connection, Connection> connections =
                 ConnectionFactory.createLocalConnections(new NodeId(0L), new NodeId(1));
-        final Connection myConnection = connections.getLeft();
-        final Connection theirConnection = connections.getRight();
+        final Connection myConnection = connections.left();
+        final Connection theirConnection = connections.right();
         final ConstructableRegistry registry = ConstructableRegistry.getInstance();
         registry.registerConstructable(new ClassConstructorPair(BasicSoftwareVersion.class, BasicSoftwareVersion::new));
         registry.registerConstructable(new ClassConstructorPair(SerializableLong.class, SerializableLong::new));

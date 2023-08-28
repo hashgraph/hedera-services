@@ -16,34 +16,36 @@
 
 package com.hedera.node.app.service.util.impl.handlers;
 
-import static java.util.Objects.requireNonNull;
-
-import com.google.common.math.IntMath;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.node.app.service.util.impl.records.PrngRecordBuilder;
-import com.hedera.node.app.spi.workflows.*;
-import com.hedera.node.config.data.UtilPrngConfig;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.crypto.RunningHash;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.concurrent.ExecutionException;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * HederaFunctionality#UTIL_PRNG}.
+ * A {@link TransactionHandler} for handling {@link HederaFunctionality#UTIL_PRNG} transactions.
+ *
+ * <p>This transaction uses the n-3 running hash to generate a pseudo-random number. The n-3 running hash is updated
+ * and maintained by the application, based on the record files generated based on preceding transactions. In this way,
+ * the number is both essentially unpredictable and deterministic. While a given node *could* determine the n-3 running
+ * hash that *will be*, after it has run the hashgraph, it will then not be able to craft and insert a transaction that
+ * can take advantage of that information. So for all intents and purposes, the number is unpredictable.
  */
 @Singleton
 public class UtilPrngHandler implements TransactionHandler {
     private static final Logger log = LogManager.getLogger(UtilPrngHandler.class);
-    public static final byte[] MISSING_BYTES = new byte[0];
+    private static final Bytes MISSING_N_MINUS_3_RUNNING_HASH = Bytes.wrap(new byte[48]);
 
     @Inject
     public UtilPrngHandler() {
@@ -55,80 +57,55 @@ public class UtilPrngHandler implements TransactionHandler {
      */
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
-        requireNonNull(context);
-        // validate range is greater than zero
+        // Negative ranges are not allowed
         if (context.body().utilPrngOrThrow().range() < 0) {
             throw new PreCheckException(ResponseCodeEnum.INVALID_PRNG_RANGE);
         }
-        // Payer key is fetched in PreHandleWorkflow
     }
 
     /**
      * {@inheritDoc}
      */
-    public void handle(@NonNull final HandleContext context) {
-        requireNonNull(context);
-
-        final var op = context.body().utilPrngOrThrow();
-        final var range = op.range();
-
-        // TODO: This check should probably be moved into app
-        final var config = context.configuration().getConfigData(UtilPrngConfig.class);
-        if (!config.isEnabled()) {
-            return;
-        }
-        // get the n-3 running hash. If the running hash is not available, will throw a
-        // HandleException
-        final Bytes pseudoRandomBytes = context.blockRecordInfo().getNMinus3RunningHash();
-
-        // If no bytes are available then return
-        if (pseudoRandomBytes == null || pseudoRandomBytes.length() == 0) {
-            return;
-        }
-        // If range is provided then generate a random number in the given range
-        // from the pseudoRandomBytes
-        final var recordBuilder = context.recordBuilder(PrngRecordBuilder.class);
-        if (range > 0) {
-            final int pseudoRandomNumber = randomNumFromBytes(pseudoRandomBytes.toByteArray(), range);
-            recordBuilder.entropyNumber(pseudoRandomNumber);
-        } else {
-            recordBuilder.entropyBytes(pseudoRandomBytes);
-        }
+    @Override
+    @NonNull
+    public Fees calculateFees(@NonNull FeeContext feeContext) {
+        // Determine the fees. If the range is specified (i.e. it isn't 0), then we charge for an additional 4 bytes
+        // (one integer), otherwise we don't charge for any additional bytes. Standard transaction usage has already
+        // been determined and loaded into the calculator.
+        final var range = feeContext.body().utilPrngOrThrow().range();
+        return feeContext
+                .feeCalculator(SubType.DEFAULT)
+                .addBytesPerTransaction(range > 0 ? Integer.BYTES : 0)
+                .calculate();
     }
 
     /**
-     * Get the n-3 running hash bytes from the n-3 running hash. If the running hash is not
-     * available, will throw a HandleException. n-3 running hash is chosen for generating random
-     * number instead of n-1 running hash for processing transactions quickly. Because n-1 running
-     * hash might not be available when the transaction is processed and might need to wait longer.
-     *
-     * @param nMinus3RunningHash n-3 running hash
-     * @return n-3 running hash bytes
+     * {@inheritDoc}
      */
-    private byte[] getNMinus3RunningHashBytes(@NonNull final RunningHash nMinus3RunningHash) {
-        // This can't happen because this running hash is taken from record stream.
-        // If this happens then there is a bug in the code.
-        requireNonNull(nMinus3RunningHash);
+    @Override
+    public void handle(@NonNull final HandleContext context) {
+        final var op = context.body().utilPrngOrThrow();
+        final var range = op.range();
 
-        Hash nMinusThreeHash;
-        try {
-            nMinusThreeHash = nMinus3RunningHash.getFutureHash().get();
-            // Use n-3 running hash instead of n-1 running hash for processing transactions quickly
-            if (nMinusThreeHash == null || Arrays.equals(nMinusThreeHash.getValue(), new byte[48])) {
-                log.info("No n-3 record running hash available to generate random number");
-                return MISSING_BYTES;
-            }
-            // generate binary string from the running hash of records
-            return nMinusThreeHash.getValue();
-        } catch (InterruptedException e) {
-            log.error("Interrupted exception while waiting for n-3 running hash", e);
-            Thread.currentThread().interrupt();
-            throw new HandleException(ResponseCodeEnum.UNKNOWN);
-            // FUTURE : Need to decide on the response code for this case
-        } catch (ExecutionException e) {
-            log.error("Unable to get current n-3 running hash", e);
-            throw new HandleException(ResponseCodeEnum.UNKNOWN);
-            // FUTURE : Need to decide on the response code for this case
+        // Get the n-3 running hash. It should never be possible to get an empty n-3 hash, and certainly not in
+        // mainnet. The only way to get one is to handle a transaction immediately after genesis. Even then it is
+        // probably not possible, and if we really wanted to defend against that, we could deterministically
+        // pre-populate the initial running hashes. Or we can return all zeros. Either way is just as safe, so we'll
+        // just return whatever it is we are given. If we *do* happen to get back null, treat as empty zeros.
+        var pseudoRandomBytes = context.blockRecordInfo().getNMinus3RunningHash();
+        if (pseudoRandomBytes == null || pseudoRandomBytes.length() == 0) {
+            log.info("No n-3 record running hash available. Will use all zeros.");
+            pseudoRandomBytes = MISSING_N_MINUS_3_RUNNING_HASH;
+        }
+
+        // If `range` is provided then generate a random number in the given range from the pseudoRandomBytes,
+        // otherwise just use the full pseudoRandomBytes as the random number.
+        final var recordBuilder = context.recordBuilder(PrngRecordBuilder.class);
+        if (range > 0) {
+            final var pseudoRandomNumber = randomNumFromBytes(pseudoRandomBytes, range);
+            recordBuilder.entropyNumber(pseudoRandomNumber);
+        } else {
+            recordBuilder.entropyBytes(pseudoRandomBytes);
         }
     }
 
@@ -138,8 +115,11 @@ public class UtilPrngHandler implements TransactionHandler {
      * @param range range of the random number
      * @return random number
      */
-    private int randomNumFromBytes(@NonNull final byte[] pseudoRandomBytes, final int range) {
-        final int initialBitsValue = ByteBuffer.wrap(pseudoRandomBytes, 0, 4).getInt();
-        return IntMath.mod(initialBitsValue, range);
+    private int randomNumFromBytes(@NonNull final Bytes pseudoRandomBytes, final int range) {
+        // Use the initial 4 bytes of the random number to extract the integer value. This might be a negative number,
+        // which when used with the modulus operator will result in a negative number. To avoid this, we mask off the
+        // high bit to make sure we always have a positive number for the mod operator.
+        final int initialBitsValue = pseudoRandomBytes.getInt(0) & 0x7fffffff;
+        return initialBitsValue % range;
     }
 }

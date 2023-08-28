@@ -26,10 +26,13 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.FeeComponents;
+import com.hedera.hapi.node.base.FeeData;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.Fraction;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SemanticVersion;
@@ -39,7 +42,10 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.network.NetworkGetExecutionTimeQuery;
+import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
+import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.transaction.CustomFee;
+import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.FixedFee;
 import com.hedera.hapi.node.transaction.FractionalFee;
 import com.hedera.hapi.node.transaction.Query;
@@ -89,8 +95,7 @@ public final class PbjConverter {
         requireNonNull(txBody);
         try {
             final var bytes = txBody.toByteArray();
-            final var ret = TransactionBody.PROTOBUF.parse(BufferedData.wrap(bytes));
-            return ret;
+            return TransactionBody.PROTOBUF.parse(BufferedData.wrap(bytes));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -104,6 +109,41 @@ public final class PbjConverter {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static @NonNull com.hederahashgraph.api.proto.java.FeeData fromPbj(@NonNull FeeData feeData) {
+        requireNonNull(feeData);
+        return com.hederahashgraph.api.proto.java.FeeData.newBuilder()
+                .setNodedata(fromPbj(feeData.nodedata()))
+                .setNetworkdata(fromPbj(feeData.networkdata()))
+                .setServicedata(fromPbj(feeData.servicedata()))
+                .setSubTypeValue(feeData.subType().protoOrdinal())
+                .build();
+    }
+
+    public static @NonNull com.hederahashgraph.api.proto.java.FeeComponents fromPbj(
+            @NonNull FeeComponents feeComponents) {
+        requireNonNull(feeComponents);
+        return com.hederahashgraph.api.proto.java.FeeComponents.newBuilder()
+                .setMin(feeComponents.min())
+                .setMax(feeComponents.max())
+                .setConstant(feeComponents.constant())
+                .setBpt(feeComponents.bpt())
+                .setVpt(feeComponents.vpt())
+                .setRbh(feeComponents.rbh())
+                .setSbh(feeComponents.sbh())
+                .setGas(feeComponents.gas())
+                .setTv(feeComponents.tv())
+                .setBpr(feeComponents.bpr())
+                .setSbpr(feeComponents.sbpr())
+                .build();
+    }
+
+    public static @NonNull com.hederahashgraph.api.proto.java.ExchangeRate fromPbj(@NonNull ExchangeRate exchangeRate) {
+        return com.hederahashgraph.api.proto.java.ExchangeRate.newBuilder()
+                .setCentEquiv(exchangeRate.centEquiv())
+                .setHbarEquiv(exchangeRate.hbarEquiv())
+                .build();
     }
 
     public static @NonNull com.hederahashgraph.api.proto.java.Key fromPbj(@NonNull Key keyValue) {
@@ -1309,6 +1349,21 @@ public final class PbjConverter {
         }
     }
 
+    public static @NonNull Optional<SchedulableTransactionBody> toPbj(
+            @Nullable final com.hederahashgraph.api.proto.java.SchedulableTransactionBody schedulableTransactionBody) {
+        if (schedulableTransactionBody == null) {
+            return Optional.empty();
+        }
+        try (final var baos = new ByteArrayOutputStream()) {
+            schedulableTransactionBody.writeTo(baos);
+            return Optional.of(SchedulableTransactionBody.PROTOBUF.parse(
+                    Bytes.wrap(baos.toByteArray()).toReadableSequentialData()));
+        } catch (final IOException e) {
+            // Should be impossible, so just propagate an exception
+            throw new IllegalStateException("Invalid conversion from PBJ for SchedulableTransactionBody", e);
+        }
+    }
+
     public static Key asPbjKey(@NonNull final JKey jKey) {
         requireNonNull(jKey);
         try {
@@ -1411,6 +1466,20 @@ public final class PbjConverter {
         if (fixedFee != null) {
             builder.setAmount(fixedFee.amount());
             builder.setDenominatingTokenId(fromPbj(fixedFee.denominatingTokenId()));
+        }
+        return builder.build();
+    }
+
+    @NonNull
+    public static com.hederahashgraph.api.proto.java.File fromPbj(@Nullable File file) {
+        var builder = com.hederahashgraph.api.proto.java.File.newBuilder();
+        if (file != null) {
+            builder.setFileId(fromPbj(file.fileId()));
+            builder.setExpirationSecond(file.expirationSecond());
+            builder.setKeys(pbjToProto(file.keys(), KeyList.class, com.hederahashgraph.api.proto.java.KeyList.class));
+            builder.setContents(ByteString.copyFrom(file.contents().toByteArray()));
+            builder.setMemo(file.memo());
+            builder.setDeleted(file.deleted());
         }
         return builder.build();
     }

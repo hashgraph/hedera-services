@@ -20,7 +20,7 @@ import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUti
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.service.token.records.FinalizeContext;
 import java.util.Map;
 
 /**
@@ -41,7 +41,7 @@ public interface StakingRewardsHandler {
      * @param context the context of the transaction
      * @return a map of account id to the amount of rewards paid out
      */
-    Map<AccountID, Long> applyStakingRewards(final HandleContext context);
+    Map<AccountID, Long> applyStakingRewards(final FinalizeContext context);
 
     /**
      * Checks if the account has been rewarded since the last staking metadata change.

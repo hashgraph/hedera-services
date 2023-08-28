@@ -44,9 +44,9 @@ import com.swirlds.common.threading.framework.config.StoppableThreadConfiguratio
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.demo.stats.signing.algorithms.ECSecP256K1Algorithm;
 import com.swirlds.demo.stats.signing.algorithms.X25519SigningAlgorithm;
+import com.swirlds.gui.model.GuiModel;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.ParameterProvider;
-import com.swirlds.platform.gui.GuiPlatformAccessor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -92,7 +92,7 @@ public class StatsSigningTestingToolMain implements SwirldMain {
      */
     private Platform platform;
 
-    private TransactionPool transactionPool;
+    private SttTransactionPool sttTransactionPool;
 
     private static final BasicSoftwareVersion softwareVersion = new BasicSoftwareVersion(1);
 
@@ -170,13 +170,13 @@ public class StatsSigningTestingToolMain implements SwirldMain {
             // they shouldn't both be -1, so set one of them
             transPerEventMax = 1024;
         }
-        GuiPlatformAccessor.getInstance()
+        GuiModel.getInstance()
                 .setAbout(
                         platform.getSelfId(),
                         "Stats Signing Demo v. 1.3\nThis writes statistics to a log file,"
                                 + " such as the number of transactions per second.");
 
-        transactionPool = new TransactionPool(
+        sttTransactionPool = new SttTransactionPool(
                 platform.getSelfId(),
                 signedTransPoolSize,
                 bytesPerTrans,
@@ -260,7 +260,7 @@ public class StatsSigningTestingToolMain implements SwirldMain {
             }
 
             // Retrieve a random signed transaction from the pool
-            transaction = transactionPool.transaction();
+            transaction = sttTransactionPool.transaction();
 
             if (!platform.createTransaction(transaction)) {
                 break; // if the queue is full, the stop adding to it
@@ -276,7 +276,7 @@ public class StatsSigningTestingToolMain implements SwirldMain {
 
     @Override
     public SwirldState newState() {
-        return new StatsSigningTestingToolState(() -> transactionPool);
+        return new StatsSigningTestingToolState(() -> sttTransactionPool);
     }
 
     /**

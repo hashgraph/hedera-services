@@ -18,44 +18,11 @@
 import com.hedera.hashgraph.gradlebuild.rules.IoGrpcDependencyMetadataRule
 import com.hedera.hashgraph.gradlebuild.rules.IoGrpcMetadataRule
 import com.hedera.hashgraph.gradlebuild.rules.IoNettyNativeEpollMetadataRule
-import com.hedera.hashgraph.gradlebuild.rules.JavaxAnnotationMetadataRule
+import com.hedera.hashgraph.gradlebuild.rules.RemoveFindbugsAnnotationsMetadataRule
 
 plugins {
     id("org.gradlex.java-ecosystem-capabilities")
     id("org.gradlex.extra-java-module-info")
-    id("org.gradlex.java-module-dependencies")
-}
-
-javaModuleDependencies {
-    warnForMissingVersions.set(false) // do not expect versions in catalog
-
-    moduleNameToGA.put("com.hedera.hashgraph.protobuf.java.api", "com.hedera.hashgraph:hedera-protobuf-java-api")
-    moduleNameToGA.put("com.hedera.pbj.runtime", "com.hedera.pbj:pbj-runtime")
-    moduleNameToGA.put("com.swirlds.base", "com.swirlds:swirlds-base")
-    moduleNameToGA.put("com.swirlds.cli", "com.swirlds:swirlds-cli")
-    moduleNameToGA.put("com.swirlds.common.test", "com.swirlds:swirlds-common-test")
-    moduleNameToGA.put("com.swirlds.config", "com.swirlds:swirlds-config-api")
-    moduleNameToGA.put("com.swirlds.config.impl", "com.swirlds:swirlds-config-impl")
-    moduleNameToGA.put("com.swirlds.test.framework", "com.swirlds:swirlds-test-framework")
-    moduleNameToGA.put("hamcrest.core", "org.hamcrest:hamcrest-core")
-    moduleNameToGA.put("io.grpc", "io.helidon.grpc:io.grpc")
-    moduleNameToGA.put("io.netty.codec.http", "io.netty:netty-codec-http")
-    moduleNameToGA.put("io.netty.codec.http2", "io.netty:netty-codec-http2")
-    moduleNameToGA.put("io.netty.codec.socks", "io.netty:netty-codec-socks")
-    moduleNameToGA.put("io.netty.handler.proxy", "io.netty:netty-handler-proxy")
-    moduleNameToGA.put("io.perfmark", "io.perfmark:perfmark-api")
-    moduleNameToGA.put("org.apache.logging.log4j.slf4j", "org.apache.logging.log4j:log4j-slf4j-impl")
-    moduleNameToGA.put("org.bouncycastle.util", "org.bouncycastle:bcutil-jdk15on")
-    moduleNameToGA.put("org.eclipse.collections.api", "org.eclipse.collections:eclipse-collections-api")
-    moduleNameToGA.put("org.eclipse.collections.impl", "org.eclipse.collections:eclipse-collections")
-    moduleNameToGA.put("org.hamcrest", "org.hamcrest:hamcrest")
-    moduleNameToGA.put("org.hyperledger.besu.datatypes", "org.hyperledger.besu:besu-datatypes")
-    moduleNameToGA.put("org.hyperledger.besu.evm", "org.hyperledger.besu:evm")
-    moduleNameToGA.put("org.hyperledger.besu.internal.rlp", "org.hyperledger.besu.internal:rlp")
-    moduleNameToGA.put("org.hyperledger.besu.plugin.api", "org.hyperledger.besu:plugin-api")
-    moduleNameToGA.put("org.mockito.junit.jupiter", "org.mockito:mockito-junit-jupiter")
-    moduleNameToGA.put("org.objenesis", "org.objenesis:objenesis")
-    moduleNameToGA.put("org.antlr.antlr4.runtime", "org.antlr:antlr4-runtime")
 }
 
 dependencies.components {
@@ -70,13 +37,20 @@ dependencies.components {
 
     withModule<IoNettyNativeEpollMetadataRule>("io.netty:netty-transport-native-epoll")
 
-    withModule<JavaxAnnotationMetadataRule>("com.google.code.findbugs:jsr305")
+    withModule<RemoveFindbugsAnnotationsMetadataRule>("com.github.spotbugs:spotbugs-annotations")
+    withModule<RemoveFindbugsAnnotationsMetadataRule>("com.google.dagger:dagger-compiler")
+    withModule<RemoveFindbugsAnnotationsMetadataRule>("com.google.dagger:dagger-spi")
+    withModule<RemoveFindbugsAnnotationsMetadataRule>("com.google.guava:guava")
+    withModule<RemoveFindbugsAnnotationsMetadataRule>("com.google.protobuf:protobuf-java-util")
+    withModule<RemoveFindbugsAnnotationsMetadataRule>("org.apache.tuweni:tuweni-bytes")
+    withModule<RemoveFindbugsAnnotationsMetadataRule>("org.apache.tuweni:tuweni-units")
 }
 
 extraJavaModuleInfo {
     module("io.grpc:grpc-netty", "grpc.netty") {
         exportAllPackages()
         requireAllDefinedDependencies()
+        requires("java.logging")
     }
     module("io.grpc:grpc-stub", "grpc.stub") {
         exportAllPackages()
@@ -97,16 +71,15 @@ extraJavaModuleInfo {
     module("io.grpc:grpc-protobuf-lite", "grpc.protobuf.lite") {
         exportAllPackages()
         requireAllDefinedDependencies()
+        requires("com.google.protobuf")
     }
-    module("com.google.code.findbugs:jsr305", "java.annotation") {
-        mergeJar("javax.annotation:javax.annotation-api")
-        exports("javax.annotation")
-        exports("javax.annotation.concurrent")
-        exports("javax.annotation.meta")
+    module("javax.annotation:javax.annotation-api", "java.annotation") {
+        exportAllPackages()
+        // no dependencies
     }
     module("com.github.spotbugs:spotbugs-annotations", "com.github.spotbugs.annotations") {
         exportAllPackages()
-        requires("java.annotation")
+        // no dependencies - see RemoveFindbugsAnnotationsMetadataRule
     }
     module("com.google.protobuf:protobuf-java", "com.google.protobuf") {
         exportAllPackages()
@@ -214,7 +187,7 @@ extraJavaModuleInfo {
     knownModule("com.swirlds:swirlds-fcqueue", "com.swirlds.fcqueue")
     knownModule("com.swirlds:swirlds-jasperdb", "com.swirlds.jasperdb")
     knownModule("com.swirlds:swirlds-merkle", "com.swirlds.merkle")
-    knownModule("com.swirlds:swirlds-platform-core", "com.swirlds.platform.core")
+    knownModule("com.swirlds:swirlds-platform-core", "com.swirlds.platform")
     knownModule("com.swirlds:swirlds-virtualmap", "com.swirlds.virtualmap")
     knownModule("io.github.classgraph:classgraph", "io.github.classgraph")
     knownModule("io.helidon.grpc:io.grpc", "io.grpc")
@@ -271,6 +244,8 @@ extraJavaModuleInfo {
     automaticModule("org.hyperledger.besu.internal:util", "org.hyperledger.besu.internal.util")
     automaticModule("org.testcontainers:junit-jupiter", "org.testcontainers.junit.jupiter")
     automaticModule("io.perfmark:perfmark-api", "io.perfmark")
+    automaticModule("com.google.auto.value:auto-value-annotations", "com.google.auto.value.annotations")
+    automaticModule("com.google.truth:truth", "com.google.truth")
 
     // Automatic modules for PBJ dependencies
     automaticModule("org.antlr:antlr4", "org.antlr.antlr4")

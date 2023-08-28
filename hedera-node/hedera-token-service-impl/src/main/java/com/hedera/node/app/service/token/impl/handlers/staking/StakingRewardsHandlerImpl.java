@@ -32,7 +32,7 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.records.CryptoDeleteRecordBuilder;
-import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.config.data.AccountsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -63,17 +63,17 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
 
     /** {@inheritDoc} */
     @Override
-    public Map<AccountID, Long> applyStakingRewards(final HandleContext context) {
+    public Map<AccountID, Long> applyStakingRewards(final FinalizeContext context) {
         final var writableStore = context.writableStore(WritableAccountStore.class);
         final var stakingRewardsStore = context.writableStore(WritableNetworkStakingRewardsStore.class);
         final var stakingInfoStore = context.writableStore(WritableStakingInfoStore.class);
         final var accountsConfig = context.configuration().getConfigData(AccountsConfig.class);
         final var stakingRewardAccountId = asAccount(accountsConfig.stakingRewardAccount());
-        final var consensusNow = context.consensusNow();
+        final var consensusNow = context.consensusTime();
 
         // TODO: confirm if the getDeletedAccountBeneficiaries should be in
         //  SingleTransactionRecordBuilder interface instead
-        final var recordBuilder = context.recordBuilder(CryptoDeleteRecordBuilder.class);
+        final var recordBuilder = context.userTransactionRecordBuilder(CryptoDeleteRecordBuilder.class);
 
         // Apply all changes related to stakedId changes, and adjust stakedToMe
         // for all accounts staking to an account
@@ -120,7 +120,7 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
                 final var roundedInitialBalance = roundedToHbar(originalAccount.tinybarBalance());
                 final var delta = roundedFinalBalance - roundedInitialBalance;
                 // Even if the stakee's total stake hasn't changed, we still want to
-                // trigger a reward situation whenever the staker balance changes;
+                // trigger a reward situation whenever the staker balance changes
                 if (roundedFinalBalance != roundedInitialBalance) {
                     updateStakedToMeFor(modifiedAccount.stakedAccountId(), delta, writableStore);
                 }
@@ -134,9 +134,10 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
                 }
                 if (scenario.awardsToAccount()) {
                     final var newStakedAccountId = modifiedAccount.stakedAccountId();
+                    final var balance = originalAccount == null ? 0 : originalAccount.tinybarBalance();
                     // Always trigger a reward situation for the new stakee when they are
                     // gaining an indirect staker, even if it doesn't change their total stake
-                    final var roundedFinalBalance = roundedToHbar(originalAccount.tinybarBalance());
+                    final var roundedFinalBalance = roundedToHbar(balance);
                     updateStakedToMeFor(newStakedAccountId, roundedFinalBalance, writableStore);
                 }
             }
@@ -302,8 +303,8 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
             //   4. Alice's stakePeriodStart is the current period.
             // We need to record her current stake as totalStakeAtStartOfLastRewardedPeriod in
             // scenarios 1 and 3, but not 2 and 4. (As noted below, in scenario 2 we want to
-            // preserve an already-recorded memory of her stake at the beginning of this period;
-            // while in scenario 4 there is no point in recording anything---it will go unused.)
+            // preserve an already-recorded memory of her stake at the beginning of this period.
+            // In scenario 4 there is no point in recording anything---her stake will go unused.)
             if (earnedZeroRewardsBecauseOfZeroStake(account, stakingRewardStore, consensusNow)) {
                 return true;
             }

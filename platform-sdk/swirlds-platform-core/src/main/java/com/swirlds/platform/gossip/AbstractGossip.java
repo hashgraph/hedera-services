@@ -25,6 +25,7 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.config.SocketConfig;
+import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
@@ -87,7 +88,6 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
     private static final Logger logger = LogManager.getLogger(AbstractGossip.class);
 
     private LifecyclePhase lifecyclePhase = LifecyclePhase.NOT_STARTED;
-    private final ThreadConfig threadConfig;
 
     protected final PlatformContext platformContext;
     protected final AddressBook addressBook;
@@ -166,7 +166,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
         this.syncMetrics = Objects.requireNonNull(syncMetrics);
         Objects.requireNonNull(time);
 
-        threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
+        final ThreadConfig threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
         criticalQuorum = buildCriticalQuorum();
         eventObserverDispatcher.addObserver(criticalQuorum);
 
@@ -242,6 +242,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
 
         reconnectMetrics = new ReconnectMetrics(platformContext.getMetrics());
 
+        final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
         reconnectHelper = new ReconnectHelper(
                 this::pause,
                 clearAllPipelinesForReconnect::run,
@@ -254,7 +255,8 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
                         threadManager,
                         addressBook,
                         reconnectConfig.asyncStreamTimeout(),
-                        reconnectMetrics));
+                        reconnectMetrics),
+                stateConfig);
     }
 
     /**

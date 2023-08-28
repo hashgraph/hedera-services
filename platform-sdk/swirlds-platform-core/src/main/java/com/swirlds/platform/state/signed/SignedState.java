@@ -48,8 +48,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -121,6 +119,14 @@ public class SignedState implements SignedStateInfo {
     private SignedStateGarbageCollector signedStateGarbageCollector;
 
     /**
+     * Indicates whether this signed state has been saved to disk.
+     * <p>
+     * Note: this value only applies to signed states that are saved inside the normal workflow: states that are dumped
+     * out of band do not affect this value.
+     */
+    private boolean hasBeenSavedToDisk;
+
+    /**
      * Used to track the lifespan of this signed state.
      */
     private final RuntimeObjectRecord registryRecord;
@@ -153,6 +159,7 @@ public class SignedState implements SignedStateInfo {
             final boolean freezeState) {
         this(platformContext, state, reason);
         this.freezeState = freezeState;
+        this.hasBeenSavedToDisk = false;
     }
 
     /**
@@ -362,21 +369,15 @@ public class SignedState implements SignedStateInfo {
      * {@inheritDoc}
      */
     @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
+    public boolean equals(final Object other) {
+        if (this == other) {
             return true;
         }
-
-        if (o == null || getClass() != o.getClass()) {
+        if (other == null || getClass() != other.getClass()) {
             return false;
         }
-
-        final SignedState that = (SignedState) o;
-
-        return new EqualsBuilder()
-                .append(sigSet, that.sigSet)
-                .append(state, that.state)
-                .isEquals();
+        final SignedState that = (SignedState) other;
+        return Objects.equals(sigSet, that.sigSet) && Objects.equals(state, that.state);
     }
 
     /**
@@ -384,7 +385,7 @@ public class SignedState implements SignedStateInfo {
      */
     @Override
     public int hashCode() {
-        return new HashCodeBuilder(17, 37).append(sigSet).append(state).toHashCode();
+        return Objects.hash(sigSet, state);
     }
 
     /**
@@ -495,6 +496,31 @@ public class SignedState implements SignedStateInfo {
     @Nullable
     public StateToDiskReason getStateToDiskReason() {
         return stateToDiskReason;
+    }
+
+    /**
+     * Checks whether this state has been saved to disk.
+     * <p>
+     * The return value of this method applies only to states saved in the normal course of operation, NOT
+     * states that have been dumped to disk out of band.
+     * <p>
+     * This method isn't threadsafe, and should only be called from the thread that is writing the state to disk.
+     *
+     * @return true if this state has been saved to disk, false otherwise
+     */
+    public boolean hasStateBeenSavedToDisk() {
+        return hasBeenSavedToDisk;
+    }
+
+    /**
+     * Indicate that this state has been saved to disk.
+     * <p>
+     * This method shouldn't be called when dumping state to disk out of band.
+     * <p>
+     * This method isn't threadsafe, and should only be called from the thread that is writing the state to disk.
+     */
+    public void stateSavedToDisk() {
+        hasBeenSavedToDisk = true;
     }
 
     /**

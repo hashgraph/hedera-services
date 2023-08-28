@@ -23,6 +23,7 @@ import static com.swirlds.platform.state.address.AddressBookInitializer.STATE_AD
 import static com.swirlds.platform.state.address.AddressBookInitializer.USED_ADDRESS_BOOK_HEADER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
@@ -74,11 +75,15 @@ class AddressBookInitializerTest {
                 signedState,
                 configAddressBook,
                 getPlatformContext(true));
-        final AddressBook inititializedAddressBook = initializer.getInitialAddressBook();
+        final AddressBook inititializedAddressBook = initializer.getCurrentAddressBook();
         assertEquals(
                 configAddressBook,
                 inititializedAddressBook,
                 "The initial address book must equal the config address book.");
+        assertEquals(
+                signedState.getAddressBook(),
+                initializer.getPreviousAddressBook(),
+                "The previous address book must equal the state address book.");
         assertAddressBookFileContent(
                 initializer, configAddressBook, signedState.getAddressBook(), inititializedAddressBook);
     }
@@ -96,11 +101,12 @@ class AddressBookInitializerTest {
                 signedState,
                 configAddressBook,
                 getPlatformContext(false));
-        final AddressBook inititializedAddressBook = initializer.getInitialAddressBook();
+        final AddressBook inititializedAddressBook = initializer.getCurrentAddressBook();
         assertEquals(
                 configAddressBook,
                 inititializedAddressBook,
                 "The initial address book must equal the expected address book.");
+        assertNull(initializer.getPreviousAddressBook(), "The previous address book should be null.");
         assertAddressBookFileContent(
                 initializer, configAddressBook, signedState.getAddressBook(), inititializedAddressBook);
     }
@@ -118,11 +124,12 @@ class AddressBookInitializerTest {
                 signedState,
                 configAddressBook,
                 getPlatformContext(false));
-        final AddressBook inititializedAddressBook = initializer.getInitialAddressBook();
+        final AddressBook inititializedAddressBook = initializer.getCurrentAddressBook();
         assertEquals(
                 configAddressBook,
                 inititializedAddressBook,
                 "The initial address book must equal the config address book.");
+        assertNull(initializer.getPreviousAddressBook(), "The previous address book should be null.");
         assertAddressBookFileContent(
                 initializer, configAddressBook, signedState.getAddressBook(), inititializedAddressBook);
     }
@@ -140,11 +147,12 @@ class AddressBookInitializerTest {
                 signedState,
                 configAddressBook,
                 getPlatformContext(false));
-        final AddressBook inititializedAddressBook = initializer.getInitialAddressBook();
+        final AddressBook inititializedAddressBook = initializer.getCurrentAddressBook();
         assertEquals(
                 configAddressBook,
                 inititializedAddressBook,
                 "The initial address book must equal the config address book.");
+        assertNull(initializer.getPreviousAddressBook(), "The previous address book should be null.");
         assertAddressBookFileContent(
                 initializer, configAddressBook, signedState.getAddressBook(), inititializedAddressBook);
     }
@@ -162,11 +170,15 @@ class AddressBookInitializerTest {
                 signedState,
                 configAddressBook,
                 getPlatformContext(false));
-        final AddressBook inititializedAddressBook = initializer.getInitialAddressBook();
+        final AddressBook inititializedAddressBook = initializer.getCurrentAddressBook();
         assertEquals(
                 signedState.getAddressBook(),
                 inititializedAddressBook,
                 "The initial address book must equal the state address book.");
+        assertEquals(
+                signedState.getAddressBook(),
+                initializer.getPreviousAddressBook(),
+                "The previous address book must equal the state address book.");
         assertAddressBookFileContent(
                 initializer, configAddressBook, signedState.getAddressBook(), inititializedAddressBook);
     }
@@ -184,11 +196,15 @@ class AddressBookInitializerTest {
                 signedState,
                 configAddressBook,
                 getPlatformContext(false));
-        final AddressBook inititializedAddressBook = initializer.getInitialAddressBook();
+        final AddressBook inititializedAddressBook = initializer.getCurrentAddressBook();
         assertEquals(
                 configAddressBook,
                 inititializedAddressBook,
                 "The initial address book must equal the config address book.");
+        assertEquals(
+                signedState.getAddressBook(),
+                initializer.getPreviousAddressBook(),
+                "The previous address book must equal the state address book.");
         assertAddressBookFileContent(
                 initializer, configAddressBook, signedState.getAddressBook(), inititializedAddressBook);
     }
@@ -206,11 +222,15 @@ class AddressBookInitializerTest {
                 signedState,
                 configAddressBook,
                 getPlatformContext(false));
-        final AddressBook inititializedAddressBook = initializer.getInitialAddressBook();
+        final AddressBook inititializedAddressBook = initializer.getCurrentAddressBook();
         assertEquals(
                 configAddressBook,
                 inititializedAddressBook,
                 "The initial address book must equal the config address book.");
+        assertEquals(
+                signedState.getAddressBook(),
+                initializer.getPreviousAddressBook(),
+                "The previous address book must equal the state address book.");
         assertAddressBookFileContent(
                 initializer, configAddressBook, signedState.getAddressBook(), inititializedAddressBook);
     }
@@ -228,7 +248,7 @@ class AddressBookInitializerTest {
                 signedState,
                 configAddressBook,
                 getPlatformContext(false));
-        final AddressBook inititializedAddressBook = initializer.getInitialAddressBook();
+        final AddressBook inititializedAddressBook = initializer.getCurrentAddressBook();
         assertNotEquals(
                 configAddressBook,
                 inititializedAddressBook,
@@ -237,6 +257,10 @@ class AddressBookInitializerTest {
                 signedState.getAddressBook(),
                 inititializedAddressBook,
                 "The initial address book must not equal the state address book.");
+        assertEquals(
+                signedState.getAddressBook(),
+                initializer.getPreviousAddressBook(),
+                "The previous address book must equal the state address book.");
         assertAddressBookFileContent(
                 initializer, configAddressBook, signedState.getAddressBook(), inititializedAddressBook);
     }

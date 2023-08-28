@@ -34,6 +34,7 @@ module com.swirlds.common {
     exports com.swirlds.common.merkle.impl.internal;
     exports com.swirlds.common.merkle.interfaces;
     exports com.swirlds.common.merkle.iterators;
+    exports com.swirlds.common.merkle.proof;
     exports com.swirlds.common.merkle.route;
     exports com.swirlds.common.merkle.synchronization;
     exports com.swirlds.common.merkle.synchronization.config;
@@ -153,7 +154,9 @@ module com.swirlds.common {
             com.swirlds.demo.platform,
             com.swirlds.jrs,
             com.swirlds.platform,
-            com.swirlds.platform.test;
+            com.swirlds.platform.test,
+            com.swirlds.gui;
+    exports com.swirlds.common.startup;
 
     requires transitive com.swirlds.base;
     requires com.swirlds.config;
@@ -172,8 +175,6 @@ module com.swirlds.common {
 
     /* Utilities */
     requires io.github.classgraph;
-    requires org.apache.commons.lang3;
-    requires org.apache.commons.codec;
 
     /* Jackson JSON */
     requires com.fasterxml.jackson.core;

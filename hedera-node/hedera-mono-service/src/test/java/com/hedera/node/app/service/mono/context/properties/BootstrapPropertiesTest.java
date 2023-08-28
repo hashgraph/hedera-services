@@ -298,6 +298,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith({LogCaptureExtension.class})
 class BootstrapPropertiesTest {
+    @LoggingTarget
+    private LogCaptor logCaptor;
+
+    @LoggingSubject
+    private BootstrapProperties subject = new BootstrapProperties();
+
     private static final String STD_PROPS_RESOURCE = "bootstrap/standard.properties";
     private static final String INVALID_PROPS_RESOURCE = "bootstrap/not.properties";
     private static final String UNREADABLE_PROPS_RESOURCE = "bootstrap/unreadable.properties";
@@ -502,11 +508,11 @@ class BootstrapPropertiesTest {
             entry(STAKING_REQUIRE_MIN_STAKE_TO_REWARD, false),
             entry(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS, 365),
             entry(STAKING_STARTUP_HELPER_RECOMPUTE, EnumSet.allOf(StakeStartupHelper.RecomputeType.class)),
-            entry(STAKING_REWARD_RATE, 0L),
+            entry(STAKING_REWARD_RATE, 48630136986000L),
             entry(STAKING_START_THRESH, 25000000000000000L),
             entry(STAKING_FEES_NODE_REWARD_PERCENT, 0),
             entry(STAKING_FEES_STAKING_REWARD_PERCENT, 100),
-            entry(STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR, 17808L),
+            entry(STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR, 6849L),
             entry(CONSENSUS_MESSAGE_MAX_BYTES_ALLOWED, 1024),
             entry(CONSENSUS_HANDLE_MAX_PRECEDING_RECORDS, 3L),
             entry(CONSENSUS_HANDLE_MAX_FOLLOWING_RECORDS, 50L),
@@ -557,12 +563,6 @@ class BootstrapPropertiesTest {
             entry(CACHE_CRYPTO_TRANSFER_WARM_THREADS, 30),
             entry(CONFIG_VERSION, 10),
             entry(RECORDS_USE_CONSOLIDATED_FCQ, false));
-
-    @LoggingTarget
-    private LogCaptor logCaptor;
-
-    @LoggingSubject
-    private BootstrapProperties subject = new BootstrapProperties();
 
     @Test
     void containsProperty() {

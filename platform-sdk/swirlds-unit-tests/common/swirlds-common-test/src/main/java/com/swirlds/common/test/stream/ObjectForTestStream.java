@@ -29,8 +29,8 @@ import com.swirlds.common.stream.Timestamped;
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.time.Instant;
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
+import java.util.Arrays;
+import java.util.Objects;
 
 /**
  * Defines a RunningHashable &amp; SerializableHashable class for testing LinkedObjectStream
@@ -124,26 +124,22 @@ public class ObjectForTestStream extends AbstractHashable
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) {
+    public boolean equals(final Object other) {
+        if (this == other) {
             return true;
         }
-        if (o == null || getClass() != o.getClass()) {
+        if (other == null || getClass() != other.getClass()) {
             return false;
         }
-        ObjectForTestStream that = (ObjectForTestStream) o;
-        return new EqualsBuilder()
-                .append(payload, that.payload)
-                .append(consensusTimestamp, that.consensusTimestamp)
-                .build();
+        final ObjectForTestStream that = (ObjectForTestStream) other;
+        return Arrays.equals(payload, that.payload) && Objects.equals(consensusTimestamp, that.consensusTimestamp);
     }
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder(17, 37)
-                .append(payload)
-                .append(consensusTimestamp)
-                .build();
+        int result = Objects.hash(consensusTimestamp);
+        result = 31 * result + Arrays.hashCode(payload);
+        return result;
     }
 
     /**

@@ -21,6 +21,7 @@ import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.common.system.events.ConsensusData;
 import com.swirlds.platform.internal.EventImpl;
+import java.util.Objects;
 
 /**
  * An event with the same behavior as a standard event but with the addition of some debugging
@@ -109,5 +110,31 @@ public class IndexedEvent extends EventImpl {
     @Override
     public String toString() {
         return super.toString();
+    }
+
+    @Override
+    public boolean equals(final Object other) {
+        if (this == other) {
+            return true;
+        }
+        if (other == null || getClass() != other.getClass()) {
+            return false;
+        }
+        if (!super.equals(other)) {
+            return false;
+        }
+        final InternalEventData data = getInternalEventData();
+        final InternalEventData otherData = ((IndexedEvent) other).getInternalEventData();
+
+        return Objects.equals(data.isCleared(), otherData.isCleared())
+                && Objects.equals(data.isFameDecided(), otherData.isFameDecided())
+                && Objects.equals(data.isConsensus(), otherData.isConsensus())
+                && Objects.equals(data.hasUserTransactions(), otherData.hasUserTransactions())
+                && Objects.equals(data.getRecTimes(), otherData.getRecTimes());
+    }
+
+    @Override
+    public int hashCode() {
+        return super.hashCode();
     }
 }

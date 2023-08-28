@@ -79,6 +79,7 @@ public class WritableSingletonStateBase<T> extends ReadableSingletonStateBase<T>
         if (modified) {
             backingStoreMutator.accept(value);
         }
+        reset();
     }
 
     /**

@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-plugins { id("com.gradle.enterprise").version("3.10.3") }
+pluginManagement { @Suppress("UnstableApiUsage") includeBuild("../build-logic") }
+
+plugins { id("com.gradle.enterprise").version("3.11.4") }
 
 rootProject.name = "swirlds-platform"
 
@@ -101,13 +103,6 @@ dependencyResolutionManagement {
             version("lazysodium-version", "5.1.1")
             version("bouncycastle-version", "1.70")
 
-            // Apache Commons
-            version("commons-lang3-version", "3.12.0")
-            version("commons-io-version", "2.11.0")
-            version("commons-codec-version", "1.15")
-            version("commons-math3-version", "3.6.1")
-            version("commons-collections4-version", "4.4")
-
             // Eclipse Commons
             version("eclipse-collections-version", "10.4.0")
 
@@ -120,9 +115,6 @@ dependencyResolutionManagement {
 
             // Parsers
             version("jackson-version", "2.13.3")
-
-            // Network
-            version("portmapper-version", "2.0.4")
 
             // JavaFX
             version("javafx-version", "17")
@@ -153,21 +145,10 @@ dependencyResolutionManagement {
                 "jackson",
                 listOf("jackson-databind", "jackson-datatype-jsr310", "jackson-dataformat-yaml")
             )
-            bundle("networking", listOf("portmapper"))
             bundle("javafx", listOf("javafx-base"))
             bundle("picocli", listOf("picocli"))
 
             // Define the individual libraries
-            // Commons Bundle
-            library("commons-lang3", "org.apache.commons", "commons-lang3")
-                .versionRef("commons-lang3-version")
-            library("commons-io", "commons-io", "commons-io").versionRef("commons-io-version")
-            library("commons-codec", "commons-codec", "commons-codec")
-                .versionRef("commons-codec-version")
-            library("commons-math3", "org.apache.commons", "commons-math3")
-                .versionRef("commons-math3-version")
-            library("commons-collections4", "org.apache.commons", "commons-collections4")
-                .versionRef("commons-collections4-version")
             // Eclipse Bundle
             library("eclipse-collections", "org.eclipse.collections", "eclipse-collections")
                 .versionRef("eclipse-collections-version")
@@ -218,9 +199,6 @@ dependencyResolutionManagement {
                     "jackson-dataformat-yaml"
                 )
                 .versionRef("jackson-version")
-            // Networking Bundle
-            library("portmapper", "com.offbynull.portmapper", "portmapper")
-                .versionRef("portmapper-version")
             // JavaFX Bundle
             library("javafx-base", "org.openjfx", "javafx-base").versionRef("javafx-version")
             // Misc
@@ -258,7 +236,7 @@ dependencyResolutionManagement {
             // List of bundles provided for us. When applicable, favor using these over individual
             // libraries.
             bundle("junit", listOf("junit-jupiter", "junit-jupiter-api", "junit-jupiter-params"))
-            bundle("mocking", listOf("mockito-core", "mockito-junit"))
+            bundle("mocking", listOf("mockito-core", "mockito-junit", "mockito-inline"))
             bundle("utils", listOf("awaitility", "assertj-core", "truth"))
 
             // Define the individual libraries
@@ -272,6 +250,8 @@ dependencyResolutionManagement {
 
             // Mocking Bundle
             library("mockito-core", "org.mockito", "mockito-core").versionRef("mockito-version")
+            // to enable mocking of final classes
+            library("mockito-inline", "org.mockito", "mockito-inline").versionRef("mockito-version")
             library("mockito-junit", "org.mockito", "mockito-junit-jupiter")
                 .versionRef("mockito-version")
 

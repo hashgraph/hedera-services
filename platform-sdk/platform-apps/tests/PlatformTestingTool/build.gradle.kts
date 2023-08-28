@@ -17,15 +17,13 @@
 plugins {
     id("com.swirlds.platform.conventions")
     id("com.swirlds.platform.application")
-    id("com.swirlds.platform.protobuf")
+    id("com.google.protobuf")
 }
 
 dependencies {
     // Individual Dependencies
     compileOnly(libs.spotbugs.annotations)
     implementation(project(":swirlds-merkle"))
-    implementation(libs.commons.math3)
-    implementation(libs.commons.io)
     implementation(libs.protobuf)
 
     // Bundle Dependencies
@@ -44,4 +42,12 @@ dependencies {
     testImplementation(testFixtures(project(":swirlds-common")))
 }
 
-tasks.withType<Javadoc>() { enabled = false }
+protobuf { protoc { artifact = "com.google.protobuf:protoc:3.21.5" } }
+
+tasks.whenTaskAdded {
+    if (name == "extractIncludeProto") {
+        enabled = false
+    }
+}
+
+tasks.withType<Javadoc> { enabled = false }

@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.benchmark.consensus;
 
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.config.ConfigUtils;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.test.fixtures.WeightGenerators;
@@ -113,8 +114,8 @@ public class ConsensusBenchmark {
                 run.stream().findFirst().orElseThrow().getPrimaryResult().getScore();
 
         for (final Pair<String, Double> pair : resultComparison) {
-            final double diff = actualScore - pair.getRight();
-            System.out.printf("Compared to '%s': %+.2f%%%n", pair.getLeft(), (100 * diff) / pair.getRight());
+            final double diff = actualScore - pair.right();
+            System.out.printf("Compared to '%s': %+.2f%%%n", pair.left(), (100 * diff) / pair.right());
         }
     }
 }

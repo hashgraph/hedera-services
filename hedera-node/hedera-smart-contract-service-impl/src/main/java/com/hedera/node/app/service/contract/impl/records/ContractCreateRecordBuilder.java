@@ -43,7 +43,7 @@ public interface ContractCreateRecordBuilder {
      * @return this builder
      */
     @NonNull
-    ContractCreateRecordBuilder contractID(@Nullable final ContractID contractId);
+    ContractCreateRecordBuilder contractID(@Nullable ContractID contractId);
 
     /**
      * Tracks the result of a top-level contract creation.
@@ -52,5 +52,5 @@ public interface ContractCreateRecordBuilder {
      * @return this builder
      */
     @NonNull
-    ContractCreateRecordBuilder contractCreateResult(@Nullable final ContractFunctionResult result);
+    ContractCreateRecordBuilder contractCreateResult(@Nullable ContractFunctionResult result);
 }

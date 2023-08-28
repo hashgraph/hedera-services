@@ -40,8 +40,8 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tu
 import static java.util.Objects.requireNonNull;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.ILLEGAL_STATE_CHANGE;
 
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
@@ -79,8 +79,10 @@ import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
  * TODO - get a little further to clarify DI strategy, then bring back a code cache.
  */
 public class DispatchingEvmFrameState implements EvmFrameState {
-    private static final Key HOLLOW_ACCOUNT_KEY =
-            Key.newBuilder().keyList(KeyList.DEFAULT).build();
+    // This key can no longer be an empty key list as it fails validation.  Use this key for now
+    private static final Key HOLLOW_ACCOUNT_KEY = Key.newBuilder()
+            .contractID(ContractID.newBuilder().contractNum(1).build())
+            .build();
     private static final String TOKEN_BYTECODE_PATTERN = "fefefefefefefefefefefefefefefefefefefefe";
 
     @SuppressWarnings("java:S6418")
@@ -162,7 +164,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
     @Override
     public @NonNull RentFactors getRentFactorsFor(final long number) {
         final var account = validatedAccount(number);
-        return new RentFactors(account.contractKvPairsNumber(), account.expiry());
+        return new RentFactors(account.contractKvPairsNumber(), account.expirationSecond());
     }
 
     /**
@@ -281,7 +283,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
      * {@inheritDoc}
      */
     @Override
-    public Address getAddress(final long number) {
+    public @Nullable Address getAddress(final long number) {
         final var account = validatedAccount(number);
         if (account.deleted()) {
             return null;

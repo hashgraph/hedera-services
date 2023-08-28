@@ -1,0 +1,145 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.hedera.node.app.service.contract.impl.test.nfra;
+
+import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_FILE_EMPTY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.FILE_DELETED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
+import static com.hedera.node.app.service.contract.impl.hevm.HydratedEthTxData.successFrom;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALL_DATA;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ETH_CALLDATA_FILE_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ETH_DATA_WITH_CALL_DATA;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ETH_DATA_WITH_TO_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ETH_WITH_CALL_DATA;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ETH_WITH_TO_ADDRESS;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verifyNoInteractions;
+
+import com.hedera.hapi.node.contract.EthereumTransactionBody;
+import com.hedera.hapi.node.state.file.File;
+import com.hedera.node.app.service.contract.impl.infra.EthereumCallDataHydration;
+import com.hedera.node.app.service.file.ReadableFileStore;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import org.bouncycastle.util.encoders.Hex;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+@ExtendWith(MockitoExtension.class)
+class EthereumCallDataHydrationTest {
+    @Mock
+    private ReadableFileStore fileStore;
+
+    private EthereumCallDataHydration subject = new EthereumCallDataHydration();
+
+    @Test
+    void failsWithInvalidEthTxWithInvalidData() {
+        final var ethTxn =
+                EthereumTransactionBody.newBuilder().ethereumData(Bytes.EMPTY).build();
+        final var result = subject.tryToHydrate(ethTxn, fileStore);
+        assertFalse(result.isAvailable());
+        assertEquals(INVALID_ETHEREUM_TRANSACTION, result.status());
+    }
+
+    @Test
+    void doesNoHydrationIfCallDataFileNotSet() {
+        final var ethTxn = EthereumTransactionBody.newBuilder()
+                .ethereumData(ETH_WITH_TO_ADDRESS)
+                .build();
+        assertEquals(successFrom(ETH_DATA_WITH_TO_ADDRESS), subject.tryToHydrate(ethTxn, fileStore));
+        verifyNoInteractions(fileStore);
+    }
+
+    @Test
+    void doesNoHydrationIfCallDataAlreadyAvailable() {
+        final var ethTxn = EthereumTransactionBody.newBuilder()
+                .ethereumData(ETH_WITH_CALL_DATA)
+                .callData(ETH_CALLDATA_FILE_ID)
+                .build();
+        assertEquals(successFrom(ETH_DATA_WITH_CALL_DATA), subject.tryToHydrate(ethTxn, fileStore));
+        verifyNoInteractions(fileStore);
+    }
+
+    @Test
+    void failsWithInvalidFileIdOnMissingCallDataFile() {
+        final var ethTxn = EthereumTransactionBody.newBuilder()
+                .ethereumData(ETH_WITH_TO_ADDRESS)
+                .callData(ETH_CALLDATA_FILE_ID)
+                .build();
+        final var result = subject.tryToHydrate(ethTxn, fileStore);
+        assertFalse(result.isAvailable());
+        assertEquals(INVALID_FILE_ID, result.status());
+    }
+
+    @Test
+    void failsWithFileDeletedOnMissingCallDataFile() {
+        given(fileStore.getFileLeaf(ETH_CALLDATA_FILE_ID))
+                .willReturn(File.newBuilder().deleted(true).build());
+        final var ethTxn = EthereumTransactionBody.newBuilder()
+                .ethereumData(ETH_WITH_TO_ADDRESS)
+                .callData(ETH_CALLDATA_FILE_ID)
+                .build();
+        final var result = subject.tryToHydrate(ethTxn, fileStore);
+        assertFalse(result.isAvailable());
+        assertEquals(FILE_DELETED, result.status());
+    }
+
+    @Test
+    void failsWithInvalidFileIdOnUnparseableCallDataFile() {
+        given(fileStore.getFileLeaf(ETH_CALLDATA_FILE_ID))
+                .willReturn(File.newBuilder().contents(Bytes.wrap("xyz")).build());
+        final var ethTxn = EthereumTransactionBody.newBuilder()
+                .ethereumData(ETH_WITH_TO_ADDRESS)
+                .callData(ETH_CALLDATA_FILE_ID)
+                .build();
+        final var result = subject.tryToHydrate(ethTxn, fileStore);
+        assertFalse(result.isAvailable());
+        assertEquals(INVALID_FILE_ID, result.status());
+    }
+
+    @Test
+    void failsWithInvalidFileIdOnEmptyCallDataFile() {
+        given(fileStore.getFileLeaf(ETH_CALLDATA_FILE_ID))
+                .willReturn(File.newBuilder().contents(Bytes.EMPTY).build());
+        final var ethTxn = EthereumTransactionBody.newBuilder()
+                .ethereumData(ETH_WITH_TO_ADDRESS)
+                .callData(ETH_CALLDATA_FILE_ID)
+                .build();
+        final var result = subject.tryToHydrate(ethTxn, fileStore);
+        assertFalse(result.isAvailable());
+        assertEquals(CONTRACT_FILE_EMPTY, result.status());
+    }
+
+    @Test
+    void replacesCallDataIfAppropriate() {
+        final var hexedCallData = Hex.encode(CALL_DATA.toByteArray());
+        final var expectedData = ETH_DATA_WITH_TO_ADDRESS.replaceCallData(CALL_DATA.toByteArray());
+        given(fileStore.getFileLeaf(ETH_CALLDATA_FILE_ID))
+                .willReturn(
+                        File.newBuilder().contents(Bytes.wrap(hexedCallData)).build());
+        final var ethTxn = EthereumTransactionBody.newBuilder()
+                .ethereumData(ETH_WITH_TO_ADDRESS)
+                .callData(ETH_CALLDATA_FILE_ID)
+                .build();
+        final var result = subject.tryToHydrate(ethTxn, fileStore);
+        assertTrue(result.isAvailable());
+        assertEquals(expectedData, result.ethTxData());
+    }
+}

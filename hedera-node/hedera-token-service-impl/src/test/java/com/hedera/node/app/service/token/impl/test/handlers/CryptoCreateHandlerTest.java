@@ -44,6 +44,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -53,7 +54,9 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -65,6 +68,9 @@ import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTe
 import com.hedera.node.app.service.token.impl.validators.CryptoCreateValidator;
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
+import com.hedera.node.app.spi.fees.FeeAccumulator;
+import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.validation.AttributeValidator;
@@ -112,6 +118,12 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     @Mock(strictness = LENIENT)
     private ExpiryValidator expiryValidator;
 
+    @Mock
+    private FeeCalculator feeCalculator;
+
+    @Mock
+    private FeeAccumulator feeAccumulator;
+
     private CryptoCreateHandler subject;
 
     private CryptoCreateValidator cryptoCreateValidator;
@@ -121,6 +133,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
 
     private Configuration configuration;
     private static final long defaultInitialBalance = 100L;
+    private static final Fees fee = new Fees(1, 1, 1);
 
     @BeforeEach
     public void setUp() {
@@ -133,9 +146,12 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
 
         given(dynamicProperties.maxMemoUtf8Bytes()).willReturn(100);
         given(dynamicProperties.minAutoRenewDuration()).willReturn(2592000L);
-        given(dynamicProperties.maxAutoRenewDuration()).willReturn(8000001L);
+        lenient().when(dynamicProperties.maxAutoRenewDuration()).thenReturn(8000001L);
         attributeValidator = new StandardizedAttributeValidator(consensusSecondNow, compositeProps, dynamicProperties);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
+        given(handleContext.feeCalculator(SubType.DEFAULT)).willReturn(feeCalculator);
+        lenient().when(handleContext.feeAccumulator()).thenReturn(feeAccumulator);
+        lenient().when(feeCalculator.legacyCalculate(any())).thenReturn(new Fees(1, 1, 1));
 
         cryptoCreateValidator = new CryptoCreateValidator();
         stakingValidator = new StakingValidator();
@@ -250,6 +266,8 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     @DisplayName("handle works when account can be created without any alias")
+    // Suppressing the warning that we have too many assertions
+    @SuppressWarnings("java:S5961")
     void handleCryptoCreateVanilla() {
         txn = new CryptoCreateBuilder().withStakedAccountId(3).build();
         given(handleContext.body()).willReturn(txn);
@@ -282,7 +300,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         assertEquals(1000L, createdAccount.accountId().accountNum());
         assertEquals(Bytes.EMPTY, createdAccount.alias());
         assertEquals(otherKey, createdAccount.key());
-        assertEquals(consensusTimestamp.seconds() + defaultAutoRenewPeriod, createdAccount.expiry());
+        assertEquals(consensusTimestamp.seconds() + defaultAutoRenewPeriod, createdAccount.expirationSecond());
         assertEquals(defaultInitialBalance, createdAccount.tinybarBalance());
         assertEquals("Create Account", createdAccount.memo());
         assertFalse(createdAccount.deleted());
@@ -304,7 +322,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         assertEquals(0L, createdAccount.ethereumNonce());
         assertEquals(0L, createdAccount.stakeAtStartOfLastRewardedPeriod());
         assertNull(createdAccount.autoRenewAccountId());
-        assertEquals(defaultAutoRenewPeriod, createdAccount.autoRenewSecs());
+        assertEquals(defaultAutoRenewPeriod, createdAccount.autoRenewSeconds());
         assertEquals(0, createdAccount.contractKvPairsNumber());
         assertTrue(createdAccount.cryptoAllowances().isEmpty());
         assertTrue(createdAccount.approveForAllNftAllowances().isEmpty());
@@ -319,6 +337,8 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     @DisplayName("handle works when account can be created without any alias using staked account id")
+    // Suppressing the warning that we have too many assertions
+    @SuppressWarnings("java:S5961")
     void handleCryptoCreateVanillaWithStakedAccountId() {
         txn = new CryptoCreateBuilder().withStakedAccountId(3).build();
         given(handleContext.body()).willReturn(txn);
@@ -350,7 +370,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         assertEquals(1000L, createdAccount.accountId().accountNum());
         assertEquals(Bytes.EMPTY, createdAccount.alias());
         assertEquals(otherKey, createdAccount.key());
-        assertEquals(consensusTimestamp.seconds() + defaultAutoRenewPeriod, createdAccount.expiry());
+        assertEquals(consensusTimestamp.seconds() + defaultAutoRenewPeriod, createdAccount.expirationSecond());
         assertEquals(defaultInitialBalance, createdAccount.tinybarBalance());
         assertEquals("Create Account", createdAccount.memo());
         assertFalse(createdAccount.deleted());
@@ -372,7 +392,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         assertEquals(0L, createdAccount.ethereumNonce());
         assertEquals(0L, createdAccount.stakeAtStartOfLastRewardedPeriod());
         assertNull(createdAccount.autoRenewAccountId());
-        assertEquals(defaultAutoRenewPeriod, createdAccount.autoRenewSecs());
+        assertEquals(defaultAutoRenewPeriod, createdAccount.autoRenewSeconds());
         assertEquals(0, createdAccount.contractKvPairsNumber());
         assertTrue(createdAccount.cryptoAllowances().isEmpty());
         assertTrue(createdAccount.approveForAllNftAllowances().isEmpty());
@@ -605,9 +625,9 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         setupConfig();
         setupExpiryValidator();
         final var writableAliases = emptyWritableAliasStateBuilder()
-                .value(Bytes.wrap(evmAddress), asAccount(accountNum))
+                .value(new ProtoBytes(Bytes.wrap(evmAddress)), asAccount(accountNum))
                 .build();
-        given(writableStates.<Bytes, AccountID>get(ALIASES)).willReturn(writableAliases);
+        given(writableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(writableAliases);
         writableStore = new WritableAccountStore(writableStates);
         when(handleContext.writableStore(WritableAccountStore.class)).thenReturn(writableStore);
 

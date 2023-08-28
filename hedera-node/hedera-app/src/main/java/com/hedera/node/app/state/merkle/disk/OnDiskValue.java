@@ -70,7 +70,6 @@ public class OnDiskValue<V> implements VirtualValue {
     /** {@inheritDoc} */
     @Override
     public VirtualValue copy() {
-        //        throwIfImmutable();
         final var copy = new OnDiskValue<>(md, value);
         this.immutable = true;
         return copy;
@@ -101,7 +100,6 @@ public class OnDiskValue<V> implements VirtualValue {
         output.skip(4);
         codec.write(value, output);
         final var pos = output.position();
-        output.position(0);
         output.writeInt((int) pos - 4);
         output.position(pos);
     }
@@ -115,9 +113,13 @@ public class OnDiskValue<V> implements VirtualValue {
     /** {@inheritDoc} */
     @Override
     public void deserialize(@NonNull final ByteBuffer byteBuffer, int ignored) throws IOException {
-        final var input = BufferedData.wrap(byteBuffer);
-        input.skip(4); // skip the length
-        value = codec.parse(input);
+        final var buff = BufferedData.wrap(byteBuffer);
+        final var len = buff.readInt();
+        final var pos = buff.position();
+        final var oldLimit = buff.limit();
+        buff.limit(pos + len);
+        value = codec.parse(buff);
+        buff.limit(oldLimit);
     }
 
     /** {@inheritDoc} */

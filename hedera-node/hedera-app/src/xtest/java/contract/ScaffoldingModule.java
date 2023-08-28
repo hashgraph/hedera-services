@@ -16,12 +16,20 @@
 
 package contract;
 
+import static com.hedera.node.app.spi.HapiUtils.functionOf;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.SignatureMap;
+import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.transaction.ExchangeRate;
+import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.config.VersionedConfigImpl;
+import com.hedera.node.app.fees.ExchangeRateManager;
+import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.records.impl.BlockRecordManagerImpl;
@@ -37,6 +45,7 @@ import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakeRewardCalculator;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakeRewardCalculatorImpl;
 import com.hedera.node.app.services.ServiceScopeLookup;
+import com.hedera.node.app.spi.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.fixtures.info.FakeNetworkInfo;
 import com.hedera.node.app.spi.fixtures.numbers.FakeHederaNumbers;
 import com.hedera.node.app.spi.info.NetworkInfo;
@@ -49,6 +58,7 @@ import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.recordcache.DeduplicationCacheImpl;
 import com.hedera.node.app.state.recordcache.RecordCacheImpl;
 import com.hedera.node.app.workflows.TransactionChecker;
+import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.HandleContextImpl;
 import com.hedera.node.app.workflows.handle.HandlersInjectionModule;
@@ -60,6 +70,7 @@ import com.hedera.node.app.workflows.prehandle.DummyPreHandleDispatcher;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.stream.Signer;
@@ -158,7 +169,9 @@ public interface ScaffoldingModule {
     @Provides
     @Singleton
     static Configuration provideConfiguration() {
-        return HederaTestConfigBuilder.create().getOrCreateConfig();
+        return HederaTestConfigBuilder.create()
+                .withValue("contracts.chainId", "298")
+                .getOrCreateConfig();
     }
 
     @Provides
@@ -175,6 +188,19 @@ public interface ScaffoldingModule {
 
     @Provides
     @Singleton
+    static ExchangeRateManager provideExchangeRateManager() {
+        final var exchangeRateManager = new ExchangeRateManager();
+        final ExchangeRate.Builder someRate =
+                ExchangeRate.newBuilder().hbarEquiv(1).centEquiv(1);
+        final var onlyCurrentRates =
+                ExchangeRateSet.newBuilder().currentRate(someRate).build();
+
+        exchangeRateManager.update(ExchangeRateSet.PROTOBUF.toBytes(onlyCurrentRates));
+        return exchangeRateManager;
+    }
+
+    @Provides
+    @Singleton
     static Function<TransactionBody, HandleContext> provideHandleContextCreator(
             @NonNull final Metrics metrics,
             @NonNull final NetworkInfo networkInfo,
@@ -184,22 +210,38 @@ public interface ScaffoldingModule {
             @NonNull final ServiceScopeLookup scopeLookup,
             @NonNull final BlockRecordManager blockRecordManager,
             @NonNull final TransactionDispatcher dispatcher,
-            @NonNull final HederaState state) {
-        final var parentRecordBuilder = new SingleTransactionRecordBuilderImpl(Instant.now());
-        return body -> new HandleContextImpl(
-                body,
-                body.transactionIDOrThrow().accountIDOrThrow(),
-                Key.DEFAULT,
-                networkInfo,
-                USER,
-                parentRecordBuilder,
-                new SavepointStackImpl(state, configuration),
-                new BaseHandleContextVerifier(configuration.getConfigData(HederaConfig.class), Map.of()),
-                new RecordListBuilder(parentRecordBuilder),
-                new TransactionChecker(6192, AccountID.DEFAULT, configProvider, metrics),
-                dispatcher,
-                scopeLookup,
-                blockRecordManager,
-                recordCache);
+            @NonNull final HederaState state,
+            @NonNull final FeeManager feeManager) {
+        final var consensusTime = Instant.now();
+        final var parentRecordBuilder = new SingleTransactionRecordBuilderImpl(consensusTime);
+        return body -> {
+            // TODO: Temporary solution, better to simplify HandleContextImpl
+            final HederaFunctionality function;
+            try {
+                function = functionOf(body);
+            } catch (UnknownHederaFunctionality e) {
+                throw new RuntimeException(e);
+            }
+            final var txInfo =
+                    new TransactionInfo(Transaction.DEFAULT, body, SignatureMap.DEFAULT, Bytes.EMPTY, function);
+            return new HandleContextImpl(
+                    txInfo,
+                    body.transactionIDOrThrow().accountIDOrThrow(),
+                    Key.DEFAULT,
+                    networkInfo,
+                    USER,
+                    parentRecordBuilder,
+                    new SavepointStackImpl(state),
+                    configuration,
+                    new BaseHandleContextVerifier(configuration.getConfigData(HederaConfig.class), Map.of()),
+                    new RecordListBuilder(parentRecordBuilder),
+                    new TransactionChecker(6192, AccountID.DEFAULT, configProvider, metrics),
+                    dispatcher,
+                    scopeLookup,
+                    blockRecordManager,
+                    recordCache,
+                    feeManager,
+                    consensusTime);
+        };
     }
 }

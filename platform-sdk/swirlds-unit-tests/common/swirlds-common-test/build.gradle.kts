@@ -16,7 +16,7 @@
 
 plugins {
     id("com.swirlds.platform.conventions")
-    id("com.swirlds.platform.library")
+    `java-library`
     id("com.swirlds.platform.maven-publish")
     id("org.gradle.java-test-fixtures")
 }
@@ -37,6 +37,7 @@ dependencies {
     // These should not be implementation() based deps, but this requires refactoring to eliminate.
     implementation(project(":swirlds-unit-tests:common:swirlds-test-framework"))
     implementation(testFixtures(project(":swirlds-common")))
+    implementation(libs.log4j.core)
 
     testImplementation(libs.bundles.logging.impl)
     testImplementation(testLibs.bundles.junit)

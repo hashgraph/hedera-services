@@ -22,6 +22,7 @@ import static com.swirlds.platform.util.BootstrapUtils.loadAppMain;
 import static com.swirlds.platform.util.BootstrapUtils.setupConstructableRegistry;
 
 import com.swirlds.common.config.ConsensusConfig;
+import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.IOIterator;
@@ -149,9 +150,9 @@ public final class EventRecoveryWorkflow {
 
             SignedStateFileWriter.writeSignedStateFilesToDirectory(
                     selfId, resultingStateDirectory, resultingState.get(), platformContext.getConfiguration());
-
+            final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
             updateEmergencyRecoveryFile(
-                    resultingStateDirectory, initialState.get().getConsensusTimestamp());
+                    stateConfig, resultingStateDirectory, initialState.get().getConsensusTimestamp());
 
             logger.info(STARTUP.getMarker(), "Recovery process completed");
 
@@ -162,13 +163,17 @@ public final class EventRecoveryWorkflow {
     /**
      * Update the resulting emergency recovery file to contain the bootstrap timestamp.
      *
+     * @param stateConfig     the state configuration for the platform
      * @param recoveryFileDir the directory containing the emergency recovery file
      * @param bootstrapTime   the consensus timestamp of the bootstrap state
      */
-    public static void updateEmergencyRecoveryFile(final Path recoveryFileDir, final Instant bootstrapTime) {
+    public static void updateEmergencyRecoveryFile(
+            @NonNull final StateConfig stateConfig,
+            @NonNull final Path recoveryFileDir,
+            @NonNull final Instant bootstrapTime) {
         try {
             // Read the existing recovery file and write it to a backup directory
-            final EmergencyRecoveryFile oldRecoveryFile = EmergencyRecoveryFile.read(recoveryFileDir);
+            final EmergencyRecoveryFile oldRecoveryFile = EmergencyRecoveryFile.read(stateConfig, recoveryFileDir);
             if (oldRecoveryFile == null) {
                 logger.error(EXCEPTION.getMarker(), "Recovery file does not exist at {}", recoveryFileDir);
                 return;

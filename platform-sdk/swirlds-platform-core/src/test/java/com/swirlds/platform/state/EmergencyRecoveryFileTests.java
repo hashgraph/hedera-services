@@ -22,6 +22,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.swirlds.base.utility.Pair;
+import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.test.fixtures.RandomUtils;
@@ -33,6 +35,7 @@ import com.swirlds.platform.recovery.emergencyfile.Recovery;
 import com.swirlds.platform.recovery.emergencyfile.State;
 import com.swirlds.platform.recovery.emergencyfile.Stream;
 import com.swirlds.test.framework.ResourceLoader;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -44,9 +47,8 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+import java.util.UUID;
 import java.util.stream.Collectors;
-import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.MockMakers;
@@ -58,6 +60,8 @@ public class EmergencyRecoveryFileTests {
     public static final String FIELD_NAME_ROUND = "round";
     public static final String FIELD_NAME_HASH = "hash";
     public static final String FIELD_NAME_TIMESTAMP = "timestamp";
+    private final StateConfig stateConfig =
+            new TestConfigBuilder().getOrCreateConfig().getConfigData(StateConfig.class);
 
     @TempDir
     Path tmpDir;
@@ -68,7 +72,7 @@ public class EmergencyRecoveryFileTests {
         final EmergencyRecoveryFile toWrite = createRecoveryFile(r);
         toWrite.write(tmpDir);
 
-        final EmergencyRecoveryFile readIn = EmergencyRecoveryFile.read(tmpDir);
+        final EmergencyRecoveryFile readIn = EmergencyRecoveryFile.read(stateConfig, tmpDir);
 
         assertNotNull(readIn, "emergency round data should not be null");
         assertEquals(toWrite.round(), readIn.round(), "round does not match");
@@ -82,7 +86,7 @@ public class EmergencyRecoveryFileTests {
         final EmergencyRecoveryFile toWrite = createRecoveryFileWithBootstrap(r);
         toWrite.write(tmpDir);
 
-        final EmergencyRecoveryFile readIn = EmergencyRecoveryFile.read(tmpDir);
+        final EmergencyRecoveryFile readIn = EmergencyRecoveryFile.read(stateConfig, tmpDir);
 
         assertNotNull(readIn, "emergency round data should not be null");
         assertEquals(toWrite.round(), readIn.round(), "round does not match");
@@ -104,7 +108,8 @@ public class EmergencyRecoveryFileTests {
                 Pair.of(FIELD_NAME_HASH, randomHashString(r)),
                 Pair.of(FIELD_NAME_TIMESTAMP, randomInstantString(r)),
                 Pair.of("anotherOne", "anotherValue"));
-        assertDoesNotThrow(() -> EmergencyRecoveryFile.read(tmpDir), "Additional fields should not cause problems");
+        assertDoesNotThrow(
+                () -> EmergencyRecoveryFile.read(stateConfig, tmpDir), "Additional fields should not cause problems");
 
         writeFileWithBootstrap(
                 Pair.of("some field", "some value"),
@@ -112,7 +117,8 @@ public class EmergencyRecoveryFileTests {
                 Pair.of(FIELD_NAME_HASH, randomHashString(r)),
                 Pair.of(FIELD_NAME_TIMESTAMP, randomInstantString(r)),
                 Pair.of("anotherOne", "anotherValue"));
-        assertDoesNotThrow(() -> EmergencyRecoveryFile.read(tmpDir), "Bootstrap field should not cause problems");
+        assertDoesNotThrow(
+                () -> EmergencyRecoveryFile.read(stateConfig, tmpDir), "Bootstrap field should not cause problems");
     }
 
     @Test
@@ -120,26 +126,38 @@ public class EmergencyRecoveryFileTests {
         final Random r = RandomUtils.getRandomPrintSeed();
         writeFileWithBootstrap(Pair.of(FIELD_NAME_ROUND, randomLongString(r)));
         assertThrows(
-                IOException.class, () -> EmergencyRecoveryFile.read(tmpDir), "Reading an invalid file should throw");
+                IOException.class,
+                () -> EmergencyRecoveryFile.read(stateConfig, tmpDir),
+                "Reading an invalid file should throw");
         writeFile(Pair.of(FIELD_NAME_HASH, randomHashString(r)));
         assertThrows(
-                IOException.class, () -> EmergencyRecoveryFile.read(tmpDir), "Reading an invalid file should throw");
+                IOException.class,
+                () -> EmergencyRecoveryFile.read(stateConfig, tmpDir),
+                "Reading an invalid file should throw");
         writeFile(Pair.of(FIELD_NAME_TIMESTAMP, randomInstantString(r)));
         assertThrows(
-                IOException.class, () -> EmergencyRecoveryFile.read(tmpDir), "Reading an invalid file should throw");
+                IOException.class,
+                () -> EmergencyRecoveryFile.read(stateConfig, tmpDir),
+                "Reading an invalid file should throw");
         writeFileWithBootstrap(
                 Pair.of(FIELD_NAME_HASH, randomHashString(r)), Pair.of(FIELD_NAME_TIMESTAMP, randomInstantString(r)));
         assertThrows(
-                IOException.class, () -> EmergencyRecoveryFile.read(tmpDir), "Reading an invalid file should throw");
+                IOException.class,
+                () -> EmergencyRecoveryFile.read(stateConfig, tmpDir),
+                "Reading an invalid file should throw");
         writeFile(Pair.of(FIELD_NAME_ROUND, randomLongString(r)), Pair.of(FIELD_NAME_HASH, randomHashString(r)));
-        assertDoesNotThrow(() -> EmergencyRecoveryFile.read(tmpDir), "Reading a valid file should not throw");
+        assertDoesNotThrow(
+                () -> EmergencyRecoveryFile.read(stateConfig, tmpDir), "Reading a valid file should not throw");
         writeFileWithBootstrap(
                 Pair.of(FIELD_NAME_ROUND, randomLongString(r)), Pair.of(FIELD_NAME_HASH, randomHashString(r)));
-        assertDoesNotThrow(() -> EmergencyRecoveryFile.read(tmpDir), "Reading a valid file should not throw");
+        assertDoesNotThrow(
+                () -> EmergencyRecoveryFile.read(stateConfig, tmpDir), "Reading a valid file should not throw");
         writeFile(
                 Pair.of(FIELD_NAME_ROUND, randomLongString(r)), Pair.of(FIELD_NAME_TIMESTAMP, randomInstantString(r)));
         assertThrows(
-                IOException.class, () -> EmergencyRecoveryFile.read(tmpDir), "Reading an invalid file should throw");
+                IOException.class,
+                () -> EmergencyRecoveryFile.read(stateConfig, tmpDir),
+                "Reading an invalid file should throw");
     }
 
     @Test
@@ -151,7 +169,10 @@ public class EmergencyRecoveryFileTests {
                 Pair.of(FIELD_NAME_ROUND, randomLongString(r)),
                 Pair.of(FIELD_NAME_HASH, ""),
                 Pair.of(FIELD_NAME_TIMESTAMP, randomInstantString(r)));
-        assertThrows(IOException.class, () -> EmergencyRecoveryFile.read(tmpDir), "A value missing should throw");
+        assertThrows(
+                IOException.class,
+                () -> EmergencyRecoveryFile.read(stateConfig, tmpDir),
+                "A value missing should throw");
     }
 
     @Test
@@ -162,7 +183,10 @@ public class EmergencyRecoveryFileTests {
                 Pair.of(FIELD_NAME_ROUND, ""),
                 Pair.of(FIELD_NAME_HASH, randomHashString(r)),
                 Pair.of(FIELD_NAME_TIMESTAMP, randomInstantString(r)));
-        assertThrows(IOException.class, () -> EmergencyRecoveryFile.read(tmpDir), "A value missing should throw");
+        assertThrows(
+                IOException.class,
+                () -> EmergencyRecoveryFile.read(stateConfig, tmpDir),
+                "A value missing should throw");
     }
 
     @Test
@@ -173,12 +197,15 @@ public class EmergencyRecoveryFileTests {
                 Pair.of(FIELD_NAME_ROUND, randomLongString(r)),
                 Pair.of(FIELD_NAME_HASH, randomHashString(r)),
                 Pair.of(FIELD_NAME_TIMESTAMP, ""));
-        assertDoesNotThrow(() -> EmergencyRecoveryFile.read(tmpDir), "An optional value missing should not throw");
+        assertDoesNotThrow(
+                () -> EmergencyRecoveryFile.read(stateConfig, tmpDir), "An optional value missing should not throw");
     }
 
     @Test
     void testFileDoesNotExist() throws IOException {
-        assertNull(EmergencyRecoveryFile.read(tmpDir), "Reading from a file that does not exist should return null");
+        assertNull(
+                EmergencyRecoveryFile.read(stateConfig, tmpDir),
+                "Reading from a file that does not exist should return null");
     }
 
     @Test
@@ -190,7 +217,8 @@ public class EmergencyRecoveryFileTests {
                 new Package(List.of(randomLocation(r), randomLocation(r), randomLocation(r))),
                 null));
         file.write(tmpDir);
-        assertDoesNotThrow(() -> EmergencyRecoveryFile.read(tmpDir), "Reading a valid file should not throw");
+        assertDoesNotThrow(
+                () -> EmergencyRecoveryFile.read(stateConfig, tmpDir), "Reading a valid file should not throw");
     }
 
     @Test
@@ -206,7 +234,7 @@ public class EmergencyRecoveryFileTests {
         file.write(tmpDir);
         assertThrows(
                 Exception.class,
-                () -> EmergencyRecoveryFile.read(tmpDir),
+                () -> EmergencyRecoveryFile.read(stateConfig, tmpDir),
                 "Reading a file with a bad url should throw");
     }
 
@@ -219,19 +247,20 @@ public class EmergencyRecoveryFileTests {
                 null,
                 new Stream(new Intervals(2000, 5000, 900000))));
         file.write(tmpDir);
-        assertDoesNotThrow(() -> EmergencyRecoveryFile.read(tmpDir), "Reading a valid file should not throw");
+        assertDoesNotThrow(
+                () -> EmergencyRecoveryFile.read(stateConfig, tmpDir), "Reading a valid file should not throw");
     }
 
     @Test
     void testReadAllFields() throws URISyntaxException {
         final Path dir = ResourceLoader.getFile("com/swirlds/platform/recovery/emergencyfile/valid/");
-        assertDoesNotThrow(() -> EmergencyRecoveryFile.read(dir, true));
+        assertDoesNotThrow(() -> EmergencyRecoveryFile.read(stateConfig, dir, true));
     }
 
     @Test
     void testFieldMissing() throws URISyntaxException {
         final Path dir = ResourceLoader.getFile("com/swirlds/platform/recovery/emergencyfile/invalid/");
-        assertThrows(Exception.class, () -> EmergencyRecoveryFile.read(dir, true));
+        assertThrows(Exception.class, () -> EmergencyRecoveryFile.read(stateConfig, dir, true));
     }
 
     private EmergencyRecoveryFile createRecoveryFile(final Random r) {
@@ -251,7 +280,7 @@ public class EmergencyRecoveryFileTests {
             file.write("recovery:\n");
             file.write("  state:\n");
             file.write(Arrays.stream(values)
-                    .map(p -> "    " + p.getLeft() + ": " + p.getRight())
+                    .map(p -> "    " + p.left() + ": " + p.right())
                     .collect(Collectors.joining("\n")));
         } catch (final IOException e) {
             throw new RuntimeException(e);
@@ -265,7 +294,7 @@ public class EmergencyRecoveryFileTests {
             file.write("recovery:\n");
             file.write("  state:\n");
             file.write(Arrays.stream(values)
-                    .map(p -> "    " + p.getLeft() + ": " + p.getRight())
+                    .map(p -> "    " + p.left() + ": " + p.right())
                     .collect(Collectors.joining("\n")));
             file.write("\n  bootstrap:\n");
         } catch (final IOException e) {
@@ -293,8 +322,8 @@ public class EmergencyRecoveryFileTests {
 
     private static Location randomLocation(final Random r) throws MalformedURLException {
         return new Location(
-                RandomStringUtils.randomAlphabetic(10),
-                new URL(String.format("https://%s.com/", RandomStringUtils.randomAlphabetic(10))),
+                UUID.randomUUID().toString(),
+                new URL(String.format("https://%s.com/", UUID.randomUUID().toString())),
                 randomHash(r));
     }
 }

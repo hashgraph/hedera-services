@@ -16,7 +16,7 @@
 
 plugins {
     id("com.swirlds.platform.conventions")
-    id("com.swirlds.platform.library")
+    `java-library`
     id("com.swirlds.platform.maven-publish")
     id("org.gradle.java-test-fixtures")
 }
@@ -24,5 +24,6 @@ plugins {
 dependencies {
     api(project(":swirlds-base"))
     implementation(project(":swirlds-common"))
-    implementation(libs.commons.lang3)
+    implementation(project(":swirlds-logging"))
+    compileOnly(libs.spotbugs.annotations)
 }

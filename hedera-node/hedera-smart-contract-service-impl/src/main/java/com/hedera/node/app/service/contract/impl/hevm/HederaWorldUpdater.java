@@ -19,10 +19,12 @@ package com.hedera.node.app.service.contract.impl.hevm;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
+import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import com.hedera.node.app.service.contract.impl.state.PendingCreation;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
+import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.ResultStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
@@ -125,7 +127,7 @@ public interface HederaWorldUpdater extends WorldUpdater {
      * @param delegateCall    whether this transfer is done via code executed by a delegate call
      * @return an optional with the reason to halt if the transfer failed, empty otherwise
      */
-    Optional<ExceptionalHaltReason> tryTransferFromContract(
+    Optional<ExceptionalHaltReason> tryTransfer(
             @NonNull Address sendingContract, @NonNull Address recipient, long amount, boolean delegateCall);
 
     /**
@@ -150,7 +152,7 @@ public interface HederaWorldUpdater extends WorldUpdater {
 
     /**
      * Given the HAPI operation initiating a top-level {@code CONTRACT_CREATION} message, sets up the
-     * {@link PendingCreation} this {@link ProxyWorldUpdater} will use to complete the creation of the new
+     * {@link PendingCreation} a {@link ProxyWorldUpdater} can use to complete the creation of the new
      * account in {@link ProxyWorldUpdater#createAccount(Address, long, Wei)}; returns the "long-zero" address
      * to be assigned to the new account.
      *
@@ -161,13 +163,22 @@ public interface HederaWorldUpdater extends WorldUpdater {
 
     /**
      * Given the HAPI operation initiating a top-level {@code CONTRACT_CREATION} message, sets up the
-     * {@link PendingCreation} this {@link ProxyWorldUpdater} will use to complete the creation of the new
+     * {@link PendingCreation} a {@link ProxyWorldUpdater} can use to complete the creation of the new
      * account in {@link ProxyWorldUpdater#createAccount(Address, long, Wei)}.
      *
      * @param body the HAPI operation initiating the creation
      * @param alias the canonical address for the top-level creation
      */
     void setupAliasedTopLevelCreate(@NonNull ContractCreateTransactionBody body, @NonNull Address alias);
+
+    /**
+     * Given the HAPI operation initiating a top-level {@code MESSAGE_CALL} that will lazy-create a new
+     * account if successful, sets up the {@link PendingCreation} a {@link ProxyWorldUpdater} can use
+     * to complete the lazy creation {@link ProxyWorldUpdater#createAccount(Address, long, Wei)}.
+     *
+     * @param alias the canonical address for the top-level lazy creation
+     */
+    void setupTopLevelLazyCreate(@NonNull Address alias);
 
     /**
      * Given the origin address of a {@code CONTRACT_CREATION} message, sets up the {@link PendingCreation}
@@ -220,4 +231,11 @@ public interface HederaWorldUpdater extends WorldUpdater {
      */
     @NonNull
     List<StorageAccesses> pendingStorageUpdates();
+
+    /**
+     * Externalizes the results of a system contract call into a record
+     * @param result    The result of the system contract call
+     * @param status    Whether the result is an error
+     */
+    public void externalizeSystemContractResults(@NonNull final ContractFunctionResult result, ResultStatus status);
 }

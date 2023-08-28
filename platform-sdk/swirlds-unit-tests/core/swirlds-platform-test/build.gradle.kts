@@ -16,8 +16,8 @@
 
 plugins {
     id("com.swirlds.platform.conventions")
-    id("com.swirlds.platform.library")
-    id("com.swirlds.platform.benchmark-conventions")
+    `java-library`
+    id("com.hedera.hashgraph.benchmark-conventions")
     id("org.gradle.java-test-fixtures")
 }
 
@@ -41,7 +41,6 @@ dependencies {
 
     testImplementation(project(":swirlds-merkle"))
     testImplementation(project(":swirlds-sign-tool")) // FUTURE WORK: should be removed in future
-    testImplementation(libs.commons.collections4)
     testImplementation(libs.classgraph)
     testImplementation(testLibs.bundles.junit)
     testImplementation(testLibs.bundles.utils)

@@ -54,12 +54,41 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+import com.swirlds.common.config.StateConfig;
+import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.crypto.RunningHash;
+import com.swirlds.common.system.Round;
+import com.swirlds.common.system.SwirldDualState;
+import com.swirlds.common.system.SwirldState;
+import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
+import com.swirlds.platform.state.MinGenInfo;
+import com.swirlds.test.framework.config.TestConfigBuilder;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
 class EventRecoveryWorkflowTests {
 
     @TempDir
     Path tmpDir;
+
+    private final StateConfig stateConfig =
+            new TestConfigBuilder().getOrCreateConfig().getConfigData(StateConfig.class);
 
     @Test
     @DisplayName("getMinGenInfo() Test")
@@ -330,10 +359,10 @@ class EventRecoveryWorkflowTests {
 
         final Instant bootstrapTime = Instant.ofEpochMilli(randomPositiveLong(random));
 
-        EventRecoveryWorkflow.updateEmergencyRecoveryFile(tmpDir, bootstrapTime);
+        EventRecoveryWorkflow.updateEmergencyRecoveryFile(stateConfig, tmpDir, bootstrapTime);
 
         // Verify the contents of the updated recovery file
-        final EmergencyRecoveryFile updatedRecoveryFile = EmergencyRecoveryFile.read(tmpDir);
+        final EmergencyRecoveryFile updatedRecoveryFile = EmergencyRecoveryFile.read(stateConfig, tmpDir);
         assertNotNull(updatedRecoveryFile, "Updated recovery file should not be null");
         assertEquals(round, updatedRecoveryFile.round(), "round does not match");
         assertEquals(hash, updatedRecoveryFile.hash(), "hash does not match");
@@ -345,7 +374,7 @@ class EventRecoveryWorkflowTests {
                 "bootstrap timestamp does not match");
 
         // Verify the contents of the backup recovery file (copy of the original)
-        final EmergencyRecoveryFile backupFile = EmergencyRecoveryFile.read(tmpDir.resolve("backup"));
+        final EmergencyRecoveryFile backupFile = EmergencyRecoveryFile.read(stateConfig, tmpDir.resolve("backup"));
         assertNotNull(backupFile, "Updated recovery file should not be null");
         assertEquals(round, backupFile.round(), "round does not match");
         assertEquals(hash, backupFile.hash(), "hash does not match");

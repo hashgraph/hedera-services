@@ -16,28 +16,69 @@
 
 package com.swirlds.platform;
 
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.swirlds.platform.network.ExternalIpAddress;
-import com.swirlds.platform.network.IpAddressStatus;
 import com.swirlds.platform.network.Network;
 import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.test.framework.TestTypeTags;
-import java.util.Collections;
+import java.net.Inet4Address;
+import java.net.Inet6Address;
+import java.net.InetAddress;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
-public class NetworkTests {
+class NetworkTests {
+
+    @ParameterizedTest
+    @CsvSource({
+        "10.0.0.1, true",
+        "172.16.0.1, true",
+        "172.31.255.255, true",
+        "192.168.0.1, true",
+        "192.169.0.1, false",
+        "172.15.0.1, false",
+        "172.32.0.1, false",
+        "127.0.0.1, true"
+    })
+    @DisplayName("Validates that the private ip v4 is detected correctly")
+    void isPrivateIPWithIPv4(String ip, boolean expected) throws Exception {
+        // given:
+        final InetAddress addr = Inet4Address.getByName(ip);
+
+        // when:
+        boolean result = Network.isPrivateIP(addr);
+
+        // then:
+        assertEquals(expected, result);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"fe80::1, true", "fd00::1, true", "fe7f::1, false", "fc00::1, false", "::1, true"})
+    @DisplayName("Validates that the private ip v6 is detected correctly")
+    void isPrivateIPWithIPv6(String ip, boolean expected) throws Exception {
+        // given:
+        final InetAddress addr = Inet6Address.getByName(ip);
+
+        // when:
+        boolean result = Network.isPrivateIP(addr);
+
+        // then:
+        assertEquals(expected, result);
+    }
 
     @Test
     @Tag(TestTypeTags.FUNCTIONAL)
     @DisplayName("Validates that the local ip is retrieved as internal ip")
-    public void getInternalIPAddressTest() {
+    void getInternalIPAddressTest() {
         final String internalIp = Network.getInternalIPAddress();
+        assertNotNull(internalIp);
         assertFalse(internalIp.isEmpty());
         assertNotEquals("127.0.0.1", internalIp);
     }
@@ -46,18 +87,8 @@ public class NetworkTests {
     @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("No ip is found running as unit test")
-    public void getExternalIpAddressWithNoIpFound() {
+    void getExternalIpAddressWithNoIpFound() {
         final ExternalIpAddress address = Network.getExternalIpAddress();
         assertEquals(ExternalIpAddress.NO_IP, address, "No IP should be found on unit test");
-    }
-
-    @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
-    @DisplayName("No IP is found with empty collection of ports to be mapped")
-    public void getNoIpFoundWithNoPorts() {
-        Network.doPortForwarding(getStaticThreadManager(), Collections.emptyList());
-        final ExternalIpAddress address = Network.getExternalIpAddress();
-        assertEquals(IpAddressStatus.NO_IP_FOUND, address.getStatus(), "No IP should be found on unit test");
-        Network.stopPortForwarding();
     }
 }
