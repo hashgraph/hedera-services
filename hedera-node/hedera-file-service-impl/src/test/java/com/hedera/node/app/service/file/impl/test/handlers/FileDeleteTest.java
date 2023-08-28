@@ -160,11 +160,12 @@ class FileDeleteTest extends FileTestBase {
 
         assertThat(realPreContext.requiredNonPayerKeys().size()).isGreaterThan(0);
         assertThat(1).isEqualTo(realPreContext.requiredNonPayerKeys().size());
-        assertThat(1).isEqualTo(realPreContext
-                .requiredNonPayerKeys()
-                .toArray(Key[]::new)[0]
-                .thresholdKey()
-                .threshold());
+        assertThat(1)
+                .isEqualTo(realPreContext
+                        .requiredNonPayerKeys()
+                        .toArray(Key[]::new)[0]
+                        .thresholdKey()
+                        .threshold());
     }
 
     @Test
