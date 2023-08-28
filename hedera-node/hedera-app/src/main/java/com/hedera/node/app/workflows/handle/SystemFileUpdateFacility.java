@@ -87,8 +87,7 @@ public class SystemFileUpdateFacility {
     public void handleTxBody(
             @NonNull final HederaState state,
             @NonNull final TransactionBody txBody,
-            // TODO: export
-            @NonNull SingleTransactionRecordBuilderImpl recordBuilder) {
+            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder) {
         requireNonNull(state, "state must not be null");
         requireNonNull(txBody, "txBody must not be null");
         requireNonNull(recordBuilder, "recordBuilder must not be null");
