@@ -126,7 +126,7 @@ public class FileUpdateHandler implements TransactionHandler {
         validateFalse(file.keys() == null, UNAUTHORIZED);
 
         validateMaybeNewMemo(handleContext.attributeValidator(), fileUpdate);
-        validateExpirationTime(fileUpdate, file, handleContext);
+        //        validateExpirationTime(fileUpdate, file, handleContext);
 
         // Now we apply the mutations to a builder
         final var builder = new File.Builder();

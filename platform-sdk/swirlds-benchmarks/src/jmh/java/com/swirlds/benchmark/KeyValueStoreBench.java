@@ -48,7 +48,7 @@ public class KeyValueStoreBench extends BaseBench {
                 getTestDir(),
                 "mergeBench",
                 null,
-                new BenchmarkRecordMerkleDbSerializer(),
+                new BenchmarkRecordSerializer(),
                 (key, dataLocation, dataValue) -> {},
                 new LongListOffHeap());
         System.out.println();
