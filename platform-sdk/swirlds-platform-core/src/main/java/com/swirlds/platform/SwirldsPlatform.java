@@ -607,6 +607,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 currentAddressBook,
                 selfId,
                 appVersion,
+                initialState.getState().getPlatformState().getPlatformData().getEpochHash(),
                 shadowGraph,
                 emergencyRecoveryManager,
                 consensusRef,
