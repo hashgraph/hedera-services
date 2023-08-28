@@ -16,7 +16,10 @@
 
 package com.swirlds.platform.test.event.source;
 
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.platform.test.fixtures.event.source.EventSource;
+import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -25,7 +28,6 @@ import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
-import org.apache.commons.lang3.tuple.Pair;
 
 public class EventSourceFactory {
 
@@ -63,8 +65,8 @@ public class EventSourceFactory {
         forEachNode:
         for (long i = 0; i < numNodes; i++) {
             for (final Pair<Predicate<Long>, Supplier<EventSource<?>>> customSource : customSources) {
-                if (customSource.getLeft().test(i)) {
-                    list.add(customSource.getRight().get());
+                if (customSource.left().test(i)) {
+                    list.add(customSource.right().get());
                     continue forEachNode;
                 }
             }

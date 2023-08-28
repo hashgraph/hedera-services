@@ -41,7 +41,11 @@ class AccumulatedAverageTimeTest {
         final MetricKeyRegistry registry = mock(MetricKeyRegistry.class);
         when(registry.register(any(), any(), any())).thenReturn(true);
         final Metrics metrics = new DefaultMetrics(
-                null, registry, mock(ScheduledExecutorService.class), new DefaultMetricsFactory(), metricsConfig);
+                null,
+                registry,
+                mock(ScheduledExecutorService.class),
+                new DefaultMetricsFactory(metricsConfig),
+                metricsConfig);
         final AccumulatedAverageTime metric = new AccumulatedAverageTime(metrics, "category", "name", "description");
         Assertions.assertEquals(0d, metric.get(), "if no data is added, value should be 0");
         metric.add(Duration.ofMillis(10).toNanos());

@@ -24,6 +24,8 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.test.fixtures.io.SerializationUtils;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.test.fixtures.event.IndexedEvent;
+import com.swirlds.platform.test.fixtures.event.RandomEventUtils;
 import com.swirlds.platform.test.utils.EqualsVerifier;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.io.FileNotFoundException;

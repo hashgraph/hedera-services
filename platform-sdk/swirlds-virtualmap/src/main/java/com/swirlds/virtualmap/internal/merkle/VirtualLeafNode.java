@@ -16,8 +16,7 @@
 
 package com.swirlds.virtualmap.internal.merkle;
 
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
-
+import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -29,7 +28,6 @@ import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import java.io.IOException;
 import java.util.Objects;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * Implementation of a VirtualLeaf
@@ -107,9 +105,7 @@ public final class VirtualLeafNode<K extends VirtualKey, V extends VirtualValue>
      */
     @Override
     public String toString() {
-        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
-                .append(virtualRecord)
-                .toString();
+        return new ToStringBuilder(this).append(virtualRecord).toString();
     }
 
     /**

@@ -17,14 +17,16 @@
 package com.hedera.node.app.service.file.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.preValidate;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateAndAddRequiredKeys;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.verifyNotSystemFile;
+import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.state.file.File;
-import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
+import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -32,6 +34,7 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.LedgerConfig;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -61,10 +64,11 @@ public class FileDeleteHandler implements TransactionHandler {
         requireNonNull(context);
 
         final var transactionBody = context.body().fileDeleteOrThrow();
-        final var fileStore = context.createStore(ReadableFileStoreImpl.class);
-        final var fileMeta = preValidate(transactionBody.fileID(), fileStore, context, true);
+        final var fileStore = context.createStore(ReadableFileStore.class);
+        preValidate(transactionBody.fileID(), fileStore, context, true);
 
-        validateAndAddRequiredKeys(fileMeta.keys(), context, true);
+        var file = fileStore.getFileLeaf(transactionBody.fileID());
+        validateAndAddRequiredKeys(file.orElse(null), null, context);
     }
 
     @Override
@@ -82,12 +86,15 @@ public class FileDeleteHandler implements TransactionHandler {
 
         final File file = verifyNotSystemFile(ledgerConfig, fileStore, fileId);
 
+        // First validate this file is mutable; and the pending mutations are allowed
+        validateFalse(file.keys() == null, UNAUTHORIZED);
+
         /* Copy part of the fields from existing, delete the file content and set the deleted flag  */
         final var fileBuilder = new File.Builder()
                 .fileId(file.fileId())
-                .expirationTime(file.expirationTime())
+                .expirationSecond(file.expirationSecond())
                 .keys(file.keys())
-                .contents(null)
+                .contents(Bytes.EMPTY)
                 .memo(file.memo())
                 .deleted(true);
 

@@ -19,6 +19,7 @@ package com.swirlds.jasperdb;
 import static com.swirlds.jasperdb.files.DataFileCommon.VARIABLE_DATA_SIZE;
 import static com.swirlds.jasperdb.utilities.HashTools.DEFAULT_DIGEST;
 
+import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -31,8 +32,6 @@ import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
-import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.apache.commons.lang3.builder.ToStringStyle;
 
 /**
  * VirtualLeafRecordSerializer serializer responsible for serializing and deserializing virtual leaf records. It depends
@@ -361,7 +360,7 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends Virtual
 
     @Override
     public String toString() {
-        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
+        return new ToStringBuilder(this)
                 .append("currentVersion", currentVersion)
                 .append("hasVariableDataSize", hasVariableDataSize)
                 .append("totalSerializedSize", totalSerializedSize)

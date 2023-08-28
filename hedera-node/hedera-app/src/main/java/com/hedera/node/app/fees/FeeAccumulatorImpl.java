@@ -16,33 +16,38 @@
 
 package com.hedera.node.app.fees;
 
-import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.Timestamp;
-import com.hedera.hapi.node.transaction.Query;
-import com.hedera.node.app.hapi.utils.fee.FeeObject;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.node.app.service.token.api.FeeRecordBuilder;
+import com.hedera.node.app.service.token.api.TokenServiceApi;
+import com.hedera.node.app.spi.fees.FeeAccumulator;
+import com.hedera.node.app.spi.fees.Fees;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 /**
- * To be implemented: An implementation of {@link FeeAccumulator}.
+ * Default implementation of {@link FeeAccumulator}.
  */
-@Singleton
 public class FeeAccumulatorImpl implements FeeAccumulator {
+    private final TokenServiceApi tokenApi;
+    private final FeeRecordBuilder recordBuilder;
 
-    @Inject
-    public FeeAccumulatorImpl() {
-        // For dagger
+    /**
+     * Creates a new instance of {@link FeeAccumulatorImpl}.
+     *
+     * @param tokenApi the {@link TokenServiceApi} to use to charge and refund fees.
+     * @param recordBuilder the {@link FeeRecordBuilder} to record any changes
+     */
+    public FeeAccumulatorImpl(@NonNull final TokenServiceApi tokenApi, @NonNull final FeeRecordBuilder recordBuilder) {
+        this.tokenApi = tokenApi;
+        this.recordBuilder = recordBuilder;
     }
 
-    @NonNull
     @Override
-    public FeeObject computePayment(
-            @NonNull ReadableStoreFactory readableStoreFactory,
-            @NonNull HederaFunctionality functionality,
-            @NonNull Query query,
-            @NonNull Timestamp now) {
-        return new FeeObject(0, 0, 0);
+    public void charge(@NonNull AccountID payer, @NonNull Fees fees) {
+        tokenApi.chargeFees(payer, fees, recordBuilder);
+    }
+
+    @Override
+    public void refund(@NonNull AccountID receiver, @NonNull Fees fees) {
+        tokenApi.refundFees(receiver, fees, recordBuilder);
     }
 }

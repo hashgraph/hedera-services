@@ -23,7 +23,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.state.file.File;
-import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
+import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.utils.FileServiceUtils;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -61,15 +61,18 @@ public class FileSystemUndeleteHandler implements TransactionHandler {
         requireNonNull(context);
 
         final var transactionBody = context.body().systemUndeleteOrThrow();
-        final var fileStore = context.createStore(ReadableFileStoreImpl.class);
-        final var fileMeta = preValidate(transactionBody.fileID(), fileStore, context, true);
+        final var fileStore = context.createStore(ReadableFileStore.class);
+        preValidate(transactionBody.fileID(), fileStore, context, true);
 
-        validateAndAddRequiredKeys(fileMeta.keys(), context, true);
+        var file = fileStore.getFileLeaf(transactionBody.fileID());
+        validateAndAddRequiredKeys(file.orElse(null), null, context);
     }
 
     @Override
     public void handle(@NonNull final HandleContext handleContext) throws HandleException {
         requireNonNull(handleContext);
+        // TODO: check here that the "payer" is a privileged account.
+        //       a privileged account is always required for this transaction.
 
         final var systemUndeleteTransactionBody = handleContext.body().systemUndeleteOrThrow();
         if (!systemUndeleteTransactionBody.hasFileID()) {
@@ -81,7 +84,7 @@ public class FileSystemUndeleteHandler implements TransactionHandler {
         final var fileStore = handleContext.writableStore(WritableFileStore.class);
         final File file = FileServiceUtils.verifyNotSystemFile(ledgerConfig, fileStore, fileId, true);
 
-        final var oldExpiry = file.expirationTime();
+        final var oldExpiry = file.expirationSecond();
         // If the file is already expired, remove it from the state otherwise update the deleted flag to false
         if (oldExpiry <= handleContext.consensusNow().getEpochSecond()) {
             fileStore.removeFile(fileId);
@@ -89,7 +92,7 @@ public class FileSystemUndeleteHandler implements TransactionHandler {
             /* Copy all the fields from existing special file and change deleted flag */
             final var fileBuilder = new File.Builder()
                     .fileId(file.fileId())
-                    .expirationTime(file.expirationTime())
+                    .expirationSecond(file.expirationSecond())
                     .keys(file.keys())
                     .contents(file.contents())
                     .memo(file.memo())

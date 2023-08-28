@@ -18,7 +18,6 @@ package com.hedera.node.app.service.file.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
-import static com.hedera.node.app.service.file.impl.test.handlers.FileTestUtils.mockFileLookup;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -30,32 +29,38 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.file.SystemDeleteTransactionBody;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.handlers.FileSystemDeleteHandler;
 import com.hedera.node.app.service.file.impl.test.FileTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.config.api.Configuration;
 import java.time.Instant;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -80,6 +85,17 @@ class FileSystemDeleteTest extends FileTestBase {
     @Mock
     private Instant instant;
 
+    @Mock(strictness = Mock.Strictness.LENIENT)
+    protected TransactionDispatcher mockDispatcher;
+
+    @Mock(strictness = Mock.Strictness.LENIENT)
+    protected ReadableStoreFactory mockStoreFactory;
+
+    @Mock(strictness = Mock.Strictness.LENIENT)
+    protected Account payerAccount;
+
+    protected Configuration testConfig;
+
     @BeforeEach
     void setUp() {
         mockStore = mock(ReadableFileStoreImpl.class);
@@ -88,9 +104,11 @@ class FileSystemDeleteTest extends FileTestBase {
         writableFileState = writableFileStateWithOneKey();
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
         writableStore = new WritableFileStore(writableStates);
-        final var configuration = HederaTestConfigBuilder.createConfig();
-        lenient().when(preHandleContext.configuration()).thenReturn(configuration);
-        lenient().when(handleContext.configuration()).thenReturn(configuration);
+        testConfig = HederaTestConfigBuilder.createConfig();
+        lenient().when(preHandleContext.configuration()).thenReturn(testConfig);
+        lenient().when(handleContext.configuration()).thenReturn(testConfig);
+        when(mockStoreFactory.getStore(ReadableFileStore.class)).thenReturn(mockStore);
+        when(mockStoreFactory.getStore(ReadableAccountStore.class)).thenReturn(accountStore);
     }
 
     @Test
@@ -99,27 +117,28 @@ class FileSystemDeleteTest extends FileTestBase {
         // given:
         mockPayerLookup();
         given(mockStore.getFileMetadata(notNull())).willReturn(null);
-        final var context = new FakePreHandleContext(accountStore, newFileDeleteTxn());
-        context.registerStore(ReadableFileStoreImpl.class, mockStore);
+        final var context = new PreHandleContextImpl(mockStoreFactory, newFileDeleteTxn(), testConfig, mockDispatcher);
 
         // when:
         assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_FILE_ID);
     }
 
     @Test
-    @DisplayName("File without keys returns error")
-    @Disabled("Revisit after fix for https://github.com/hashgraph/hedera-services/issues/7646")
-    void noFileKeys() throws PreCheckException {
-        // given:
-        mockPayerLookup();
-        mockFileLookup(null, mockStore);
-        lenient().when(preHandleContext.body()).thenReturn(newFileDeleteTxn());
-        lenient()
-                .when(preHandleContext.createStore(ReadableFileStoreImpl.class))
-                .thenReturn(mockStore);
+    @DisplayName("Pre handle works as expected")
+    void preHandleWorksAsExpected() throws PreCheckException {
+        refreshStoresWithCurrentFileOnlyInReadable();
+        BDDMockito.given(accountStore.getAccountById(payerId)).willReturn(payerAccount);
+        BDDMockito.given(mockStoreFactory.getStore(ReadableFileStore.class)).willReturn(readableStore);
+        BDDMockito.given(mockStoreFactory.getStore(ReadableAccountStore.class)).willReturn(accountStore);
+        BDDMockito.given(payerAccount.key()).willReturn(A_COMPLEX_KEY);
 
-        // when:
-        assertThrowsPreCheck(() -> subject.preHandle(preHandleContext), UNAUTHORIZED);
+        PreHandleContext realPreContext =
+                new PreHandleContextImpl(mockStoreFactory, newFileDeleteTxn(), testConfig, mockDispatcher);
+
+        subject.preHandle(realPreContext);
+
+        assertTrue(realPreContext.requiredNonPayerKeys().size() > 0);
+        assertEquals(3, realPreContext.requiredNonPayerKeys().size());
     }
 
     @Test
@@ -178,7 +197,7 @@ class FileSystemDeleteTest extends FileTestBase {
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
         lenient().when(handleContext.consensusNow()).thenReturn(instant);
-        lenient().when(instant.getEpochSecond()).thenReturn(existingFile.get().expirationTime() + 100);
+        lenient().when(instant.getEpochSecond()).thenReturn(existingFile.get().expirationSecond() + 100);
         subject.handle(handleContext);
 
         final var changedFile = writableStore.get(fileId);
@@ -197,7 +216,7 @@ class FileSystemDeleteTest extends FileTestBase {
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
         lenient().when(handleContext.consensusNow()).thenReturn(instant);
-        lenient().when(instant.getEpochSecond()).thenReturn(existingFile.get().expirationTime() - 100);
+        lenient().when(instant.getEpochSecond()).thenReturn(existingFile.get().expirationSecond() - 100);
         subject.handle(handleContext);
 
         final var changedFile = writableStore.get(fileId);

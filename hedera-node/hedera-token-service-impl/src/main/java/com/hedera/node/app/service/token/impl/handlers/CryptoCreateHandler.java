@@ -25,6 +25,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SEND_RECORD_THRESHOLD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
+import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
@@ -32,15 +34,18 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
+import com.hedera.node.app.hapi.utils.fee.CryptoFeeBuilder;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
-import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.service.token.impl.validators.CryptoCreateValidator;
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;
-import com.hedera.node.app.spi.info.NetworkInfo;
+import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -50,9 +55,11 @@ import com.hedera.node.config.data.CryptoCreateWithAliasConfig;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
+import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.data.TokensConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -65,18 +72,15 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
     private final CryptoCreateValidator cryptoCreateValidator;
 
     private StakingValidator stakingValidator;
-    private NetworkInfo networkInfo;
 
     @Inject
     public CryptoCreateHandler(
             @NonNull final CryptoCreateValidator cryptoCreateValidator,
-            @NonNull final StakingValidator stakingValidator,
-            @NonNull final NetworkInfo networkInfo) {
+            @NonNull final StakingValidator stakingValidator) {
         this.cryptoCreateValidator =
                 requireNonNull(cryptoCreateValidator, "The supplied argument 'cryptoCreateValidator' must not be null");
         this.stakingValidator =
                 requireNonNull(stakingValidator, "The supplied argument 'stakingValidator' must not be null");
-        this.networkInfo = requireNonNull(networkInfo, "The supplied argument 'nodeInfo' must not be null");
     }
 
     @Override
@@ -84,7 +88,20 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         requireNonNull(context);
         final var op = context.body().cryptoCreateAccountOrThrow();
         pureChecks(context.body());
+
         if (op.hasKey()) {
+            final var key = op.key();
+            if (op.alias() != null && !op.alias().equals(Bytes.EMPTY)) {
+                final var alias = op.alias();
+                // add evm address key to req keys only if it is derived from a key, diff than the admin key
+                final var isAliasDerivedFromDiffKey = !(key.hasEcdsaSecp256k1()
+                        && Arrays.equals(
+                                recoverAddressFromPubKey(key.ecdsaSecp256k1().toByteArray()), alias.toByteArray()));
+                if (isAliasDerivedFromDiffKey) {
+                    // TODO : Need to decide what to do about JWildcardECDSAKey
+                }
+            }
+
             final var receiverSigReq = op.receiverSigRequired();
             if (receiverSigReq) {
                 context.requireKey(op.keyOrThrow());
@@ -112,6 +129,18 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         final var txnBody = handleContext.body();
         final var op = txnBody.cryptoCreateAccount();
 
+        final var fees = handleContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> {
+            try {
+                final var protoBody = fromPbj(handleContext.body());
+                return CryptoFeeBuilder.getCryptoCreateTxFeeMatrices(protoBody, sigValueObj);
+            } catch (InvalidTxBodyException e) {
+                // FUTURE : ('post-modularization-cleanup') Replace this with an appropriate HandleException
+                throw new RuntimeException(e);
+            }
+        });
+
+        handleContext.feeAccumulator().charge(handleContext.payer(), fees);
+
         final var accountStore = handleContext.writableStore(WritableAccountStore.class);
 
         // FUTURE: Use the config and check if accounts can be created.
@@ -119,14 +148,18 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
 
         // validate fields in the transaction body that involves checking with
         // dynamic properties or state
-        final var payer = validateSemantics(handleContext, accountStore, op);
+        validateSemantics(handleContext, accountStore, op);
 
-        final long newPayerBalance = payer.tinybarBalance() - op.initialBalance();
-        // Change payer's balance to reflect the deduction of the initial balance for the new
-        // account
-        final var modifiedPayer =
-                payer.copyBuilder().tinybarBalance(newPayerBalance).build();
-        accountStore.put(modifiedPayer);
+        if (op.initialBalance() > 0) {
+            final var payer = accountStore.getAccountById(
+                    handleContext.body().transactionIDOrThrow().accountIDOrThrow());
+            final long newPayerBalance = payer.tinybarBalance() - op.initialBalance();
+            // Change payer's balance to reflect the deduction of the initial balance for the new
+            // account
+            final var modifiedPayer =
+                    payer.copyBuilder().tinybarBalance(newPayerBalance).build();
+            accountStore.put(modifiedPayer);
+        }
 
         // Build the new account to be persisted based on the transaction body
         final var accountCreated = buildAccount(op, handleContext);
@@ -170,9 +203,9 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
      * @param op crypto create transaction body
      * @return the payer account if validated successfully
      */
-    private Account validateSemantics(
+    private void validateSemantics(
             @NonNull final HandleContext context,
-            @NonNull final WritableAccountStore accountStore,
+            @NonNull final ReadableAccountStore accountStore,
             @NonNull final CryptoCreateTransactionBody op) {
         final var cryptoCreateWithAliasConfig =
                 context.configuration().getConfigData(CryptoCreateWithAliasConfig.class);
@@ -180,15 +213,16 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         final var entitiesConfig = context.configuration().getConfigData(EntitiesConfig.class);
         final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
 
-        // validate payer account exists and has enough balance
-        final var payer = getIfUsable(
-                context.body().transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT),
-                accountStore,
-                context.expiryValidator(),
-                INVALID_PAYER_ACCOUNT_ID);
-
-        final long newPayerBalance = payer.tinybarBalance() - op.initialBalance();
-        validatePayer(payer, newPayerBalance);
+        if (op.initialBalance() > 0) {
+            // validate payer account exists and has enough balance
+            final var payer = getIfUsable(
+                    context.body().transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT),
+                    accountStore,
+                    context.expiryValidator(),
+                    INVALID_PAYER_ACCOUNT_ID);
+            final long newPayerBalance = payer.tinybarBalance() - op.initialBalance();
+            validatePayer(payer, newPayerBalance);
+        }
 
         context.attributeValidator().validateMemo(op.memo());
         cryptoCreateValidator.validateKeyAliasAndEvmAddressCombinations(
@@ -202,17 +236,16 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         validateFalse(
                 op.hasProxyAccountID() && !op.proxyAccountID().equals(AccountID.DEFAULT),
                 PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED);
-
-        stakingValidator.validateStakedId(
-                op.declineReward(),
-                op.stakedId().kind().name(),
-                op.stakedAccountId(),
-                op.stakedNodeId(),
-                accountStore,
-                context,
-                networkInfo);
-
-        return payer;
+        if (op.hasStakedAccountId() || op.hasStakedNodeId()) {
+            stakingValidator.validateStakedIdForCreation(
+                    context.configuration().getConfigData(StakingConfig.class).isEnabled(),
+                    op.declineReward(),
+                    op.stakedId().kind().name(),
+                    op.stakedAccountId(),
+                    op.stakedNodeId(),
+                    accountStore,
+                    context.networkInfo());
+        }
     }
 
     /**
@@ -246,8 +279,8 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         long expiry = consensusTime + autoRenewPeriod;
         var builder = Account.newBuilder()
                 .memo(op.memo())
-                .expiry(expiry)
-                .autoRenewSecs(autoRenewPeriod)
+                .expirationSecond(expiry)
+                .autoRenewSeconds(autoRenewPeriod)
                 .receiverSigRequired(op.receiverSigRequired())
                 .maxAutoAssociations(op.maxAutomaticTokenAssociations())
                 .tinybarBalance(op.initialBalance())

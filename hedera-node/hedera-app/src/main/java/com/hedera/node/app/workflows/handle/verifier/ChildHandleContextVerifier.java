@@ -74,4 +74,9 @@ public class ChildHandleContextVerifier implements HandleContextVerifier {
         requireNonNull(evmAlias, "evmAlias must not be null");
         return parent.verificationFor(evmAlias);
     }
+
+    @Override
+    public int numSignaturesVerified() {
+        return parent.numSignaturesVerified();
+    }
 }

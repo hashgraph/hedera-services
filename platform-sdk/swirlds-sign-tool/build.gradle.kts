@@ -15,21 +15,21 @@
  */
 
 plugins {
-  id("com.swirlds.platform.conventions")
-  id("com.swirlds.platform.library")
-  id("com.swirlds.platform.maven-publish")
-  id("com.swirlds.platform.application")
+    id("com.swirlds.platform.conventions")
+    `java-library`
+    id("com.swirlds.platform.maven-publish")
+    id("com.swirlds.platform.application")
 }
 
 dependencies {
-  // Individual Dependencies
-  implementation(project(":swirlds-common"))
-  implementation(project(":swirlds-base"))
-  implementation(project(":swirlds-logging"))
-  implementation(libs.bundles.logging.impl)
-  implementation(libs.jackson.databind)
-  implementation(libs.jackson.datatype.jsr310)
-  compileOnly(libs.spotbugs.annotations)
+    // Individual Dependencies
+    implementation(project(":swirlds-common"))
+    implementation(project(":swirlds-base"))
+    implementation(project(":swirlds-logging"))
+    implementation(libs.bundles.logging.impl)
+    implementation(libs.jackson.databind)
+    implementation(libs.jackson.datatype.jsr310)
+    compileOnly(libs.spotbugs.annotations)
 
-  testImplementation(project(":swirlds-unit-tests:common:swirlds-test-framework"))
+    testImplementation(project(":swirlds-unit-tests:common:swirlds-test-framework"))
 }

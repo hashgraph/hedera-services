@@ -30,6 +30,7 @@ import static com.swirlds.platform.state.address.AddressBookMetrics.registerAddr
 
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.time.Time;
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.EventConfig;
@@ -56,6 +57,7 @@ import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.address.AddressBookUtils;
 import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.common.system.status.PlatformStatusManager;
 import com.swirlds.common.system.status.actions.DoneReplayingEventsAction;
@@ -83,6 +85,7 @@ import com.swirlds.platform.components.transaction.system.ConsensusSystemTransac
 import com.swirlds.platform.components.transaction.system.PreconsensusSystemTransactionManager;
 import com.swirlds.platform.components.wiring.ManualWiring;
 import com.swirlds.platform.config.ThreadConfig;
+import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.dispatch.DispatchBuilder;
 import com.swirlds.platform.dispatch.DispatchConfiguration;
 import com.swirlds.platform.dispatch.triggers.flow.DiskStateLoadedTrigger;
@@ -103,7 +106,7 @@ import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamSequencer;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import com.swirlds.platform.event.preconsensus.SyncPreconsensusEventWriter;
-import com.swirlds.platform.event.tipset.TipsetEventCreationManager;
+import com.swirlds.platform.event.tipset.AsyncTipsetEventCreationManager;
 import com.swirlds.platform.event.validation.AncientValidator;
 import com.swirlds.platform.event.validation.EventDeduplication;
 import com.swirlds.platform.event.validation.EventValidator;
@@ -159,7 +162,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
-import org.apache.commons.lang3.tuple.Pair;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -191,8 +194,8 @@ public class SwirldsPlatform implements Platform, Startable {
      * from disk or getting it through reconnect
      */
     private final AtomicReference<Consensus> consensusRef = new AtomicReference<>();
-    /** set in the constructor and given to the SwirldState object in run() */
-    private final AddressBook initialAddressBook;
+    /** the current nodes in the network and their information */
+    private final AddressBook currentAddressBook;
 
     private final Metrics metrics;
 
@@ -215,7 +218,7 @@ public class SwirldsPlatform implements Platform, Startable {
     private final ConsensusRoundHandler consensusRoundHandler;
     /** Handles all interaction with {@link SwirldState} */
     private final SwirldStateManager swirldStateManager;
-    /** Checks the validity of transactions and submits valid ones to the event transaction pool */
+    /** Checks the validity of transactions and submits valid ones to the transaction pool */
     private final SwirldTransactionSubmitter transactionSubmitter;
     /** clears all pipelines to prepare for a reconnect */
     private final Clearable clearAllPipelines;
@@ -281,7 +284,7 @@ public class SwirldsPlatform implements Platform, Startable {
     /**
      * Creates new events using the tipset algorithm.
      */
-    private final TipsetEventCreationManager tipsetEventCreator;
+    private final AsyncTipsetEventCreationManager tipsetEventCreator;
 
     /**
      * The round of the most recent reconnect state received, or {@link com.swirlds.common.system.UptimeData#NO_ROUND}
@@ -301,6 +304,7 @@ public class SwirldsPlatform implements Platform, Startable {
      * @param swirldName               the name of the swirld being run
      * @param appVersion               the current version of the running application
      * @param initialState             the initial state of the platform
+     * @param previousAddressBook      the address book used before the restart, or null if this is the first one ever
      * @param emergencyRecoveryManager used in emergency recovery.
      */
     SwirldsPlatform(
@@ -312,6 +316,7 @@ public class SwirldsPlatform implements Platform, Startable {
             @NonNull final String swirldName,
             @NonNull final SoftwareVersion appVersion,
             @NonNull final SignedState initialState,
+            @Nullable final AddressBook previousAddressBook,
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
 
         this.platformContext = Objects.requireNonNull(platformContext, "platformContext");
@@ -339,7 +344,7 @@ public class SwirldsPlatform implements Platform, Startable {
         this.appVersion = appVersion;
 
         this.selfId = id;
-        this.initialAddressBook = initialState.getAddressBook();
+        this.currentAddressBook = initialState.getAddressBook();
 
         this.eventMapper = new EventMapper(platformContext.getMetrics(), selfId);
 
@@ -354,7 +359,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 PlatformStatus.values(),
                 platformStatusManager::getCurrentStatus));
 
-        registerAddressBookMetrics(metrics, initialAddressBook, selfId);
+        registerAddressBookMetrics(metrics, currentAddressBook, selfId);
 
         this.recycleBin = Objects.requireNonNull(recycleBin);
 
@@ -364,7 +369,7 @@ public class SwirldsPlatform implements Platform, Startable {
         final SyncMetrics syncMetrics = new SyncMetrics(metrics);
         RuntimeMetrics.setup(metrics);
 
-        this.shadowGraph = new ShadowGraph(syncMetrics, initialAddressBook.getSize());
+        this.shadowGraph = new ShadowGraph(syncMetrics, currentAddressBook.getSize());
 
         this.crypto = crypto;
 
@@ -408,6 +413,9 @@ public class SwirldsPlatform implements Platform, Startable {
         consensusSystemTransactionManager.addHandler(
                 StateSignatureTransaction.class,
                 (ignored, nodeId, txn) -> consensusHashManager.handlePostconsensusSignatureTransaction(nodeId, txn));
+        consensusSystemTransactionManager.addHandler(
+                StateSignatureTransaction.class,
+                (ignored, nodeId, txn) -> signedStateManager.handlePostconsensusSignatureTransaction(nodeId, txn));
 
         // FUTURE WORK remove this when there are no more ShutdownRequestedTriggers being dispatched
         components.add(new Shutdown());
@@ -442,7 +450,7 @@ public class SwirldsPlatform implements Platform, Startable {
         // This object makes a copy of the state. After this point, initialState becomes immutable.
         swirldStateManager = PlatformConstructor.swirldStateManager(
                 platformContext,
-                initialAddressBook,
+                currentAddressBook,
                 selfId,
                 preconsensusSystemTransactionManager,
                 consensusSystemTransactionManager,
@@ -477,7 +485,6 @@ public class SwirldsPlatform implements Platform, Startable {
         final EventObserverDispatcher eventObserverDispatcher = new EventObserverDispatcher(
                 new ShadowGraphEventObserver(shadowGraph),
                 consensusRoundHandler,
-                preConsensusEventHandler,
                 eventMapper,
                 addedEventMetrics,
                 eventIntakeMetrics,
@@ -507,13 +514,17 @@ public class SwirldsPlatform implements Platform, Startable {
         final IntakeCycleStats intakeCycleStats = new IntakeCycleStats(time, metrics);
 
         final EventIntake eventIntake = new EventIntake(
+                platformContext,
+                threadManager,
+                time,
                 selfId,
                 eventLinker,
                 consensusRef::get,
-                initialAddressBook,
+                currentAddressBook,
                 eventObserverDispatcher,
                 intakeCycleStats,
-                shadowGraph);
+                shadowGraph,
+                preConsensusEventHandler::preconsensusEvent);
 
         final EventCreator eventCreator = buildEventCreator(eventIntake);
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
@@ -523,10 +534,15 @@ public class SwirldsPlatform implements Platform, Startable {
         // doesn't track ancient events
         validators.add(new AncientValidator(consensusRef::get));
         validators.add(new EventDeduplication(isDuplicateChecks, eventIntakeMetrics));
-        validators.add(StaticValidators.buildParentValidator(initialAddressBook.getSize()));
+        validators.add(StaticValidators.buildParentValidator(currentAddressBook.getSize()));
         validators.add(new TransactionSizeValidator(transactionConfig.maxTransactionBytesPerEvent()));
+        // some events in the PCES might have been created by nodes that are no longer in the current
+        // address book but are in the previous one, so we need both for signature validation
+        final List<AddressBook> validationAddressBooks = Stream.of(currentAddressBook, previousAddressBook)
+                .filter(Objects::nonNull)
+                .toList();
         if (basicConfig.verifyEventSigs()) {
-            validators.add(new SignatureValidator(initialAddressBook));
+            validators.add(new SignatureValidator(validationAddressBooks, CryptoStatic::verifySignature));
         }
         final GossipEventValidators eventValidators = new GossipEventValidators(validators);
 
@@ -561,7 +577,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 threadManager,
                 time,
                 this,
-                initialAddressBook,
+                currentAddressBook,
                 selfId,
                 appVersion,
                 swirldStateManager.getTransactionPool(),
@@ -586,7 +602,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 time,
                 crypto,
                 notificationEngine,
-                initialAddressBook,
+                currentAddressBook,
                 selfId,
                 appVersion,
                 shadowGraph,
@@ -643,9 +659,16 @@ public class SwirldsPlatform implements Platform, Startable {
             });
         }
 
+        final Clearable pauseEventCreation = () -> {
+            if (tipsetEventCreator != null) {
+                tipsetEventCreator.pauseEventCreation();
+            }
+        };
+
         clearAllPipelines = new LoggingClearables(
                 RECONNECT.getMarker(),
                 List.of(
+                        Pair.of(pauseEventCreation, "eventCreator"),
                         Pair.of(gossip, "gossip"),
                         Pair.of(preConsensusEventHandler, "preConsensusEventHandler"),
                         Pair.of(consensusRoundHandler, "consensusRoundHandler"),
@@ -856,6 +879,9 @@ public class SwirldsPlatform implements Platform, Startable {
                                 + signedState.getState().getHash());
             }
 
+            // Before attempting to load the state, verify that the platform AB matches the state AB.
+            AddressBookUtils.verifyReconnectAddressBooks(getAddressBook(), signedState.getAddressBook());
+
             swirldStateManager.loadFromSignedState(signedState);
 
             latestReconnectRound.set(signedState.getRound());
@@ -898,6 +924,7 @@ public class SwirldsPlatform implements Platform, Startable {
         }
 
         gossip.resetFallenBehind();
+        tipsetEventCreator.resumeEventCreation();
         platformStatusManager.submitStatusAction(new ReconnectCompleteAction(signedState.getRound()));
     }
 
@@ -949,7 +976,9 @@ public class SwirldsPlatform implements Platform, Startable {
         Objects.requireNonNull(isDuplicateChecks);
         final ParentFinder parentFinder = new ParentFinder(shadowGraph::hashgraphEvent);
         final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
-        if (chatterConfig.useChatter()) {
+        final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
+
+        if (chatterConfig.useChatter() || eventConfig.forceUseOfOrphanBuffer()) {
             final OrphanBufferingLinker orphanBuffer = new OrphanBufferingLinker(
                     platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
                     parentFinder,
@@ -959,10 +988,6 @@ public class SwirldsPlatform implements Platform, Startable {
                             .withDescription("the number of events without parents buffered")
                             .withFormat("%d"));
 
-            // when using chatter an event could be an orphan, in this case it will be stored in the orphan set
-            // when its parents are found, or become ancient, it will move to the shadowgraph
-            // non-orphans are also stored in the shadowgraph
-            // to dedupe, we need to check both
             isDuplicateChecks.add(orphanBuffer::isOrphan);
 
             return orphanBuffer;
@@ -1119,7 +1144,7 @@ public class SwirldsPlatform implements Platform, Startable {
      */
     @Override
     public AddressBook getAddressBook() {
-        return initialAddressBook;
+        return currentAddressBook;
     }
 
     /**

@@ -17,13 +17,12 @@
 package com.swirlds.common.metrics;
 
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
+import com.swirlds.base.utility.ToStringBuilder;
 import java.util.EnumSet;
+import java.util.Objects;
 import java.util.function.IntBinaryOperator;
 import java.util.function.IntSupplier;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * An {@code IntegerAccumulator} accumulates an {@code int}-value.
@@ -64,7 +63,7 @@ public interface IntegerAccumulator extends Metric {
      */
     @Override
     default Integer get(final ValueType valueType) {
-        throwArgNull(valueType, "valueType");
+        Objects.requireNonNull(valueType, "valueType");
         if (valueType == VALUE) {
             return get();
         }
@@ -139,7 +138,7 @@ public interface IntegerAccumulator extends Metric {
                 final int initialValue) {
 
             super(category, name, description, unit, format);
-            this.accumulator = throwArgNull(accumulator, "accumulator");
+            this.accumulator = Objects.requireNonNull(accumulator, "accumulator");
             this.initializer = initializer;
             this.initialValue = initialValue;
         }
@@ -254,7 +253,7 @@ public interface IntegerAccumulator extends Metric {
                     getUnit(),
                     getFormat(),
                     getAccumulator(),
-                    throwArgNull(initializer, "initializer"),
+                    Objects.requireNonNull(initializer, "initializer"),
                     getInitialValue());
         }
 
@@ -307,7 +306,7 @@ public interface IntegerAccumulator extends Metric {
          */
         @Override
         public String toString() {
-            return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+            return new ToStringBuilder(this)
                     .appendSuper(super.toString())
                     .append("initialValue", initializer != null ? initializer.getAsInt() : initialValue)
                     .toString();

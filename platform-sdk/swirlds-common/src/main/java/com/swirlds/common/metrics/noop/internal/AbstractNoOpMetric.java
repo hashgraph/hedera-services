@@ -16,6 +16,7 @@
 
 package com.swirlds.common.metrics.noop.internal;
 
+import com.swirlds.common.metrics.LegacyMetric;
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.MetricConfig;
 import com.swirlds.common.metrics.statistics.StatsBuffered;
@@ -24,7 +25,7 @@ import java.util.EnumSet;
 /**
  * Boilerplate for a no-op metric.
  */
-public abstract class AbstractNoOpMetric implements Metric {
+public abstract class AbstractNoOpMetric implements Metric, LegacyMetric {
 
     private final MetricConfig<?, ?> config;
 

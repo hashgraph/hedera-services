@@ -31,7 +31,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.units.UnitConstants;
 import com.swirlds.merkledb.KeyRange;
 import com.swirlds.merkledb.collections.CASableLongIndex;
@@ -40,7 +39,6 @@ import com.swirlds.merkledb.collections.IndexedObject;
 import com.swirlds.merkledb.collections.LongListHeap;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.channels.ClosedChannelException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -334,7 +332,7 @@ class DataFileCollectionTest {
                             assertNotNull(dataItem, "DataItem should never be null");
                         }
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        fail("Exception should not be thrown", e);
                     }
                 }
             } else if (thread < (NUM_OF_THREADS - 1)) { // check reading item at index 100 as fast as
@@ -345,11 +343,8 @@ class DataFileCollectionTest {
                     try {
                         final long[] dataItem = fileCollection.readDataItemUsingIndex(storedOffsets, 100);
                         assertNotNull(dataItem, "DataItem should never be null");
-                    } catch (ClosedChannelException e) {
-                        e.printStackTrace();
-                        fail("Exception should not be thrown");
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        fail("Exception should not be thrown", e);
                     }
                 }
             } else if (thread == (NUM_OF_THREADS - 1)) { // move thread
@@ -401,16 +396,15 @@ class DataFileCollectionTest {
                                     DataFileCommon.fileIndexFromDataLocation(location),
                                     "Expect all data to be" + " correct"));
                     System.out.println("============= CHECK DONE ===========================");
+                    final KeyRange validKeyRange = fileCollection.getValidKeyRange();
+                    assertEquals(new KeyRange(0, NUM_OF_KEYS), validKeyRange, "Should still have values");
+                    mergeComplete.set(true);
+                    // all files should have been merged into 1.
+                    assertNotNull(mergedFiles, "null merged files list");
+                    assertEquals(1, mergedFiles.size(), "unexpected # of post-merge files");
                 } catch (Exception e) {
-                    e.printStackTrace();
-                    fail("Exception should not be thrown");
+                    fail("Exception should not be thrown", e);
                 }
-                final KeyRange validKeyRange = fileCollection.getValidKeyRange();
-                assertEquals(new KeyRange(0, NUM_OF_KEYS), validKeyRange, "Should still have values");
-                mergeComplete.set(true);
-                // all files should have been merged into 1.
-                assertNotNull(mergedFiles, "null merged files list");
-                assertEquals(1, mergedFiles.size(), "unexpected # of post-merge files");
             }
         });
         // check we only have 1 file left

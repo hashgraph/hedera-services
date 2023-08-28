@@ -30,6 +30,7 @@ import com.hedera.node.app.service.token.impl.handlers.CryptoGetLiveHashHandler;
 import com.hedera.node.app.service.token.impl.handlers.CryptoGetStakersHandler;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
 import com.hedera.node.app.service.token.impl.handlers.CryptoUpdateHandler;
+import com.hedera.node.app.service.token.impl.handlers.FinalizeParentRecordHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenAccountWipeHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenAssociateToAccountHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenBurnHandler;
@@ -50,6 +51,11 @@ import com.hedera.node.app.service.token.impl.handlers.TokenRevokeKycFromAccount
 import com.hedera.node.app.service.token.impl.handlers.TokenUnfreezeAccountHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUnpauseHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
+import com.hedera.node.app.service.token.impl.handlers.staking.StakeRewardCalculator;
+import com.hedera.node.app.service.token.impl.handlers.staking.StakeRewardCalculatorImpl;
+import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHandler;
+import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHandlerImpl;
+import com.hedera.node.app.service.token.records.ParentRecordFinalizer;
 import dagger.Binds;
 import dagger.Module;
 
@@ -61,6 +67,15 @@ public interface TokenServiceInjectionModule {
 
     @Binds
     CryptoSignatureWaivers cryptoSignatureWaivers(CryptoSignatureWaiversImpl impl);
+
+    @Binds
+    StakingRewardsHandler stakingRewardHandler(StakingRewardsHandlerImpl stakingRewardsHandler);
+
+    @Binds
+    StakeRewardCalculator stakeRewardCalculator(StakeRewardCalculatorImpl rewardCalculator);
+
+    @Binds
+    ParentRecordFinalizer parentRecordFinalizer(FinalizeParentRecordHandler parentRecordFinalizer);
 
     CryptoAddLiveHashHandler cryptoAddLiveHashHandler();
 

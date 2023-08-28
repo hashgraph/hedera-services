@@ -22,6 +22,7 @@ import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
 import com.swirlds.base.state.LifecyclePhase;
 import com.swirlds.base.time.Time;
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -93,7 +94,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * Gossip implemented with the chatter protocol.
@@ -172,6 +172,7 @@ public class ChatterGossip extends AbstractGossip {
         super(
                 platformContext,
                 threadManager,
+                time,
                 crypto,
                 addressBook,
                 selfId,
@@ -269,7 +270,9 @@ public class ChatterGossip extends AbstractGossip {
                                             reconnectConfig.asyncStreamTimeout(),
                                             reconnectMetrics,
                                             reconnectController,
-                                            fallenBehindManager),
+                                            fallenBehindManager,
+                                            statusActionSubmitter,
+                                            platformContext.getConfiguration()),
                                     new ReconnectProtocol(
                                             threadManager,
                                             otherId,
@@ -280,7 +283,8 @@ public class ChatterGossip extends AbstractGossip {
                                             reconnectMetrics,
                                             reconnectController,
                                             new DefaultSignedStateValidator(),
-                                            fallenBehindManager),
+                                            fallenBehindManager,
+                                            platformContext.getConfiguration()),
                                     new ChatterSyncProtocol(
                                             otherId,
                                             chatterPeer.communicationState(),

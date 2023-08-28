@@ -49,6 +49,7 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.validators.TokenUpdateValidator;
+import com.hedera.node.app.service.token.records.TokenUpdateRecordBuilder;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -110,6 +111,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         final var txn = context.body();
         final var op = txn.tokenUpdateOrThrow();
         final var tokenId = op.tokenOrThrow();
+        final var recordBuilder = context.recordBuilder(TokenUpdateRecordBuilder.class);
 
         // validate fields that involve config or state
         final var validationResult = tokenUpdateValidator.validateSemantics(context, op);
@@ -136,7 +138,9 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
             // If there is no treasury relationship, then we need to create one if auto associations are available.
             // If not fail
             if (newTreasuryRel == null) {
-                autoAssociate(newTreasuryAccount, token, accountStore, tokenRelStore, context);
+                final var newRelation = autoAssociate(newTreasuryAccount, token, accountStore, tokenRelStore, context);
+                recordBuilder.addAutomaticTokenAssociation(
+                        asTokenAssociation(newRelation.tokenId(), newRelation.accountId()));
             }
             // Treasury can be modified when it owns NFTs when the property "tokens.nfts.useTreasuryWildcards"
             // is enabled.
@@ -318,10 +322,10 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
     private void updateExpiryFields(
             final TokenUpdateTransactionBody op, final ExpiryMeta resolvedExpiry, final Token.Builder builder) {
         if (op.hasExpiry()) {
-            builder.expiry(resolvedExpiry.expiry());
+            builder.expirationSecond(resolvedExpiry.expiry());
         }
         if (op.hasAutoRenewPeriod()) {
-            builder.autoRenewSecs(resolvedExpiry.autoRenewPeriod());
+            builder.autoRenewSeconds(resolvedExpiry.autoRenewPeriod());
         }
         if (op.hasAutoRenewAccount()) {
             builder.autoRenewAccountId(resolvedExpiry.autoRenewAccountId());

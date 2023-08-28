@@ -16,24 +16,19 @@
 
 package com.swirlds.platform.benchmark.consensus;
 
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.config.ConsensusConfig;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.test.fixtures.WeightGenerators;
-import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.ConsensusImpl;
+import com.swirlds.platform.config.DefaultConfiguration;
 import com.swirlds.platform.test.NoOpConsensusMetrics;
 import com.swirlds.platform.test.consensus.ConsensusTestDefinition;
-import com.swirlds.platform.test.event.IndexedEvent;
-import io.github.classgraph.ClassGraph;
-import io.github.classgraph.ClassInfoList;
-import io.github.classgraph.ScanResult;
+import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import org.apache.commons.lang3.tuple.Pair;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -71,24 +66,13 @@ public class ConsensusBenchmark {
     private Consensus consensus;
 
     @Setup
-    public void setup() {
+    public void setup() throws Exception {
         final ConsensusTestDefinition testDefinition = new ConsensusTestDefinition(
                 "Performance Test", numNodes, (l, i) -> WeightGenerators.balancedNodeWeights(i), numEvents);
         testDefinition.setSeed(seed);
         events = testDefinition.getNode1EventEmitter().emitEvents(numEvents);
 
-        final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create();
-        // FUTURE WORK: replace this with ConfigurationUtils.scanAndRegisterAllConfigTypes() after it merges
-        try (ScanResult result = new ClassGraph().enableAnnotationInfo().scan()) {
-            ClassInfoList classInfos = result.getClassesWithAnnotation(ConfigData.class.getName());
-            classInfos.forEach(classInfo -> {
-                Class<? extends Record> type = (Class<? extends Record>) classInfo.loadClass();
-                configurationBuilder.withConfigDataType(type);
-            });
-        }
-        final Configuration configuration = configurationBuilder.build();
-        ConfigurationHolder.getInstance().setConfiguration(configuration);
-
+        final Configuration configuration = DefaultConfiguration.buildBasicConfiguration();
         consensus = new ConsensusImpl(
                 configuration.getConfigData(ConsensusConfig.class),
                 new NoOpConsensusMetrics(),
@@ -123,8 +107,8 @@ public class ConsensusBenchmark {
                 run.stream().findFirst().orElseThrow().getPrimaryResult().getScore();
 
         for (final Pair<String, Double> pair : resultComparison) {
-            final double diff = actualScore - pair.getRight();
-            System.out.printf("Compared to '%s': %+.2f%%%n", pair.getLeft(), (100 * diff) / pair.getRight());
+            final double diff = actualScore - pair.right();
+            System.out.printf("Compared to '%s': %+.2f%%%n", pair.left(), (100 * diff) / pair.right());
         }
     }
 }

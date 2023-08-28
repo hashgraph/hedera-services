@@ -33,6 +33,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateTransferLis
 import static java.util.function.Function.identity;
 
 import com.esaulpaugh.headlong.abi.Tuple;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
@@ -47,6 +48,7 @@ import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+@HapiTestSuite
 public class ContractRecordsSanityCheckSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ContractRecordsSanityCheckSuite.class);
     private static final String BALANCE_LOOKUP = "BalanceLookup";

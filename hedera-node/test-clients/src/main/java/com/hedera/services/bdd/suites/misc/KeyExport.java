@@ -26,6 +26,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.keyFromPem;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.keys.KeyShape;
@@ -39,6 +40,7 @@ import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+@HapiTestSuite
 public class KeyExport extends HapiSuite {
     private static final Logger log = LogManager.getLogger(KeyExport.class);
 
@@ -100,7 +102,8 @@ public class KeyExport extends HapiSuite {
     }
 
     private HapiSpec exportGenesisKey() {
-        final var r = new Random();
+        @SuppressWarnings("java:S2245") // using java.util.Random in tests is fine
+        final var r = new Random(271230L);
         final int passphraseLength = 24;
         final char[] choices = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".toCharArray();
         final KeyShape listOfSizeOne = listOf(1);

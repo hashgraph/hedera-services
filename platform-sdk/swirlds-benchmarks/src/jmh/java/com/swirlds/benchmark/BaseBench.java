@@ -17,14 +17,22 @@
 package com.swirlds.benchmark;
 
 import com.swirlds.benchmark.config.BenchmarkConfig;
+import com.swirlds.common.config.export.ConfigExport;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.config.sources.LegacyFileConfigSource;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
-import java.io.File;
+import com.swirlds.jasperdb.config.JasperDbConfig;
+import com.swirlds.merkledb.config.MerkleDbConfig;
+import com.swirlds.virtualmap.config.VirtualMapConfig;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.ForkJoinPool;
@@ -79,17 +87,29 @@ public abstract class BaseBench {
 
     private BenchmarkConfig benchmarkConfig;
 
+    private static BenchmarkConfig loadConfig() throws IOException {
+        final Configuration configuration = ConfigurationBuilder.create()
+                .withSource(new LegacyFileConfigSource(Path.of(".", "settings.txt")))
+                .withConfigDataType(BenchmarkConfig.class)
+                .withConfigDataType(VirtualMapConfig.class)
+                .withConfigDataType(MerkleDbConfig.class)
+                .withConfigDataType(JasperDbConfig.class)
+                .withConfigDataType(MetricsConfig.class)
+                .withConfigDataType(CryptoConfig.class)
+                .build();
+        ConfigurationHolder.getInstance().setConfiguration(configuration);
+
+        final StringBuilder settingsUsed = new StringBuilder();
+        ConfigExport.addConfigContents(configuration, settingsUsed);
+        try (OutputStream os = Files.newOutputStream(Path.of(".", "settingsUsed.txt"))) {
+            os.write(settingsUsed.toString().getBytes(StandardCharsets.UTF_8));
+        }
+        return configuration.getConfigData(BenchmarkConfig.class);
+    }
+
     @Setup
     public void setup() throws IOException {
-        BenchmarkSettings.init();
-        final File configFile = new File(".", "settings.txt");
-
-        final Configuration configuration = ConfigurationBuilder.create()
-                .withSource(new LegacyFileConfigSource(configFile.toPath()))
-                .withConfigDataType(BenchmarkConfig.class)
-                .build();
-
-        benchmarkConfig = configuration.getConfigData(BenchmarkConfig.class);
+        benchmarkConfig = loadConfig();
         logger.info("Benchmark configuration: {}", benchmarkConfig);
         logger.info("Build: {}", Utils.buildVersion());
 

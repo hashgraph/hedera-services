@@ -34,6 +34,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.swirlds.common.utility.CommonUtils;
@@ -43,7 +44,9 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+@HapiTestSuite
 public class PrngSeedOperationSuite extends HapiSuite {
+
     private static final Logger log = LogManager.getLogger(PrngSeedOperationSuite.class);
     private static final long GAS_TO_OFFER = 400_000L;
     private static final String THE_PRNG_CONTRACT = "PrngSeedOperationContract";

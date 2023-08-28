@@ -17,7 +17,6 @@
 package com.swirlds.merkledb.files;
 
 import static com.swirlds.merkledb.files.DataFileCommon.FOOTER_SIZE;
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
 import java.io.IOException;
@@ -109,7 +108,7 @@ public final class DataFileMetadataJdb extends DataFileMetadata {
     /** toString for debugging */
     @Override
     public String toString() {
-        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+        return new ToStringBuilder(this)
                 .append("itemsCount", itemsCount)
                 .append("index", index)
                 .append("creationDate", creationDate)

@@ -868,6 +868,8 @@ class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
 
     @Test
     @DisplayName("After making many modifications and reads, reset the state")
+    // Suppress the warning that we have too many asserts
+    @SuppressWarnings("java:S5961")
     void reset() {
         assertThat(state.get(C_KEY)).isNull();
         assertThat(state.get(A_KEY)).isEqualTo(APPLE);

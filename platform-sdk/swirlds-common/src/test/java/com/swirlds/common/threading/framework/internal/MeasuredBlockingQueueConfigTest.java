@@ -45,9 +45,9 @@ class MeasuredBlockingQueueConfigTest {
     void setUp() {
         final MetricKeyRegistry registry = new MetricKeyRegistry();
         final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-        final MetricsFactory factory = new DefaultMetricsFactory();
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
+        final MetricsFactory factory = new DefaultMetricsFactory(metricsConfig);
         metrics = new DefaultMetrics(null, registry, executor, factory, metricsConfig);
     }
 
@@ -96,12 +96,12 @@ class MeasuredBlockingQueueConfigTest {
     @DisplayName("Testing config constructor with invalid parameter")
     void configConstructorWithInvalidParameter() {
         assertThatThrownBy(() -> new MeasuredBlockingQueue.Config(null, null, null))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new MeasuredBlockingQueue.Config(null, CATEGORY, QUEUE_NAME))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new MeasuredBlockingQueue.Config(metrics, null, QUEUE_NAME))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new MeasuredBlockingQueue.Config(metrics, CATEGORY, null))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(NullPointerException.class);
     }
 }

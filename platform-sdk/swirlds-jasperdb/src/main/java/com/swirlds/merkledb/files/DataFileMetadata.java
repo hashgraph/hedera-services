@@ -25,12 +25,13 @@ import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_ITEMS_COU
 import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_ITEM_VERSION;
 import static com.swirlds.merkledb.utilities.ProtoUtils.WIRE_TYPE_FIXED_64_BIT;
 import static com.swirlds.merkledb.utilities.ProtoUtils.WIRE_TYPE_VARINT;
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
+import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.merkledb.utilities.ProtoUtils;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteOrder;
@@ -41,7 +42,6 @@ import java.time.Instant;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * DataFile's metadata that is stored in the data file's footer
@@ -223,7 +223,7 @@ public class DataFileMetadata {
     /** toString for debugging */
     @Override
     public String toString() {
-        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+        return new ToStringBuilder(this)
                 .append("itemsCount", itemsCount)
                 .append("index", index)
                 .append("creationDate", creationDate)

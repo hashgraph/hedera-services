@@ -50,6 +50,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_B
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -62,6 +64,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+@HapiTestSuite
 public class CryptoCreateSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(CryptoCreateSuite.class);
@@ -115,6 +118,7 @@ public class CryptoCreateSuite extends HapiSuite {
                 cannotCreateAnAccountWithLongZeroKeyButCanUseEvmAddress());
     }
 
+    @HapiTest
     private HapiSpec createAnAccountWithStakingFields() {
         return defaultHapiSpec("createAnAccountWithStakingFields")
                 .given(
@@ -169,6 +173,7 @@ public class CryptoCreateSuite extends HapiSuite {
                                 .hasPrecheck(INVALID_STAKING_ID));
     }
 
+    @HapiTest
     private HapiSpec cannotCreateAnAccountWithLongZeroKeyButCanUseEvmAddress() {
         final AtomicReference<ByteString> secp256k1Key = new AtomicReference<>();
         final AtomicReference<ByteString> evmAddress = new AtomicReference<>();
@@ -263,6 +268,7 @@ public class CryptoCreateSuite extends HapiSuite {
                         cryptoCreate("alsoBroken").entityMemo(ZERO_BYTE_MEMO).hasPrecheck(INVALID_ZERO_BYTE_IN_STRING));
     }
 
+    @HapiTest
     private HapiSpec createAnAccountEmptyThresholdKey() {
         KeyShape shape = threshOf(0, 0);
         long initialBalance = 10_000L;
@@ -277,6 +283,7 @@ public class CryptoCreateSuite extends HapiSuite {
                         .hasPrecheck(KEY_REQUIRED));
     }
 
+    @HapiTest
     private HapiSpec createAnAccountEmptyKeyList() {
         KeyShape shape = listOf(0);
         long initialBalance = 10_000L;
@@ -291,6 +298,7 @@ public class CryptoCreateSuite extends HapiSuite {
                         .hasPrecheck(KEY_REQUIRED));
     }
 
+    @HapiTest
     private HapiSpec createAnAccountEmptyNestedKey() {
         KeyShape emptyThresholdShape = threshOf(0, 0);
         KeyShape emptyListShape = listOf(0);
@@ -307,6 +315,7 @@ public class CryptoCreateSuite extends HapiSuite {
                         .hasPrecheck(KEY_REQUIRED));
     }
 
+    @HapiTest
     // One of element in key list is not valid
     private HapiSpec createAnAccountInvalidKeyList() {
         KeyShape emptyThresholdShape = threshOf(0, 0);
@@ -323,6 +332,7 @@ public class CryptoCreateSuite extends HapiSuite {
                         .hasPrecheck(INVALID_ADMIN_KEY));
     }
 
+    @HapiTest
     // One of element in nested key list is not valid
     private HapiSpec createAnAccountInvalidNestedKeyList() {
         KeyShape invalidListShape = listOf(SIMPLE, SIMPLE, listOf(0));
@@ -339,6 +349,7 @@ public class CryptoCreateSuite extends HapiSuite {
                         .hasPrecheck(INVALID_ADMIN_KEY));
     }
 
+    @HapiTest
     // One of element in threshold key is not valid
     private HapiSpec createAnAccountInvalidThresholdKey() {
         KeyShape emptyListShape = listOf(0);
@@ -396,7 +407,7 @@ public class CryptoCreateSuite extends HapiSuite {
                                 .hasPrecheck(INVALID_ADMIN_KEY));
     }
 
-    // createAnAccountInvalidNestedThresholdKey
+    @HapiTest
     private HapiSpec createAnAccountInvalidNestedThresholdKey() {
         KeyShape goodShape = threshOf(2, 3);
         KeyShape thresholdShape0 = threshOf(0, SIMPLE, SIMPLE, SIMPLE);
@@ -425,6 +436,7 @@ public class CryptoCreateSuite extends HapiSuite {
                                 .hasPrecheck(INVALID_ADMIN_KEY));
     }
 
+    @HapiTest
     private HapiSpec createAnAccountThresholdKeyWithInvalidThreshold() {
         KeyShape thresholdShape0 = threshOf(0, SIMPLE, SIMPLE, SIMPLE);
         KeyShape thresholdShape4 = threshOf(4, SIMPLE, SIMPLE, SIMPLE);
@@ -447,6 +459,7 @@ public class CryptoCreateSuite extends HapiSuite {
                                 .hasPrecheck(INVALID_ADMIN_KEY));
     }
 
+    @HapiTest
     private HapiSpec createAnAccountInvalidED25519() {
         long initialBalance = 10_000L;
         Key emptyKey = Key.newBuilder().setEd25519(ByteString.EMPTY).build();
@@ -474,6 +487,7 @@ public class CryptoCreateSuite extends HapiSuite {
                                 .hasPrecheck(BAD_ENCODING));
     }
 
+    @HapiTest
     private HapiSpec createAnAccountWithECDSAAlias() {
         return defaultHapiSpec("CreateAnAccountWithECDSAAlias")
                 .given(newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE))
@@ -489,6 +503,7 @@ public class CryptoCreateSuite extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
     private HapiSpec createAnAccountWithED25519Alias() {
         return defaultHapiSpec("CreateAnAccountWithED25519Alias")
                 .given(newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519))
@@ -504,6 +519,7 @@ public class CryptoCreateSuite extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
     private HapiSpec createAnAccountWithECKeyAndNoAlias() {
         return defaultHapiSpec("CreateAnAccountWithECKeyAndNoAlias")
                 .given(newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE))
@@ -548,6 +564,7 @@ public class CryptoCreateSuite extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
     private HapiSpec createAnAccountWithEDKeyAndNoAlias() {
         return defaultHapiSpec("CreateAnAccountWithEDKeyAndNoAlias")
                 .given(newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519))
@@ -556,6 +573,7 @@ public class CryptoCreateSuite extends HapiSuite {
                         .has(accountWith().key(ED_25519_KEY).noAlias()));
     }
 
+    @HapiTest
     private HapiSpec createAnAccountWithED25519KeyAndED25519Alias() {
         return defaultHapiSpec("CreateAnAccountWithED25519KeyAndED25519Alias")
                 .given(newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519))
@@ -572,6 +590,7 @@ public class CryptoCreateSuite extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
     private HapiSpec createAnAccountWithECKeyAndECKeyAlias() {
         return defaultHapiSpec("CreateAnAccountWithECKeyAndECKeyAlias")
                 .given(newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE))
@@ -607,6 +626,7 @@ public class CryptoCreateSuite extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
     private HapiSpec createAnAccountWithECDSAKeyAliasDifferentThanAdminKeyShouldFail() {
         return defaultHapiSpec("createAnAccountWithECDSAKeyAliasDifferentThanAdminKeyShouldFail")
                 .given(
@@ -626,6 +646,7 @@ public class CryptoCreateSuite extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
     private HapiSpec createAnAccountWithEVMAddressAliasFromSameKey() {
         final var edKey = "edKey";
         return defaultHapiSpec("createAnAccountWithEVMAddressAliasFromSameKey")
@@ -705,6 +726,7 @@ public class CryptoCreateSuite extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
     private HapiSpec createAnAccountWithEDKeyAliasDifferentThanAdminKeyShouldFail() {
         return defaultHapiSpec("createAnAccountWithEDKeyAliasDifferentThanAdminKeyShouldFail")
                 .given(

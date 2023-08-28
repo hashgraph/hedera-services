@@ -17,15 +17,14 @@
 package com.swirlds.common.metrics;
 
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
+import com.swirlds.base.utility.ToStringBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.EnumSet;
+import java.util.Objects;
 import java.util.function.LongBinaryOperator;
 import java.util.function.LongSupplier;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * An {@code LongAccumulator} accumulates a {@code long}-value.
@@ -66,7 +65,7 @@ public interface LongAccumulator extends Metric {
      */
     @Override
     default Long get(final ValueType valueType) {
-        throwArgNull(valueType, "valueType");
+        Objects.requireNonNull(valueType, "valueType");
         if (valueType == VALUE) {
             return get();
         }
@@ -141,7 +140,7 @@ public interface LongAccumulator extends Metric {
                 final long initialValue) {
 
             super(category, name, description, unit, format);
-            this.accumulator = throwArgNull(accumulator, "accumulator");
+            this.accumulator = Objects.requireNonNull(accumulator, "accumulator");
             this.initializer = initializer;
             this.initialValue = initialValue;
         }
@@ -258,7 +257,7 @@ public interface LongAccumulator extends Metric {
                     getUnit(),
                     getFormat(),
                     getAccumulator(),
-                    throwArgNull(initializer, "initializer"),
+                    Objects.requireNonNull(initializer, "initializer"),
                     getInitialValue());
         }
 
@@ -311,7 +310,7 @@ public interface LongAccumulator extends Metric {
          */
         @Override
         public String toString() {
-            return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+            return new ToStringBuilder(this)
                     .appendSuper(super.toString())
                     .append("initialValue", initialValue)
                     .toString();

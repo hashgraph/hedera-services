@@ -25,6 +25,7 @@ import com.hedera.services.bdd.spec.HapiSpecSetup;
 import java.util.Map;
 
 public class AutoRenewConfigChoices {
+
     static final int DEFAULT_HIGH_TOUCH_COUNT = 10_000;
     static final int HIGH_SCAN_CYCLE_COUNT = 10_000;
 

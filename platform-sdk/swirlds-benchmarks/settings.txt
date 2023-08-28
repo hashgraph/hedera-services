@@ -11,3 +11,4 @@ virtualMap.preferredFlushQueueSize,            1
 virtualMap.flushThrottleStepSize,              500ms
 jasperDb.hashesRamToDiskThreshold,             8388608
 merkleDb.hashesRamToDiskThreshold,             8388608
+

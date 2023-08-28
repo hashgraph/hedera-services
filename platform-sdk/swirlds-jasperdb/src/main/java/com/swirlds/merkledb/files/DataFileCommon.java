@@ -293,7 +293,10 @@ public final class DataFileCommon {
         final ConcurrentMap<Integer, Long> missingFileCounts = LongStream.range(
                         validKeyRange.getMinValidKey(), validKeyRange.getMaxValidKey() + 1)
                 .parallel()
-                .map(key -> index.get(key, -1))
+                .map(key -> index.get(key, NON_EXISTENT_DATA_LOCATION))
+                // the index could've been modified while we were iterating over it, so non-existent data locations
+                // possible
+                .filter(location -> location != NON_EXISTENT_DATA_LOCATION)
                 .filter(location -> {
                     final int fileIndex = DataFileCommon.fileIndexFromDataLocation(location);
                     return !(validFileIds.contains(fileIndex)

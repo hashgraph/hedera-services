@@ -19,6 +19,7 @@ package com.swirlds.common.metrics.noop;
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.MetricConfig;
 import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.metrics.PlatformMetrics;
 import com.swirlds.common.metrics.noop.internal.NoOpMetricsFactory;
 import com.swirlds.common.system.NodeId;
 import java.util.ArrayList;
@@ -34,7 +35,7 @@ import java.util.Map;
  * parties are warned not to rely on this class.
  */
 @Deprecated(forRemoval = true)
-public class NoOpMetrics implements Metrics {
+public class NoOpMetrics implements PlatformMetrics {
 
     private final Map<String /* category */, Map<String /* name */, Metric>> metrics = new HashMap<>();
 

@@ -100,7 +100,6 @@ public final class OnDiskKey<K> implements VirtualKey {
         output.skip(4);
         codec.write(key, output);
         final var pos = output.position();
-        output.position(0);
         output.writeInt((int) pos - 4);
         output.position(pos);
     }

@@ -16,7 +16,6 @@
 
 package com.swirlds.common.metrics;
 
-import com.swirlds.common.metrics.statistics.StatsBuffered;
 import java.util.EnumSet;
 
 /**
@@ -131,17 +130,6 @@ public interface Metric {
      * startup time is not taken into consideration.
      */
     void reset();
-
-    /**
-     * This method returns the {@link StatsBuffered} of this metric, if there is one.
-     * <p>
-     * This method is only used to simplify the migration and will be removed afterwards
-     *
-     * @return the {@code StatsBuffered}, if there is one, {@code null} otherwise
-     * @deprecated This method is only temporary and will be removed during the Metric overhaul.
-     */
-    @Deprecated(forRemoval = true)
-    StatsBuffered getStatsBuffered();
 
     /**
      * Overwritten {@code equals}-method. Two {@code Metric}-instances are considered equal, if they

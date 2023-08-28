@@ -68,11 +68,11 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenCreateHandler;
-import com.hedera.node.app.service.token.impl.records.TokenCreateRecordBuilder;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.CustomFeesValidator;
 import com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator;
 import com.hedera.node.app.service.token.impl.validators.TokenCreateValidator;
+import com.hedera.node.app.service.token.records.TokenCreateRecordBuilder;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -135,6 +135,8 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
+    // Suppressing the warning that we have too many assertions
+    @SuppressWarnings("java:S5961")
     void handleWorksForFungibleCreate() {
         setUpTxnContext();
 
@@ -150,7 +152,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(token.tokenId()).isEqualTo(newTokenId);
         assertThat(token.totalSupply()).isEqualTo(1000L);
         assertThat(token.tokenType()).isEqualTo(TokenType.FUNGIBLE_COMMON);
-        assertThat(token.expiry())
+        assertThat(token.expirationSecond())
                 .isEqualTo(consensusInstant.plusSeconds(autoRenewSecs).getEpochSecond());
         assertThat(token.freezeKey()).isEqualTo(A_COMPLEX_KEY);
         assertThat(token.kycKey()).isEqualTo(A_COMPLEX_KEY);
@@ -158,7 +160,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(token.wipeKey()).isEqualTo(A_COMPLEX_KEY);
         assertThat(token.supplyKey()).isEqualTo(A_COMPLEX_KEY);
         assertThat(token.feeScheduleKey()).isEqualTo(A_COMPLEX_KEY);
-        assertThat(token.autoRenewSecs()).isEqualTo(autoRenewSecs);
+        assertThat(token.autoRenewSeconds()).isEqualTo(autoRenewSecs);
         assertThat(token.autoRenewAccountId()).isEqualTo(autoRenewAccountId);
         assertThat(token.decimals()).isZero();
         assertThat(token.name()).isEqualTo("TestToken");
@@ -181,6 +183,8 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
+    // Suppressing the warning that we have too many assertions
+    @SuppressWarnings("java:S5961")
     void handleWorksForFungibleCreateWithSelfDenominatedToken() {
         setUpTxnContext();
         final var customFees = List.of(
@@ -205,7 +209,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(token.tokenId()).isEqualTo(newTokenId);
         assertThat(token.totalSupply()).isEqualTo(1000L);
         assertThat(token.tokenType()).isEqualTo(TokenType.FUNGIBLE_COMMON);
-        assertThat(token.expiry())
+        assertThat(token.expirationSecond())
                 .isEqualTo(consensusInstant.plusSeconds(autoRenewSecs).getEpochSecond());
         assertThat(token.freezeKey()).isEqualTo(A_COMPLEX_KEY);
         assertThat(token.kycKey()).isEqualTo(A_COMPLEX_KEY);
@@ -213,7 +217,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(token.wipeKey()).isEqualTo(A_COMPLEX_KEY);
         assertThat(token.supplyKey()).isEqualTo(A_COMPLEX_KEY);
         assertThat(token.feeScheduleKey()).isEqualTo(A_COMPLEX_KEY);
-        assertThat(token.autoRenewSecs()).isEqualTo(autoRenewSecs);
+        assertThat(token.autoRenewSeconds()).isEqualTo(autoRenewSecs);
         assertThat(token.autoRenewAccountId()).isEqualTo(autoRenewAccountId);
         assertThat(token.decimals()).isZero();
         assertThat(token.name()).isEqualTo("TestToken");
@@ -367,6 +371,8 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
+    // Suppressing the warning that we have too many assertions
+    @SuppressWarnings("java:S5961")
     void uniqueSupportedIfNftsEnabled() {
         setUpTxnContext();
         configuration = HederaTestConfigBuilder.create()
@@ -391,7 +397,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(token.tokenId()).isEqualTo(newTokenId);
         assertThat(token.totalSupply()).isZero();
         assertThat(token.tokenType()).isEqualTo(TokenType.NON_FUNGIBLE_UNIQUE);
-        assertThat(token.expiry())
+        assertThat(token.expirationSecond())
                 .isEqualTo(consensusInstant.plusSeconds(autoRenewSecs).getEpochSecond());
         assertThat(token.freezeKey()).isEqualTo(A_COMPLEX_KEY);
         assertThat(token.kycKey()).isEqualTo(A_COMPLEX_KEY);
@@ -399,7 +405,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(token.wipeKey()).isEqualTo(A_COMPLEX_KEY);
         assertThat(token.supplyKey()).isEqualTo(A_COMPLEX_KEY);
         assertThat(token.feeScheduleKey()).isEqualTo(A_COMPLEX_KEY);
-        assertThat(token.autoRenewSecs()).isEqualTo(autoRenewSecs);
+        assertThat(token.autoRenewSeconds()).isEqualTo(autoRenewSecs);
         assertThat(token.autoRenewAccountId()).isEqualTo(autoRenewAccountId);
         assertThat(token.decimals()).isZero();
         assertThat(token.name()).isEqualTo("TestToken");

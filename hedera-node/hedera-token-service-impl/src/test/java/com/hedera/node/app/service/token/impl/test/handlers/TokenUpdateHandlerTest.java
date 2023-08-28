@@ -52,11 +52,13 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.TokenAssociation;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.TokenRelation;
@@ -76,6 +78,7 @@ import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator;
 import com.hedera.node.app.service.token.impl.validators.TokenUpdateValidator;
+import com.hedera.node.app.service.token.records.TokenUpdateRecordBuilder;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -108,6 +111,9 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
     @Mock(strictness = LENIENT)
     private GlobalDynamicProperties dynamicProperties;
 
+    @Mock
+    private TokenUpdateRecordBuilder recordBuilder;
+
     private TransactionBody txn;
     private ExpiryValidator expiryValidator;
     private AttributeValidator attributeValidator;
@@ -124,6 +130,8 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
+    // Suppressing the warning that we have too many assertions
+    @SuppressWarnings("java:S5961")
     void happyPathForFungibleTokenUpdate() {
         txn = new TokenUpdateBuilder().build();
         given(handleContext.body()).willReturn(txn);
@@ -140,9 +148,9 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(token.feeScheduleKey()).isEqualTo(fungibleToken.feeScheduleKey());
         assertThat(token.pauseKey()).isEqualTo(fungibleToken.pauseKey());
         assertThat(token.autoRenewAccountId()).isEqualTo(fungibleToken.autoRenewAccountId());
-        assertThat(token.expiry()).isEqualTo(fungibleToken.expiry());
+        assertThat(token.expirationSecond()).isEqualTo(fungibleToken.expirationSecond());
         assertThat(token.memo()).isEqualTo(fungibleToken.memo());
-        assertThat(token.autoRenewSecs()).isEqualTo(fungibleToken.autoRenewSecs());
+        assertThat(token.autoRenewSeconds()).isEqualTo(fungibleToken.autoRenewSeconds());
         assertThat(token.tokenType()).isEqualTo(FUNGIBLE_COMMON);
 
         assertThatNoException().isThrownBy(() -> subject.handle(handleContext));
@@ -159,13 +167,15 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(modifiedToken.feeScheduleKey()).isEqualTo(B_COMPLEX_KEY);
         assertThat(modifiedToken.pauseKey()).isEqualTo(B_COMPLEX_KEY);
         assertThat(modifiedToken.autoRenewAccountId()).isEqualTo(ownerId);
-        assertThat(modifiedToken.expiry()).isEqualTo(1234600L);
+        assertThat(modifiedToken.expirationSecond()).isEqualTo(1234600L);
         assertThat(modifiedToken.memo()).isEqualTo("test token1");
-        assertThat(modifiedToken.autoRenewSecs()).isEqualTo(fungibleToken.autoRenewSecs());
+        assertThat(modifiedToken.autoRenewSeconds()).isEqualTo(fungibleToken.autoRenewSeconds());
         assertThat(token.tokenType()).isEqualTo(FUNGIBLE_COMMON);
     }
 
     @Test
+    // Suppressing the warning that we have too many assertions
+    @SuppressWarnings("java:S5961")
     void happyPathForNonFungibleTokenUpdate() {
         txn = new TokenUpdateBuilder().build();
         given(handleContext.body()).willReturn(txn);
@@ -182,9 +192,9 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(token.feeScheduleKey()).isEqualTo(nonFungibleToken.feeScheduleKey());
         assertThat(token.pauseKey()).isEqualTo(nonFungibleToken.pauseKey());
         assertThat(token.autoRenewAccountId()).isEqualTo(nonFungibleToken.autoRenewAccountId());
-        assertThat(token.expiry()).isEqualTo(nonFungibleToken.expiry());
+        assertThat(token.expirationSecond()).isEqualTo(nonFungibleToken.expirationSecond());
         assertThat(token.memo()).isEqualTo(nonFungibleToken.memo());
-        assertThat(token.autoRenewSecs()).isEqualTo(nonFungibleToken.autoRenewSecs());
+        assertThat(token.autoRenewSeconds()).isEqualTo(nonFungibleToken.autoRenewSeconds());
         assertThat(token.tokenType()).isEqualTo(NON_FUNGIBLE_UNIQUE);
 
         assertThatNoException().isThrownBy(() -> subject.handle(handleContext));
@@ -201,9 +211,9 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(modifiedToken.feeScheduleKey()).isEqualTo(B_COMPLEX_KEY);
         assertThat(modifiedToken.pauseKey()).isEqualTo(B_COMPLEX_KEY);
         assertThat(modifiedToken.autoRenewAccountId()).isEqualTo(ownerId);
-        assertThat(modifiedToken.expiry()).isEqualTo(1234600L);
+        assertThat(modifiedToken.expirationSecond()).isEqualTo(1234600L);
         assertThat(modifiedToken.memo()).isEqualTo("test token1");
-        assertThat(modifiedToken.autoRenewSecs()).isEqualTo(fungibleToken.autoRenewSecs());
+        assertThat(modifiedToken.autoRenewSeconds()).isEqualTo(fungibleToken.autoRenewSeconds());
         assertThat(token.tokenType()).isEqualTo(NON_FUNGIBLE_UNIQUE);
     }
 
@@ -356,6 +366,8 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
+    // Suppressing the warning that we have too many assertions
+    @SuppressWarnings("java:S5961")
     void worksWithUnassociatedNewTreasuryIfAutoAssociationsAvailable() {
         txn = new TokenUpdateBuilder()
                 .withTreasury(payerId)
@@ -368,6 +380,7 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
                 .build());
         given(handleContext.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
         given(handleContext.readableStore(ReadableTokenRelationStore.class)).willReturn(writableTokenRelStore);
+        given(handleContext.recordBuilder(TokenUpdateRecordBuilder.class)).willReturn(recordBuilder);
         assertThat(writableTokenRelStore.get(payerId, fungibleTokenId)).isNull();
 
         final var token = readableTokenStore.get(fungibleTokenId);
@@ -382,9 +395,9 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(token.feeScheduleKey()).isEqualTo(fungibleToken.feeScheduleKey());
         assertThat(token.pauseKey()).isEqualTo(fungibleToken.pauseKey());
         assertThat(token.autoRenewAccountId()).isEqualTo(fungibleToken.autoRenewAccountId());
-        assertThat(token.expiry()).isEqualTo(fungibleToken.expiry());
+        assertThat(token.expirationSecond()).isEqualTo(fungibleToken.expirationSecond());
         assertThat(token.memo()).isEqualTo(fungibleToken.memo());
-        assertThat(token.autoRenewSecs()).isEqualTo(fungibleToken.autoRenewSecs());
+        assertThat(token.autoRenewSeconds()).isEqualTo(fungibleToken.autoRenewSeconds());
         assertThat(token.tokenType()).isEqualTo(FUNGIBLE_COMMON);
 
         assertThatNoException().isThrownBy(() -> subject.handle(handleContext));
@@ -404,16 +417,24 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(modifiedToken.feeScheduleKey()).isEqualTo(B_COMPLEX_KEY);
         assertThat(modifiedToken.pauseKey()).isEqualTo(B_COMPLEX_KEY);
         assertThat(modifiedToken.autoRenewAccountId()).isEqualTo(ownerId);
-        assertThat(modifiedToken.expiry()).isEqualTo(1234600L);
+        assertThat(modifiedToken.expirationSecond()).isEqualTo(1234600L);
         assertThat(modifiedToken.memo()).isEqualTo("test token1");
-        assertThat(modifiedToken.autoRenewSecs()).isEqualTo(fungibleToken.autoRenewSecs());
+        assertThat(modifiedToken.autoRenewSeconds()).isEqualTo(fungibleToken.autoRenewSeconds());
         assertThat(modifiedToken.tokenType()).isEqualTo(FUNGIBLE_COMMON);
 
         assertThat(rel.frozen()).isFalse();
         assertThat(rel.kycGranted()).isTrue();
+
+        verify(recordBuilder)
+                .addAutomaticTokenAssociation(TokenAssociation.newBuilder()
+                        .tokenId(fungibleTokenId)
+                        .accountId(payerId)
+                        .build());
     }
 
     @Test
+    // Suppressing the warning that we have too many assertions
+    @SuppressWarnings("java:S5961")
     void worksWithUnassociatedNewTreasuryIfAutoAssociationsAvailableForNFT() {
         txn = new TokenUpdateBuilder()
                 .withTreasury(payerId)
@@ -440,9 +461,9 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(token.feeScheduleKey()).isEqualTo(nonFungibleToken.feeScheduleKey());
         assertThat(token.pauseKey()).isEqualTo(nonFungibleToken.pauseKey());
         assertThat(token.autoRenewAccountId()).isEqualTo(nonFungibleToken.autoRenewAccountId());
-        assertThat(token.expiry()).isEqualTo(nonFungibleToken.expiry());
+        assertThat(token.expirationSecond()).isEqualTo(nonFungibleToken.expirationSecond());
         assertThat(token.memo()).isEqualTo(nonFungibleToken.memo());
-        assertThat(token.autoRenewSecs()).isEqualTo(nonFungibleToken.autoRenewSecs());
+        assertThat(token.autoRenewSeconds()).isEqualTo(nonFungibleToken.autoRenewSeconds());
         assertThat(token.tokenType()).isEqualTo(NON_FUNGIBLE_UNIQUE);
 
         final var newTreasury = writableAccountStore.get(payerId);
@@ -452,6 +473,8 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
 
         final var newTreasuryRel = writableTokenRelStore.get(payerId, nonFungibleTokenId);
         final var oldTreasuryRel = writableTokenRelStore.get(treasuryId, nonFungibleTokenId);
+        given(handleContext.recordBuilder(TokenUpdateRecordBuilder.class)).willReturn(recordBuilder);
+
         assertThat(newTreasuryRel).isNull();
         assertThat(oldTreasuryRel.balance()).isEqualTo(1);
 
@@ -473,9 +496,9 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(modifiedToken.feeScheduleKey()).isEqualTo(B_COMPLEX_KEY);
         assertThat(modifiedToken.pauseKey()).isEqualTo(B_COMPLEX_KEY);
         assertThat(modifiedToken.autoRenewAccountId()).isEqualTo(ownerId);
-        assertThat(modifiedToken.expiry()).isEqualTo(1234600L);
+        assertThat(modifiedToken.expirationSecond()).isEqualTo(1234600L);
         assertThat(modifiedToken.memo()).isEqualTo("test token1");
-        assertThat(modifiedToken.autoRenewSecs()).isEqualTo(fungibleToken.autoRenewSecs());
+        assertThat(modifiedToken.autoRenewSeconds()).isEqualTo(fungibleToken.autoRenewSeconds());
         assertThat(modifiedToken.tokenType()).isEqualTo(NON_FUNGIBLE_UNIQUE);
 
         assertThat(rel.frozen()).isFalse();
@@ -485,6 +508,12 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         final var modifiedOldTreasury = writableAccountStore.get(treasuryId);
         assertThat(modifiedNewTreasury.numberOwnedNfts()).isEqualTo(3);
         assertThat(modifiedOldTreasury.numberOwnedNfts()).isEqualTo(1);
+
+        verify(recordBuilder)
+                .addAutomaticTokenAssociation(TokenAssociation.newBuilder()
+                        .tokenId(nonFungibleTokenId)
+                        .accountId(payerId)
+                        .build());
     }
 
     @Test
@@ -529,7 +558,7 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         writableAccountStore.put(account.copyBuilder()
                 .expiredAndPendingRemoval(true)
                 .tinybarBalance(0)
-                .expiry(consensusInstant.getEpochSecond() - 10000)
+                .expirationSecond(consensusInstant.getEpochSecond() - 10000)
                 .build());
         given(handleContext.body()).willReturn(txn);
         writableTokenRelStore.remove(TokenRelation.newBuilder()
@@ -557,7 +586,7 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
                 .copyBuilder()
                 .expiredAndPendingRemoval(true)
                 .tinybarBalance(0)
-                .expiry(consensusInstant.getEpochSecond() - 10000)
+                .expirationSecond(consensusInstant.getEpochSecond() - 10000)
                 .build());
         given(handleContext.body()).willReturn(txn);
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
@@ -578,7 +607,7 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         writableAccountStore.put(account.copyBuilder()
                 .expiredAndPendingRemoval(true)
                 .tinybarBalance(0)
-                .expiry(consensusInstant.getEpochSecond() - 10000)
+                .expirationSecond(consensusInstant.getEpochSecond() - 10000)
                 .build());
         given(handleContext.body()).willReturn(txn);
         writableTokenRelStore.remove(TokenRelation.newBuilder()
@@ -606,7 +635,7 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
                 .copyBuilder()
                 .expiredAndPendingRemoval(true)
                 .tinybarBalance(0)
-                .expiry(consensusInstant.getEpochSecond() - 10000)
+                .expirationSecond(consensusInstant.getEpochSecond() - 10000)
                 .build());
         given(handleContext.body()).willReturn(txn);
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
@@ -763,6 +792,7 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
         given(handleContext.readableStore(ReadableAccountStore.class)).willReturn(writableAccountStore);
         assertThat(writableTokenRelStore.get(payerId, fungibleTokenId)).isNull();
+        given(handleContext.recordBuilder(TokenUpdateRecordBuilder.class)).willReturn(recordBuilder);
 
         assertThatNoException().isThrownBy(() -> subject.handle(handleContext));
 
@@ -779,10 +809,16 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(modifiedToken.feeScheduleKey()).isEqualTo(B_COMPLEX_KEY);
         assertThat(modifiedToken.pauseKey()).isEqualTo(B_COMPLEX_KEY);
         assertThat(modifiedToken.autoRenewAccountId()).isEqualTo(ownerId);
-        assertThat(modifiedToken.expiry()).isEqualTo(1234600L);
+        assertThat(modifiedToken.expirationSecond()).isEqualTo(1234600L);
         assertThat(modifiedToken.memo()).isEqualTo("test token1");
-        assertThat(modifiedToken.autoRenewSecs()).isEqualTo(fungibleToken.autoRenewSecs());
+        assertThat(modifiedToken.autoRenewSeconds()).isEqualTo(fungibleToken.autoRenewSeconds());
         assertThat(modifiedToken.tokenType()).isEqualTo(FUNGIBLE_COMMON);
+
+        verify(recordBuilder)
+                .addAutomaticTokenAssociation(TokenAssociation.newBuilder()
+                        .tokenId(fungibleTokenId)
+                        .accountId(payerId)
+                        .build());
     }
 
     @Test
@@ -809,6 +845,7 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
                 .build());
         given(handleContext.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
         given(handleContext.readableStore(ReadableTokenStore.class)).willReturn(writableTokenStore);
+        given(handleContext.recordBuilder(TokenUpdateRecordBuilder.class)).willReturn(recordBuilder);
 
         assertThatNoException().isThrownBy(() -> subject.handle(handleContext));
 
@@ -825,13 +862,19 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(modifiedToken.feeScheduleKey()).isEqualTo(B_COMPLEX_KEY);
         assertThat(modifiedToken.pauseKey()).isEqualTo(B_COMPLEX_KEY);
         assertThat(modifiedToken.autoRenewAccountId()).isEqualTo(ownerId);
-        assertThat(modifiedToken.expiry()).isEqualTo(1234600L);
+        assertThat(modifiedToken.expirationSecond()).isEqualTo(1234600L);
         assertThat(modifiedToken.memo()).isEqualTo("test token1");
-        assertThat(modifiedToken.autoRenewSecs()).isEqualTo(fungibleToken.autoRenewSecs());
+        assertThat(modifiedToken.autoRenewSeconds()).isEqualTo(fungibleToken.autoRenewSeconds());
         assertThat(modifiedToken.tokenType()).isEqualTo(FUNGIBLE_COMMON);
 
         assertThat(rel.frozen()).isFalse();
         assertThat(rel.kycGranted()).isTrue();
+
+        verify(recordBuilder)
+                .addAutomaticTokenAssociation(TokenAssociation.newBuilder()
+                        .tokenId(fungibleTokenId)
+                        .accountId(payerId)
+                        .build());
     }
 
     @Test

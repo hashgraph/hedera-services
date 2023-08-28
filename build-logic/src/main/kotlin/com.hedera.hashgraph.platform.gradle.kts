@@ -17,6 +17,7 @@
 plugins {
     `java-platform`
     id("com.hedera.hashgraph.jpms-modules")
+    id("com.hedera.hashgraph.jpms-module-dependencies")
 }
 
 group = "com.hedera.hashgraph"

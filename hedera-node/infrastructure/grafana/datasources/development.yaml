@@ -1,0 +1,6 @@
+datasources:
+  - name: local-prom
+    access: proxy
+    type: prometheus
+    url: http://172.27.0.4:9090
+    isDefault: true

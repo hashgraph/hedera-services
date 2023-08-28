@@ -21,7 +21,7 @@ import java.awt.Dimension;
 import java.awt.FontMetrics;
 
 /**
- * Metadata that is used to aid in drawing a {@link HashgraphPicture}
+ * Metadata that is used to aid in drawing a {@code HashgraphPicture}
  */
 public class PictureMetadata {
     /**

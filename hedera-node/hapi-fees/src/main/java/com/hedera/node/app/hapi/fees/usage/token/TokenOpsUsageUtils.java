@@ -28,7 +28,6 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQ
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
-import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.fees.usage.token.meta.TokenBurnMeta;
 import com.hedera.node.app.hapi.fees.usage.token.meta.TokenCreateMeta;
 import com.hedera.node.app.hapi.fees.usage.token.meta.TokenFreezeMeta;
@@ -91,18 +90,14 @@ public enum TokenOpsUsageUtils {
         long rbs = 0;
         int transferRecordRb = 0;
         if (subType == TOKEN_NON_FUNGIBLE_UNIQUE) {
-            var metadataBytes = 0;
-            for (final ByteString o : op.getMetadataList()) {
-                metadataBytes += o.size();
-            }
-            bpt = metadataBytes;
-            rbs = metadataBytes * expectedLifeTime;
-            transferRecordRb = TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(1, 0, op.getMetadataCount());
+            // bpt section in feeSchedules.json is manually modified to just use a constant price of $0.02
+            // for each nft metadata
+            bpt = op.getMetadataList().size();
         } else {
             bpt = AMOUNT_REPR_BYTES;
             transferRecordRb = TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(1, 1, 0);
+            bpt += BASIC_ENTITY_ID_SIZE;
         }
-        bpt += BASIC_ENTITY_ID_SIZE;
         return new TokenMintMeta(bpt, subType, transferRecordRb, rbs);
     }
 

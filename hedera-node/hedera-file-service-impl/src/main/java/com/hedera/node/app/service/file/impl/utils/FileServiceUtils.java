@@ -66,10 +66,9 @@ public class FileServiceUtils {
      *
      * @param fileId the file id to validate and to fetch the metadata
      * @param fileStore the file store to fetch the metadata of specified file id
-     * @return the file metadata of specific file id
      * @throws PreCheckException if the file id is invalid or the file does not exist
      */
-    public static @NonNull FileMetadata preValidate(
+    public static void preValidate(
             @Nullable final FileID fileId,
             @NonNull final ReadableFileStore fileStore,
             @NonNull final PreHandleContext context,
@@ -81,44 +80,45 @@ public class FileServiceUtils {
             throw new PreCheckException(INVALID_FILE_ID);
         }
 
-        final var fileMeta = fileStore.getFileMetadata(fileId);
-        mustExist(fileMeta, INVALID_FILE_ID);
+        final var fileConfig = context.configuration().getConfigData(FilesConfig.class);
+
+        // @future('8172'): check if upgrade file exist after modularization is done
+        FileMetadata fileMeta = null;
+        if (fileId.fileNum() != fileConfig.upgradeFileNumber()) {
+            fileMeta = fileStore.getFileMetadata(fileId);
+            mustExist(fileMeta, INVALID_FILE_ID);
+        }
 
         final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
         // we cannot delete system files
         if (fileId.fileNum() <= ledgerConfig.numReservedSystemEntities() && isDelete) {
             throw new PreCheckException(INVALID_FILE_ID);
         }
-
-        return fileMeta;
     }
 
     /**
      * The function validates the keys and adds them to the context.
      *
-     * @param listKeys the list of keys to validate and add to required keys in context
+     * @param file file that will be checked for required keys
+     * @param transactionKeys transaction keys that add to context for required keys.
      * @param context the prehandle context for the transaction.
-     * @param areKeysRequired create allows files to be created without additional keys. Therefore,
-     *     this flag is needed.
-     * @throws PreCheckException
      */
     public static void validateAndAddRequiredKeys(
-            @Nullable final KeyList listKeys, @NonNull final PreHandleContext context, final boolean areKeysRequired)
-            throws PreCheckException {
+            @Nullable final File file,
+            @Nullable final KeyList transactionKeys,
+            @NonNull final PreHandleContext context) {
+        if (file != null) {
+            KeyList fileKeyList = file.keys();
 
-        // TODO This logic is wrong. What we should be doing, is verifying whether the file in state has keys, and
-        //  if so, that all those keys are added to the required signing keys, and if not, then unless the user is
-        //  a super user, we should throw UNAUTHORIZED. But just because the update transaction itself (for example)
-        //  is missing keys DOES NOT mean that we should throw UNAUTHORIZED.
-        //        if (listKeys == null || !listKeys.hasKeys() || listKeys.keys().isEmpty()) {
-        //            // @todo('protobuf change needed') change to immutable file response code
-        //            if (areKeysRequired) {
-        //                throw new PreCheckException(UNAUTHORIZED);
-        //            }
-        //        }
+            if (fileKeyList != null && fileKeyList.hasKeys()) {
+                for (final Key key : fileKeyList.keys()) {
+                    context.requireKey(key);
+                }
+            }
+        }
 
-        if (listKeys != null && listKeys.hasKeys()) {
-            for (final Key key : listKeys.keys()) {
+        if (transactionKeys != null && transactionKeys.hasKeys()) {
+            for (final Key key : transactionKeys.keys()) {
                 context.requireKey(key);
             }
         }

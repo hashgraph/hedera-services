@@ -21,35 +21,34 @@ import com.hedera.node.app.spi.fixtures.state.StateTestBase;
 import com.hedera.node.app.spi.fixtures.state.TestSchema;
 import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.app.state.merkle.disk.OnDiskKey;
-import com.hedera.node.app.state.merkle.disk.OnDiskKeySerializer;
+import com.hedera.node.app.state.merkle.disk.OnDiskKeySerializerMerkleDb;
 import com.hedera.node.app.state.merkle.disk.OnDiskValue;
-import com.hedera.node.app.state.merkle.disk.OnDiskValueSerializer;
+import com.hedera.node.app.state.merkle.disk.OnDiskValueSerializerMerkleDb;
 import com.hedera.node.app.state.merkle.memory.InMemoryKey;
 import com.hedera.node.app.state.merkle.memory.InMemoryValue;
 import com.hedera.node.app.state.merkle.queue.QueueNode;
 import com.hedera.node.app.state.merkle.singleton.SingletonNode;
 import com.hedera.pbj.runtime.Codec;
-import com.hedera.pbj.runtime.io.ReadableSequentialData;
-import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.common.utility.Labeled;
-import com.swirlds.jasperdb.JasperDbBuilder;
-import com.swirlds.jasperdb.VirtualLeafRecordSerializer;
-import com.swirlds.jasperdb.files.DataFileCommon;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.merkledb.MerkleDb;
+import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
+import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import org.junit.jupiter.api.io.TempDir;
 
 /**
  * This base class provides helpful methods and defaults for simplifying the other merkle related
@@ -78,10 +77,10 @@ public class MerkleTestBase extends StateTestBase {
     public static final String SECOND_SERVICE = "Second-Service";
     public static final String UNKNOWN_SERVICE = "Bogus-Service";
 
-    /** A {@link Codec} to be used with String data types */
-    public static final Codec<String> STRING_CODEC = new StringCodec();
-    /** A {@link Codec} to be used with Long data types */
-    public static final Codec<Long> LONG_CODEC = new LongCodec();
+    /** A TEST ONLY {@link Codec} to be used with String data types */
+    public static final Codec<String> STRING_CODEC = TestStringCodec.SINGLETON;
+    /** A TEST ONLY {@link Codec} to be used with Long data types */
+    public static final Codec<Long> LONG_CODEC = TestLongCodec.SINGLETON;
 
     /** Used by some tests that need to hash */
     protected static final MerkleCryptography CRYPTO = MerkleCryptoFactory.getInstance();
@@ -101,6 +100,9 @@ public class MerkleTestBase extends StateTestBase {
      * the test code.
      */
     protected ConstructableRegistry registry;
+
+    @TempDir
+    private Path virtualDbPath;
 
     // The "FRUIT" Map is part of FIRST_SERVICE
     protected String fruitLabel;
@@ -196,6 +198,7 @@ public class MerkleTestBase extends StateTestBase {
             registry.reset();
             registry.registerConstructables("com.swirlds.merklemap");
             registry.registerConstructables("com.swirlds.jasperdb");
+            registry.registerConstructables("com.swirlds.merkledb");
             registry.registerConstructables("com.swirlds.fcqueue");
             registry.registerConstructables("com.swirlds.virtualmap");
             registry.registerConstructables("com.swirlds.common.merkle");
@@ -219,20 +222,14 @@ public class MerkleTestBase extends StateTestBase {
     @SuppressWarnings("unchecked")
     protected VirtualMap<OnDiskKey<String>, OnDiskValue<String>> createVirtualMap(
             String label, StateMetadata<String, String> md) {
-        final var keySerializer = new OnDiskKeySerializer<>(md);
-        final var builder = new JasperDbBuilder<OnDiskKey<String>, OnDiskValue<String>>()
-                .hashesRamToDiskThreshold(0)
-                .maxNumOfKeys(100)
-                .preferDiskBasedIndexes(true)
-                .keySerializer(keySerializer)
-                .virtualLeafRecordSerializer(new VirtualLeafRecordSerializer<>(
-                        (short) 1,
-                        DataFileCommon.VARIABLE_DATA_SIZE,
-                        keySerializer,
-                        (short) 1,
-                        DataFileCommon.VARIABLE_DATA_SIZE,
-                        new OnDiskValueSerializer<>(md),
-                        false));
+        final var merkleDbTableConfig = new MerkleDbTableConfig<>(
+                (short) 1,
+                DigestType.SHA_384,
+                (short) 1,
+                new OnDiskKeySerializerMerkleDb<>(md),
+                (short) 1,
+                new OnDiskValueSerializerMerkleDb<>(md));
+        final var builder = new MerkleDbDataSourceBuilder<>(virtualDbPath, merkleDbTableConfig);
         return new VirtualMap<>(label, builder);
     }
 
@@ -296,86 +293,11 @@ public class MerkleTestBase extends StateTestBase {
     /** A convenience method used to deserialize a merkle tree */
     protected <T extends MerkleNode> T parseTree(@NonNull final byte[] state, @NonNull final Path tempDir)
             throws IOException {
+        // Restore to a fresh MerkleDb instance
+        MerkleDb.setDefaultPath(null);
         final var byteInputStream = new ByteArrayInputStream(state);
         try (final var in = new MerkleDataInputStream(byteInputStream)) {
             return in.readMerkleTree(tempDir, 100);
-        }
-    }
-
-    /** An implementation of {@link Codec} for String types */
-    private static final class StringCodec implements Codec<String> {
-
-        @NonNull
-        @Override
-        public String parse(@NonNull ReadableSequentialData input) {
-            final var len = input.readInt();
-            final var bytes = new byte[len];
-            input.readBytes(bytes);
-            return len == 0 ? "" : new String(bytes, StandardCharsets.UTF_8);
-        }
-
-        @NonNull
-        @Override
-        public String parseStrict(@NonNull ReadableSequentialData input) {
-            return parse(input);
-        }
-
-        @Override
-        public void write(@NonNull String s, @NonNull WritableSequentialData output) {
-            final var bytes = s.getBytes(StandardCharsets.UTF_8);
-            output.writeInt(bytes.length);
-            output.writeBytes(bytes);
-        }
-
-        @Override
-        public int measure(@NonNull ReadableSequentialData input) {
-            return input.readInt();
-        }
-
-        @Override
-        public int measureRecord(String s) {
-            return s.getBytes(StandardCharsets.UTF_8).length;
-        }
-
-        @Override
-        public boolean fastEquals(@NonNull String value, @NonNull ReadableSequentialData input) {
-            return value.equals(parse(input));
-        }
-    }
-
-    /** An implementation of {@link Codec} for Long types */
-    private static final class LongCodec implements Codec<Long> {
-
-        @NonNull
-        @Override
-        public Long parse(@NonNull ReadableSequentialData input) {
-            return input.readLong();
-        }
-
-        @NonNull
-        @Override
-        public Long parseStrict(@NonNull ReadableSequentialData input) {
-            return parse(input);
-        }
-
-        @Override
-        public void write(@NonNull Long value, @NonNull WritableSequentialData output) {
-            output.writeLong(value);
-        }
-
-        @Override
-        public int measure(@NonNull ReadableSequentialData input) {
-            return 8;
-        }
-
-        @Override
-        public int measureRecord(Long aLong) {
-            return 8;
-        }
-
-        @Override
-        public boolean fastEquals(@NonNull Long value, @NonNull ReadableSequentialData input) {
-            return value.equals(parse(input));
         }
     }
 }

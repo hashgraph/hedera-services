@@ -31,11 +31,13 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.consensus.ConsensusCreateTopicTransactionBody;
@@ -46,6 +48,9 @@ import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.fees.FeeAccumulator;
+import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
@@ -81,6 +86,12 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
     @Mock
     private ConsensusCreateTopicRecordBuilder recordBuilder;
 
+    @Mock
+    private FeeCalculator feeCalculator;
+
+    @Mock
+    private FeeAccumulator feeAccumulator;
+
     private WritableTopicStore topicStore;
     private ConsensusCreateTopicHandler subject;
 
@@ -115,6 +126,10 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         given(handleContext.writableStore(WritableTopicStore.class)).willReturn(topicStore);
         given(handleContext.recordBuilder(ConsensusCreateTopicRecordBuilder.class))
                 .willReturn(recordBuilder);
+        lenient().when(handleContext.feeCalculator(any(SubType.class))).thenReturn(feeCalculator);
+        lenient().when(handleContext.feeAccumulator()).thenReturn(feeAccumulator);
+        lenient().when(feeCalculator.calculate()).thenReturn(Fees.FREE);
+        lenient().when(feeCalculator.legacyCalculate(any())).thenReturn(Fees.FREE);
     }
 
     @Test
@@ -261,7 +276,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         assertEquals(memo, actualTopic.memo());
         assertEquals(adminKey, actualTopic.adminKey());
         assertEquals(submitKey, actualTopic.submitKey());
-        assertEquals(1234667, actualTopic.expiry());
+        assertEquals(1234667, actualTopic.expirationSecond());
         assertEquals(op.autoRenewPeriod().seconds(), actualTopic.autoRenewPeriod());
         assertEquals(autoRenewId, actualTopic.autoRenewAccountId());
         final var topicID = TopicID.newBuilder().topicNum(1_234L).build();
@@ -297,7 +312,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         assertEquals(memo, actualTopic.memo());
         assertNull(actualTopic.adminKey());
         assertNull(actualTopic.submitKey());
-        assertEquals(1_234_567L + op.autoRenewPeriod().seconds(), actualTopic.expiry());
+        assertEquals(1_234_567L + op.autoRenewPeriod().seconds(), actualTopic.expirationSecond());
         assertEquals(op.autoRenewPeriod().seconds(), actualTopic.autoRenewPeriod());
         assertEquals(autoRenewId, actualTopic.autoRenewAccountId());
         final var topicID = TopicID.newBuilder().topicNum(1_234L).build();

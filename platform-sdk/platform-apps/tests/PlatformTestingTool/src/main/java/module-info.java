@@ -44,7 +44,7 @@ module com.swirlds.demo.platform {
     requires lazysodium.java;
     requires java.management;
     requires org.apache.commons.lang3;
-    requires commons.math3;
+    requires org.apache.commons.math3;
     requires org.apache.commons.io;
     requires com.swirlds.merkle.test;
     requires java.sql;

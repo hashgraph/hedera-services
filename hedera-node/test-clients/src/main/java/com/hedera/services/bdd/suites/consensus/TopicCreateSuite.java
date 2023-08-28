@@ -35,12 +35,15 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
+import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+@HapiTestSuite
 public class TopicCreateSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TopicCreateSuite.class);
 
@@ -67,6 +70,7 @@ public class TopicCreateSuite extends HapiSuite {
         return true;
     }
 
+    @HapiTest
     private HapiSpec adminKeyIsValidated() {
         return defaultHapiSpec("AdminKeyIsValidated")
                 .given()
@@ -78,6 +82,7 @@ public class TopicCreateSuite extends HapiSuite {
                         .hasKnownStatus(BAD_ENCODING));
     }
 
+    @HapiTest
     private HapiSpec submitKeyIsValidated() {
         return defaultHapiSpec("SubmitKeyIsValidated")
                 .given()
@@ -88,6 +93,7 @@ public class TopicCreateSuite extends HapiSuite {
                         .hasKnownStatus(BAD_ENCODING));
     }
 
+    @HapiTest
     private HapiSpec autoRenewAccountIsValidated() {
         return defaultHapiSpec("AutoRenewAccountIsValidated")
                 .given()
@@ -98,6 +104,7 @@ public class TopicCreateSuite extends HapiSuite {
                         .hasKnownStatus(INVALID_AUTORENEW_ACCOUNT));
     }
 
+    @HapiTest
     private HapiSpec autoRenewAccountIdNeedsAdminKeyToo() {
         return defaultHapiSpec("autoRenewAccountIdNeedsAdminKeyToo")
                 .given(cryptoCreate("payer"), cryptoCreate("autoRenewAccount"))
@@ -110,6 +117,7 @@ public class TopicCreateSuite extends HapiSuite {
                         .hasKnownStatusFrom(SUCCESS, AUTORENEW_ACCOUNT_NOT_ALLOWED));
     }
 
+    @HapiTest
     private HapiSpec autoRenewPeriodIsValidated() {
         final var tooShortAutoRenewPeriod = "tooShortAutoRenewPeriod";
         final var tooLongAutoRenewPeriod = "tooLongAutoRenewPeriod";
@@ -125,6 +133,7 @@ public class TopicCreateSuite extends HapiSuite {
                                 .hasKnownStatus(AUTORENEW_DURATION_NOT_IN_RANGE));
     }
 
+    @HapiTest
     private HapiSpec noAutoRenewPeriod() {
         return defaultHapiSpec("noAutoRenewPeriod")
                 .given()
@@ -208,6 +217,7 @@ public class TopicCreateSuite extends HapiSuite {
                                 .logged());
     }
 
+    @HapiTest
     private HapiSpec allFieldsSetHappyCase() {
         return defaultHapiSpec("AllFieldsSetHappyCase")
                 .given(newKeyNamed("adminKey"), newKeyNamed("submitKey"), cryptoCreate("autoRenewAccount"))
@@ -219,6 +229,7 @@ public class TopicCreateSuite extends HapiSuite {
                         .autoRenewAccountId("autoRenewAccount"));
     }
 
+    @HapiTest
     private HapiSpec feeAsExpected() {
         return defaultHapiSpec("feeAsExpected")
                 .given(

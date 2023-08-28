@@ -35,13 +35,14 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
-import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
+import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -52,7 +53,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.UnaryOperator;
-import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -63,12 +63,11 @@ public class AutoAccountCreator {
     // checks tokenAliasMap if the change consists an alias that is already used in previous
     // iteration of the token transfer list. This map is used to count number of
     // maxAutoAssociations needed on auto created account
-    protected final Map<Bytes, Set<TokenID>> tokenAliasMap = new HashMap<>();
+    protected final Map<ProtoBytes, Set<TokenID>> tokenAliasMap = new HashMap<>();
     private static final CryptoUpdateTransactionBody.Builder UPDATE_TXN_BODY_BUILDER =
             CryptoUpdateTransactionBody.newBuilder()
                     .key(Key.newBuilder().ecdsaSecp256k1(Bytes.EMPTY).build());
 
-    @Inject
     public AutoAccountCreator(@NonNull final HandleContext handleContext) {
         this.handleContext = requireNonNull(handleContext);
         this.accountStore = handleContext.writableStore(WritableAccountStore.class);
@@ -92,11 +91,12 @@ public class AutoAccountCreator {
         String memo;
 
         if (isByTokenTransfer) {
-            tokenAliasMap.putIfAbsent(alias, Collections.emptySet());
+            tokenAliasMap.putIfAbsent(new ProtoBytes(alias), Collections.emptySet());
         }
 
-        final var maxAutoAssociations =
-                tokenAliasMap.getOrDefault(alias, Collections.emptySet()).size();
+        final var maxAutoAssociations = tokenAliasMap
+                .getOrDefault(new ProtoBytes(alias), Collections.emptySet())
+                .size();
         final var isAliasEVMAddress = EntityIdUtils.isOfEvmAddressSize(alias);
         if (isAliasEVMAddress) {
             syntheticCreation = createHollowAccount(alias, 0L);
@@ -133,7 +133,7 @@ public class AutoAccountCreator {
                 }
             }
         }
-        // TODO: Not sure if fee should be set here childRecord.transactionFee(fee);
+        childRecord.transactionFee(fee);
 
         final var createdAccountId = accountStore.getAccountIDByAlias(alias);
         validateTrue(createdAccountId != null, FAIL_INVALID);

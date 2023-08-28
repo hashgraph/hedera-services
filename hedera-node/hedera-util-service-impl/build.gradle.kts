@@ -22,8 +22,10 @@ dependencies {
     javaModuleDependencies {
         annotationProcessor(gav("dagger.compiler"))
 
+        testImplementation(project(":app-service-network-admin"))
         testImplementation(testFixtures(project(":app-spi")))
         testImplementation(testFixtures(project(":config")))
+        testImplementation(gav("com.swirlds.test.framework"))
         testImplementation(gav("org.assertj.core"))
         testImplementation(gav("org.junit.jupiter.api"))
         testImplementation(gav("org.mockito"))

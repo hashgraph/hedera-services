@@ -30,6 +30,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
@@ -42,11 +44,13 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+@HapiTestSuite
 public class UpdateFailuresSpec extends HapiSuite {
 
     private static final long A_LOT = 1_234_567_890L;
     private static final Logger LOG = LogManager.getLogger(UpdateFailuresSpec.class);
     private static final String CIVILIAN = "civilian";
+    private static final String UNIQUE_PAYER_ACCOUNT = "uniquePayerAccount";
 
     public static void main(String... args) {
         new UpdateFailuresSpec().runSuiteAsync();
@@ -69,7 +73,9 @@ public class UpdateFailuresSpec extends HapiSuite {
                 confusedUpdateCantExtendExpiry());
     }
 
+    @HapiTest
     private HapiSpec confusedUpdateCantExtendExpiry() {
+        // this test verify that the exchange rate file parsed correctly on update, it doesn't check expiry
         var initialExpiry = new AtomicLong();
         var extension = 1_000L;
         return defaultHapiSpec("ConfusedUpdateCantExtendExpiry")
@@ -87,7 +93,9 @@ public class UpdateFailuresSpec extends HapiSuite {
                 .then(QueryVerbs.getFileInfo(EXCHANGE_RATES).hasExpiry(initialExpiry::get));
     }
 
+    @HapiTest
     private HapiSpec precheckRejectsUnauthorized() {
+        // this test is to verify that the system files cannot be updated without privileged account
         return defaultHapiSpec("precheckRejectsUnauthorized")
                 .given(cryptoCreate(CIVILIAN))
                 .when()
@@ -100,6 +108,7 @@ public class UpdateFailuresSpec extends HapiSuite {
                         fileUpdate(EXCHANGE_RATES).payingWith(CIVILIAN).hasPrecheck(AUTHORIZATION_FAILED));
     }
 
+    @HapiTest
     private HapiSpec precheckAllowsMissing() {
         return defaultHapiSpec("PrecheckAllowsMissing")
                 .given()
@@ -112,6 +121,7 @@ public class UpdateFailuresSpec extends HapiSuite {
                         .hasKnownStatus(INVALID_FILE_ID));
     }
 
+    @HapiTest
     private HapiSpec precheckAllowsDeleted() {
         return defaultHapiSpec("PrecheckAllowsDeleted")
                 .given(fileCreate("tbd"))
@@ -119,6 +129,7 @@ public class UpdateFailuresSpec extends HapiSuite {
                 .then(fileUpdate("tbd").hasPrecheck(OK).hasKnownStatus(FILE_DELETED));
     }
 
+    @HapiTest
     private HapiSpec precheckRejectsPrematureExpiry() {
         long now = Instant.now().getEpochSecond();
         return defaultHapiSpec("PrecheckRejectsPrematureExpiry")
@@ -130,6 +141,7 @@ public class UpdateFailuresSpec extends HapiSuite {
                         .hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE));
     }
 
+    @HapiTest
     private HapiSpec precheckAllowsBadEncoding() {
         return defaultHapiSpec("PrecheckAllowsBadEncoding")
                 .given(fileCreate("file"))
@@ -143,6 +155,7 @@ public class UpdateFailuresSpec extends HapiSuite {
     }
 
     @SuppressWarnings("java:S5960")
+    @HapiTest
     private HapiSpec handleIgnoresEarlierExpiry() {
         var initialExpiry = new AtomicLong();
 

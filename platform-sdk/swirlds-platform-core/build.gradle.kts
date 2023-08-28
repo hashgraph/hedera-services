@@ -16,7 +16,7 @@
 
 plugins {
     id("com.swirlds.platform.conventions")
-    id("com.swirlds.platform.library")
+    `java-library`
     id("com.swirlds.platform.maven-publish")
     id("org.gradle.java-test-fixtures")
 }
@@ -25,19 +25,18 @@ extraJavaModuleInfo { failOnMissingModuleInfo.set(false) }
 
 dependencies {
     // Individual Dependencies
-    implementation(project(":swirlds-base"))
     api(project(":swirlds-fchashmap"))
     api(project(":swirlds-fcqueue"))
     api(project(":swirlds-jasperdb"))
     api(project(":swirlds-cli"))
     api(project(":swirlds-base"))
+    api(project(":swirlds-platform-gui"))
     compileOnly(libs.spotbugs.annotations)
     runtimeOnly(project(":swirlds-config-impl"))
 
     // Bundle Dependencies
     implementation(libs.bundles.logging.impl)
     implementation(libs.bundles.javafx)
-    implementation(libs.bundles.networking)
     implementation(libs.bundles.picocli)
     implementation(libs.bundles.jackson)
     implementation(libs.bundles.pbj)
@@ -53,7 +52,13 @@ dependencies {
     testImplementation(testLibs.bundles.mocking)
     testImplementation(testLibs.bundles.utils)
     testImplementation(project(":swirlds-config-impl"))
+    testImplementation(project(":swirlds-unit-tests:core:swirlds-platform-test"))
     testImplementation(testFixtures(project(":swirlds-base")))
     testImplementation(testFixtures(project(":swirlds-common")))
     testImplementation(testFixtures(project(":swirlds-config-api")))
+
+    testFixturesImplementation(testLibs.bundles.junit)
+    testFixturesImplementation(testFixtures(project(":swirlds-common")))
+    testFixturesImplementation(project(":swirlds-unit-tests:common:swirlds-test-framework"))
+    testFixturesCompileOnly(libs.spotbugs.annotations)
 }

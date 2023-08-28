@@ -23,6 +23,7 @@ import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.synchronization.LearningSynchronizer;
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.internal.QueryResponse;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
@@ -42,8 +43,9 @@ public class LaggingLearningSynchronizer extends LearningSynchronizer {
             final MerkleDataOutputStream out,
             final MerkleNode root,
             final int latencyMilliseconds,
-            final Runnable breakConnection) {
-        super(getStaticThreadManager(), in, out, root, breakConnection);
+            final Runnable breakConnection,
+            final ReconnectConfig reconnectConfig) {
+        super(getStaticThreadManager(), in, out, root, breakConnection, reconnectConfig);
 
         this.latencyMilliseconds = latencyMilliseconds;
     }
@@ -54,6 +56,6 @@ public class LaggingLearningSynchronizer extends LearningSynchronizer {
     @Override
     protected AsyncOutputStream<QueryResponse> buildOutputStream(
             final StandardWorkGroup workGroup, final SerializableDataOutputStream out) {
-        return new LaggingAsyncOutputStream<>(out, workGroup, latencyMilliseconds);
+        return new LaggingAsyncOutputStream<>(out, workGroup, latencyMilliseconds, reconnectConfig);
     }
 }

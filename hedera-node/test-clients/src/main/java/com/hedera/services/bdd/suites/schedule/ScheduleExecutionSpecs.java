@@ -107,6 +107,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
@@ -133,6 +134,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
+@HapiTestSuite
 public class ScheduleExecutionSpecs extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ScheduleExecutionSpecs.class);
     private static final String A_TOKEN = "token";
@@ -188,6 +190,9 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     private String successTxn = "successTxn";
     private String signTxn = "signTxn";
+
+    @SuppressWarnings("java:S2245") // using java.util.Random in tests is fine
+    private final Random r = new Random(882654L);
 
     public static void main(String... args) {
         new ScheduleExecutionSpecs().runSuiteAsync();
@@ -519,7 +524,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     private byte[] genRandomBytes(int numBytes) {
         byte[] contents = new byte[numBytes];
-        (new Random()).nextBytes(contents);
+        r.nextBytes(contents);
         return contents;
     }
 

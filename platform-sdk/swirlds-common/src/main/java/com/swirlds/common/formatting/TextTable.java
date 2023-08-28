@@ -21,13 +21,14 @@ import static com.swirlds.common.formatting.HorizontalAlignment.ALIGNED_LEFT;
 import static com.swirlds.common.formatting.StringFormattingUtils.repeatedChar;
 import static com.swirlds.common.formatting.TextEffect.applyEffects;
 import static com.swirlds.common.formatting.TextEffect.getPrintableTextLength;
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * <p>
@@ -135,7 +136,7 @@ public class TextTable {
             final List<String> rowString = new ArrayList<>();
 
             for (final Object o : row) {
-                rowString.add(o.toString());
+                rowString.add(o == null ? "null" : o.toString());
             }
 
             rows.add(rowString);
@@ -161,7 +162,7 @@ public class TextTable {
         }
 
         for (final Object o : elements) {
-            row.add(o.toString());
+            row.add(o == null ? "null" : o.toString());
         }
 
         return this;
@@ -346,8 +347,8 @@ public class TextTable {
      * 		the alignment of the row
      * @return this object
      */
-    public TextTable setRowHorizontalAlignment(final int row, final HorizontalAlignment alignment) {
-        throwArgNull(alignment, "alignment");
+    public TextTable setRowHorizontalAlignment(final int row, @NonNull final HorizontalAlignment alignment) {
+        Objects.requireNonNull(alignment, "alignment must not be null");
         rowHorizontalAlignments.put(row, alignment);
         return this;
     }
@@ -373,8 +374,8 @@ public class TextTable {
      * 		the alignment of the column
      * @return this object
      */
-    public TextTable setColumnHorizontalAlignment(final int column, final HorizontalAlignment alignment) {
-        throwArgNull(alignment, "alignment");
+    public TextTable setColumnHorizontalAlignment(final int column, @NonNull final HorizontalAlignment alignment) {
+        Objects.requireNonNull(alignment, "alignment must not be null");
         columnHorizontalAlignments.put(column, alignment);
         return this;
     }
@@ -402,8 +403,9 @@ public class TextTable {
      * 		the alignment of the cell
      * @return this object
      */
-    public TextTable setCellHorizontalAlignment(final int row, final int column, final HorizontalAlignment alignment) {
-        throwArgNull(alignment, "alignment");
+    public TextTable setCellHorizontalAlignment(
+            final int row, final int column, @NonNull final HorizontalAlignment alignment) {
+        Objects.requireNonNull(alignment, "alignment must not be null");
         cellHorizontalAlignments.put(new Cell(row, column), alignment);
         return this;
     }
@@ -415,8 +417,8 @@ public class TextTable {
      * 		the alignment of the title
      * @return this object
      */
-    public TextTable setTitleHorizontalAlignment(final HorizontalAlignment alignment) {
-        throwArgNull(alignment, "alignment");
+    public TextTable setTitleHorizontalAlignment(@NonNull final HorizontalAlignment alignment) {
+        Objects.requireNonNull(alignment, "alignment must not be null");
         titleHorizontalAlignment = alignment;
         return this;
     }
@@ -440,8 +442,8 @@ public class TextTable {
      * 		the alignment for the entire table
      * @return this object
      */
-    public TextTable setGlobalHorizontalAlignment(final HorizontalAlignment alignment) {
-        throwArgNull(alignment, "alignment");
+    public TextTable setGlobalHorizontalAlignment(@NonNull final HorizontalAlignment alignment) {
+        Objects.requireNonNull(alignment, "alignment must not be null");
         globalHorizontalAlignment = alignment;
         return this;
     }

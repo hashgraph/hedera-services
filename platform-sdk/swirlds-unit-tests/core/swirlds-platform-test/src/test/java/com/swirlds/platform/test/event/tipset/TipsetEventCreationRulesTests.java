@@ -29,7 +29,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.base.test.fixtures.FakeTime;
+import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.EventCreationRuleResponse;
@@ -43,11 +43,10 @@ import com.swirlds.platform.event.tipset.rules.ReconnectStateSavedRule;
 import com.swirlds.platform.event.tipset.rules.TipsetEventCreationRule;
 import com.swirlds.platform.event.tipset.rules.TipsetMaximumRateRule;
 import com.swirlds.platform.event.tipset.rules.TipsetPlatformStatusRule;
-import com.swirlds.platform.eventhandling.EventTransactionPool;
+import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.time.Duration;
-import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -62,7 +61,7 @@ class TipsetEventCreationRulesTests {
     @Test
     @DisplayName("Empty Aggregate Test")
     void emptyAggregateTest() {
-        final TipsetEventCreationRule rule = AggregateTipsetEventCreationRules.of(List.of());
+        final TipsetEventCreationRule rule = AggregateTipsetEventCreationRules.of();
         assertTrue(rule.isEventCreationPermitted());
 
         // should not throw
@@ -112,8 +111,7 @@ class TipsetEventCreationRulesTests {
                 .when(rule4)
                 .eventWasCreated();
 
-        final TipsetEventCreationRule aggregateRule =
-                AggregateTipsetEventCreationRules.of(List.of(rule1, rule2, rule3, rule4));
+        final TipsetEventCreationRule aggregateRule = AggregateTipsetEventCreationRules.of(rule1, rule2, rule3, rule4);
 
         assertTrue(aggregateRule.isEventCreationPermitted());
 
@@ -139,7 +137,7 @@ class TipsetEventCreationRulesTests {
     @Test
     @DisplayName("Blocked by StartUpFrozenManager Test")
     void blockedByStartUpFrozenManagerTest() {
-        final EventTransactionPool transactionPool = mock(EventTransactionPool.class);
+        final TransactionPool transactionPool = mock(TransactionPool.class);
         final Supplier<PlatformStatus> platformStatusSupplier = () -> ACTIVE;
 
         final AtomicReference<EventCreationRuleResponse> shouldCreateEvent =
@@ -172,8 +170,9 @@ class TipsetEventCreationRulesTests {
         when(startUpEventFrozenManager.shouldCreateEvent()).thenAnswer(invocation -> PASS);
 
         final AtomicInteger numSignatureTransactions = new AtomicInteger(0);
-        final EventTransactionPool transactionPool = mock(EventTransactionPool.class);
-        when(transactionPool.numSignatureTransEvent()).thenAnswer(invocation -> numSignatureTransactions.get());
+        final TransactionPool transactionPool = mock(TransactionPool.class);
+        when(transactionPool.hasBufferedSignatureTransactions())
+                .thenAnswer(invocation -> numSignatureTransactions.get() > 0);
 
         final AtomicInteger eventCreationCount = new AtomicInteger(0);
         final TipsetEventCreator baseEventCreator = mock(TipsetEventCreator.class);
@@ -193,7 +192,7 @@ class TipsetEventCreationRulesTests {
     @Test
     @DisplayName("Blocked by Status Test")
     void blockedByStatus() {
-        final EventTransactionPool transactionPool = mock(EventTransactionPool.class);
+        final TransactionPool transactionPool = mock(TransactionPool.class);
         final StartUpEventFrozenManager startUpEventFrozenManager = mock(StartUpEventFrozenManager.class);
         when(startUpEventFrozenManager.shouldCreateEvent()).thenAnswer(invocation -> PASS);
 

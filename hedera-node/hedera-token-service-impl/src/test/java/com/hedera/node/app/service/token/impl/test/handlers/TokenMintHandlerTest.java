@@ -30,14 +30,15 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.token.TokenMintTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenMintHandler;
-import com.hedera.node.app.service.token.impl.records.TokenMintRecordBuilder;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator;
+import com.hedera.node.app.service.token.records.TokenMintRecordBuilder;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -118,7 +119,8 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(writableAccountStore.get(treasuryId).tinybarBalance()).isEqualTo(10000L);
         assertThat(writableAccountStore.get(treasuryId).numberOwnedNfts()).isEqualTo(2);
         assertThat(writableTokenStore.get(nonFungibleTokenId).totalSupply()).isEqualTo(1000L);
-        assertThat(recordBuilder.serialNumbers()).isEmpty();
+        assertThat(recordBuilder.build().transactionRecord().receipt().serialNumbers())
+                .isEmpty();
 
         assertThatNoException().isThrownBy(() -> subject.handle(handleContext));
 
@@ -132,7 +134,8 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(writableAccountStore.get(treasuryId).numberOwnedNfts()).isEqualTo(4);
         // treasury relation supply will not increase since its not fungible token change
         assertThat(writableTokenStore.get(nonFungibleTokenId).totalSupply()).isEqualTo(1000L);
-        assertThat(recordBuilder.serialNumbers()).isEqualTo(List.of(3L, 4L));
+        assertThat(recordBuilder.build().transactionRecord().receipt().serialNumbers())
+                .isEqualTo(List.of(3L, 4L));
     }
 
     @Test
@@ -229,15 +232,18 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
         if (amount != null) {
             builder.amount(amount);
         }
-        final var txn = TransactionBody.newBuilder()
+        final var txnBody = TransactionBody.newBuilder()
                 .transactionID(transactionID)
                 .tokenMint(builder.build())
                 .build();
 
-        given(handleContext.body()).willReturn(txn);
+        final var txn = Transaction.newBuilder().body(txnBody).build();
+        recordBuilder.transaction(txn);
+
+        given(handleContext.body()).willReturn(txnBody);
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
         given(handleContext.recordBuilder(TokenMintRecordBuilder.class)).willReturn(recordBuilder);
 
-        return txn;
+        return txnBody;
     }
 }

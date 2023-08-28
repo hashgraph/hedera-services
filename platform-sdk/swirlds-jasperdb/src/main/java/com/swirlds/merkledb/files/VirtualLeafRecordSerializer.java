@@ -151,10 +151,8 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends Virtual
         final int totalSize;
         if (isVariableSize()) {
             final int finalPos = buffer.position();
-            buffer.position(initialPos + Long.BYTES);
             totalSize = finalPos - initialPos;
-            buffer.putInt(totalSize);
-            buffer.position(finalPos);
+            buffer.putInt(initialPos + Long.BYTES, totalSize);
         } else {
             totalSize = dataItemSerializedSize;
         }
@@ -194,14 +192,20 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends Virtual
 
     private K readKey(final ReadableSequentialData in) {
         final int keySize = in.readVarInt(false);
+        final long limit = in.limit();
+        in.limit(in.position() + keySize);
         final K key = keySerializer.deserialize(in);
+        in.limit(limit);
         assert keySize == keySerializer.getSerializedSize(key);
         return key;
     }
 
     private V readValue(final ReadableSequentialData in) {
         final int valueSize = in.readVarInt(false);
+        final long limit = in.limit();
+        in.limit(in.position() + valueSize);
         final V value = valueSerializer.deserialize(in);
+        in.limit(limit);
         assert valueSize == valueSerializer.getSerializedSize(value);
         return value;
     }

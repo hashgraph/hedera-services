@@ -37,8 +37,6 @@ import com.swirlds.config.api.ConfigProperty;
  * 		timeout when server is waiting for another member to create a connection
  * @param useTLS
  * 		should TLS be turned on, rather than making all sockets unencrypted?
- * @param doUpnp
- * 		should this set up uPnP port forwarding on the router once every 60 seconds?
  * @param useLoopbackIp
  * 		should be set to true when using the internet simulator
  * @param tcpNoDelay
@@ -52,6 +50,5 @@ public record SocketConfig(
         @ConfigProperty(defaultValue = "5000") int timeoutSyncClientConnect,
         @ConfigProperty(defaultValue = "5000") int timeoutServerAcceptConnect,
         @ConfigProperty(defaultValue = "true") boolean useTLS,
-        @ConfigProperty(defaultValue = "false") boolean doUpnp,
         @ConfigProperty(defaultValue = "false") boolean useLoopbackIp,
         @ConfigProperty(defaultValue = "true") boolean tcpNoDelay) {}

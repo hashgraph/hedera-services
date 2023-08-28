@@ -122,7 +122,7 @@ public class HapiTokenMint extends HapiTxnOp<HapiTokenMint> {
         final var baseTransactionMeta =
                 new BaseTransactionMeta(txn.getMemoBytes().size(), 0);
         final TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
-        tokenOpsUsage.tokenMintUsage(suFrom(svo), baseTransactionMeta, tokenMintMeta, accumulator);
+        tokenOpsUsage.tokenMintUsage(suFrom(svo), baseTransactionMeta, tokenMintMeta, accumulator, subType);
         return AdapterUtils.feeDataFrom(accumulator);
     }
 

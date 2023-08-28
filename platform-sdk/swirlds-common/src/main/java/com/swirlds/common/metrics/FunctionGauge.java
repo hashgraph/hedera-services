@@ -17,12 +17,11 @@
 package com.swirlds.common.metrics;
 
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
+import com.swirlds.base.utility.ToStringBuilder;
 import java.util.EnumSet;
+import java.util.Objects;
 import java.util.function.Supplier;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * A {@code FunctionGauge} maintains a single value.
@@ -57,7 +56,7 @@ public interface FunctionGauge<T> extends Metric {
      */
     @Override
     default T get(final ValueType valueType) {
-        throwArgNull(valueType, "valueType");
+        Objects.requireNonNull(valueType, "valueType");
         if (valueType == VALUE) {
             return get();
         }
@@ -97,8 +96,8 @@ public interface FunctionGauge<T> extends Metric {
          */
         public Config(final String category, final String name, final Class<T> type, final Supplier<T> supplier) {
             super(category, name, "%s");
-            this.type = throwArgNull(type, "type");
-            this.supplier = throwArgNull(supplier, "supplier");
+            this.type = Objects.requireNonNull(type, "type");
+            this.supplier = Objects.requireNonNull(supplier, "supplier");
         }
 
         private Config(
@@ -110,8 +109,8 @@ public interface FunctionGauge<T> extends Metric {
                 final Class<T> type,
                 final Supplier<T> supplier) {
             super(category, name, description, unit, format);
-            this.type = throwArgNull(type, "type");
-            this.supplier = throwArgNull(supplier, "supplier");
+            this.type = Objects.requireNonNull(type, "type");
+            this.supplier = Objects.requireNonNull(supplier, "supplier");
         }
 
         /**
@@ -186,7 +185,7 @@ public interface FunctionGauge<T> extends Metric {
          */
         @Override
         public String toString() {
-            return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+            return new ToStringBuilder(this)
                     .appendSuper(super.toString())
                     .append("type", type.getName())
                     .toString();

@@ -20,6 +20,8 @@ import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getVersionInfo;
 
+import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.BddTestNameDoesNotMatchMethodName;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -28,6 +30,7 @@ import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+@HapiTestSuite
 public class VersionInfoSpec extends HapiSuite {
     private static final Logger log = LogManager.getLogger(VersionInfoSpec.class);
     private final Map<String, String> specConfig;
@@ -71,6 +74,7 @@ public class VersionInfoSpec extends HapiSuite {
     }
 
     @BddTestNameDoesNotMatchMethodName
+    @HapiTest
     private HapiSpec discoversExpectedVersions() {
         if (specConfig != null) {
             return customHapiSpec("getVersionInfo")

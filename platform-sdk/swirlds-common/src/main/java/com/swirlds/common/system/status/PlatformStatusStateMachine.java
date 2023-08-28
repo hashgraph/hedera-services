@@ -27,6 +27,7 @@ import com.swirlds.common.notification.listeners.PlatformStatusChangeListener;
 import com.swirlds.common.notification.listeners.PlatformStatusChangeNotification;
 import com.swirlds.common.system.status.actions.CatastrophicFailureAction;
 import com.swirlds.common.system.status.actions.DoneReplayingEventsAction;
+import com.swirlds.common.system.status.actions.EmergencyReconnectStartedAction;
 import com.swirlds.common.system.status.actions.FallenBehindAction;
 import com.swirlds.common.system.status.actions.FreezePeriodEnteredAction;
 import com.swirlds.common.system.status.actions.PlatformStatusAction;
@@ -121,6 +122,9 @@ public class PlatformStatusStateMachine implements PlatformStatusGetter {
                 return currentStatusLogic.processCatastrophicFailureAction((CatastrophicFailureAction) action);
             } else if (actionClass == DoneReplayingEventsAction.class) {
                 return currentStatusLogic.processDoneReplayingEventsAction((DoneReplayingEventsAction) action);
+            } else if (actionClass == EmergencyReconnectStartedAction.class) {
+                return currentStatusLogic.processEmergencyReconnectStartedAction(
+                        (EmergencyReconnectStartedAction) action);
             } else if (actionClass == FallenBehindAction.class) {
                 return currentStatusLogic.processFallenBehindAction((FallenBehindAction) action);
             } else if (actionClass == FreezePeriodEnteredAction.class) {

@@ -16,11 +16,14 @@
 
 package com.swirlds.platform.gui.internal;
 
+import com.swirlds.gui.components.ScrollableJPanel;
 import com.swirlds.platform.SwirldsPlatform;
-import java.awt.GraphicsEnvironment;
-import java.awt.Insets;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Objects;
 
 /**
  * Manages static variables for the browser GUI window.
@@ -33,11 +36,6 @@ public final class BrowserWindowManager {
      * the primary window used by Browser
      */
     private static WinBrowser browserWindow = null;
-
-    /**
-     * the number of pixels between the edges of a window and interior region that can be used
-     */
-    private static Insets insets;
 
     /**
      * metadata about all known apps, swirlds, members, signed states
@@ -64,20 +62,6 @@ public final class BrowserWindowManager {
     }
 
     /**
-     * Get the number of pixels between the edges of a window and interior region that can be used.
-     */
-    public static Insets getInsets() {
-        return insets;
-    }
-
-    /**
-     * Set the number of pixels between the edges of a window and interior region that can be used.
-     */
-    public static void setInsets(final Insets insets) {
-        BrowserWindowManager.insets = insets;
-    }
-
-    /**
      * Get metadata about all known apps, swirlds, members, signed states.
      */
     public static StateHierarchy getStateHierarchy() {
@@ -99,22 +83,26 @@ public final class BrowserWindowManager {
     }
 
     /**
-     * Make the browser window visible. If it doesn't yet exist, then create it. Then switch to the given
-     * tab, with a component name of the form Browser.browserWindow.tab* such as
-     * Browser.browserWindow.tabCalls to switch to the "Calls" tab.
+     * Add a collection of platforms to the list of platforms running on this machine.
      *
-     * @param comp
-     * 		the index of the tab to select
+     * @param toAdd the platforms to add
      */
-    public static void showBrowserWindow(final WinBrowser.ScrollableJPanel comp) {
-        showBrowserWindow();
-        getBrowserWindow().goTab(comp);
+    public static void addPlatforms(@NonNull final Collection<SwirldsPlatform> toAdd) {
+        Objects.requireNonNull(toAdd);
+
+        synchronized (platforms) {
+            platforms.addAll(toAdd);
+        }
     }
 
     /**
-     * Make the browser window visible. If it doesn't yet exist, then create it.
+     * Make the browser window visible. If it doesn't yet exist, then create it. Then switch to the given tab, with a
+     * component name of the form Browser.browserWindow.tab* such as Browser.browserWindow.tabCalls to switch to the
+     * "Calls" tab.
+     *
+     * @param comp the index of the tab to select
      */
-    public static void showBrowserWindow() {
+    public static void showBrowserWindow(@Nullable final ScrollableJPanel comp) {
         if (GraphicsEnvironment.isHeadless()) {
             return;
         }
@@ -123,5 +111,17 @@ public final class BrowserWindowManager {
             return;
         }
         setBrowserWindow(new WinBrowser(new PlatformHashgraphGuiSource()));
+        getBrowserWindow().goTab(comp);
+    }
+
+    /**
+     * Move the browser window to the front of the screen.
+     */
+    public static void moveBrowserWindowToFront() {
+        for (final Frame frame : Frame.getFrames()) {
+            if (!frame.equals(getBrowserWindow())) {
+                frame.toFront();
+            }
+        }
     }
 }

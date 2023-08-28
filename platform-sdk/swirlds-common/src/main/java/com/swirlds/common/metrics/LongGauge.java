@@ -17,11 +17,10 @@
 package com.swirlds.common.metrics;
 
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
+import com.swirlds.base.utility.ToStringBuilder;
 import java.util.EnumSet;
-import org.apache.commons.lang3.builder.ToStringBuilder;
+import java.util.Objects;
 
 /**
  * An {@code LongGauge} stores a single {@code long} value.
@@ -59,7 +58,7 @@ public interface LongGauge extends Metric {
      */
     @Override
     default Long get(final ValueType valueType) {
-        throwArgNull(valueType, "valueType");
+        Objects.requireNonNull(valueType, "valueType");
         if (valueType == VALUE) {
             return get();
         }
@@ -193,7 +192,7 @@ public interface LongGauge extends Metric {
          */
         @Override
         public String toString() {
-            return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+            return new ToStringBuilder(this)
                     .appendSuper(super.toString())
                     .append("initialValue", initialValue)
                     .toString();

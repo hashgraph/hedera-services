@@ -253,7 +253,7 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
 
     /** Utility for setting up various shared configuration settings between both servers */
     private NettyServerBuilder builderFor(final int port, NettyConfig config) {
-        NettyServerBuilder builder;
+        NettyServerBuilder builder = null;
         try {
             builder = NettyServerBuilder.forPort(port)
                     .keepAliveTime(config.prodKeepAliveTime(), TimeUnit.SECONDS)
@@ -269,7 +269,7 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
                     .bossEventLoopGroup(new EpollEventLoopGroup())
                     .workerEventLoopGroup(new EpollEventLoopGroup());
             logger.info("Using Epoll for gRPC server");
-        } catch (final Throwable ignored) {
+        } catch (final UnsatisfiedLinkError | NoClassDefFoundError ignored) {
             // If we can't use Epoll, then just use NIO
             logger.info("Epoll not available, using NIO");
             builder = NettyServerBuilder.forPort(port)
@@ -282,8 +282,9 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
                     .maxConcurrentCallsPerConnection(config.prodMaxConcurrentCalls())
                     .flowControlWindow(config.prodFlowControlWindow())
                     .directExecutor();
+        } catch (final Exception unexpected) {
+            logger.info("Unexpected exception initializing Netty", unexpected);
         }
-
         return builder;
     }
 

@@ -18,9 +18,10 @@ package com.swirlds.platform.gui.hashgraph.internal;
 
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.PlatformEvent;
+import com.swirlds.gui.hashgraph.HashgraphGuiConstants;
+import com.swirlds.gui.hashgraph.HashgraphGuiSource;
 import com.swirlds.platform.event.EventConstants;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
-import com.swirlds.platform.gui.hashgraph.HashgraphGuiSource;
 
 /**
  * A {@link HashgraphGuiSource} that wraps another source but caches the results until {@link #refresh()} is called
@@ -31,7 +32,7 @@ public class CachingGuiSource implements HashgraphGuiSource {
     private AddressBook addressBook = null;
     private long maxGeneration = EventConstants.GENERATION_UNDEFINED;
     private long startGeneration = Generations.FIRST_GENERATION;
-    private int numGenerations = HashgraphGuiUtils.DEFAULT_GENERATIONS_TO_DISPLAY;
+    private int numGenerations = HashgraphGuiConstants.DEFAULT_GENERATIONS_TO_DISPLAY;
 
     public CachingGuiSource(final HashgraphGuiSource source) {
         this.source = source;

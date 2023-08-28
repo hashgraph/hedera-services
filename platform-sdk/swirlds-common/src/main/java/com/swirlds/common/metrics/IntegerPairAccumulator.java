@@ -17,14 +17,13 @@
 package com.swirlds.common.metrics;
 
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
+import com.swirlds.base.utility.ToStringBuilder;
 import java.util.EnumSet;
+import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.IntBinaryOperator;
 import java.util.function.IntSupplier;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * An {@code IntegerPairAccumulator} accumulates two {@code int}-values, which can be updated atomically.
@@ -58,7 +57,7 @@ public interface IntegerPairAccumulator<T> extends Metric {
      */
     @Override
     default T get(final ValueType valueType) {
-        throwArgNull(valueType, "valueType");
+        Objects.requireNonNull(valueType, "valueType");
         if (valueType == VALUE) {
             return get();
         }
@@ -133,8 +132,8 @@ public interface IntegerPairAccumulator<T> extends Metric {
                 final BiFunction<Integer, Integer, T> resultFunction) {
 
             super(category, name, "%s");
-            this.type = throwArgNull(type, "type");
-            this.resultFunction = throwArgNull(resultFunction, "resultFunction");
+            this.type = Objects.requireNonNull(type, "type");
+            this.resultFunction = Objects.requireNonNull(resultFunction, "resultFunction");
             this.leftAccumulator = Integer::sum;
             this.rightAccumulator = Integer::sum;
             this.leftInitializer = DEFAULT_INITIALIZER;
@@ -155,12 +154,12 @@ public interface IntegerPairAccumulator<T> extends Metric {
                 final IntSupplier rightInitializer) {
 
             super(category, name, description, unit, format);
-            this.type = throwArgNull(type, "type");
-            this.resultFunction = throwArgNull(resultFunction, "resultFunction");
-            this.leftAccumulator = throwArgNull(leftAccumulator, "leftAccumulator");
-            this.rightAccumulator = throwArgNull(rightAccumulator, "rightAccumulator");
-            this.leftInitializer = throwArgNull(leftInitializer, "leftInitializer");
-            this.rightInitializer = throwArgNull(rightInitializer, "rightInitializer");
+            this.type = Objects.requireNonNull(type, "type");
+            this.resultFunction = Objects.requireNonNull(resultFunction, "resultFunction");
+            this.leftAccumulator = Objects.requireNonNull(leftAccumulator, "leftAccumulator");
+            this.rightAccumulator = Objects.requireNonNull(rightAccumulator, "rightAccumulator");
+            this.leftInitializer = Objects.requireNonNull(leftInitializer, "leftInitializer");
+            this.rightInitializer = Objects.requireNonNull(rightInitializer, "rightInitializer");
         }
 
         /**
@@ -425,7 +424,7 @@ public interface IntegerPairAccumulator<T> extends Metric {
          */
         @Override
         public String toString() {
-            return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+            return new ToStringBuilder(this)
                     .appendSuper(super.toString())
                     .append("type", type.getName())
                     .toString();

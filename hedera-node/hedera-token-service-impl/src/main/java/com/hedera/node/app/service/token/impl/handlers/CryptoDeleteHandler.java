@@ -35,6 +35,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoDeleteTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.service.token.records.CryptoDeleteRecordBuilder;
 import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -100,6 +101,12 @@ public class CryptoDeleteHandler implements TransactionHandler {
         final var updatedDeleteAccount = accountStore.get(op.deleteAccountID());
         validateTrue(updatedDeleteAccount != null, ACCOUNT_ID_DOES_NOT_EXIST);
         accountStore.put(updatedDeleteAccount.copyBuilder().deleted(true).build());
+
+        // add the transfer account for this deleted account to record builder.
+        // This is needed while computing staking rewards. In the future it will also be added
+        // to the transaction record exported to mirror node.
+        final var cryptoDeleteBuilder = context.recordBuilder(CryptoDeleteRecordBuilder.class);
+        cryptoDeleteBuilder.addBeneficiaryForDeletedAccount(op.deleteAccountID(), op.transferAccountID());
     }
 
     /* ----------------------------- Helper methods -------------------------------- */

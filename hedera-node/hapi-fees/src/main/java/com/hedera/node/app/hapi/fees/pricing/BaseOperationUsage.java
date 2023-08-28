@@ -460,7 +460,8 @@ public class BaseOperationUsage {
         final var tokenMintMeta = TOKEN_OPS_USAGE_UTILS.tokenMintUsageFrom(
                 canonicalTxn, TOKEN_NON_FUNGIBLE_UNIQUE, THREE_MONTHS_IN_SECONDS);
         final var into = new UsageAccumulator();
-        TOKEN_OPS_USAGE.tokenMintUsage(SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, tokenMintMeta, into);
+        TOKEN_OPS_USAGE.tokenMintUsage(
+                SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, tokenMintMeta, into, TOKEN_NON_FUNGIBLE_UNIQUE);
         return into;
     }
 
@@ -474,7 +475,8 @@ public class BaseOperationUsage {
         final var tokenMintMeta =
                 TOKEN_OPS_USAGE_UTILS.tokenMintUsageFrom(canonicalTxn, TOKEN_FUNGIBLE_COMMON, THREE_MONTHS_IN_SECONDS);
         final var into = new UsageAccumulator();
-        TOKEN_OPS_USAGE.tokenMintUsage(SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, tokenMintMeta, into);
+        TOKEN_OPS_USAGE.tokenMintUsage(
+                SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, tokenMintMeta, into, TOKEN_FUNGIBLE_COMMON);
         return into;
     }
 
