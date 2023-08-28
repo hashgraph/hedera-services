@@ -313,8 +313,8 @@ class EndOfStakingPeriodUpdaterTest {
         return HederaTestConfigBuilder.create()
                 .withConfigDataType(StakingConfig.class)
                 .withValue("staking.isEnabled", true)
+                .withValue("staking.rewardRate", 100L)
                 .withValue("staking.sumOfConsensusWeights", SUM_OF_CONSENSUS_WEIGHTS)
-                .withValue("staking.maxDailyStakeRewardThPerH", Long.MAX_VALUE)
                 .withValue("staking.maxStakeRewarded", Long.MAX_VALUE)
                 .withValue("staking.perHbarRewardRate", 100L);
     }
