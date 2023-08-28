@@ -231,12 +231,12 @@ class RecycleBinTests {
         final Path path2 = testDirectory.resolve("file2.txt");
         writeFile(path2, "file2");
 
-        final Path path3 = testDirectory.resolve("file3.txt");
+        final Path path3 = testDirectory.resolve("foo/bar/baz/file3.txt");
         writeFile(path3, "file3");
 
         recycleBin.recycle(path1);
         recycleBin.recycle(path2);
-        recycleBin.recycle(path3);
+        recycleBin.recycle(testDirectory.resolve("foo"));
 
         assertFalse(Files.exists(path1));
         assertFalse(Files.exists(path2));
@@ -245,7 +245,7 @@ class RecycleBinTests {
         final Path recycleBinPath = testDirectory.resolve("swirlds-recycle-bin").resolve("0");
         final Path recycledPath1 = recycleBinPath.resolve("file1.txt");
         final Path recycledPath2 = recycleBinPath.resolve("file2.txt");
-        final Path recycledPath3 = recycleBinPath.resolve("file3.txt");
+        final Path recycledPath3 = recycleBinPath.resolve("foo/bar/baz/file3.txt");
 
         // Wait some time. Although the recycle bin will have had time to delete files if it wanted to,
         // it won't have actually deleted them yet because not enough time has passed.

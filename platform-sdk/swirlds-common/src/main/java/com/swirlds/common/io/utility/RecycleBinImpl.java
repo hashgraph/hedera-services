@@ -58,7 +58,11 @@ public class RecycleBinImpl implements RecycleBin, Startable, Stoppable {
     private final Time time;
     private final Path recycleBinPath;
     private final Duration maximumFileAge;
-    private int recycledFileCount;
+
+    /**
+     * The number of top level files in the recycle bin directory.
+     */
+    private int topLevelRecycledFileCount;
 
     private final StoppableThread cleanupThread;
 
@@ -66,13 +70,15 @@ public class RecycleBinImpl implements RecycleBin, Startable, Stoppable {
 
     private static final IntegerGauge.Config RECYLED_FILE_COUNT_CONFIG = new IntegerGauge.Config(
                     "platform", "recycled-file-count")
-            .withDescription("The number of files/directories in the recycle bin, non recursive.");
+            .withDescription("The number of top level files/directories in the recycle bin, non recursive.");
     private final IntegerGauge recycledFileCountMetric;
 
     /**
      * Create a new recycle bin.
      *
      * @param configuration the configuration object
+     * @param metrics       manages the creation of metrics
+     * @param threadManager manages the creation of threads
      * @param time          provides wall clock time
      * @param selfId        the ID of this node
      * @throws IOException if the recycle bin directory could not be created
@@ -95,10 +101,10 @@ public class RecycleBinImpl implements RecycleBin, Startable, Stoppable {
         maximumFileAge = recycleBinConfig.maximumFileAge();
         recycleBinPath = recycleBinConfig.getStorageLocation(stateConfig, selfId);
         Files.createDirectories(recycleBinPath);
-        recycledFileCount = countRecycledFiles(recycleBinPath);
+        topLevelRecycledFileCount = countRecycledFiles(recycleBinPath);
 
         recycledFileCountMetric = metrics.getOrCreate(RECYLED_FILE_COUNT_CONFIG);
-        recycledFileCountMetric.set(recycledFileCount);
+        recycledFileCountMetric.set(topLevelRecycledFileCount);
 
         cleanupThread = new StoppableThreadConfiguration<>(threadManager)
                 .setComponent("platform")
@@ -109,7 +115,7 @@ public class RecycleBinImpl implements RecycleBin, Startable, Stoppable {
     }
 
     /**
-     * {@inheritDoc}
+     * Count the number of top level files in the recycle bin directory.
      */
     private static int countRecycledFiles(@NonNull final Path recycleBinPath) {
         try (final Stream<Path> stream = Files.list(recycleBinPath)) {
@@ -141,8 +147,8 @@ public class RecycleBinImpl implements RecycleBin, Startable, Stoppable {
                         fileName);
                 deleteDirectory(recyclePath);
             } else {
-                recycledFileCount++;
-                recycledFileCountMetric.set(recycledFileCount);
+                topLevelRecycledFileCount++;
+                recycledFileCountMetric.set(topLevelRecycledFileCount);
             }
 
             Files.move(path, recyclePath);
@@ -168,7 +174,7 @@ public class RecycleBinImpl implements RecycleBin, Startable, Stoppable {
                         if (CompareTo.isGreaterThan(age, maximumFileAge)) {
                             deleteDirectory(path);
                             deletedCount.incrementAndGet();
-                            recycledFileCount--;
+                            topLevelRecycledFileCount--;
                         }
                     } catch (final IOException e) {
                         logger.error(EXCEPTION.getMarker(), "Error cleaning up recycle bin file {}", path, e);
@@ -178,7 +184,7 @@ public class RecycleBinImpl implements RecycleBin, Startable, Stoppable {
             } catch (final IOException e) {
                 logger.error(EXCEPTION.getMarker(), "Error cleaning up recycle bin", e);
             }
-            recycledFileCountMetric.set(recycledFileCount);
+            recycledFileCountMetric.set(topLevelRecycledFileCount);
         }
 
         logger.info(STARTUP.getMarker(), "Deleted {} files from the recycle bin.", deletedCount.get());

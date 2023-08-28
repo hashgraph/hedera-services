@@ -881,8 +881,8 @@ class PreconsensusEventFileManagerTests {
                 Time.getCurrent(),
                 new NodeId(0));
 
-        final PreconsensusEventFileManager manager = new PreconsensusEventFileManager(
-                platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0));
+        final PreconsensusEventFileManager manager =
+                new PreconsensusEventFileManager(platformContext, Time.getCurrent(), recycleBin, new NodeId(0));
 
         // Don't try to fix discontinuities, we should see all files
         assertIteratorEquality(
