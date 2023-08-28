@@ -36,11 +36,11 @@ import com.hedera.node.app.state.merkle.singleton.ValueLeaf;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.crypto.DigestType;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.jasperdb.JasperDbBuilder;
-import com.swirlds.jasperdb.VirtualLeafRecordSerializer;
-import com.swirlds.jasperdb.files.DataFileCommon;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
+import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -186,23 +186,19 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                     map.setLabel(StateUtils.computeLabel(serviceName, stateKey));
                     hederaState.putServiceStateIfAbsent(md, map);
                 } else {
-                    final var ks = new OnDiskKeySerializer(md);
-                    final var ds = new JasperDbBuilder()
-                            .maxNumOfKeys(def.maxKeysHint())
-                            .keySerializer(ks)
-                            .virtualLeafRecordSerializer(new VirtualLeafRecordSerializer(
-                                    (short) 1,
-                                    DataFileCommon.VARIABLE_DATA_SIZE,
-                                    ks,
-                                    (short) 1,
-                                    DataFileCommon.VARIABLE_DATA_SIZE,
-                                    new OnDiskValueSerializer(md),
-                                    false));
-
                     // MAX_IN_MEMORY_HASHES (ramToDiskThreshold) = 8388608
                     // PREFER_DISK_BASED_INDICES = false
+                    final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig<>(
+                                    (short) 1,
+                                    DigestType.SHA_384,
+                                    (short) 1,
+                                    new OnDiskKeySerializer<>(md),
+                                    (short) 1,
+                                    new OnDiskValueSerializer<>(md))
+                            .maxNumberOfKeys(def.maxKeysHint());
                     final var label = StateUtils.computeLabel(serviceName, stateKey);
-                    hederaState.putServiceStateIfAbsent(md, new VirtualMap<>(label, ds));
+                    final MerkleDbDataSourceBuilder dsBuilder = new MerkleDbDataSourceBuilder<>(tableConfig);
+                    hederaState.putServiceStateIfAbsent(md, new VirtualMap<>(label, dsBuilder));
                 }
             });
 

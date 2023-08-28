@@ -19,7 +19,6 @@ package com.swirlds.demo.virtualmerkle.config;
 import static com.swirlds.demo.platform.PAYLOAD_TYPE.TYPE_VIRTUAL_MERKLE_CREATE;
 import static com.swirlds.demo.platform.PAYLOAD_TYPE.TYPE_VIRTUAL_MERKLE_CREATE_SMART_CONTRACT;
 import static com.swirlds.demo.platform.PAYLOAD_TYPE.TYPE_VIRTUAL_MERKLE_SMART_CONTRACT_METHOD_EXECUTION;
-import static java.io.File.separator;
 
 import com.swirlds.demo.platform.PAYLOAD_TYPE;
 import java.util.List;
@@ -36,8 +35,6 @@ public class VirtualMerkleConfig {
     private double samplingProbability = 0.0;
 
     private SmartContractConfig smartContractConfig;
-
-    private String jasperDBStoragePath = "data" + separator + "saved" + separator + "JasperDB";
 
     private long firstSmartContractId;
 
@@ -164,23 +161,6 @@ public class VirtualMerkleConfig {
      */
     public void setSmartContractConfig(final SmartContractConfig smartContractConfig) {
         this.smartContractConfig = smartContractConfig;
-    }
-
-    /**
-     * @return The path where JasperDB storage must be done.
-     */
-    public String getJasperDBStoragePath() {
-        return jasperDBStoragePath;
-    }
-
-    /**
-     * Sets the path to JasperDB storage.
-     *
-     * @param jasperDBStoragePath
-     * 		The path to JasperDB storage.
-     */
-    public void setJasperDBStoragePath(final String jasperDBStoragePath) {
-        this.jasperDBStoragePath = jasperDBStoragePath;
     }
 
     /**
