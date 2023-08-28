@@ -153,7 +153,7 @@ public class SystemFileUpdateFacility {
     }
 
     private void checkForMissingExpectedOperations(
-        com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions defs) {
+            com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions defs) {
         Set<HederaFunctionality> customizedOps = new HashSet<>();
         for (var bucket : defs.getBuckets()) {
             for (var group : bucket.getThrottleGroups()) {
@@ -166,7 +166,7 @@ public class SystemFileUpdateFacility {
     }
 
     private void checkForZeroOpsPerSec(
-        com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions defs) {
+            com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions defs) {
         for (var bucket : defs.getBuckets()) {
             for (var group : bucket.getThrottleGroups()) {
                 if (group.impliedMilliOpsPerSec() == 0) {
@@ -177,7 +177,7 @@ public class SystemFileUpdateFacility {
     }
 
     private void checkForRepeatedOperations(
-        com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions defs) {
+            com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions defs) {
         final Set<HederaFunctionality> seenSoFar = new HashSet<>();
         for (var bucket : defs.getBuckets()) {
             for (var group : bucket.getThrottleGroups()) {

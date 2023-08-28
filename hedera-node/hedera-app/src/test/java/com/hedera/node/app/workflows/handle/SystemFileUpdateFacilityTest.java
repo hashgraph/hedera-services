@@ -81,9 +81,9 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
         state = new FakeHederaState().addService(FileService.NAME, Map.of(BLOBS_KEY, files));
 
         final var config = new TestConfigBuilder(false)
-            .withConverter(new BytesConverter())
-            .withConverter(new LongPairConverter())
-            .withConfigDataType(FilesConfig.class)
+                .withConverter(new BytesConverter())
+                .withConverter(new LongPairConverter())
+                .withConfigDataType(FilesConfig.class)
                 .withConfigDataType(LedgerConfig.class)
                 .getOrCreateConfig();
         when(configProvider.getConfiguration()).thenReturn(new VersionedConfigImpl(config, 1L));
@@ -99,16 +99,16 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
 
         // then
         assertThatThrownBy(() -> new SystemFileUpdateFacility(null, throttleManager, exchangeRateManager))
-            .isInstanceOf(NullPointerException.class);
+                .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new SystemFileUpdateFacility(configProvider, null, exchangeRateManager))
-            .isInstanceOf(NullPointerException.class);
+                .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new SystemFileUpdateFacility(configProvider, throttleManager, null))
-            .isInstanceOf(NullPointerException.class);
+                .isInstanceOf(NullPointerException.class);
 
-        assertThatThrownBy(() -> subject.handleTxBody(null, txBody, recordBuilder)).isInstanceOf(
-            NullPointerException.class);
-        assertThatThrownBy(() -> subject.handleTxBody(state, null, recordBuilder)).isInstanceOf(
-            NullPointerException.class);
+        assertThatThrownBy(() -> subject.handleTxBody(null, txBody, recordBuilder))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> subject.handleTxBody(state, null, recordBuilder))
+                .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> subject.handleTxBody(state, txBody, null)).isInstanceOf(NullPointerException.class);
     }
 
@@ -120,7 +120,8 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
                 .build();
 
         // then
-        Assertions.assertThatCode(() -> subject.handleTxBody(state, txBody, recordBuilder)).doesNotThrowAnyException();
+        Assertions.assertThatCode(() -> subject.handleTxBody(state, txBody, recordBuilder))
+                .doesNotThrowAnyException();
     }
 
     @Test
