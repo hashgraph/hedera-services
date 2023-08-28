@@ -45,7 +45,6 @@ import javax.inject.Inject;
 @QueryScope
 public class ContextQueryProcessor implements Callable<CallOutcome> {
     private final QueryContext context;
-    private final Configuration configuration;
     private final HederaEvmContext hederaEvmContext;
     private final ActionSidecarContentTracer tracer;
     private final ProxyWorldUpdater worldUpdater;
@@ -56,7 +55,6 @@ public class ContextQueryProcessor implements Callable<CallOutcome> {
     @Inject
     public ContextQueryProcessor(
             @NonNull final QueryContext context,
-            @NonNull final Configuration configuration,
             @NonNull final HederaEvmContext hederaEvmContext,
             @NonNull final ActionSidecarContentTracer tracer,
             @NonNull final ProxyWorldUpdater worldUpdater,
@@ -68,7 +66,6 @@ public class ContextQueryProcessor implements Callable<CallOutcome> {
         this.feesOnlyUpdater = Objects.requireNonNull(feesOnlyUpdater);
         this.processors = Objects.requireNonNull(processors);
         this.worldUpdater = Objects.requireNonNull(worldUpdater);
-        this.configuration = Objects.requireNonNull(configuration);
         this.hederaEvmContext = Objects.requireNonNull(hederaEvmContext);
         this.hevmStaticTransactionFactory = Objects.requireNonNull(hevmStaticTransactionFactory);
     }
@@ -78,13 +75,13 @@ public class ContextQueryProcessor implements Callable<CallOutcome> {
         // Try to translate the HAPI operation to a Hedera EVM transaction, throw HandleException on failure
         final var hevmTransaction = hevmStaticTransactionFactory.fromHapiQuery(context.query());
 
-        final var contractsConfig = configuration.getConfigData(ContractsConfig.class);
+        final var contractsConfig = context.configuration().getConfigData(ContractsConfig.class);
         // Get the appropriate processor for the EVM version
         final var processor = processors.get(EVM_VERSIONS.get(contractsConfig.evmVersion()));
 
         // Process the transaction
         final var result = processor.processTransaction(
-                hevmTransaction, worldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, configuration);
+                hevmTransaction, worldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, context.configuration());
 
         // Return the outcome, maybe enriched with details of the base commit and Ethereum transaction
         return new CallOutcome(result.asQueryResultOf(), result.finalStatus());

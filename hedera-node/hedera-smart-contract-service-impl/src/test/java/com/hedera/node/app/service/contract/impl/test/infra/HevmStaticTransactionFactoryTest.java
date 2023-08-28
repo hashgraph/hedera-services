@@ -25,6 +25,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertFailsWith;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -34,6 +35,7 @@ import com.hedera.hapi.node.contract.ContractCallLocalQuery;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.infra.HevmStaticTransactionFactory;
+import com.hedera.node.app.spi.workflows.QueryContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Consumer;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -48,11 +50,15 @@ class HevmStaticTransactionFactoryTest {
     @Mock
     private GasCalculator gasCalculator;
 
+    @Mock
+    private QueryContext context;
+
     private HevmStaticTransactionFactory subject;
 
     @BeforeEach
     void setUp() {
-        subject = new HevmStaticTransactionFactory(DEFAULT_CONFIG, gasCalculator);
+        given(context.configuration()).willReturn(DEFAULT_CONFIG);
+        subject = new HevmStaticTransactionFactory(context, gasCalculator);
     }
 
     @Test

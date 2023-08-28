@@ -26,9 +26,10 @@ import com.hedera.hapi.node.contract.ContractCallLocalQuery;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.node.app.service.contract.impl.annotations.QueryScope;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
+import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.data.ContractsConfig;
-import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 import javax.inject.Inject;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
@@ -45,8 +46,8 @@ public class HevmStaticTransactionFactory {
 
     @Inject
     public HevmStaticTransactionFactory(
-            @NonNull final Configuration configuration, @NonNull final GasCalculator gasCalculator) {
-        this.contractsConfig = configuration.getConfigData(ContractsConfig.class);
+            @NonNull final QueryContext context, @NonNull final GasCalculator gasCalculator) {
+        this.contractsConfig = Objects.requireNonNull(context).configuration().getConfigData(ContractsConfig.class);
         this.gasCalculator = gasCalculator;
     }
 

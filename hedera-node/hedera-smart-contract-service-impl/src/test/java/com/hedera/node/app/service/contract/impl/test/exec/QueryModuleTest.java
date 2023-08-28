@@ -18,8 +18,6 @@ package com.hedera.node.app.service.contract.impl.test.exec;
 
 import static com.hedera.node.app.service.contract.impl.exec.TransactionModule.provideActionSidecarContentTracer;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.contract.impl.exec.EvmActionTracer;
 import com.hedera.node.app.service.contract.impl.exec.QueryModule;
@@ -31,7 +29,6 @@ import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.QueryContext;
-import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -62,13 +59,6 @@ class QueryModuleTest {
     private Configuration config;
 
     @Test
-    void providesExpectedConfig() {
-        final var config = HederaTestConfigBuilder.create().getOrCreateConfig();
-        given(context.configuration()).willReturn(config);
-        assertSame(config, QueryModule.provideConfiguration(context));
-    }
-
-    @Test
     void providesExpectedProxyWorldUpdater() {
         assertInstanceOf(
                 ProxyWorldUpdater.class,
@@ -92,11 +82,5 @@ class QueryModuleTest {
     void providesExpectedHederaEvmContext() {
         assertInstanceOf(
                 HederaEvmContext.class, QueryModule.provideHederaEvmContext(hederaOperations, hederaEvmBlocks));
-    }
-
-    @Test
-    void providesExpectedConfiguration() {
-        given(context.configuration()).willReturn(config);
-        assertSame(config, QueryModule.provideConfiguration(context));
     }
 }

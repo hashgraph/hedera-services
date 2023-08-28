@@ -34,8 +34,6 @@ import com.hedera.node.app.service.contract.impl.hevm.QueryContextHevmBlocks;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.ScopedEvmFrameStateFactory;
-import com.hedera.node.app.spi.workflows.QueryContext;
-import com.swirlds.config.api.Configuration;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -75,12 +73,6 @@ public interface QueryModule {
     static HederaEvmContext provideHederaEvmContext(
             @NonNull final HederaOperations extWorldScope, @NonNull final HederaEvmBlocks hederaEvmBlocks) {
         return new HederaEvmContext(extWorldScope.gasPriceInTinybars(), true, hederaEvmBlocks);
-    }
-
-    @Provides
-    @QueryScope
-    static Configuration provideConfiguration(@NonNull final QueryContext context) {
-        return requireNonNull(context).configuration();
     }
 
     @Binds

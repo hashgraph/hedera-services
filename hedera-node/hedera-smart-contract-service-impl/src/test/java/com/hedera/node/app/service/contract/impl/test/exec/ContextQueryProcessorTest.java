@@ -79,7 +79,6 @@ class ContextQueryProcessorTest {
 
         final var subject = new ContextQueryProcessor(
                 context,
-                CONFIGURATION,
                 hederaEvmContext,
                 tracer,
                 proxyWorldUpdater,
@@ -87,6 +86,7 @@ class ContextQueryProcessorTest {
                 feesOnlyUpdater,
                 processors);
 
+        given(context.configuration()).willReturn(CONFIGURATION);
         given(context.query()).willReturn(Query.DEFAULT);
         given(hevmStaticTransactionFactory.fromHapiQuery(Query.DEFAULT)).willReturn(HEVM_CREATION);
         given(processor.processTransaction(

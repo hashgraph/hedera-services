@@ -22,7 +22,6 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAdd
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
@@ -914,7 +913,7 @@ public class ContractCallSuite extends HapiSuite {
         final AtomicReference<byte[]> erc721IsOperatorOutput = new AtomicReference<>();
         final var supplyKey = "supplyKey";
         final var ercUserKey = "ercUserKey";
-        return onlyDefaultHapiSpec("SpecialQueriesXTest")
+        return defaultHapiSpec("SpecialQueriesXTest")
                 .given(
                         newKeyNamed(supplyKey),
                         newKeyNamed(ercUserKey).shape(SECP_256K1_SHAPE),

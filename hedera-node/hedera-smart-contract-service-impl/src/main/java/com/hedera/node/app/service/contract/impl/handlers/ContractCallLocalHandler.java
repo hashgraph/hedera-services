@@ -83,7 +83,7 @@ public class ContractCallLocalHandler extends PaidQueryHandler {
     public Response findResponse(@NonNull final QueryContext context, @NonNull final ResponseHeader header) {
         requireNonNull(context);
         requireNonNull(header);
-        // FIXME: Where do we get the approximate consensus timestamp from?
+
         var component = provider.get().create(context, Instant.now());
         final var outcome = component.contextQueryProcessor().call();
 
