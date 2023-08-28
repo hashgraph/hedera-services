@@ -26,6 +26,7 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.utility.Threshold;
+import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateFileReader;
@@ -566,7 +567,12 @@ public final class ConsensusTestDefinitions {
 			);
 			final int fi = i;
 			orchestrator1.getNodes().get(i).getOutput().getAddedEvents().forEach(
-					e -> orchestrator2.getNodes().get(fi).getIntake().addLinkedEvent(e)
+					e -> {
+						// since the same events are reused, the metadata needs to be cleared
+						e.clearMetadata();
+						e.setRoundCreated(ConsensusConstants.ROUND_UNDEFINED);
+						orchestrator2.getNodes().get(fi).getIntake().addLinkedEvent(e);
+					}
 			);
 			ConsensusUtils.loadEventsIntoGenerator(
 					orchestrator1.getNodes().get(i).getOutput().getAddedEvents().toArray(EventImpl[]::new),
