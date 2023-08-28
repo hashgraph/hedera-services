@@ -178,8 +178,8 @@ public class SystemFileUpdateFacility {
 
     private void checkForRepeatedOperations(
             com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions defs) {
-        final Set<HederaFunctionality> seenSoFar = new HashSet<>();
         for (var bucket : defs.getBuckets()) {
+            final Set<HederaFunctionality> seenSoFar = new HashSet<>();
             for (var group : bucket.getThrottleGroups()) {
                 final var functions = group.getOperations();
                 if (!Collections.disjoint(seenSoFar, functions)) {
