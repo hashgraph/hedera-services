@@ -287,7 +287,7 @@ public final class StartupStateLoader {
             logger.info(
                     STARTUP.getMarker(),
                     """
-                            The following state does meets the emergency recovery criteria:
+                            The following state meets the emergency recovery criteria:
                                 File path: {}
                                 Hash: {}
                                 Hash Mnemonic: {}
