@@ -103,8 +103,6 @@ public class TargetNetworkPrep extends HapiSuite {
                                     "10",
                                     "staking.isEnabled",
                                     "true",
-                                    "staking.maxDailyStakeRewardThPerH",
-                                    "100",
                                     "staking.perHbarRewardRate",
                                     "100_000_000_000",
                                     "staking.startThreshold",
