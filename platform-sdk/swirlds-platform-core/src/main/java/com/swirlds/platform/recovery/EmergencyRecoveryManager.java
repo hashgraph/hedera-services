@@ -18,7 +18,6 @@ package com.swirlds.platform.recovery;
 
 import static com.swirlds.common.system.SystemExitCode.EMERGENCY_RECOVERY_ERROR;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.STARTUP;
 
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.crypto.Hash;

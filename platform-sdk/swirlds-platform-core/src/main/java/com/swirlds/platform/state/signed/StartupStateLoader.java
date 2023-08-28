@@ -253,7 +253,6 @@ public final class StartupStateLoader {
                 break;
             }
         }
-        ;
 
         if (shouldClearPreconsensusStream) {
             logger.warn(STARTUP.getMarker(), "Clearing preconsensus event stream for emergency recovery.");
@@ -319,7 +318,8 @@ public final class StartupStateLoader {
      */
     @NonNull
     private static ReservedSignedState processRecoveryState(
-            @NonNull final EmergencyRecoveryManager emergencyRecoveryManager, @Nullable ReservedSignedState state) {
+            @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
+            @Nullable final ReservedSignedState state) {
         if (state == null) {
             logger.warn(
                     STARTUP.getMarker(),
@@ -337,6 +337,16 @@ public final class StartupStateLoader {
                         "Loaded state is in the correct hash epoch, "
                                 + "this node will not need to receive a state through an emergency reconnect.");
 
+                // Ensure that the next round created has the proper epoch hash.
+                state.get()
+                        .getState()
+                        .getPlatformState()
+                        .getPlatformData()
+                        .setNextEpochHash(emergencyRecoveryManager
+                                .getEmergencyRecoveryFile()
+                                .hash());
+
+                // Signal that an emergency reconnect is not needed.
                 emergencyRecoveryManager.emergencyStateLoaded();
             } else {
                 logger.warn(
