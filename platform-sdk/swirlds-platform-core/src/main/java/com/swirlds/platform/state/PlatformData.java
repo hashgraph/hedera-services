@@ -479,15 +479,14 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
         return new TextTable()
                 .setBordersEnabled(false)
                 .addRow("Round", round)
-                .addRow("Number of consensus events", numEventsCons)
                 .addRow("Consensus events running hash", hashEventsCons == null ? "null" : hashEventsCons.toMnemonic())
                 .addRow("Consensus timestamp", consensusTimestamp)
-                .addRow("Last timestamp", lastTransactionTimestamp)
                 .addRow("Rounds non-ancient", roundsNonAncient)
                 .addRow("Creation software version", creationSoftwareVersion)
                 .addRow("Epoch hash", epochHash == null ? "null" : epochHash.toMnemonic())
                 .addRow("Min gen info hash code", minGenInfo == null ? "null" : minGenInfo.hashCode())
                 .addRow("Events hash code", Arrays.hashCode(events))
+                //TODO add snapshot info
                 .render();
     }
 
@@ -504,13 +503,13 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
         }
         final PlatformData that = (PlatformData) other;
         return round == that.round
-                && numEventsCons == that.numEventsCons
                 && Objects.equals(hashEventsCons, that.hashEventsCons)
                 && Arrays.equals(events, that.events)
                 && Objects.equals(consensusTimestamp, that.consensusTimestamp)
                 && Objects.equals(minGenInfo, that.minGenInfo)
                 && Objects.equals(epochHash, that.epochHash)
-                && Objects.equals(roundsNonAncient, that.roundsNonAncient);
+                && Objects.equals(roundsNonAncient, that.roundsNonAncient)
+                && Objects.equals(snapshot, that.snapshot);
     }
 
     /**

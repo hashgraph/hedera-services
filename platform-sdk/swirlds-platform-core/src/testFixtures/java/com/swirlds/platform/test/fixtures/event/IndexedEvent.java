@@ -120,17 +120,7 @@ public class IndexedEvent extends EventImpl {
         if (other == null || getClass() != other.getClass()) {
             return false;
         }
-        if (!super.equals(other)) {
-            return false;
-        }
-        final InternalEventData data = getInternalEventData();
-        final InternalEventData otherData = ((IndexedEvent) other).getInternalEventData();
-
-        return Objects.equals(data.isCleared(), otherData.isCleared())
-                && Objects.equals(data.isFameDecided(), otherData.isFameDecided())
-                && Objects.equals(data.isConsensus(), otherData.isConsensus())
-                && Objects.equals(data.hasUserTransactions(), otherData.hasUserTransactions())
-                && Objects.equals(data.getRecTimes(), otherData.getRecTimes());
+        return !super.equals(other);
     }
 
     @Override

@@ -19,10 +19,10 @@ package com.swirlds.platform.test.consensus.framework.validation;
 import static com.swirlds.platform.test.fixtures.event.EventUtils.countConsensusAndStaleEvents;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.base.utility.Pair;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.consensus.framework.ConsensusOutput;
 import java.util.List;
-import org.apache.commons.lang3.tuple.Pair;
 
 public class EventRatioValidation implements ConsensusOutputValidation {
     /**
@@ -103,7 +103,7 @@ public class EventRatioValidation implements ConsensusOutputValidation {
         final Pair<Integer, Integer> ratios = countConsensusAndStaleEvents(allEvents1);
 
         // Validate consensus ratio
-        final double consensusRatio = ((double) ratios.getLeft()) / allEvents1.size();
+        final double consensusRatio = ((double) ratios.left()) / allEvents1.size();
 
         assertTrue(
                 consensusRatio >= minimumConsensusRatio,
@@ -117,7 +117,7 @@ public class EventRatioValidation implements ConsensusOutputValidation {
                         consensusRatio, maximumConsensusRatio));
 
         // Validate stale ratio
-        final double staleRatio = ((double) ratios.getRight()) / allEvents1.size();
+        final double staleRatio = ((double) ratios.right()) / allEvents1.size();
 
         assertTrue(
                 staleRatio >= minimumStaleRatio,
