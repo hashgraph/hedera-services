@@ -197,10 +197,10 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_MAX_STAKE_REWARDED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_NODE_MAX_TO_MIN_STAKE_RATIOS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_PERIOD_MINS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_PER_HBAR_REWARD_RATE;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REQUIRE_MIN_STAKE_TO_REWARD;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_BALANCE_THRESHOLD;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_RATE;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_STARTUP_HELPER_RECOMPUTE;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_START_THRESH;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_SUM_OF_CONSENSUS_WEIGHTS;
@@ -502,7 +502,7 @@ class BootstrapPropertiesTest {
             entry(STAKING_REQUIRE_MIN_STAKE_TO_REWARD, false),
             entry(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS, 365),
             entry(STAKING_STARTUP_HELPER_RECOMPUTE, EnumSet.allOf(StakeStartupHelper.RecomputeType.class)),
-            entry(STAKING_REWARD_RATE, 48630136986000L),
+            entry(STAKING_PER_HBAR_REWARD_RATE, 6_849L),
             entry(STAKING_START_THRESH, 25000000000000000L),
             entry(STAKING_FEES_NODE_REWARD_PERCENT, 0),
             entry(STAKING_FEES_STAKING_REWARD_PERCENT, 100),
