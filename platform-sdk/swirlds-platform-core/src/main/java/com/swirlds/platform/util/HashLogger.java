@@ -57,12 +57,9 @@ public class HashLogger {
     /**
      * Construct a HashLogger.
      *
-     * @param threadManager
-     * 		responsible for creating and managing threads
-     * @param nodeId
-     * 		the id of the current node that is logging.
-     * @param stateConfig
-     *         configuration for the current state.
+     * @param threadManager responsible for creating and managing threads
+     * @param nodeId        the id of the current node that is logging.
+     * @param stateConfig   configuration for the current state.
      */
     public HashLogger(
             @NonNull final ThreadManager threadManager,
@@ -121,8 +118,7 @@ public class HashLogger {
     /**
      * Queues the provided signed state for extracting hashes and logging.
      *
-     * @param signedState
-     * 		the signed state to retrieve hash information from and log.
+     * @param signedState the signed state to retrieve hash information from and log.
      */
     public void logHashes(final SignedState signedState) {
         if (!isEnabled) {
@@ -138,10 +134,16 @@ public class HashLogger {
                 .setDepth(stateConfig.debugHashDepth())
                 .render();
 
-        final String fullRootHashLine = "Root hash (unabbreviated): " + state.getHash();
+        final String fullRootHashLine = "Root hash: " + state.getHash();
 
         return MESSAGE_FACTORY.newMessage(
-                "[node-{}] Information for hash stream (round = {}):\n{}\n{}\n\n{}\n",
+                """
+                        [node-{}] Information for hash stream (round = {}):
+                        {}
+                        {}
+
+                        {}
+                        """,
                 nodeId,
                 signedState.getRound(),
                 platformInfo,

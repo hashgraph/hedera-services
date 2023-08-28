@@ -239,6 +239,11 @@ public class ConsensusHashFinder {
                 .append(round)
                 .append(".\n");
 
+        if (consensusHash != null) {
+            sb.append("Consensus mnemonic: ").append(consensusHash.toMnemonic()).append("\n");
+            sb.append("Consensus hash: ").append(consensusHash).append("\n");
+        }
+
         final List<HashPartition> partitions = new ArrayList<>(partitionMap.size());
         partitions.addAll(partitionMap.values());
         // Sort from highest weight to lowest weight
@@ -273,12 +278,10 @@ public class ConsensusHashFinder {
                     .append(" (")
                     .append((float) partitionWeight / totalWeight * 100)
                     .append("% of total weight)\n");
-            sb.append("  partition hash: ")
+            sb.append("  partition mnemonic: ")
                     .append(partition.getHash().toMnemonic())
                     .append("\n");
-            sb.append("  partition hash (unabbreviated): ")
-                    .append(partition.getHash())
-                    .append("\n");
+            sb.append("  partition hash: ").append(partition.getHash()).append("\n");
         }
     }
 }
