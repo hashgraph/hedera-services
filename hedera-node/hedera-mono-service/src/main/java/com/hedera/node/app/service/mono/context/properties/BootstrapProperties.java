@@ -197,10 +197,10 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_MAX_STAKE_REWARDED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_NODE_MAX_TO_MIN_STAKE_RATIOS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_PERIOD_MINS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_PER_HBAR_REWARD_RATE;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REQUIRE_MIN_STAKE_TO_REWARD;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_BALANCE_THRESHOLD;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_RATE;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_STARTUP_HELPER_RECOMPUTE;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_START_THRESH;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_SUM_OF_CONSENSUS_WEIGHTS;
@@ -536,7 +536,7 @@ public final class BootstrapProperties implements PropertySource {
             STAKING_IS_ENABLED,
             STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR,
             STAKING_REQUIRE_MIN_STAKE_TO_REWARD,
-            STAKING_REWARD_RATE,
+            STAKING_PER_HBAR_REWARD_RATE,
             STAKING_START_THRESH,
             STAKING_MAX_STAKE_REWARDED,
             STAKING_REWARD_BALANCE_THRESHOLD,
@@ -740,7 +740,7 @@ public final class BootstrapProperties implements PropertySource {
             entry(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS, AS_INT),
             entry(STAKING_STARTUP_HELPER_RECOMPUTE, AS_RECOMPUTE_TYPES),
             entry(STAKING_REQUIRE_MIN_STAKE_TO_REWARD, AS_BOOLEAN),
-            entry(STAKING_REWARD_RATE, AS_LONG),
+            entry(STAKING_PER_HBAR_REWARD_RATE, AS_LONG),
             entry(STAKING_START_THRESH, AS_LONG),
             entry(STAKING_SUM_OF_CONSENSUS_WEIGHTS, AS_INT),
             entry(STAKING_MAX_STAKE_REWARDED, AS_LONG),

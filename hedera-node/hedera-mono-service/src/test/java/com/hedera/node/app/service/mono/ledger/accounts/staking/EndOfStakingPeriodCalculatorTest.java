@@ -101,7 +101,7 @@ class EndOfStakingPeriodCalculatorTest {
 
         verify(merkleNetworkContext, never()).setTotalStakedRewardStart(anyLong());
         verify(merkleNetworkContext, never()).setTotalStakedStart(anyLong());
-        verify(syntheticTxnFactory, never()).nodeStakeUpdate(any(), anyList(), any());
+        verify(syntheticTxnFactory, never()).nodeStakeUpdate(any(), anyList(), any(), anyLong(), anyLong());
     }
 
     @Test
@@ -192,9 +192,10 @@ class EndOfStakingPeriodCalculatorTest {
 
         given(dynamicProperties.isStakingEnabled()).willReturn(true);
         given(dynamicProperties.sumOfConsensusWeights()).willReturn(500);
-        given(dynamicProperties.maxDailyStakeRewardThPerH()).willReturn(Long.MAX_VALUE);
         given(dynamicProperties.maxStakeRewarded()).willReturn(Long.MAX_VALUE);
-        given(dynamicProperties.stakingRewardRate()).willReturn(100L);
+        // Total period rewards for this test is 100 tinybars, and there are 10 hbar staked;
+        // so the reward rate is 100 / 10 = 10 tinybars per hbar
+        given(dynamicProperties.stakingPerHbarRewardRate()).willReturn(10L);
         given(properties.getLongProperty(ACCOUNTS_STAKING_REWARD_ACCOUNT)).willReturn(stakingRewardAccount);
         given(accounts.get(EntityNum.fromInt(800))).willReturn(account_800);
         given(account_800.getBalance()).willReturn(balance_800);
