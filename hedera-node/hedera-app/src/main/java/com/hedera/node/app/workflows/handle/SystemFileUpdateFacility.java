@@ -37,6 +37,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Set;
@@ -142,13 +143,17 @@ public class SystemFileUpdateFacility {
 
     private void throttleValidations(SingleTransactionRecordBuilderImpl recordBuilder) {
         final var defs = toPojo.apply(throttleManager.throttleDefinitionsProto());
-        checkForMissingExpectedOperations(defs, recordBuilder);
-        checkForZeroOpsPerSec(defs, recordBuilder);
+        try {
+            checkForMissingExpectedOperations(defs);
+            checkForZeroOpsPerSec(defs);
+            checkForRepeatedOperations(defs);
+        } catch (IllegalStateException e) {
+            recordBuilder.status(ResponseCodeEnum.valueOf(e.getMessage()));
+        }
     }
 
     private void checkForMissingExpectedOperations(
-            com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions defs,
-            SingleTransactionRecordBuilderImpl recordBuilder) {
+        com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions defs) {
         Set<HederaFunctionality> customizedOps = new HashSet<>();
         for (var bucket : defs.getBuckets()) {
             for (var group : bucket.getThrottleGroups()) {
@@ -156,18 +161,31 @@ public class SystemFileUpdateFacility {
             }
         }
         if (!expectedOps.equals(EnumSet.copyOf(customizedOps))) {
-            recordBuilder.status(ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION);
+            throw new IllegalStateException(ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION.name());
         }
     }
 
     private void checkForZeroOpsPerSec(
-            com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions defs,
-            SingleTransactionRecordBuilderImpl recordBuilder) {
+        com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions defs) {
         for (var bucket : defs.getBuckets()) {
             for (var group : bucket.getThrottleGroups()) {
                 if (group.impliedMilliOpsPerSec() == 0) {
-                    recordBuilder.status(ResponseCodeEnum.THROTTLE_GROUP_HAS_ZERO_OPS_PER_SEC);
+                    throw new IllegalStateException(ResponseCodeEnum.THROTTLE_GROUP_HAS_ZERO_OPS_PER_SEC.name());
                 }
+            }
+        }
+    }
+
+    private void checkForRepeatedOperations(
+        com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions defs) {
+        final Set<HederaFunctionality> seenSoFar = new HashSet<>();
+        for (var bucket : defs.getBuckets()) {
+            for (var group : bucket.getThrottleGroups()) {
+                final var functions = group.getOperations();
+                if (!Collections.disjoint(seenSoFar, functions)) {
+                    throw new IllegalStateException(ResponseCodeEnum.OPERATION_REPEATED_IN_BUCKET_GROUPS.name());
+                }
+                seenSoFar.addAll(functions);
             }
         }
     }
