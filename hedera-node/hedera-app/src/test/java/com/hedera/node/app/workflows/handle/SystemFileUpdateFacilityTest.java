@@ -35,6 +35,7 @@ import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.spi.fixtures.TransactionFactory;
 import com.hedera.node.app.throttle.ThrottleManager;
+import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.converter.LongPairConverter;
 import com.hedera.node.config.data.FilesConfig;
@@ -71,15 +72,18 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
     @Mock
     private ExchangeRateManager exchangeRateManager;
 
+    @Mock
+    private SingleTransactionRecordBuilderImpl recordBuilder;
+
     @BeforeEach
     void setUp() {
         files = new HashMap<>();
         state = new FakeHederaState().addService(FileService.NAME, Map.of(BLOBS_KEY, files));
 
         final var config = new TestConfigBuilder(false)
-                .withConverter(new BytesConverter())
-                .withConverter(new LongPairConverter())
-                .withConfigDataType(FilesConfig.class)
+            .withConverter(new BytesConverter())
+            .withConverter(new LongPairConverter())
+            .withConfigDataType(FilesConfig.class)
                 .withConfigDataType(LedgerConfig.class)
                 .getOrCreateConfig();
         when(configProvider.getConfiguration()).thenReturn(new VersionedConfigImpl(config, 1L));
@@ -95,14 +99,17 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
 
         // then
         assertThatThrownBy(() -> new SystemFileUpdateFacility(null, throttleManager, exchangeRateManager))
-                .isInstanceOf(NullPointerException.class);
+            .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new SystemFileUpdateFacility(configProvider, null, exchangeRateManager))
-                .isInstanceOf(NullPointerException.class);
+            .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new SystemFileUpdateFacility(configProvider, throttleManager, null))
-                .isInstanceOf(NullPointerException.class);
+            .isInstanceOf(NullPointerException.class);
 
-        assertThatThrownBy(() -> subject.handleTxBody(null, txBody)).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> subject.handleTxBody(state, null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> subject.handleTxBody(null, txBody, recordBuilder)).isInstanceOf(
+            NullPointerException.class);
+        assertThatThrownBy(() -> subject.handleTxBody(state, null, recordBuilder)).isInstanceOf(
+            NullPointerException.class);
+        assertThatThrownBy(() -> subject.handleTxBody(state, txBody, null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
@@ -113,7 +120,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
                 .build();
 
         // then
-        Assertions.assertThatCode(() -> subject.handleTxBody(state, txBody)).doesNotThrowAnyException();
+        Assertions.assertThatCode(() -> subject.handleTxBody(state, txBody, recordBuilder)).doesNotThrowAnyException();
     }
 
     @Test
@@ -125,7 +132,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
         files.put(fileID, File.newBuilder().contents(FILE_BYTES).build());
 
         // when
-        subject.handleTxBody(state, txBody.build());
+        subject.handleTxBody(state, txBody.build(), recordBuilder);
 
         // then
         verify(configProvider).update(FILE_BYTES);
@@ -140,7 +147,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
         files.put(fileID, File.newBuilder().contents(FILE_BYTES).build());
 
         // when
-        subject.handleTxBody(state, txBody.build());
+        subject.handleTxBody(state, txBody.build(), recordBuilder);
 
         // then
         verify(configProvider).update(FILE_BYTES);
@@ -159,7 +166,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
         files.put(fileID, File.newBuilder().contents(FILE_BYTES).build());
 
         // when
-        subject.handleTxBody(state, txBody.build());
+        subject.handleTxBody(state, txBody.build(), recordBuilder);
 
         // then
         verify(throttleManager, times(1)).update(SystemFileUpdateFacility.getFileContent(state, fileID));
@@ -178,7 +185,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
         files.put(fileID, File.newBuilder().contents(FILE_BYTES).build());
 
         // when
-        subject.handleTxBody(state, txBody.build());
+        subject.handleTxBody(state, txBody.build(), recordBuilder);
 
         // then
         verify(exchangeRateManager, times(1)).update(SystemFileUpdateFacility.getFileContent(state, fileID));
