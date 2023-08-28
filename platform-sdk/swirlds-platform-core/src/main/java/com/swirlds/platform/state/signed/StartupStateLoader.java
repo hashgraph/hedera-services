@@ -229,9 +229,9 @@ public final class StartupStateLoader {
                 STARTUP.getMarker(),
                 """
                         Loading state in emergency recovery mode. The emergency recovery file specifies the following:
-                            Epoch hash: {}
+                            Epoch hash:          {}
                             Epoch hash mnemonic: {}
-                            Round: {}""",
+                            Round:               {}""",
                 recoveryFile.hash(),
                 recoveryFile.hash().toMnemonic(),
                 recoveryFile.round());
@@ -288,10 +288,10 @@ public final class StartupStateLoader {
                     STARTUP.getMarker(),
                     """
                             The following state meets the emergency recovery criteria:
-                                File path: {}
-                                Hash: {}
+                                File path:     {}
+                                Hash:          {}
                                 Hash Mnemonic: {}
-                                Round: {}""",
+                                Round:         {}""",
                     savedStateFile.stateFile(),
                     savedStateFile.metadata().hash(),
                     savedStateFile.metadata().hashMnemonic(),
@@ -301,10 +301,10 @@ public final class StartupStateLoader {
                     STARTUP.getMarker(),
                     """
                             The following state does not meet the emergency recovery criteria:
-                                File path: {}
-                                Hash: {}
+                                File path:     {}
+                                Hash:          {}
                                 Hash Mnemonic: {}
-                                Round: {}""",
+                                Round:         {}""",
                     savedStateFile.stateFile(),
                     savedStateFile.metadata().hash(),
                     savedStateFile.metadata().hashMnemonic(),
