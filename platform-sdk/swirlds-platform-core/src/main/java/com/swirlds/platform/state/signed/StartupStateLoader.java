@@ -227,8 +227,13 @@ public final class StartupStateLoader {
         final EmergencyRecoveryFile recoveryFile = emergencyRecoveryManager.getEmergencyRecoveryFile();
         logger.info(
                 STARTUP.getMarker(),
-                "Loading state in emergency recovery mode. Epoch hash: {}, round: {}. ",
+                """
+                        Loading state in emergency recovery mode.
+                            Epoch hash: {}
+                            Epoch hash mnemonic: {}
+                            Round: {}""",
                 recoveryFile.hash(),
+                recoveryFile.hash().toMnemonic(),
                 recoveryFile.round());
 
         boolean shouldClearPreconsensusStream = false;
@@ -277,18 +282,28 @@ public final class StartupStateLoader {
         if (isStateSuitable) {
             logger.info(
                     STARTUP.getMarker(),
-                    "State file {} meets the criteria to be an initial state during emergency recovery. "
-                            + "State hash: {}, state round: {}",
+                    """
+                            State file meets the criteria to be an initial state during emergency recovery.
+                                File path: {}
+                                Hash: {}
+                                Hash Mnemonic: {}
+                                Round: {}""",
                     savedStateFile.stateFile(),
                     savedStateFile.metadata().hash(),
+                    savedStateFile.metadata().hashMnemonic(),
                     savedStateFile.metadata().round());
         } else {
             logger.warn(
                     STARTUP.getMarker(),
-                    "State file {} does not meet the criteria to be an initial state during emergency recovery. "
-                            + "State hash: {}, state round: {}",
+                    """
+                            State file does not meet the criteria to be an initial state during emergency recovery.
+                                File path: {}
+                                Hash: {}
+                                Hash Mnemonic: {}
+                                Round: {}""",
                     savedStateFile.stateFile(),
                     savedStateFile.metadata().hash(),
+                    savedStateFile.metadata().hashMnemonic(),
                     savedStateFile.metadata().round());
         }
 
@@ -304,8 +319,7 @@ public final class StartupStateLoader {
      */
     @NonNull
     private static ReservedSignedState processRecoveryState(
-            @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
-            @Nullable ReservedSignedState state) {
+            @NonNull final EmergencyRecoveryManager emergencyRecoveryManager, @Nullable ReservedSignedState state) {
         if (state == null) {
             logger.warn(
                     STARTUP.getMarker(),
