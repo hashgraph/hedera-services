@@ -66,6 +66,9 @@ public class GossipEvent implements EventIntakeTask, BaseEvent, ChatterEvent {
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         hashedData = in.readSerializable(false, BaseEventHashedData::new);
         unhashedData = in.readSerializable(false, BaseEventUnhashedData::new);
+        if (version == ClassVersion.ORIGINAL) {
+            in.readLong(); // roundCreated
+        }
         timeReceived = Instant.now();
     }
 
@@ -131,7 +134,7 @@ public class GossipEvent implements EventIntakeTask, BaseEvent, ChatterEvent {
      */
     @Override
     public int getVersion() {
-        return ClassVersion.ORIGINAL;
+        return ClassVersion.REMOVED_ROUND;
     }
 
     /**
@@ -169,5 +172,6 @@ public class GossipEvent implements EventIntakeTask, BaseEvent, ChatterEvent {
 
     private static final class ClassVersion {
         public static final int ORIGINAL = 1;
+        public static final int REMOVED_ROUND = 2;
     }
 }
