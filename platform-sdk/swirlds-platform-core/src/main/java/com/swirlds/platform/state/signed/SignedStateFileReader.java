@@ -166,7 +166,7 @@ public final class SignedStateFileReader {
                 });
 
         final SignedState newSignedState =
-                new SignedState(platformContext, data.left(), "SignedStateFileReader.readStateFile()");
+                new SignedState(platformContext, data.left(), "SignedStateFileReader.readStateFile()", false);
 
         newSignedState.setSigSet(data.right());
 

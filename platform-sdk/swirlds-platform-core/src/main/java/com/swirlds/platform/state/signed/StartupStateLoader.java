@@ -181,7 +181,7 @@ public final class StartupStateLoader {
 
         final State stateCopy = initialSignedState.getState().copy();
         final SignedState signedStateCopy =
-                new SignedState(platformContext, stateCopy, "Browser create new copy of initial state");
+                new SignedState(platformContext, stateCopy, "Browser create new copy of initial state", false);
         signedStateCopy.setSigSet(initialSignedState.getSigSet());
 
         return signedStateCopy.reserve("Browser copied initial state");
@@ -228,7 +228,7 @@ public final class StartupStateLoader {
         logger.info(
                 STARTUP.getMarker(),
                 """
-                        Loading state in emergency recovery mode.
+                        Loading state in emergency recovery mode. The emergency recovery file specifies the following:
                             Epoch hash: {}
                             Epoch hash mnemonic: {}
                             Round: {}""",
@@ -287,7 +287,7 @@ public final class StartupStateLoader {
             logger.info(
                     STARTUP.getMarker(),
                     """
-                            State file meets the criteria to be an initial state during emergency recovery.
+                            The following state does meets the emergency recovery criteria:
                                 File path: {}
                                 Hash: {}
                                 Hash Mnemonic: {}
@@ -300,7 +300,7 @@ public final class StartupStateLoader {
             logger.warn(
                     STARTUP.getMarker(),
                     """
-                            State file does not meet the criteria to be an initial state during emergency recovery.
+                            The following state does not meet the emergency recovery criteria:
                                 File path: {}
                                 Hash: {}
                                 Hash Mnemonic: {}
@@ -358,6 +358,8 @@ public final class StartupStateLoader {
                     STARTUP.getMarker(),
                     "Loaded state is in the correct hash epoch, "
                             + "this node will not need to receive a state through an emergency reconnect.");
+
+            state.get().markAsRecoveryState();
 
             // Ensure that the next round created has the proper epoch hash.
             state.get()
