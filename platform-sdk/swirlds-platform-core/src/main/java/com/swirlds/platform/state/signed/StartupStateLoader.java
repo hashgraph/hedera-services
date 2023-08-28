@@ -87,7 +87,7 @@ public final class StartupStateLoader {
         Objects.requireNonNull(configAddressBook);
         Objects.requireNonNull(emergencyRecoveryManager);
 
-        final ReservedSignedState loadedState = StartupStateLoader.loadState(
+        final ReservedSignedState loadedState = StartupStateLoader.loadStateFile(
                 platformContext,
                 recycleBin,
                 selfId,
@@ -128,7 +128,7 @@ public final class StartupStateLoader {
      * @return a reserved signed state (wrapped state will be null if no state could be loaded)
      */
     @NonNull
-    public static ReservedSignedState loadState(
+    public static ReservedSignedState loadStateFile(
             @NonNull final PlatformContext platformContext,
             @NonNull final RecycleBin recycleBin,
             @NonNull final NodeId selfId,
@@ -248,7 +248,7 @@ public final class StartupStateLoader {
                 continue;
             }
 
-            state = loadState(platformContext, recycleBin, currentSoftwareVersion, savedStateFile);
+            state = loadStateFile(platformContext, recycleBin, currentSoftwareVersion, savedStateFile);
             if (state != null) {
                 break;
             }
@@ -400,7 +400,7 @@ public final class StartupStateLoader {
 
         for (final SavedStateInfo savedStateFile : savedStateFiles) {
             final ReservedSignedState state =
-                    loadState(platformContext, recycleBin, currentSoftwareVersion, savedStateFile);
+                    loadStateFile(platformContext, recycleBin, currentSoftwareVersion, savedStateFile);
             if (state != null) {
                 return state;
             }
@@ -411,7 +411,7 @@ public final class StartupStateLoader {
     }
 
     /**
-     * Load the requested state. If state can not be loaded, recycle the invalid state file and return null.
+     * Load the requested state from file. If state can not be loaded, recycle the file and return null.
      *
      * @param platformContext        the platform context
      * @param recycleBin             the recycle bin
@@ -420,7 +420,7 @@ public final class StartupStateLoader {
      * @return the loaded state, or null if the state could not be loaded. Will be fully hashed if non-null.
      */
     @Nullable
-    private static ReservedSignedState loadState(
+    private static ReservedSignedState loadStateFile(
             @NonNull final PlatformContext platformContext,
             @NonNull final RecycleBin recycleBin,
             @NonNull final SoftwareVersion currentSoftwareVersion,
