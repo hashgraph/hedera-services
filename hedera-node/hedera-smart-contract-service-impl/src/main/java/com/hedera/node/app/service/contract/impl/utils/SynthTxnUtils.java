@@ -37,7 +37,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 public class SynthTxnUtils {
     public static final Key IMMUTABILITY_SENTINEL_KEY =
             Key.newBuilder().keyList(KeyList.DEFAULT).build();
-    ;
 
     public static final long THREE_MONTHS_IN_SECONDS = 7776000L;
     public static final Duration DEFAULT_AUTO_RENEW_PERIOD =
