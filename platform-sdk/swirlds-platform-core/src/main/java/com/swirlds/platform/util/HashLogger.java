@@ -137,11 +137,15 @@ public class HashLogger {
         final String hashInfo = new MerkleTreeVisualizer(state)
                 .setDepth(stateConfig.debugHashDepth())
                 .render();
+
+        final String fullRootHashLine = "Root hash (unabbreviated): " + state.getHash();
+
         return MESSAGE_FACTORY.newMessage(
-                "[node-{}] Information for hash stream (round = {}):\n{}\n{}\n",
+                "[node-{}] Information for hash stream (round = {}):\n{}\n{}\n\n{}\n",
                 nodeId,
                 signedState.getRound(),
                 platformInfo,
+                fullRootHashLine,
                 hashInfo);
     }
 }
