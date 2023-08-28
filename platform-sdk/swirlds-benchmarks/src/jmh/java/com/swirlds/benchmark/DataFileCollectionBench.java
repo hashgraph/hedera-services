@@ -53,7 +53,7 @@ public class DataFileCollectionBench extends BaseBench {
                         getTestDir(),
                         "mergeBench",
                         null,
-                        new BenchmarkRecordMerkleDbSerializer(),
+                        new BenchmarkRecordSerializer(),
                         (key, dataLocation, dataValue) -> {}) {
                     BenchmarkRecord read(long dataLocation) throws IOException {
                         return readDataItem(dataLocation);
