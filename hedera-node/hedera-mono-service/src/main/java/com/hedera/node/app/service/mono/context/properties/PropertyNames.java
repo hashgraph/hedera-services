@@ -172,7 +172,6 @@ public class PropertyNames {
     public static final String STAKING_FEES_STAKING_REWARD_PERCENT = "staking.fees.stakingRewardPercentage";
     public static final String STAKING_NODE_MAX_TO_MIN_STAKE_RATIOS = "staking.nodeMaxToMinStakeRatios";
     public static final String STAKING_IS_ENABLED = "staking.isEnabled";
-    public static final String STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR = "staking.maxDailyStakeRewardThPerH";
     public static final String STAKING_REQUIRE_MIN_STAKE_TO_REWARD = "staking.requireMinStakeToReward";
     // Could be renamed to "staking.rewardRate" when the "staking.rewardRate" property is
     // removed from all production 0.0.121 system files
