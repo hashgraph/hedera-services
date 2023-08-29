@@ -282,13 +282,6 @@ jobs:
           destination: ${{ secrets.bucket-name }}
           parent: false
 
-      - name: Validate Release Artifact Exist
-        if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
-        run: |
-          ARTIFACT_NAME="build-v${{ inputs.new-version }}"
-          echo "ARTIFACT_NAME=${ARTIFACT_NAME}"
-          gsutil ls "gs://${{ secrets.bucket-name }}/${ARTIFACT_NAME}.zip"
-
       - name: Notify Jenkins of Release (Integration)
         id: jenkins-integration
         uses: fjogeleit/http-request-action@86014825e97036cd3e0903bbc72b3c5fff7474c4 # pin@v1
