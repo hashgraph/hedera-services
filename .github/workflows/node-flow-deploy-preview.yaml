@@ -1,5 +1,5 @@
 ##
-# Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+# Copyright (C) 2023 Hedera Hashgraph, LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,22 +27,6 @@ on:
         type: boolean
         required: false
         default: false
-      java-version:
-        description: "Java JDK Version:"
-        type: string
-        required: false
-        default: "17.0.3"
-      java-distribution:
-        description: "Java JDK Distribution:"
-        type: string
-        required: false
-        default: "temurin"
-      gradle-version:
-        description: "Gradle Version:"
-        type: string
-        required: false
-        default: "wrapper"
-
 
 defaults:
   run:
@@ -84,16 +68,13 @@ jobs:
 
   deploy-tag:
     name: Release / Tag
-    uses: ./.github/workflows/node-zxc-build-release-artifact.yaml
+    uses: ./.github/workflows/node-zxc-deploy-preview.yaml
     needs:
       - prepare-deploy-preview
     with:
       version-policy: specified
       new-version: ${{ needs.prepare-deploy-preview.outputs.version }}
-      trigger-env-deploy: preview
-      generate-artifacts: false
     secrets:
       access-token: ${{ secrets.GITHUB_TOKEN }}
       bucket-name: ${{ secrets.RELEASE_ARTIFACT_BUCKET_NAME }}
-      jenkins-integration-url: ${{ secrets.RELEASE_JENKINS_INTEGRATION_URL }}
       jenkins-preview-url: ${{ secrets.RELEASE_JENKINS_PREVIEW_URL }}

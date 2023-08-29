@@ -65,7 +65,6 @@ jobs:
       access-token: ${{ secrets.GITHUB_TOKEN }}
       bucket-name: ${{ secrets.RELEASE_ARTIFACT_BUCKET_NAME }}
       jenkins-integration-url: ${{ secrets.RELEASE_JENKINS_INTEGRATION_URL }}
-      jenkins-preview-url: ${{ secrets.RELEASE_JENKINS_PREVIEW_URL }}
 
   prepare-tag-release:
     name: Release / Tag / Prepare
@@ -114,7 +113,6 @@ jobs:
       access-token: ${{ secrets.GITHUB_TOKEN }}
       bucket-name: ${{ secrets.RELEASE_ARTIFACT_BUCKET_NAME }}
       jenkins-integration-url: ${{ secrets.RELEASE_JENKINS_INTEGRATION_URL }}
-      jenkins-preview-url: ${{ secrets.RELEASE_JENKINS_PREVIEW_URL }}
 
   release-branch:
     name: Release / Branch
@@ -127,7 +125,6 @@ jobs:
       access-token: ${{ secrets.GITHUB_TOKEN }}
       bucket-name: ${{ secrets.RELEASE_ARTIFACT_BUCKET_NAME }}
       jenkins-integration-url: ${{ secrets.RELEASE_JENKINS_INTEGRATION_URL }}
-      jenkins-preview-url: ${{ secrets.RELEASE_JENKINS_PREVIEW_URL }}
 
   prepare-mc-release:
     name: Release / MC / Prepare
