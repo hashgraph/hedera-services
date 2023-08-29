@@ -28,6 +28,7 @@ import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.FileMetadata;
 import com.hedera.node.app.service.file.ReadableFileStore;
@@ -120,6 +121,28 @@ public class FileServiceUtils {
         if (transactionKeys != null && transactionKeys.hasKeys()) {
             for (final Key key : transactionKeys.keys()) {
                 context.requireKey(key);
+            }
+        }
+    }
+
+    /**
+     * The function is unique for File delete Pre-handle validates the keys.
+     * Then it wraps the file Keylist into thresholds adds them to the context.
+     *
+     * @param file file that will be checked for required keys
+     * @param context the prehandle context for the transaction.
+     */
+    public static void validateAndAddRequiredKeysForDelete(
+            @Nullable final File file, @NonNull final PreHandleContext context) {
+        if (file != null) {
+            KeyList fileKeyList = file.keys();
+
+            if (fileKeyList != null && fileKeyList.hasKeys()) {
+                // this threshold created to solve the issue of the file delete that can be deleted using one of the
+                // keys in the keylist that's why it is wrapped in threshold key with threshold 1
+                ThresholdKey syntheticKey =
+                        ThresholdKey.newBuilder().threshold(1).keys(fileKeyList).build();
+                context.requireKey(Key.newBuilder().thresholdKey(syntheticKey).build());
             }
         }
     }
