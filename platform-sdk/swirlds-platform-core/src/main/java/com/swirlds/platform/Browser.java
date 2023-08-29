@@ -16,6 +16,7 @@
 
 package com.swirlds.platform;
 
+import static com.swirlds.common.system.SystemExitUtils.exitSystem;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
@@ -55,6 +56,7 @@ import com.swirlds.common.startup.Log4jSetup;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldMain;
+import com.swirlds.common.system.SystemExitCode;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
@@ -68,6 +70,7 @@ import com.swirlds.logging.payloads.NodeStartPayload;
 import com.swirlds.platform.config.internal.PlatformConfigUtils;
 import com.swirlds.platform.crypto.CryptoConstants;
 import com.swirlds.platform.gui.internal.StateHierarchy;
+import com.swirlds.platform.internal.SignedStateLoadingException;
 import com.swirlds.platform.network.Network;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.State;
@@ -374,15 +377,21 @@ public class Browser {
         final EmergencyRecoveryManager emergencyRecoveryManager = new EmergencyRecoveryManager(
                 stateConfig, new Shutdown()::shutdown, basicConfig.getEmergencyRecoveryFileLoadDir());
 
-        final ReservedSignedState initialState = getInitialState(
-                platformContext,
-                recycleBin,
-                appMain,
-                mainClassName,
-                swirldName,
-                nodeId,
-                configAddressBook,
-                emergencyRecoveryManager);
+        final ReservedSignedState initialState;
+        try {
+            initialState = getInitialState(
+                    platformContext,
+                    recycleBin,
+                    appMain,
+                    mainClassName,
+                    swirldName,
+                    nodeId,
+                    configAddressBook,
+                    emergencyRecoveryManager);
+        } catch (final SignedStateLoadingException e) {
+            exitSystem(SystemExitCode.FATAL_ERROR, "unable to load initial state");
+            throw new IllegalStateException(); // unreachable
+        }
 
         try (initialState) {
             // check software version compatibility

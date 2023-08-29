@@ -34,6 +34,7 @@ import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.logging.payloads.SavedStateLoadedPayload;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventFileManager;
+import com.swirlds.platform.internal.SignedStateLoadingException;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.state.State;
@@ -68,6 +69,8 @@ public final class StartupStateLoader {
      * @param configAddressBook        the address book from config.txt
      * @param emergencyRecoveryManager the emergency recovery manager
      * @return the initial state to be used by this node
+     * @throws SignedStateLoadingException if there was a problem parsing states on disk and we are not configured to
+     *                                     delete malformed states
      */
     @NonNull
     public static ReservedSignedState getInitialState(
@@ -78,7 +81,8 @@ public final class StartupStateLoader {
             @NonNull final String swirldName,
             @NonNull final NodeId selfId,
             @NonNull final AddressBook configAddressBook,
-            @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
+            @NonNull final EmergencyRecoveryManager emergencyRecoveryManager)
+            throws SignedStateLoadingException {
 
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(mainClassName);
@@ -126,6 +130,8 @@ public final class StartupStateLoader {
      * @param currentSoftwareVersion   the current software version
      * @param emergencyRecoveryManager the emergency recovery manager
      * @return a reserved signed state (wrapped state will be null if no state could be loaded)
+     * @throws SignedStateLoadingException if there was a problem parsing states on disk and we are not configured to
+     *                                     delete malformed states
      */
     @NonNull
     public static ReservedSignedState loadStateFile(
@@ -135,7 +141,8 @@ public final class StartupStateLoader {
             @NonNull final String mainClassName,
             @NonNull final String swirldName,
             @NonNull final SoftwareVersion currentSoftwareVersion,
-            @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
+            @NonNull final EmergencyRecoveryManager emergencyRecoveryManager)
+            throws SignedStateLoadingException {
 
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
         final String actualMainClassName = stateConfig.getMainClassName(mainClassName);
@@ -222,7 +229,8 @@ public final class StartupStateLoader {
             @NonNull final NodeId selfId,
             @NonNull final SoftwareVersion currentSoftwareVersion,
             @NonNull final List<SavedStateInfo> savedStateFiles,
-            @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
+            @NonNull final EmergencyRecoveryManager emergencyRecoveryManager)
+            throws SignedStateLoadingException {
 
         final EmergencyRecoveryFile recoveryFile = emergencyRecoveryManager.getEmergencyRecoveryFile();
         logger.info(
@@ -396,7 +404,8 @@ public final class StartupStateLoader {
             @NonNull final PlatformContext platformContext,
             @NonNull final RecycleBin recycleBin,
             @NonNull final SoftwareVersion currentSoftwareVersion,
-            @NonNull final List<SavedStateInfo> savedStateFiles) {
+            @NonNull final List<SavedStateInfo> savedStateFiles)
+            throws SignedStateLoadingException {
 
         logger.info(STARTUP.getMarker(), "Loading latest state from disk.");
 
@@ -426,7 +435,8 @@ public final class StartupStateLoader {
             @NonNull final PlatformContext platformContext,
             @NonNull final RecycleBin recycleBin,
             @NonNull final SoftwareVersion currentSoftwareVersion,
-            @NonNull final SavedStateInfo savedStateFile) {
+            @NonNull final SavedStateInfo savedStateFile)
+            throws SignedStateLoadingException {
 
         logger.info(STARTUP.getMarker(), "Loading signed state from disk: {}", savedStateFile.stateFile());
 
@@ -435,9 +445,14 @@ public final class StartupStateLoader {
             deserializedSignedState = readStateFile(platformContext, savedStateFile.stateFile());
         } catch (final IOException e) {
             logger.error(EXCEPTION.getMarker(), "unable to load state file {}", savedStateFile.stateFile(), e);
-            // TODO setting if we should crash or recycle
-            recycleState(recycleBin, savedStateFile);
-            return null;
+
+            final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
+            if (stateConfig.deleteInvalidStateFiles()) {
+                recycleState(recycleBin, savedStateFile);
+                return null;
+            } else {
+                throw new SignedStateLoadingException("unable to load state, this is unrecoverable");
+            }
         }
 
         final State state = deserializedSignedState.reservedSignedState().get().getState();
