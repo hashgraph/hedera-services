@@ -303,6 +303,15 @@ public class HtmlGenerator {
         final List<String> filterDivs = new ArrayList<>();
 
         filterDivs.add(createFilterDiv(
+                "Node ID",
+                logLines.stream()
+                        .map(LogLine::getNodeId)
+                        .distinct()
+                        .filter(Objects::nonNull)
+                        .map(nodeId -> "node" + nodeId)
+                        .toList()));
+
+        filterDivs.add(createFilterDiv(
                 "Column",
                 List.of(
                         NODE_ID_COLUMN_LABEL,

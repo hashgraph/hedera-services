@@ -27,10 +27,10 @@ import static com.swirlds.cli.logging.HtmlGenerator.NODE_ID_COLUMN_LABEL;
 import static com.swirlds.cli.logging.HtmlGenerator.REMAINDER_OF_LINE_COLUMN_LABEL;
 import static com.swirlds.cli.logging.HtmlGenerator.THREAD_NAME_COLUMN_LABEL;
 import static com.swirlds.cli.logging.HtmlGenerator.TIMESTAMP_COLUMN_LABEL;
+import static com.swirlds.cli.logging.LogProcessingUtils.escapeString;
 import static com.swirlds.cli.logging.LogProcessingUtils.getLogLevelColor;
 import static com.swirlds.cli.logging.LogProcessingUtils.parseTimestamp;
 import static com.swirlds.common.units.TimeUnit.UNIT_MILLISECONDS;
-import static org.apache.commons.lang3.StringEscapeUtils.escapeHtml4;
 
 import com.swirlds.common.formatting.TextEffect;
 import com.swirlds.common.formatting.UnitFormat;
@@ -46,7 +46,6 @@ import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
-import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -361,7 +360,7 @@ public class LogLine implements FormattableString {
         final List<String> dataCellTags = new ArrayList<>();
 
         final HtmlTagFactory nodeIdTagFactory = new HtmlTagFactory(
-                        "td", nodeId == null ? "" : "node" + escapeHtml4(nodeId.toString()) + " ", false)
+                        "td", nodeId == null ? "" : "node" + escapeString(nodeId.toString()) + " ", false)
                 .addClasses(List.of(NODE_ID_COLUMN_LABEL, HIDEABLE_LABEL));
         dataCellTags.add(nodeIdTagFactory.generateTag());
 
@@ -374,34 +373,35 @@ public class LogLine implements FormattableString {
                     .setUnitFormat(UnitFormat.MULTI_SIMPLIFIED)
                     .setDecimalPlaces(0)
                     .setShowSpaceInBetween(false);
-            elapsedTimeString = escapeHtml4(unitFormatter.render());
+            elapsedTimeString = escapeString(unitFormatter.render());
         }
 
         final HtmlTagFactory logStartTimeTagFactory = new HtmlTagFactory("td", elapsedTimeString, false)
                 .addClasses(List.of(ELAPSED_TIME_COLUMN_LABEL, HIDEABLE_LABEL));
         dataCellTags.add(logStartTimeTagFactory.generateTag());
 
-        final HtmlTagFactory timestampTagFactory = new HtmlTagFactory("td", escapeHtml4(timestampOriginalString), false)
+        final HtmlTagFactory timestampTagFactory = new HtmlTagFactory(
+                        "td", escapeString(timestampOriginalString), false)
                 .addClasses(List.of(TIMESTAMP_COLUMN_LABEL, HIDEABLE_LABEL));
         dataCellTags.add(timestampTagFactory.generateTag());
 
-        final HtmlTagFactory logNumberTagFactory = new HtmlTagFactory("td", escapeHtml4(logNumber), false)
+        final HtmlTagFactory logNumberTagFactory = new HtmlTagFactory("td", escapeString(logNumber), false)
                 .addClasses(List.of(LOG_NUMBER_COLUMN_LABEL, HIDEABLE_LABEL));
         dataCellTags.add(logNumberTagFactory.generateTag());
 
-        final HtmlTagFactory logLevelTagFactory = new HtmlTagFactory("td", escapeHtml4(logLevel), false)
+        final HtmlTagFactory logLevelTagFactory = new HtmlTagFactory("td", escapeString(logLevel), false)
                 .addClasses(List.of(LOG_LEVEL_COLUMN_LABEL, HIDEABLE_LABEL, logLevel));
         dataCellTags.add(logLevelTagFactory.generateTag());
 
-        final HtmlTagFactory markerTagFactory = new HtmlTagFactory("td", escapeHtml4(marker), false)
+        final HtmlTagFactory markerTagFactory = new HtmlTagFactory("td", escapeString(marker), false)
                 .addClasses(List.of(MARKER_COLUMN_LABEL, HIDEABLE_LABEL));
         dataCellTags.add(markerTagFactory.generateTag());
 
-        final HtmlTagFactory threadNameTagFactory = new HtmlTagFactory("td", escapeHtml4(threadName), false)
+        final HtmlTagFactory threadNameTagFactory = new HtmlTagFactory("td", escapeString(threadName), false)
                 .addClasses(List.of(THREAD_NAME_COLUMN_LABEL, HIDEABLE_LABEL));
         dataCellTags.add(threadNameTagFactory.generateTag());
 
-        final HtmlTagFactory classNameTagFactory = new HtmlTagFactory("td", escapeHtml4(className) + colonSpace, false)
+        final HtmlTagFactory classNameTagFactory = new HtmlTagFactory("td", escapeString(className) + colonSpace, false)
                 .addClasses(List.of(CLASS_NAME_COLUMN_LABEL, HIDEABLE_LABEL));
         dataCellTags.add(classNameTagFactory.generateTag());
 
@@ -424,7 +424,7 @@ public class LogLine implements FormattableString {
                         nodeId == null ? "" : "node" + nodeId,
                         HIDEABLE_LABEL,
                         LOG_LINE_LABEL)
-                .map(StringEscapeUtils::escapeHtml4)
+                .map(LogProcessingUtils::escapeString)
                 .toList();
 
         final String mainLogRow = new HtmlTagFactory("tr", "\n" + String.join("\n", dataCellTags) + "\n", false)

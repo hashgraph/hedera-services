@@ -84,4 +84,20 @@ public class LogProcessingUtils {
             return inputString;
         }
     }
+
+    /**
+     * Escapes the input string to be HTML safe
+     *
+     * @param inputString the string to escape
+     * @return the escaped string
+     */
+    @NonNull
+    public static String escapeString(@NonNull final String inputString) {
+        return inputString
+                .replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("’", "&#39;");
+    }
 }

@@ -16,8 +16,6 @@
 
 package com.swirlds.cli.logging;
 
-import static org.apache.commons.lang3.StringEscapeUtils.escapeHtml4;
-
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -62,6 +60,6 @@ public class DefaultFormattableString implements FormattableString {
     @NonNull
     @Override
     public String generateHtmlString() {
-        return escapeHtml4(originalString);
+        return LogProcessingUtils.escapeString(originalString);
     }
 }

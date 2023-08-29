@@ -22,14 +22,13 @@ import static com.swirlds.cli.logging.HtmlGenerator.LOG_NUMBER_COLUMN_LABEL;
 import static com.swirlds.cli.logging.HtmlGenerator.NODE_ID_COLUMN_LABEL;
 import static com.swirlds.cli.logging.HtmlGenerator.NON_STANDARD_LABEL;
 import static com.swirlds.cli.logging.HtmlGenerator.TIMESTAMP_COLUMN_LABEL;
-import static org.apache.commons.lang3.StringEscapeUtils.escapeHtml4;
+import static com.swirlds.cli.logging.LogProcessingUtils.escapeString;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
-import org.apache.commons.lang3.StringEscapeUtils;
 
 /**
  * A log that doesn't adhere to the standard format. Becomes part of the most recent log line.
@@ -83,7 +82,7 @@ public class NonStandardLog {
         dataCellTags.add(logNumberTagFactory.generateTag());
 
         // add the non-standard contents
-        final HtmlTagFactory contentsFactory = new HtmlTagFactory("td", escapeHtml4(nonStandardText), false)
+        final HtmlTagFactory contentsFactory = new HtmlTagFactory("td", escapeString(nonStandardText), false)
                 .addClasses(List.of(NON_STANDARD_LABEL, HIDEABLE_LABEL))
                 .addAttribute("colspan", "5");
         dataCellTags.add(contentsFactory.generateTag());
@@ -96,7 +95,7 @@ public class NonStandardLog {
                         parentLogLine.getClassName(),
                         parentLogLine.getNodeId() == null ? "" : "node" + parentLogLine.getNodeId(),
                         HIDEABLE_LABEL)
-                .map(StringEscapeUtils::escapeHtml4)
+                .map(LogProcessingUtils::escapeString)
                 .toList();
 
         return new HtmlTagFactory("tr", "\n" + String.join("\n", dataCellTags) + "\n", false)
