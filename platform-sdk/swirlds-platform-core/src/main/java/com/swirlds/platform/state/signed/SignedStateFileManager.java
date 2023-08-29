@@ -217,15 +217,16 @@ public class SignedStateFileManager implements Startable {
     }
 
     /**
-     * Method to be called when a state has been successfully written to disk.
+     * Method to be called when a state has been successfully written to disk in-band. An "in-band" write is part of
+     * normal platform operations, whereas an out-of-band write is triggered due to a fault, or for debug purposes.
      * <p>
-     * This method shouldn't be called if the state was written out of band.
+     * This method shouldn't be called if the state was written out-of-band.
      *
      * @param reservedState the state that was written to disk
      * @param directory     the directory where the state was written
      * @param start         the nano start time of the state writing process
      */
-    private void stateWrittenToDisk(
+    private void stateWrittenToDiskInBand(
             @NonNull final SignedState reservedState, @NonNull final Path directory, final long start) {
 
         final long round = reservedState.getRound();
@@ -243,7 +244,7 @@ public class SignedStateFileManager implements Startable {
     /**
      * Method to be called when a state is being written to disk in-band, but it lacks signatures.
      * <p>
-     * This method shouldn't be called if the state was written out of band.
+     * This method shouldn't be called if the state was written out-of-band.
      *
      * @param reservedState the state being written to disk
      */
@@ -270,7 +271,7 @@ public class SignedStateFileManager implements Startable {
      * @param directory            the directory where the signed state will be written
      * @param reason               the reason this state is being written to disk
      * @param finishedCallback     a function that is called after state writing is complete
-     * @param outOfBand            whether this state has been requested to be written out of band
+     * @param outOfBand            whether this state has been requested to be written out-of-band
      * @param stateLacksSignatures whether the state being written lacks signatures
      */
     private void saveStateTask(
@@ -287,7 +288,7 @@ public class SignedStateFileManager implements Startable {
         try (reservedSignedState) {
             try {
                 if (outOfBand) {
-                    // states requested to be written out of band are always written to disk
+                    // states requested to be written out-of-band are always written to disk
                     SignedStateFileWriter.writeSignedStateToDisk(
                             selfId, directory, reservedSignedState.get(), reason, configuration);
 
@@ -305,7 +306,7 @@ public class SignedStateFileManager implements Startable {
 
                         SignedStateFileWriter.writeSignedStateToDisk(
                                 selfId, directory, reservedSignedState.get(), reason, configuration);
-                        stateWrittenToDisk(reservedSignedState.get(), directory, start);
+                        stateWrittenToDiskInBand(reservedSignedState.get(), directory, start);
 
                         success = true;
                     }
@@ -342,7 +343,7 @@ public class SignedStateFileManager implements Startable {
      * @param reason               the reason this state is being written to disk
      * @param finishedCallback     a function that is called after state writing is complete. Is passed true if writing
      *                             succeeded, else is passed false.
-     * @param outOfBand            true if this state is being written out of band, false otherwise
+     * @param outOfBand            true if this state is being written out-of-band, false otherwise
      * @param stateLacksSignatures true if the state lacks signatures, false otherwise
      * @param configuration        the configuration of the platform
      * @return true if it will be written to disk, false otherwise
@@ -406,13 +407,13 @@ public class SignedStateFileManager implements Startable {
     }
 
     /**
-     * Dump a state to disk out of band.
+     * Dump a state to disk out-of-band.
      * <p>
      * The state will be saved in a subdirectory of the signed states base directory, with the subdirectory being named
-     * after the reason the state is being written out of band.
+     * after the reason the state is being written out-of-band.
      *
      * @param signedState the signed state to write to disk
-     * @param reason      the reason why the state is being written out of band
+     * @param reason      the reason why the state is being written out-of-band
      * @param blocking    if true then block until the state has been fully written to disk
      */
     public void dumpState(
