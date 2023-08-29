@@ -367,11 +367,7 @@ public class Browser {
         final SoftwareVersion appVersion = appMain.getSoftwareVersion();
 
         final RecycleBinImpl recycleBin = new RecycleBinImpl(
-                configuration,
-                platformContext.getMetrics(),
-                getStaticThreadManager(),
-                Time.getCurrent(),
-                nodeId);
+                configuration, platformContext.getMetrics(), getStaticThreadManager(), Time.getCurrent(), nodeId);
         recycleBin.start();
 
         // We can't send a "real" dispatch, since the dispatcher will not have been started by the
