@@ -54,12 +54,12 @@ public class ReadableFileStoreImpl extends FileStore implements ReadableFileStor
      * @param id file id being looked up
      * @return file's metadata
      */
-    public @Nullable FileMetadata getFileMetadata(@Nullable final FileID id) {
+    public @Nullable FileMetadata getFileMetadata(@NonNull final FileID id) {
         final var file = getFileLeaf(id);
         return file == null ? null : FileStore.fileMetaFrom(file);
     }
 
-    public @Nullable File getFileLeaf(@Nullable FileID id) {
+    public @Nullable File getFileLeaf(@NonNull FileID id) {
         return fileState.get(id);
     }
 }
