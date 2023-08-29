@@ -18,8 +18,8 @@ package com.hedera.node.app.service.mono.state.virtual.temporal;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.jasperdb.files.hashmap.KeyIndexType;
-import com.swirlds.jasperdb.files.hashmap.KeySerializer;
+import com.swirlds.merkledb.serialize.KeyIndexType;
+import com.swirlds.merkledb.serialize.KeySerializer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -35,7 +35,7 @@ public class SecondSinceEpocVirtualKeySerializer implements KeySerializer<Second
     }
 
     @Override
-    public int getSerializedSize(long dataVersion) {
+    public int getSerializedSize() {
         return SecondSinceEpocVirtualKey.sizeInBytes();
     }
 
@@ -62,8 +62,8 @@ public class SecondSinceEpocVirtualKeySerializer implements KeySerializer<Second
     }
 
     @Override
-    public int serialize(SecondSinceEpocVirtualKey key, SerializableDataOutputStream out) throws IOException {
-        key.serialize(out);
+    public int serialize(SecondSinceEpocVirtualKey key, ByteBuffer byteBuffer) throws IOException {
+        key.serialize(byteBuffer);
         return SecondSinceEpocVirtualKey.sizeInBytes();
     }
 

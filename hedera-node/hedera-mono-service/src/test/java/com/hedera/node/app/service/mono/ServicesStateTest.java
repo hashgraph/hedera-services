@@ -35,7 +35,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -123,8 +122,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledOnOs;
-import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -503,8 +500,6 @@ class ServicesStateTest extends ResponsibleVMapUser {
     void genesisInitRespectsSelectedOnDiskMapsAndConsolidatedRecords() {
         // setup:
         // it should correspond to the default value in test/resources/bootstrap.properties
-        given(bootstrapProperties.getBooleanProperty(PropertyNames.VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB))
-                .willReturn(true);
         subject = tracked(new ServicesState(bootstrapProperties));
         given(bootstrapProperties.getBooleanProperty(PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE))
                 .willReturn(true);
@@ -957,42 +952,6 @@ class ServicesStateTest extends ResponsibleVMapUser {
         assertSame(addressBook, copy.addressBook());
         assertSame(networkContext, copy.networkCtx());
         assertSame(specialFiles, copy.specialFiles());
-    }
-
-    @Test
-    // Since 0.38 JDB files include the ':' character which is forbidden by Windows (and may
-    // exceed the maximum path length besides), only run this test on Linux, Mac, or UNIX
-    @EnabledOnOs({OS.LINUX, OS.MAC, OS.AIX, OS.SOLARIS})
-    void testLoading038XState() throws IOException {
-        // The saved state used for this test is from 0.38.1, meaning the JDB file names
-        // use the ':' character; but Windows prohibits such files, so the repository
-        // couldn't be cloned on that OS with the as-is saved state. The solution is to
-        // store the JDB files in the repo with ':' replaced by 'cln' (plus other
-        // shortening abbreviations); and then copy those files to a temp directory, using
-        // their proper JDB names, for use in this test. We can't use @TempDir here because
-        // JDB uses symlinks and we'll get "Invalid cross-device link" errors if we let
-        // JUnit create the temp directory under /tmp
-        final var jdbNamedSignedStateDir = new File("swirlds-sst-tmp");
-
-        ClassLoaderHelper.loadClassPathDependencies();
-
-        cpWithDirTransform(
-                Paths.get(statesDir, "0.38.1/").toString(),
-                jdbNamedSignedStateDir.getAbsolutePath(),
-                ServicesStateTest::unabbreviate);
-        final var relocatedSignedState = Paths.get(jdbNamedSignedStateDir.getAbsolutePath(), "SignedState.swh");
-        // This signed state should be auto-closed by the try block
-        try (ReservedSignedState state = loadSignedState(relocatedSignedState.toString())) {
-            final var mockPlatform = createMockPlatformWithCrypto();
-
-            given(mockPlatform.getAddressBook()).willReturn(addressBook);
-            ServicesState swirldState = (ServicesState) state.get().getSwirldState();
-            swirldState.init(mockPlatform, new DualStateImpl(), RESTART, forHapiAndHedera("0.30.0", "0.30.5"));
-        } catch (IOException e) {
-            fail("State file should be loaded correctly, but failed with exception: " + e.getMessage());
-        }
-
-        FileUtils.deleteDirectory(jdbNamedSignedStateDir);
     }
 
     @Test

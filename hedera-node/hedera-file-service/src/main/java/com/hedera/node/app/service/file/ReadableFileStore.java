@@ -38,7 +38,7 @@ public interface ReadableFileStore {
      */
     // TODO : Change to return File instead of FileMetadata
     @Nullable
-    FileMetadata getFileMetadata(@Nullable FileID id);
+    FileMetadata getFileMetadata(@NonNull FileID id);
 
     /**
      * Returns the file needed from state, if not exist will return null.

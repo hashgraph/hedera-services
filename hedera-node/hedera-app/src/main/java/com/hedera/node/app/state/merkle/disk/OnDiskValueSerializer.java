@@ -17,24 +17,27 @@
 package com.hedera.node.app.state.merkle.disk;
 
 import com.hedera.node.app.state.merkle.StateMetadata;
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.jasperdb.SelfSerializableSupplier;
+import com.swirlds.merkledb.serialize.ValueSerializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Objects;
 
 /**
- * An implementation of {@link SelfSerializableSupplier}, required by the {@link
+ * An implementation of {@link ValueSerializer}, required by the {@link
  * com.swirlds.virtualmap.VirtualMap} for creating new {@link OnDiskValue}s.
  *
  * @param <V> The type of the value in the virtual map
  */
-public final class OnDiskValueSerializer<V> implements SelfSerializableSupplier<OnDiskValue<V>> {
-    @Deprecated(forRemoval = true)
-    private static final long CLASS_ID = 0x3992113882234885L;
+public final class OnDiskValueSerializer<V> implements ValueSerializer<OnDiskValue<V>> {
 
+    private static final long CLASS_ID = 0x3992113882234886L;
+
+    private static final long DATA_VERSION = 1;
     private final StateMetadata<?, V> md;
+
+    // guesstimate of the typical size of a serialized value
+    private static final int TYPICAL_SIZE = 1024;
 
     // Default constructor provided for ConstructableRegistry, TO BE REMOVED ASAP
     @Deprecated(forRemoval = true)
@@ -65,19 +68,29 @@ public final class OnDiskValueSerializer<V> implements SelfSerializableSupplier<
 
     /** {@inheritDoc} */
     @Override
-    public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
-        // This class has nothing to serialize
+    public int serialize(OnDiskValue<V> value, ByteBuffer byteBuffer) throws IOException {
+        return value.serializeReturningWrittenBytes(byteBuffer);
     }
 
-    /** {@inheritDoc} */
     @Override
-    public void deserialize(@NonNull final SerializableDataInputStream in, final int ignored) throws IOException {
-        // This class has nothing to deserialize
+    public long getCurrentDataVersion() {
+        return DATA_VERSION;
     }
 
-    /** {@inheritDoc} */
     @Override
-    public OnDiskValue<V> get() {
-        return new OnDiskValue<>(md);
+    public int getSerializedSize() {
+        return VARIABLE_DATA_SIZE;
+    }
+
+    @Override
+    public int getTypicalSerializedSize() {
+        return TYPICAL_SIZE;
+    }
+
+    @Override
+    public OnDiskValue<V> deserialize(ByteBuffer byteBuffer, long dataVersion) throws IOException {
+        final OnDiskValue<V> value = new OnDiskValue<>(md);
+        value.deserialize(byteBuffer, (int) dataVersion);
+        return value;
     }
 }
