@@ -225,13 +225,13 @@ public class DumpStateCommand extends AbstractCommand {
     }
 
     @Command(name = "tokens", description = "Dump fungible token types")
-    void fungible(
+    void tokens(
             @Option(
                             names = {"--token"},
                             arity = "1",
                             description = "Output file for fungibles dump")
                     @NonNull
-                    Path tokensPath,
+                    final Path tokensPath,
             @Option(
                             names = {"--keys"},
                             arity = "0..*",
@@ -256,6 +256,26 @@ public class DumpStateCommand extends AbstractCommand {
                 doFeeSummary ? WithFeeSummary.YES : WithFeeSummary.NO,
                 emitSummary ? EmitSummary.YES : EmitSummary.NO,
                 parent.verbosity);
+        finish();
+    }
+
+    @Command(name = "uniques", description = "Dump unique (serial-numbered) tokens")
+    void uniques(
+            @Option(
+                            names = {"--unique"},
+                            arity = "1",
+                            description = "Output file for unique tokens dump")
+                    @NonNull
+                    final Path uniquesPath,
+            @Option(
+                            names = {"-s", "--summary"},
+                            description = "Emit a summary line")
+                    final boolean emitSummary) {
+        Objects.requireNonNull(uniquesPath);
+        init();
+        System.out.println("=== unique NFTs ===");
+        DumpUniqueTokensSubcommand.doit(
+                parent.signedState, uniquesPath, emitSummary ? EmitSummary.YES : EmitSummary.NO, parent.verbosity);
         finish();
     }
 
