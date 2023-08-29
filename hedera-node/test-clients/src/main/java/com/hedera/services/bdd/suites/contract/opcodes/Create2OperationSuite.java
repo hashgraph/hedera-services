@@ -147,7 +147,6 @@ public class Create2OperationSuite extends HapiSuite {
     private static final Logger LOG = LogManager.getLogger(Create2OperationSuite.class);
     private static final String CREATION = "creation";
     private static final String CREATE_2_TXN = "create2Txn";
-    private static final String CREATE_2_TXN_2 = "create2Txn2";
     private static final String SWISS = "swiss";
     private static final String RETURNER = "Returner";
     private static final String CALL_RETURNER = "callReturner";
