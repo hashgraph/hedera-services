@@ -67,7 +67,7 @@ jobs:
           echo "prerelease=${PRERELEASE_FLAG}" >>"${GITHUB_OUTPUT}"
 
   deploy-tag:
-    name: Deploy to Preview Network
+    name: Deploy Tag
     uses: ./.github/workflows/node-zxc-deploy-preview.yaml
     needs:
       - prepare-deploy-preview
