@@ -260,7 +260,7 @@ public class HandleWorkflow {
             // Get the parsed data
             final var transaction = transactionInfo.transaction();
             txBody = transactionInfo.txBody();
-            payer = preHandleResult.payer();
+            payer = txBody.transactionID().accountID();
 
             final Bytes transactionBytes;
             if (transaction.signedTransactionBytes().length() > 0) {
