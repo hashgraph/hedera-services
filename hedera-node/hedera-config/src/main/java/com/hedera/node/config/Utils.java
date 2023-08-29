@@ -34,6 +34,7 @@ import org.apache.logging.log4j.Logger;
  */
 public final class Utils {
     private static final Logger logger = LogManager.getLogger(Utils.class);
+
     private Utils() {
         // Do not instantiate
         throw new UnsupportedOperationException("Utility Class");
