@@ -61,11 +61,28 @@ public interface NodeInfo {
      */
     String memo();
 
+    /**
+     * The host name of this node, as known by the external world. This is an IP address.
+     *
+     * @return The host name (IP Address) of this node
+     */
     String externalHostName();
 
+    /**
+     * The port the node is listening on.
+     * @return the port. Non-negative.
+     */
     int externalPort();
 
+    /**
+     * The public key of this node, as a hex-encoded string.
+     * @return the public key
+     */
     String hexEncodedPublicKey();
 
+    /**
+     * The stake weight of this node.
+     * @return the stake weight
+     */
     long stake();
 }
