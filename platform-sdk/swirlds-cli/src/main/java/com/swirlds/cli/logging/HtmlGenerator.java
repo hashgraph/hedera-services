@@ -457,7 +457,7 @@ public class HtmlGenerator {
     /**
      * Generate an HTML page from a list of log line strings
      *
-     * @param logLineStrings the log line strings
+     * @param logLineStrings a map of node id to the raw log line strings for that node
      * @return the HTML page
      */
     public static String generateHtmlPage(@NonNull final Map<NodeId, List<String>> logLineStrings) {
@@ -465,6 +465,7 @@ public class HtmlGenerator {
 
         final List<LogLine> logLines = logLineStrings.entrySet().stream()
                 .flatMap(entry -> processNodeLogLines(entry.getKey(), entry.getValue()).stream())
+                .sorted(Comparator.comparing(LogLine::getTimestamp))
                 .toList();
 
         setFirstLogTime(logLines);
