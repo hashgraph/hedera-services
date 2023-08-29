@@ -21,7 +21,11 @@ import static com.hedera.node.app.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.Service;
-import com.hedera.node.app.spi.state.*;
+import com.hedera.node.app.spi.info.NetworkInfo;
+import com.hedera.node.app.spi.state.FilteredReadableStates;
+import com.hedera.node.app.spi.state.FilteredWritableStates;
+import com.hedera.node.app.spi.state.Schema;
+import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.state.merkle.MerkleHederaState.MerkleWritableStates;
 import com.hedera.node.app.state.merkle.disk.OnDiskKey;
 import com.hedera.node.app.state.merkle.disk.OnDiskKeySerializer;
@@ -44,7 +48,15 @@ import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.TreeSet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -57,11 +69,10 @@ import org.apache.logging.log4j.Logger;
  * a {@link SemanticVersion}.
  *
  * <p>The Hedera application then calls {@link #migrate(MerkleHederaState, SemanticVersion,
- * SemanticVersion, Configuration)} on each {@link MerkleSchemaRegistry} instance, supplying it the application
- * version number and the newly created (or deserialized) but not yet hashed copy of the {@link
- * MerkleHederaState}. The registry determines which {@link Schema}s to apply, possibly taking
- * multiple migration steps, to transition the merkle tree from its current version to the final
- * version.
+ * SemanticVersion, Configuration, NetworkInfo)} on each {@link MerkleSchemaRegistry} instance, supplying it the
+ * application version number and the newly created (or deserialized) but not yet hashed copy of the {@link
+ * MerkleHederaState}. The registry determines which {@link Schema}s to apply, possibly taking multiple migration steps,
+ * to transition the merkle tree from its current version to the final version.
  */
 public class MerkleSchemaRegistry implements SchemaRegistry {
     private static final Logger logger = LogManager.getLogger(MerkleSchemaRegistry.class);
@@ -126,10 +137,12 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             @NonNull final MerkleHederaState hederaState,
             @Nullable final SemanticVersion previousVersion,
             @NonNull final SemanticVersion currentVersion,
-            @NonNull final Configuration config) {
+            @NonNull final Configuration config,
+            @NonNull final NetworkInfo networkInfo) {
         Objects.requireNonNull(hederaState);
         Objects.requireNonNull(currentVersion);
         Objects.requireNonNull(config);
+        Objects.requireNonNull(networkInfo);
 
         // If the previous and current versions are the same, then we have no need to migrate
         // to achieve the correct merkle tree version. All we need to do is register with
@@ -210,7 +223,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             remainingStates.removeAll(statesToRemove);
             final var newStates = new FilteredWritableStates(writeableStates, remainingStates);
 
-            final var migrationContext = new MigrationContextImpl(previousStates, newStates, config);
+            final var migrationContext = new MigrationContextImpl(previousStates, newStates, config, networkInfo);
             schema.migrate(migrationContext);
             if (writeableStates instanceof MerkleWritableStates mws) {
                 mws.commit();

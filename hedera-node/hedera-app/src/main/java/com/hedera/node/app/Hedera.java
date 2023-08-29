@@ -366,6 +366,7 @@ public final class Hedera implements SwirldMain {
                 () -> previousVersion == null ? "<NONE>" : HapiUtils.toString(previousVersion),
                 () -> HapiUtils.toString(currentVersion));
 
+        final var networkInfo = daggerApp.networkInfo();
         for (final var service : servicesRegistry.services()) {
             // FUTURE We should have metrics here to keep track of how long it takes to migrate each service
             final var serviceName = service.getServiceName();
@@ -373,7 +374,7 @@ public final class Hedera implements SwirldMain {
             logger.debug("Registering schemas for service {}", serviceName);
             service.registerSchemas(registry);
             logger.info("Migrating Service {}", serviceName);
-            registry.migrate(state, previousVersion, currentVersion, configProvider.getConfiguration());
+            registry.migrate(state, previousVersion, currentVersion, configProvider.getConfiguration(), networkInfo);
         }
         logger.info("Migration complete");
     }

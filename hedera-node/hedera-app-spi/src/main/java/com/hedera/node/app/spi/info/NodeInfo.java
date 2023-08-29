@@ -31,7 +31,9 @@ public interface NodeInfo {
      *
      * @return whether this node has zero stake.
      */
-    boolean zeroStake();
+    default boolean zeroStake() {
+        return stake() == 0;
+    }
 
     /**
      * Gets the node ID. This is a separate identifier from the node's account. This IS NOT IN ANY WAY related to the
@@ -58,4 +60,12 @@ public interface NodeInfo {
      * @return this node's account memo
      */
     String memo();
+
+    String externalHostName();
+
+    int externalPort();
+
+    String hexEncodedPublicKey();
+
+    long stake();
 }
