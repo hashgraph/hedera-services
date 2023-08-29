@@ -34,7 +34,7 @@ defaults:
 
 jobs:
   prepare-deploy-preview:
-    name: Deploy / Tag / Prepare
+    name: Prepare for Deploy
     runs-on: [self-hosted, Linux, medium, ephemeral]
     outputs:
       version: ${{ steps.tag.outputs.version }}
@@ -67,7 +67,7 @@ jobs:
           echo "prerelease=${PRERELEASE_FLAG}" >>"${GITHUB_OUTPUT}"
 
   deploy-tag:
-    name: Release / Tag
+    name: Deploy to Preview Network
     uses: ./.github/workflows/node-zxc-deploy-preview.yaml
     needs:
       - prepare-deploy-preview
