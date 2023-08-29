@@ -39,12 +39,10 @@ public class DeleteFailuresSpec extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            //						handleRejectsMissingFile(),
-            handleRejectsDeletedFile(),
-        });
+        return List.of(handleRejectsMissingFile(), handleRejectsDeletedFile());
     }
 
+    @HapiTest
     private HapiSpec handleRejectsMissingFile() {
         return defaultHapiSpec("handleRejectsMissingFile")
                 .given()
