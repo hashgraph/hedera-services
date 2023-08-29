@@ -54,7 +54,7 @@ import org.apache.logging.log4j.Logger;
 public class SystemFileUpdateFacility {
 
     private static final Logger logger = LogManager.getLogger(SystemFileUpdateFacility.class);
-    private static final Set<HederaFunctionality> expectedOps = ExpectedCustomThrottles.ACTIVE_OPS;
+    static final Set<HederaFunctionality> expectedOps = ExpectedCustomThrottles.ACTIVE_OPS;
     private static final Function<
                     ThrottleDefinitions, com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions>
             toPojo = com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions::fromProto;
@@ -159,7 +159,7 @@ public class SystemFileUpdateFacility {
                 customizedOps.addAll(group.getOperations());
             }
         }
-        if (!expectedOps.equals(EnumSet.copyOf(customizedOps))) {
+        if (customizedOps.isEmpty() || !expectedOps.equals(EnumSet.copyOf(customizedOps))) {
             throw new IllegalStateException(ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION.name());
         }
     }

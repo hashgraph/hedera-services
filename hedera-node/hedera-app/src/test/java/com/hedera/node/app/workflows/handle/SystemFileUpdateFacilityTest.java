@@ -23,6 +23,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.FileID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.file.FileAppendTransactionBody;
 import com.hedera.hapi.node.file.FileUpdateTransactionBody;
 import com.hedera.hapi.node.state.file.File;
@@ -32,6 +33,7 @@ import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.config.VersionedConfigImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
+import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleGroup;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.spi.fixtures.TransactionFactory;
 import com.hedera.node.app.throttle.ThrottleManager;
@@ -41,10 +43,13 @@ import com.hedera.node.config.converter.LongPairConverter;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.swirlds.test.framework.config.TestConfigBuilder;
+import java.time.Instant;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -56,6 +61,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class SystemFileUpdateFacilityTest implements TransactionFactory {
 
     private static final Bytes FILE_BYTES = Bytes.wrap("Hello World");
+    private static final Instant CONSENSUS_NOW = Instant.parse("2000-01-01T00:00:00Z");
 
     @Mock(strictness = Strictness.LENIENT)
     private ConfigProviderImpl configProvider;
@@ -71,9 +77,6 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
 
     @Mock
     private ExchangeRateManager exchangeRateManager;
-
-    @Mock
-    private SingleTransactionRecordBuilderImpl recordBuilder;
 
     @BeforeEach
     void setUp() {
@@ -96,6 +99,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
     void testMethodsWithInvalidArguments() {
         // given
         final var txBody = simpleCryptoTransfer().body();
+        final var recordBuilder = new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW);
 
         // then
         assertThatThrownBy(() -> new SystemFileUpdateFacility(null, throttleManager, exchangeRateManager))
@@ -118,9 +122,10 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
         final var txBody = TransactionBody.newBuilder()
                 .cryptoTransfer(CryptoTransferTransactionBody.DEFAULT)
                 .build();
+        final var recordBuilder = new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW);
 
         // then
-        Assertions.assertThatCode(() -> subject.handleTxBody(state, txBody, recordBuilder))
+        org.assertj.core.api.Assertions.assertThatCode(() -> subject.handleTxBody(state, txBody, recordBuilder))
                 .doesNotThrowAnyException();
     }
 
@@ -133,7 +138,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
         files.put(fileID, File.newBuilder().contents(FILE_BYTES).build());
 
         // when
-        subject.handleTxBody(state, txBody.build(), recordBuilder);
+        subject.handleTxBody(state, txBody.build(), new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW));
 
         // then
         verify(configProvider).update(FILE_BYTES);
@@ -148,7 +153,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
         files.put(fileID, File.newBuilder().contents(FILE_BYTES).build());
 
         // when
-        subject.handleTxBody(state, txBody.build(), recordBuilder);
+        subject.handleTxBody(state, txBody.build(), new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW));
 
         // then
         verify(configProvider).update(FILE_BYTES);
@@ -167,7 +172,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
         files.put(fileID, File.newBuilder().contents(FILE_BYTES).build());
 
         // when
-        subject.handleTxBody(state, txBody.build(), recordBuilder);
+        subject.handleTxBody(state, txBody.build(), new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW));
 
         // then
         verify(throttleManager, times(1)).update(SystemFileUpdateFacility.getFileContent(state, fileID));
@@ -186,9 +191,137 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
         files.put(fileID, File.newBuilder().contents(FILE_BYTES).build());
 
         // when
-        subject.handleTxBody(state, txBody.build(), recordBuilder);
+        subject.handleTxBody(state, txBody.build(), new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW));
 
         // then
         verify(exchangeRateManager, times(1)).update(SystemFileUpdateFacility.getFileContent(state, fileID));
+    }
+
+    @Test
+    void handleThrottleFileTxBodyWithEmptyListOfGroups() {
+        // given
+        final var txBody = generateThrottleDefFileTransaction();
+
+        final var throttleBucket =
+                new com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleBucket<HederaFunctionality>();
+        throttleBucket.setName("test");
+        throttleBucket.setBurstPeriod(100);
+        throttleBucket.setThrottleGroups(List.of()); // no throttle groups added
+
+        var throttleDefinitions = new com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions();
+        throttleDefinitions.setBuckets(List.of(throttleBucket));
+
+        when(throttleManager.throttleDefinitionsProto()).thenReturn(throttleDefinitions.toProto());
+
+        // when
+        final var recordBuilder = new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW);
+        subject.handleTxBody(state, txBody, recordBuilder);
+
+        // then
+        Assertions.assertEquals(ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION, recordBuilder.status());
+    }
+
+    @Test
+    void handleThrottleFileTxBodyWithNotAllRequiredOperations() {
+        // given
+        final var txBody = generateThrottleDefFileTransaction();
+
+        var throttleGroup = new ThrottleGroup<HederaFunctionality>();
+        throttleGroup.setOpsPerSec(10);
+        // setting only a few operations. We require a lot more
+        throttleGroup.setOperations(List.of(HederaFunctionality.CryptoCreate, HederaFunctionality.CryptoTransfer));
+
+        final var throttleBucket =
+                new com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleBucket<HederaFunctionality>();
+        throttleBucket.setName("test");
+        throttleBucket.setBurstPeriod(100);
+        throttleBucket.setThrottleGroups(List.of(throttleGroup));
+
+        var throttleDefinitions = new com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions();
+        throttleDefinitions.setBuckets(List.of(throttleBucket));
+
+        when(throttleManager.throttleDefinitionsProto()).thenReturn(throttleDefinitions.toProto());
+
+        // when
+        final var recordBuilder = new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW);
+        subject.handleTxBody(state, txBody, recordBuilder);
+
+        // then
+        Assertions.assertEquals(ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION, recordBuilder.status());
+    }
+
+    @Test
+    void handleThrottleFileTxBodyWithZeroOpsPerSec() {
+        // given
+        final var txBody = generateThrottleDefFileTransaction();
+
+        var throttleGroup = new ThrottleGroup<HederaFunctionality>();
+        throttleGroup.setOpsPerSec(0); // the ops per sec should be more than 0
+        throttleGroup.setOperations(
+                SystemFileUpdateFacility.expectedOps.stream().toList());
+
+        final var throttleBucket =
+                new com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleBucket<HederaFunctionality>();
+        throttleBucket.setName("test");
+        throttleBucket.setBurstPeriod(100);
+        throttleBucket.setThrottleGroups(List.of(throttleGroup));
+
+        var throttleDefinitions = new com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions();
+        throttleDefinitions.setBuckets(List.of(throttleBucket));
+
+        when(throttleManager.throttleDefinitionsProto()).thenReturn(throttleDefinitions.toProto());
+
+        // when
+        final var recordBuilder = new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW);
+        subject.handleTxBody(state, txBody, recordBuilder);
+
+        // then
+        Assertions.assertEquals(ResponseCodeEnum.THROTTLE_GROUP_HAS_ZERO_OPS_PER_SEC, recordBuilder.status());
+    }
+
+    @Test
+    void handleThrottleFileTxBodyWithRepeatedOperation() {
+        // given
+        final var txBody = generateThrottleDefFileTransaction();
+
+        final var throttleGroup = new ThrottleGroup<HederaFunctionality>();
+        throttleGroup.setOpsPerSec(10);
+        throttleGroup.setOperations(
+                SystemFileUpdateFacility.expectedOps.stream().toList());
+
+        final var repeatedThrottleGroup = new ThrottleGroup<HederaFunctionality>();
+        repeatedThrottleGroup.setOpsPerSec(10);
+        // repeating an operation that exists in the first throttle group
+        repeatedThrottleGroup.setOperations(List.of(HederaFunctionality.CryptoCreate));
+
+        final var throttleBucket =
+                new com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleBucket<HederaFunctionality>();
+        throttleBucket.setName("test");
+        throttleBucket.setBurstPeriod(100);
+        throttleBucket.setThrottleGroups(List.of(throttleGroup, repeatedThrottleGroup));
+
+        var throttleDefinitions = new com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions();
+        throttleDefinitions.setBuckets(List.of(throttleBucket));
+
+        when(throttleManager.throttleDefinitionsProto()).thenReturn(throttleDefinitions.toProto());
+
+        // when
+        final var recordBuilder = new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW);
+        subject.handleTxBody(state, txBody, recordBuilder);
+
+        // then
+        Assertions.assertEquals(ResponseCodeEnum.OPERATION_REPEATED_IN_BUCKET_GROUPS, recordBuilder.status());
+    }
+
+    private TransactionBody generateThrottleDefFileTransaction() {
+        final var configuration = configProvider.getConfiguration();
+        final var config = configuration.getConfigData(FilesConfig.class);
+
+        final var fileNum = config.throttleDefinitions();
+        final var fileID = FileID.newBuilder().fileNum(fileNum).build();
+        files.put(fileID, File.newBuilder().contents(FILE_BYTES).build());
+        return TransactionBody.newBuilder()
+                .fileAppend(FileAppendTransactionBody.newBuilder().fileID(fileID))
+                .build();
     }
 }
