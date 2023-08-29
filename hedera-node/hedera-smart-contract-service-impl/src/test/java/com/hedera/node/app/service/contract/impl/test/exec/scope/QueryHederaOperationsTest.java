@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.test.exec.scope;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
@@ -97,13 +98,13 @@ class QueryHederaOperationsTest {
     }
 
     @Test
-    void gasPriceNotYetImplemented() {
-        assertThrows(AssertionError.class, subject::gasPriceInTinybars);
+    void gasPriceInTinybarsHardcoded() {
+        assertEquals(1L, subject.gasPriceInTinybars());
     }
 
     @Test
-    void tinybarConversionNotYetImplemented() {
-        assertThrows(AssertionError.class, () -> subject.valueInTinybars(1234L));
+    void valueInTinybarsUsesOneToOneExchange() {
+        assertEquals(1L, subject.valueInTinybars(1L));
     }
 
     @Test

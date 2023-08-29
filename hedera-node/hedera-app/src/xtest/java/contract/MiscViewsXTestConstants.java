@@ -38,7 +38,7 @@ public class MiscViewsXTestConstants {
     static final AccountID COINBASE_ID = AccountID.newBuilder().accountNum(98L).build();
     static final TokenID ERC20_TOKEN_ID = TokenID.newBuilder().tokenNum(1027L).build();
     static final TokenID ERC721_TOKEN_ID = TokenID.newBuilder().tokenNum(1028L).build();
-    static final ContractID SPECIAL_QUERIES_X_TEST =
+    static final ContractID SPECIAL_QUERIES_X_TEST_ID =
             ContractID.newBuilder().contractNum(1030L).build();
 
     static final Bytes UNCOVERED_SECRET =
@@ -68,6 +68,7 @@ public class MiscViewsXTestConstants {
     static final Bytes ERC721_IS_OPERATOR =
             Bytes.fromHex("0000000000000000000000000000000000000000000000000000000000000001");
     static final Function GET_TINYCENTS_EQUIV = new Function("getTinycentsEquiv(uint)");
+    static final Function GET_SECRET = new Function("secret()");
     static final Function GET_PRNG_SEED = new Function("getPrngSeed()");
     static final Function GET_ERC_20_BALANCE = new Function("getErc20Balance(address,address)");
     static final Function GET_ERC_20_SUPPLY = new Function("getErc20Supply(address)");
@@ -76,7 +77,7 @@ public class MiscViewsXTestConstants {
     static final Function GET_ERC_20_DECIMALS = new Function("getErc20Decimals(address)");
     static final Function GET_ERC_721_NAME = new Function("getErc721Name(address)");
     static final Function GET_ERC_721_SYMBOL = new Function("getErc721Symbol(address)");
-    static final Function GET_ERC_721_TOKENURI = new Function("getErc721TokenUri(address,uint256)");
+    static final Function GET_ERC_721_TOKEN_URI = new Function("getErc721TokenUri(address,uint256)");
     static final Function GET_ERC_721_BALANCE = new Function("getErc721Balance(address,address)");
     static final Function GET_ERC_721_OWNER = new Function("getErc721Owner(address,uint256)");
     static final Function GET_ERC721_IS_OPERATOR = new Function("getErc721IsOperator(address,address,address)");

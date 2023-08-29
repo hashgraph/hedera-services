@@ -16,10 +16,19 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.scope;
 
+import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.MOCK_VERIFICATION_STRATEGY;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_ACCOUNT_ID;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.contract.impl.exec.scope.QueryHederaNativeOperations;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,6 +41,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class QueryHederaNativeOperationsTest {
     @Mock
     private QueryContext context;
+
+    @Mock
+    private ReadableAccountStore accountStore;
 
     private QueryHederaNativeOperations subject;
 
@@ -50,5 +62,26 @@ class QueryHederaNativeOperationsTest {
                 UnsupportedOperationException.class,
                 () -> subject.transferWithReceiverSigCheck(1L, 2L, 3L, MOCK_VERIFICATION_STRATEGY));
         assertThrows(UnsupportedOperationException.class, () -> subject.trackDeletion(1L, 2L));
+    }
+
+    @Test
+    void getAccountUsesContextReadableStore() {
+        given(context.createStore(ReadableAccountStore.class)).willReturn(accountStore);
+        given(accountStore.getAccountById(NON_SYSTEM_ACCOUNT_ID)).willReturn(Account.DEFAULT);
+        assertSame(Account.DEFAULT, subject.getAccount(NON_SYSTEM_ACCOUNT_ID.accountNumOrThrow()));
+    }
+
+    @Test
+    void resolveAliasReturnsMissingNumIfNotPresent() {
+        given(context.createStore(ReadableAccountStore.class)).willReturn(accountStore);
+        assertEquals(MISSING_ENTITY_NUMBER, subject.resolveAlias(tuweniToPbjBytes(EIP_1014_ADDRESS)));
+    }
+
+    @Test
+    void resolveAliasReturnsNumIfPresent() {
+        final var alias = tuweniToPbjBytes(EIP_1014_ADDRESS);
+        given(context.createStore(ReadableAccountStore.class)).willReturn(accountStore);
+        given(accountStore.getAccountIDByAlias(alias)).willReturn(NON_SYSTEM_ACCOUNT_ID);
+        assertEquals(NON_SYSTEM_ACCOUNT_ID.accountNumOrThrow(), subject.resolveAlias(alias));
     }
 }
