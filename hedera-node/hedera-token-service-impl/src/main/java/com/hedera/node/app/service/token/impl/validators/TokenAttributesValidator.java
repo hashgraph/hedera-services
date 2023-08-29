@@ -32,7 +32,6 @@ import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -50,10 +49,8 @@ import javax.inject.Singleton;
 @Singleton
 public class TokenAttributesValidator {
 
-    // This key can no longer be an empty key list as it fails validation.  Use this key for now
-    public static final Key IMMUTABILITY_SENTINEL_KEY = Key.newBuilder()
-            .contractID(ContractID.newBuilder().contractNum(1).build())
-            .build();
+    public static final Key IMMUTABILITY_SENTINEL_KEY =
+            Key.newBuilder().keyList(KeyList.DEFAULT).build();
 
     @Inject
     public TokenAttributesValidator() {
