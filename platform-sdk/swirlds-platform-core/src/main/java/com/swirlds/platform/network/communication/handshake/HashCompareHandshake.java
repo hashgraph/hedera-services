@@ -29,16 +29,16 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Exchanges epoch hash with the peer, either throws a {@link HandshakeException} or logs an error if the hashes
+ * Exchanges a hash with the peer, either throws a {@link HandshakeException} or logs an error if the hashes
  * do not match
  */
-public class EpochHashCompareHandshake implements ProtocolRunnable {
-    private static final Logger logger = LogManager.getLogger(EpochHashCompareHandshake.class);
+public class HashCompareHandshake implements ProtocolRunnable {
+    private static final Logger logger = LogManager.getLogger(HashCompareHandshake.class);
 
     /**
-     * The epoch hash in this node's state
+     * This node's hash
      */
-    private final Hash epochHash;
+    private final Hash hash;
 
     /**
      * Whether an exception should be thrown if there is a mismatch during the handshake
@@ -48,12 +48,12 @@ public class EpochHashCompareHandshake implements ProtocolRunnable {
     /**
      * Constructor
      *
-     * @param epochHash       the epoch hash in this node's state
+     * @param hash            this node's hash
      * @param throwOnMismatch if set to true, the protocol will throw an exception on a mismatch. if set to false, it will log an
      *                        error and continue
      */
-    public EpochHashCompareHandshake(@Nullable final Hash epochHash, final boolean throwOnMismatch) {
-        this.epochHash = epochHash;
+    public HashCompareHandshake(@Nullable final Hash hash, final boolean throwOnMismatch) {
+        this.hash = hash;
         this.throwOnMismatch = throwOnMismatch;
     }
 
@@ -64,22 +64,19 @@ public class EpochHashCompareHandshake implements ProtocolRunnable {
     public void runProtocol(@NonNull final Connection connection)
             throws NetworkProtocolException, IOException, InterruptedException {
 
-        connection.getDos().writeSerializable(epochHash, true);
+        connection.getDos().writeSerializable(hash, true);
         connection.getDos().flush();
 
         final SelfSerializable readSerializable = connection.getDis().readSerializable();
 
         // if both are null, or both are hashes that match, then the protocol has succeeded
-        if (epochHash == null && readSerializable == null
-                || epochHash != null
-                        && readSerializable instanceof Hash peerHash
-                        && epochHash.compareTo(peerHash) == 0) {
+        if (hash == null && readSerializable == null
+                || hash != null && readSerializable instanceof Hash peerHash && hash.compareTo(peerHash) == 0) {
             return;
         }
 
-        final String message = String.format(
-                "Incompatible epoch hash. Self epoch hash is '%s', peer epoch hash is '%s'",
-                epochHash, readSerializable);
+        final String message =
+                String.format("Incompatible hash. Self hash is '%s', peer hash is '%s'", hash, readSerializable);
 
         if (throwOnMismatch) {
             throw new HandshakeException(message);

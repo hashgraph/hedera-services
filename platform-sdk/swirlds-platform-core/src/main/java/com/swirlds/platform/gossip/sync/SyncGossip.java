@@ -66,7 +66,7 @@ import com.swirlds.platform.metrics.EventIntakeMetrics;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.communication.NegotiationProtocols;
 import com.swirlds.platform.network.communication.NegotiatorThread;
-import com.swirlds.platform.network.communication.handshake.EpochHashCompareHandshake;
+import com.swirlds.platform.network.communication.handshake.HashCompareHandshake;
 import com.swirlds.platform.network.communication.handshake.VersionCompareHandshake;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.reconnect.DefaultSignedStateValidator;
@@ -258,8 +258,7 @@ public class SyncGossip extends AbstractGossip {
                                     new VersionCompareHandshake(
                                             PlatformVersion.locateOrDefault(),
                                             !protocolConfig.tolerateMismatchedVersion()),
-                                    new EpochHashCompareHandshake(
-                                            epochHash, !protocolConfig.tolerateMismatchedEpochHash())),
+                                    new HashCompareHandshake(epochHash, !protocolConfig.tolerateMismatchedEpochHash())),
                             new NegotiationProtocols(List.of(
                                     new HeartbeatProtocol(
                                             otherId,
