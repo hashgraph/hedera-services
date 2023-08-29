@@ -18,6 +18,8 @@ package com.hedera.node.app.service.contract.impl.test.exec.scope;
 
 import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.MOCK_VERIFICATION_STRATEGY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_ACCOUNT_ID;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
@@ -29,6 +31,7 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.contract.impl.exec.scope.QueryHederaNativeOperations;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,6 +47,9 @@ class QueryHederaNativeOperationsTest {
 
     @Mock
     private ReadableAccountStore accountStore;
+
+    @Mock
+    private ReadableTokenStore tokenStore;
 
     private QueryHederaNativeOperations subject;
 
@@ -83,5 +89,12 @@ class QueryHederaNativeOperationsTest {
         given(context.createStore(ReadableAccountStore.class)).willReturn(accountStore);
         given(accountStore.getAccountIDByAlias(alias)).willReturn(NON_SYSTEM_ACCOUNT_ID);
         assertEquals(NON_SYSTEM_ACCOUNT_ID.accountNumOrThrow(), subject.resolveAlias(alias));
+    }
+
+    @Test
+    void getTokenUsesStore() {
+        given(context.createStore(ReadableTokenStore.class)).willReturn(tokenStore);
+        given(tokenStore.get(FUNGIBLE_TOKEN_ID)).willReturn(FUNGIBLE_TOKEN);
+        assertSame(FUNGIBLE_TOKEN, subject.getToken(FUNGIBLE_TOKEN_ID.tokenNum()));
     }
 }

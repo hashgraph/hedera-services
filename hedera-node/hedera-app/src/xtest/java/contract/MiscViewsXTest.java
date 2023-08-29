@@ -19,17 +19,46 @@ package contract;
 import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
 import static contract.AssortedOpsXTestConstants.ONE_HBAR;
 import static contract.MiscViewsXTestConstants.COINBASE_ID;
+import static contract.MiscViewsXTestConstants.EQUIV_TINYCENTS;
+import static contract.MiscViewsXTestConstants.ERC20_DECIMALS;
+import static contract.MiscViewsXTestConstants.ERC20_NAME;
+import static contract.MiscViewsXTestConstants.ERC20_SUPPLY;
+import static contract.MiscViewsXTestConstants.ERC20_SYMBOL;
+import static contract.MiscViewsXTestConstants.ERC20_TOKEN_ADDRESS;
 import static contract.MiscViewsXTestConstants.ERC20_TOKEN_ID;
+import static contract.MiscViewsXTestConstants.ERC20_USER_BALANCE;
+import static contract.MiscViewsXTestConstants.ERC721_IS_OPERATOR;
+import static contract.MiscViewsXTestConstants.ERC721_NAME;
+import static contract.MiscViewsXTestConstants.ERC721_OPERATOR_ADDRESS;
+import static contract.MiscViewsXTestConstants.ERC721_SN1_OWNER;
+import static contract.MiscViewsXTestConstants.ERC721_SN2_METADATA;
+import static contract.MiscViewsXTestConstants.ERC721_SYMBOL;
+import static contract.MiscViewsXTestConstants.ERC721_TOKEN_ADDRESS;
 import static contract.MiscViewsXTestConstants.ERC721_TOKEN_ID;
+import static contract.MiscViewsXTestConstants.ERC721_USER_BALANCE;
 import static contract.MiscViewsXTestConstants.ERC_USER_ADDRESS;
 import static contract.MiscViewsXTestConstants.ERC_USER_ID;
+import static contract.MiscViewsXTestConstants.GET_ERC721_IS_OPERATOR;
+import static contract.MiscViewsXTestConstants.GET_ERC_20_BALANCE;
+import static contract.MiscViewsXTestConstants.GET_ERC_20_DECIMALS;
+import static contract.MiscViewsXTestConstants.GET_ERC_20_NAME;
+import static contract.MiscViewsXTestConstants.GET_ERC_20_SUPPLY;
+import static contract.MiscViewsXTestConstants.GET_ERC_20_SYMBOL;
+import static contract.MiscViewsXTestConstants.GET_ERC_721_BALANCE;
+import static contract.MiscViewsXTestConstants.GET_ERC_721_NAME;
+import static contract.MiscViewsXTestConstants.GET_ERC_721_OWNER;
+import static contract.MiscViewsXTestConstants.GET_ERC_721_SYMBOL;
+import static contract.MiscViewsXTestConstants.GET_ERC_721_TOKEN_URI;
 import static contract.MiscViewsXTestConstants.GET_PRNG_SEED;
 import static contract.MiscViewsXTestConstants.GET_SECRET;
+import static contract.MiscViewsXTestConstants.GET_TINYCENTS_EQUIV;
 import static contract.MiscViewsXTestConstants.NEXT_ENTITY_NUM;
 import static contract.MiscViewsXTestConstants.OPERATOR_ID;
 import static contract.MiscViewsXTestConstants.PRNG_SEED;
+import static contract.MiscViewsXTestConstants.RAW_ERC_USER_ADDRESS;
 import static contract.MiscViewsXTestConstants.SECRET;
 import static contract.MiscViewsXTestConstants.SPECIAL_QUERIES_X_TEST_ID;
+import static contract.MiscViewsXTestConstants.TINYBARS;
 import static contract.MiscViewsXTestConstants.UNCOVERED_SECRET;
 import static contract.MiscViewsXTestConstants.VIEWS_INITCODE_FILE_ID;
 
@@ -56,6 +85,7 @@ import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -71,6 +101,90 @@ public class MiscViewsXTest extends AbstractContractXTest {
                 miscViewsQuery(GET_SECRET),
                 ERC_USER_ID,
                 assertingCallLocalResultIs(UNCOVERED_SECRET));
+        doPrngQuery();
+        // TODO - uncomment once 0x168 precompile is implemented
+        //        doExchangeRateQuery();
+        // TODO - uncomment once 0x167 precompile is implemented for ERC-20 redirects
+        //        doErc20Queries();
+        // TODO - uncomment once 0x167 precompile is implemented for ERC-721 redirects
+        //        doErc721Queries();
+    }
+
+    private void doPrngQuery() {
+        answerSingleQuery(
+                CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
+                miscViewsQuery(GET_PRNG_SEED),
+                ERC_USER_ID,
+                assertingCallLocalResultIs(PRNG_SEED));
+    }
+
+    private void doExchangeRateQuery() {
+        answerSingleQuery(
+                CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
+                miscViewsQuery(GET_TINYCENTS_EQUIV, TINYBARS),
+                ERC_USER_ID,
+                assertingCallLocalResultIs(EQUIV_TINYCENTS));
+    }
+
+    private void doErc20Queries() {
+        answerSingleQuery(
+                CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
+                miscViewsQuery(GET_ERC_20_BALANCE, ERC20_TOKEN_ADDRESS, ERC_USER_ADDRESS),
+                ERC_USER_ID,
+                assertingCallLocalResultIs(ERC20_USER_BALANCE));
+        answerSingleQuery(
+                CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
+                miscViewsQuery(GET_ERC_20_SUPPLY, ERC20_TOKEN_ADDRESS),
+                ERC_USER_ID,
+                assertingCallLocalResultIs(ERC20_SUPPLY));
+        answerSingleQuery(
+                CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
+                miscViewsQuery(GET_ERC_20_NAME, ERC20_TOKEN_ADDRESS),
+                ERC_USER_ID,
+                assertingCallLocalResultIs(ERC20_NAME));
+        answerSingleQuery(
+                CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
+                miscViewsQuery(GET_ERC_20_SYMBOL, ERC20_TOKEN_ADDRESS),
+                ERC_USER_ID,
+                assertingCallLocalResultIs(ERC20_SYMBOL));
+        answerSingleQuery(
+                CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
+                miscViewsQuery(GET_ERC_20_DECIMALS, ERC20_TOKEN_ADDRESS),
+                ERC_USER_ID,
+                assertingCallLocalResultIs(ERC20_DECIMALS));
+    }
+
+    private void doErc721Queries() {
+        answerSingleQuery(
+                CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
+                miscViewsQuery(GET_ERC_721_NAME, ERC721_TOKEN_ADDRESS),
+                ERC_USER_ID,
+                assertingCallLocalResultIs(ERC721_NAME));
+        answerSingleQuery(
+                CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
+                miscViewsQuery(GET_ERC_721_SYMBOL, ERC721_TOKEN_ADDRESS),
+                ERC_USER_ID,
+                assertingCallLocalResultIs(ERC721_SYMBOL));
+        answerSingleQuery(
+                CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
+                miscViewsQuery(GET_ERC_721_TOKEN_URI, ERC721_TOKEN_ADDRESS, BigInteger.TWO),
+                ERC_USER_ID,
+                assertingCallLocalResultIs(ERC721_SN2_METADATA));
+        answerSingleQuery(
+                CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
+                miscViewsQuery(GET_ERC_721_BALANCE, ERC721_TOKEN_ADDRESS, ERC_USER_ADDRESS),
+                ERC_USER_ID,
+                assertingCallLocalResultIs(ERC721_USER_BALANCE));
+        answerSingleQuery(
+                CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
+                miscViewsQuery(GET_ERC_721_OWNER, ERC721_TOKEN_ADDRESS, BigInteger.ONE),
+                ERC_USER_ID,
+                assertingCallLocalResultIs(ERC721_SN1_OWNER));
+        answerSingleQuery(
+                CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
+                miscViewsQuery(GET_ERC721_IS_OPERATOR, ERC721_TOKEN_ADDRESS, ERC_USER_ADDRESS, ERC721_OPERATOR_ADDRESS),
+                ERC_USER_ID,
+                assertingCallLocalResultIs(ERC721_IS_OPERATOR));
     }
 
     private Query miscViewsQuery(@NonNull final Function function, @NonNull final Object... args) {
@@ -121,7 +235,7 @@ public class MiscViewsXTest extends AbstractContractXTest {
     @Override
     protected Map<ProtoBytes, AccountID> initialAliases() {
         final var aliases = new HashMap<ProtoBytes, AccountID>();
-        aliases.put(ProtoBytes.newBuilder().value(ERC_USER_ADDRESS).build(), ERC_USER_ID);
+        aliases.put(ProtoBytes.newBuilder().value(RAW_ERC_USER_ADDRESS).build(), ERC_USER_ID);
         return aliases;
     }
 
@@ -132,7 +246,7 @@ public class MiscViewsXTest extends AbstractContractXTest {
                 ERC_USER_ID,
                 Account.newBuilder()
                         .accountId(ERC_USER_ID)
-                        .alias(ERC_USER_ADDRESS)
+                        .alias(RAW_ERC_USER_ADDRESS)
                         .tinybarBalance(100 * ONE_HBAR)
                         .approveForAllNftAllowances(List.of(AccountApprovalForAllAllowance.newBuilder()
                                 .tokenId(ERC721_TOKEN_ID)

@@ -283,4 +283,11 @@ public abstract class AbstractContractXTest {
                 .createReadableStates(TokenServiceImpl.NAME)
                 .get(TokenServiceImpl.ACCOUNTS_KEY);
     }
+
+    public static com.esaulpaugh.headlong.abi.Address asHeadlongAddress(final byte[] address) {
+        final var addressBytes = org.apache.tuweni.bytes.Bytes.wrap(address);
+        final var addressAsInteger = addressBytes.toUnsignedBigInteger();
+        return com.esaulpaugh.headlong.abi.Address.wrap(
+                com.esaulpaugh.headlong.abi.Address.toChecksumAddress(addressAsInteger));
+    }
 }

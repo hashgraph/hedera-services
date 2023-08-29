@@ -16,6 +16,10 @@
 
 package contract;
 
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
+import static contract.AbstractContractXTest.asHeadlongAddress;
+
+import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
@@ -30,14 +34,21 @@ public class MiscViewsXTestConstants {
     static final BigInteger TINYBARS = BigInteger.valueOf(666_666_666L);
 
     static final FileID VIEWS_INITCODE_FILE_ID = new FileID(0, 0, 1029L);
-    static final Bytes ERC_USER_ADDRESS = Bytes.fromHex("24Afdd97fc25332cf82FC29868293bD8eA24161c");
+    static final Bytes RAW_ERC_USER_ADDRESS = Bytes.fromHex("24Afdd97fc25332cf82FC29868293bD8eA24161c");
+    static final Address ERC_USER_ADDRESS = asHeadlongAddress(RAW_ERC_USER_ADDRESS.toByteArray());
     static final AccountID ERC_USER_ID =
             AccountID.newBuilder().accountNum(1024L).build();
     static final AccountID OPERATOR_ID =
             AccountID.newBuilder().accountNum(1025L).build();
+    static final Address ERC721_OPERATOR_ADDRESS =
+            asHeadlongAddress(asLongZeroAddress(OPERATOR_ID.accountNumOrThrow()).toArray());
     static final AccountID COINBASE_ID = AccountID.newBuilder().accountNum(98L).build();
     static final TokenID ERC20_TOKEN_ID = TokenID.newBuilder().tokenNum(1027L).build();
+    static final Address ERC20_TOKEN_ADDRESS =
+            asHeadlongAddress(asLongZeroAddress(ERC20_TOKEN_ID.tokenNum()).toArray());
     static final TokenID ERC721_TOKEN_ID = TokenID.newBuilder().tokenNum(1028L).build();
+    static final Address ERC721_TOKEN_ADDRESS =
+            asHeadlongAddress(asLongZeroAddress(ERC721_TOKEN_ID.tokenNum()).toArray());
     static final ContractID SPECIAL_QUERIES_X_TEST_ID =
             ContractID.newBuilder().contractNum(1030L).build();
 
