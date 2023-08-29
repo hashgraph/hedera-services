@@ -16,7 +16,6 @@
 
 package com.hedera.services.bdd.suites.contract.opcodes;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LAZY_CREATION_ENABLED;
 import static com.hedera.services.bdd.spec.HapiPropertySource.accountIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
@@ -25,7 +24,6 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexe
 import static com.hedera.services.bdd.spec.HapiPropertySource.explicitBytesOf;
 import static com.hedera.services.bdd.spec.HapiPropertySource.literalIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
@@ -61,12 +59,10 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
@@ -85,7 +81,6 @@ import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.NFT
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.NFT_INFINITE_SUPPLY_TOKEN;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.PARTY;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.TOKEN_A_CREATE;
-import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.TRUE;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.MULTI_KEY;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_STILL_OWNS_NFTS;
@@ -115,7 +110,6 @@ import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.queries.contract.HapiContractCallLocal;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
@@ -194,7 +188,6 @@ public class Create2OperationSuite extends HapiSuite {
                 /* --- HIP 583 --- */
                 canMergeCreate2ChildWithHollowAccount(),
                 canMergeCreate2MultipleCreatesWithHollowAccount(),
-                canMergeCreate2ChildWithHollowAccountAndSelfDestructInConstructor(),
                 canCallFinalizedContractViaHapi());
     }
 
@@ -606,103 +599,6 @@ public class Create2OperationSuite extends HapiSuite {
                                 () -> getContractBytecode(mergedAliasAddr.get()).isNonEmpty()),
                         sourcing(() ->
                                 assertCreate2Address(contract, salt, expectedCreate2Address, testContractInitcode)));
-    }
-
-    @SuppressWarnings("java:S5960")
-    private HapiSpec canMergeCreate2ChildWithHollowAccountAndSelfDestructInConstructor() {
-        final var tcValue = 1_234L;
-        final var contract = "Create2FactoryWithSelfDestructingContract";
-        final var creation = CREATION;
-        final var salt = BigInteger.valueOf(42);
-        final var adminKey = ADMIN_KEY;
-        final AtomicReference<String> factoryEvmAddress = new AtomicReference<>();
-        final AtomicReference<String> expectedCreate2Address = new AtomicReference<>();
-        final AtomicReference<String> hollowCreationAddress = new AtomicReference<>();
-        final AtomicReference<String> mergedAliasAddr = new AtomicReference<>();
-        final AtomicReference<String> mergedMirrorAddr = new AtomicReference<>();
-        final AtomicReference<String> mergedAliasAddr2 = new AtomicReference<>();
-        final AtomicReference<String> mergedMirrorAddr2 = new AtomicReference<>();
-        final AtomicReference<byte[]> testContractInitcode = new AtomicReference<>();
-
-        return propertyPreservingHapiSpec("canMergeCreate2ChildWithHollowAccountAndSelfDestructInConstructor")
-                .preserving(LAZY_CREATION_ENABLED)
-                .given(
-                        overriding(LAZY_CREATION_ENABLED, TRUE),
-                        newKeyNamed(adminKey),
-                        newKeyNamed(MULTI_KEY),
-                        uploadInitCode(contract),
-                        contractCreate(contract)
-                                .payingWith(GENESIS)
-                                .adminKey(adminKey)
-                                .entityMemo(ENTITY_MEMO)
-                                .via(CREATE_2_TXN)
-                                .exposingNumTo(num -> factoryEvmAddress.set(asHexedSolidityAddress(0, 0, num))))
-                .when(
-                        sourcing(() -> contractCallLocal(
-                                        contract, GET_BYTECODE, asHeadlongAddress(factoryEvmAddress.get()), salt)
-                                .exposingTypedResultsTo(results -> {
-                                    final var tcInitcode = (byte[]) results[0];
-                                    testContractInitcode.set(tcInitcode);
-                                    LOG.info(CONTRACT_REPORTED_LOG_MESSAGE, tcInitcode.length);
-                                })
-                                .payingWith(GENESIS)
-                                .nodePayment(ONE_HBAR)),
-                        sourcing(() -> setExpectedCreate2Address(
-                                contract, salt, expectedCreate2Address, testContractInitcode)),
-                        // Now create a hollow account at the desired address
-                        cryptoTransfer((spec, b) -> {
-                                    final var defaultPayerId = spec.registry().getAccountID(DEFAULT_PAYER);
-                                    b.setTransfers(TransferList.newBuilder()
-                                            .addAccountAmounts(aaWith(
-                                                    ByteString.copyFrom(
-                                                            CommonUtils.unhex(expectedCreate2Address.get())),
-                                                    +ONE_HBAR))
-                                            .addAccountAmounts(aaWith(defaultPayerId, -ONE_HBAR)));
-                                })
-                                .signedBy(DEFAULT_PAYER)
-                                .fee(ONE_HBAR)
-                                .via(creation),
-                        getTxnRecord(creation)
-                                .andAllChildRecords()
-                                .exposingCreationsTo(l -> hollowCreationAddress.set(l.get(0))))
-                .then(
-                        getContractInfo(contract)
-                                .has(ContractInfoAsserts.contractWith().balance(0L)),
-                        sourcing(() -> contractCall(contract, DEPLOY, testContractInitcode.get(), salt)
-                                .payingWith(GENESIS)
-                                .gas(4_000_000L)
-                                .sending(tcValue)
-                                .via(CREATE_2_TXN)),
-                        captureOneChildCreate2MetaFor(
-                                "Merged deployed contract with hollow account and self-destructed the contract",
-                                CREATE_2_TXN,
-                                mergedMirrorAddr,
-                                mergedAliasAddr),
-                        sourcing(() -> getContractInfo(mergedMirrorAddr.get())
-                                .has(ContractInfoAsserts.contractWith().isDeleted())),
-                        getContractInfo(contract)
-                                .has(ContractInfoAsserts.contractWith().balance(ONE_HBAR + tcValue)),
-                        /* Can repeat CREATE2 with same args because the previous contract was destroyed in the constructor*/
-                        sourcing(() -> contractCall(contract, DEPLOY, testContractInitcode.get(), salt)
-                                .payingWith(GENESIS)
-                                .gas(4_000_000L)
-                                .sending(tcValue)
-                                .via(CREATE_2_TXN_2)),
-                        captureOneChildCreate2MetaFor(
-                                "Merged deployed contract with hollow account and self-destructed the contract",
-                                CREATE_2_TXN_2,
-                                mergedMirrorAddr2,
-                                mergedAliasAddr2),
-                        sourcing(() -> getContractInfo(mergedMirrorAddr2.get())
-                                .has(ContractInfoAsserts.contractWith().isDeleted())),
-                        sourcing(() -> assertionsHold((spec, asertLog) -> {
-                            assertEquals(
-                                    mergedAliasAddr.get(), mergedAliasAddr2.get(), "Alias addresses must be equal!");
-                            assertNotEquals(
-                                    mergedMirrorAddr.get(),
-                                    mergedMirrorAddr2.get(),
-                                    "Mirror addresses must not be equal!");
-                        })));
     }
 
     @SuppressWarnings("java:S5960")
@@ -1402,7 +1298,7 @@ public class Create2OperationSuite extends HapiSuite {
                 }));
     }
 
-    private HapiContractCallLocal setExpectedCreate2Address(
+    public static HapiContractCallLocal setExpectedCreate2Address(
             String contract,
             BigInteger salt,
             AtomicReference<String> expectedCreate2Address,
