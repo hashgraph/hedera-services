@@ -28,9 +28,20 @@ class UnitFormatterTests {
     @Test
     @DisplayName("Format Longs Test")
     void formatLongsTest() {
-
         assertEquals("0.0 b", DataUnit.UNIT_KILOBYTES.buildFormatter().render());
+        assertEquals(
+                "0.0 b",
+                DataUnit.UNIT_KILOBYTES
+                        .buildFormatter()
+                        .setUnitFormat(UnitFormat.MULTI_SIMPLIFIED)
+                        .render());
         assertEquals("1.0 KB", DataUnit.UNIT_KILOBYTES.buildFormatter(1).render());
+        assertEquals(
+                "1.0 KB",
+                DataUnit.UNIT_KILOBYTES
+                        .buildFormatter(1)
+                        .setUnitFormat(UnitFormat.MULTI_SIMPLIFIED)
+                        .render());
         assertEquals(
                 "1.0 kilobyte",
                 DataUnit.UNIT_KILOBYTES.buildFormatter(1).setAbbreviate(false).render());
@@ -67,19 +78,51 @@ class UnitFormatterTests {
         assertEquals(
                 "7.00000 KB",
                 DataUnit.UNIT_KILOBYTES.buildFormatter(7).setDecimalPlaces(5).render());
+        assertEquals(
+                "7.00000 KB",
+                DataUnit.UNIT_KILOBYTES
+                        .buildFormatter(7)
+                        .setDecimalPlaces(5)
+                        .setUnitFormat(UnitFormat.MULTI_SIMPLIFIED)
+                        .render());
         assertEquals("2.0 MB", DataUnit.UNIT_KILOBYTES.buildFormatter(1024 * 2).render());
         assertEquals(
                 "2,048.0 KB",
                 DataUnit.UNIT_KILOBYTES
                         .buildFormatter(1024 * 2)
-                        .setSimplify(false)
+                        .setUnitFormat(UnitFormat.UNSIMPLIFIED)
+                        .render());
+        assertEquals(
+                "2.0 MB",
+                DataUnit.UNIT_KILOBYTES
+                        .buildFormatter(1024 * 2)
+                        .setUnitFormat(UnitFormat.SINGLE_SIMPLIFIED)
+                        .render());
+        assertEquals(
+                "2.0 MB",
+                DataUnit.UNIT_KILOBYTES
+                        .buildFormatter(1024 * 2)
+                        .setUnitFormat(UnitFormat.MULTI_SIMPLIFIED)
+                        .render());
+        assertEquals(
+                "1 TB 2 MB 523.00 KB",
+                DataUnit.UNIT_KILOBYTES
+                        .buildFormatter(1024 * 1024 * 1024 + 2048 + 523)
+                        .setUnitFormat(UnitFormat.MULTI_SIMPLIFIED)
+                        .setDecimalPlaces(2)
+                        .render());
+        assertEquals(
+                "1 GB 2 MB 523 KB",
+                DataUnit.UNIT_KILOBYTES
+                        .buildFormatter(1024 * 1024 + 2048 + 523)
+                        .setDecimalPlaces(0)
+                        .setUnitFormat(UnitFormat.MULTI_SIMPLIFIED)
                         .render());
     }
 
     @Test
-    @DisplayName("Format Longs Test")
+    @DisplayName("Format Doubles Test")
     void formatDoublesTest() {
-
         assertEquals(
                 "0.0 b",
                 DataUnit.UNIT_KILOBYTES.buildFormatter().setQuantity(0.0).render());
@@ -126,7 +169,7 @@ class UnitFormatterTests {
                 "2,048.0 KB",
                 DataUnit.UNIT_KILOBYTES
                         .buildFormatter(1024 * 2.0)
-                        .setSimplify(false)
+                        .setUnitFormat(UnitFormat.UNSIMPLIFIED)
                         .render());
         assertEquals(
                 "9.877 KB",
@@ -147,6 +190,23 @@ class UnitFormatterTests {
                         .setDecimalPlaces(3)
                         .setAbbreviate(false)
                         .render());
+        assertEquals(
+                "2 megabytes 651.55 kilobytes",
+                DataUnit.UNIT_KILOBYTES
+                        .buildFormatter(1024 * 2 + 651.54698)
+                        .setUnitFormat(UnitFormat.MULTI_SIMPLIFIED)
+                        .setDecimalPlaces(2)
+                        .setAbbreviate(false)
+                        .render());
+        assertEquals(
+                "2MB 652KB",
+                DataUnit.UNIT_KILOBYTES
+                        .buildFormatter(1024 * 2 + 651.54698)
+                        .setUnitFormat(UnitFormat.MULTI_SIMPLIFIED)
+                        .setDecimalPlaces(0)
+                        .setShowSpaceInBetween(false)
+                        .render());
+
         // Edge case: number that isn't 1.0 but rounds to 1.0
         assertEquals(
                 "1.000 kilobyte",
@@ -167,6 +227,14 @@ class UnitFormatterTests {
                         .buildFormatter(1.0000001)
                         .setDecimalPlaces(0)
                         .setAbbreviate(false)
+                        .render());
+        assertEquals(
+                "1 kilobyte",
+                DataUnit.UNIT_KILOBYTES
+                        .buildFormatter(1.0000001)
+                        .setDecimalPlaces(0)
+                        .setAbbreviate(false)
+                        .setUnitFormat(UnitFormat.MULTI_SIMPLIFIED)
                         .render());
     }
 }
