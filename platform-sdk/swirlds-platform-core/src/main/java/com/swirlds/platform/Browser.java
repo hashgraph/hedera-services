@@ -368,7 +368,7 @@ public class Browser {
 
         final RecycleBinImpl recycleBin = new RecycleBinImpl(
                 configuration,
-                metricsProvider.createGlobalMetrics(),
+                platformContext.getMetrics(),
                 getStaticThreadManager(),
                 Time.getCurrent(),
                 nodeId);
