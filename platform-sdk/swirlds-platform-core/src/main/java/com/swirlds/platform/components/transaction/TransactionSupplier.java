@@ -17,6 +17,7 @@
 package com.swirlds.platform.components.transaction;
 
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A source of transactions.
@@ -29,5 +30,6 @@ public interface TransactionSupplier {
      *
      * @return an array with 0 or more transactions
      */
+    @NonNull
     ConsensusTransactionImpl[] getTransactions();
 }

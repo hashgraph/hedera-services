@@ -35,11 +35,11 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
-import com.swirlds.platform.EventImpl;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
 import com.swirlds.platform.event.EventDescriptor;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
@@ -69,6 +69,9 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
     private final ChildlessEventTracker childlessOtherEventTracker;
     private final TransactionSupplier transactionSupplier;
     private final SoftwareVersion softwareVersion;
+    /** The address book for the current network. */
+    private final AddressBook addressBook;
+
     private final int networkSize;
 
     /**
@@ -126,8 +129,7 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
         this.selfId = Objects.requireNonNull(selfId);
         this.transactionSupplier = Objects.requireNonNull(transactionSupplier);
         this.softwareVersion = Objects.requireNonNull(softwareVersion);
-
-        Objects.requireNonNull(addressBook);
+        this.addressBook = Objects.requireNonNull(addressBook);
 
         final EventCreationConfig eventCreationConfig =
                 platformContext.getConfiguration().getConfigData(EventCreationConfig.class);
@@ -152,6 +154,9 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
     public void registerEvent(@NonNull final EventImpl event) {
 
         final NodeId eventCreator = event.getHashedData().getCreatorId();
+        if (!addressBook.contains(eventCreator)) {
+            return;
+        }
         final boolean selfEvent = eventCreator.equals(selfId);
 
         if (selfEvent) {

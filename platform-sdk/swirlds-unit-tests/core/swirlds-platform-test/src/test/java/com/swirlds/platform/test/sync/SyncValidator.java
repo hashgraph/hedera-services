@@ -28,17 +28,17 @@ import static org.junit.jupiter.api.Assertions.fail;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.platform.EventImpl;
 import com.swirlds.platform.event.EventIntakeTask;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.apache.commons.collections4.CollectionUtils;
 
 public class SyncValidator {
 
@@ -125,10 +125,11 @@ public class SyncValidator {
     private static void compareEventLists(final SyncNode caller, final SyncNode listener, final boolean strictCompare) {
         // Determine the unique events for the caller and listener, since they could have added some of the
         // same events from step 2.
-        final Collection<IndexedEvent> expectedCallerSendList =
-                CollectionUtils.subtract(caller.getGeneratedEvents(), listener.getGeneratedEvents());
-        final Collection<IndexedEvent> expectedListenerSendList =
-                CollectionUtils.subtract(listener.getGeneratedEvents(), caller.getGeneratedEvents());
+        final Collection<IndexedEvent> expectedCallerSendList = new ArrayList<>(caller.getGeneratedEvents());
+        expectedCallerSendList.removeAll(listener.getGeneratedEvents());
+
+        final Collection<IndexedEvent> expectedListenerSendList = new ArrayList<>(listener.getGeneratedEvents());
+        expectedListenerSendList.removeAll(caller.getGeneratedEvents());
 
         // Remove expired events
         expectedCallerSendList.removeIf(e -> e.getGeneration() < caller.getOldestGeneration());

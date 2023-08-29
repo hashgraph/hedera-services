@@ -34,11 +34,8 @@ import com.hedera.node.app.service.contract.impl.exec.v038.V038Module;
 import dagger.Binds;
 import dagger.Module;
 import dagger.multibindings.IntoMap;
-import dagger.multibindings.Multibinds;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Map;
 import javax.inject.Singleton;
-import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
@@ -55,9 +52,6 @@ public interface ContractServiceModule {
     @Binds
     @Singleton
     GasCalculator bindGasCalculator(@NonNull final CustomGasCalculator gasCalculator);
-
-    @Multibinds
-    Map<Address, PrecompiledContract> bindHederaPrecompiles();
 
     @Binds
     @IntoMap

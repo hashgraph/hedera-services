@@ -19,6 +19,7 @@ package com.hedera.node.app.service.mono.state.virtual;
 import static com.hedera.node.app.service.mono.state.virtual.ContractKeySerializer.CLASS_ID;
 import static com.hedera.node.app.service.mono.state.virtual.ContractKeySerializer.CURRENT_VERSION;
 import static com.hedera.node.app.service.mono.state.virtual.ContractKeySerializer.DATA_VERSION;
+import static com.swirlds.merkledb.serialize.BaseSerializer.VARIABLE_DATA_SIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -26,8 +27,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.jasperdb.files.DataFileCommon;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -49,7 +48,7 @@ class ContractKeySerializerTest {
         assertEquals(DATA_VERSION, subject.getCurrentDataVersion());
         assertEquals(CLASS_ID, subject.getClassId());
         assertEquals(CURRENT_VERSION, subject.getVersion());
-        assertEquals(DataFileCommon.VARIABLE_DATA_SIZE, subject.getSerializedSize());
+        assertEquals(VARIABLE_DATA_SIZE, subject.getSerializedSize());
         assertEquals(ContractKey.ESTIMATED_AVERAGE_SIZE, subject.getTypicalSerializedSize());
     }
 
@@ -70,17 +69,17 @@ class ContractKeySerializerTest {
         final var contractIdNonZeroBytes = contractKey.getContractIdNonZeroBytes();
         final var uint256KeyNonZeroBytes = contractKey.getUint256KeyNonZeroBytes();
 
-        final var out = mock(SerializableDataOutputStream.class);
+        final var out = mock(ByteBuffer.class);
         final var inOrder = inOrder(out);
 
         subject.serialize(contractKey, out);
 
-        inOrder.verify(out).write(contractKey.getContractIdNonZeroBytesAndUint256KeyNonZeroBytes());
+        inOrder.verify(out).put(contractKey.getContractIdNonZeroBytesAndUint256KeyNonZeroBytes());
         for (int b = contractIdNonZeroBytes - 1; b >= 0; b--) {
-            inOrder.verify(out).write((byte) (contractKey.getContractId() >> (b * 8)));
+            inOrder.verify(out).put((byte) (contractKey.getContractId() >> (b * 8)));
         }
         for (int b = uint256KeyNonZeroBytes - 1; b >= 0; b--) {
-            inOrder.verify(out).write(contractKey.getUint256Byte(b));
+            inOrder.verify(out).put(contractKey.getUint256Byte(b));
         }
     }
 

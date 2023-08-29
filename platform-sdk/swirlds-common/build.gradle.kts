@@ -27,7 +27,6 @@ dependencies {
     api(project(":swirlds-logging"))
     api(project(":swirlds-config-api"))
     implementation(libs.classgraph)
-    implementation(libs.commons.codec)
     implementation(libs.prometheus.httpserver) {
         exclude("io.prometheus", "simpleclient_tracer_otel")
         exclude("io.prometheus", "simpleclient_tracer_otel_agent")

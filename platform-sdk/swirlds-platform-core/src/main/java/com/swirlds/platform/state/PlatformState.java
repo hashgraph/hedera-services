@@ -120,6 +120,6 @@ public class PlatformState extends PartialBinaryMerkleInternal implements Merkle
      * same time as a call to <code>MerkleHashChecker.generateHashDebugString()</code>.
      */
     public String getInfoString() {
-        return getPlatformData().getInfoString(getAddressBook().getHash());
+        return getPlatformData().getInfoString();
     }
 }
