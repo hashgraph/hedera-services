@@ -282,9 +282,8 @@ public class HevmTransactionFactory {
         if (body.hasInitcode()) {
             return body.initcode();
         } else {
-            final var maybeInitcode = fileStore.getFileLeaf(body.fileIDOrElse(FileID.DEFAULT));
-            validateTrue(maybeInitcode.isPresent(), INVALID_FILE_ID);
-            final var initcode = maybeInitcode.get();
+            final var initcode = fileStore.getFileLeaf(body.fileIDOrElse(FileID.DEFAULT));
+            validateFalse(initcode == null, INVALID_FILE_ID);
             validateFalse(initcode.deleted(), FILE_DELETED);
             validateTrue(initcode.contents().length() > 0, CONTRACT_FILE_EMPTY);
             try {

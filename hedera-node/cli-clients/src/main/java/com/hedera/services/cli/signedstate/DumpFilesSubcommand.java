@@ -49,6 +49,8 @@ import java.util.stream.Stream;
  * state - sorted by file entity number, etc. - so that
  * comparisons can be made between two signed states that are similar (e.g., mono-service vs modularized service when
  * the same events are run through them).
+ *
+ * N.B.: Does _not_ include _special files_ which are stored in a different merkle tree.
  */
 @SuppressWarnings("java:S106") // "use of system.out/system.err instead of logger" - not needed/desirable for CLI tool
 public class DumpFilesSubcommand {
@@ -56,7 +58,7 @@ public class DumpFilesSubcommand {
     static void doit(
             @NonNull final SignedStateHolder state,
             @NonNull final Path filesPath,
-            @NonNull final KeyDetails keyDetails,
+            @NonNull final EnumSet<KeyDetails> keyDetails,
             @NonNull final EmitSummary emitSummary,
             @NonNull final Verbosity verbosity) {
         new DumpFilesSubcommand(state, filesPath, keyDetails, emitSummary, verbosity).doit();
@@ -69,7 +71,7 @@ public class DumpFilesSubcommand {
     final Path filesPath;
 
     @NonNull
-    final KeyDetails keyDetails;
+    final EnumSet<KeyDetails> keyDetails;
 
     @NonNull
     final EmitSummary emitSummary;
@@ -80,7 +82,7 @@ public class DumpFilesSubcommand {
     DumpFilesSubcommand(
             @NonNull final SignedStateHolder state,
             @NonNull final Path filesPath,
-            @NonNull final KeyDetails keyDetails,
+            @NonNull final EnumSet<KeyDetails> keyDetails,
             @NonNull final EmitSummary emitSummary,
             @NonNull final Verbosity verbosity) {
         this.state = state;
@@ -104,7 +106,8 @@ public class DumpFilesSubcommand {
             if (EmitSummary.YES == emitSummary) reportSummary(writer, fileSummary, allFiles);
             if (EmitSummary.YES == emitSummary) reportFileSizes(writer, allFiles);
             reportFileContents(writer, allFiles);
-            if (KeyDetails.DEEP == keyDetails) reportOnKeys(writer, allFiles);
+            if (keyDetails.contains(KeyDetails.STRUCTURE)) reportOnKeyStructure(writer, allFiles);
+            if (keyDetails.contains(KeyDetails.STRUCTURE_WITH_IDS)) reportOnKeyIds(writer, allFiles);
             reportSize[0] = writer.getSize();
         } catch (final RuntimeException ex) {
             System.err.printf("*** Exception when writing to '%s':%n", filesPath);
@@ -248,7 +251,7 @@ public class DumpFilesSubcommand {
     }
 
     /** Emits a summary of the _structures_ of the keys securing the data files. */
-    void reportOnKeys(@NonNull final Writer writer, @NonNull final Map<Integer, HederaFile> allFiles) {
+    void reportOnKeyStructure(@NonNull final Writer writer, @NonNull final Map<Integer, HederaFile> allFiles) {
         final var keySummary = new HashMap<String, Integer>();
         for (@NonNull final var hf : allFiles.values()) {
             if (hf.isDeleted()) continue;
@@ -266,6 +269,43 @@ public class DumpFilesSubcommand {
         keySummary.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
                 .forEachOrdered(e -> writer.write("%7d: %s%n", e.getValue(), e.getKey()));
+    }
+
+    /** Emits a summary of key structure for each file that has a non-trivial key */
+    @SuppressWarnings(
+            "java:S135") // Reduce total # of break+continue statements to at most one" - disagree it would improve this
+    // code
+    void reportOnKeyIds(@NonNull final Writer writer, @NonNull final Map<Integer, HederaFile> allFiles) {
+        final var keySummary = new HashMap<Integer, String>();
+        for (@NonNull final var hf : allFiles.values()) {
+            if (hf.isDeleted()) continue;
+            final var jkey = hf.metadata().getWacl();
+            if (null == jkey) continue;
+            final var key = jkey.getKeyList();
+            if (key.isEmpty() || !key.isValid() || !key.hasKeyList()) continue;
+            if (key.getKeysList().size() <= 1) continue;
+            // Have a "complex" key (more than one key in key list)
+            final var sb = new StringBuilder();
+            final var b = toStructureSummaryOfJKey(sb, jkey);
+            if (b) keySummary.put(hf.contractId(), sb.toString());
+        }
+
+        writer.writeln("=== Files with complex keys ===");
+        if (!keySummary.isEmpty()) {
+            final var NEW_LINE = System.lineSeparator();
+            final var sb = new StringBuilder();
+            sb.append("[");
+            sb.append(NEW_LINE);
+            keySummary.entrySet().stream()
+                    .sorted(Map.Entry.comparingByKey())
+                    .forEachOrdered(e -> sb.append("  { \"fileid\" : \"0.0.%d\", \"key\" : \"%s\" }, %s"
+                            .formatted(e.getKey(), e.getValue(), NEW_LINE)));
+            sb.setLength(sb.length() - (1 + NEW_LINE.length()));
+            sb.append(NEW_LINE);
+            sb.append("]");
+            sb.append(NEW_LINE);
+            writer.write(sb);
+        }
     }
 
     /** Collects the information for each data file in the file store, also the summaries of all files of all types. */

@@ -71,8 +71,23 @@ public final class SignedStateFileWriter {
         final String hashInfo = new MerkleTreeVisualizer(state)
                 .setDepth(stateConfig.debugHashDepth())
                 .render();
+
+        // the merkle tree visualizer prints hashes as mnemonics, which are good for most cases
+        // just in case, we print the unabbreviated root hash here as well
+        final String fullRootHashLine = "Root hash: " + state.getHash();
+
         logger.info(
-                STATE_TO_DISK.getMarker(), "Information for state written to disk:\n{}\n{}", platformInfo, hashInfo);
+                STATE_TO_DISK.getMarker(),
+                """
+                        Information for state written to disk:
+                        {}
+                        {}
+
+                        {}
+                        """,
+                platformInfo,
+                fullRootHashLine,
+                hashInfo);
 
         final Path hashInfoFile = directory.resolve(HASH_INFO_FILE_NAME);
 
@@ -84,9 +99,9 @@ public final class SignedStateFileWriter {
     /**
      * Write the signed state metadata file
      *
-     * @param selfId        the id of the platform
-     * @param directory     the directory to write to
-     * @param signedState   the signed state being written
+     * @param selfId      the id of the platform
+     * @param directory   the directory to write to
+     * @param signedState the signed state being written
      */
     public static void writeMetadataFile(
             @Nullable final NodeId selfId, @NonNull final Path directory, @NonNull final SignedState signedState)

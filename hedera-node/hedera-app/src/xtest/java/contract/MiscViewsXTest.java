@@ -109,9 +109,9 @@ public class MiscViewsXTest extends AbstractContractXTest {
     }
 
     @Override
-    protected Map<Bytes, AccountID> initialAliases() {
-        final var aliases = new HashMap<Bytes, AccountID>();
-        aliases.put(ERC_USER_ADDRESS, ERC_USER_ID);
+    protected Map<ProtoBytes, AccountID> initialAliases() {
+        final var aliases = new HashMap<ProtoBytes, AccountID>();
+        aliases.put(ProtoBytes.newBuilder().value(ERC_USER_ADDRESS).build(), ERC_USER_ID);
         return aliases;
     }
 
