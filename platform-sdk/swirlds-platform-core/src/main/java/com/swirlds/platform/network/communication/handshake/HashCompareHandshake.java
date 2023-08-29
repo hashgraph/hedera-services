@@ -25,6 +25,7 @@ import com.swirlds.platform.network.protocol.ProtocolRunnable;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
+import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -64,14 +65,12 @@ public class HashCompareHandshake implements ProtocolRunnable {
     public void runProtocol(@NonNull final Connection connection)
             throws NetworkProtocolException, IOException, InterruptedException {
 
-        connection.getDos().writeSerializable(hash, true);
+        connection.getDos().writeSerializable(hash, false);
         connection.getDos().flush();
 
-        final SelfSerializable readSerializable = connection.getDis().readSerializable();
+        final SelfSerializable readSerializable = connection.getDis().readSerializable(false, Hash::new);
 
-        // if both are null, or both are hashes that match, then the protocol has succeeded
-        if (hash == null && readSerializable == null
-                || hash != null && readSerializable instanceof Hash peerHash && hash.compareTo(peerHash) == 0) {
+        if (Objects.equals(hash, readSerializable)) {
             return;
         }
 

@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.test.network.communication.handshake;
 
-import static com.swirlds.platform.test.network.communication.handshake.HandshakeTestUtils.clearWriteFlush;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -24,6 +23,7 @@ import com.swirlds.base.utility.Pair;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
@@ -33,6 +33,8 @@ import com.swirlds.platform.network.communication.handshake.HandshakeException;
 import com.swirlds.platform.network.communication.handshake.VersionCompareHandshake;
 import com.swirlds.platform.network.protocol.ProtocolRunnable;
 import com.swirlds.platform.test.sync.ConnectionFactory;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -47,6 +49,15 @@ class VersionHandshakeTests {
 
     private ProtocolRunnable protocolToleratingMismatch;
     private ProtocolRunnable protocolThrowingOnMismatch;
+
+    private static void clearWriteFlush(
+            @NonNull final Connection connection, @Nullable final SelfSerializable serializable) throws IOException {
+        if (connection.getDis().available() > 0) {
+            connection.getDis().readSerializable();
+        }
+        connection.getDos().writeSerializable(serializable, true);
+        connection.getDos().flush();
+    }
 
     @BeforeEach
     void setup() throws ConstructableRegistryException, IOException {

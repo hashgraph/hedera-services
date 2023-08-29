@@ -598,6 +598,14 @@ public class SwirldsPlatform implements Platform, Startable {
 
         final boolean startedFromGenesis = initialState.isGenesisState();
 
+        final Hash epochHash;
+        if (emergencyRecoveryManager.isEmergencyRecoveryFilePresent()) {
+            epochHash = emergencyRecoveryManager.getEmergencyRecoveryFile().hash();
+        } else {
+            epochHash =
+                    initialState.getState().getPlatformState().getPlatformData().getEpochHash();
+        }
+
         gossip = GossipFactory.buildGossip(
                 platformContext,
                 threadManager,
@@ -607,7 +615,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 currentAddressBook,
                 selfId,
                 appVersion,
-                initialState.getState().getPlatformState().getPlatformData().getEpochHash(),
+                epochHash,
                 shadowGraph,
                 emergencyRecoveryManager,
                 consensusRef,

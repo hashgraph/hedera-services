@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.test.network.communication.handshake;
 
-import static com.swirlds.platform.test.network.communication.handshake.HandshakeTestUtils.clearWriteFlush;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -25,6 +24,7 @@ import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
@@ -33,6 +33,8 @@ import com.swirlds.platform.network.communication.handshake.HandshakeException;
 import com.swirlds.platform.network.communication.handshake.HashCompareHandshake;
 import com.swirlds.platform.network.protocol.ProtocolRunnable;
 import com.swirlds.platform.test.sync.ConnectionFactory;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -44,6 +46,15 @@ import org.junit.jupiter.api.Test;
 class HashHandshakeTests {
     private Connection theirConnection;
     private Connection myConnection;
+
+    private static void clearWriteFlush(
+            @NonNull final Connection connection, @Nullable final SelfSerializable serializable) throws IOException {
+        if (connection.getDis().available() > 0) {
+            connection.getDis().readSerializable(false, Hash::new);
+        }
+        connection.getDos().writeSerializable(serializable, false);
+        connection.getDos().flush();
+    }
 
     @BeforeEach
     void setup() throws ConstructableRegistryException, IOException {
@@ -128,22 +139,6 @@ class HashHandshakeTests {
         assertDoesNotThrow(() -> protocolThrowingOnMismatch.runProtocol(myConnection));
 
         clearWriteFlush(theirConnection, null);
-        assertDoesNotThrow(() -> protocolToleratingMismatch.runProtocol(myConnection));
-    }
-
-    @Test
-    @DisplayName("Their hash is a different class")
-    void differentClass() throws IOException {
-        final Hash ourHash = RandomUtils.randomHash();
-        final SerializableLong theirHash = new SerializableLong(5);
-
-        final ProtocolRunnable protocolToleratingMismatch = new HashCompareHandshake(ourHash, false);
-        final ProtocolRunnable protocolThrowingOnMismatch = new HashCompareHandshake(ourHash, true);
-
-        clearWriteFlush(theirConnection, theirHash);
-        assertThrows(HandshakeException.class, () -> protocolThrowingOnMismatch.runProtocol(myConnection));
-
-        clearWriteFlush(theirConnection, theirHash);
         assertDoesNotThrow(() -> protocolToleratingMismatch.runProtocol(myConnection));
     }
 }
