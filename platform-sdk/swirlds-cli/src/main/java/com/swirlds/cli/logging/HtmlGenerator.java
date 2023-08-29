@@ -193,8 +193,11 @@ public class HtmlGenerator {
         final List<String> filterCheckboxes =
                 filterValues.stream().map(HtmlGenerator::createFilterCheckbox).toList();
 
-        return new HtmlTagFactory("div", "\n" + filterHeading + "\n" + String.join("\n", filterCheckboxes), false)
+        final String form = new HtmlTagFactory("form", "\n" + String.join("\n", filterCheckboxes), false)
+                .addAttribute("autocomplete", "off")
                 .generateTag();
+
+        return new HtmlTagFactory("div", "\n" + filterHeading + "\n" + form, false).generateTag();
     }
 
     /**
