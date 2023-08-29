@@ -763,11 +763,21 @@ public class SwirldsPlatform implements Platform, Startable {
         // If our hash changes as a result of the new address book then our old signatures may become invalid.
         signedState.pruneInvalidSignatures();
 
+        // the merkle tree visualizer prints hashes as mnemonics, which are good for most cases
+        // just in case, we print the unabbreviated root hash here as well
+        final String fullRootHashLine = "Root hash: " + signedState.getState().getHash();
+
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
         logger.info(
                 STARTUP.getMarker(),
-                "The platform is using the following initial state:\n{}\n{}",
+                """
+                        The platform is using the following initial state:
+                        {}
+                        {}
+
+                        {}""",
                 signedState.getState().getPlatformState().getInfoString(),
+                fullRootHashLine,
                 new MerkleTreeVisualizer(signedState.getState())
                         .setDepth(stateConfig.debugHashDepth())
                         .render());
@@ -1112,7 +1122,9 @@ public class SwirldsPlatform implements Platform, Startable {
         }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean createTransaction(@NonNull final byte[] transaction) {
         return transactionSubmitter.submitTransaction(new SwirldTransaction(transaction));
@@ -1134,7 +1146,9 @@ public class SwirldsPlatform implements Platform, Startable {
         return notificationEngine;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Signature sign(final byte[] data) {
         return crypto.sign(data);
@@ -1186,8 +1200,8 @@ public class SwirldsPlatform implements Platform, Startable {
      * Clears the preconsensus event stream if a software upgrade has occurred and the configuration specifies that
      * the stream should be cleared on software upgrade.
      *
-     * @param softwareUpgrade       true if a software upgrade has occurred
-     * @param fileManager           the preconsensus event file manager
+     * @param softwareUpgrade true if a software upgrade has occurred
+     * @param fileManager     the preconsensus event file manager
      * @throws UncheckedIOException if the required changes on software upgrade cannot be performed
      */
     public void clearPCESOnSoftwareUpgradeIfConfigured(
