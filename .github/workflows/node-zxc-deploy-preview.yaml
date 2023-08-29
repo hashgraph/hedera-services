@@ -36,7 +36,7 @@ on:
         description: "Custom Job Label:"
         type: string
         required: false
-        default: "Artifact"
+        default: ""
 
     secrets:
       access-token:
