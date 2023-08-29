@@ -59,7 +59,7 @@ public class HashLoggerTest {
      * @return the regex
      */
     private String getRoundEqualsRegex(final long round) {
-        return String.format("[\\S\\s]*Round\\s+%s[\\S\\s]*", round);
+        return String.format("[\\S\\s]*Round:\\s+%s[\\S\\s]*", round);
     }
 
     @BeforeEach
