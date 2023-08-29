@@ -79,6 +79,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class FileUpdateTest extends FileTestBase {
 
+    private static final long EXPIRATION_TIMESTAMP = 3_456_789L;
     private final FileUpdateTransactionBody.Builder OP_BUILDER = FileUpdateTransactionBody.newBuilder();
 
     private final ExpiryMeta currentExpiryMeta = new ExpiryMeta(expirationTime, NA, null);
@@ -285,7 +286,7 @@ class FileUpdateTest extends FileTestBase {
     }
 
     @Test
-    void validatesExpirationTimeIsNotInRange() {
+    void validatesAutoRenewDurationIsInRange() {
         givenValidFile(false);
         refreshStoresWithCurrentFileInBothReadableAndWritable();
 
@@ -411,7 +412,7 @@ class FileUpdateTest extends FileTestBase {
     void appliesNewExpiryViaMeta() {
         refreshStoresWithCurrentFileInBothReadableAndWritable();
 
-        final var expiry = Timestamp.newBuilder().seconds(3_456_789L).build();
+        final var expiry = Timestamp.newBuilder().seconds(EXPIRATION_TIMESTAMP).build();
         final var op = OP_BUILDER.fileID(wellKnownId()).expirationTime(expiry).build();
         final var txBody = TransactionBody.newBuilder()
                 .fileUpdate(op)
@@ -427,14 +428,14 @@ class FileUpdateTest extends FileTestBase {
         subject.handle(handleContext);
 
         final var newFile = writableFileState.get(fileId);
-        assertEquals(3_456_789L, newFile.expirationSecond());
+        assertEquals(EXPIRATION_TIMESTAMP, newFile.expirationSecond());
     }
 
     @Test
     void appliesNewExpiryLowerExpirationTimeViaMeta() {
         refreshStoresWithCurrentFileInBothReadableAndWritable();
 
-        final var expiry = Timestamp.newBuilder().seconds(3_456_789L).build();
+        final var expiry = Timestamp.newBuilder().seconds(EXPIRATION_TIMESTAMP).build();
         final var op = OP_BUILDER.fileID(wellKnownId()).expirationTime(expiry).build();
         final var txBody = TransactionBody.newBuilder()
                 .fileUpdate(op)
@@ -450,7 +451,7 @@ class FileUpdateTest extends FileTestBase {
         subject.handle(handleContext);
 
         final var newFile = writableFileState.get(fileId);
-        assertEquals(3_456_789L, newFile.expirationSecond());
+        assertEquals(EXPIRATION_TIMESTAMP, newFile.expirationSecond());
     }
 
     @Test

@@ -190,12 +190,9 @@ public class FileUpdateHandler implements TransactionHandler {
 
     private void validateAutoRenew(FileUpdateTransactionBody op, HandleContext handleContext) {
         if (op.hasExpirationTime()) {
-            final long effectiveDuration = op.expirationTime().seconds()
-                    - handleContext
-                            .body()
-                            .transactionID()
-                            .transactionValidStart()
-                            .seconds();
+            final long startSeconds =
+                    handleContext.body().transactionID().transactionValidStart().seconds();
+            final long effectiveDuration = op.expirationTime().seconds() - startSeconds;
 
             final var entityConfig = handleContext.configuration().getConfigData(LedgerConfig.class);
             final long maxEntityLifetime = entityConfig.autoRenewPeriodMaxDuration();
