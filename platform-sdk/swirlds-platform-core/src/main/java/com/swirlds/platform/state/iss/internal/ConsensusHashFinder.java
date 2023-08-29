@@ -238,8 +238,10 @@ public class ConsensusHashFinder {
                 .append("%) of total weight have reported a hash for round ")
                 .append(round)
                 .append(".\n");
+
         if (consensusHash != null) {
-            sb.append("Consensus hash: ").append(consensusHash.toMnemonic()).append("\n");
+            sb.append("Consensus mnemonic: ").append(consensusHash.toMnemonic()).append("\n");
+            sb.append("Consensus hash: ").append(consensusHash).append("\n");
         }
 
         final List<HashPartition> partitions = new ArrayList<>(partitionMap.size());
@@ -276,9 +278,10 @@ public class ConsensusHashFinder {
                     .append(" (")
                     .append((float) partitionWeight / totalWeight * 100)
                     .append("% of total weight)\n");
-            sb.append("  partition hash: ")
+            sb.append("  partition mnemonic: ")
                     .append(partition.getHash().toMnemonic())
                     .append("\n");
+            sb.append("  partition hash: ").append(partition.getHash()).append("\n");
         }
     }
 }
