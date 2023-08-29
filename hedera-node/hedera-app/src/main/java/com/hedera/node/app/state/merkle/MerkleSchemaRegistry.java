@@ -201,7 +201,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                 } else {
                     // MAX_IN_MEMORY_HASHES (ramToDiskThreshold) = 8388608
                     // PREFER_DISK_BASED_INDICES = false
-                    final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig<>(
+                    final var tableConfig = new MerkleDbTableConfig<>(
                                     (short) 1,
                                     DigestType.SHA_384,
                                     (short) 1,
@@ -210,7 +210,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                                     new OnDiskValueSerializer<>(md))
                             .maxNumberOfKeys(def.maxKeysHint());
                     final var label = StateUtils.computeLabel(serviceName, stateKey);
-                    final MerkleDbDataSourceBuilder dsBuilder = new MerkleDbDataSourceBuilder<>(tableConfig);
+                    final var dsBuilder = new MerkleDbDataSourceBuilder<>(tableConfig);
                     hederaState.putServiceStateIfAbsent(md, new VirtualMap<>(label, dsBuilder));
                 }
             });
