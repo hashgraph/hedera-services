@@ -25,7 +25,10 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.FileID;
+import com.hedera.hapi.node.state.file.File;
+import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
+import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.info.CurrentPlatformStatusImpl;
 import com.hedera.node.app.info.SelfNodeInfoImpl;
@@ -52,9 +55,11 @@ import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
+import com.hedera.node.app.throttle.ThrottleManager;
 import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.handle.SystemFileUpdateFacility;
+import com.hedera.node.config.Utils;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.VersionConfig;
@@ -117,10 +122,7 @@ import org.apache.logging.log4j.Logger;
  */
 public final class Hedera implements SwirldMain {
     private static final Logger logger = LogManager.getLogger(Hedera.class);
-    private static final int STATE_VERSION_NEWER_THAN_SOFTWARE_VERSION_EXIT_CODE = 10;
-    private static final int VERSION_NOT_IN_SAVED_STATE_EXIT_CODE = 11;
-    private static final int CRITICAL_FAILURE_EXIT_CODE = 12;
-    // FUTURE: This should come from configuration, NOT be hardcoded.
+    // FUTURE: This should come from configuration, not be hardcoded.
     public static final int MAX_SIGNED_TXN_SIZE = 6144;
 
     /**
@@ -143,6 +145,10 @@ public final class Hedera implements SwirldMain {
     private Platform platform;
     /** The configuration for this node */
     private ConfigProviderImpl configProvider;
+    /** The throttle manager for parsing the throttle definition file */
+    private ThrottleManager throttleManager;
+    /** The exchange rate manager */
+    private ExchangeRateManager exchangeRateManager;
     /**
      * Dependencies managed by Dagger. Set during state initialization. The mono-service requires this object, but none
      * of the rest of the system (and particularly the modular implementation) uses it directly. Rather, it is created
@@ -165,16 +171,36 @@ public final class Hedera implements SwirldMain {
         this.constructableRegistry = requireNonNull(constructableRegistry);
 
         // Print welcome message
+        logger.info(
+                """
+
+                                ---------------
+                            -----------------------
+                          ---------##-----##---------
+                        -----------##-----##-----------            _   _              _                      \s
+                        -----------#########-----------           | | | |   ___    __| |   ___   _ __    __ _\s
+                        -----------##-----##-----------           | |_| |  / _ \\  / _` |  / _ \\ | '__|  / _` |
+                        -----------#########-----------           |  _  | |  __/ | (_| | |  __/ | |    | (_| |
+                        -----------##-----##-----------           |_| |_|  \\___|  \\__,_|  \\___| |_|     \\__,_|
+                          ---------##-----##---------                                                        \s
+                            -----------------------
+                                ---------------
+                        """);
         logger.info("Welcome to Hedera! Developed with love by the Open Source Community. "
                 + "https://github.com/hashgraph/hedera-services");
 
-        // Let the user know which mode they are starting in (DEV vs. TEST vs. PROD)
-        final var bootstrapConfig = new ConfigProviderImpl(false).getConfiguration();
+        // Load the bootstrap configuration. These config values are NOT stored in state, so we don't need to have
+        // state up and running for getting their values. We use this bootstrap config only in this constructor.
+        final var bootstrapConfig = new BootstrapConfigProviderImpl().configuration();
+
+        // Let the user know which mode they are starting in (DEV vs. TEST vs. PROD).
+        // NOTE: This bootstrapConfig is not entirely satisfactory. We probably need an alternative...
         final var hederaConfig = bootstrapConfig.getConfigData(HederaConfig.class);
         final var activeProfile = Profile.valueOf(hederaConfig.activeProfile());
         logger.info("Starting in {} mode", activeProfile);
 
-        // Read the software version
+        // Read the software version. In addition to logging, we will use this software version to determine whether
+        // we need to migrate the state to a newer release, and to determine which schemas to execute.
         logger.debug("Loading Software Version");
         final var versionConfig = bootstrapConfig.getConfigData(VersionConfig.class);
         version = new HederaSoftwareVersion(versionConfig.hapiVersion(), versionConfig.servicesVersion());
@@ -184,7 +210,7 @@ public final class Hedera implements SwirldMain {
                 () -> HapiUtils.toString(version.getServicesVersion()));
 
         // Create all the service implementations
-        logger.info("Registering schemas for services");
+        logger.info("Registering services");
         // FUTURE: Use the service loader framework to load these services!
         this.servicesRegistry = new ServicesRegistryImpl(Set.of(
                 new ConsensusServiceImpl(),
@@ -199,9 +225,8 @@ public final class Hedera implements SwirldMain {
                 new BlockRecordService(),
                 new EntityIdService()));
 
-        // Register MerkleHederaState with the ConstructableRegistry, so we can use a constructor
-        // OTHER THAN the default constructor to make sure it has the config and other info
-        // it needs to be created correctly.
+        // Register MerkleHederaState with the ConstructableRegistry, so we can use a constructor OTHER THAN the default
+        // constructor to make sure it has the config and other info it needs to be created correctly.
         try {
             logger.debug("Register MerkleHederaState with ConstructableRegistry");
             constructableRegistry.registerConstructable(
@@ -290,7 +315,7 @@ public final class Hedera implements SwirldMain {
                     "Fatal error, state source version {} is higher than node software version {}",
                     deserializedVersion,
                     version);
-            System.exit(STATE_VERSION_NEWER_THAN_SOFTWARE_VERSION_EXIT_CODE);
+            System.exit(1);
         }
 
         // This is the *FIRST* time in the initialization sequence that we have access to the platform. Grab it!
@@ -311,7 +336,7 @@ public final class Hedera implements SwirldMain {
             }
         } catch (final Throwable th) {
             logger.fatal("Critical failure during initialization", th);
-            System.exit(CRITICAL_FAILURE_EXIT_CODE);
+            System.exit(1);
         }
 
         // This field has to be set by the time we get here. It will be set by both the genesis and restart code
@@ -345,9 +370,10 @@ public final class Hedera implements SwirldMain {
             // FUTURE We should have metrics here to keep track of how long it takes to migrate each service
             final var serviceName = service.getServiceName();
             final var registry = new MerkleSchemaRegistry(constructableRegistry, serviceName);
+            logger.debug("Registering schemas for service {}", serviceName);
             service.registerSchemas(registry);
+            logger.info("Migrating Service {}", serviceName);
             registry.migrate(state, previousVersion, currentVersion, configProvider.getConfiguration());
-            logger.info("Migrated Service {}", serviceName);
         }
         logger.info("Migration complete");
     }
@@ -483,7 +509,7 @@ public final class Hedera implements SwirldMain {
         final var selfNodeInfo = daggerApp.networkInfo().selfNodeInfo();
         if (!selfNodeInfo.zeroStake() && selfNodeInfo.accountId() == null) {
             logger.fatal("Node is not zero-stake, but has no known account");
-            daggerApp.systemExits().fail(1); // TBD What code to use?
+            daggerApp.systemExits().fail(1);
         }
 
         // Verify the ledger state. At the moment, this is a sanity check that we still have all HBARs present and
@@ -493,7 +519,7 @@ public final class Hedera implements SwirldMain {
             daggerApp.ledgerValidator().validate(state);
         } catch (Throwable th) {
             logger.fatal("Ledger validation failed", th);
-            daggerApp.systemExits().fail(1); // TBD What code to use?
+            daggerApp.systemExits().fail(1);
         }
     }
 
@@ -582,11 +608,22 @@ public final class Hedera implements SwirldMain {
 
     /** Implements the code flow for initializing the state of a new Hedera node with NO SAVED STATE. */
     private void genesis(@NonNull final MerkleHederaState state, @NonNull final SwirldDualState dualState) {
-        logger.info("Genesis Initialization");
+        logger.debug("Genesis Initialization");
 
-        logger.info("Initializing Configuration");
+        // Initialize the configuration from disk (genesis case). We must do this BEFORE we run migration, because
+        // the various migration methods may depend on configuration to do their work. For example, the token service
+        // migration code needs to know the token treasury account, which has an account ID specified in config.
+        // The initial config file in state, created by the file service migration, will match what we have here,
+        // so we don't have to worry about re-loading config after migration.
+        logger.info("Initializing genesis configuration");
         this.configProvider = new ConfigProviderImpl(true);
         logConfiguration();
+
+        logger.info("Initializing ThrottleManager");
+        this.throttleManager = new ThrottleManager();
+
+        logger.info("Initializing ExchangeRateManager");
+        exchangeRateManager = new ExchangeRateManager();
 
         // Create all the nodes in the merkle tree for all the services
         onMigrate(state, null);
@@ -594,8 +631,12 @@ public final class Hedera implements SwirldMain {
         // Now that we have the state created, we are ready to create the dependency graph with Dagger
         initializeDagger(state, GENESIS);
 
+        // And now that the entire dependency graph has been initialized, and we have config, and all migration has
+        // been completed, we are prepared to initialize in-memory data structures. These specifically are loaded
+        // from information held in state.
         initializeFeeManager(state);
         initializeExchangeRateManager(state);
+        initializeThrottleManager(state);
 
         // Store the version in state
         // TODO Who is responsible for saving this in the tree? I assumed it went into dual state... not sensible!
@@ -673,59 +714,6 @@ public final class Hedera implements SwirldMain {
          */
     }
 
-    private void ensureSystemAccounts() {
-        /*
-        final long systemAccounts = properties.getIntProperty(LEDGER_NUM_SYSTEM_ACCOUNTS);
-        final long expiry = properties.getLongProperty(BOOTSTRAP_SYSTEM_ENTITY_EXPIRY);
-        final long tinyBarFloat = properties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT);
-
-        for (long num = 1; num <= systemAccounts; num++) {
-            final var id = STATIC_PROPERTIES.scopedAccountWith(num);
-            if (accounts.contains(id)) {
-                continue;
-            }
-            final HederaAccount account;
-            if (num == accountNums.treasury()) {
-                account = accountWith(tinyBarFloat, expiry);
-            } else {
-                account = accountWith(ZERO_BALANCE, expiry);
-            }
-            accounts.put(id, account);
-            systemAccountsCreated.add(account);
-        }
-
-        final var stakingRewardAccountNum = accountNums.stakingRewardAccount();
-        final var stakingRewardAccountId = STATIC_PROPERTIES.scopedAccountWith(stakingRewardAccountNum);
-        final var nodeRewardAccountNum = accountNums.nodeRewardAccount();
-        final var nodeRewardAccountId = STATIC_PROPERTIES.scopedAccountWith(nodeRewardAccountNum);
-        final var stakingFundAccounts = List.of(stakingRewardAccountId, nodeRewardAccountId);
-        for (final var id : stakingFundAccounts) {
-            if (!accounts.contains(id)) {
-                final var stakingFundAccount = accountSupplier.get();
-                customizeAsStakingFund(stakingFundAccount);
-                accounts.put(id, stakingFundAccount);
-            }
-        }
-        for (long num = 900; num <= 1000; num++) {
-            final var id = STATIC_PROPERTIES.scopedAccountWith(num);
-            if (!accounts.contains(id)) {
-                final var account = accountWith(ZERO_BALANCE, expiry);
-                accounts.put(id, account);
-                systemAccountsCreated.add(account);
-            }
-        }
-
-        treasuryCloner.ensureTreasuryClonesExist();
-
-        var ledgerFloat = 0L;
-        final var allIds = accounts.idSet();
-        for (final var id : allIds) {
-            ledgerFloat += accounts.getImmutableRef(id).getBalance();
-        }
-        log.info("Ledger float is {} tinyBars in {} accounts.", ledgerFloat, allIds.size());
-                 */
-    }
-
     // Only called during genesis
     private void createAddressBookIfMissing() {
         // Get the address book from the platform and create a NodeAddressBook, and write the protobuf bytes of
@@ -797,42 +785,49 @@ public final class Hedera implements SwirldMain {
 
     private void initializeFeeManager(@NonNull final HederaState state) {
         logger.info("Initializing fee schedules");
-        final var readableFileStore = new ReadableStoreFactory(state).getStore(ReadableFileStore.class);
-        final var hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
         final var filesConfig = configProvider.getConfiguration().getConfigData(FilesConfig.class);
         final var fileNum = filesConfig.feeSchedules();
-        final var fileId = FileID.newBuilder()
-                .fileNum(fileNum)
-                .shardNum(hederaConfig.shard())
-                .realmNum(hederaConfig.realm())
-                .build();
-
-        final var fileOpt = readableFileStore.getFileLeaf(fileId);
-        fileOpt.ifPresent(file -> {
+        final File file = getFileFromStorage(state, fileNum);
+        if (file != null) {
             final var fileData = file.contents();
             daggerApp.feeManager().update(fileData);
-        });
+        }
         logger.info("Fee schedule initialized");
     }
 
     private void initializeExchangeRateManager(@NonNull final HederaState state) {
         logger.info("Initializing exchange rates");
-        final var readableFileStore = new ReadableStoreFactory(state).getStore(ReadableFileStore.class);
-        final var hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
         final var filesConfig = configProvider.getConfiguration().getConfigData(FilesConfig.class);
         final var fileNum = filesConfig.exchangeRates();
+        final var file = getFileFromStorage(state, fileNum);
+        if (file != null) {
+            final var fileData = file.contents();
+            daggerApp.exchangeRateManager().update(fileData);
+        }
+        logger.info("Exchange rates initialized");
+    }
+
+    private void initializeThrottleManager(@NonNull final HederaState state) {
+        logger.info("Initializing throttles");
+        final var filesConfig = configProvider.getConfiguration().getConfigData(FilesConfig.class);
+        final var fileNum = filesConfig.throttleDefinitions();
+        final var file = getFileFromStorage(state, fileNum);
+        if (file != null) {
+            final var fileData = file.contents();
+            daggerApp.throttleManager().update(fileData);
+        }
+        logger.info("Throttles initialized");
+    }
+
+    private File getFileFromStorage(HederaState state, long fileNum) {
+        final var readableFileStore = new ReadableStoreFactory(state).getStore(ReadableFileStore.class);
+        final var hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
         final var fileId = FileID.newBuilder()
                 .fileNum(fileNum)
                 .shardNum(hederaConfig.shard())
                 .realmNum(hederaConfig.realm())
                 .build();
-
-        final var fileOpt = readableFileStore.getFileLeaf(fileId);
-        fileOpt.ifPresent(file -> {
-            final var fileData = file.contents();
-            daggerApp.exchangeRateManager().update(fileData);
-        });
-        logger.info("Exchange rates initialized");
+        return readableFileStore.getFileLeaf(fileId);
     }
 
     /*==================================================================================================================
@@ -851,7 +846,7 @@ public final class Hedera implements SwirldMain {
         // The deserialized version can ONLY be null if we are in genesis, otherwise something is wrong with the state
         if (deserializedVersion == null) {
             logger.fatal("Fatal error, previous software version not found in saved state!");
-            System.exit(VERSION_NOT_IN_SAVED_STATE_EXIT_CODE);
+            System.exit(1);
         }
 
         // This configuration is based on what is in state *RIGHT NOW*, before any possible upgrade. This is the config
@@ -927,7 +922,10 @@ public final class Hedera implements SwirldMain {
             daggerApp = com.hedera.node.app.DaggerHederaInjectionComponent.builder()
                     .initTrigger(trigger)
                     .configuration(configProvider)
-                    .systemFileUpdateFacility(new SystemFileUpdateFacility(configProvider))
+                    .throttleManager(throttleManager)
+                    .exchangeRateManager(exchangeRateManager)
+                    .systemFileUpdateFacility(
+                            new SystemFileUpdateFacility(configProvider, throttleManager, exchangeRateManager))
                     .self(SelfNodeInfoImpl.of(nodeAddress, version))
                     .initialHash(initialHash)
                     .platform(platform)
@@ -961,12 +959,11 @@ public final class Hedera implements SwirldMain {
     }
 
     private void logConfiguration() {
-        // TODO Need reflection to print out all of the configuration values.
         if (logger.isInfoEnabled()) {
             final var config = configProvider.getConfiguration();
             final var lines = new ArrayList<String>();
             lines.add("Active Configuration:");
-            config.getPropertyNames().forEach(name -> lines.add(name + " = " + config.getValue(name)));
+            Utils.allProperties(config).forEach((key, value) -> lines.add(key + " = " + value));
             logger.info(String.join("\n", lines));
         }
     }

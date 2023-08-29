@@ -237,7 +237,6 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.UPGRADE_ARTIFACTS_PATH;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.UTIL_PRNG_IS_ENABLED;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.WORKFLOWS_ENABLED;
 import static com.hedera.node.app.service.mono.contracts.ContractsV_0_38Module.EVM_VERSION_0_38;
 import static com.hedera.node.app.service.mono.throttling.MapAccessType.ACCOUNTS_GET;
@@ -298,6 +297,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith({LogCaptureExtension.class})
 class BootstrapPropertiesTest {
+    @LoggingTarget
+    private LogCaptor logCaptor;
+
+    @LoggingSubject
+    private BootstrapProperties subject = new BootstrapProperties();
+
     private static final String STD_PROPS_RESOURCE = "bootstrap/standard.properties";
     private static final String INVALID_PROPS_RESOURCE = "bootstrap/not.properties";
     private static final String UNREADABLE_PROPS_RESOURCE = "bootstrap/unreadable.properties";
@@ -550,19 +555,12 @@ class BootstrapPropertiesTest {
             entry(HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION, true),
             entry(TOKENS_AUTO_CREATIONS_ENABLED, true),
             entry(WORKFLOWS_ENABLED, Set.of()),
-            entry(VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB, true),
             entry(ACCOUNTS_BLOCKLIST_ENABLED, true),
             entry(ACCOUNTS_BLOCKLIST_RESOURCE, "evm-addresses-blocklist.csv"),
             entry(STAKING_SUM_OF_CONSENSUS_WEIGHTS, 500),
             entry(CACHE_CRYPTO_TRANSFER_WARM_THREADS, 30),
             entry(CONFIG_VERSION, 10),
             entry(RECORDS_USE_CONSOLIDATED_FCQ, false));
-
-    @LoggingTarget
-    private LogCaptor logCaptor;
-
-    @LoggingSubject
-    private BootstrapProperties subject = new BootstrapProperties();
 
     @Test
     void containsProperty() {

@@ -96,12 +96,19 @@ public final class OnDiskKey<K> implements VirtualKey {
 
     @Override
     public void serialize(@NonNull final ByteBuffer byteBuffer) throws IOException {
+        serializeReturningWrittenBytes(byteBuffer);
+    }
+
+    public int serializeReturningWrittenBytes(@NonNull ByteBuffer byteBuffer) throws IOException {
+        int initPos = byteBuffer.position();
         final var output = BufferedData.wrap(byteBuffer);
-        output.skip(4);
+        output.skip(Integer.BYTES);
         codec.write(key, output);
         final var pos = output.position();
-        output.writeInt((int) pos - 4);
+        output.position(initPos);
+        output.writeInt((int) (pos - initPos - Integer.BYTES));
         output.position(pos);
+        return (int) (pos - initPos);
     }
 
     @Override

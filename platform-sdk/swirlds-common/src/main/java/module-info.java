@@ -156,6 +156,7 @@ module com.swirlds.common {
             com.swirlds.platform,
             com.swirlds.platform.test,
             com.swirlds.gui;
+    exports com.swirlds.common.startup;
 
     requires transitive com.swirlds.base;
     requires com.swirlds.config;
@@ -174,8 +175,6 @@ module com.swirlds.common {
 
     /* Utilities */
     requires io.github.classgraph;
-    requires org.apache.commons.lang3;
-    requires org.apache.commons.codec;
 
     /* Jackson JSON */
     requires com.fasterxml.jackson.core;

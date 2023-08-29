@@ -22,7 +22,6 @@ import static com.hedera.node.app.service.mono.state.virtual.KeyPackingUtils.ser
 import com.google.common.annotations.VisibleForTesting;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.jasperdb.files.DataFileCommon;
 import com.swirlds.virtualmap.VirtualValue;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -40,7 +39,6 @@ public class IterableContractValue implements VirtualValue {
     public static final int ITERABLE_VERSION = 2;
 
     public static final int NON_ITERABLE_SERIALIZED_SIZE = 32;
-    public static final int ITERABLE_SERIALIZED_SIZE = DataFileCommon.VARIABLE_DATA_SIZE;
 
     public static final long RUNTIME_CONSTRUCTABLE_ID = 0xabf8bd64a87ee740L;
 

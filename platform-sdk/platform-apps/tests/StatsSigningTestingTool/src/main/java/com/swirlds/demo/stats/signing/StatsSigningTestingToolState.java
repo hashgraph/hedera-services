@@ -68,7 +68,7 @@ public class StatsSigningTestingToolState extends PartialMerkleLeaf implements S
      */
     private static final Logger logger = LogManager.getLogger(StatsSigningTestingToolState.class);
 
-    private final Supplier<TransactionPool> transactionPoolSupplier;
+    private final Supplier<SttTransactionPool> transactionPoolSupplier;
 
     /** A running sum of transaction contents */
     private long runningSum = 0;
@@ -83,7 +83,7 @@ public class StatsSigningTestingToolState extends PartialMerkleLeaf implements S
         this(() -> null);
     }
 
-    public StatsSigningTestingToolState(@NonNull final Supplier<TransactionPool> transactionPoolSupplier) {
+    public StatsSigningTestingToolState(@NonNull final Supplier<SttTransactionPool> transactionPoolSupplier) {
         this.transactionPoolSupplier = Objects.requireNonNull(transactionPoolSupplier);
     }
 
@@ -108,10 +108,10 @@ public class StatsSigningTestingToolState extends PartialMerkleLeaf implements S
      */
     @Override
     public void preHandle(final Event event) {
-        final TransactionPool transactionPool = transactionPoolSupplier.get();
-        if (transactionPool != null) {
+        final SttTransactionPool sttTransactionPool = transactionPoolSupplier.get();
+        if (sttTransactionPool != null) {
             event.forEachTransaction(transaction -> {
-                transactionPool.expandSignatures(transaction);
+                sttTransactionPool.expandSignatures(transaction);
                 CryptographyHolder.get().verifyAsync(transaction.getSignatures());
             });
         }

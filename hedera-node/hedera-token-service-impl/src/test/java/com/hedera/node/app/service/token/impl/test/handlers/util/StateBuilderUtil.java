@@ -20,13 +20,13 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.common.EntityIDPair;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 public class StateBuilderUtil {
@@ -80,12 +80,12 @@ public class StateBuilderUtil {
     }
 
     @NonNull
-    protected MapWritableKVState.Builder<Bytes, AccountID> emptyWritableAliasStateBuilder() {
+    protected MapWritableKVState.Builder<ProtoBytes, AccountID> emptyWritableAliasStateBuilder() {
         return MapWritableKVState.builder(ALIASES);
     }
 
     @NonNull
-    protected MapReadableKVState.Builder<Bytes, AccountID> emptyReadableAliasStateBuilder() {
+    protected MapReadableKVState.Builder<ProtoBytes, AccountID> emptyReadableAliasStateBuilder() {
         return MapReadableKVState.builder(ALIASES);
     }
 

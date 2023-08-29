@@ -58,7 +58,7 @@ import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.common.system.status.PlatformStatusConfig;
 import com.swirlds.config.api.spi.ConfigurationBuilderFactory;
 import com.swirlds.fchashmap.config.FCHashMapConfig;
-import com.swirlds.jasperdb.config.JasperDbConfig;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.platform.Crypto;
 import com.swirlds.platform.CryptoMetrics;
 import com.swirlds.platform.SwirldsPlatform;
@@ -282,7 +282,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                 final var registry = ConstructableRegistry.getInstance();
                 registry.reset();
                 registry.registerConstructables("com.swirlds.merklemap");
-                registry.registerConstructables("com.swirlds.jasperdb");
+                registry.registerConstructables("com.swirlds.merkledb");
                 registry.registerConstructables("com.swirlds.fcqueue");
                 registry.registerConstructables("com.swirlds.virtualmap");
                 registry.registerConstructables("com.swirlds.common.merkle");
@@ -321,7 +321,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                         .withConfigDataType(TransactionConfig.class)
                         .withConfigDataType(EventCreationConfig.class)
                         .withConfigDataType(SocketConfig.class)
-                        .withConfigDataType(JasperDbConfig.class)
+                        .withConfigDataType(MerkleDbConfig.class)
                         .withConfigDataType(ChatterConfig.class)
                         .withConfigDataType(AddressBookConfig.class)
                         .withConfigDataType(VirtualMapConfig.class)
@@ -406,6 +406,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                         "Hedera", // swirld name
                         new BasicSoftwareVersion(Long.MAX_VALUE), // App Version :TODO USE REAL VERSION NUMBER
                         initialSignedState,
+                        new AddressBook(),
                         new EmergencyRecoveryManager(
                                 platformContext.getConfiguration().getConfigData(StateConfig.class),
                                 (s, exitCode) -> {
@@ -472,8 +473,8 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
             // Also, If we encounter a scenario where tests in the same suite are interfering with each other we
             // can move this logic inside the after method in the MethodTestDescriptor class.
             // This way we will clean up the data after each test.
-            FileUtils.deleteDirectory(context.getSavedStateDirectory());
-            FileUtils.deleteDirectory(context.getEventsLogDir());
+            if (context.getSavedStateDirectory() != null) FileUtils.deleteDirectory(context.getSavedStateDirectory());
+            if (context.getEventsLogDir() != null) FileUtils.deleteDirectory(context.getEventsLogDir());
         }
 
         private boolean allTestsSkipped() {
@@ -509,7 +510,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
         public SkipResult shouldBeSkipped(HapiTestEngineExecutionContext context) {
             final var annotation = AnnotationSupport.findAnnotation(testMethod, Disabled.class);
             if (!AnnotationSupport.isAnnotated(testMethod, HapiTest.class)) {
-                return SkipResult.skip("No @HapiTest annotation");
+                return SkipResult.skip(testMethod.getName() + " No @HapiTest annotation");
             } else if (annotation.isPresent()) {
                 final var msg = annotation.get().value();
                 return SkipResult.skip(msg == null || msg.isBlank() ? "Disabled" : msg);

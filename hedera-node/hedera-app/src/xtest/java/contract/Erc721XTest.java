@@ -45,6 +45,7 @@ import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.state.ReadableKVState;
@@ -173,7 +174,7 @@ public class Erc721XTest extends AbstractContractXTest {
     }
 
     @Override
-    protected void assertExpectedAliases(@NotNull final ReadableKVState<Bytes, AccountID> aliases) {
+    protected void assertExpectedAliases(@NotNull final ReadableKVState<ProtoBytes, AccountID> aliases) {
         // No aliases change in this test
     }
 
@@ -226,11 +227,11 @@ public class Erc721XTest extends AbstractContractXTest {
     }
 
     @Override
-    protected Map<Bytes, AccountID> initialAliases() {
-        final var aliases = new HashMap<Bytes, AccountID>();
-        aliases.put(TOKEN_TREASURY_ADDRESS, TOKEN_TREASURY_ID);
-        aliases.put(COUNTERPARTY_ADDRESS, COUNTERPARTY_ID);
-        aliases.put(OPERATOR_ADDRESS, OPERATOR_ID);
+    protected Map<ProtoBytes, AccountID> initialAliases() {
+        final var aliases = new HashMap<ProtoBytes, AccountID>();
+        aliases.put(ProtoBytes.newBuilder().value(TOKEN_TREASURY_ADDRESS).build(), TOKEN_TREASURY_ID);
+        aliases.put(ProtoBytes.newBuilder().value(COUNTERPARTY_ADDRESS).build(), COUNTERPARTY_ID);
+        aliases.put(ProtoBytes.newBuilder().value(OPERATOR_ADDRESS).build(), OPERATOR_ID);
         return aliases;
     }
 

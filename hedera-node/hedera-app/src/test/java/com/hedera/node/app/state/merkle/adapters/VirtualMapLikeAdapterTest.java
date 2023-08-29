@@ -17,6 +17,7 @@
 package com.hedera.node.app.state.merkle.adapters;
 
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.NFTS_KEY;
+import static com.swirlds.common.io.utility.TemporaryFileBuilder.buildTemporaryDirectory;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -41,17 +42,16 @@ import com.hedera.node.app.state.merkle.disk.OnDiskKey;
 import com.hedera.node.app.state.merkle.disk.OnDiskKeySerializer;
 import com.hedera.node.app.state.merkle.disk.OnDiskValue;
 import com.hedera.node.app.state.merkle.disk.OnDiskValueSerializer;
-import com.swirlds.common.io.utility.TemporaryFileBuilder;
+import com.swirlds.base.utility.Pair;
+import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
-import com.swirlds.jasperdb.JasperDbBuilder;
-import com.swirlds.jasperdb.VirtualLeafRecordSerializer;
-import com.swirlds.jasperdb.files.DataFileCommon;
+import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
+import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.Set;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -132,19 +132,12 @@ class VirtualMapLikeAdapterTest {
 
         final var keySerializer = new OnDiskKeySerializer(metadata);
         final var valueSerializer = new OnDiskValueSerializer(metadata);
-        final var ds = new JasperDbBuilder<>()
-                .maxNumOfKeys(1_024)
-                .storageDir(TemporaryFileBuilder.buildTemporaryDirectory("jasperdb"))
-                .keySerializer(keySerializer)
-                .virtualLeafRecordSerializer(new VirtualLeafRecordSerializer<>(
-                        (short) 1,
-                        DataFileCommon.VARIABLE_DATA_SIZE,
-                        keySerializer,
-                        (short) 1,
-                        DataFileCommon.VARIABLE_DATA_SIZE,
-                        valueSerializer,
-                        false));
-        real = new VirtualMap<>("REAL", ds);
+        final var tableConfig = new MerkleDbTableConfig<>(
+                        (short) 1, DigestType.SHA_384, (short) 1, keySerializer, (short) 1, valueSerializer)
+                .maxNumberOfKeys(1_024);
+
+        final var dsBuilder = new MerkleDbDataSourceBuilder<>(buildTemporaryDirectory("merkledb"), tableConfig);
+        real = new VirtualMap<>("REAL", dsBuilder);
         subject = VirtualMapLikeAdapter.unwrapping(metadata, real);
     }
 

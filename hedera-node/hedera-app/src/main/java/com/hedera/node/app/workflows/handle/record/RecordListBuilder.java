@@ -23,6 +23,7 @@ import com.hedera.node.config.data.ConsensusConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -54,6 +55,33 @@ public class RecordListBuilder {
     public RecordListBuilder(@NonNull final SingleTransactionRecordBuilderImpl recordBuilder) {
         requireNonNull(recordBuilder, "recordBuilder must not be null");
         recordBuilders.add(recordBuilder);
+    }
+
+    /**
+     * Returns the main record builder
+     *
+     * @return the main record builder
+     */
+    public SingleTransactionRecordBuilderImpl userTransactionRecordBuilder() {
+        return childRecordBuilders().get(0);
+    }
+
+    /**
+     * Returns an unmodifiable {@link List} of all preceding record builders.
+     *
+     * @return all preceding record builders
+     */
+    public List<SingleTransactionRecordBuilderImpl> precedingRecordBuilders() {
+        return Collections.unmodifiableList(precedingRecordBuilders);
+    }
+
+    /**
+     * Returns an unmodifiable {@link List} of all child record builders.
+     *
+     * @return all child record builders
+     */
+    public List<SingleTransactionRecordBuilderImpl> childRecordBuilders() {
+        return Collections.unmodifiableList(recordBuilders);
     }
 
     /**
@@ -196,5 +224,6 @@ public class RecordListBuilder {
     }
 
     public record Result(
-            @NonNull SingleTransactionRecord mainRecord, @NonNull Stream<SingleTransactionRecord> recordStream) {}
+            @NonNull SingleTransactionRecord userTransactionRecord,
+            @NonNull Stream<SingleTransactionRecord> recordStream) {}
 }

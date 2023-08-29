@@ -106,9 +106,7 @@ gradleEnterprise {
 // The HAPI API version to use for Protobuf sources. This can be a tag or branch
 // name from the hedera-protobufs GIT repo.
 val hapiProtoVersion = "0.40.0-blocks-state-SNAPSHOT"
-// val hapiProtoBranchOrTag = "add-pbj-types-for-state" // hapiProtoVersion
-val hapiProtoBranchOrTag =
-    "7684-protobuf-cleanup" // revert this change after associated protobuf PR is merged
+val hapiProtoBranchOrTag = "add-pbj-types-for-state" // hapiProtoVersion
 
 gitRepositories {
     checkoutsDirectory.set(File(rootDir, "hedera-node/hapi"))
@@ -136,7 +134,7 @@ dependencyResolutionManagement {
             version("grpc-proto", "1.45.1")
             version("hapi-proto", hapiProtoVersion)
 
-            plugin("pbj", "com.hedera.pbj.pbj-compiler").version("0.6.1")
+            plugin("pbj", "com.hedera.pbj.pbj-compiler").version("0.7.4")
         }
     }
 }

@@ -20,6 +20,8 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.node.app.service.util.impl.records.PrngRecordBuilder;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -64,19 +66,26 @@ public class UtilPrngHandler implements TransactionHandler {
     /**
      * {@inheritDoc}
      */
-    public void handle(@NonNull final HandleContext context) {
-        final var op = context.body().utilPrngOrThrow();
-        final var range = op.range();
-
+    @Override
+    @NonNull
+    public Fees calculateFees(@NonNull FeeContext feeContext) {
         // Determine the fees. If the range is specified (i.e. it isn't 0), then we charge for an additional 4 bytes
         // (one integer), otherwise we don't charge for any additional bytes. Standard transaction usage has already
         // been determined and loaded into the calculator.
-        final var fees = context.feeCalculator(SubType.DEFAULT)
+        final var range = feeContext.body().utilPrngOrThrow().range();
+        return feeContext
+                .feeCalculator(SubType.DEFAULT)
                 .addBytesPerTransaction(range > 0 ? Integer.BYTES : 0)
                 .calculate();
+    }
 
-        // Charge the payer for these fees. If the payer doesn't have enough funds, this will throw an exception.
-        context.feeAccumulator().charge(context.payer(), fees);
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void handle(@NonNull final HandleContext context) {
+        final var op = context.body().utilPrngOrThrow();
+        final var range = op.range();
 
         // Get the n-3 running hash. It should never be possible to get an empty n-3 hash, and certainly not in
         // mainnet. The only way to get one is to handle a transaction immediately after genesis. Even then it is

@@ -101,7 +101,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
             @Nullable final Long stakedNodeIdInOp,
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final NetworkInfo networkInfo) {
-        stakingValidator.validateStakedId(
+        stakingValidator.validateStakedIdForCreation(
                 isStakingEnabled,
                 hasDeclineRewardChange,
                 stakedIdKind,

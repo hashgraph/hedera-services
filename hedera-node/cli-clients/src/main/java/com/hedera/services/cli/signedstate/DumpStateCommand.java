@@ -21,6 +21,7 @@ import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
+import java.util.EnumSet;
 import java.util.Objects;
 import java.util.Set;
 import picocli.CommandLine;
@@ -63,6 +64,12 @@ public class DumpStateCommand extends AbstractCommand {
     enum Format {
         CSV,
         ELIDED_DEFAULT_FIELDS
+    }
+
+    enum KeyDetails {
+        STRUCTURE,
+        STRUCTURE_WITH_IDS,
+        NONE
     }
 
     // We want to open the signed state file only once but run a bunch of dumps against it
@@ -157,7 +164,12 @@ public class DumpStateCommand extends AbstractCommand {
                             arity = "0..1",
                             defaultValue = "2147483647",
                             description = "highest account number (inclusive) to dump")
-                    int highLimit) {
+                    int highLimit,
+            @Option(
+                            names = {"--keys"},
+                            arity = "0..*",
+                            description = "How to dump key summaries")
+                    final EnumSet<KeyDetails> keyDetails) {
         Objects.requireNonNull(accountPath);
         if (lowLimit > highLimit)
             throw new CommandLine.ParameterException(
@@ -170,7 +182,37 @@ public class DumpStateCommand extends AbstractCommand {
                 accountPath,
                 lowLimit,
                 highLimit,
+                keyDetails,
                 doCsv ? Format.CSV : Format.ELIDED_DEFAULT_FIELDS,
+                parent.verbosity);
+        finish();
+    }
+
+    @Command(name = "files")
+    void files(
+            @Option(
+                            names = {"--files"},
+                            arity = "1",
+                            description = "Output file for files dump")
+                    @NonNull
+                    final Path filesPath,
+            @Option(
+                            names = {"--keys"},
+                            arity = "0..*",
+                            description = "How to dump key summaries")
+                    final EnumSet<KeyDetails> keyDetails,
+            @Option(
+                            names = {"-s", "--summary"},
+                            description = "Emit a summary line")
+                    final boolean emitSummary) {
+        Objects.requireNonNull(filesPath);
+        init();
+        System.out.println("=== files ===");
+        DumpFilesSubcommand.doit(
+                parent.signedState,
+                filesPath,
+                keyDetails,
+                emitSummary ? EmitSummary.YES : EmitSummary.NO,
                 parent.verbosity);
         finish();
     }
