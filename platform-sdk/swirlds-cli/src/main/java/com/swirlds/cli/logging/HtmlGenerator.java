@@ -311,6 +311,7 @@ public class HtmlGenerator {
                         .map(LogLine::getNodeId)
                         .distinct()
                         .filter(Objects::nonNull)
+                        .sorted()
                         .map(nodeId -> "node" + nodeId)
                         .toList()));
 
