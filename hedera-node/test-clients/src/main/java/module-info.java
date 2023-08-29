@@ -26,7 +26,7 @@ module com.hedera.node.test.clients {
     requires com.github.docker.java.api;
     requires com.swirlds.config.api;
     requires com.swirlds.fchashmap;
-    requires com.swirlds.jasperdb;
+    requires com.swirlds.merkledb;
     requires com.swirlds.platform.core;
     requires com.swirlds.virtualmap;
     requires grpc.netty;

@@ -268,8 +268,8 @@ module com.hedera.node.app.service.mono {
     requires transitive com.swirlds.common;
     requires transitive com.swirlds.fchashmap;
     requires transitive com.swirlds.fcqueue;
-    requires transitive com.swirlds.merkledb;
     requires transitive com.swirlds.merkle;
+    requires transitive com.swirlds.merkledb;
     requires transitive com.swirlds.virtualmap;
     requires transitive dagger;
     requires transitive grpc.netty;

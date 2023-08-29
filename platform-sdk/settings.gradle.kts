@@ -44,7 +44,7 @@ include(":swirlds-fcqueue")
 
 include(":swirlds-merkle")
 
-include(":swirlds-jasperdb")
+include(":swirlds-merkledb", "swirlds-jasperdb")
 
 include(":swirlds-virtualmap")
 

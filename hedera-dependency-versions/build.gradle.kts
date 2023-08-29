@@ -33,7 +33,7 @@ val prometheusVersion = "0.16.0"
 val protobufVersion = "3.21.7"
 val systemStubsVersion = "2.0.2"
 val testContainersVersion = "1.17.2"
-val tuweniVersion = "2.2.0"
+val tuweniVersion = "2.3.1"
 
 dependencies {
     api(enforcedPlatform("io.netty:netty-bom:$nettyVersion"))
@@ -43,7 +43,7 @@ moduleInfo {
     version("awaitility", "4.2.0")
     version("com.fasterxml.jackson.core", jacksonVersion)
     version("com.fasterxml.jackson.databind", jacksonVersion)
-    version("com.github.benmanes.caffeine", "3.0.6")
+    version("com.github.benmanes.caffeine", "3.1.1")
     version("com.github.docker.java.api", "3.2.13")
     version("com.github.spotbugs.annotations", "4.7.3")
     version("com.google.common", "31.1-jre")
@@ -94,7 +94,7 @@ moduleInfo {
     version("org.hyperledger.besu.evm", besuVersion)
     version("org.hyperledger.besu.secp256k1", besuNativeVersion)
     version("org.json", "20230227")
-    version("org.junit.jupiter.api", "5.9.0")
+    version("org.junit.jupiter.api", "5.9.1")
     version("org.junit.platform.engine", "1.9.1")
     version("org.junitpioneer", "2.0.1")
     version("org.mockito", mockitoVersion)

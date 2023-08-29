@@ -7,7 +7,6 @@ module com.swirlds.platform.gui {
     requires transitive com.swirlds.common;
     requires transitive java.desktop;
     requires com.swirlds.logging;
-    requires org.apache.commons.lang3;
     requires org.apache.logging.log4j;
     requires static com.github.spotbugs.annotations;
 }

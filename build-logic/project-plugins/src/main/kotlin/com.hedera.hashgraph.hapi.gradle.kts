@@ -34,9 +34,9 @@ protobuf {
     generateProtoTasks { ofSourceSet("main").forEach { it.plugins { id("grpc") } } }
 }
 
-configurations.compileProtoPath {
+sourceSets.all {
     // Make all dependency versions accessible to proto compile
-    extendsFrom(configurations["internal"])
+    configurations.getByName(getTaskName("", "compileProtoPath")) {
+        extendsFrom(configurations["internal"])
+    }
 }
-
-configurations.testCompileProtoPath { extendsFrom(configurations["internal"]) }

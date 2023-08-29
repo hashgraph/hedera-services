@@ -24,7 +24,7 @@ jmhModuleInfo {
     requires("com.swirlds.common")
     requires("com.swirlds.config.api")
     requires("com.swirlds.fchashmap")
-    requires("com.swirlds.jasperdb")
+    requires("com.swirlds.merkledb")
     requires("com.swirlds.virtualmap")
     requires("jmh.core")
     requires("org.apache.logging.log4j")

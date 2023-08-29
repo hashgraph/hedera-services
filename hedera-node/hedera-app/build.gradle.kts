@@ -73,6 +73,7 @@ xtestModuleInfo {
     annotationProcessor("dagger.compiler")
     requires("com.hedera.node.app")
     requires("com.hedera.node.app.test.fixtures")
+    requires("com.hedera.node.app.hapi.fees")
     requires("com.hedera.node.app.service.consensus.impl")
     requires("com.hedera.node.app.service.contract.impl")
     requires("com.hedera.node.app.service.file.impl")

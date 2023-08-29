@@ -33,17 +33,16 @@ module com.swirlds.demo.platform {
     requires com.swirlds.common;
     requires com.swirlds.fchashmap;
     requires com.swirlds.fcqueue;
-    requires com.swirlds.jasperdb;
     requires com.swirlds.logging;
     requires com.swirlds.merkle.test;
     requires com.swirlds.merkle;
+    requires com.swirlds.merkledb;
     requires com.swirlds.platform.core;
     requires com.swirlds.platform.gui;
     requires com.swirlds.virtualmap;
     requires java.logging;
     requires java.management;
     requires java.sql;
-    requires org.apache.commons.math3;
     requires org.apache.logging.log4j;
     requires static com.github.spotbugs.annotations;
 }

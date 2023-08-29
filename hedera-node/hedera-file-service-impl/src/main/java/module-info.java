@@ -7,6 +7,7 @@ module com.hedera.node.app.service.file.impl {
     requires com.swirlds.config.api;
     requires org.apache.commons.lang3;
     requires org.apache.logging.log4j;
+    requires transitive com.hedera.node.app.hapi.fees;
     requires transitive com.hedera.node.app.service.file;
     requires transitive com.hedera.node.app.service.mono;
     requires transitive com.hedera.node.app.spi;

@@ -7,8 +7,8 @@ open module com.swirlds.common.testing {
     exports com.swirlds.common.test.map;
 
     requires transitive com.swirlds.common;
+    requires transitive org.apache.logging.log4j.core;
     requires java.scripting;
-    requires org.apache.commons.lang3;
     requires org.apache.logging.log4j;
     requires org.junit.jupiter.api;
     requires static com.github.spotbugs.annotations;
