@@ -37,7 +37,6 @@ import com.swirlds.base.utility.Pair;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.file.Path;
-import java.security.InvalidKeyException;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -419,17 +418,9 @@ public class DumpTokensSubcommand {
         map.accept("key complexity", Token::getKeyComplexity);
     }
 
-    static final int MAX_KEY_DEPTH = 15; // From JKey (but not exported from that package)
-
     static boolean jkeyDeepEqualsButBothNullIsFalse(final JKey left, final JKey right) {
         if (left == null || right == null) return false;
-        if (left == right) return true;
-        if (left.getClass() != right.getClass()) return false;
-        try {
-            return Objects.equals(JKey.convertJKey(left, MAX_KEY_DEPTH), JKey.convertJKey(right, MAX_KEY_DEPTH));
-        } catch (InvalidKeyException ignore) {
-            return false;
-        }
+        return left.equals(right);
     }
 
     /** A "complex" key is a keylist with >1 key or a threshold key with >1 key. If a keylist has one key or if a
