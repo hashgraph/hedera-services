@@ -65,7 +65,7 @@ public final class UpdateFileForUpgrade extends HapiSuite {
                                 GENESIS,
                                 upgradeFileId(),
                                 ByteString.copyFrom(Files.readAllBytes(Paths.get(upgradeFilePath()))),
-                                TxnUtils.BYTES_4K*2,
+                                TxnUtils.BYTES_4K,
                                 upgradeFileAppendsPerBurst());
                     } catch (IOException e) {
                         e.printStackTrace();
