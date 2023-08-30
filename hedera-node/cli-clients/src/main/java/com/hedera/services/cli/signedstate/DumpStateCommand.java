@@ -21,6 +21,7 @@ import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
+import java.util.EnumSet;
 import java.util.Objects;
 import java.util.Set;
 import picocli.CommandLine;
@@ -66,8 +67,9 @@ public class DumpStateCommand extends AbstractCommand {
     }
 
     enum KeyDetails {
-        DEEP,
-        SHALLOW
+        STRUCTURE,
+        STRUCTURE_WITH_IDS,
+        NONE
     }
 
     // We want to open the signed state file only once but run a bunch of dumps against it
@@ -162,7 +164,12 @@ public class DumpStateCommand extends AbstractCommand {
                             arity = "0..1",
                             defaultValue = "2147483647",
                             description = "highest account number (inclusive) to dump")
-                    int highLimit) {
+                    int highLimit,
+            @Option(
+                            names = {"--keys"},
+                            arity = "0..*",
+                            description = "How to dump key summaries")
+                    final EnumSet<KeyDetails> keyDetails) {
         Objects.requireNonNull(accountPath);
         if (lowLimit > highLimit)
             throw new CommandLine.ParameterException(
@@ -175,6 +182,7 @@ public class DumpStateCommand extends AbstractCommand {
                 accountPath,
                 lowLimit,
                 highLimit,
+                keyDetails,
                 doCsv ? Format.CSV : Format.ELIDED_DEFAULT_FIELDS,
                 parent.verbosity);
         finish();
@@ -189,10 +197,10 @@ public class DumpStateCommand extends AbstractCommand {
                     @NonNull
                     final Path filesPath,
             @Option(
-                            names = {"--deep-keys"},
-                            arity = "0..1",
-                            description = "Whether to fully dump keys or not")
-                    final boolean doDeepKeys,
+                            names = {"--keys"},
+                            arity = "0..*",
+                            description = "How to dump key summaries")
+                    final EnumSet<KeyDetails> keyDetails,
             @Option(
                             names = {"-s", "--summary"},
                             description = "Emit a summary line")
@@ -203,7 +211,7 @@ public class DumpStateCommand extends AbstractCommand {
         DumpFilesSubcommand.doit(
                 parent.signedState,
                 filesPath,
-                doDeepKeys ? KeyDetails.DEEP : KeyDetails.SHALLOW,
+                keyDetails,
                 emitSummary ? EmitSummary.YES : EmitSummary.NO,
                 parent.verbosity);
         finish();

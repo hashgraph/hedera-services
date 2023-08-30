@@ -40,8 +40,8 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tu
 import static java.util.Objects.requireNonNull;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.ILLEGAL_STATE_CHANGE;
 
-import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
@@ -79,10 +79,8 @@ import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
  * TODO - get a little further to clarify DI strategy, then bring back a code cache.
  */
 public class DispatchingEvmFrameState implements EvmFrameState {
-    // This key can no longer be an empty key list as it fails validation.  Use this key for now
-    private static final Key HOLLOW_ACCOUNT_KEY = Key.newBuilder()
-            .contractID(ContractID.newBuilder().contractNum(1).build())
-            .build();
+    private static final Key HOLLOW_ACCOUNT_KEY =
+            Key.newBuilder().keyList(KeyList.DEFAULT).build();
     private static final String TOKEN_BYTECODE_PATTERN = "fefefefefefefefefefefefefefefefefefefefe";
 
     @SuppressWarnings("java:S6418")

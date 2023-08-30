@@ -1,0 +1,169 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.hedera.node.app.service.contract.impl.test.handlers;
+
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SUCCESS_RESULT;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+
+import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.QueryHeader;
+import com.hedera.hapi.node.base.ResponseHeader;
+import com.hedera.hapi.node.contract.ContractCallLocalQuery;
+import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.transaction.Query;
+import com.hedera.node.app.service.contract.impl.exec.CallOutcome;
+import com.hedera.node.app.service.contract.impl.exec.ContextQueryProcessor;
+import com.hedera.node.app.service.contract.impl.exec.QueryComponent;
+import com.hedera.node.app.service.contract.impl.handlers.ContractCallLocalHandler;
+import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.QueryContext;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+@ExtendWith(MockitoExtension.class)
+class ContractCallLocalHandlerTest {
+    @Mock
+    private QueryContext context;
+
+    @Mock
+    private QueryComponent.Factory factory;
+
+    @Mock
+    private ContractCallLocalQuery contractCallLocalQuery;
+
+    @Mock
+    private QueryHeader header;
+
+    @Mock
+    private ResponseHeader responseHeader;
+
+    @Mock
+    private Query query;
+
+    @Mock
+    private ContractID contractID;
+
+    @Mock
+    private ReadableAccountStore store;
+
+    @Mock
+    private Account contract;
+
+    @Mock
+    private QueryComponent component;
+
+    @Mock
+    private ContextQueryProcessor processor;
+
+    private final ContractCallLocalHandler subject = new ContractCallLocalHandler(() -> factory);
+
+    @Test
+    void extractHeaderTest() {
+        // given:
+        given(query.contractCallLocalOrThrow()).willReturn(contractCallLocalQuery);
+        given(contractCallLocalQuery.header()).willReturn(header);
+
+        // when:
+        var header = subject.extractHeader(query);
+
+        // then:
+        assertThat(header).isNotNull();
+    }
+
+    @Test
+    void createEmptyResponseTest() {
+        // when:
+        var response = subject.createEmptyResponse(responseHeader);
+
+        // then:
+        assertThat(response).isNotNull();
+    }
+
+    @Test
+    void validatePositiveTest() {
+        // given
+        given(context.query()).willReturn(query);
+        given(query.contractCallLocalOrThrow()).willReturn(contractCallLocalQuery);
+        given(contractCallLocalQuery.contractID()).willReturn(contractID);
+        given(context.createStore(ReadableAccountStore.class)).willReturn(store);
+        given(store.getContractById(contractID)).willReturn(contract);
+
+        // when:
+        assertThatCode(() -> subject.validate(context)).doesNotThrowAnyException();
+    }
+
+    @Test
+    void validateFailsIfNoContractIdTest() {
+        // given
+        given(context.query()).willReturn(query);
+        given(query.contractCallLocalOrThrow()).willReturn(contractCallLocalQuery);
+        given(contractCallLocalQuery.contractID()).willReturn(null);
+
+        // when:
+        assertThatThrownBy(() -> subject.validate(context)).isInstanceOf(PreCheckException.class);
+    }
+
+    @Test
+    void validateFailsIfNoContractTest() {
+        // given
+        given(context.query()).willReturn(query);
+        given(query.contractCallLocalOrThrow()).willReturn(contractCallLocalQuery);
+        given(contractCallLocalQuery.contractID()).willReturn(contractID);
+        given(context.createStore(ReadableAccountStore.class)).willReturn(store);
+        given(store.getContractById(contractID)).willReturn(null);
+
+        // when:
+        assertThatThrownBy(() -> subject.validate(context)).isInstanceOf(PreCheckException.class);
+    }
+
+    @Test
+    void validateFailsIfContractDeletedTest() {
+        // given
+        given(context.query()).willReturn(query);
+        given(query.contractCallLocalOrThrow()).willReturn(contractCallLocalQuery);
+        given(contractCallLocalQuery.contractID()).willReturn(contractID);
+        given(context.createStore(ReadableAccountStore.class)).willReturn(store);
+        given(store.getContractById(contractID)).willReturn(contract);
+        given(contract.deleted()).willReturn(true);
+
+        // when:
+        assertThatThrownBy(() -> subject.validate(context)).isInstanceOf(PreCheckException.class);
+    }
+
+    @Test
+    void findResponsePositiveTest() {
+        given(factory.create(any(), any())).willReturn(component);
+        given(component.contextQueryProcessor()).willReturn(processor);
+        final var expectedResult = SUCCESS_RESULT.asQueryResultOf();
+        final var expectedOutcome = new CallOutcome(expectedResult, SUCCESS_RESULT.finalStatus());
+        given(processor.call()).willReturn(expectedOutcome);
+
+        // given(processor.call()).willReturn(responseHeader);
+        // when:
+        var response = subject.findResponse(context, responseHeader);
+
+        assertThat(response.contractCallLocal().header()).isEqualTo(responseHeader);
+        assertThat(response.contractCallLocal().functionResult()).isEqualTo(expectedOutcome.result());
+    }
+}

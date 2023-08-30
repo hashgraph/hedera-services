@@ -154,7 +154,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             final var storeFactory = new ReadableStoreFactory(state);
             final var paymentRequired = handler.requiresNodePayment(responseType);
             final var context =
-                    new QueryContextImpl(storeFactory, query, configProvider.getConfiguration(), recordCache);
+                    new QueryContextImpl(state, storeFactory, query, configProvider.getConfiguration(), recordCache);
             Transaction allegedPayment = null;
             TransactionBody txBody = null;
             if (paymentRequired) {
