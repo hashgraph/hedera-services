@@ -16,12 +16,20 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec;
 
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.mockito.BDDMockito.given;
+import static com.hedera.node.app.service.contract.impl.exec.TransactionModule.provideActionSidecarContentTracer;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
+import com.hedera.node.app.service.contract.impl.exec.EvmActionTracer;
 import com.hedera.node.app.service.contract.impl.exec.QueryModule;
+import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
+import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations;
+import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
+import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
+import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
+import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.QueryContext;
-import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.swirlds.config.api.Configuration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -32,10 +40,47 @@ class QueryModuleTest {
     @Mock
     private QueryContext context;
 
+    @Mock
+    private HederaOperations hederaOperations;
+
+    @Mock
+    SystemContractOperations systemContractOperations;
+
+    @Mock
+    private EvmFrameStateFactory factory;
+
+    @Mock
+    private HederaEvmBlocks hederaEvmBlocks;
+
+    @Mock
+    private ReadableAccountStore readableAccountStore;
+
+    @Mock
+    private Configuration config;
+
     @Test
-    void providesExpectedConfig() {
-        final var config = HederaTestConfigBuilder.create().getOrCreateConfig();
-        given(context.configuration()).willReturn(config);
-        assertSame(config, QueryModule.provideConfiguration(context));
+    void providesExpectedProxyWorldUpdater() {
+        assertInstanceOf(
+                ProxyWorldUpdater.class,
+                QueryModule.provideProxyWorldUpdater(hederaOperations, systemContractOperations, factory));
+    }
+
+    @Test
+    void createsEvmActionTracer() {
+        assertInstanceOf(EvmActionTracer.class, provideActionSidecarContentTracer());
+    }
+
+    @Test
+    void feesOnlyUpdaterIsProxyUpdater() {
+        assertInstanceOf(
+                ProxyWorldUpdater.class,
+                QueryModule.provideFeesOnlyUpdater(hederaOperations, systemContractOperations, factory)
+                        .get());
+    }
+
+    @Test
+    void providesExpectedHederaEvmContext() {
+        assertInstanceOf(
+                HederaEvmContext.class, QueryModule.provideHederaEvmContext(hederaOperations, hederaEvmBlocks));
     }
 }
