@@ -35,7 +35,6 @@ import com.hedera.node.app.service.file.impl.base.FileQueryBase;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -47,7 +46,9 @@ import javax.inject.Singleton;
 public class FileGetContentsHandler extends FileQueryBase {
 
     @Inject
-    public FileGetContentsHandler() {}
+    public FileGetContentsHandler() {
+        // Dagger2
+    }
 
     @Override
     public @NonNull QueryHeader extractHeader(@NonNull final Query query) {
@@ -103,7 +104,7 @@ public class FileGetContentsHandler extends FileQueryBase {
      * @param fileStore the file store
      * @return the content about the file
      */
-    private @Nullable Optional<FileContents> contentFile(
+    private Optional<FileContents> contentFile(
             @NonNull final FileID fileID, @NonNull final ReadableFileStore fileStore) {
         final var meta = fileStore.getFileMetadata(fileID);
         if (meta == null) {

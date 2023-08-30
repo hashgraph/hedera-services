@@ -469,6 +469,8 @@ public class GenesisSchema extends Schema {
     // ================================================================================================================
     // Creates and loads the software update file into state (may be empty? NOT SURE)
 
+    // Suppressing the warning that the arguments are not used. To be removed when implemented
+    @SuppressWarnings("java:S1172")
     private void createGenesisSoftwareUpdateZip(
             @NonNull final BootstrapConfig bootstrapConfig,
             @NonNull final FilesConfig filesConfig,

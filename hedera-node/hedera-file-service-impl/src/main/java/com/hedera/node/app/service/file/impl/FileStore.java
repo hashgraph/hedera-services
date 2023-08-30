@@ -25,6 +25,7 @@ import java.util.Objects;
 /**
  * Base class for {@link ReadableFileStoreImpl} and {@link WritableFileStore}.
  */
+@SuppressWarnings("java:S1118") // suppressing the warning to have a private constructor. This is not utility class
 public abstract class FileStore {
     /**
      * Convert a {@link File} to a {@link FileMetadata}.

@@ -81,6 +81,8 @@ public class FileGetInfoHandler extends FileQueryBase {
         }
     }
 
+    // Suppress the warning that we shouldn't throw generic exceptions
+    @SuppressWarnings("java:S112")
     @Override
     public @NonNull Response findResponse(@NonNull final QueryContext context, @NonNull final ResponseHeader header) {
         requireNonNull(header);
@@ -122,6 +124,7 @@ public class FileGetInfoHandler extends FileQueryBase {
      * @param ledgerConfig
      * @return the information about the file
      */
+    @SuppressWarnings("java:S5738") // Suppress the warning that we are using deprecated class(CryptographyHolder)
     private Optional<FileInfo> infoForFile(
             @NonNull final FileID fileID,
             @NonNull final ReadableFileStore fileStore,
