@@ -33,7 +33,6 @@ public interface ThrottleAccumulator {
      * the {@code transaction}, will always return true.)
      *
      * @param txn the transaction to consider throttling
-     * @param t the time at which the transaction is being processed
      * @return true if the relevant throttle(s) have run out of capacity, false otherwise.
      * @throws NullPointerException if {@code txn} is {@code null}
      */
