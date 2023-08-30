@@ -33,6 +33,7 @@ import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.function.Predicate;
 
 /**
  * Represents the context of a single {@code handle()}-call.
@@ -304,8 +305,12 @@ public interface HandleContext {
      * changes have been introduced by the user transaction (either by storing state or by calling a child
      * transaction).
      *
+     * <p>The provided {@link Predicate} callback will be called to verify simple keys when the child transaction calls
+     * any of the {@code verificationFor} methods.
+     *
      * @param txBody the {@link TransactionBody} of the transaction to dispatch
      * @param recordBuilderClass the record builder class of the transaction
+     * @param verifier a {@link Predicate} that will be used to validate primitive keys
      * @return the record builder of the transaction
      * @throws NullPointerException if {@code txBody} is {@code null}
      * @throws IllegalArgumentException if the transaction is not a {@link TransactionCategory#USER}-transaction or if
@@ -313,7 +318,18 @@ public interface HandleContext {
      * @throws IllegalStateException if the current transaction has already introduced state changes
      */
     @NonNull
-    <T> T dispatchPrecedingTransaction(@NonNull TransactionBody txBody, @NonNull Class<T> recordBuilderClass);
+    <T> T dispatchPrecedingTransaction(
+            @NonNull TransactionBody txBody, @NonNull Class<T> recordBuilderClass, @NonNull Predicate<Key> verifier);
+
+    /**
+     * @deprecated Use {@link #dispatchPrecedingTransaction(TransactionBody, Class, Predicate)} instead.
+     */
+    @Deprecated(forRemoval = true)
+    @NonNull
+    default <T> T dispatchPrecedingTransaction(@NonNull TransactionBody txBody, @NonNull Class<T> recordBuilderClass) {
+        return dispatchPrecedingTransaction(
+                txBody, recordBuilderClass, key -> verificationFor(key).passed());
+    }
 
     /**
      * Dispatches a child transaction.
@@ -328,15 +344,14 @@ public interface HandleContext {
      * aware that any state changes introduced by storing data in one of the stores after calling a child transaction
      * will also be rolled back if the child transaction is rolled back.
      *
-     * <p>The provided {@link VerificationAssistant} callback will be called when the child transaction calls any
-     * of the {@code verificationFor} methods. If both, parent and child transaction, provide a
-     * {@link VerificationAssistant}, the one from the parent will be called first.
+     * <p>The provided {@link Predicate} callback will be called to verify simple keys when the child transaction calls
+     * any of the {@code verificationFor} methods.
      *
      * <p>A {@link TransactionCategory#PRECEDING}-transaction must not dispatch a child transaction.
      *
      * @param txBody the {@link TransactionBody} of the child transaction to dispatch
      * @param recordBuilderClass the record builder class of the child transaction
-     * @param callback a {@link VerificationAssistant} callback function that will observe each primitive key
+     * @param callback a {@link Predicate} callback function that will observe each primitive key
      * @return the record builder of the child transaction
      * @throws NullPointerException if any of the arguments is {@code null}
      * @throws IllegalArgumentException if the current transaction is a
@@ -344,42 +359,35 @@ public interface HandleContext {
      */
     @NonNull
     <T> T dispatchChildTransaction(
-            @NonNull TransactionBody txBody,
-            @NonNull Class<T> recordBuilderClass,
-            @NonNull VerificationAssistant callback);
+            @NonNull TransactionBody txBody, @NonNull Class<T> recordBuilderClass, @NonNull Predicate<Key> callback);
 
     /**
-     * Dispatches a child transaction without a {@link VerificationAssistant}.
-     *
-     * <p>This method is similar to {@link #dispatchChildTransaction(TransactionBody, Class, VerificationAssistant)}
-     * except that no {@link VerificationAssistant} is provided.
-     *
-     * @param txBody the {@link TransactionBody} of the child transaction to dispatch
-     * @param recordBuilderClass the record builder class of the child transaction
-     * @return the record builder of the child transaction
-     * @throws NullPointerException if any of the arguments is {@code null}
-     * @throws IllegalArgumentException if the current transaction is a
-     * {@link TransactionCategory#PRECEDING}-transaction or if the record builder type is unknown to the app
+     * @deprecated Use {@link #dispatchChildTransaction(TransactionBody, Class, Predicate)} instead.
      */
+    @Deprecated(forRemoval = true)
     @NonNull
-    <T> T dispatchChildTransaction(@NonNull TransactionBody txBody, @NonNull Class<T> recordBuilderClass);
+    default <T> T dispatchChildTransaction(
+            @NonNull TransactionBody txBody,
+            @NonNull Class<T> recordBuilderClass,
+            @NonNull VerificationAssistant callback) {
+        return dispatchChildTransaction(txBody, recordBuilderClass, key -> callback.test(key, verificationFor(key)));
+    }
 
     /**
      * Dispatches a removable child transaction.
      *
      * <p>A removable child transaction depends on the current transaction. It behaves in almost all aspects like a
-     * regular child transaction (see {@link #dispatchChildTransaction(TransactionBody, Class)}. But unlike regular
-     * child transactions, the records of removable child transactions are removed and not reverted.
+     * regular child transaction (see {@link #dispatchChildTransaction(TransactionBody, Class, Predicate)}.
+     * But unlike regular child transactions, the records of removable child transactions are removed and not reverted.
      *
-     * <p>The provided {@link VerificationAssistant} callback will be called when the child transaction calls any
-     * of the {@code verificationFor} methods. If both, parent and child transaction, provide a
-     * {@link VerificationAssistant}, the one from the parent will be called first.
+     * <p>The provided {@link Predicate} callback will be called to verify simple keys when the child transaction calls
+     * any of the {@code verificationFor} methods.
      *
      * <p>A {@link TransactionCategory#PRECEDING}-transaction must not dispatch a child transaction.
      *
      * @param txBody the {@link TransactionBody} of the child transaction to dispatch
      * @param recordBuilderClass the record builder class of the child transaction
-     * @param callback a {@link VerificationAssistant} callback function that will observe each primitive key
+     * @param callback a {@link Predicate} callback function that will observe each primitive key
      * @return the record builder of the child transaction
      * @throws NullPointerException if any of the arguments is {@code null}
      * @throws IllegalArgumentException if the current transaction is a
@@ -387,25 +395,20 @@ public interface HandleContext {
      */
     @NonNull
     <T> T dispatchRemovableChildTransaction(
-            @NonNull TransactionBody txBody,
-            @NonNull Class<T> recordBuilderClass,
-            @NonNull VerificationAssistant callback);
+            @NonNull TransactionBody txBody, @NonNull Class<T> recordBuilderClass, @NonNull Predicate<Key> callback);
 
     /**
-     * Dispatches a removable child transaction without a {@link VerificationAssistant}.
-     *
-     * <p>This method is similar to {@link #dispatchRemovableChildTransaction(TransactionBody, Class, VerificationAssistant)}
-     * except that no {@link VerificationAssistant} is provided.
-     *
-     * @param txBody the {@link TransactionBody} of the child transaction to dispatch
-     * @param recordBuilderClass the record builder class of the child transaction
-     * @return the record builder of the child transaction
-     * @throws NullPointerException if any of the arguments is {@code null}
-     * @throws IllegalArgumentException if the current transaction is a
-     * {@link TransactionCategory#PRECEDING}-transaction or if the record builder type is unknown to the app
+     * @deprecated Use {@link #dispatchRemovableChildTransaction(TransactionBody, Class, Predicate)} instead.
      */
+    @Deprecated(forRemoval = true)
     @NonNull
-    <T> T dispatchRemovableChildTransaction(@NonNull TransactionBody txBody, @NonNull Class<T> recordBuilderClass);
+    default <T> T dispatchRemovableChildTransaction(
+            @NonNull TransactionBody txBody,
+            @NonNull Class<T> recordBuilderClass,
+            @NonNull VerificationAssistant callback) {
+        return dispatchRemovableChildTransaction(
+                txBody, recordBuilderClass, key -> callback.test(key, verificationFor(key)));
+    }
 
     /**
      * Adds a child record builder to the list of record builders. If the current {@link HandleContext} (or any parent

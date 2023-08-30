@@ -22,8 +22,10 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.token.impl.schemas.GenesisSchema;
+import com.hedera.node.app.spi.fixtures.info.FakeNetworkInfo;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
+import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.state.EmptyReadableStates;
 import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
@@ -44,11 +46,13 @@ final class GenesisSchemaTest {
     private MapWritableKVState<AccountID, Account> accounts;
     private WritableStates newStates;
     private Configuration config;
+    private NetworkInfo networkInfo;
 
     @BeforeEach
     void setUp() {
         accounts = MapWritableKVState.<AccountID, Account>builder(TokenServiceImpl.ACCOUNTS_KEY)
                 .build();
+
         newStates = MapWritableStates.builder()
                 .state(accounts)
                 .state(MapWritableKVState.builder(TokenServiceImpl.STAKING_INFO_KEY)
@@ -56,6 +60,8 @@ final class GenesisSchemaTest {
                 .state(new WritableSingletonStateBase<>(
                         TokenServiceImpl.STAKING_NETWORK_REWARDS_KEY, () -> null, c -> {}))
                 .build();
+
+        networkInfo = new FakeNetworkInfo();
 
         config = HederaTestConfigBuilder.create()
                 .withConfigDataType(HederaConfig.class)
@@ -69,7 +75,7 @@ final class GenesisSchemaTest {
     @Test
     void systemAccountsCreated() {
         final var schema = new GenesisSchema();
-        schema.migrate(new MigrationContextImpl(EmptyReadableStates.INSTANCE, newStates, config));
+        schema.migrate(new MigrationContextImpl(EmptyReadableStates.INSTANCE, newStates, config, networkInfo));
 
         for (int i = 1; i <= 100; i++) {
             final var account = accounts.get(accountID(i));
@@ -85,7 +91,7 @@ final class GenesisSchemaTest {
     @Test
     void fileEntityIdsNotUsed() {
         final var schema = new GenesisSchema();
-        schema.migrate(new MigrationContextImpl(EmptyReadableStates.INSTANCE, newStates, config));
+        schema.migrate(new MigrationContextImpl(EmptyReadableStates.INSTANCE, newStates, config, networkInfo));
 
         for (int i = 101; i < 200; i++) {
             assertThat(accounts.contains(accountID(i))).isFalse();
@@ -95,7 +101,7 @@ final class GenesisSchemaTest {
     @Test
     void accountsBetweenFilesAndContracts() {
         final var schema = new GenesisSchema();
-        schema.migrate(new MigrationContextImpl(EmptyReadableStates.INSTANCE, newStates, config));
+        schema.migrate(new MigrationContextImpl(EmptyReadableStates.INSTANCE, newStates, config, networkInfo));
 
         for (int i = 200; i < 350; i++) {
             final var account = accounts.get(accountID(i));
@@ -109,7 +115,7 @@ final class GenesisSchemaTest {
     @Test
     void contractEntityIdsNotUsed() {
         final var schema = new GenesisSchema();
-        schema.migrate(new MigrationContextImpl(EmptyReadableStates.INSTANCE, newStates, config));
+        schema.migrate(new MigrationContextImpl(EmptyReadableStates.INSTANCE, newStates, config, networkInfo));
 
         for (int i = 350; i < 400; i++) {
             assertThat(accounts.contains(accountID(i))).isFalse();
@@ -119,7 +125,7 @@ final class GenesisSchemaTest {
     @Test
     void accountsAfterContracts() {
         final var schema = new GenesisSchema();
-        schema.migrate(new MigrationContextImpl(EmptyReadableStates.INSTANCE, newStates, config));
+        schema.migrate(new MigrationContextImpl(EmptyReadableStates.INSTANCE, newStates, config, networkInfo));
 
         for (int i = 400; i <= 750; i++) {
             final var account = accounts.get(accountID(i));
@@ -133,7 +139,7 @@ final class GenesisSchemaTest {
     @Test
     void entityIdsBetweenSystemAccountsAndRewardAccountsAreEmpty() {
         final var schema = new GenesisSchema();
-        schema.migrate(new MigrationContextImpl(EmptyReadableStates.INSTANCE, newStates, config));
+        schema.migrate(new MigrationContextImpl(EmptyReadableStates.INSTANCE, newStates, config, networkInfo));
 
         for (int i = 751; i < 800; i++) {
             assertThat(accounts.contains(accountID(i))).isFalse();
@@ -143,7 +149,7 @@ final class GenesisSchemaTest {
     @Test
     void stakingRewardAccounts() {
         final var schema = new GenesisSchema();
-        schema.migrate(new MigrationContextImpl(EmptyReadableStates.INSTANCE, newStates, config));
+        schema.migrate(new MigrationContextImpl(EmptyReadableStates.INSTANCE, newStates, config, networkInfo));
 
         final var stakingRewardAccount = accounts.get(accountID(800));
         assertThat(stakingRewardAccount).isNotNull();
@@ -159,7 +165,7 @@ final class GenesisSchemaTest {
     @Test
     void entityIdsAfterRewardAccountsAreEmpty() {
         final var schema = new GenesisSchema();
-        schema.migrate(new MigrationContextImpl(EmptyReadableStates.INSTANCE, newStates, config));
+        schema.migrate(new MigrationContextImpl(EmptyReadableStates.INSTANCE, newStates, config, networkInfo));
 
         for (int i = 802; i < 900; i++) {
             assertThat(accounts.contains(accountID(i))).isFalse();
@@ -169,7 +175,7 @@ final class GenesisSchemaTest {
     @Test
     void specialAccountsAfter900() {
         final var schema = new GenesisSchema();
-        schema.migrate(new MigrationContextImpl(EmptyReadableStates.INSTANCE, newStates, config));
+        schema.migrate(new MigrationContextImpl(EmptyReadableStates.INSTANCE, newStates, config, networkInfo));
 
         for (int i = 900; i <= 1000; i++) {
             final var account = accounts.get(accountID(i));
