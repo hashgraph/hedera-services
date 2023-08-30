@@ -115,19 +115,19 @@ public class HtmlGenerator {
     public static final String FILTER_JS =
             """
                     // the checkboxes that have the ability to hide things
-                    var filterCheckboxes = document.getElementsByClassName("%s");
+                    let filterCheckboxes = document.getElementsByClassName("%s");
 
                     // add a listener to each checkbox
-                    for (var i = 0; i < filterCheckboxes.length; i++) {
-                        filterCheckboxes[i].addEventListener("click", function() {
+                    for (const element of filterCheckboxes) {
+                        element.addEventListener("click", function() {
                             // the classes that exist on the checkbox that is clicked
-                            var checkboxClasses = this.classList;
+                            let checkboxClasses = this.classList;
 
                             // the name of the class that should be hidden
                             // each checkbox has 2 classes, "%s", and the name of the class to be hidden
-                            var toggleClass;
+                            let toggleClass;
                             for (j = 0; j < checkboxClasses.length; j++) {
-                                if (checkboxClasses[j] == "%s") {
+                                if (checkboxClasses[j] === "%s") {
                                     continue;
                                 }
 
@@ -136,13 +136,13 @@ public class HtmlGenerator {
                             }
 
                             // these are the objects on the page which match the class to toggle (discluding the input boxes)
-                            var matchingObjects = $("." + toggleClass).not("input");
+                            let matchingObjects = $("." + toggleClass).not("input");
 
                             // go through each of the matching objects, and modify the hide count according to the value of the checkbox
                             for (j = 0; j < matchingObjects.length; j++) {
-                                var currentHideCount = parseInt($(matchingObjects[j]).attr('data-hide')) || 0;
+                                let currentHideCount = parseInt($(matchingObjects[j]).attr('data-hide')) || 0;
 
-                                var newHideCount;
+                                let newHideCount;
                                 if ($(this).is(":checked")) {
                                     newHideCount = currentHideCount + 1;
                                 } else {
@@ -356,7 +356,7 @@ public class HtmlGenerator {
     /**
      * Generate the log table for the HTML page
      *
-     * @param logLines the log lines
+     * @param logLines   the log lines
      * @param cssFactory a factory that new rules can be added to
      * @return the log table for the HTML page
      */
