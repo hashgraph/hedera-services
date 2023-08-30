@@ -137,6 +137,7 @@ import com.swirlds.platform.observers.ConsensusRoundObserver;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.observers.PreConsensusEventObserver;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
+import com.swirlds.platform.scratchpad.Scratchpad;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.iss.ConsensusHashManager;
@@ -144,6 +145,7 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateManager;
 import com.swirlds.platform.state.signed.SourceOfSignedState;
+import com.swirlds.platform.state.signed.StartupStateUtilities;
 import com.swirlds.platform.stats.StatConstructor;
 import com.swirlds.platform.system.Shutdown;
 import com.swirlds.platform.threading.PauseAndLoad;
@@ -291,6 +293,11 @@ public class SwirldsPlatform implements Platform, Startable {
      * if no reconnect state has been received since startup.
      */
     private final AtomicLong latestReconnectRound = new AtomicLong(NO_ROUND);
+
+    /**
+     * A location where the platform can write data that will be preserved across restarts.
+     */
+    private final Scratchpad scratchpad;
 
     /**
      * the browser gives the Platform what app to run. There can be multiple Platforms on one computer.
@@ -677,6 +684,25 @@ public class SwirldsPlatform implements Platform, Startable {
                         Pair.of(consensusRoundHandler, "consensusRoundHandler"),
                         Pair.of(swirldStateManager, "swirldStateManager")));
 
+        final Hash epochHash;
+        if (emergencyRecoveryManager.getEmergencyRecoveryFile() != null) {
+            epochHash = emergencyRecoveryManager.getEmergencyRecoveryFile().hash();
+        } else {
+            epochHash =
+                    initialState.getState().getPlatformState().getPlatformData().getEpochHash();
+        }
+
+        scratchpad = new Scratchpad(platformContext, selfId);
+        StartupStateUtilities.doRecoveryCleanup(
+                platformContext,
+                scratchpad,
+                recycleBin,
+                selfId,
+                swirldName,
+                actualMainClassName,
+                epochHash,
+                initialState.getRound());
+
         // To be removed once the GUI component is better integrated with the platform.
         GuiPlatformAccessor.getInstance().setShadowGraph(selfId, shadowGraph);
         GuiPlatformAccessor.getInstance().setStateManagementComponent(selfId, stateManagementComponent);
@@ -1019,7 +1045,7 @@ public class SwirldsPlatform implements Platform, Startable {
     @NonNull
     private PreconsensusEventFileManager buildPreconsensusEventFileManager(final boolean softwareUpgrade) {
         try {
-            clearPCESOnSoftwareUpgradeIfConfigured(softwareUpgrade);
+            clearPCESOnSoftwareUpgradeIfConfigured(softwareUpgrade); // TODO this doesn't have to go here!
             return new PreconsensusEventFileManager(platformContext, Time.getCurrent(), recycleBin, selfId);
         } catch (final IOException e) {
             throw new UncheckedIOException("unable load preconsensus files", e);
@@ -1186,18 +1212,13 @@ public class SwirldsPlatform implements Platform, Startable {
     }
 
     /**
-     * Clears the preconsensus event stream if a software upgrade has occurred and the configuration specifies that
-     * the stream should be cleared on software upgrade.
+     * Clears the preconsensus event stream if a software upgrade has occurred and the configuration specifies that the
+     * stream should be cleared on software upgrade.
      *
-<<<<<<< HEAD
-     * @param softwareUpgrade       true if a software upgrade has occurred
-=======
      * @param softwareUpgrade true if a software upgrade has occurred
-     * @param fileManager     the preconsensus event file manager
->>>>>>> develop
      * @throws UncheckedIOException if the required changes on software upgrade cannot be performed
      */
-    public void clearPCESOnSoftwareUpgradeIfConfigured(final boolean softwareUpgrade) {
+    private void clearPCESOnSoftwareUpgradeIfConfigured(final boolean softwareUpgrade) {
         final boolean clearOnSoftwareUpgrade = platformContext
                 .getConfiguration()
                 .getConfigData(PreconsensusEventStreamConfig.class)

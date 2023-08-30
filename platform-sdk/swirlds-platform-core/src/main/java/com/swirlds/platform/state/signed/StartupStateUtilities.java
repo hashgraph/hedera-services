@@ -37,6 +37,8 @@ import com.swirlds.platform.event.preconsensus.PreconsensusEventFileManager;
 import com.swirlds.platform.internal.SignedStateLoadingException;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
+import com.swirlds.platform.scratchpad.Scratchpad;
+import com.swirlds.platform.scratchpad.ScratchpadField;
 import com.swirlds.platform.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -48,13 +50,57 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Utilities for loading the state at startup time.
+ * Utilities for loading and manipulating state files at startup time.
  */
-public final class StartupStateLoader {
+public final class StartupStateUtilities {
 
-    private static final Logger logger = LogManager.getLogger(StartupStateLoader.class);
+    private static final Logger logger = LogManager.getLogger(StartupStateUtilities.class);
 
-    private StartupStateLoader() {}
+    private StartupStateUtilities() {}
+
+    /**
+     * If necessary, perform cleanup in preparation for emergency recovery.
+     *
+     * @param scratchpad the platform's scratchpad
+     * @param epoch      the current epoch hash
+     */
+    public static void doRecoveryCleanup(
+            @NonNull final PlatformContext platformContext,
+            @NonNull final Scratchpad scratchpad,
+            @NonNull final RecycleBin recycleBin,
+            @NonNull final NodeId selfId,
+            @NonNull final String swirldName,
+            @NonNull final String actualMainClassName,
+            @Nullable final Hash epoch,
+            final long initialStateRound) {
+
+        final Hash previousEpoch = scratchpad.get(ScratchpadField.EPOCH_HASH);
+        if (Objects.equals(epoch, previousEpoch)) {
+            // We are in the same epoch as when we were the last time he platform was shut down.
+            return;
+        }
+
+        logger.info(
+                STARTUP.getMarker(),
+                "Entering epoch {}, cleaning up file system in preparation for emergency recovery. "
+                        + "The preconsensus event stream will be cleared, and any states with a round number "
+                        + "higher than {} will recycled.",
+                epoch,
+                initialStateRound);
+
+        PreconsensusEventFileManager.clear(platformContext, recycleBin, selfId);
+
+        final List<SavedStateInfo> savedStateFiles = getSavedStateFiles(actualMainClassName, selfId, swirldName);
+        for (final SavedStateInfo stateInfo : savedStateFiles) {
+            if (stateInfo.metadata().round() > initialStateRound) {
+                recycleState(recycleBin, stateInfo);
+            }
+        }
+
+        // Write the current epoch into the scratchpad. Once this completes, the platform will not do cleanup
+        // the next time it boots with this epoch hash.
+        scratchpad.set(ScratchpadField.EPOCH_HASH, epoch);
+    }
 
     /**
      * Get the initial state to be used by this node. May return a state loaded from disk, or may return a genesis state
@@ -91,7 +137,7 @@ public final class StartupStateLoader {
         Objects.requireNonNull(configAddressBook);
         Objects.requireNonNull(emergencyRecoveryManager);
 
-        final ReservedSignedState loadedState = StartupStateLoader.loadStateFile(
+        final ReservedSignedState loadedState = StartupStateUtilities.loadStateFile(
                 platformContext,
                 recycleBin,
                 selfId,
@@ -160,12 +206,7 @@ public final class StartupStateLoader {
         final ReservedSignedState state;
         if (emergencyStateRequired) {
             state = loadEmergencyState(
-                    platformContext,
-                    recycleBin,
-                    selfId,
-                    currentSoftwareVersion,
-                    savedStateFiles,
-                    emergencyRecoveryManager);
+                    platformContext, recycleBin, currentSoftwareVersion, savedStateFiles, emergencyRecoveryManager);
         } else {
             state = loadLatestState(platformContext, recycleBin, currentSoftwareVersion, savedStateFiles);
         }
@@ -226,7 +267,6 @@ public final class StartupStateLoader {
     private static ReservedSignedState loadEmergencyState(
             @NonNull final PlatformContext platformContext,
             @NonNull final RecycleBin recycleBin,
-            @NonNull final NodeId selfId,
             @NonNull final SoftwareVersion currentSoftwareVersion,
             @NonNull final List<SavedStateInfo> savedStateFiles,
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager)
@@ -244,15 +284,9 @@ public final class StartupStateLoader {
                 recoveryFile.hash().toMnemonic(),
                 recoveryFile.round());
 
-        boolean latestStateIgnored = false;
         ReservedSignedState state = null;
         for (final SavedStateInfo savedStateFile : savedStateFiles) {
-            final boolean suitableForRecovery =
-                    isSuitableInitialRecoveryState(emergencyRecoveryManager, savedStateFile);
-
-            if (!suitableForRecovery) {
-                latestStateIgnored = true;
-                recycleState(recycleBin, savedStateFile);
+            if (!isSuitableInitialRecoveryState(emergencyRecoveryManager, savedStateFile)) {
                 continue;
             }
 
@@ -262,14 +296,7 @@ public final class StartupStateLoader {
             }
         }
 
-        final boolean inHashEpoch = isInHashEpoch(emergencyRecoveryManager, state);
-
-        if (latestStateIgnored || !inHashEpoch) {
-            logger.warn(STARTUP.getMarker(), "Clearing preconsensus event stream for emergency recovery.");
-            PreconsensusEventFileManager.clear(platformContext, recycleBin, selfId);
-        }
-
-        return processRecoveryState(emergencyRecoveryManager, state, inHashEpoch);
+        return processRecoveryState(emergencyRecoveryManager, state);
     }
 
     /**
@@ -347,21 +374,22 @@ public final class StartupStateLoader {
      *
      * @param emergencyRecoveryManager the emergency recovery manager
      * @param state                    the state that will be our initial state (null if we are starting from genesis)
-     * @param inHashEpoch              true if the state is in the hash epoch, false otherwise
      * @return the state that will be our initial state (converts null genesis state to a non-null wrapper)
      */
     @NonNull
     private static ReservedSignedState processRecoveryState(
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
-            @Nullable final ReservedSignedState state,
-            final boolean inHashEpoch) {
+            @Nullable final ReservedSignedState state) {
+
+        final boolean inEpoch = isInHashEpoch(emergencyRecoveryManager, state);
+
         if (state == null) {
             logger.warn(
                     STARTUP.getMarker(),
                     "No state on disk met the criteria for emergency recovery, starting from genesis. "
                             + "This node will need to receive a state through an emergency reconnect.");
             return createNullReservation();
-        } else if (inHashEpoch) {
+        } else if (inEpoch) {
             logger.info(
                     STARTUP.getMarker(),
                     "Loaded state is in the correct hash epoch, "

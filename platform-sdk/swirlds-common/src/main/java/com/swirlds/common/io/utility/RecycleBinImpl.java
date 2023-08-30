@@ -146,12 +146,9 @@ public class RecycleBinImpl implements RecycleBin, Startable, Stoppable {
                         "File with the name '{}' already exists in the recycle bin, deleting previous copy.",
                         fileName);
                 deleteDirectory(recyclePath);
-<<<<<<< HEAD
-=======
             } else {
                 topLevelRecycledFileCount++;
                 recycledFileCountMetric.set(topLevelRecycledFileCount);
->>>>>>> develop
             }
 
             Files.move(path, recyclePath);
