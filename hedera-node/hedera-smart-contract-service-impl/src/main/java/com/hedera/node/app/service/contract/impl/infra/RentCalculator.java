@@ -30,6 +30,7 @@ import javax.inject.Inject;
  * the current consensus time and contract service configuration.
  */
 @TransactionScope
+@SuppressWarnings("java:S1068") // suppressing the warning that the fields are not used. To be deleted when implemented
 public class RentCalculator {
     private final Instant consensusNow;
     private final ContractsConfig contractsConfig;

@@ -142,6 +142,8 @@ public class PrngSystemContract extends AbstractPrecompiledContract {
         return entropy;
     }
 
+    @SuppressWarnings("java:S125")
+    // suppressing the warning for commented out code. To be removed when implemented
     long calculateGas(@NonNull final Instant now) {
         // @future('8094') Update gas calculations once the fee calculator classes are available
         // final var feesInTinyCents = pricingUtils.getCanonicalPriceInTinyCents(PRNG);
