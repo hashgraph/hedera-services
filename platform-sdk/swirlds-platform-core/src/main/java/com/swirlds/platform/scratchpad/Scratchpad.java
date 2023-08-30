@@ -132,8 +132,7 @@ public class Scratchpad {
                 STARTUP.getMarker(),
                 """
                         Scratchpad contents:
-                        {}
-                        """,
+                        {}""",
                 table.render());
     }
 
