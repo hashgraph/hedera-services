@@ -480,11 +480,6 @@ public final class Hedera implements SwirldMain {
             // com.hedera.node.app.service.mono.state.exports.NewSignedStateListener
             // Has some relationship to freeze/upgrade, but also with balance exports. This was the trigger that
             // caused us to export balance files on a certain schedule.
-
-            // TBD: notifications.register(IssListener.class, daggerApp.issListener());
-            // com.hedera.node.app.service.mono.state.forensics.ServicesIssListener
-            // This is something that MUST be implemented by the Hedera app module. We use this to respond to detected
-            // ISS events, logging, restarting, etc.
         } catch (final Throwable th) {
             logger.error("Fatal precondition violation in HederaNode#{}", daggerApp.nodeId(), th);
             daggerApp.systemExits().fail(1); // TBD: Better exit code?
