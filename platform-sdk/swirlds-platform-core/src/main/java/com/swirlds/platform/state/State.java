@@ -290,10 +290,14 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
 
         new MerkleTreeVisualizer(this).setDepth(hashDepth).render(sb);
 
+        // TODO remove this
+        sb.append("\nEvents in the state:\n");
+        for (final EventImpl event : data.getEvents()) {
+            sb.append("  - ").append(event.toMediumString()).append("\n");
+        }
+
         return sb.toString();
     }
-
-    // TODO method that prints info string and hash tree
 
     /**
      * {@inheritDoc}
