@@ -458,13 +458,9 @@ public class LogLine implements FormattableString {
         if (additionalLines == null) {
             return mainLogRow;
         } else {
-            final String nestedTableBody = new HtmlTagFactory(
-                            "tbody", mainLogRow + "\n" + additionalLines.generateHtmlString(), false)
+            return new HtmlTagFactory(
+                    "tbody", mainLogRow + "\n" + additionalLines.generateHtmlString(), false)
                     .addClass(LOG_LINE_LABEL)
-                    .generateTag();
-
-            return new HtmlTagFactory("td", nestedTableBody, false)
-                    .addAttribute("colspan", "9")
                     .generateTag();
         }
     }
