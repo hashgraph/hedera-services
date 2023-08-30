@@ -16,11 +16,11 @@
 
 package com.swirlds.common.formatting;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.swirlds.common.units.DataUnit;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @DisplayName("UnitFormatter Tests")
 class UnitFormatterTests {
@@ -145,7 +145,8 @@ class UnitFormatterTests {
         assertEquals(
                 "1 PB 1 TB 1 GB 2.51 MB",
                 DataUnit.UNIT_KILOBYTES
-                        .buildFormatter((1024L * 1024 * 1024 * 1024) + (1024 * 1024 * 1024) + (1024 * 1024) + 2048 + 523)
+                        .buildFormatter(
+                                (1024L * 1024 * 1024 * 1024) + (1024 * 1024 * 1024) + (1024 * 1024) + 2048 + 523)
                         .setDecimalPlaces(2)
                         .setUnitFormat(UnitFormat.MULTI_SIMPLIFIED)
                         .setUnitCount(4)
