@@ -314,7 +314,7 @@ public final class ScheduleUtility {
         }
         if (scheduleToHash.providedExpirationSecond() != Schedule.DEFAULT.providedExpirationSecond()) {
             // @todo('7905') fix to not use Proto serialization
-            //            hasher.putLong(scheduleToHash.providedExpirationSecond());
+            // hasher.putLong(scheduleToHash.providedExpirationSecond())
             addToHash(hasher, scheduleToHash.providedExpirationSecond());
         }
         hasher.putBoolean(scheduleToHash.waitForExpiry());
