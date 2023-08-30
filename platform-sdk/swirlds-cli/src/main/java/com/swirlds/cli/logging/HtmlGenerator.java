@@ -75,6 +75,11 @@ public class HtmlGenerator {
     public static final String BLACKLIST_LABEL = "blacklist";
 
     /**
+     * This label is for fields we absolutely positively do not want displayed, regardless of what other filters say
+     */
+    public static final String ABSOLUTELY_NO_SHOW = "no-show";
+
+    /**
      * This label is used to hold the value of how many whitelist filters are currently applied to a field
      */
     public static final String WHITELIST_LABEL = "whitelist";
@@ -159,36 +164,51 @@ public class HtmlGenerator {
 
                         let currentBlacklistCount = parseInt($(element).attr('blacklist')) || 0;
                         let currentWhitelistCount = parseInt($(element).attr('whitelist')) || 0;
+                        let currentNoShowCount = parseInt($(element).attr('no-show')) || 0;
 
                         let newBlacklistCount;
                         let newWhitelistCount;
+                        let newNoShowCount;
 
                         // modify blacklist and whitelist counts depending on the new checked value, and the previous checked value
                         if (newCheckedValue === "1") {
                             newWhitelistCount = currentWhitelistCount + 1;
                             if (previousCheckedValue === "3") {
                                 newBlacklistCount = currentBlacklistCount - 1;
-                                newWhitelistCount = currentWhitelistCount + 1;
+                            } else if(previousCheckedValue === "4") {
+                                newNoShowCount = currentNoShowCount - 1;
                             }
                         } else if (newCheckedValue === "2") {
                             if (previousCheckedValue === "1") {
                                 newWhitelistCount = currentWhitelistCount - 1;
                             } else if (previousCheckedValue === "3") {
                                 newBlacklistCount = currentBlacklistCount - 1;
+                            } else if(previousCheckedValue === "4") {
+                                newNoShowCount = currentNoShowCount - 1;
                             }
                         } else if (newCheckedValue === "3") {
                             newBlacklistCount = currentBlacklistCount + 1;
                             if (previousCheckedValue === "1") {
                                 newWhitelistCount = currentWhitelistCount - 1;
+                            } else if(previousCheckedValue === "4") {
+                                newNoShowCount = currentNoShowCount - 1;
+                            }
+                        } else if (newCheckedValue === "4") {
+                            newNoShowCount = currentNoShowCount + 1;
+                            if (previousCheckedValue === "1") {
+                                newWhitelistCount = currentWhitelistCount - 1;
+                            } else if(previousCheckedValue === "3") {
+                                newBlacklistCount = currentBlacklistCount - 1;
                             }
                         }
 
                         $(element).attr('whitelist', newWhitelistCount);
                         $(element).attr('blacklist', newBlacklistCount);
+                        $(element).attr('no-show', newNoShowCount);
                     }
                 });
             }
-                                """;
+                                                                """;
 
     /**
      * Hidden constructor.
@@ -197,7 +217,25 @@ public class HtmlGenerator {
     }
 
     /**
-     * Create a checkbox that can hide elements with the given name
+     * Create show / hide radio buttons for node IDs
+     *
+     * @param nodeName the node name
+     * @return the radio buttons
+     */
+    private static String createNodeRadios(@NonNull final String nodeName) {
+        final String commonRadioLabel = nodeName + "-radio";
+
+        final String neutralTag = new HtmlTagFactory("input", null, true).addClasses(List.of(FILTER_RADIO_LABEL, nodeName)).addAttribute("type", "radio").addAttribute("name", commonRadioLabel).addAttribute("value", "2").addAttribute("checked", "checked").generateTag();
+        final String noShowTag = new HtmlTagFactory("input", null, true).addClasses(List.of(FILTER_RADIO_LABEL, ABSOLUTELY_NO_SHOW, nodeName)).addAttribute("type", "radio").addAttribute("name", commonRadioLabel).addAttribute("value", "4").generateTag();
+
+        final String labelTag = new HtmlTagFactory("label", nodeName, false).generateTag();
+        final String breakTag = new HtmlTagFactory("br", null, true).generateTag();
+
+        return neutralTag + "\n" + noShowTag + "\n" + "\n" + labelTag + "\n" + breakTag + "\n";
+    }
+
+    /**
+     * Create a set of radio buttons that can hide elements with the given name
      *
      * @param elementName the name of the element to hide
      * @return the checkbox
@@ -216,6 +254,21 @@ public class HtmlGenerator {
     }
 
     /**
+     * Create the div for node ID filters
+     *
+     * @param filterValues the different node IDs to make filters for
+     * @return the node ID filter div
+     */
+    private static String createNodeFilterDiv(@NonNull final List<String> filterValues) {
+        final String filterHeading = new HtmlTagFactory("h3", "Node ID", false).generateTag();
+        final List<String> filterRadios = filterValues.stream().map(HtmlGenerator::createNodeRadios).toList();
+
+        final String form = new HtmlTagFactory("form", "\n" + String.join("\n", filterRadios), false).addAttribute("autocomplete", "off").generateTag();
+
+        return new HtmlTagFactory("div", "\n" + filterHeading + "\n" + form, false).generateTag();
+    }
+
+    /**
      * Create a filter div for the given filter name and values
      * <p>
      * The filter div has a heading, and a series of checkboxes that can hide elements with the given names
@@ -226,9 +279,9 @@ public class HtmlGenerator {
      */
     private static String createFilterDiv(@NonNull final String filterName, @NonNull final List<String> filterValues) {
         final String filterHeading = new HtmlTagFactory("h3", filterName, false).generateTag();
-        final List<String> filterCheckboxes = filterValues.stream().map(HtmlGenerator::createFilterRadios).toList();
+        final List<String> filterRadios = filterValues.stream().map(HtmlGenerator::createFilterRadios).toList();
 
-        final String form = new HtmlTagFactory("form", "\n" + String.join("\n", filterCheckboxes), false).addAttribute("autocomplete", "off").generateTag();
+        final String form = new HtmlTagFactory("form", "\n" + String.join("\n", filterRadios), false).addAttribute("autocomplete", "off").generateTag();
 
         return new HtmlTagFactory("div", "\n" + filterHeading + "\n" + form, false).generateTag();
     }
@@ -249,11 +302,8 @@ public class HtmlGenerator {
         // hide elements that have a blacklist value that isn't 0 or NaN
         cssFactory.addRule("[%s]:not([%s~='0']):not([%s~=\"NaN\"]):is([%s='0'])".formatted(BLACKLIST_LABEL, BLACKLIST_LABEL, BLACKLIST_LABEL, WHITELIST_LABEL), new CssDeclaration("display", "none"));
 
-        //        // show elements that have a whitelist value that isn't 0 or NaN
-        //        cssFactory.addRule(
-        //                "[%s]:not([%s~='0']):not([%s~=\"NaN\"])".formatted(WHITELIST_LABEL, WHITELIST_LABEL,
-        // WHITELIST_LABEL),
-        //                new CssDeclaration("display", "block"));
+        // absolutely hide any elements with a no-show value of > 1
+        cssFactory.addRule("[%s]:not([%s~='0'])".formatted(ABSOLUTELY_NO_SHOW, ABSOLUTELY_NO_SHOW), new CssDeclaration("display", "none !important"));
 
         // pad the log table columns
         cssFactory.addRule("td", new CssDeclaration("padding-left", "1em"));
@@ -310,7 +360,7 @@ public class HtmlGenerator {
 
         final List<String> filterDivs = new ArrayList<>();
 
-        filterDivs.add(createFilterDiv("Node ID", logLines.stream().map(LogLine::getNodeId).distinct().filter(Objects::nonNull).sorted().map(nodeId -> "node" + nodeId).toList()));
+        filterDivs.add(createNodeFilterDiv(logLines.stream().map(LogLine::getNodeId).distinct().filter(Objects::nonNull).sorted().map(nodeId -> "node" + nodeId).toList()));
 
         filterDivs.add(createFilterDiv("Column", List.of(NODE_ID_COLUMN_LABEL, ELAPSED_TIME_COLUMN_LABEL, TIMESTAMP_COLUMN_LABEL, LOG_NUMBER_COLUMN_LABEL, LOG_LEVEL_COLUMN_LABEL, MARKER_COLUMN_LABEL, THREAD_NAME_COLUMN_LABEL, CLASS_NAME_COLUMN_LABEL, REMAINDER_OF_LINE_COLUMN_LABEL)));
 
