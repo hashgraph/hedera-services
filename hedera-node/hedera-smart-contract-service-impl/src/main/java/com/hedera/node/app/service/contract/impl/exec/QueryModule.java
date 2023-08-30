@@ -38,18 +38,26 @@ import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.util.function.Supplier;
 
 @Module
 public interface QueryModule {
     @Provides
     @QueryScope
+    static HederaWorldUpdater.Enhancement provideEnhancement(
+            @NonNull final HederaOperations operations,
+            @NonNull final HederaNativeOperations nativeOperations,
+            @NonNull final SystemContractOperations systemContractOperations) {
+        return new HederaWorldUpdater.Enhancement(operations, nativeOperations, systemContractOperations);
+    }
+
+    @Provides
+    @QueryScope
     static ProxyWorldUpdater provideProxyWorldUpdater(
-            @NonNull final HederaOperations extWorldScope,
-            @NonNull final SystemContractOperations systemContractOperations,
+            @NonNull final HederaWorldUpdater.Enhancement enhancement,
             @NonNull final EvmFrameStateFactory factory) {
-        return new ProxyWorldUpdater(
-                requireNonNull(extWorldScope), requireNonNull(systemContractOperations), requireNonNull(factory), null);
+        return new ProxyWorldUpdater(enhancement, requireNonNull(factory), null);
     }
 
     @Provides
@@ -61,11 +69,9 @@ public interface QueryModule {
     @Provides
     @QueryScope
     static Supplier<HederaWorldUpdater> provideFeesOnlyUpdater(
-            @NonNull final HederaOperations extWorldScope,
-            @NonNull final SystemContractOperations systemContractOperations,
+            @NonNull final HederaWorldUpdater.Enhancement enhancement,
             @NonNull final EvmFrameStateFactory factory) {
-        return () -> new ProxyWorldUpdater(
-                requireNonNull(extWorldScope), requireNonNull(systemContractOperations), requireNonNull(factory), null);
+        return () -> new ProxyWorldUpdater(enhancement, requireNonNull(factory), null);
     }
 
     @Provides

@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.v038;
 
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.v030.Version030AddressChecks;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
@@ -36,8 +37,8 @@ public class Version038AddressChecks extends Version030AddressChecks {
     private static final int FIRST_USER_ACCOUNT = 1_001;
 
     @Inject
-    public Version038AddressChecks(@NonNull Map<Address, PrecompiledContract> hederaPrecompiles) {
-        super(hederaPrecompiles);
+    public Version038AddressChecks(@NonNull Map<Address, HederaSystemContract> systemContracts) {
+        super(systemContracts);
     }
 
     @Override

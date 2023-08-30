@@ -52,14 +52,13 @@ public class RootProxyWorldUpdater extends ProxyWorldUpdater {
 
     @Inject
     public RootProxyWorldUpdater(
-            @NonNull final HederaOperations extWorldScope,
-            @NonNull final SystemContractOperations systemContractOperations,
+            @NonNull final Enhancement enhancement,
             @NonNull final ContractsConfig contractsConfig,
             @NonNull final EvmFrameStateFactory evmFrameStateFactory,
             @NonNull final RentCalculator rentCalculator,
             @NonNull final IterableStorageManager storageManager,
             @NonNull final StorageSizeValidator storageSizeValidator) {
-        super(extWorldScope, systemContractOperations, evmFrameStateFactory, null);
+        super(enhancement, evmFrameStateFactory, null);
         this.contractsConfig = Objects.requireNonNull(contractsConfig);
         this.storageManager = Objects.requireNonNull(storageManager);
         this.rentCalculator = Objects.requireNonNull(rentCalculator);
@@ -82,17 +81,23 @@ public class RootProxyWorldUpdater extends ProxyWorldUpdater {
         // Validate the effects on size are legal
         final var changes = evmFrameState.getStorageChanges();
         final var sizeEffects = summarizeSizeEffects(changes);
-        storageSizeValidator.assertValid(sizeEffects.finalSlotsUsed(), hederaOperations, sizeEffects.sizeChanges());
+        storageSizeValidator.assertValid(
+                sizeEffects.finalSlotsUsed(),
+                enhancement.operations(),
+                sizeEffects.sizeChanges());
         // Charge rent for each increase in storage size
         chargeRentFor(sizeEffects);
         // "Rewrite" the pending storage changes to preserve per-contract linked lists
         storageManager.persistChanges(
-                hederaOperations, changes, sizeEffects.sizeChanges(), hederaOperations.getStore());
+                enhancement.operations(),
+                changes,
+                sizeEffects.sizeChanges(),
+                enhancement.operations().getStore());
 
         // We now have an apparently valid change set, and want to capture some summary
         // information for the Hedera record
-        createdContractIds = hederaOperations.createdContractIds();
-        updatedContractNonces = hederaOperations.updatedContractNonces();
+        createdContractIds = enhancement.operations().createdContractIds();
+        updatedContractNonces = enhancement.operations().updatedContractNonces();
         super.commit();
         // Be sure not to externalize contract ids or nonces without a successful commit
         committed = true;
@@ -114,7 +119,7 @@ public class RootProxyWorldUpdater extends ProxyWorldUpdater {
     /**
      * If a successful commit has been made, returns the map of contract ids to nonces updated during the transaction.
      *
-     * @return the map of contract ids to nonces updated during the transaction
+     * @return the list of nonces updated during the transaction
      * @throws IllegalStateException if a commit has not been made successfully
      */
     public List<ContractNonceInfo> getUpdatedContractNonces() {
@@ -148,8 +153,9 @@ public class RootProxyWorldUpdater extends ProxyWorldUpdater {
                         sizeChange.numAdded(),
                         rentFactors.numSlotsUsed(),
                         rentFactors.expiry());
-                final var rentInTinybars = hederaOperations.valueInTinybars(rentInTinycents);
-                hederaOperations.chargeStorageRent(sizeChange.contractNumber(), rentInTinybars, true);
+                final var rentInTinybars = enhancement.operations().valueInTinybars(rentInTinycents);
+                enhancement.operations().chargeStorageRent(
+                        sizeChange.contractNumber(), rentInTinybars, true);
             }
         }
     }

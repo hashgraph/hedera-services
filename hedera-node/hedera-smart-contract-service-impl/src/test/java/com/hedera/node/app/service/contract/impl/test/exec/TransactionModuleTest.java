@@ -28,8 +28,10 @@ import com.hedera.hapi.node.contract.EthereumTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.EvmActionTracer;
 import com.hedera.node.app.service.contract.impl.exec.TransactionModule;
+import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations;
+import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.hevm.HydratedEthTxData;
 import com.hedera.node.app.service.contract.impl.infra.EthereumCallDataHydration;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
@@ -59,6 +61,8 @@ class TransactionModuleTest {
 
     @Mock
     private HederaOperations hederaOperations;
+    @Mock
+    private HederaNativeOperations nativeOperations;
 
     @Mock
     private SystemContractOperations systemContractOperations;
@@ -82,9 +86,10 @@ class TransactionModuleTest {
 
     @Test
     void feesOnlyUpdaterIsProxyUpdater() {
+        final var enhancement = new HederaWorldUpdater.Enhancement(hederaOperations, nativeOperations, systemContractOperations);
         assertInstanceOf(
                 ProxyWorldUpdater.class,
-                TransactionModule.provideFeesOnlyUpdater(hederaOperations, systemContractOperations, factory)
+                TransactionModule.provideFeesOnlyUpdater(enhancement, factory)
                         .get());
     }
 

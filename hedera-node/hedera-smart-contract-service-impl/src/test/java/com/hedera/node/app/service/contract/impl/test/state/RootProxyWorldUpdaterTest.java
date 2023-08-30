@@ -22,8 +22,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.contract.ContractNonceInfo;
+import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations;
+import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.infra.IterableStorageManager;
 import com.hedera.node.app.service.contract.impl.infra.RentCalculator;
 import com.hedera.node.app.service.contract.impl.infra.StorageSizeValidator;
@@ -74,6 +76,9 @@ class RootProxyWorldUpdaterTest {
 
     @Mock
     private HederaOperations hederaOperations;
+
+    @Mock
+    private HederaNativeOperations hederaNativeOperations;
 
     @Mock
     private SystemContractOperations systemContractOperations;
@@ -133,9 +138,9 @@ class RootProxyWorldUpdaterTest {
     }
 
     private void givenSubjectWith(@NonNull final Configuration configuration) {
+        final var enhancement = new HederaWorldUpdater.Enhancement(hederaOperations, hederaNativeOperations, systemContractOperations);
         subject = new RootProxyWorldUpdater(
-                hederaOperations,
-                systemContractOperations,
+                enhancement,
                 configuration.getConfigData(ContractsConfig.class),
                 () -> evmFrameState,
                 rentCalculator,
