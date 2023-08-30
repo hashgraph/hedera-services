@@ -76,7 +76,7 @@ public class DefaultSignedStateValidator implements SignedStateValidator {
             logger.error(
                     LogMarker.SIGNED_STATE.getMarker(),
                     STATE_TOO_EARLY_LOG_MESSAGE,
-                    signedState.getState().getPlatformState().getInfoString(),
+                    signedState.getState().getInfoString(),
                     previousStateData.getInfoString());
             throw new SignedStateInvalidException(STATE_TOO_EARLY_MESSAGE.formatted(
                     previousStateData.round(),

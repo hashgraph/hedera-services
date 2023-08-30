@@ -147,7 +147,7 @@ public class ReconnectHelper {
         logger.info(
                 RECONNECT.getMarker(),
                 "Information for state received during reconnect:\n{}\n{}",
-                () -> reservedState.get().getState().getPlatformState().getInfoString(),
+                () -> reservedState.get().getState().getInfoString(),
                 () -> new MerkleTreeVisualizer(reservedState.get().getState())
                         .setDepth(stateConfig.debugHashDepth())
                         .render());

@@ -97,7 +97,7 @@ public class EmergencySignedStateValidator implements SignedStateValidator {
                             {}
                             {}
                             """,
-                    () -> signedState.getState().getPlatformState().getInfoString(),
+                    () -> signedState.getState().getInfoString(),
                     () -> new MerkleTreeVisualizer(signedState.getState())
                             .setDepth(debugHashDepth)
                             .render());
@@ -127,7 +127,7 @@ public class EmergencySignedStateValidator implements SignedStateValidator {
                         State is too old. Failed emergency reconnect state:
                         {}
                         {}""",
-                () -> signedState.getState().getPlatformState().getInfoString(),
+                () -> signedState.getState().getInfoString(),
                 () -> new MerkleTreeVisualizer(signedState.getState())
                         .setDepth(debugHashDepth)
                         .render());
@@ -164,7 +164,7 @@ public class EmergencySignedStateValidator implements SignedStateValidator {
                             State is fully signed but has an incorrect epoch hash. Failed emergency recovery state:
                             {}
                             {}""",
-                    () -> signedState.getState().getPlatformState().getInfoString(),
+                    () -> signedState.getState().getInfoString(),
                     () -> new MerkleTreeVisualizer(signedState.getState())
                             .setDepth(debugHashDepth)
                             .render());

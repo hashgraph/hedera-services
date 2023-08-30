@@ -18,6 +18,7 @@ package com.swirlds.platform.state;
 
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.exceptions.IllegalChildIndexException;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
@@ -26,7 +27,9 @@ import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.utility.RuntimeObjectRecord;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
 import com.swirlds.platform.internal.EventImpl;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -257,6 +260,35 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
     public int hashCode() {
         return Objects.hash(getPlatformState(), getSwirldState(), getPlatformDualState());
     }
+
+    /**
+     * Generate a string that describes this state.
+     */
+    public String getInfoString() {
+
+        final PlatformData data = getPlatformState().getPlatformData();
+        final Hash epochHash = data.getNextEpochHash();
+        final Hash hashEventsCons = data.getHashEventsCons();
+        final List<MinGenInfo> minGenInfo = data.getMinGenInfo();
+
+        return new TextTable()
+                .setBordersEnabled(false)
+                .addRow("Round:", data.getRound())
+                .addRow("Timestamp:", data.getConsensusTimestamp())
+                .addRow("Event count:", data.getNumEventsCons())
+                .addRow("Running event hash:", hashEventsCons)
+                .addRow("Running event mnemonic:", hashEventsCons == null ? "null" : hashEventsCons.toMnemonic())
+                .addRow("Rounds non-ancient:", data.getRoundsNonAncient())
+                .addRow("Creation version:", data.getCreationSoftwareVersion())
+                .addRow("Epoch mnemonic:", epochHash == null ? "null" : epochHash.toMnemonic())
+                .addRow("Epoch hash:", epochHash)
+                .addRow("Min gen hash code:", minGenInfo == null ? "null" : minGenInfo.hashCode())
+                .addRow("Events hash code:", Arrays.hashCode(data.getEvents()))
+                .addRow("Root hash:", getHash())
+                .render();
+    }
+
+    // TODO method that prints info string and hash tree
 
     /**
      * {@inheritDoc}

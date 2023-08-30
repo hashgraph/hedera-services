@@ -67,7 +67,7 @@ public final class SignedStateFileWriter {
      */
     public static void writeHashInfoFile(final Path directory, final State state) throws IOException {
         final StateConfig stateConfig = ConfigurationHolder.getConfigData(StateConfig.class);
-        final String platformInfo = state.getPlatformState().getInfoString();
+        final String platformInfo = state.getInfoString();
         final String hashInfo = new MerkleTreeVisualizer(state)
                 .setDepth(stateConfig.debugHashDepth())
                 .render();

@@ -57,8 +57,6 @@ public record SignedStateValidationData(
      * This method constructs a {@link String} containing the critical attributes of this data object.
      * The original use is during reconnect to produce useful information sent to diagnostic event output.
      * @return a {@link String} containing the core data from this object, in human-readable form.
-     * @see PlatformState#getInfoString()
-     * @see PlatformData#getInfoString()
      */
     public String getInfoString() {
         return new StringBuilder()

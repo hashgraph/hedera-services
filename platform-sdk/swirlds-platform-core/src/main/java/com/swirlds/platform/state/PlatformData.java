@@ -522,36 +522,6 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
     }
 
     /**
-     * Informational method used in reconnect diagnostics. This method constructs a {@link String} containing the
-     * critical attributes of this data object. The original use is during reconnect to produce useful information sent
-     * to diagnostic event output.
-     *
-     * @return a {@link String} containing the core data from this object, in human-readable form.
-     * @see PlatformState#getInfoString()
-     */
-    public String getInfoString() {
-        final String dataTable = new TextTable()
-                .setBordersEnabled(false)
-                .addRow("Round:", round)
-                .addRow("Number of consensus events:", numEventsCons)
-                .addRow("Consensus timestamp:", consensusTimestamp)
-                .addRow("Last timestamp:", lastTransactionTimestamp)
-                .addRow("Rounds non-ancient:", roundsNonAncient)
-                .addRow("Creation software version:", creationSoftwareVersion)
-                .addRow("Epoch hash:", epochHash == null ? "null" : epochHash.toMnemonic())
-                .addRow("Min gen info hash code:", minGenInfo == null ? "null" : minGenInfo.hashCode())
-                .addRow("Events hash code:", Arrays.hashCode(events))
-                .addRow(
-                        "Consensus events running mnemonic:",
-                        hashEventsCons == null ? "null" : hashEventsCons.toMnemonic())
-                .render();
-
-        // the unabbreviated running hash is printed separately because it is too long to fit into the table, which
-        // doesn't support wrapping well
-        return dataTable + "Consensus events running hash: " + hashEventsCons;
-    }
-
-    /**
      * {@inheritDoc}
      */
     @Override

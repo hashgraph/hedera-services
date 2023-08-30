@@ -129,7 +129,7 @@ public class HashLogger {
 
     private Message generateLogMessage(final NodeId nodeId, final SignedState signedState) {
         final State state = signedState.getState();
-        final String platformInfo = state.getPlatformState().getInfoString();
+        final String platformInfo = state.getInfoString();
         final String hashInfo = new MerkleTreeVisualizer(state)
                 .setDepth(stateConfig.debugHashDepth())
                 .render();

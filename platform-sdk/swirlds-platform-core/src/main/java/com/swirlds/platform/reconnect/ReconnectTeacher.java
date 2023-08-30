@@ -193,7 +193,7 @@ public class ReconnectTeacher {
         logger.info(
                 RECONNECT.getMarker(),
                 "The following state will be sent to the learner:\n{}\n{}",
-                () -> signedState.getState().getPlatformState().getInfoString(),
+                () -> signedState.getState().getInfoString(),
                 () -> new MerkleTreeVisualizer(signedState.getState())
                         .setDepth(stateConfig.debugHashDepth())
                         .render());
