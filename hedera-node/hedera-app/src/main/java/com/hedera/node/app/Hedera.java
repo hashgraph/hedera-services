@@ -143,6 +143,8 @@ public final class Hedera implements SwirldMain {
     private final ServicesRegistry servicesRegistry;
     /** The current version of THIS software */
     private final HederaSoftwareVersion version;
+    /** The configuration at the time of bootstrapping the node */
+    private final ConfigProvider bootstrapConfigProvider;
     /** The Hashgraph Platform. This is set during state initialization. */
     private Platform platform;
     /** The configuration for this node */
@@ -151,8 +153,6 @@ public final class Hedera implements SwirldMain {
     private ThrottleManager throttleManager;
     /** The exchange rate manager */
     private ExchangeRateManager exchangeRateManager;
-    /** The configuration at the time of bootstrapping the node */
-    private ConfigProvider bootstrapConfigProvider;
     /**
      * Dependencies managed by Dagger. Set during state initialization. The mono-service requires this object, but none
      * of the rest of the system (and particularly the modular implementation) uses it directly. Rather, it is created
