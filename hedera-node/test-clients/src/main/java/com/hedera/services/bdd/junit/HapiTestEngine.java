@@ -216,6 +216,11 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
 
         @Override
         public HapiTestEngineExecutionContext before(HapiTestEngineExecutionContext context) {
+            // If there are no children, then there is nothing to do.
+            if (super.getChildren().isEmpty()) {
+                return context;
+            }
+
             try {
                 // Deleting the test data. Currently, we are deleting the data/saved and the eventstreams folders.
                 // We need to do that in order to be able to run all tests at the same time. Without that the tests
