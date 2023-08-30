@@ -82,10 +82,9 @@ public final class StartupStateUtilities {
 
         logger.info(
                 STARTUP.getMarker(),
-                "Entering epoch {}, cleaning up file system in preparation for emergency recovery. "
-                        + "The preconsensus event stream will be cleared, and any states with a round number "
+                "Entering new epoch, cleaning up file system in preparation for emergency recovery. "
+                        + "The preconsensus event stream will be cleared and any states with a round number "
                         + "higher than {} will recycled.",
-                epoch,
                 initialStateRound);
 
         PreconsensusEventFileManager.clear(platformContext, recycleBin, selfId);

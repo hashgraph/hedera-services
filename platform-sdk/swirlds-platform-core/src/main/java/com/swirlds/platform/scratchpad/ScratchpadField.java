@@ -22,8 +22,32 @@ package com.swirlds.platform.scratchpad;
 public enum ScratchpadField {
     /**
      * The current epoch hash. If this value is different than the epoch hash specified by the emergency recovery file
-     * (if present) or the latest state (if recovery file is not present), then this indicates that the platform
-     * is entering a new epoch.
+     * (if present) or the latest state (if recovery file is not present), then this indicates that the platform is
+     * entering a new epoch.
      */
-    EPOCH_HASH
+    EPOCH_HASH(0);
+
+    /**
+     * The unique index of this field.
+     */
+    private final int index;
+
+    /**
+     * Create a new scratchpad field with the given index.
+     *
+     * @param index the unique index of this field
+     */
+    ScratchpadField(final int index) {
+        this.index = ordinal();
+    }
+
+    /**
+     * Get the unique index of this field. Prevents the scratchpad file from being corrupted by changing the order of
+     * the fields.
+     *
+     * @return the unique index of this field
+     */
+    public int getIndex() {
+        return index;
+    }
 }

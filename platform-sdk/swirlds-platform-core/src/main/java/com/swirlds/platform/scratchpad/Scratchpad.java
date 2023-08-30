@@ -18,6 +18,7 @@ package com.swirlds.platform.scratchpad;
 
 import static com.swirlds.common.io.utility.TemporaryFileBuilder.buildTemporaryFile;
 import static com.swirlds.logging.LogMarker.STARTUP;
+import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
@@ -50,6 +51,9 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * A utility that allows the platform to "take notes" that are preserved across restart boundaries.
+ * <p>
+ * The scratch pad is thread safe. All read operations and write operations are atomic. Any write that has completed
+ * is guaranteed to be visible to all subsequent reads, regardless of crashes/restarts.
  */
 public class Scratchpad {
 
@@ -68,6 +72,17 @@ public class Scratchpad {
      */
     public static final String SCRATCHPAD_FILE_EXTENSION = ".scr";
 
+    private static final Map<Integer, ScratchpadField> indexToFieldMap = new HashMap<>();
+
+    static {
+        for (final ScratchpadField field : ScratchpadField.values()) {
+            final ScratchpadField previous = indexToFieldMap.put(field.getIndex(), field);
+            if (previous != null) {
+                throw new RuntimeException("duplicate scratchpad field index " + field.getIndex());
+            }
+        }
+    }
+
     private final Map<ScratchpadField, SelfSerializable> data = new HashMap<>();
     private final AutoClosableLock lock = Locks.createAutoLock();
     private final Path scratchpadDirectory;
@@ -80,8 +95,8 @@ public class Scratchpad {
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
         scratchpadDirectory = stateConfig
                 .savedStateDirectory()
-                .resolve(Long.toString(selfId.id()))
-                .resolve(SCRATCHPAD_DIRECTORY_NAME);
+                .resolve(SCRATCHPAD_DIRECTORY_NAME)
+                .resolve(Long.toString(selfId.id()));
 
         loadFromDisk();
         logContents();
@@ -171,7 +186,12 @@ public class Scratchpad {
             int fieldCount = in.readInt();
 
             for (int index = 0; index < fieldCount; index++) {
-                final ScratchpadField field = ScratchpadField.values()[in.readInt()];
+                final int fieldId = in.readInt();
+                final ScratchpadField field = indexToFieldMap.get(fieldId);
+                if (field == null) {
+                    throw new IOException("scratchpad file contains unknown field " + fieldId);
+                }
+
                 final SelfSerializable value = in.readSerializable();
                 data.put(field, value);
             }
@@ -205,7 +225,7 @@ public class Scratchpad {
         for (final ScratchpadField field : ScratchpadField.values()) {
             final SelfSerializable value = data.get(field);
             if (value != null) {
-                out.writeInt(field.ordinal());
+                out.writeInt(field.getIndex());
                 out.writeSerializable(value, true);
             }
         }
@@ -248,7 +268,7 @@ public class Scratchpad {
 
         try (final DirectoryStream<Path> stream = Files.newDirectoryStream(scratchpadDirectory)) {
             for (final var path : stream) {
-                if (path.endsWith(SCRATCHPAD_FILE_EXTENSION)) {
+                if (path.toString().endsWith(SCRATCHPAD_FILE_EXTENSION)) {
                     files.add(path);
                 }
             }
@@ -273,7 +293,7 @@ public class Scratchpad {
             if (!Files.exists(scratchpadDirectory)) {
                 Files.createDirectories(scratchpadDirectory);
             }
-            Files.move(temporaryFile, generateNextFilePath(), java.nio.file.StandardCopyOption.ATOMIC_MOVE);
+            Files.move(temporaryFile, generateNextFilePath(), ATOMIC_MOVE);
 
             for (final Path scratchpadFile : scratchpadFiles) {
                 Files.delete(scratchpadFile);
