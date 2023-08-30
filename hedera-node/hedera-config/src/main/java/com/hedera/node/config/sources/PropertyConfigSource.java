@@ -57,6 +57,8 @@ public class PropertyConfigSource implements ConfigSource {
         this(properties, ConfigSource.DEFAULT_ORDINAL);
     }
 
+    // Suppress the warning that we shouldn't throw generic exceptions
+    @SuppressWarnings("java:S112")
     private static Properties loadProperties(@NonNull final String resourceName) {
         requireNonNull(resourceName, "resourceName must not be null");
         // It is important to use the Thread's context class loader because the resource we want to load might
