@@ -63,10 +63,15 @@ public class Scratchpad {
      */
     public static final String SCRATCHPAD_DIRECTORY_NAME = "scratchpad";
 
+    /**
+     * The file extension used for scratchpad files.
+     */
+    public static final String SCRATCHPAD_FILE_EXTENSION = ".scr";
+
     private final Map<ScratchpadField, SelfSerializable> data = new HashMap<>();
     private final AutoClosableLock lock = Locks.createAutoLock();
     private final Path scratchpadDirectory;
-    private long scratchpadIndex;
+    private long nextScratchpadIndex;
 
     private final int fileVersion = 1;
 
@@ -152,6 +157,7 @@ public class Scratchpad {
             }
 
             final Path scratchpadFile = files.get(files.size() - 1);
+            nextScratchpadIndex = getFileIndex(scratchpadFile) + 1;
 
             final SerializableDataInputStream in = new SerializableDataInputStream(
                     new BufferedInputStream(new FileInputStream(scratchpadFile.toFile())));
@@ -214,7 +220,18 @@ public class Scratchpad {
      */
     @NonNull
     private Path generateNextFilePath() {
-        return scratchpadDirectory.resolve((scratchpadIndex++) + ".scr");
+        return scratchpadDirectory.resolve((nextScratchpadIndex++) + SCRATCHPAD_FILE_EXTENSION);
+    }
+
+    /**
+     * Get the file index of a scratchpad file.
+     *
+     * @param path the path to the scratchpad file
+     * @return the file index
+     */
+    private long getFileIndex(@NonNull final Path path) {
+        final String fileName = path.getFileName().toString();
+        return Long.parseLong(fileName.substring(0, fileName.indexOf('.')));
     }
 
     /**
@@ -230,19 +247,15 @@ public class Scratchpad {
 
         try (final DirectoryStream<Path> stream = Files.newDirectoryStream(scratchpadDirectory)) {
             for (final var path : stream) {
-                files.add(path);
+                if (path.endsWith(SCRATCHPAD_FILE_EXTENSION)) {
+                    files.add(path);
+                }
             }
         } catch (final IOException e) {
             throw new RuntimeException("unable to list scratchpad files", e);
         }
 
-        files.sort((a, b) -> {
-            final String aName = a.getFileName().toString();
-            final String bName = b.getFileName().toString();
-            final int aIndex = Integer.parseInt(aName.substring(0, aName.indexOf('.')));
-            final int bIndex = Integer.parseInt(bName.substring(0, bName.indexOf('.')));
-            return Integer.compare(aIndex, bIndex);
-        });
+        files.sort((a, b) -> Long.compare(getFileIndex(a), getFileIndex(b)));
 
         return files;
     }
