@@ -19,7 +19,11 @@ package com.hedera.services.cli.utils;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 import com.hedera.node.app.service.mono.state.submerkle.FcTokenAllowanceId;
+import com.hedera.node.app.service.mono.state.submerkle.FixedFeeSpec;
+import com.hedera.node.app.service.mono.state.submerkle.FractionalFeeSpec;
+import com.hedera.node.app.service.mono.state.submerkle.RoyaltyFeeSpec;
 import com.hedera.node.app.service.mono.state.virtual.ContractKey;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
@@ -69,6 +73,12 @@ public class ThingsToStrings {
         return true;
     }
 
+    @NonNull
+    public static String toStringOfByteArray(@NonNull final byte[] bs) {
+        if (bs.length == 0) return "";
+        return hexer.formatHex(bs);
+    }
+
     public static boolean toStringOfByteArray(@NonNull final StringBuilder sb, @Nullable final byte[] bs) {
         if (bs == null || bs.length == 0) return false;
 
@@ -93,6 +103,11 @@ public class ThingsToStrings {
 
         sb.append(entityNum.longValue());
         return true;
+    }
+
+    public static String toStringOfEntityId(@NonNull EntityId entityId) {
+        if (entityId.equals(EntityId.MISSING_ENTITY_ID)) return "";
+        return entityId.toAbbrevString();
     }
 
     public static boolean toStringOfEntityId(@NonNull final StringBuilder sb, @Nullable final EntityId entityId) {
@@ -165,6 +180,23 @@ public class ThingsToStrings {
     @SuppressWarnings(
             "java:S5738") // 'deprecated' code marked for removal - it's practically impossible to use the platform sdk
     // these days w/o running into deprecated methods
+    @NonNull
+    public static String toStringOfJKey(@NonNull final JKey jkey) {
+        if (jkey.isEmpty()) return "";
+        try {
+            final var ser = jkey.serialize();
+            final var hash = CryptographyHolder.get().digestSync(ser).getValue();
+            return toStringOfByteArray(hash);
+
+        } catch (final IOException ex) {
+            return "**EXCEPTION SERIALIZING JKEY**";
+        }
+    }
+
+    /** Writes a cryptographic hash of the actual key */
+    @SuppressWarnings(
+            "java:S5738") // 'deprecated' code marked for removal - it's practically impossible to use the platform sdk
+    // these days w/o running into deprecated methods
     public static boolean toStringOfJKey(@NonNull final StringBuilder sb, @Nullable final JKey jkey) {
         if (jkey == null || jkey.isEmpty()) return false;
 
@@ -173,7 +205,7 @@ public class ThingsToStrings {
             final var hash = CryptographyHolder.get().digestSync(ser).getValue();
             toStringOfByteArray(sb, hash);
         } catch (final IOException ex) {
-            sb.append("**EXCEPTION**");
+            sb.append("**EXCEPTION SERIALIZING JKEY**");
         }
         return true;
     }
@@ -249,6 +281,95 @@ public class ThingsToStrings {
         sb.setLength(sb.length() - 1);
         sb.append(")");
         return true;
+    }
+
+    public enum FeeProfile {
+        FULL,
+        SKETCH
+    }
+
+    @NonNull
+    public static String toStringOfFcCustomFee(@NonNull final FcCustomFee fee) {
+        return toStringOfFcCustomFee(fee, FeeProfile.FULL);
+    }
+
+    @NonNull
+    public static String toSketchyStringOfFcCustomFee(@NonNull final FcCustomFee fee) {
+        return toStringOfFcCustomFee(fee, FeeProfile.SKETCH);
+    }
+
+    @NonNull
+    public static String toStringOfFcCustomFee(@NonNull final FcCustomFee fee, @NonNull final FeeProfile profile) {
+        final EntityId feeCollector = fee.getFeeCollector();
+        final boolean allCollectorsAreExempt = fee.getAllCollectorsAreExempt();
+        final String actualFee =
+                switch (fee.getFeeType()) {
+                    case FIXED_FEE -> toStringOfFixedFee(fee.getFixedFeeSpec(), profile);
+                    case FRACTIONAL_FEE -> toStringOfFractionalFee(fee.getFractionalFeeSpec(), profile);
+                    case ROYALTY_FEE -> toStringOfRoyaltyFee(fee.getRoyaltyFeeSpec(), profile);
+                };
+        return switch (profile) {
+            case FULL -> "Fee[%s,%s%s]"
+                    .formatted(
+                            actualFee, toStringOfEntityId(feeCollector), allCollectorsAreExempt ? ",ALL-EXEMPT" : "");
+            case SKETCH -> "Fee[%s%s]".formatted(actualFee, allCollectorsAreExempt ? ",ALL-EXEMPT" : "");
+        };
+    }
+
+    @NonNull
+    public static String toStringOfFixedFee(@NonNull final FixedFeeSpec fee, @NonNull final FeeProfile profile) {
+        final long unitsToCollect = fee.getUnitsToCollect();
+        final EntityId tokenDenomination = fee.getTokenDenomination();
+        final boolean usedDenomWildcard = fee.usedDenomWildcard();
+
+        return switch (profile) {
+            case FULL -> "Fixed[%d,%s%s]"
+                    .formatted(
+                            unitsToCollect,
+                            tokenDenomination != null ? toStringOfEntityId(tokenDenomination) : "NO-TOKEN-DENOMINATION",
+                            usedDenomWildcard ? ",*" : "");
+            case SKETCH -> "FIX[%s%s]"
+                    .formatted(null == tokenDenomination ? "NO-TOKEN-DENOMINATION" : "", usedDenomWildcard ? "*" : "");
+        };
+    }
+
+    @NonNull
+    public static String toStringOfFractionalFee(
+            @NonNull final FractionalFeeSpec fee, @NonNull final FeeProfile profile) {
+        final long numerator = fee.getNumerator();
+        final long denominator = fee.getDenominator();
+        final long minimumUnitsToCollect = fee.getMinimumAmount();
+        final long maximumUnitsToCollect = fee.getMaximumUnitsToCollect();
+        final boolean isNetOfTransfers = fee.isNetOfTransfers();
+
+        return switch (profile) {
+            case FULL -> "Fractional[%d/%d (min %d max %d)%s]"
+                    .formatted(
+                            numerator,
+                            denominator,
+                            minimumUnitsToCollect,
+                            maximumUnitsToCollect,
+                            isNetOfTransfers ? ", NET" : "");
+            case SKETCH -> "FRAC[%s]".formatted(isNetOfTransfers ? "NET" : "");
+        };
+    }
+
+    @NonNull
+    public static String toStringOfRoyaltyFee(@NonNull final RoyaltyFeeSpec fee, @NonNull final FeeProfile profile) {
+        final long numerator = fee.numerator();
+        final long denominator = fee.denominator();
+        final FixedFeeSpec fallbackFee = fee.fallbackFee();
+
+        return switch (profile) {
+            case FULL -> "Royalty[%d/%d%s]"
+                    .formatted(
+                            numerator,
+                            denominator,
+                            fee.hasFallbackFee() ? "," + toStringOfFixedFee(fallbackFee, profile) : "");
+            case SKETCH -> fee.hasFallbackFee()
+                    ? "ROYAL+FALLBACK[%s]".formatted(toStringOfFixedFee(fallbackFee, FeeProfile.SKETCH))
+                    : "ROYAL[]";
+        };
     }
 
     private ThingsToStrings() {}

@@ -111,19 +111,19 @@ public class DumpAccountsSubcommand {
 
         final var accountsArr = gatherAccounts(accountsStore);
 
-        final var reportSize = new int[1];
+        int reportSize;
         try (@NonNull final var writer = new Writer(accountPath)) {
-            reportOnAccounts(writer, accountsArr, reportSize);
+            reportOnAccounts(writer, accountsArr);
             if (keyDetails.contains(KeyDetails.STRUCTURE) || keyDetails.contains(KeyDetails.STRUCTURE_WITH_IDS))
                 reportOnKeyStructure(writer, accountsArr);
+            reportSize = writer.getSize();
         }
 
-        System.out.printf("=== accounts report is %d bytes%n", reportSize[0]);
+        System.out.printf("=== accounts report is %d bytes%n", reportSize);
         System.out.printf("=== fields with exceptions: %s%n", String.join(",", fieldsWithExceptions));
     }
 
-    void reportOnAccounts(
-            @NonNull final Writer writer, @NonNull final HederaAccount[] accountsArr, @NonNull final int[] reportSize) {
+    void reportOnAccounts(@NonNull final Writer writer, @NonNull final HederaAccount[] accountsArr) {
         if (format == Format.CSV) {
             writer.write("account#");
             writer.write(FIELD_SEPARATOR);
@@ -135,7 +135,6 @@ public class DumpAccountsSubcommand {
         Arrays.stream(accountsArr).map(a -> formatAccount(sb, a)).forEachOrdered(s -> {
             writer.write(s);
             writer.newLine();
-            reportSize[0] += s.length() + 1;
         });
     }
 

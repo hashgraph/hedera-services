@@ -74,6 +74,7 @@ import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.dispatch.DispatchConfiguration;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig;
 import com.swirlds.platform.event.tipset.EventCreationConfig;
+import com.swirlds.platform.gossip.ProtocolConfig;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.health.OSHealthChecker;
@@ -199,7 +200,8 @@ public final class BootstrapUtils {
                 .withConfigDataType(PathsConfig.class)
                 .withConfigDataType(SocketConfig.class)
                 .withConfigDataType(PlatformStatusConfig.class)
-                .withConfigDataType(TransactionConfig.class);
+                .withConfigDataType(TransactionConfig.class)
+                .withConfigDataType(ProtocolConfig.class);
 
         // Assume all locally run instances provide the same configuration definitions to the configuration builder.
         if (!appMains.isEmpty()) {

@@ -95,7 +95,7 @@ import org.apache.logging.log4j.Logger;
  * Implementation of the {@link ConfigProvider} interface.
  */
 @Singleton
-public class ConfigProviderImpl extends ConfigProviderBase implements ConfigProvider {
+public class ConfigProviderImpl extends ConfigProviderBase {
     private static final Logger logger = LogManager.getLogger(ConfigProviderImpl.class);
 
     /**

@@ -18,6 +18,7 @@ package com.hedera.node.app.config;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.config.ConfigProvider;
 import com.swirlds.common.config.sources.PropertyFileConfigSource;
 import com.swirlds.config.api.ConfigurationBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -31,7 +32,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * A convenient base class for implementing configuration providers. Not intended to be used outside of this package.
  */
-public abstract class ConfigProviderBase {
+public abstract class ConfigProviderBase implements ConfigProvider {
     /**
      * Name of an environment variable that can be used to override the default path to the genesis.properties file (see
      * {@link #GENESIS_PROPERTIES_DEFAULT_PATH}).

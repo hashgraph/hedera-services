@@ -20,6 +20,7 @@ import static com.swirlds.logging.LogMarker.STARTUP;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
@@ -48,6 +49,7 @@ import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -74,6 +76,7 @@ public final class GossipFactory {
      * @param addressBook                   the current address book
      * @param selfId                        this node's ID
      * @param appVersion                    the version of the app
+     * @param epochHash                     the epoch hash of the initial state
      * @param shadowGraph                   contains non-ancient events
      * @param emergencyRecoveryManager      handles emergency recovery
      * @param consensusRef                  a pointer to consensus
@@ -104,6 +107,7 @@ public final class GossipFactory {
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
             @NonNull final SoftwareVersion appVersion,
+            @Nullable final Hash epochHash,
             @NonNull final ShadowGraph shadowGraph,
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
             @NonNull final AtomicReference<Consensus> consensusRef,
@@ -162,6 +166,7 @@ public final class GossipFactory {
                     addressBook,
                     selfId,
                     appVersion,
+                    epochHash,
                     shadowGraph,
                     emergencyRecoveryManager,
                     consensusRef,
@@ -216,6 +221,7 @@ public final class GossipFactory {
                         addressBook,
                         selfId,
                         appVersion,
+                        epochHash,
                         shadowGraph,
                         emergencyRecoveryManager,
                         consensusRef,
