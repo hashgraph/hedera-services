@@ -38,6 +38,7 @@ import static com.swirlds.platform.util.BootstrapUtils.startJVMPauseDetectorThre
 import static com.swirlds.platform.util.BootstrapUtils.startThreadDumpGenerator;
 import static com.swirlds.platform.util.BootstrapUtils.writeSettingsUsed;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.StartupTime;
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.PathsConfig;
@@ -47,7 +48,7 @@ import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.internal.ApplicationDefinition;
-import com.swirlds.common.io.utility.RecycleBin;
+import com.swirlds.common.io.utility.RecycleBinImpl;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.MetricsProvider;
 import com.swirlds.common.metrics.platform.DefaultMetricsProvider;
@@ -368,7 +369,9 @@ public class Browser {
         final String swirldName = appDefinition.getSwirldName();
         final SoftwareVersion appVersion = appMain.getSoftwareVersion();
 
-        final RecycleBin recycleBin = RecycleBin.create(configuration, nodeId);
+        final RecycleBinImpl recycleBin = new RecycleBinImpl(
+                configuration, platformContext.getMetrics(), getStaticThreadManager(), Time.getCurrent(), nodeId);
+        recycleBin.start();
 
         // We can't send a "real" dispatch, since the dispatcher will not have been started by the
         // time this class is used.
@@ -396,11 +399,6 @@ public class Browser {
         try (initialState) {
             // check software version compatibility
             final boolean softwareUpgrade = detectSoftwareUpgrade(appVersion, initialState.get());
-
-            if (softwareUpgrade) {
-                logger.info(STARTUP.getMarker(), "Clearing recycle bin as part of software upgrade workflow.");
-                recycleBin.clear();
-            }
 
             // Initialize the address book from the configuration and platform saved state.
             final AddressBookInitializer addressBookInitializer = new AddressBookInitializer(

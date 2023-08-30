@@ -530,19 +530,25 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
      * @see PlatformState#getInfoString()
      */
     public String getInfoString() {
-        return new TextTable()
+        final String dataTable = new TextTable()
                 .setBordersEnabled(false)
-                .addRow("Round", round)
-                .addRow("Number of consensus events", numEventsCons)
-                .addRow("Consensus events running hash", hashEventsCons == null ? "null" : hashEventsCons.toMnemonic())
-                .addRow("Consensus timestamp", consensusTimestamp)
-                .addRow("Last timestamp", lastTransactionTimestamp)
-                .addRow("Rounds non-ancient", roundsNonAncient)
-                .addRow("Creation software version", creationSoftwareVersion)
-                .addRow("Epoch hash", epochHash == null ? "null" : epochHash.toMnemonic())
-                .addRow("Min gen info hash code", minGenInfo == null ? "null" : minGenInfo.hashCode())
-                .addRow("Events hash code", Arrays.hashCode(events))
+                .addRow("Round:", round)
+                .addRow("Number of consensus events:", numEventsCons)
+                .addRow("Consensus timestamp:", consensusTimestamp)
+                .addRow("Last timestamp:", lastTransactionTimestamp)
+                .addRow("Rounds non-ancient:", roundsNonAncient)
+                .addRow("Creation software version:", creationSoftwareVersion)
+                .addRow("Epoch hash:", epochHash == null ? "null" : epochHash.toMnemonic())
+                .addRow("Min gen info hash code:", minGenInfo == null ? "null" : minGenInfo.hashCode())
+                .addRow("Events hash code:", Arrays.hashCode(events))
+                .addRow(
+                        "Consensus events running mnemonic:",
+                        hashEventsCons == null ? "null" : hashEventsCons.toMnemonic())
                 .render();
+
+        // the unabbreviated running hash is printed separately because it is too long to fit into the table, which
+        // doesn't support wrapping well
+        return dataTable + "Consensus events running hash: " + hashEventsCons;
     }
 
     /**

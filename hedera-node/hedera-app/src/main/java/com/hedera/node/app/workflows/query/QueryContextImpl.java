@@ -18,9 +18,15 @@ package com.hedera.node.app.workflows.query;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.state.blockrecords.BlockInfo;
+import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.hapi.node.transaction.Query;
+import com.hedera.node.app.records.BlockRecordService;
+import com.hedera.node.app.records.impl.BlockRecordInfoImpl;
+import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -34,6 +40,8 @@ public class QueryContextImpl implements QueryContext {
     private final Query query;
     private final Configuration configuration;
     private final RecordCache recordCache;
+    private final HederaState state;
+    private BlockRecordInfo blockRecordInfo; // lazily created
 
     /**
      * Constructor of {@code QueryContextImpl}.
@@ -44,6 +52,7 @@ public class QueryContextImpl implements QueryContext {
      * @throws NullPointerException if {@code query} is {@code null}
      */
     public QueryContextImpl(
+            @NonNull final HederaState state,
             @NonNull final ReadableStoreFactory storeFactory,
             @NonNull final Query query,
             @NonNull final Configuration configuration,
@@ -52,6 +61,7 @@ public class QueryContextImpl implements QueryContext {
         this.query = requireNonNull(query, "The supplied argument 'query' cannot be null!");
         this.configuration = requireNonNull(configuration, "The supplied argument 'configuration' cannot be null!");
         this.recordCache = requireNonNull(recordCache, "The supplied argument 'recordCache' cannot be null!");
+        this.state = requireNonNull(state, "The supplied argument 'state' cannot be null!");
     }
 
     @Override
@@ -76,5 +86,22 @@ public class QueryContextImpl implements QueryContext {
     @Override
     public RecordCache recordCache() {
         return recordCache;
+    }
+
+    @NonNull
+    @Override
+    public BlockRecordInfo blockRecordInfo() {
+        if (blockRecordInfo == null) {
+            final var states = state.createReadableStates(BlockRecordService.NAME);
+            final var blockInfoState = states.<BlockInfo>getSingleton(BlockRecordService.BLOCK_INFO_STATE_KEY)
+                    .get();
+            final var runningHashState = states.<RunningHashes>getSingleton(BlockRecordService.RUNNING_HASHES_STATE_KEY)
+                    .get();
+            if (blockInfoState == null) throw new NullPointerException("state cannot be null!");
+            if (runningHashState == null) throw new NullPointerException("state cannot be null!");
+            blockRecordInfo = new BlockRecordInfoImpl(blockInfoState, runningHashState);
+        }
+
+        return blockRecordInfo;
     }
 }

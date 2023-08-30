@@ -19,7 +19,7 @@ package com.hedera.node.app.service.file.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.preValidate;
-import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateAndAddRequiredKeys;
+import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateAndAddRequiredKeysForDelete;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.verifyNotSystemFile;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static java.util.Objects.requireNonNull;
@@ -65,10 +65,11 @@ public class FileDeleteHandler implements TransactionHandler {
 
         final var transactionBody = context.body().fileDeleteOrThrow();
         final var fileStore = context.createStore(ReadableFileStore.class);
-        preValidate(transactionBody.fileID(), fileStore, context, true);
+        final var transactionFileId = requireNonNull(transactionBody.fileID());
+        preValidate(transactionFileId, fileStore, context, true);
 
-        var file = fileStore.getFileLeaf(transactionBody.fileID());
-        validateAndAddRequiredKeys(file.orElse(null), null, context);
+        var file = fileStore.getFileLeaf(transactionFileId);
+        validateAndAddRequiredKeysForDelete(file, context);
     }
 
     @Override
