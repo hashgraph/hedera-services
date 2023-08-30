@@ -33,6 +33,7 @@ import static com.swirlds.cli.logging.LogProcessingUtils.escapeString;
 import static com.swirlds.cli.logging.LogProcessingUtils.getLogLevelColor;
 import static com.swirlds.cli.logging.LogProcessingUtils.parseTimestamp;
 import static com.swirlds.common.units.TimeUnit.UNIT_MILLISECONDS;
+import static com.swirlds.common.units.TimeUnit.UNIT_SECONDS;
 
 import com.swirlds.common.formatting.TextEffect;
 import com.swirlds.common.formatting.UnitFormat;
@@ -375,7 +376,8 @@ public class LogLine implements FormattableString {
             final UnitFormatter unitFormatter = new UnitFormatter(
                             timestamp.toEpochMilli() - logStartTime.toEpochMilli(), UNIT_MILLISECONDS)
                     .setUnitFormat(UnitFormat.MULTI_SIMPLIFIED)
-                    .setDecimalPlaces(0)
+                    .setDecimalPlaces(3)
+                    .setLowestUnit(UNIT_SECONDS)
                     .setShowSpaceInBetween(false);
             elapsedTimeString = escapeString(unitFormatter.render());
         }
