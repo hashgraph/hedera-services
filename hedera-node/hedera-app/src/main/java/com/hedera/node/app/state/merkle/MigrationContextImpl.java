@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.state.merkle;
 
+import static java.util.Objects.requireNonNull;
+
+import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
@@ -30,5 +33,16 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param configuration The configuration to use
  */
 public record MigrationContextImpl(
-        @NonNull ReadableStates previousStates, @NonNull WritableStates newStates, @NonNull Configuration configuration)
-        implements MigrationContext {}
+        @NonNull ReadableStates previousStates,
+        @NonNull WritableStates newStates,
+        @NonNull Configuration configuration,
+        @NonNull NetworkInfo networkInfo)
+        implements MigrationContext {
+
+    public MigrationContextImpl {
+        requireNonNull(previousStates);
+        requireNonNull(newStates);
+        requireNonNull(configuration);
+        requireNonNull(networkInfo);
+    }
+}

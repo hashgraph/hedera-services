@@ -38,6 +38,18 @@ public class UnitFormatter {
     private final Unit<?> unit;
 
     /**
+     * The lowest unit that will be displayed when using the MULTI_SIMPLIFIED format. This value must not be set if
+     * a {@link #unitCount} is set.
+     */
+    private Unit<?> lowestUnit;
+
+    /**
+     * The number of units that will be displayed when using the MULTI_SIMPLIFIED format. This value must not be set if
+     * a {@link #lowestUnit} is set.
+     */
+    private int unitCount;
+
+    /**
      * Create a new unit formatter.
      *
      * @param quantity the quantity
@@ -73,6 +85,7 @@ public class UnitFormatter {
      * @param unitFormat the unit format
      * @return this object
      */
+    @NonNull
     public UnitFormatter setUnitFormat(@NonNull final UnitFormat unitFormat) {
         this.unitFormat = unitFormat;
         return this;
@@ -84,6 +97,7 @@ public class UnitFormatter {
      * @param quantity the quantity
      * @return this object
      */
+    @NonNull
     public UnitFormatter setQuantity(final long quantity) {
         this.doubleQuantity = null;
         this.longQuantity = quantity;
@@ -96,6 +110,7 @@ public class UnitFormatter {
      * @param quantity the quantity
      * @return this object
      */
+    @NonNull
     public UnitFormatter setQuantity(final double quantity) {
         this.longQuantity = null;
         this.doubleQuantity = quantity;
@@ -108,6 +123,7 @@ public class UnitFormatter {
      * @param abbreviate if true then abbreviate the unit
      * @return this object
      */
+    @NonNull
     public UnitFormatter setAbbreviate(final boolean abbreviate) {
         this.abbreviate = abbreviate;
         return this;
@@ -119,6 +135,7 @@ public class UnitFormatter {
      * @param decimalPlaces the number of decimal places to show
      * @return this object
      */
+    @NonNull
     public UnitFormatter setDecimalPlaces(final int decimalPlaces) {
         this.decimalPlaces = decimalPlaces;
         return this;
@@ -130,8 +147,43 @@ public class UnitFormatter {
      * @param showUnit true if the unit should be displayed
      * @return this object
      */
+    @NonNull
     public UnitFormatter setShowUnit(final boolean showUnit) {
         this.showUnit = showUnit;
+        return this;
+    }
+
+    /**
+     * Set the lowest unit that will be displayed when using the MULTI_SIMPLIFIED format. This value must not be set if
+     * a {@link #unitCount} is set.
+     *
+     * @param lowestUnit the lowest unit
+     * @return this object
+     */
+    @NonNull
+    public UnitFormatter setLowestUnit(@NonNull final Unit<?> lowestUnit) {
+        if (unitCount != 0) {
+            throw new IllegalArgumentException("unitCount is already set");
+        }
+
+        this.lowestUnit = Objects.requireNonNull(lowestUnit);
+        return this;
+    }
+
+    /**
+     * Set the number of units that will be displayed when using the MULTI_SIMPLIFIED format. This value must not be set if
+     * a {@link #lowestUnit} is set.
+     *
+     * @param unitCount the number of units
+     * @return this object
+     */
+    @NonNull
+    public UnitFormatter setUnitCount(final int unitCount) {
+        if (lowestUnit != null) {
+            throw new IllegalArgumentException("lowestUnit is already set");
+        }
+
+        this.unitCount = unitCount;
         return this;
     }
 
@@ -141,6 +193,7 @@ public class UnitFormatter {
      * @param showSpaceInBetween true if there should be a space in between the number and the unit
      * @return this object
      */
+    @NonNull
     public UnitFormatter setShowSpaceInBetween(final boolean showSpaceInBetween) {
         this.showSpaceInBetween = showSpaceInBetween;
         return this;
@@ -151,6 +204,7 @@ public class UnitFormatter {
      *
      * @return the rendered string
      */
+    @NonNull
     public String render() {
         final StringBuilder sb = new StringBuilder();
         render(sb);
@@ -166,25 +220,7 @@ public class UnitFormatter {
      * @return true if the quantity string requires a plural unit
      */
     private boolean isQuantityPlural(@NonNull final String quantityString) {
-        boolean plural = false;
-
-        if (quantityString.charAt(0) != '1') {
-            plural = true;
-        } else if (quantityString.length() > 1) {
-            if (quantityString.charAt(1) != '.') {
-                plural = true;
-            } else {
-                for (int i = 2; i < quantityString.length(); i++) {
-                    final char c = quantityString.charAt(i);
-                    if (c != '0') {
-                        plural = true;
-                        break;
-                    }
-                }
-            }
-        }
-
-        return plural;
+        return Double.parseDouble(quantityString.replace(",", "")) != 1.0;
     }
 
     /**
@@ -256,21 +292,24 @@ public class UnitFormatter {
      *
      * @param stringBuilder    the string builder to write the rendered string to
      * @param startingQuantity the starting quantity
+     * @param finalUnitOrdinal the lowest unit ordinal that may be displayed
      * @return the remainder
      */
+    @NonNull
     private Unit.SimplifiedQuantity<?> addTerm(
-            @NonNull final StringBuilder stringBuilder, @NonNull final Unit.SimplifiedQuantity<?> startingQuantity) {
+            @NonNull final StringBuilder stringBuilder,
+            @NonNull final Unit.SimplifiedQuantity<?> startingQuantity,
+            int finalUnitOrdinal) {
 
-        final Unit.SimplifiedQuantity<?> simplifiedQuantity =
-                startingQuantity.unit().simplify(startingQuantity.quantity());
-        final long roundedDownQuantity = (long) simplifiedQuantity.quantity();
+        final long roundedDownQuantity = (long) startingQuantity.quantity();
 
         final Unit.SimplifiedQuantity<?> remainder = new Unit.SimplifiedQuantity<>(
-                simplifiedQuantity.quantity() - roundedDownQuantity, simplifiedQuantity.unit());
+                startingQuantity.quantity() - roundedDownQuantity, startingQuantity.unit());
+        final Unit.SimplifiedQuantity<?> simplifiedRemainder = remainder.unit().simplify(remainder.quantity());
 
         final String termString;
-        if (remainder.unit() == unit) {
-            termString = commaSeparatedNumber(simplifiedQuantity.quantity(), decimalPlaces);
+        if (simplifiedRemainder.unit().ordinal() < finalUnitOrdinal) {
+            termString = commaSeparatedNumber(startingQuantity.quantity(), decimalPlaces);
         } else {
             termString = commaSeparatedNumber(roundedDownQuantity, 0);
         }
@@ -278,9 +317,9 @@ public class UnitFormatter {
         stringBuilder.append(termString);
 
         // multi simplified format always displays the unit
-        appendUnit(stringBuilder, termString, simplifiedQuantity.unit());
+        appendUnit(stringBuilder, termString, startingQuantity.unit());
 
-        return remainder;
+        return simplifiedRemainder;
     }
 
     /**
@@ -290,13 +329,23 @@ public class UnitFormatter {
      */
     private void formatWithMultiSimplifiedUnits(@NonNull final StringBuilder stringBuilder) {
         double originalQuantity = longQuantity == null ? doubleQuantity : (double) longQuantity;
+        final Unit.SimplifiedQuantity<?> firstTerm =
+                new Unit.SimplifiedQuantity<>(originalQuantity, unit).unit().simplify(originalQuantity);
 
-        Unit.SimplifiedQuantity<?> remainder =
-                addTerm(stringBuilder, new Unit.SimplifiedQuantity<>(originalQuantity, unit));
+        final int finalUnitOrdinal;
+        if (lowestUnit != null) {
+            finalUnitOrdinal = lowestUnit.ordinal();
+        } else if (unitCount != 0) {
+            finalUnitOrdinal = Math.max(0, firstTerm.unit().ordinal() - unitCount + 1);
+        } else {
+            finalUnitOrdinal = unit.ordinal();
+        }
 
-        while (remainder.unit().ordinal() > unit.ordinal()) {
+        Unit.SimplifiedQuantity<?> remainder = addTerm(stringBuilder, firstTerm, finalUnitOrdinal);
+
+        while (remainder.unit().ordinal() >= finalUnitOrdinal) {
             stringBuilder.append(" ");
-            remainder = addTerm(stringBuilder, remainder);
+            remainder = addTerm(stringBuilder, remainder, finalUnitOrdinal);
         }
     }
 

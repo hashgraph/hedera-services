@@ -113,7 +113,8 @@ public class SingleTransactionRecordBuilderImpl
     private Bytes transactionBytes = Bytes.EMPTY;
     // fields needed for TransactionRecord
     private final Instant consensusNow;
-    private final Instant parentConsensus;
+    private Instant parentConsensus;
+    private TransactionID transactionID;
     private List<TokenTransferList> tokenTransferLists = new LinkedList<>();
     private List<AssessedCustomFee> assessedCustomFees = new LinkedList<>();
     private List<TokenAssociation> automaticTokenAssociations = new LinkedList<>();
@@ -123,6 +124,7 @@ public class SingleTransactionRecordBuilderImpl
 
     // fields needed for TransactionReceipt
     private ResponseCodeEnum status = ResponseCodeEnum.OK;
+    private ExchangeRateSet exchangeRate = ExchangeRateSet.DEFAULT;
     private List<Long> serialNumbers = new LinkedList<>();
     private final TransactionReceipt.Builder transactionReceiptBuilder = TransactionReceipt.newBuilder();
     // Sidecar data, booleans are the migration flag
@@ -145,19 +147,6 @@ public class SingleTransactionRecordBuilderImpl
      */
     public SingleTransactionRecordBuilderImpl(@NonNull final Instant consensusNow) {
         this.consensusNow = requireNonNull(consensusNow, "consensusNow must not be null");
-        parentConsensus = null;
-    }
-
-    /**
-     * Creates new transaction record builder for a child transaction.
-     *
-     * @param consensusNow    the consensus timestamp for the transaction
-     * @param parentConsensus the consensus timestamp of the parent transaction
-     */
-    public SingleTransactionRecordBuilderImpl(
-            @NonNull final Instant consensusNow, @NonNull final Instant parentConsensus) {
-        this.consensusNow = requireNonNull(consensusNow, "consensusNow must not be null");
-        this.parentConsensus = requireNonNull(parentConsensus, "parentConsensusTimestamp must not be null");
     }
 
     /**
@@ -166,8 +155,10 @@ public class SingleTransactionRecordBuilderImpl
      * @return the transaction record
      */
     public SingleTransactionRecord build() {
-        final var transactionReceipt =
-                transactionReceiptBuilder.serialNumbers(serialNumbers).build();
+        final var transactionReceipt = transactionReceiptBuilder
+                .exchangeRate(exchangeRate)
+                .serialNumbers(serialNumbers)
+                .build();
 
         final Bytes transactionHash;
         try {
@@ -182,6 +173,7 @@ public class SingleTransactionRecordBuilderImpl
                 parentConsensus != null ? HapiUtils.asTimestamp(parentConsensus) : null;
 
         final var transactionRecord = transactionRecordBuilder
+                .transactionID(transactionID)
                 .receipt(transactionReceipt)
                 .transactionHash(transactionHash)
                 .consensusTimestamp(consensusTimestamp)
@@ -220,6 +212,11 @@ public class SingleTransactionRecordBuilderImpl
     // ------------------------------------------------------------------------------------------------------------------------
     // base transaction data
 
+    public SingleTransactionRecordBuilderImpl parentConsensus(@NonNull final Instant parentConsensus) {
+        this.parentConsensus = requireNonNull(parentConsensus, "parentConsensus must not be null");
+        return this;
+    }
+
     /**
      * Sets the transaction.
      *
@@ -246,6 +243,15 @@ public class SingleTransactionRecordBuilderImpl
     }
 
     /**
+     * Gets the {@link TransactionID} that is currently set.
+     *
+     * @return the {@link TransactionID}
+     */
+    public TransactionID transactionID() {
+        return transactionID;
+    }
+
+    /**
      * Sets the transaction ID.
      *
      * @param transactionID the transaction ID
@@ -253,8 +259,7 @@ public class SingleTransactionRecordBuilderImpl
      */
     @NonNull
     public SingleTransactionRecordBuilderImpl transactionID(@NonNull final TransactionID transactionID) {
-        requireNonNull(transactionID, "transactionID must not be null");
-        transactionRecordBuilder.transactionID(transactionID);
+        this.transactionID = requireNonNull(transactionID, "transactionID must not be null");
         return this;
     }
 
@@ -624,6 +629,16 @@ public class SingleTransactionRecordBuilderImpl
     }
 
     /**
+     * Gets the {@link ExchangeRateSet} that is currently set for the receipt.
+     *
+     * @return the {@link ExchangeRateSet}
+     */
+    @NonNull
+    public ExchangeRateSet exchangeRate() {
+        return exchangeRate;
+    }
+
+    /**
      * Sets the receipt exchange rate.
      *
      * @param exchangeRate the {@link ExchangeRateSet} for the receipt
@@ -632,7 +647,7 @@ public class SingleTransactionRecordBuilderImpl
     @NonNull
     public SingleTransactionRecordBuilderImpl exchangeRate(@NonNull final ExchangeRateSet exchangeRate) {
         requireNonNull(exchangeRate, "exchangeRate must not be null");
-        transactionReceiptBuilder.exchangeRate(exchangeRate);
+        this.exchangeRate = exchangeRate;
         return this;
     }
 

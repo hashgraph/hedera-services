@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.spi.state;
 
+import com.hedera.node.app.spi.info.NetworkInfo;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -52,4 +53,12 @@ public interface MigrationContext {
      */
     @NonNull
     Configuration configuration();
+
+    /**
+     * Information about the network itself. Generally, this is not useful information for migrations, but is used at
+     * genesis for the file service. In the future, this may no longer be required.
+     *
+     * @return The {@link NetworkInfo} of the network at the time of migration.
+     */
+    NetworkInfo networkInfo();
 }
