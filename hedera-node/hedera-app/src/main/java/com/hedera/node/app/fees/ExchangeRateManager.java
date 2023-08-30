@@ -68,7 +68,6 @@ public final class ExchangeRateManager {
     private ExchangeRateInfo currentExchangeRateInfo;
     private ExchangeRateSet midnightRates;
 
-
     @Inject
     public ExchangeRateManager(@NonNull final ConfigProvider configProvider) {
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
@@ -80,7 +79,8 @@ public final class ExchangeRateManager {
 
         // First we try to read midnightRates from state
         midnightRates = state.createReadableStates(FeeService.NAME)
-                .<ExchangeRateSet>getSingleton(FeeService.MIDNIGHT_RATES_STATE_KEY).get();
+                .<ExchangeRateSet>getSingleton(FeeService.MIDNIGHT_RATES_STATE_KEY)
+                .get();
         if (midnightRates != ExchangeRateSet.DEFAULT) {
             // midnightRates were found in state, a regular update is sufficient
             update(bytes);
@@ -113,7 +113,9 @@ public final class ExchangeRateManager {
         }
 
         // Validate mandatory fields
-        if (! (proposedRates.hasCurrentRate() && proposedRates.currentRateOrThrow().hasExpirationTime() && proposedRates.hasNextRate())) {
+        if (!(proposedRates.hasCurrentRate()
+                && proposedRates.currentRateOrThrow().hasExpirationTime()
+                && proposedRates.hasNextRate())) {
             throw new HandleException(ResponseCodeEnum.INVALID_EXCHANGE_RATE_FILE);
         }
 
@@ -121,7 +123,7 @@ public final class ExchangeRateManager {
         // TODO: This check needs to be skipped if payer is SysAdmin or Treasury
         final var ratesConfig = configProvider.getConfiguration().getConfigData(RatesConfig.class);
         final var limitPercent = ratesConfig.intradayChangeLimitPercent();
-        if (! isNormalIntradayChange(midnightRates, proposedRates, limitPercent)) {
+        if (!isNormalIntradayChange(midnightRates, proposedRates, limitPercent)) {
             throw new HandleException(ResponseCodeEnum.EXCHANGE_RATE_CHANGE_LIMIT_EXCEEDED);
         }
 
@@ -170,8 +172,15 @@ public final class ExchangeRateManager {
         final var hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
         final var shardNum = hederaConfig.shard();
         final var realmNum = hederaConfig.realm();
-        final var fileNum = configProvider.getConfiguration().getConfigData(FilesConfig.class).exchangeRates();
-        final var fileID = FileID.newBuilder().shardNum(shardNum).realmNum(realmNum).fileNum(fileNum).build();
+        final var fileNum = configProvider
+                .getConfiguration()
+                .getConfigData(FilesConfig.class)
+                .exchangeRates();
+        final var fileID = FileID.newBuilder()
+                .shardNum(shardNum)
+                .realmNum(realmNum)
+                .fileNum(fileNum)
+                .build();
         final var bytes = FileUtilities.getFileContent(state, fileID);
         final ExchangeRateSet exchangeRates;
         try {
@@ -188,17 +197,17 @@ public final class ExchangeRateManager {
             @NonNull final ExchangeRateSet proposedRates,
             final int limitPercent) {
         return canonicalTest(
-                limitPercent,
-                midnightRates.currentRate().centEquiv(),
-                midnightRates.currentRate().hbarEquiv(),
-                proposedRates.currentRate().centEquiv(),
-                proposedRates.currentRate().hbarEquiv())
+                        limitPercent,
+                        midnightRates.currentRate().centEquiv(),
+                        midnightRates.currentRate().hbarEquiv(),
+                        proposedRates.currentRate().centEquiv(),
+                        proposedRates.currentRate().hbarEquiv())
                 && canonicalTest(
-                limitPercent,
-                midnightRates.nextRate().centEquiv(),
-                midnightRates.nextRate().hbarEquiv(),
-                proposedRates.nextRate().centEquiv(),
-                proposedRates.nextRate().hbarEquiv());
+                        limitPercent,
+                        midnightRates.nextRate().centEquiv(),
+                        midnightRates.nextRate().hbarEquiv(),
+                        proposedRates.nextRate().centEquiv(),
+                        proposedRates.nextRate().hbarEquiv());
     }
 
     private static boolean canonicalTest(
@@ -212,15 +221,14 @@ public final class ExchangeRateManager {
 
         return LongStream.of(bound, oldC, oldH, newC, newH).allMatch(i -> i > 0)
                 && oC.multiply(nH)
-                .multiply(b100)
-                .subtract(nC.multiply(oH).multiply(ONE_HUNDRED))
-                .signum()
-                >= 0
+                                .multiply(b100)
+                                .subtract(nC.multiply(oH).multiply(ONE_HUNDRED))
+                                .signum()
+                        >= 0
                 && oH.multiply(nC)
-                .multiply(b100)
-                .subtract(nH.multiply(oC).multiply(ONE_HUNDRED))
-                .signum()
-                >= 0;
+                                .multiply(b100)
+                                .subtract(nH.multiply(oC).multiply(ONE_HUNDRED))
+                                .signum()
+                        >= 0;
     }
-
 }

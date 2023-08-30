@@ -106,7 +106,6 @@ public abstract class AbstractContractXTest {
         assertExpectedStorage(finalStorage(), finalAccounts());
     }
 
-
     protected abstract long initialEntityNum();
 
     protected Map<TokenID, Token> initialTokens() {
@@ -208,9 +207,14 @@ public abstract class AbstractContractXTest {
 
         fakeHederaState.addService("RecordCache", Map.of("TransactionRecordQueue", new ArrayDeque<>()));
 
-        final var expirationTime = TimestampSeconds.newBuilder().seconds(Instant.now().plusSeconds(100).getEpochSecond()).build();
+        final var expirationTime = TimestampSeconds.newBuilder()
+                .seconds(Instant.now().plusSeconds(100).getEpochSecond())
+                .build();
         final var someRate = ExchangeRate.newBuilder().hbarEquiv(1).centEquiv(1).expirationTime(expirationTime);
-        final var midnightRates = ExchangeRateSet.newBuilder().currentRate(someRate).nextRate(someRate).build();
+        final var midnightRates = ExchangeRateSet.newBuilder()
+                .currentRate(someRate)
+                .nextRate(someRate)
+                .build();
         fakeHederaState.addService(FeeService.NAME, Map.of("MIDNIGHT_RATES", new AtomicReference<>(midnightRates)));
 
         fakeHederaState.addService(
@@ -239,7 +243,9 @@ public abstract class AbstractContractXTest {
 
     private void setupExchangeManager() {
         final var state = scaffoldingComponent.workingStateAccessor().getHederaState();
-        final var midnightRates = state.createReadableStates(FeeService.NAME).<ExchangeRateSet>getSingleton("MIDNIGHT_RATES").get();
+        final var midnightRates = state.createReadableStates(FeeService.NAME)
+                .<ExchangeRateSet>getSingleton("MIDNIGHT_RATES")
+                .get();
 
         scaffoldingComponent.exchangeRateManager().init(state, ExchangeRateSet.PROTOBUF.toBytes(midnightRates));
     }

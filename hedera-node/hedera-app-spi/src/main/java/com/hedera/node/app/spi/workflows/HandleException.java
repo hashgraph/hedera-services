@@ -68,9 +68,7 @@ public class HandleException extends RuntimeException {
 
     @Override
     public String toString() {
-        return "HandleException{" +
-                "status=" + status +
-                '}';
+        return "HandleException{" + "status=" + status + '}';
     }
 
     /**

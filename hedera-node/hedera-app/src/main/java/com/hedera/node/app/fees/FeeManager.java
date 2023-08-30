@@ -148,8 +148,7 @@ public final class FeeManager {
 
         // Create the fee calculator
         return new FeeCalculatorImpl(
-                txInfo, payerKey, numVerifications, feeData,
-                exchangeRateManager.activeRate(consensusTime));
+                txInfo, payerKey, numVerifications, feeData, exchangeRateManager.activeRate(consensusTime));
     }
 
     /**

@@ -96,7 +96,7 @@ class ExchangeRateManagerTest {
         // then
         assertThatThrownBy(() -> subject.update(bytes))
                 .isInstanceOf(HandleException.class)
-                        .has(responseCode(ResponseCodeEnum.INVALID_EXCHANGE_RATE_FILE));
+                .has(responseCode(ResponseCodeEnum.INVALID_EXCHANGE_RATE_FILE));
     }
 
     @ParameterizedTest

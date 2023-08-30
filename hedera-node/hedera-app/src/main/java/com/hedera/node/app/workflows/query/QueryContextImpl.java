@@ -56,7 +56,8 @@ public class QueryContextImpl implements QueryContext {
         this.query = requireNonNull(query, "query must not be null");
         this.configuration = requireNonNull(configuration, "configuration must not be null");
         this.recordCache = requireNonNull(recordCache, "recordCache must not be null");
-        this.exchangeRateInfoSupplier = requireNonNull(exchangeRateInfoSupplier, "exchangeRateInfoSupplier must not be null");
+        this.exchangeRateInfoSupplier =
+                requireNonNull(exchangeRateInfoSupplier, "exchangeRateInfoSupplier must not be null");
     }
 
     @Override
