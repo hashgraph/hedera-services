@@ -251,7 +251,8 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
         logger.info("Closing MerkleHederaState");
         for (final var svc : services.values()) {
             for (final var md : svc.values()) {
-                final var index = findNodeIndex(md.serviceName(), md.stateDefinition().stateKey());
+                final var index =
+                        findNodeIndex(md.serviceName(), md.stateDefinition().stateKey());
                 if (index >= 0) {
                     final var node = getChild(index);
                     if (node instanceof VirtualMap<?, ?>) {
