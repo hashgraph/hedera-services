@@ -16,16 +16,15 @@
 
 package com.swirlds.platform.test.consensus;
 
+import static com.swirlds.common.test.fixtures.WeightGenerators.RANDOM;
+import static com.swirlds.platform.test.consensus.ConsensusTestArgs.RANDOM_WEIGHT_DESC;
 import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.test.framework.TestTypeTags;
 import com.swirlds.test.framework.config.TestConfigBuilder;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -290,6 +289,15 @@ class ConsensusTests {
         ConsensusTestRunner.create()
                 .setTest(ConsensusTestDefinitions::removeNode)
                 .setParams(params)
+                .setIterations(NUM_ITER)
+                .run();
+    }
+
+    @Test
+    void syntheticSnapshotTest() {
+        ConsensusTestRunner.create()
+                .setTest(ConsensusTestDefinitions::syntheticSnapshot)
+                .setParams(new ConsensusTestParams(4, RANDOM, RANDOM_WEIGHT_DESC))
                 .setIterations(NUM_ITER)
                 .run();
     }

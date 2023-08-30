@@ -22,11 +22,18 @@ import static com.swirlds.platform.test.graph.OtherParentMatrixFactory.createCli
 import static com.swirlds.platform.test.graph.OtherParentMatrixFactory.createPartitionedOtherParentAffinityMatrix;
 import static com.swirlds.platform.test.graph.OtherParentMatrixFactory.createShunnedNodeOtherParentAffinityMatrix;
 
+import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.crypto.RandomSigner;
 import com.swirlds.common.utility.Threshold;
+import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.consensus.ConsensusConstants;
+import com.swirlds.platform.consensus.SyntheticSnapshot;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateFileReader;
@@ -41,6 +48,7 @@ import com.swirlds.platform.test.event.emitter.StandardEventEmitter;
 import com.swirlds.platform.test.event.source.ForkingEventSource;
 import com.swirlds.platform.test.fixtures.event.DynamicValue;
 import com.swirlds.platform.test.fixtures.event.EventUtils;
+import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.EventSource;
 import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
@@ -51,6 +59,7 @@ import org.junit.jupiter.api.Assertions;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -585,5 +594,49 @@ public final class ConsensusTestDefinitions {
 		orchestrator2.validate(
 				Validations.standard().ratios(EventRatioValidation.blank().setMinimumConsensusRatio(0.5)));
 
+	}
+
+	public static void syntheticSnapshot(final TestInput input) {
+		final RandomSigner signer = new RandomSigner(new Random(input.seed()));
+		final long round = 100;
+		final long minGeneration = 1000;
+		final long lastConsensusOrder = 4000;
+
+		final SyntheticSnapshot syntheticSnapshot = SyntheticSnapshot.generateSyntheticSnapshot(
+				new BasicSoftwareVersion(1),
+				NodeId.FIRST_NODE_ID,
+				round,
+				minGeneration,
+				lastConsensusOrder,
+				Instant.now(),
+				ConfigurationBuilder
+						.create()
+						.withConfigDataType(ConsensusConfig.class)
+						.build()
+						.getConfigData(ConsensusConfig.class),
+				ss -> {
+					final Hash h = RandomUtils.randomHash(new Random(input.seed()));
+					ss.setHash(h);
+					return h;
+				},
+				signer
+		);
+
+		final ConsensusTestOrchestrator orchestrator =
+				OrchestratorBuilder.builder().setTestInput(input).build();
+		for (int i = 0; i < 2; i++) {
+			orchestrator.getNodes().get(i).getIntake().loadSnapshot(syntheticSnapshot.snapshot());
+			final EventImpl judge = new IndexedEvent(syntheticSnapshot.judge().getHashedData(), syntheticSnapshot.judge().getUnhashedData());
+			orchestrator.getNodes().get(i).getIntake().addLinkedEvent(judge);
+			ConsensusUtils.loadEventsIntoGenerator(
+					new EventImpl[]{judge},
+					orchestrator.getNodes().get(i).getEventEmitter().getGraphGenerator(),
+					orchestrator.getNodes().get(i).getRandom()
+			);
+		}
+
+		orchestrator.generateEvents(1);
+		orchestrator.validate(
+				Validations.standard().ratios(EventRatioValidation.blank().setMinimumConsensusRatio(0.8)));
 	}
 }

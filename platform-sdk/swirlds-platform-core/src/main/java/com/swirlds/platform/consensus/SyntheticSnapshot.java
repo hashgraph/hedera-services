@@ -4,6 +4,7 @@ import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.crypto.SerializableHashable;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
@@ -17,6 +18,7 @@ import com.swirlds.platform.state.MinGenInfo;
 import java.time.Instant;
 import java.util.List;
 import java.util.Random;
+import java.util.function.Function;
 import java.util.stream.LongStream;
 
 public record SyntheticSnapshot(ConsensusSnapshot snapshot, GossipEvent judge) {
@@ -28,7 +30,7 @@ public record SyntheticSnapshot(ConsensusSnapshot snapshot, GossipEvent judge) {
             final long lastConsensusOrder,
             final Instant roundTimestamp,
             final ConsensusConfig config,
-            final Cryptography cryptography,
+            final Function<SerializableHashable, Hash> hasher,
             final Signer signer) {
         final List<MinGenInfo> minGenInfos = LongStream.range(
                         RoundCalculationUtils.getOldestNonAncientRound(
@@ -50,7 +52,7 @@ public record SyntheticSnapshot(ConsensusSnapshot snapshot, GossipEvent judge) {
                 roundTimestamp.plusSeconds(1),
                 new ConsensusTransactionImpl[0]
         );
-        cryptography.digestSync(hashedData);
+        hasher.apply(hashedData);
         final GossipEvent judge = new GossipEvent(
                 hashedData,
                 new BaseEventUnhashedData(

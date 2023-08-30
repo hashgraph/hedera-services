@@ -33,6 +33,7 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.linking.ParentFinder;
+import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphEventObserver;
 import com.swirlds.platform.internal.ConsensusRound;
@@ -52,6 +53,7 @@ import java.util.List;
 public class TestIntake implements LoadableFromSignedState {
     private final ConsensusImpl consensus;
     private final ShadowGraph shadowGraph;
+    private final EventLinker linker;
     private final EventIntake intake;
     private final ConsensusOutput output;
     private int numEventsAdded = 0;
@@ -76,7 +78,7 @@ public class TestIntake implements LoadableFromSignedState {
         consensus = new ConsensusImpl(consensusConfig, ConsensusUtils.NOOP_CONSENSUS_METRICS, ab);
         shadowGraph = new ShadowGraph(mock(SyncMetrics.class));
         final ParentFinder parentFinder = new ParentFinder(shadowGraph::hashgraphEvent);
-        final EventLinker linker = new InOrderLinker(
+        linker = new InOrderLinker(
                 Time.getCurrent(), ConfigurationHolder.getConfigData(ConsensusConfig.class), parentFinder, l -> null);
         final EventObserverDispatcher dispatcher =
                 new EventObserverDispatcher(new ShadowGraphEventObserver(shadowGraph), output);
@@ -180,6 +182,7 @@ public class TestIntake implements LoadableFromSignedState {
 
     public void loadSnapshot(final ConsensusSnapshot snapshot) {
         consensus.loadSnapshot(snapshot);
+        linker.updateGenerations(consensus);
         shadowGraph.clear();
         shadowGraph.startFromGeneration(consensus.getMinGenerationNonAncient());
     }
