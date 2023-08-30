@@ -27,8 +27,6 @@ import org.junit.jupiter.api.Test;
 @DisplayName("HorizontalAlignment Tests")
 public class HorizontalAlignmentTests {
 
-    // TODO test without trailing padding
-
     @Test
     @DisplayName("ALIGNED_LEFT Test")
     void alignedLeftTest() {
