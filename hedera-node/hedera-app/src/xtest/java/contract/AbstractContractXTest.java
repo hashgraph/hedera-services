@@ -22,6 +22,7 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.NftID;
+import com.hedera.hapi.node.base.TimestampSeconds;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractCallTransactionBody;
@@ -38,7 +39,10 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
+import com.hedera.hapi.node.transaction.ExchangeRate;
+import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.fees.FeeService;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.records.BlockRecordService;
@@ -58,6 +62,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.Map;
@@ -91,6 +96,7 @@ public abstract class AbstractContractXTest {
     void scenarioPasses() {
         setupFeeManager();
         setupInitialStates();
+        setupExchangeManager();
 
         handleAndCommitScenarioTransactions();
 
@@ -99,6 +105,7 @@ public abstract class AbstractContractXTest {
         assertExpectedBytecodes(finalBytecodes());
         assertExpectedStorage(finalStorage(), finalAccounts());
     }
+
 
     protected abstract long initialEntityNum();
 
@@ -201,6 +208,11 @@ public abstract class AbstractContractXTest {
 
         fakeHederaState.addService("RecordCache", Map.of("TransactionRecordQueue", new ArrayDeque<>()));
 
+        final var expirationTime = TimestampSeconds.newBuilder().seconds(Instant.now().plusSeconds(100).getEpochSecond()).build();
+        final var someRate = ExchangeRate.newBuilder().hbarEquiv(1).centEquiv(1).expirationTime(expirationTime);
+        final var midnightRates = ExchangeRateSet.newBuilder().currentRate(someRate).nextRate(someRate).build();
+        fakeHederaState.addService(FeeService.NAME, Map.of("MIDNIGHT_RATES", new AtomicReference<>(midnightRates)));
+
         fakeHederaState.addService(
                 BlockRecordService.NAME,
                 Map.of(
@@ -223,6 +235,13 @@ public abstract class AbstractContractXTest {
                         ContractSchema.STORAGE_KEY, new HashMap<SlotKey, SlotValue>()));
 
         scaffoldingComponent.workingStateAccessor().setHederaState(fakeHederaState);
+    }
+
+    private void setupExchangeManager() {
+        final var state = scaffoldingComponent.workingStateAccessor().getHederaState();
+        final var midnightRates = state.createReadableStates(FeeService.NAME).<ExchangeRateSet>getSingleton("MIDNIGHT_RATES").get();
+
+        scaffoldingComponent.exchangeRateManager().init(state, ExchangeRateSet.PROTOBUF.toBytes(midnightRates));
     }
 
     private ReadableKVState<ProtoBytes, AccountID> finalAliases() {

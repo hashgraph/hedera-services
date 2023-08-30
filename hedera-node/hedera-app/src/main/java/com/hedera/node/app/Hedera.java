@@ -28,6 +28,7 @@ import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
+import com.hedera.node.app.fees.FeeService;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.info.CurrentPlatformStatusImpl;
 import com.hedera.node.app.info.SelfNodeInfoImpl;
@@ -204,7 +205,8 @@ public final class Hedera implements SwirldMain {
                 new UtilServiceImpl(),
                 new RecordCacheService(),
                 new BlockRecordService(),
-                new EntityIdService()));
+                new EntityIdService(),
+                new FeeService()));
 
         // Register MerkleHederaState with the ConstructableRegistry, so we can use a constructor
         // OTHER THAN the default constructor to make sure it has the config and other info
@@ -599,7 +601,7 @@ public final class Hedera implements SwirldMain {
         this.throttleManager = new ThrottleManager();
 
         logger.info("Initializing ExchangeRateManager");
-        exchangeRateManager = new ExchangeRateManager();
+        exchangeRateManager = new ExchangeRateManager(configProvider);
 
         // Create all the nodes in the merkle tree for all the services
         onMigrate(state, null);
@@ -828,7 +830,7 @@ public final class Hedera implements SwirldMain {
         final var file = getFileFromStorage(state, fileNum);
         if (file != null) {
             final var fileData = file.contents();
-            daggerApp.exchangeRateManager().update(fileData);
+            daggerApp.exchangeRateManager().init(state, fileData);
         }
         logger.info("Exchange rates initialized");
     }

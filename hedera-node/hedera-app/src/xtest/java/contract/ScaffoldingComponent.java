@@ -17,6 +17,7 @@
 package contract;
 
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -74,4 +75,6 @@ public interface ScaffoldingComponent {
     Function<TransactionBody, HandleContext> contextFactory();
 
     FeeManager feeManager();
+
+    ExchangeRateManager exchangeRateManager();
 }

@@ -33,9 +33,11 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.UnknownHederaFunctionality;
+import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -82,17 +84,22 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
     private final Codec<Query> queryParser;
     private final ConfigProvider configProvider;
     private final RecordCache recordCache;
+    private final ExchangeRateManager exchangeRateManager;
 
     /**
      * Constructor of {@code QueryWorkflowImpl}
      *
-     * @param stateAccessor a {@link Function} that returns the latest immutable or latest signed
-     *     state depending on the {@link ResponseType}
+     * @param stateAccessor a {@link Function} that returns the latest immutable or latest signed state depending on the
+     * {@link ResponseType}
      * @param throttleAccumulator the {@link ThrottleAccumulator} for throttling
      * @param submissionManager the {@link SubmissionManager} to submit transactions to the platform
      * @param queryChecker the {@link QueryChecker} with specific checks of an ingest-workflow
      * @param ingestChecker the {@link IngestChecker} to handle the crypto transfer
      * @param dispatcher the {@link QueryDispatcher} that will call query-specific methods
+     * @param queryParser the {@link Codec} to parse a query
+     * @param configProvider the {@link ConfigProvider} to get the current configuration
+     * @param recordCache the {@link RecordCache}
+     * @param exchangeRateManager the {@link ExchangeRateManager} to get the {@link ExchangeRateInfo}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     @Inject
@@ -105,16 +112,18 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             @NonNull final QueryDispatcher dispatcher,
             @NonNull final Codec<Query> queryParser,
             @NonNull final ConfigProvider configProvider,
-            @NonNull final RecordCache recordCache) {
-        this.stateAccessor = requireNonNull(stateAccessor);
-        this.throttleAccumulator = requireNonNull(throttleAccumulator);
-        this.submissionManager = requireNonNull(submissionManager);
-        this.ingestChecker = requireNonNull(ingestChecker);
-        this.queryChecker = requireNonNull(queryChecker);
-        this.dispatcher = requireNonNull(dispatcher);
-        this.queryParser = requireNonNull(queryParser);
-        this.configProvider = requireNonNull(configProvider);
-        this.recordCache = requireNonNull(recordCache);
+            @NonNull final RecordCache recordCache,
+            @NonNull final ExchangeRateManager exchangeRateManager) {
+        this.stateAccessor = requireNonNull(stateAccessor, "stateAccessor must not be null");
+        this.throttleAccumulator = requireNonNull(throttleAccumulator, "throttleAccumulator must not be null");
+        this.submissionManager = requireNonNull(submissionManager, "submissionManager must not be null");
+        this.ingestChecker = requireNonNull(ingestChecker, "ingestChecker must not be null");
+        this.queryChecker = requireNonNull(queryChecker, "queryChecker must not be null");
+        this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
+        this.queryParser = requireNonNull(queryParser, "queryParser must not be null");
+        this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
+        this.recordCache = requireNonNull(recordCache, "recordCache must not be null");
+        this.exchangeRateManager = requireNonNull(exchangeRateManager, "exchangeRateManager must not be null");
     }
 
     @Override
@@ -153,8 +162,12 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             final var state = wrappedState.get();
             final var storeFactory = new ReadableStoreFactory(state);
             final var paymentRequired = handler.requiresNodePayment(responseType);
-            final var context =
-                    new QueryContextImpl(storeFactory, query, configProvider.getConfiguration(), recordCache);
+            final var context = new QueryContextImpl(
+                    storeFactory,
+                    query,
+                    configProvider.getConfiguration(),
+                    recordCache,
+                    () -> exchangeRateManager.exchangeRateInfo(state));
             Transaction allegedPayment = null;
             TransactionBody txBody = null;
             if (paymentRequired) {

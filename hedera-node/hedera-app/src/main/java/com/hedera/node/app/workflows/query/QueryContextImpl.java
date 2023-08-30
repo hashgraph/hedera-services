@@ -19,11 +19,13 @@ package com.hedera.node.app.workflows.query;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.transaction.Query;
+import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.function.Supplier;
 
 /**
  * Simple implementation of {@link QueryContext}.
@@ -34,6 +36,7 @@ public class QueryContextImpl implements QueryContext {
     private final Query query;
     private final Configuration configuration;
     private final RecordCache recordCache;
+    private final Supplier<ExchangeRateInfo> exchangeRateInfoSupplier;
 
     /**
      * Constructor of {@code QueryContextImpl}.
@@ -47,11 +50,13 @@ public class QueryContextImpl implements QueryContext {
             @NonNull final ReadableStoreFactory storeFactory,
             @NonNull final Query query,
             @NonNull final Configuration configuration,
-            @NonNull final RecordCache recordCache) {
-        this.storeFactory = requireNonNull(storeFactory, "The supplied argument 'storeFactory' cannot be null!");
-        this.query = requireNonNull(query, "The supplied argument 'query' cannot be null!");
-        this.configuration = requireNonNull(configuration, "The supplied argument 'configuration' cannot be null!");
-        this.recordCache = requireNonNull(recordCache, "The supplied argument 'recordCache' cannot be null!");
+            @NonNull final RecordCache recordCache,
+            @NonNull final Supplier<ExchangeRateInfo> exchangeRateInfoSupplier) {
+        this.storeFactory = requireNonNull(storeFactory, "storeFactory must not be null");
+        this.query = requireNonNull(query, "query must not be null");
+        this.configuration = requireNonNull(configuration, "configuration must not be null");
+        this.recordCache = requireNonNull(recordCache, "recordCache must not be null");
+        this.exchangeRateInfoSupplier = requireNonNull(exchangeRateInfoSupplier, "exchangeRateInfoSupplier must not be null");
     }
 
     @Override
@@ -76,5 +81,11 @@ public class QueryContextImpl implements QueryContext {
     @Override
     public RecordCache recordCache() {
         return recordCache;
+    }
+
+    @NonNull
+    @Override
+    public ExchangeRateInfo exchangeRateInfo() {
+        return exchangeRateInfoSupplier.get();
     }
 }
