@@ -42,7 +42,7 @@ concurrency:
 #   "configs/services/suites/daily/GCP-Daily-Services-Comp-3NReconnect-15N-4C.json"                   ----         90m
 #   "configs/services/suites/daily/GCP-Daily-Services-Global-3NReconnect-15N-4C.json"                 ----         90m
 
-#   TOTAL RUN TIME:             180 minutes, 2 hours
+#   TOTAL RUN TIME:             180 minutes, 3 hours
 #
 #   Parallel job(s):
 #
