@@ -393,6 +393,26 @@ public class SwirldsPlatform implements Platform, Startable {
         final AppCommunicationComponent appCommunicationComponent =
                 wiring.wireAppCommunicationComponent(notificationEngine);
 
+        scratchpad = new Scratchpad(platformContext, selfId);
+
+        final Hash epochHash;
+        if (emergencyRecoveryManager.getEmergencyRecoveryFile() != null) {
+            epochHash = emergencyRecoveryManager.getEmergencyRecoveryFile().hash();
+        } else {
+            epochHash =
+                    initialState.getState().getPlatformState().getPlatformData().getEpochHash();
+        }
+
+        StartupStateUtilities.doRecoveryCleanup(
+                platformContext,
+                scratchpad,
+                recycleBin,
+                selfId,
+                swirldName,
+                actualMainClassName,
+                epochHash,
+                initialState.getRound());
+
         preconsensusEventFileManager = buildPreconsensusEventFileManager(softwareUpgrade);
 
         preconsensusEventWriter = components.add(buildPreconsensusEventWriter(preconsensusEventFileManager));
@@ -683,25 +703,6 @@ public class SwirldsPlatform implements Platform, Startable {
                         Pair.of(preConsensusEventHandler, "preConsensusEventHandler"),
                         Pair.of(consensusRoundHandler, "consensusRoundHandler"),
                         Pair.of(swirldStateManager, "swirldStateManager")));
-
-        final Hash epochHash;
-        if (emergencyRecoveryManager.getEmergencyRecoveryFile() != null) {
-            epochHash = emergencyRecoveryManager.getEmergencyRecoveryFile().hash();
-        } else {
-            epochHash =
-                    initialState.getState().getPlatformState().getPlatformData().getEpochHash();
-        }
-
-        scratchpad = new Scratchpad(platformContext, selfId);
-        StartupStateUtilities.doRecoveryCleanup(
-                platformContext,
-                scratchpad,
-                recycleBin,
-                selfId,
-                swirldName,
-                actualMainClassName,
-                epochHash,
-                initialState.getRound());
 
         // To be removed once the GUI component is better integrated with the platform.
         GuiPlatformAccessor.getInstance().setShadowGraph(selfId, shadowGraph);
@@ -1045,7 +1046,7 @@ public class SwirldsPlatform implements Platform, Startable {
     @NonNull
     private PreconsensusEventFileManager buildPreconsensusEventFileManager(final boolean softwareUpgrade) {
         try {
-            clearPCESOnSoftwareUpgradeIfConfigured(softwareUpgrade); // TODO this doesn't have to go here!
+            clearPCESOnSoftwareUpgradeIfConfigured(softwareUpgrade);
             return new PreconsensusEventFileManager(platformContext, Time.getCurrent(), recycleBin, selfId);
         } catch (final IOException e) {
             throw new UncheckedIOException("unable load preconsensus files", e);

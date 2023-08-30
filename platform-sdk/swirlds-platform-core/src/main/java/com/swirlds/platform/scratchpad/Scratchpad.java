@@ -95,6 +95,7 @@ public class Scratchpad {
      * @return the value, or null if the field is not present
      */
     @SuppressWarnings("unchecked")
+    @Nullable
     public <T extends SelfSerializable> T get(final ScratchpadField field) {
         try (final Locked ignored = lock.lock()) {
             return (T) data.get(field);
@@ -286,5 +287,4 @@ public class Scratchpad {
     //  - atomic reads and writes of multiple fields
     //  - pcli command to look inside a scratchpad file
     //  - pcli command to edit a scratchpad file
-    //  - logging at startup time
 }
