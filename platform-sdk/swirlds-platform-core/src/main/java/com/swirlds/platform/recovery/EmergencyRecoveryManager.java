@@ -20,16 +20,11 @@ import static com.swirlds.common.system.SystemExitCode.EMERGENCY_RECOVERY_ERROR;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
 import com.swirlds.common.config.StateConfig;
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.dispatch.triggers.control.ShutdownRequestedTrigger;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
-import com.swirlds.platform.state.signed.SavedStateInfo;
-import com.swirlds.platform.state.signed.SavedStateMetadata;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -84,46 +79,6 @@ public class EmergencyRecoveryManager {
      */
     public EmergencyRecoveryFile getEmergencyRecoveryFile() {
         return emergencyRecoveryFile;
-    }
-
-    // TODO tests
-
-    /**
-     * Check if a state is in the hash epoch defined by the emergency recovery file.
-     *
-     * @param stateHash      the hash of the state in question
-     * @param stateHashEpoch the epoch hash of the state in question
-     * @return {@code true} if the state is in the hash epoch, {@code false} otherwise
-     */
-    public boolean isInHashEpoch(@NonNull final Hash stateHash, @Nullable final Hash stateHashEpoch) {
-
-        if (emergencyRecoveryFile == null) {
-            throw new IllegalStateException("Emergency recovery file is not present");
-        }
-
-        return stateHash.equals(emergencyRecoveryFile.hash())
-                || Objects.equals(stateHashEpoch, emergencyRecoveryFile.hash());
-    }
-
-    /**
-     * Check if a given state file on disk is compatible with the emergency recovery file.
-     *
-     * @param candidateState the state file to check
-     * @return {@code true} if the state file is compatible, {@code false} otherwise
-     */
-    public boolean isStateSuitableForStartup(@NonNull final SavedStateInfo candidateState) {
-        if (emergencyRecoveryFile == null) {
-            throw new IllegalStateException("Emergency recovery file is not present");
-        }
-
-        if (candidateState.metadata().hash() == null) {
-            // This state was created with an old version of the metadata, do not consider it.
-            // Any state written with the current software version will have a non-null value for this field.
-            return false;
-        }
-
-        final SavedStateMetadata metadata = candidateState.metadata();
-        return isInHashEpoch(metadata.hash(), metadata.epochHash()) || metadata.round() < emergencyRecoveryFile.round();
     }
 
     private EmergencyRecoveryFile readEmergencyRecoveryFile(final Path dir) {

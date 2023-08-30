@@ -19,7 +19,6 @@ package com.swirlds.platform.util;
 import static com.swirlds.logging.LogMarker.STATE_HASH;
 
 import com.swirlds.common.config.StateConfig;
-import com.swirlds.common.system.NodeId;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
@@ -47,7 +46,6 @@ public class HashLogger {
     private static final int LOGGING_QUEUE_CAPACITY = 100;
 
     private final AtomicLong lastRoundLogged = new AtomicLong(-1);
-    private final NodeId nodeId;
     private final StateConfig stateConfig;
     private final QueueThread<Runnable> logQueue;
     private final Logger logOutput; // NOSONAR: selected logger to output to.
@@ -57,25 +55,19 @@ public class HashLogger {
      * Construct a HashLogger.
      *
      * @param threadManager responsible for creating and managing threads
-     * @param nodeId        the id of the current node that is logging.
      * @param stateConfig   configuration for the current state.
      */
-    public HashLogger(
-            @NonNull final ThreadManager threadManager,
-            @NonNull final NodeId nodeId,
-            @NonNull final StateConfig stateConfig) {
-        this(threadManager, nodeId, stateConfig, logger);
+    public HashLogger(@NonNull final ThreadManager threadManager, @NonNull final StateConfig stateConfig) {
+        this(threadManager, stateConfig, logger);
     }
 
     // Visible for testing
     HashLogger(
             @NonNull final ThreadManager threadManager,
-            @NonNull final NodeId nodeId,
             @NonNull final StateConfig stateConfig,
             @NonNull final Logger logOutput) {
         this.stateConfig = Objects.requireNonNull(stateConfig);
         isEnabled = stateConfig.enableHashStreamLogging();
-        this.nodeId = Objects.requireNonNull(nodeId);
         logQueue = !isEnabled
                 ? null
                 : new QueueThreadConfiguration<Runnable>(Objects.requireNonNull(threadManager))
@@ -96,14 +88,13 @@ public class HashLogger {
             logOutput.info(
                     STATE_HASH.getMarker(),
                     () -> MESSAGE_FACTORY.newMessage(
-                            "*** [node-{}] Several rounds skipped. Round received {}. Previously received {}.",
-                            nodeId,
+                            "*** Several rounds skipped. Round received {}. Previously received {}.",
                             currentRound,
                             prevRound));
         }
 
         if (currentRound > prevRound) {
-            logOutput.info(STATE_HASH.getMarker(), () -> generateLogMessage(nodeId, signedState));
+            logOutput.info(STATE_HASH.getMarker(), () -> generateLogMessage(signedState));
         }
     }
 
@@ -126,15 +117,14 @@ public class HashLogger {
         logQueue.offer(() -> log(signedState)); // NOSONAR: silently drop message if unable to queue.
     }
 
-    private Message generateLogMessage(final NodeId nodeId, final SignedState signedState) {
+    private Message generateLogMessage(final SignedState signedState) {
         final State state = signedState.getState();
         final String platformInfo = state.getInfoString(stateConfig.debugHashDepth());
 
         return MESSAGE_FACTORY.newMessage(
                 """
-                        [node-{}] Information for hash stream (round = {}):
+                        State Info, round = {}:
                         {}""",
-                nodeId,
                 signedState.getRound(),
                 platformInfo);
     }

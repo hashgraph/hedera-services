@@ -315,7 +315,22 @@ public final class StartupStateUtilities {
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
             @NonNull final SavedStateInfo savedStateFile) {
 
-        final boolean isStateSuitable = emergencyRecoveryManager.isStateSuitableForStartup(savedStateFile);
+        if (savedStateFile.metadata().hash() == null) {
+            // This state was created with an old version of the metadata, do not consider it.
+            // Any state written with the current software version will have a non-null value for this field.
+            return false;
+        }
+
+        final Hash targetEpoch =
+                emergencyRecoveryManager.getEmergencyRecoveryFile().hash();
+        final long targetRound =
+                emergencyRecoveryManager.getEmergencyRecoveryFile().round();
+
+        final Hash stateHash = savedStateFile.metadata().hash();
+        final Hash stateEpoch = savedStateFile.metadata().epochHash();
+        final long stateRound = savedStateFile.metadata().round();
+
+        final boolean isStateSuitable = isInHashEpoch(targetEpoch, stateHash, stateEpoch) || stateRound < targetRound;
 
         if (isStateSuitable) {
             logger.info(
@@ -351,21 +366,20 @@ public final class StartupStateUtilities {
     /**
      * Check if a provided state is in the hash epoch that is specified by the emergency recovery file.
      *
-     * @param emergencyRecoveryManager the emergency recovery manager
-     * @param state                    the state to check, may be null
+     * @param targetEpoch the hash epoch specified by the emergency recovery file
+     * @param stateHash   the hash of the state
+     * @param stateEpoch  the epoch hash of the state
      * @return true if the state is in the hash epoch, false otherwise. Null states are not in the hash epoch.
      */
     private static boolean isInHashEpoch(
-            @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
-            @Nullable final ReservedSignedState state) {
+            @Nullable final Hash targetEpoch, @Nullable final Hash stateHash, @Nullable final Hash stateEpoch) {
 
-        if (state == null || state.isNull()) {
+        if (stateHash == null) {
+            // State is from an old version of hte code that did not store state hash in metadata
             return false;
         }
 
-        return emergencyRecoveryManager.isInHashEpoch(
-                state.get().getState().getHash(),
-                state.get().getState().getPlatformState().getPlatformData().getEpochHash());
+        return stateHash.equals(targetEpoch) || Objects.equals(stateEpoch, targetEpoch);
     }
 
     /**
@@ -380,7 +394,14 @@ public final class StartupStateUtilities {
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
             @Nullable final ReservedSignedState state) {
 
-        final boolean inEpoch = isInHashEpoch(emergencyRecoveryManager, state);
+        final Hash targetEpoch =
+                emergencyRecoveryManager.getEmergencyRecoveryFile().hash();
+        final Hash stateHash = state == null ? null : state.get().getState().getHash();
+        final Hash stateEpoch = state == null
+                ? null
+                : state.get().getState().getPlatformState().getPlatformData().getEpochHash();
+
+        final boolean inEpoch = isInHashEpoch(targetEpoch, stateHash, stateEpoch);
 
         if (state == null) {
             logger.warn(

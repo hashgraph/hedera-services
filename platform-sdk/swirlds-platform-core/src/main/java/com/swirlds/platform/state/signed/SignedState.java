@@ -553,8 +553,6 @@ public class SignedState implements SignedStateInfo {
         return signingWeight;
     }
 
-    // TODO test with recoveryState flag
-
     /**
      * {@inheritDoc}
      */

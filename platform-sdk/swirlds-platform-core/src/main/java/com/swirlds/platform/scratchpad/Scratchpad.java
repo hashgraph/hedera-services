@@ -47,8 +47,6 @@ import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-// TODO unit test
-
 /**
  * A utility that allows the platform to "take notes" that are preserved across restart boundaries.
  * <p>
