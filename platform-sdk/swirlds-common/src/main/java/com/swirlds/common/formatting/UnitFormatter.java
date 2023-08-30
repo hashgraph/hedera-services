@@ -38,6 +38,18 @@ public class UnitFormatter {
     private final Unit<?> unit;
 
     /**
+     * The lowest unit that will be displayed when using the MULTI_SIMPLIFIED format. This value must not be set if
+     * a {@link #unitCount} is set.
+     */
+    private Unit<?> lowestUnit;
+
+    /**
+     * The number of units that will be displayed when using the MULTI_SIMPLIFIED format. This value must not be set if
+     * a {@link #lowestUnit} is set.
+     */
+    private int unitCount;
+
+    /**
      * Create a new unit formatter.
      *
      * @param quantity the quantity
@@ -138,6 +150,40 @@ public class UnitFormatter {
     @NonNull
     public UnitFormatter setShowUnit(final boolean showUnit) {
         this.showUnit = showUnit;
+        return this;
+    }
+
+    /**
+     * Set the lowest unit that will be displayed when using the MULTI_SIMPLIFIED format. This value must not be set if
+     * a {@link #unitCount} is set.
+     *
+     * @param lowestUnit the lowest unit
+     * @return this object
+     */
+    @NonNull
+    public UnitFormatter setLowestUnit(@NonNull final Unit<?> lowestUnit) {
+        if (unitCount != 0) {
+            throw new IllegalArgumentException("unitCount is already set");
+        }
+
+        this.lowestUnit = Objects.requireNonNull(lowestUnit);
+        return this;
+    }
+
+    /**
+     * Set the number of units that will be displayed when using the MULTI_SIMPLIFIED format. This value must not be set if
+     * a {@link #lowestUnit} is set.
+     *
+     * @param unitCount the number of units
+     * @return this object
+     */
+    @NonNull
+    public UnitFormatter setUnitCount(final int unitCount) {
+        if (lowestUnit != null) {
+            throw new IllegalArgumentException("lowestUnit is already set");
+        }
+
+        this.unitCount = unitCount;
         return this;
     }
 
@@ -246,11 +292,14 @@ public class UnitFormatter {
      *
      * @param stringBuilder    the string builder to write the rendered string to
      * @param startingQuantity the starting quantity
+     * @param finalUnitOrdinal the lowest unit ordinal that may be displayed
      * @return the remainder
      */
     @NonNull
     private Unit.SimplifiedQuantity<?> addTerm(
-            @NonNull final StringBuilder stringBuilder, @NonNull final Unit.SimplifiedQuantity<?> startingQuantity) {
+            @NonNull final StringBuilder stringBuilder,
+            @NonNull final Unit.SimplifiedQuantity<?> startingQuantity,
+            int finalUnitOrdinal) {
 
         final long roundedDownQuantity = (long) startingQuantity.quantity();
 
@@ -259,7 +308,7 @@ public class UnitFormatter {
         final Unit.SimplifiedQuantity<?> simplifiedRemainder = remainder.unit().simplify(remainder.quantity());
 
         final String termString;
-        if (simplifiedRemainder.unit().ordinal() < unit.ordinal()) {
+        if (simplifiedRemainder.unit().ordinal() < finalUnitOrdinal) {
             termString = commaSeparatedNumber(startingQuantity.quantity(), decimalPlaces);
         } else {
             termString = commaSeparatedNumber(roundedDownQuantity, 0);
@@ -280,14 +329,23 @@ public class UnitFormatter {
      */
     private void formatWithMultiSimplifiedUnits(@NonNull final StringBuilder stringBuilder) {
         double originalQuantity = longQuantity == null ? doubleQuantity : (double) longQuantity;
+        final Unit.SimplifiedQuantity<?> firstTerm =
+                new Unit.SimplifiedQuantity<>(originalQuantity, unit).unit().simplify(originalQuantity);
 
-        Unit.SimplifiedQuantity<?> remainder = addTerm(
-                stringBuilder,
-                new Unit.SimplifiedQuantity<>(originalQuantity, unit).unit().simplify(originalQuantity));
+        final int finalUnitOrdinal;
+        if (lowestUnit != null) {
+            finalUnitOrdinal = lowestUnit.ordinal();
+        } else if (unitCount != 0) {
+            finalUnitOrdinal = Math.max(0, firstTerm.unit().ordinal() - unitCount + 1);
+        } else {
+            finalUnitOrdinal = unit.ordinal();
+        }
 
-        while (remainder.unit().ordinal() >= unit.ordinal()) {
+        Unit.SimplifiedQuantity<?> remainder = addTerm(stringBuilder, firstTerm, finalUnitOrdinal);
+
+        while (remainder.unit().ordinal() >= finalUnitOrdinal) {
             stringBuilder.append(" ");
-            remainder = addTerm(stringBuilder, remainder);
+            remainder = addTerm(stringBuilder, remainder, finalUnitOrdinal);
         }
     }
 

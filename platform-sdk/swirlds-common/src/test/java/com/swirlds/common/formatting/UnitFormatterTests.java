@@ -16,11 +16,11 @@
 
 package com.swirlds.common.formatting;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import com.swirlds.common.units.DataUnit;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @DisplayName("UnitFormatter Tests")
 class UnitFormatterTests {
@@ -117,6 +117,38 @@ class UnitFormatterTests {
                         .buildFormatter(1024 * 1024 + 2048 + 523)
                         .setDecimalPlaces(0)
                         .setUnitFormat(UnitFormat.MULTI_SIMPLIFIED)
+                        .render());
+        assertEquals(
+                "1 GB 3 MB",
+                DataUnit.UNIT_KILOBYTES
+                        .buildFormatter(1024 * 1024 + 2048 + 523)
+                        .setDecimalPlaces(0)
+                        .setUnitFormat(UnitFormat.MULTI_SIMPLIFIED)
+                        .setLowestUnit(DataUnit.UNIT_MEGABYTES)
+                        .render());
+        assertEquals(
+                "1 GB 2.51 MB",
+                DataUnit.UNIT_KILOBYTES
+                        .buildFormatter(1024 * 1024 + 2048 + 523)
+                        .setDecimalPlaces(2)
+                        .setUnitFormat(UnitFormat.MULTI_SIMPLIFIED)
+                        .setLowestUnit(DataUnit.UNIT_MEGABYTES)
+                        .render());
+        assertEquals(
+                "1 GB 2 MB 523.0 KB",
+                DataUnit.UNIT_KILOBYTES
+                        .buildFormatter(1024 * 1024 + 2048 + 523)
+                        .setDecimalPlaces(1)
+                        .setUnitFormat(UnitFormat.MULTI_SIMPLIFIED)
+                        .setUnitCount(4)
+                        .render());
+        assertEquals(
+                "1 PB 1 TB 1 GB 2.51 MB",
+                DataUnit.UNIT_KILOBYTES
+                        .buildFormatter((1024L * 1024 * 1024 * 1024) + (1024 * 1024 * 1024) + (1024 * 1024) + 2048 + 523)
+                        .setDecimalPlaces(2)
+                        .setUnitFormat(UnitFormat.MULTI_SIMPLIFIED)
+                        .setUnitCount(4)
                         .render());
     }
 
