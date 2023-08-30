@@ -16,18 +16,6 @@
 
 package com.swirlds.cli.logging;
 
-import com.swirlds.common.system.NodeId;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import org.apache.logging.log4j.Level;
-
-import java.time.Instant;
-import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-
 import static com.swirlds.cli.logging.HtmlColors.getHtmlColor;
 import static com.swirlds.cli.logging.LogLine.CLASS_NAME_COLOR;
 import static com.swirlds.cli.logging.LogLine.LOG_MARKER_COLOR;
@@ -36,6 +24,17 @@ import static com.swirlds.cli.logging.LogLine.THREAD_NAME_COLOR;
 import static com.swirlds.cli.logging.LogLine.TIMESTAMP_COLOR;
 import static com.swirlds.cli.logging.LogProcessingUtils.getLogLevelColor;
 import static com.swirlds.cli.logging.PlatformStatusLog.STATUS_HTML_CLASS;
+
+import com.swirlds.common.system.NodeId;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import org.apache.logging.log4j.Level;
 
 /**
  * Generates an HTML log page
@@ -121,7 +120,8 @@ public class HtmlGenerator {
     /**
      * The javascript that is used to hide/show elements when the filter checkboxes are clicked
      */
-    public static final String FILTER_JS = """
+    public static final String FILTER_JS =
+            """
             // the radio buttons that have the ability to hide things
             let filterRadios = document.getElementsByClassName("filter-radio");
 
@@ -213,8 +213,7 @@ public class HtmlGenerator {
     /**
      * Hidden constructor.
      */
-    private HtmlGenerator() {
-    }
+    private HtmlGenerator() {}
 
     /**
      * Create show / hide radio buttons for node IDs
@@ -225,8 +224,19 @@ public class HtmlGenerator {
     private static String createNodeRadios(@NonNull final String nodeName) {
         final String commonRadioLabel = nodeName + "-radio";
 
-        final String neutralTag = new HtmlTagFactory("input", null, true).addClasses(List.of(FILTER_RADIO_LABEL, nodeName)).addAttribute("type", "radio").addAttribute("name", commonRadioLabel).addAttribute("value", "2").addAttribute("checked", "checked").generateTag();
-        final String noShowTag = new HtmlTagFactory("input", null, true).addClasses(List.of(FILTER_RADIO_LABEL, ABSOLUTELY_NO_SHOW, nodeName)).addAttribute("type", "radio").addAttribute("name", commonRadioLabel).addAttribute("value", "4").generateTag();
+        final String neutralTag = new HtmlTagFactory("input", null, true)
+                .addClasses(List.of(FILTER_RADIO_LABEL, nodeName))
+                .addAttribute("type", "radio")
+                .addAttribute("name", commonRadioLabel)
+                .addAttribute("value", "2")
+                .addAttribute("checked", "checked")
+                .generateTag();
+        final String noShowTag = new HtmlTagFactory("input", null, true)
+                .addClasses(List.of(FILTER_RADIO_LABEL, ABSOLUTELY_NO_SHOW, nodeName))
+                .addAttribute("type", "radio")
+                .addAttribute("name", commonRadioLabel)
+                .addAttribute("value", "4")
+                .generateTag();
 
         final String labelTag = new HtmlTagFactory("label", nodeName, false).generateTag();
         final String breakTag = new HtmlTagFactory("br", null, true).generateTag();
@@ -243,9 +253,25 @@ public class HtmlGenerator {
     private static String createFilterRadios(@NonNull final String elementName) {
         final String commonRadioLabel = elementName + "-radio";
 
-        final String whitelistTag = new HtmlTagFactory("input", null, true).addClasses(List.of(FILTER_RADIO_LABEL, WHITELIST_LABEL, elementName)).addAttribute("type", "radio").addAttribute("name", commonRadioLabel).addAttribute("value", "1").generateTag();
-        final String neutralTag = new HtmlTagFactory("input", null, true).addClasses(List.of(FILTER_RADIO_LABEL, elementName)).addAttribute("type", "radio").addAttribute("name", commonRadioLabel).addAttribute("checked", "checked").addAttribute("value", "2").generateTag();
-        final String blacklistTag = new HtmlTagFactory("input", null, true).addClasses(List.of(FILTER_RADIO_LABEL, BLACKLIST_LABEL, elementName)).addAttribute("type", "radio").addAttribute("name", commonRadioLabel).addAttribute("value", "3").generateTag();
+        final String whitelistTag = new HtmlTagFactory("input", null, true)
+                .addClasses(List.of(FILTER_RADIO_LABEL, WHITELIST_LABEL, elementName))
+                .addAttribute("type", "radio")
+                .addAttribute("name", commonRadioLabel)
+                .addAttribute("value", "1")
+                .generateTag();
+        final String neutralTag = new HtmlTagFactory("input", null, true)
+                .addClasses(List.of(FILTER_RADIO_LABEL, elementName))
+                .addAttribute("type", "radio")
+                .addAttribute("name", commonRadioLabel)
+                .addAttribute("checked", "checked")
+                .addAttribute("value", "2")
+                .generateTag();
+        final String blacklistTag = new HtmlTagFactory("input", null, true)
+                .addClasses(List.of(FILTER_RADIO_LABEL, BLACKLIST_LABEL, elementName))
+                .addAttribute("type", "radio")
+                .addAttribute("name", commonRadioLabel)
+                .addAttribute("value", "3")
+                .generateTag();
 
         final String labelTag = new HtmlTagFactory("label", elementName, false).generateTag();
         final String breakTag = new HtmlTagFactory("br", null, true).generateTag();
@@ -261,9 +287,12 @@ public class HtmlGenerator {
      */
     private static String createNodeFilterDiv(@NonNull final List<String> filterValues) {
         final String filterHeading = new HtmlTagFactory("h3", "Node ID", false).generateTag();
-        final List<String> filterRadios = filterValues.stream().map(HtmlGenerator::createNodeRadios).toList();
+        final List<String> filterRadios =
+                filterValues.stream().map(HtmlGenerator::createNodeRadios).toList();
 
-        final String form = new HtmlTagFactory("form", "\n" + String.join("\n", filterRadios), false).addAttribute("autocomplete", "off").generateTag();
+        final String form = new HtmlTagFactory("form", "\n" + String.join("\n", filterRadios), false)
+                .addAttribute("autocomplete", "off")
+                .generateTag();
 
         return new HtmlTagFactory("div", "\n" + filterHeading + "\n" + form, false).generateTag();
     }
@@ -279,9 +308,12 @@ public class HtmlGenerator {
      */
     private static String createFilterDiv(@NonNull final String filterName, @NonNull final List<String> filterValues) {
         final String filterHeading = new HtmlTagFactory("h3", filterName, false).generateTag();
-        final List<String> filterRadios = filterValues.stream().map(HtmlGenerator::createFilterRadios).toList();
+        final List<String> filterRadios =
+                filterValues.stream().map(HtmlGenerator::createFilterRadios).toList();
 
-        final String form = new HtmlTagFactory("form", "\n" + String.join("\n", filterRadios), false).addAttribute("autocomplete", "off").generateTag();
+        final String form = new HtmlTagFactory("form", "\n" + String.join("\n", filterRadios), false)
+                .addAttribute("autocomplete", "off")
+                .generateTag();
 
         return new HtmlTagFactory("div", "\n" + filterHeading + "\n" + form, false).generateTag();
     }
@@ -294,28 +326,54 @@ public class HtmlGenerator {
      * @param logLines   the log lines
      * @param cssFactory a factory that new rules can be added to
      */
-    private static void createGeneralCssRules(@NonNull final List<LogLine> logLines, @NonNull final CssRuleSetFactory cssFactory) {
+    private static void createGeneralCssRules(
+            @NonNull final List<LogLine> logLines, @NonNull final CssRuleSetFactory cssFactory) {
 
         // set page defaults
-        cssFactory.addRule("html *", new CssDeclaration("font-family", DEFAULT_FONT), new CssDeclaration("background-color", PAGE_BACKGROUND_COLOR), new CssDeclaration("color", DEFAULT_TEXT_COLOR), new CssDeclaration("white-space", "nowrap"), new CssDeclaration("vertical-align", "top"));
+        cssFactory.addRule(
+                "html *",
+                new CssDeclaration("font-family", DEFAULT_FONT),
+                new CssDeclaration("background-color", PAGE_BACKGROUND_COLOR),
+                new CssDeclaration("color", DEFAULT_TEXT_COLOR),
+                new CssDeclaration("white-space", "nowrap"),
+                new CssDeclaration("vertical-align", "top"));
 
         // hide elements that have a blacklist value that isn't 0 or NaN
-        cssFactory.addRule("[%s]:not([%s~='0']):not([%s~=\"NaN\"]):is([%s='0'])".formatted(BLACKLIST_LABEL, BLACKLIST_LABEL, BLACKLIST_LABEL, WHITELIST_LABEL), new CssDeclaration("display", "none"));
+        cssFactory.addRule(
+                "[%s]:not([%s~='0']):not([%s~=\"NaN\"]):is([%s='0'])"
+                        .formatted(BLACKLIST_LABEL, BLACKLIST_LABEL, BLACKLIST_LABEL, WHITELIST_LABEL),
+                new CssDeclaration("display", "none"));
 
         // absolutely hide any elements with a no-show value of > 1
-        cssFactory.addRule("[%s]:not([%s~='0'])".formatted(ABSOLUTELY_NO_SHOW, ABSOLUTELY_NO_SHOW), new CssDeclaration("display", "none !important"));
+        cssFactory.addRule(
+                "[%s]:not([%s~='0'])".formatted(ABSOLUTELY_NO_SHOW, ABSOLUTELY_NO_SHOW),
+                new CssDeclaration("display", "none !important"));
 
         // pad the log table columns
         cssFactory.addRule("td", new CssDeclaration("padding-left", "1em"));
 
         // set a max width for remainder column, and wrap words
-        cssFactory.addRule("." + REMAINDER_OF_LINE_COLUMN_LABEL, new CssDeclaration("max-width", "100em"), new CssDeclaration("overflow-wrap", "break-word"), new CssDeclaration("word-break", "break-word"), new CssDeclaration("white-space", "normal"));
+        cssFactory.addRule(
+                "." + REMAINDER_OF_LINE_COLUMN_LABEL,
+                new CssDeclaration("max-width", "100em"),
+                new CssDeclaration("overflow-wrap", "break-word"),
+                new CssDeclaration("word-break", "break-word"),
+                new CssDeclaration("white-space", "normal"));
 
         // wrap non standard log lines
-        cssFactory.addRule("." + NON_STANDARD_LABEL, new CssDeclaration("white-space", "pre-wrap"), new CssDeclaration("word-break", "break-word"), new CssDeclaration("overflow-wrap", "break-word"));
+        cssFactory.addRule(
+                "." + NON_STANDARD_LABEL,
+                new CssDeclaration("white-space", "pre-wrap"),
+                new CssDeclaration("word-break", "break-word"),
+                new CssDeclaration("overflow-wrap", "break-word"));
 
         // set a max width for thread name column, and wrap words
-        cssFactory.addRule("." + THREAD_NAME_COLUMN_LABEL, new CssDeclaration("max-width", "30em"), new CssDeclaration("overflow-wrap", "break-word"), new CssDeclaration("word-break", "break-word"), new CssDeclaration("white-space", "normal"));
+        cssFactory.addRule(
+                "." + THREAD_NAME_COLUMN_LABEL,
+                new CssDeclaration("max-width", "30em"),
+                new CssDeclaration("overflow-wrap", "break-word"),
+                new CssDeclaration("word-break", "break-word"),
+                new CssDeclaration("white-space", "normal"));
 
         // TODO make these different colors
         cssFactory.addRule("." + NODE_ID_COLUMN_LABEL, new CssDeclaration("color", getHtmlColor(TIMESTAMP_COLOR)));
@@ -324,15 +382,23 @@ public class HtmlGenerator {
         cssFactory.addRule("." + TIMESTAMP_COLUMN_LABEL, new CssDeclaration("color", getHtmlColor(TIMESTAMP_COLOR)));
         cssFactory.addRule("." + LOG_NUMBER_COLUMN_LABEL, new CssDeclaration("color", getHtmlColor(LOG_NUMBER_COLOR)));
         cssFactory.addRule("." + MARKER_COLUMN_LABEL, new CssDeclaration("color", getHtmlColor(LOG_MARKER_COLOR)));
-        cssFactory.addRule("." + THREAD_NAME_COLUMN_LABEL, new CssDeclaration("color", getHtmlColor(THREAD_NAME_COLOR)));
+        cssFactory.addRule(
+                "." + THREAD_NAME_COLUMN_LABEL, new CssDeclaration("color", getHtmlColor(THREAD_NAME_COLOR)));
         cssFactory.addRule("." + CLASS_NAME_COLUMN_LABEL, new CssDeclaration("color", getHtmlColor(CLASS_NAME_COLOR)));
-        cssFactory.addRule("." + STATUS_HTML_CLASS, new CssDeclaration("color", getHtmlColor(PlatformStatusLog.STATUS_COLOR)), new CssDeclaration("background-color", "inherit"));
+        cssFactory.addRule(
+                "." + STATUS_HTML_CLASS,
+                new CssDeclaration("color", getHtmlColor(PlatformStatusLog.STATUS_COLOR)),
+                new CssDeclaration("background-color", "inherit"));
 
         // highlight log lines when you hover over them with your mouse
         cssFactory.addRule("." + LOG_LINE_LABEL + ":hover td", new CssDeclaration("background-color", HIGHLIGHT_COLOR));
 
         // create color rules for each log level
-        logLines.stream().map(LogLine::getLogLevel).distinct().forEach(logLevel -> cssFactory.addRule("td" + "." + logLevel, new CssDeclaration("color", getHtmlColor(getLogLevelColor(logLevel)))));
+        logLines.stream()
+                .map(LogLine::getLogLevel)
+                .distinct()
+                .forEach(logLevel -> cssFactory.addRule(
+                        "td" + "." + logLevel, new CssDeclaration("color", getHtmlColor(getLogLevelColor(logLevel)))));
     }
 
     /**
@@ -344,7 +410,9 @@ public class HtmlGenerator {
     private static String generateHead(@NonNull final CssRuleSetFactory cssFactory) {
         final String cssTag = new HtmlTagFactory("style", cssFactory.generateCss(), false).generateTag();
 
-        final String minJsSourceTag = new HtmlTagFactory("script", "", false).addAttribute("src", MIN_JS_SOURCE).generateTag();
+        final String minJsSourceTag = new HtmlTagFactory("script", "", false)
+                .addAttribute("src", MIN_JS_SOURCE)
+                .generateTag();
 
         return new HtmlTagFactory("head", "\n" + cssTag + "\n" + minJsSourceTag + "\n", false).generateTag();
     }
@@ -356,22 +424,50 @@ public class HtmlGenerator {
      * @param cssFactory a factory that new rules can be added to
      * @return the generate filters div for the html page
      */
-    private static String generateFiltersDiv(@NonNull final List<LogLine> logLines, @NonNull final CssRuleSetFactory cssFactory) {
+    private static String generateFiltersDiv(
+            @NonNull final List<LogLine> logLines, @NonNull final CssRuleSetFactory cssFactory) {
 
         final List<String> filterDivs = new ArrayList<>();
 
-        filterDivs.add(createNodeFilterDiv(logLines.stream().map(LogLine::getNodeId).distinct().filter(Objects::nonNull).sorted().map(nodeId -> "node" + nodeId).toList()));
+        filterDivs.add(createNodeFilterDiv(logLines.stream()
+                .map(LogLine::getNodeId)
+                .distinct()
+                .filter(Objects::nonNull)
+                .sorted()
+                .map(nodeId -> "node" + nodeId)
+                .toList()));
 
-        filterDivs.add(createFilterDiv("Column", List.of(NODE_ID_COLUMN_LABEL, ELAPSED_TIME_COLUMN_LABEL, TIMESTAMP_COLUMN_LABEL, LOG_NUMBER_COLUMN_LABEL, LOG_LEVEL_COLUMN_LABEL, MARKER_COLUMN_LABEL, THREAD_NAME_COLUMN_LABEL, CLASS_NAME_COLUMN_LABEL, REMAINDER_OF_LINE_COLUMN_LABEL)));
+        filterDivs.add(createFilterDiv(
+                "Column",
+                List.of(
+                        NODE_ID_COLUMN_LABEL,
+                        ELAPSED_TIME_COLUMN_LABEL,
+                        TIMESTAMP_COLUMN_LABEL,
+                        LOG_NUMBER_COLUMN_LABEL,
+                        LOG_LEVEL_COLUMN_LABEL,
+                        MARKER_COLUMN_LABEL,
+                        THREAD_NAME_COLUMN_LABEL,
+                        CLASS_NAME_COLUMN_LABEL,
+                        REMAINDER_OF_LINE_COLUMN_LABEL)));
 
-        filterDivs.add(createFilterDiv("Log Level", logLines.stream().map(LogLine::getLogLevel).distinct().sorted(Comparator.comparing(Level::toLevel)).toList()));
-        filterDivs.add(createFilterDiv("Log Marker", logLines.stream().map(LogLine::getMarker).distinct().toList()));
+        filterDivs.add(createFilterDiv(
+                "Log Level",
+                logLines.stream()
+                        .map(LogLine::getLogLevel)
+                        .distinct()
+                        .sorted(Comparator.comparing(Level::toLevel))
+                        .toList()));
+        filterDivs.add(createFilterDiv(
+                "Log Marker",
+                logLines.stream().map(LogLine::getMarker).distinct().toList()));
 
         final String filterDivsCombined = "\n" + String.join("\n", filterDivs) + "\n";
 
         final String filtersHeading = new HtmlTagFactory("h2", "Filters", false).generateTag();
 
-        final String scrollableFilterColumn = new HtmlTagFactory("div", filterDivsCombined, false).addClass(INDEPENDENT_SCROLL_LABEL).generateTag();
+        final String scrollableFilterColumn = new HtmlTagFactory("div", filterDivsCombined, false)
+                .addClass(INDEPENDENT_SCROLL_LABEL)
+                .generateTag();
 
         // make the filter columns and the log table scroll independently
         cssFactory.addRule("." + INDEPENDENT_SCROLL_LABEL, new CssDeclaration("overflow", "auto"));
@@ -386,13 +482,17 @@ public class HtmlGenerator {
      * @param cssFactory a factory that new rules can be added to
      * @return the log table for the HTML page
      */
-    private static String generateLogTable(@NonNull final List<LogLine> logLines, @NonNull final CssRuleSetFactory cssFactory) {
-        final List<String> formattedLogLines = logLines.stream().map(LogLine::generateHtmlString).toList();
+    private static String generateLogTable(
+            @NonNull final List<LogLine> logLines, @NonNull final CssRuleSetFactory cssFactory) {
+        final List<String> formattedLogLines =
+                logLines.stream().map(LogLine::generateHtmlString).toList();
         final String combinedLogLines = "\n" + String.join("\n", formattedLogLines) + "\n";
 
         cssFactory.addRule("." + LOG_TABLE_LABEL, new CssDeclaration("border-collapse", "collapse"));
 
-        return new HtmlTagFactory("table", combinedLogLines, false).addClass(LOG_TABLE_LABEL).generateTag();
+        return new HtmlTagFactory("table", combinedLogLines, false)
+                .addClass(LOG_TABLE_LABEL)
+                .generateTag();
     }
 
     /**
@@ -402,19 +502,28 @@ public class HtmlGenerator {
      * @param cssFactory a factory that new rules can be added to
      * @return the body of the HTML page
      */
-    private static String generateBody(@NonNull final List<LogLine> logLines, @NonNull final CssRuleSetFactory cssFactory) {
+    private static String generateBody(
+            @NonNull final List<LogLine> logLines, @NonNull final CssRuleSetFactory cssFactory) {
 
         final String filtersDiv = generateFiltersDiv(logLines, cssFactory);
-        final String tableDiv = new HtmlTagFactory("div", generateLogTable(logLines, cssFactory), false).addClass(INDEPENDENT_SCROLL_LABEL).addClass(TABLE_INDEPENDENT_SCROLL_LABEL).generateTag();
+        final String tableDiv = new HtmlTagFactory("div", generateLogTable(logLines, cssFactory), false)
+                .addClass(INDEPENDENT_SCROLL_LABEL)
+                .addClass(TABLE_INDEPENDENT_SCROLL_LABEL)
+                .generateTag();
 
         // make the log table independent scroll fill 100% of width
         cssFactory.addRule("." + TABLE_INDEPENDENT_SCROLL_LABEL, new CssDeclaration("width", "100%"));
 
         // this is a div surrounding the filters and the log table
         // its purpose is so that there can be 2 independently scrollable columns
-        final String doubleColumnDiv = new HtmlTagFactory("div", filtersDiv + "\n" + tableDiv, false).addClass(DOUBLE_COLUMNS_DIV_LABEL).generateTag();
+        final String doubleColumnDiv = new HtmlTagFactory("div", filtersDiv + "\n" + tableDiv, false)
+                .addClass(DOUBLE_COLUMNS_DIV_LABEL)
+                .generateTag();
 
-        cssFactory.addRule("." + DOUBLE_COLUMNS_DIV_LABEL, new CssDeclaration("display", "flex"), new CssDeclaration("height", "100%"));
+        cssFactory.addRule(
+                "." + DOUBLE_COLUMNS_DIV_LABEL,
+                new CssDeclaration("display", "flex"),
+                new CssDeclaration("height", "100%"));
 
         final String scriptTag = new HtmlTagFactory("script", FILTER_JS, false).generateTag();
 
@@ -427,7 +536,9 @@ public class HtmlGenerator {
      * @param logLines the log lines
      */
     private static void setFirstLogTime(@NonNull final List<LogLine> logLines) {
-        final LogLine firstLogLine = logLines.stream().min(Comparator.comparing(LogLine::getTimestamp)).orElse(null);
+        final LogLine firstLogLine = logLines.stream()
+                .min(Comparator.comparing(LogLine::getTimestamp))
+                .orElse(null);
 
         final Instant firstLogTime = firstLogLine == null ? null : firstLogLine.getTimestamp();
 
@@ -443,7 +554,8 @@ public class HtmlGenerator {
      * @param logLineStrings the raw log line strings
      * @return the list of log lines, which represent the raw log strings
      */
-    private static List<LogLine> processNodeLogLines(@NonNull final NodeId nodeId, @NonNull final List<String> logLineStrings) {
+    private static List<LogLine> processNodeLogLines(
+            @NonNull final NodeId nodeId, @NonNull final List<String> logLineStrings) {
         final List<LogLine> outputLines = new ArrayList<>();
 
         LogLine previousLogLine = null;
@@ -474,7 +586,10 @@ public class HtmlGenerator {
     public static String generateHtmlPage(@NonNull final Map<NodeId, List<String>> logLineStrings) {
         Objects.requireNonNull(logLineStrings);
 
-        final List<LogLine> logLines = logLineStrings.entrySet().stream().flatMap(entry -> processNodeLogLines(entry.getKey(), entry.getValue()).stream()).sorted(Comparator.comparing(LogLine::getTimestamp)).toList();
+        final List<LogLine> logLines = logLineStrings.entrySet().stream()
+                .flatMap(entry -> processNodeLogLines(entry.getKey(), entry.getValue()).stream())
+                .sorted(Comparator.comparing(LogLine::getTimestamp))
+                .toList();
 
         setFirstLogTime(logLines);
 
