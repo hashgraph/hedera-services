@@ -329,14 +329,10 @@ public class SignedStateFileManager implements Startable {
     }
 
     /**
+     * Adds a state save task to a task queue, so that the state will eventually be written to disk.
      * <p>
-     * Notifies the platform that the signed state is complete, the platform will then write it to a file.
-     * </p>
-     *
-     * <p>
-     * This method will take a reservation on the signed state before returning, and will eventually release that
-     * reservation when the state has been fully written to disk (or if state saving fails).
-     * </p>
+     * This method will take a reservation on the signed state, and will eventually release that reservation when the
+     * state has been fully written to disk (or if state saving fails).
      *
      * @param signedState          the signed state to be written
      * @param directory            the directory where the signed state will be written
@@ -379,11 +375,15 @@ public class SignedStateFileManager implements Startable {
 
             reservedSignedState.close();
         }
+
         return accepted;
     }
 
     /**
-     * Save a signed state to disk. This method will be called periodically under standard operations.
+     * Save a signed state to disk.
+     * <p>
+     * This method will be called periodically under standard operations, and should not be used to write arbitrary
+     * states to disk. To write arbitrary states to disk out-of-band, use {@link #dumpState}
      *
      * @param signedState          the signed state to be written to disk.
      * @param stateLacksSignatures true if the state lacks signatures, false otherwise
@@ -409,8 +409,12 @@ public class SignedStateFileManager implements Startable {
     /**
      * Dump a state to disk out-of-band.
      * <p>
-     * The state will be saved in a subdirectory of the signed states base directory, with the subdirectory being named
-     * after the reason the state is being written out-of-band.
+     * Writing a state "out-of-band" means the state is being written for the sake of a human, whether for debug
+     * purposes, or because of a fault. States written out-of-band will not be read automatically by the platform,
+     * and will not be used as an initial state at boot time.
+     * <p>
+     * A dumped state will be saved in a subdirectory of the signed states base directory, with the subdirectory being
+     * named after the reason the state is being written out-of-band.
      *
      * @param signedState the signed state to write to disk
      * @param reason      the reason why the state is being written out-of-band

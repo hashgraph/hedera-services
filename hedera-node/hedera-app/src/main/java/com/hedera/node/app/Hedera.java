@@ -31,6 +31,7 @@ import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.info.CurrentPlatformStatusImpl;
+import com.hedera.node.app.info.NetworkInfoImpl;
 import com.hedera.node.app.info.SelfNodeInfoImpl;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
@@ -59,6 +60,7 @@ import com.hedera.node.app.throttle.ThrottleManager;
 import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.handle.SystemFileUpdateFacility;
+import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.Utils;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;
@@ -141,6 +143,8 @@ public final class Hedera implements SwirldMain {
     private final ServicesRegistry servicesRegistry;
     /** The current version of THIS software */
     private final HederaSoftwareVersion version;
+    /** The configuration at the time of bootstrapping the node */
+    private final ConfigProvider bootstrapConfigProvider;
     /** The Hashgraph Platform. This is set during state initialization. */
     private Platform platform;
     /** The configuration for this node */
@@ -191,7 +195,8 @@ public final class Hedera implements SwirldMain {
 
         // Load the bootstrap configuration. These config values are NOT stored in state, so we don't need to have
         // state up and running for getting their values. We use this bootstrap config only in this constructor.
-        final var bootstrapConfig = new BootstrapConfigProviderImpl().configuration();
+        this.bootstrapConfigProvider = new BootstrapConfigProviderImpl();
+        final var bootstrapConfig = bootstrapConfigProvider.getConfiguration();
 
         // Let the user know which mode they are starting in (DEV vs. TEST vs. PROD).
         // NOTE: This bootstrapConfig is not entirely satisfactory. We probably need an alternative...
@@ -366,6 +371,10 @@ public final class Hedera implements SwirldMain {
                 () -> previousVersion == null ? "<NONE>" : HapiUtils.toString(previousVersion),
                 () -> HapiUtils.toString(currentVersion));
 
+        final var selfId = platform.getSelfId();
+        final var nodeAddress = platform.getAddressBook().getAddress(selfId);
+        final var selfNodeInfo = SelfNodeInfoImpl.of(nodeAddress, version);
+        final var networkInfo = new NetworkInfoImpl(selfNodeInfo, platform, bootstrapConfigProvider);
         for (final var service : servicesRegistry.services()) {
             // FUTURE We should have metrics here to keep track of how long it takes to migrate each service
             final var serviceName = service.getServiceName();
@@ -373,7 +382,7 @@ public final class Hedera implements SwirldMain {
             logger.debug("Registering schemas for service {}", serviceName);
             service.registerSchemas(registry);
             logger.info("Migrating Service {}", serviceName);
-            registry.migrate(state, previousVersion, currentVersion, configProvider.getConfiguration());
+            registry.migrate(state, previousVersion, currentVersion, configProvider.getConfiguration(), networkInfo);
         }
         logger.info("Migration complete");
     }
@@ -545,9 +554,17 @@ public final class Hedera implements SwirldMain {
      * Called for an orderly shutdown.
      */
     public void shutdown() {
+        logger.info("Shutting down Hedera node");
         shutdownGrpcServer();
 
         if (daggerApp != null) {
+            logger.debug("Shutting down the state");
+            final var state = daggerApp.workingStateAccessor().getHederaState();
+            if (state instanceof MerkleHederaState mhs) {
+                mhs.close();
+            }
+
+            logger.debug("Shutting down the block manager");
             daggerApp.blockRecordManager().close();
         }
     }

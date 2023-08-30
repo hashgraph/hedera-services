@@ -19,6 +19,7 @@ package com.swirlds.platform.test.event.preconsensus;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomInstant;
 import static com.swirlds.common.test.fixtures.io.FileManipulation.writeRandomBytes;
+import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.platform.event.preconsensus.PreconsensusEventFile.EVENT_FILE_SEPARATOR;
 import static com.swirlds.platform.event.preconsensus.PreconsensusEventFile.MAXIMUM_GENERATION_PREFIX;
 import static com.swirlds.platform.event.preconsensus.PreconsensusEventFile.MINIMUM_GENERATION_PREFIX;
@@ -28,8 +29,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.RecycleBin;
+import com.swirlds.common.io.utility.RecycleBinImpl;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.config.api.Configuration;
@@ -294,7 +298,8 @@ class PreconsensusEventFileTests {
                 .withValue("recycleBin.recycleBinPath", recycleDirectory.toString())
                 .getOrCreateConfig();
 
-        final RecycleBin recycleBin = RecycleBin.create(configuration, selfId);
+        final RecycleBin recycleBin = new RecycleBinImpl(
+                configuration, new NoOpMetrics(), getStaticThreadManager(), Time.getCurrent(), new NodeId(0));
 
         Files.createDirectories(streamDirectory);
         Files.createDirectories(recycleDirectory);
