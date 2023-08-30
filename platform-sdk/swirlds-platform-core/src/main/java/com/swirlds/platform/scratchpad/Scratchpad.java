@@ -168,7 +168,7 @@ public class Scratchpad {
             }
 
             // Delete all files except for the most recent one
-            for (int index = 0; index < files.size() - 2; index++) {
+            for (int index = 0; index < files.size() - 1; index++) {
                 Files.delete(files.get(index));
             }
 
