@@ -255,9 +255,9 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
                         findNodeIndex(md.serviceName(), md.stateDefinition().stateKey());
                 if (index >= 0) {
                     final var node = getChild(index);
-                    if (node instanceof VirtualMap<?, ?>) {
+                    if (node instanceof VirtualMap<?, ?> virtualMap) {
                         try {
-                            ((VirtualMap<?, ?>) node).getDataSource().close();
+                            virtualMap.getDataSource().close();
                         } catch (IOException e) {
                             logger.warn("Unable to close data source for virtual map {}", md.serviceName(), e);
                         }
