@@ -400,7 +400,10 @@ public class LogLine implements FormattableString {
         dataCellTags.add(logNumberTagFactory.generateTag());
 
         final HtmlTagFactory logLevelTagFactory = new HtmlTagFactory("td", escapeString(logLevel), false)
-                .addClasses(List.of(LOG_LEVEL_COLUMN_LABEL, HIDEABLE_LABEL, logLevel));
+                // the log level string itself must be a class, for coloring purposes
+                .addClasses(List.of(LOG_LEVEL_COLUMN_LABEL, HIDEABLE_LABEL, logLevel))
+                .addAttribute(BLACKLIST_LABEL, "0")
+                .addAttribute(WHITELIST_LABEL, "0");
         dataCellTags.add(logLevelTagFactory.generateTag());
 
         final HtmlTagFactory markerTagFactory = new HtmlTagFactory("td", escapeString(marker), false)
