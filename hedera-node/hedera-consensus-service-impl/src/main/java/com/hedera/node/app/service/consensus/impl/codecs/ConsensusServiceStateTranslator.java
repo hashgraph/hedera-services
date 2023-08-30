@@ -36,6 +36,10 @@ import java.util.function.BiConsumer;
  */
 public class ConsensusServiceStateTranslator {
 
+    private ConsensusServiceStateTranslator() {
+        // Utility class
+    }
+
     @NonNull
     /**
      * Migrates the state of the consensus service from the merkle state to the pbj state.

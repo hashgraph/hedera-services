@@ -82,6 +82,8 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     @Override
+    // Suppress the warning that we shouldn't throw generic exceptions
+    @SuppressWarnings("java:S112")
     public void handle(@NonNull final HandleContext handleContext) {
         requireNonNull(handleContext, "The argument 'context' must not be null");
 

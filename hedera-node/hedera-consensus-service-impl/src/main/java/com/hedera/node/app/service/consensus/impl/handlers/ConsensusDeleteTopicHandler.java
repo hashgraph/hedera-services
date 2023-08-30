@@ -70,6 +70,8 @@ public class ConsensusDeleteTopicHandler implements TransactionHandler {
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     @Override
+    // Suppress the warning that we shouldn't throw generic exceptions
+    @SuppressWarnings("java:S112")
     public void handle(@NonNull final HandleContext context) {
         requireNonNull(context, "The argument 'context' must not be null");
 

@@ -50,15 +50,12 @@ import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * This class contains all workflow-related functionality regarding {@link HederaFunctionality#CONSENSUS_UPDATE_TOPIC}.
  */
 @Singleton
 public class ConsensusUpdateTopicHandler implements TransactionHandler {
-    private static final Logger logger = LogManager.getLogger(ConsensusUpdateTopicHandler.class);
 
     @Inject
     public ConsensusUpdateTopicHandler() {
@@ -115,6 +112,8 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     @Override
+    // Suppress the warning that we shouldn't throw generic exceptions
+    @SuppressWarnings("java:S112")
     public void handle(@NonNull final HandleContext handleContext) {
         requireNonNull(handleContext);
 

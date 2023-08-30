@@ -54,7 +54,9 @@ import javax.inject.Singleton;
 public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
 
     @Inject
-    public ConsensusGetTopicInfoHandler() {}
+    public ConsensusGetTopicInfoHandler() {
+        // Dagger 2
+    }
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {
