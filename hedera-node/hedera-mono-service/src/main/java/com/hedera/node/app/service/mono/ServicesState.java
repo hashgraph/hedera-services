@@ -70,7 +70,6 @@ import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
-import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -90,19 +89,13 @@ import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.state.notifications.NewRecoveredStateListener;
-import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.fcqueue.FCQueue;
-import com.swirlds.jasperdb.VirtualDataSourceJasperDB;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.gui.SwirldsGui;
 import com.swirlds.platform.state.DualStateImpl;
-import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
-import com.swirlds.virtualmap.VirtualMapMigration;
-import com.swirlds.virtualmap.VirtualValue;
-import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -111,8 +104,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
@@ -239,11 +230,6 @@ public class ServicesState extends PartialNaryMerkleInternal
 
     @Override
     public MerkleNode migrate(final int version) {
-        final boolean enabledJasperdbToMerkleDb =
-                getBootstrapProperties().getBooleanProperty(PropertyNames.VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB);
-        if (enabledJasperdbToMerkleDb) {
-            migrateVirtualMapsToMerkleDb(this);
-        }
         return MerkleInternal.super.migrate(version);
     }
 
@@ -344,11 +330,7 @@ public class ServicesState extends PartialNaryMerkleInternal
         // it's a singleton. It leads to nodes to overwrite each other's data. To work it around,
         // let's reset the default MerkleDb path. It has to be done before the state is loaded
         // from disk, so I'm putting this code right into the constructor
-        final boolean enabledJasperdbToMerkleDb =
-                getBootstrapProperties().getBooleanProperty(PropertyNames.VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB);
-        if (enabledJasperdbToMerkleDb) {
-            MerkleDb.setDefaultPath(null);
-        }
+        MerkleDb.setDefaultPath(null);
     }
 
     private ServicesApp deserializedInit(
@@ -700,114 +682,6 @@ public class ServicesState extends PartialNaryMerkleInternal
         return consolidateRecordStorage
                 && (getNumberOfChildren() < StateChildIndices.NUM_032X_CHILDREN
                         || getChild(StateChildIndices.PAYER_RECORDS_OR_CONSOLIDATED_FCQ) instanceof MerkleMap<?, ?>);
-    }
-
-    private static void migrateVirtualMapsToMerkleDb(final ServicesState state) {
-        final VirtualMapFactory virtualMapFactory = state.getVirtualMapFactory();
-
-        // virtualized blobs
-        final VirtualMap<VirtualBlobKey, VirtualBlobValue> storageMap = state.getChild(StateChildIndices.STORAGE);
-        if (jasperDbBacked(storageMap)) {
-            VirtualMap<VirtualBlobKey, VirtualBlobValue> merkleDbBackedMap = virtualMapFactory.newVirtualizedBlobs();
-            merkleDbBackedMap = migrateVirtualMap(storageMap, merkleDbBackedMap);
-            state.setChild(StateChildIndices.STORAGE, merkleDbBackedMap);
-        }
-
-        // virtualized iterable storage
-        final VirtualMap<ContractKey, IterableContractValue> contractStorageMap =
-                state.getChild(StateChildIndices.CONTRACT_STORAGE);
-        if (jasperDbBacked(contractStorageMap)) {
-            VirtualMap<ContractKey, IterableContractValue> merkleDbBackedMap =
-                    virtualMapFactory.newVirtualizedIterableStorage();
-            merkleDbBackedMap = migrateVirtualMap(contractStorageMap, merkleDbBackedMap);
-            state.setChild(StateChildIndices.CONTRACT_STORAGE, merkleDbBackedMap);
-        }
-
-        // virtualized accounts, if enabled
-        if (state.enableVirtualAccounts) {
-            final VirtualMap<EntityNumVirtualKey, OnDiskAccount> accountsMap =
-                    state.getChild(StateChildIndices.ACCOUNTS);
-            if (jasperDbBacked(accountsMap)) {
-                VirtualMap<EntityNumVirtualKey, OnDiskAccount> merkleDbBackedMap =
-                        virtualMapFactory.newOnDiskAccountStorage();
-                merkleDbBackedMap = migrateVirtualMap(accountsMap, merkleDbBackedMap);
-                state.setChild(StateChildIndices.ACCOUNTS, merkleDbBackedMap);
-            }
-        }
-
-        // virtualized token associations, if enabled
-        if (state.enableVirtualTokenRels) {
-            final VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> tokenAssociationsMap =
-                    state.getChild(StateChildIndices.TOKEN_ASSOCIATIONS);
-            if (jasperDbBacked(tokenAssociationsMap)) {
-                VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> merkleDbBackedMap =
-                        virtualMapFactory.newOnDiskTokenRels();
-                merkleDbBackedMap = migrateVirtualMap(tokenAssociationsMap, merkleDbBackedMap);
-                state.setChild(StateChildIndices.TOKEN_ASSOCIATIONS, merkleDbBackedMap);
-            }
-        }
-
-        // virtualized unique token storage, if enabled
-        if (state.enabledVirtualNft) {
-            final VirtualMap<UniqueTokenKey, UniqueTokenValue> uniqueTokensMap =
-                    state.getChild(StateChildIndices.UNIQUE_TOKENS);
-            if (jasperDbBacked(uniqueTokensMap)) {
-                VirtualMap<UniqueTokenKey, UniqueTokenValue> merkleDbBackedMap =
-                        virtualMapFactory.newVirtualizedUniqueTokenStorage();
-                merkleDbBackedMap = migrateVirtualMap(uniqueTokensMap, merkleDbBackedMap);
-                state.setChild(StateChildIndices.UNIQUE_TOKENS, merkleDbBackedMap);
-            }
-        }
-    }
-
-    private static boolean jasperDbBacked(final VirtualMap<?, ?> map) {
-        final VirtualRootNode<?, ?> virtualRootNode = map.getRight();
-        return virtualRootNode.getDataSource() instanceof VirtualDataSourceJasperDB;
-    }
-
-    private static <K extends VirtualKey, V extends VirtualValue> VirtualMap<K, V> migrateVirtualMap(
-            final VirtualMap<K, V> source, final VirtualMap<K, V> target) {
-        final int copyTargetMapEveryPuts = 10_000;
-        final AtomicInteger count = new AtomicInteger(copyTargetMapEveryPuts);
-        final AtomicReference<VirtualMap<K, V>> targetMapRef = new AtomicReference<>(target);
-        final AtomicReference<VirtualRootNode<K, V>> previousRoot = new AtomicReference<>();
-        MiscUtils.withLoggedDuration(
-                () -> {
-                    try {
-                        VirtualMapMigration.extractVirtualMapData(
-                                AdHocThreadManager.getStaticThreadManager(),
-                                source,
-                                kvPair -> {
-                                    final K key = kvPair.left();
-                                    final V value = kvPair.right();
-                                    final VirtualMap<K, V> curCopy = targetMapRef.get();
-                                    curCopy.put(key, value);
-                                    // Make a map copy every X rounds to flush map cache to disk
-                                    if (count.decrementAndGet() == 0) {
-                                        targetMapRef.set(curCopy.copy());
-                                        curCopy.release();
-                                        count.set(copyTargetMapEveryPuts);
-                                        // Apply backpressure, so virtual map flushing to disk can
-                                        // keep up with data migration
-                                        final VirtualRootNode<K, V> root = curCopy.getRight();
-                                        if (root.shouldBeFlushed()) {
-                                            final VirtualRootNode<K, V> previous = previousRoot.get();
-                                            if (previous != null) {
-                                                previous.waitUntilFlushed();
-                                            }
-                                            previousRoot.set(root);
-                                        }
-                                    }
-                                },
-                                4);
-                    } catch (final InterruptedException z) {
-                        log.error("Interrupted VirtualMap migration", z);
-                        throw new RuntimeException(z);
-                    }
-                },
-                log,
-                "VirtualMap migration: " + source.getLabel());
-        return targetMapRef.get();
     }
 
     private BootstrapProperties getBootstrapProperties() {

@@ -66,8 +66,6 @@ on:
         required: true
       jenkins-integration-url:
         required: true
-      jenkins-preview-url:
-        required: true
 
 defaults:
   run:
@@ -292,18 +290,10 @@ jobs:
           url: ${{ secrets.jenkins-integration-url }}
           data: ${{ toJSON(github.event) }}
 
-      - name: Notify Jenkins of Release (Preview)
-        id: jenkins-preview
-        uses: fjogeleit/http-request-action@86014825e97036cd3e0903bbc72b3c5fff7474c4 # pin@v1
-        if: ${{ inputs.dry-run-enabled != true && inputs.trigger-env-deploy == 'preview' && !cancelled() && !failure() }}
-        with:
-          url: ${{ secrets.jenkins-preview-url }}
-          data: ${{ toJSON(github.event) }}
-
       - name: Display Jenkins Payload
         env:
           JSON_RESPONSE: ${{ steps.jenkins-integration.outputs.response || steps.jenkins-preview.outputs.response }}
-        if: ${{ inputs.trigger-env-deploy == 'integration' || inputs.trigger-env-deploy == 'preview' }}
+        if: ${{ inputs.trigger-env-deploy == 'integration' }}
         run: |
           jq '.' <<<"${JSON_RESPONSE}"
           printf "### Jenkins Response Payload\n\`\`\`json\n%s\n\`\`\`\n" "$(jq '.' <<<"${JSON_RESPONSE}")" >>"${GITHUB_STEP_SUMMARY}"
@@ -323,18 +313,6 @@ jobs:
 
           if [[ "${DOCKER_TRIGGERED}" != true ]]; then
             echo "::error title=Jenkins Trigger Failure::Failed to trigger the 'build-upgrade-integration-docker' job via the Jenkins 'integration' pipeline!"
-            exit 1
-          fi
-
-      - name: Check for Jenkins Failures (Preview)
-        if: ${{ inputs.trigger-env-deploy == 'preview' }}
-        env:
-          JSON_RESPONSE: ${{ steps.jenkins-preview.outputs.response }}
-        run: |
-          PREVIEW_TRIGGERED="$(jq '.jobs."build-preview-testnet".triggered' <<<"${JSON_RESPONSE}")"
-
-          if [[ "${PREVIEW_TRIGGERED}" != true ]]; then
-            echo "::error title=Jenkins Trigger Failure::Failed to trigger the 'build-preview-testnet' job via the Jenkins 'preview' pipeline!"
             exit 1
           fi
 

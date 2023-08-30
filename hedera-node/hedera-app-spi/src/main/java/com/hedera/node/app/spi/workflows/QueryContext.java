@@ -18,6 +18,7 @@ package com.hedera.node.app.spi.workflows;
 
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
+import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -58,6 +59,10 @@ public interface QueryContext {
     /** Gets the {@link RecordCache}. */
     @NonNull
     RecordCache recordCache();
+
+    /** Gets the {@link BlockRecordInfo}. */
+    @NonNull
+    BlockRecordInfo blockRecordInfo();
 
     /**
      * Returns information on current exchange rates

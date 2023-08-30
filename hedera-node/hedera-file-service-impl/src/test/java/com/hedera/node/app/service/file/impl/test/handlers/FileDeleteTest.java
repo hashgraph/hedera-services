@@ -19,6 +19,7 @@ package com.hedera.node.app.service.file.impl.test.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -157,8 +158,14 @@ class FileDeleteTest extends FileTestBase {
 
         subject.preHandle(realPreContext);
 
-        assertTrue(realPreContext.requiredNonPayerKeys().size() > 0);
-        assertEquals(3, realPreContext.requiredNonPayerKeys().size());
+        assertThat(realPreContext.requiredNonPayerKeys().size()).isGreaterThan(0);
+        assertThat(1).isEqualTo(realPreContext.requiredNonPayerKeys().size());
+        assertThat(1)
+                .isEqualTo(realPreContext
+                        .requiredNonPayerKeys()
+                        .toArray(Key[]::new)[0]
+                        .thresholdKey()
+                        .threshold());
     }
 
     @Test

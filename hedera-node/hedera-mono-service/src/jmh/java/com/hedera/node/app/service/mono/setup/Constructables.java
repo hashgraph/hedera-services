@@ -23,9 +23,7 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleAccountState;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.state.virtual.ContractKey;
 import com.hedera.node.app.service.mono.state.virtual.ContractKeySerializer;
-import com.hedera.node.app.service.mono.state.virtual.ContractKeySupplier;
 import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
-import com.hedera.node.app.service.mono.state.virtual.IterableContractValueSupplier;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -33,7 +31,6 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.utility.MerkleLong;
 import com.swirlds.fcqueue.FCQueue;
-import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkle.tree.MerkleBinaryTree;
 import com.swirlds.merkle.tree.MerkleTreeInternalNode;
@@ -93,13 +90,8 @@ public class Constructables {
                 .registerConstructable(
                         new ClassConstructorPair(ContractKeySerializer.class, ContractKeySerializer::new));
         ConstructableRegistry.getInstance()
-                .registerConstructable(new ClassConstructorPair(ContractKeySupplier.class, ContractKeySupplier::new));
-        ConstructableRegistry.getInstance()
                 .registerConstructable(
                         new ClassConstructorPair(IterableContractValue.class, IterableContractValue::new));
-        ConstructableRegistry.getInstance()
-                .registerConstructable(new ClassConstructorPair(
-                        IterableContractValueSupplier.class, IterableContractValueSupplier::new));
     }
 
     public static void registerForMerkleMap() {
@@ -131,8 +123,6 @@ public class Constructables {
     }
 
     public static void registerForVirtualDataSource() throws ConstructableRegistryException {
-        ConstructableRegistry.getInstance()
-                .registerConstructable(new ClassConstructorPair(JasperDbBuilder.class, JasperDbBuilder::new));
         ConstructableRegistry.getInstance()
                 .registerConstructable(
                         new ClassConstructorPair(MerkleDbDataSourceBuilder.class, MerkleDbDataSourceBuilder::new));
