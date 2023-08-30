@@ -16,6 +16,7 @@
 
 package com.swirlds.cli.logging;
 
+import static com.swirlds.cli.logging.HtmlGenerator.BLACKLIST_LABEL;
 import static com.swirlds.cli.logging.HtmlGenerator.CLASS_NAME_COLUMN_LABEL;
 import static com.swirlds.cli.logging.HtmlGenerator.ELAPSED_TIME_COLUMN_LABEL;
 import static com.swirlds.cli.logging.HtmlGenerator.HIDEABLE_LABEL;
@@ -27,6 +28,7 @@ import static com.swirlds.cli.logging.HtmlGenerator.NODE_ID_COLUMN_LABEL;
 import static com.swirlds.cli.logging.HtmlGenerator.REMAINDER_OF_LINE_COLUMN_LABEL;
 import static com.swirlds.cli.logging.HtmlGenerator.THREAD_NAME_COLUMN_LABEL;
 import static com.swirlds.cli.logging.HtmlGenerator.TIMESTAMP_COLUMN_LABEL;
+import static com.swirlds.cli.logging.HtmlGenerator.WHITELIST_LABEL;
 import static com.swirlds.cli.logging.LogProcessingUtils.escapeString;
 import static com.swirlds.cli.logging.LogProcessingUtils.getLogLevelColor;
 import static com.swirlds.cli.logging.LogProcessingUtils.parseTimestamp;
@@ -361,7 +363,9 @@ public class LogLine implements FormattableString {
 
         final HtmlTagFactory nodeIdTagFactory = new HtmlTagFactory(
                         "td", nodeId == null ? "" : "node" + escapeString(nodeId.toString()) + " ", false)
-                .addClasses(List.of(NODE_ID_COLUMN_LABEL, HIDEABLE_LABEL));
+                .addClasses(List.of(NODE_ID_COLUMN_LABEL, HIDEABLE_LABEL))
+                .addAttribute(BLACKLIST_LABEL, "0")
+                .addAttribute(WHITELIST_LABEL, "0");
         dataCellTags.add(nodeIdTagFactory.generateTag());
 
         final String elapsedTimeString;
@@ -377,16 +381,22 @@ public class LogLine implements FormattableString {
         }
 
         final HtmlTagFactory logStartTimeTagFactory = new HtmlTagFactory("td", elapsedTimeString, false)
-                .addClasses(List.of(ELAPSED_TIME_COLUMN_LABEL, HIDEABLE_LABEL));
+                .addClasses(List.of(ELAPSED_TIME_COLUMN_LABEL, HIDEABLE_LABEL))
+                .addAttribute(BLACKLIST_LABEL, "0")
+                .addAttribute(WHITELIST_LABEL, "0");
         dataCellTags.add(logStartTimeTagFactory.generateTag());
 
         final HtmlTagFactory timestampTagFactory = new HtmlTagFactory(
                         "td", escapeString(timestampOriginalString), false)
-                .addClasses(List.of(TIMESTAMP_COLUMN_LABEL, HIDEABLE_LABEL));
+                .addClasses(List.of(TIMESTAMP_COLUMN_LABEL, HIDEABLE_LABEL))
+                .addAttribute(BLACKLIST_LABEL, "0")
+                .addAttribute(WHITELIST_LABEL, "0");
         dataCellTags.add(timestampTagFactory.generateTag());
 
         final HtmlTagFactory logNumberTagFactory = new HtmlTagFactory("td", escapeString(logNumber), false)
-                .addClasses(List.of(LOG_NUMBER_COLUMN_LABEL, HIDEABLE_LABEL));
+                .addClasses(List.of(LOG_NUMBER_COLUMN_LABEL, HIDEABLE_LABEL))
+                .addAttribute(BLACKLIST_LABEL, "0")
+                .addAttribute(WHITELIST_LABEL, "0");
         dataCellTags.add(logNumberTagFactory.generateTag());
 
         final HtmlTagFactory logLevelTagFactory = new HtmlTagFactory("td", escapeString(logLevel), false)
@@ -394,15 +404,21 @@ public class LogLine implements FormattableString {
         dataCellTags.add(logLevelTagFactory.generateTag());
 
         final HtmlTagFactory markerTagFactory = new HtmlTagFactory("td", escapeString(marker), false)
-                .addClasses(List.of(MARKER_COLUMN_LABEL, HIDEABLE_LABEL));
+                .addClasses(List.of(MARKER_COLUMN_LABEL, HIDEABLE_LABEL))
+                .addAttribute(BLACKLIST_LABEL, "0")
+                .addAttribute(WHITELIST_LABEL, "0");
         dataCellTags.add(markerTagFactory.generateTag());
 
         final HtmlTagFactory threadNameTagFactory = new HtmlTagFactory("td", escapeString(threadName), false)
-                .addClasses(List.of(THREAD_NAME_COLUMN_LABEL, HIDEABLE_LABEL));
+                .addClasses(List.of(THREAD_NAME_COLUMN_LABEL, HIDEABLE_LABEL))
+                .addAttribute(BLACKLIST_LABEL, "0")
+                .addAttribute(WHITELIST_LABEL, "0");
         dataCellTags.add(threadNameTagFactory.generateTag());
 
         final HtmlTagFactory classNameTagFactory = new HtmlTagFactory("td", escapeString(className) + colonSpace, false)
-                .addClasses(List.of(CLASS_NAME_COLUMN_LABEL, HIDEABLE_LABEL));
+                .addClasses(List.of(CLASS_NAME_COLUMN_LABEL, HIDEABLE_LABEL))
+                .addAttribute(BLACKLIST_LABEL, "0")
+                .addAttribute(WHITELIST_LABEL, "0");
         dataCellTags.add(classNameTagFactory.generateTag());
 
         final HtmlTagFactory remainderOfLineTagFactory = new HtmlTagFactory(
@@ -411,7 +427,9 @@ public class LogLine implements FormattableString {
                         // escaped
                         remainderOfLine.generateHtmlString(),
                         false)
-                .addClasses(List.of(REMAINDER_OF_LINE_COLUMN_LABEL, HIDEABLE_LABEL));
+                .addClasses(List.of(REMAINDER_OF_LINE_COLUMN_LABEL, HIDEABLE_LABEL))
+                .addAttribute(BLACKLIST_LABEL, "0")
+                .addAttribute(WHITELIST_LABEL, "0");
         dataCellTags.add(remainderOfLineTagFactory.generateTag());
 
         // the actual value of these elements of the line become html classes for the line itself, so that we can filter
@@ -429,6 +447,8 @@ public class LogLine implements FormattableString {
 
         final String mainLogRow = new HtmlTagFactory("tr", "\n" + String.join("\n", dataCellTags) + "\n", false)
                 .addClasses(rowClassNames)
+                .addAttribute(BLACKLIST_LABEL, "0")
+                .addAttribute(WHITELIST_LABEL, "0")
                 .generateTag();
 
         if (additionalLines == null) {

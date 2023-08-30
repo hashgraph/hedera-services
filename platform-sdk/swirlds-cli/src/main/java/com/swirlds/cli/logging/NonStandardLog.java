@@ -16,12 +16,14 @@
 
 package com.swirlds.cli.logging;
 
+import static com.swirlds.cli.logging.HtmlGenerator.BLACKLIST_LABEL;
 import static com.swirlds.cli.logging.HtmlGenerator.ELAPSED_TIME_COLUMN_LABEL;
 import static com.swirlds.cli.logging.HtmlGenerator.HIDEABLE_LABEL;
 import static com.swirlds.cli.logging.HtmlGenerator.LOG_NUMBER_COLUMN_LABEL;
 import static com.swirlds.cli.logging.HtmlGenerator.NODE_ID_COLUMN_LABEL;
 import static com.swirlds.cli.logging.HtmlGenerator.NON_STANDARD_LABEL;
 import static com.swirlds.cli.logging.HtmlGenerator.TIMESTAMP_COLUMN_LABEL;
+import static com.swirlds.cli.logging.HtmlGenerator.WHITELIST_LABEL;
 import static com.swirlds.cli.logging.LogProcessingUtils.escapeString;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -68,23 +70,33 @@ public class NonStandardLog {
         final List<String> dataCellTags = new ArrayList<>();
 
         // add some empty cells for alignment purposes
-        final HtmlTagFactory nodeIdTagFactory =
-                new HtmlTagFactory("td", "", false).addClasses(List.of(NODE_ID_COLUMN_LABEL, HIDEABLE_LABEL));
+        final HtmlTagFactory nodeIdTagFactory = new HtmlTagFactory("td", "", false)
+                .addClasses(List.of(NODE_ID_COLUMN_LABEL, HIDEABLE_LABEL))
+                .addAttribute(BLACKLIST_LABEL, "0")
+                .addAttribute(WHITELIST_LABEL, "0");
         dataCellTags.add(nodeIdTagFactory.generateTag());
-        final HtmlTagFactory logStartTimeTagFactory =
-                new HtmlTagFactory("td", "", false).addClasses(List.of(ELAPSED_TIME_COLUMN_LABEL, HIDEABLE_LABEL));
+        final HtmlTagFactory logStartTimeTagFactory = new HtmlTagFactory("td", "", false)
+                .addClasses(List.of(ELAPSED_TIME_COLUMN_LABEL, HIDEABLE_LABEL))
+                .addAttribute(BLACKLIST_LABEL, "0")
+                .addAttribute(WHITELIST_LABEL, "0");
         dataCellTags.add(logStartTimeTagFactory.generateTag());
-        final HtmlTagFactory timestampTagFactory =
-                new HtmlTagFactory("td", "", false).addClasses(List.of(TIMESTAMP_COLUMN_LABEL, HIDEABLE_LABEL));
+        final HtmlTagFactory timestampTagFactory = new HtmlTagFactory("td", "", false)
+                .addClasses(List.of(TIMESTAMP_COLUMN_LABEL, HIDEABLE_LABEL))
+                .addAttribute(BLACKLIST_LABEL, "0")
+                .addAttribute(WHITELIST_LABEL, "0");
         dataCellTags.add(timestampTagFactory.generateTag());
-        final HtmlTagFactory logNumberTagFactory =
-                new HtmlTagFactory("td", "", false).addClasses(List.of(LOG_NUMBER_COLUMN_LABEL, HIDEABLE_LABEL));
+        final HtmlTagFactory logNumberTagFactory = new HtmlTagFactory("td", "", false)
+                .addClasses(List.of(LOG_NUMBER_COLUMN_LABEL, HIDEABLE_LABEL))
+                .addAttribute(BLACKLIST_LABEL, "0")
+                .addAttribute(WHITELIST_LABEL, "0");
         dataCellTags.add(logNumberTagFactory.generateTag());
 
         // add the non-standard contents
         final HtmlTagFactory contentsFactory = new HtmlTagFactory("td", escapeString(nonStandardText), false)
                 .addClasses(List.of(NON_STANDARD_LABEL, HIDEABLE_LABEL))
-                .addAttribute("colspan", "5");
+                .addAttribute("colspan", "5")
+                .addAttribute(BLACKLIST_LABEL, "0")
+                .addAttribute(WHITELIST_LABEL, "0");
         dataCellTags.add(contentsFactory.generateTag());
 
         // add classes via the parent line, so that this non-standard log will be filtered with its parent
@@ -100,6 +112,8 @@ public class NonStandardLog {
 
         return new HtmlTagFactory("tr", "\n" + String.join("\n", dataCellTags) + "\n", false)
                 .addClasses(rowClassNames)
+                .addAttribute(BLACKLIST_LABEL, "0")
+                .addAttribute(WHITELIST_LABEL, "0")
                 .generateTag();
     }
 }
