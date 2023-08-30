@@ -41,7 +41,6 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
-import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.notification.NotificationEngine;
@@ -576,7 +575,7 @@ public class SwirldsPlatform implements Platform, Startable {
         }
         final GossipEventValidators eventValidators = new GossipEventValidators(validators);
 
-        /* validates events received from gossip */
+        // validates events received from gossip
         final EventValidator eventValidator = new EventValidator(eventValidators, eventIntake::addUnlinkedEvent);
 
         eventTaskDispatcher = new EventTaskDispatcher(
@@ -625,14 +624,6 @@ public class SwirldsPlatform implements Platform, Startable {
                 new TransactionMetrics(metrics));
 
         final boolean startedFromGenesis = initialState.isGenesisState();
-
-        final Hash epochHash;
-        if (emergencyRecoveryManager.isEmergencyRecoveryFilePresent()) {
-            epochHash = emergencyRecoveryManager.getEmergencyRecoveryFile().hash();
-        } else {
-            epochHash =
-                    initialState.getState().getPlatformState().getPlatformData().getEpochHash();
-        }
 
         gossip = GossipFactory.buildGossip(
                 platformContext,
@@ -805,13 +796,8 @@ public class SwirldsPlatform implements Platform, Startable {
                 STARTUP.getMarker(),
                 """
                         The platform is using the following initial state:
-                        {}
-
                         {}""",
-                signedState.getState().getInfoString(),
-                new MerkleTreeVisualizer(signedState.getState())
-                        .setDepth(stateConfig.debugHashDepth())
-                        .render());
+                signedState.getState().getInfoString(stateConfig.debugHashDepth()));
     }
 
     /**

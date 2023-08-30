@@ -19,7 +19,6 @@ package com.swirlds.platform.util;
 import static com.swirlds.logging.LogMarker.STATE_HASH;
 
 import com.swirlds.common.config.StateConfig;
-import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
@@ -129,25 +128,14 @@ public class HashLogger {
 
     private Message generateLogMessage(final NodeId nodeId, final SignedState signedState) {
         final State state = signedState.getState();
-        final String platformInfo = state.getInfoString();
-        final String hashInfo = new MerkleTreeVisualizer(state)
-                .setDepth(stateConfig.debugHashDepth())
-                .render();
-
-        final String fullRootHashLine = "Root hash: " + state.getHash();
+        final String platformInfo = state.getInfoString(stateConfig.debugHashDepth());
 
         return MESSAGE_FACTORY.newMessage(
                 """
                         [node-{}] Information for hash stream (round = {}):
-                        {}
-                        {}
-
-                        {}
-                        """,
+                        {}""",
                 nodeId,
                 signedState.getRound(),
-                platformInfo,
-                fullRootHashLine,
-                hashInfo);
+                platformInfo);
     }
 }

@@ -16,12 +16,15 @@
 
 package com.swirlds.platform.reconnect;
 
+import com.swirlds.common.config.StateConfig;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.logging.LogMarker;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
 import com.swirlds.platform.state.signed.SignedStateValidationData;
 import com.swirlds.platform.state.signed.SignedStateValidator;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -41,7 +44,14 @@ public class DefaultSignedStateValidator implements SignedStateValidator {
 		Original reconnect state:
 		{}""";
 
-    public DefaultSignedStateValidator() {}
+    private final int hashDepth;
+
+    public DefaultSignedStateValidator(@NonNull final PlatformContext platformContext) {
+        hashDepth = platformContext
+                .getConfiguration()
+                .getConfigData(StateConfig.class)
+                .debugHashDepth();
+    }
 
     /**
      * {@inheritDoc}
@@ -76,7 +86,7 @@ public class DefaultSignedStateValidator implements SignedStateValidator {
             logger.error(
                     LogMarker.SIGNED_STATE.getMarker(),
                     STATE_TOO_EARLY_LOG_MESSAGE,
-                    signedState.getState().getInfoString(),
+                    signedState.getState().getInfoString(hashDepth),
                     previousStateData.getInfoString());
             throw new SignedStateInvalidException(STATE_TOO_EARLY_MESSAGE.formatted(
                     previousStateData.round(),

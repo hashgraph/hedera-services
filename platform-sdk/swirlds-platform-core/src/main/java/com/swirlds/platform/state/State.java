@@ -22,6 +22,7 @@ import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.exceptions.IllegalChildIndexException;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
+import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.utility.RuntimeObjectRecord;
@@ -33,11 +34,8 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * The root of the merkle tree holding the state of the Swirlds ledger.
- * Contains three children:
- * the state used by the application;
- * the state used by the platform;
- * and the state used by both application and platform.
+ * The root of the merkle tree holding the state of the Swirlds ledger. Contains three children: the state used by the
+ * application; the state used by the platform; and the state used by both application and platform.
  */
 public class State extends PartialNaryMerkleInternal implements MerkleInternal {
 
@@ -53,8 +51,8 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
 
     private static class ChildIndices {
         /**
-         * The state written and used by the application. It is the state resulting from all transactions in
-         * consensus order from all events with received rounds up through the round this State represents.
+         * The state written and used by the application. It is the state resulting from all transactions in consensus
+         * order from all events with received rounds up through the round this State represents.
          */
         public static final int SWIRLD_STATE = 0;
         /**
@@ -129,8 +127,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
     /**
      * Set the application state.
      *
-     * @param state
-     * 		the application state
+     * @param state the application state
      */
     public void setSwirldState(final SwirldState state) {
         setChild(ChildIndices.SWIRLD_STATE, state);
@@ -148,8 +145,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
     /**
      * Set the platform state.
      *
-     * @param platformState
-     * 		the platform state
+     * @param platformState the platform state
      */
     public void setPlatformState(final PlatformState platformState) {
         setChild(ChildIndices.PLATFORM_STATE, platformState);
@@ -185,8 +181,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
     /**
      * Set the dual state.
      *
-     * @param dualState
-     * 		the dual state
+     * @param dualState the dual state
      */
     public void setDualState(final DualStateImpl dualState) {
         setChild(ChildIndices.DUAL_STATE, dualState);
@@ -263,15 +258,19 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
 
     /**
      * Generate a string that describes this state.
+     *
+     * @param hashDepth the depth of the tree to visit and print
      */
-    public String getInfoString() {
+    public String getInfoString(final int hashDepth) {
 
         final PlatformData data = getPlatformState().getPlatformData();
         final Hash epochHash = data.getNextEpochHash();
         final Hash hashEventsCons = data.getHashEventsCons();
         final List<MinGenInfo> minGenInfo = data.getMinGenInfo();
 
-        return new TextTable()
+        final StringBuilder sb = new StringBuilder();
+
+        new TextTable()
                 .setBordersEnabled(false)
                 .addRow("Round:", data.getRound())
                 .addRow("Timestamp:", data.getConsensusTimestamp())
@@ -285,7 +284,13 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
                 .addRow("Min gen hash code:", minGenInfo == null ? "null" : minGenInfo.hashCode())
                 .addRow("Events hash code:", Arrays.hashCode(data.getEvents()))
                 .addRow("Root hash:", getHash())
-                .render();
+                .render(sb);
+
+        sb.append("\n");
+
+        new MerkleTreeVisualizer(this).setDepth(hashDepth).render(sb);
+
+        return sb.toString();
     }
 
     // TODO method that prints info string and hash tree
