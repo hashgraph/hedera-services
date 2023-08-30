@@ -174,25 +174,7 @@ public class UnitFormatter {
      * @return true if the quantity string requires a plural unit
      */
     private boolean isQuantityPlural(@NonNull final String quantityString) {
-        boolean plural = false;
-
-        if (quantityString.charAt(0) != '1') {
-            plural = true;
-        } else if (quantityString.length() > 1) {
-            if (quantityString.charAt(1) != '.') {
-                plural = true;
-            } else {
-                for (int i = 2; i < quantityString.length(); i++) {
-                    final char c = quantityString.charAt(i);
-                    if (c != '0') {
-                        plural = true;
-                        break;
-                    }
-                }
-            }
-        }
-
-        return plural;
+        return Double.parseDouble(quantityString.replace(",", "")) != 1.0;
     }
 
     /**
