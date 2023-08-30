@@ -39,6 +39,7 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.utility.CommonUtils;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -61,6 +62,9 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
     private Optional<ContractFnResultAsserts> expectations = Optional.empty();
     private Optional<Function<HapiSpec, Object[]>> paramsFn = Optional.empty();
     private Optional<Consumer<Object[]>> typedResultsObs = Optional.empty();
+
+    @Nullable
+    private Consumer<byte[]> rawResultsObs;
 
     @Override
     public HederaFunctionality type() {
@@ -94,6 +98,11 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
 
     public HapiContractCallLocal has(ContractFnResultAsserts provider) {
         expectations = Optional.of(provider);
+        return this;
+    }
+
+    public HapiContractCallLocal exposingRawResultsTo(final Consumer<byte[]> obs) {
+        rawResultsObs = obs;
         return this;
     }
 
@@ -160,6 +169,9 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
             } else {
                 typedResultsObs.get().accept(new Object[1]);
             }
+        }
+        if (rawResultsObs != null) {
+            rawResultsObs.accept(rawResult.toByteArray());
         }
     }
 

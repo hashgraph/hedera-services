@@ -25,6 +25,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
+import javax.inject.Inject;
 
 /**
  * A read-only {@link HederaNativeOperations} based on a {@link QueryContext}.
@@ -33,6 +34,7 @@ import java.util.Objects;
 public class QueryHederaNativeOperations implements HederaNativeOperations {
     private final QueryContext context;
 
+    @Inject
     public QueryHederaNativeOperations(@NonNull final QueryContext context) {
         this.context = Objects.requireNonNull(context);
     }
