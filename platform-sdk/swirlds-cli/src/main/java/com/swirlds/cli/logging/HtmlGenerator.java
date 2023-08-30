@@ -100,6 +100,10 @@ public class HtmlGenerator {
      */
     public static final String FILTER_RADIO_LABEL = "filter-radio";
 
+    public static final String WHITELIST_RADIO_LABEL = "whitelist-radio";
+    public static final String NEUTRALLIST_RADIO_LABEL = "neutrallist-radio";
+    public static final String BLACKLIST_RADIO_LABEL = "blacklist-radio";
+
     /**
      * Signifies filter checkboxes
      */
@@ -266,14 +270,14 @@ public class HtmlGenerator {
         final String commonRadioLabel = nodeName + "-radio";
 
         final String neutralTag = new HtmlTagFactory("input", null, true)
-                .addClasses(List.of(FILTER_RADIO_LABEL, nodeName))
+                .addClasses(List.of(FILTER_RADIO_LABEL, WHITELIST_RADIO_LABEL, nodeName))
                 .addAttribute("type", "radio")
                 .addAttribute("name", commonRadioLabel)
                 .addAttribute("value", "2")
                 .addAttribute("checked", "checked")
                 .generateTag();
         final String noShowTag = new HtmlTagFactory("input", null, true)
-                .addClasses(List.of(FILTER_RADIO_LABEL, ABSOLUTELY_NO_SHOW, nodeName))
+                .addClasses(List.of(FILTER_RADIO_LABEL, ABSOLUTELY_NO_SHOW, BLACKLIST_RADIO_LABEL, nodeName))
                 .addAttribute("type", "radio")
                 .addAttribute("name", commonRadioLabel)
                 .addAttribute("value", "4")
@@ -316,20 +320,20 @@ public class HtmlGenerator {
         final String commonRadioLabel = elementName + "-radio";
 
         final String whitelistTag = new HtmlTagFactory("input", null, true)
-                .addClasses(List.of(FILTER_RADIO_LABEL, WHITELIST_LABEL, elementName))
+                .addClasses(List.of(FILTER_RADIO_LABEL, WHITELIST_LABEL, WHITELIST_RADIO_LABEL, elementName))
                 .addAttribute("type", "radio")
                 .addAttribute("name", commonRadioLabel)
                 .addAttribute("value", "1")
                 .generateTag();
         final String neutralTag = new HtmlTagFactory("input", null, true)
-                .addClasses(List.of(FILTER_RADIO_LABEL, elementName))
+                .addClasses(List.of(FILTER_RADIO_LABEL, NEUTRALLIST_RADIO_LABEL, elementName))
                 .addAttribute("type", "radio")
                 .addAttribute("name", commonRadioLabel)
                 .addAttribute("checked", "checked")
                 .addAttribute("value", "2")
                 .generateTag();
         final String blacklistTag = new HtmlTagFactory("input", null, true)
-                .addClasses(List.of(FILTER_RADIO_LABEL, BLACKLIST_LABEL, elementName))
+                .addClasses(List.of(FILTER_RADIO_LABEL, BLACKLIST_LABEL, BLACKLIST_RADIO_LABEL, elementName))
                 .addAttribute("type", "radio")
                 .addAttribute("name", commonRadioLabel)
                 .addAttribute("value", "3")
@@ -479,7 +483,7 @@ public class HtmlGenerator {
                 .map(LogLine::getLogLevel)
                 .distinct()
                 .forEach(logLevel -> cssFactory.addRule(
-                        "td" + "." + logLevel, new CssDeclaration("color", getHtmlColor(getLogLevelColor(logLevel)))));
+                        "td" + "." + logLevel + "-level", new CssDeclaration("color", getHtmlColor(getLogLevelColor(logLevel)))));
     }
 
     /**
@@ -547,6 +551,10 @@ public class HtmlGenerator {
         final String scrollableFilterColumn = new HtmlTagFactory("div", filterDivsCombined, false)
                 .addClass(INDEPENDENT_SCROLL_LABEL)
                 .generateTag();
+
+        cssFactory.addRule("." + WHITELIST_RADIO_LABEL, new CssDeclaration("accent-color", "#6FD154"));
+        cssFactory.addRule("." + NEUTRALLIST_RADIO_LABEL, new CssDeclaration("accent-color", "#F3D412"));
+        cssFactory.addRule("." + BLACKLIST_RADIO_LABEL, new CssDeclaration("accent-color", "#DA4754"));
 
         // make the filter columns and the log table scroll independently
         cssFactory.addRule("." + INDEPENDENT_SCROLL_LABEL, new CssDeclaration("overflow", "auto"));
