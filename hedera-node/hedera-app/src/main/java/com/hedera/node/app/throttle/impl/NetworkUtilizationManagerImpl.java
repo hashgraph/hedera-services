@@ -23,6 +23,7 @@ import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.congestion.MonoMultiplierSources;
+import com.hedera.node.app.service.mono.fees.congestion.MultiplierSources;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.HandleThrottleAccumulator;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
@@ -32,6 +33,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import javax.inject.Inject;
 
+/**
+ * Implementation of {@link NetworkUtilizationManager}  that delegates to injected {@link HandleThrottleAccumulator} and {@link
+ * MultiplierSources}.
+ */
 public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager {
     // Used to update network utilization after a user-submitted transaction fails the signature
     // validity
@@ -46,9 +51,9 @@ public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager 
     @Inject
     public NetworkUtilizationManagerImpl(
             @NonNull final HandleThrottleAccumulator handleThrottling,
-            @NonNull final MonoMultiplierSources genericFeeMultiplier) {
+            @NonNull final MonoMultiplierSources multiplierSources) {
         this.handleThrottling = requireNonNull(handleThrottling, "handleThrottling must not be null");
-        this.multiplierSources = requireNonNull(genericFeeMultiplier, "multiplierSources must not be null");
+        this.multiplierSources = requireNonNull(multiplierSources, "multiplierSources must not be null");
     }
 
     @Override

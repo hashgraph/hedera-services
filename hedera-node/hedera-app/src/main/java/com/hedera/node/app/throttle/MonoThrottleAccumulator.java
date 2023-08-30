@@ -30,7 +30,6 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayOutputStream;
-import java.time.Instant;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -53,7 +52,7 @@ public class MonoThrottleAccumulator implements ThrottleAccumulator {
     }
 
     @Override
-    public boolean shouldThrottle(@NonNull final TransactionBody txn, Instant t) {
+    public boolean shouldThrottle(@NonNull final TransactionBody txn) {
         try {
             // This is wildly inefficient. We need to rework the fee system, so we are not
             // creating temporary objects like this and doing so much protobuf serialization

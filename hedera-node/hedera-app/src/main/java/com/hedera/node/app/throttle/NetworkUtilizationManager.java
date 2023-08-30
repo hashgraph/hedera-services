@@ -21,6 +21,10 @@ import com.hedera.node.app.workflows.TransactionInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 
+/**
+ * Interface which purpose is to do the work of tracking network utilization (and its impact on
+ * congestion pricing).
+ */
 public interface NetworkUtilizationManager {
     void trackTxn(@NonNull final TransactionInfo txnInfo, Instant consensusTime, HederaState state);
 

@@ -20,7 +20,6 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Instant;
 
 /**
  * Keeps track of the amount of usage of different throttle categories (by {@code id}), and returns
@@ -38,7 +37,7 @@ public interface ThrottleAccumulator {
      * @return true if the relevant throttle(s) have run out of capacity, false otherwise.
      * @throws NullPointerException if {@code txn} is {@code null}
      */
-    boolean shouldThrottle(@NonNull TransactionBody txn, final Instant t);
+    boolean shouldThrottle(@NonNull TransactionBody txn);
 
     /**
      * Tests whether the given query should be throttled, assuming its functionality is as

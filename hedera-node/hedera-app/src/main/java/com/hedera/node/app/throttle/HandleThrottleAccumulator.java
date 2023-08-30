@@ -420,6 +420,7 @@ public class HandleThrottleAccumulator {
         return gasThrottle;
     }
 
+    // TODO: do we need to throttle queries in handle throttle?
     //    @Override
     //    public boolean shouldThrottleQuery(@NonNull HederaFunctionality functionality, @NonNull Query query) {
     //        return false;

@@ -39,7 +39,6 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.throttling.FunctionalityThrottling;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -97,7 +96,7 @@ class MonoThrottleAccumulatorTest {
 
         given(hapiThrottling.shouldThrottleTxn(any())).willReturn(true);
 
-        assertTrue(subject.shouldThrottle(TRANSACTION_BODY, Instant.now()));
+        assertTrue(subject.shouldThrottle(TRANSACTION_BODY));
 
         verify(hapiThrottling).shouldThrottleTxn(captor.capture());
         final var throttledFunction = captor.getValue().getFunction();
