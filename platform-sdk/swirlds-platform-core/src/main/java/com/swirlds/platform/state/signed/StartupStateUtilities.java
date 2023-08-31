@@ -183,7 +183,7 @@ public final class StartupStateUtilities {
      *                                     delete malformed states
      */
     @NonNull
-    public static ReservedSignedState loadStateFile(
+    static ReservedSignedState loadStateFile(
             @NonNull final PlatformContext platformContext,
             @NonNull final RecycleBin recycleBin,
             @NonNull final NodeId selfId,
