@@ -85,6 +85,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
@@ -601,10 +602,11 @@ class QueryWorkflowImplTest extends AppTestBase {
 
     @Test
     void testQuerySpecificValidationFails() throws PreCheckException, IOException {
+        final var captor = ArgumentCaptor.forClass(QueryContext.class);
         // given
         doThrow(new PreCheckException(ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN))
                 .when(handler)
-                .validate(any());
+                .validate(captor.capture());
         final var responseBuffer = newEmptyBuffer();
 
         // when
@@ -617,6 +619,8 @@ class QueryWorkflowImplTest extends AppTestBase {
                 .isEqualTo(ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN);
         Assertions.assertThat(header.responseType()).isEqualTo(ANSWER_ONLY);
         Assertions.assertThat(header.cost()).isZero();
+        final var queryContext = captor.getValue();
+        Assertions.assertThat(queryContext.payer()).isNull();
     }
 
     @Test
