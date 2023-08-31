@@ -42,6 +42,7 @@ import com.swirlds.common.utility.CompareTo;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.ConsensusUtils;
+import com.swirlds.platform.consensus.SyntheticSnapshot;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.recovery.internal.EventStreamRoundIterator;
@@ -57,11 +58,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.StreamSupport;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -241,9 +241,6 @@ public final class EventRecoveryWorkflow {
 
         final Configuration configuration = platformContext.getConfiguration();
 
-        final long roundsNonAncient =
-                configuration.getConfigData(ConsensusConfig.class).roundsNonAncient();
-
         initialState.get().getState().throwIfImmutable("initial state must be mutable");
 
         logger.info(STARTUP.getMarker(), "Initializing application state");
@@ -280,7 +277,7 @@ public final class EventRecoveryWorkflow {
                     round.getEventCount(),
                     round.getRoundNum());
 
-            signedState = handleNextRound(platformContext, signedState, round, roundsNonAncient);
+            signedState = handleNextRound(platformContext, signedState, round, configuration.getConfigData(ConsensusConfig.class));
             platform.setLatestState(signedState.get());
         }
 
@@ -310,30 +307,30 @@ public final class EventRecoveryWorkflow {
      * @param platformContext  the current context
      * @param previousState    the previous round's signed state
      * @param round            the next round
-     * @param roundsNonAncient the number of rounds until an event becomes ancient
+     * @param config           the consensus configuration
      * @return the resulting signed state
      */
     private static ReservedSignedState handleNextRound(
             @NonNull final PlatformContext platformContext,
             @NonNull final ReservedSignedState previousState,
             @NonNull final Round round,
-            final long roundsNonAncient) {
+            @NonNull final ConsensusConfig config) {
 
         final Instant currentRoundTimestamp = getRoundTimestamp(round);
-
         previousState.get().getState().throwIfImmutable();
         final State newState = previousState.get().getState().copy();
+        final EventImpl lastEvent = (EventImpl) getLastEvent(round);
         newState.getPlatformState()
                 .getPlatformData()
                 .setRound(round.getRoundNum())
                 .setHashEventsCons(getHashEventsCons(previousState.get().getHashEventsCons(), round))
                 .setConsensusTimestamp(currentRoundTimestamp)
-                .setSnapshot(new ConsensusSnapshot(
+                .setSnapshot(SyntheticSnapshot.generateSyntheticSnapshot(
                         round.getRoundNum(),
-                        List.of(), // TODO fake judges?
-                        getMinGenInfo(roundsNonAncient, previousState.get().getMinGenInfo(), round),
-                        getLastEvent(round).getConsensusOrder() + 1,
-                        ConsensusUtils.calcMinTimestampForNextEvent(currentRoundTimestamp)))
+                        lastEvent.getConsensusOrder(),
+                        currentRoundTimestamp,
+                        config,
+                        lastEvent.getBaseEvent()))
                 .setCreationSoftwareVersion(previousState
                         .get()
                         .getState()
@@ -452,47 +449,6 @@ public final class EventRecoveryWorkflow {
 
         return CompareTo.isLessThan(previousRoundTimestamp, freezeTime)
                 && CompareTo.isGreaterThanOrEqualTo(currentRoundTimestamp, freezeTime);
-    }
-
-    /**
-     * <p>
-     * Get the minimum generation info for all non-ancient rounds.
-     * </p>
-     *
-     * <p>
-     * This implementation differs from what happens in a real platform because the event stream contains insufficient
-     * information to fully reconstruct all consensus data. This implementation will reuse the minimum generation info
-     * from the previous rounds, and will set the minimum generation for the current round to be equal to the minimum
-     * generation of all events in the current round.
-     * </p>
-     *
-     * @param roundsNonAncient   the number of rounds until an event becomes ancient
-     * @param previousMinGenInfo the previous round's minimum generation info
-     * @param round              the current round
-     * @return minimum generation info for the rounds described by the events
-     */
-    static List<MinGenInfo> getMinGenInfo(
-            final long roundsNonAncient, final List<MinGenInfo> previousMinGenInfo, final Round round) {
-
-        final long firstRoundToKeep = round.getRoundNum() - roundsNonAncient;
-        final List<MinGenInfo> minGenInfos = new ArrayList<>();
-
-        for (final MinGenInfo minGenInfo : previousMinGenInfo) {
-            if (minGenInfo.round() >= firstRoundToKeep) {
-                minGenInfos.add(minGenInfo);
-            }
-        }
-
-        if (!round.isEmpty()) {
-            long minimumGeneration = Integer.MAX_VALUE;
-            for (final ConsensusEvent event : round) {
-                final EventImpl eventImpl = (EventImpl) event;
-                minimumGeneration = Math.min(minimumGeneration, eventImpl.getGeneration());
-            }
-            minGenInfos.add(new MinGenInfo(round.getRoundNum(), minimumGeneration));
-        }
-
-        return minGenInfos;
     }
 
     /**

@@ -91,66 +91,6 @@ class EventRecoveryWorkflowTests {
             new TestConfigBuilder().getOrCreateConfig().getConfigData(StateConfig.class);
 
     @Test
-    @DisplayName("getMinGenInfo() Test")
-    void getMinGenInfoTest() {
-
-        // FUTURE WORK: recovery currently does not rebuild minimum generations the way we want to (due to lack
-        //  of data in the event stream). This test validates current behavior, not the behavior we eventually
-        //  want. Once we have all the data in the event stream and minimum generation behavior in recovery is
-        //  fixed, we should throw this test away and write a new test that validates the new behavior.
-
-        final int roundsToSimulate = 50;
-        final int roundsNonAncient = 26;
-
-        final Map<Long /* round */, Long /* min gen */> minGenForRound = new HashMap<>();
-        List<MinGenInfo> minGenInfos = new ArrayList<>();
-
-        long roundNumber = 1;
-
-        // Generate some initial rounds
-        for (long i = 0; i < roundsNonAncient; i++) {
-            minGenForRound.put(roundNumber, roundNumber);
-            minGenInfos.add(new MinGenInfo(roundNumber, roundNumber));
-            roundNumber++;
-        }
-
-        // Simulate further rounds.
-        for (long i = 0; i < roundsToSimulate; i++) {
-            final long minimumGeneration = i * 2;
-            final long nextMinimumGeneration = (i + 1) * 2;
-            minGenForRound.put(roundNumber, minimumGeneration);
-
-            // Create mock events for the round
-            final List<ConsensusEvent> events = new ArrayList<>();
-            for (long generation = minimumGeneration; generation < nextMinimumGeneration; generation++) {
-                final EventImpl event = mock(EventImpl.class);
-                when(event.getGeneration()).thenReturn(generation);
-                events.add(event);
-            }
-            Collections.shuffle(events);
-
-            // Create a mock round
-            final Round round = mock(Round.class);
-            when(round.isEmpty()).thenReturn(false);
-            when(round.getRoundNum()).thenReturn(roundNumber);
-            when(round.iterator()).thenReturn(events.iterator());
-
-            minGenInfos = EventRecoveryWorkflow.getMinGenInfo(roundsNonAncient, minGenInfos, round);
-
-            assertEquals(roundsNonAncient + 1, minGenInfos.size(), "unexpected number of min gen infos");
-
-            long expectedRound = roundNumber - roundsNonAncient;
-            for (final MinGenInfo minGenInfo : minGenInfos) {
-                assertEquals(expectedRound, minGenInfo.round(), "unexpected round");
-                assertEquals(minGenForRound.get(expectedRound), minGenInfo.minimumGeneration(), "unexpected round");
-                expectedRound++;
-            }
-
-            roundNumber++;
-        }
-    }
-
-    @Test
     @DisplayName("isFreezeState() Test")
     void isFreezeStateTest() {
 
