@@ -46,7 +46,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class ExchangeRateSystemContractTest {
+class ExchangeRateSystemContractTest {
     @Mock
     private GasCalculator gasCalculator;
 
