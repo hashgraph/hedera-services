@@ -29,6 +29,7 @@ import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValue;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.mono.utils.NftNumPair;
 import com.hedera.services.cli.signedstate.DumpStateCommand.EmitSummary;
+import com.hedera.services.cli.signedstate.SignedStateCommand.Verbosity;
 import com.hedera.services.cli.utils.ThingsToStrings;
 import com.hedera.services.cli.utils.Writer;
 import com.swirlds.base.utility.Pair;
@@ -49,8 +50,8 @@ public class DumpUniqueTokensSubcommand {
     static void doit(
             @NonNull final SignedStateHolder state,
             @NonNull final Path uniquesPath,
-            @NonNull final DumpStateCommand.EmitSummary emitSummary,
-            @NonNull final SignedStateCommand.Verbosity verbosity) {
+            @NonNull final EmitSummary emitSummary,
+            @NonNull final Verbosity verbosity) {
         new DumpUniqueTokensSubcommand(state, uniquesPath, emitSummary, verbosity).doit();
     }
 
@@ -61,16 +62,16 @@ public class DumpUniqueTokensSubcommand {
     final Path uniquesPath;
 
     @NonNull
-    final SignedStateCommand.Verbosity verbosity;
+    final Verbosity verbosity;
 
     @NonNull
-    final DumpStateCommand.EmitSummary emitSummary;
+    final EmitSummary emitSummary;
 
     DumpUniqueTokensSubcommand(
             @NonNull final SignedStateHolder state,
             @NonNull final Path uniquesPath,
-            @NonNull final DumpStateCommand.EmitSummary emitSummary,
-            @NonNull final SignedStateCommand.Verbosity verbosity) {
+            @NonNull final EmitSummary emitSummary,
+            @NonNull final Verbosity verbosity) {
         this.state = state;
         this.uniquesPath = uniquesPath;
         this.emitSummary = emitSummary;
@@ -155,23 +156,26 @@ public class DumpUniqueTokensSubcommand {
 
     void reportSummary(@NonNull final Writer writer, @NonNull final Map<UniqueNFTId, UniqueNFT> uniques) {
         final var relatedEntityCounts = RelatedEntities.countRelatedEntities(uniques);
-        writer.writeln("=== %7d unique tokens".formatted(uniques.size()));
-        writer.writeln("    %7d null or missing owners, %7d null or missing spenders"
+        writer.writeln("=== %7d unique tokens (%d owned by treasury accounts)"
+                .formatted(uniques.size(), relatedEntityCounts.ownedByTreasury()));
+        writer.writeln("    %7d null owners, %7d null or missing spenders"
                 .formatted(
-                        uniques.size() - relatedEntityCounts.owners(),
+                        uniques.size()
+                                - (relatedEntityCounts.ownersNotTreasury() + relatedEntityCounts.ownedByTreasury()),
                         uniques.size() - relatedEntityCounts.spenders()));
         writer.writeln("");
     }
 
-    record RelatedEntities(long owners, long spenders) {
+    record RelatedEntities(long ownersNotTreasury, long ownedByTreasury, long spenders) {
         @NonNull
         static RelatedEntities countRelatedEntities(@NonNull final Map<UniqueNFTId, UniqueNFT> uniques) {
-            final var cs = new long[2];
+            final var cs = new long[3];
             uniques.values().forEach(unique -> {
                 if (null != unique.owner && !unique.owner.equals(EntityId.MISSING_ENTITY_ID)) cs[0]++;
-                if (null != unique.spender && !unique.spender.equals(EntityId.MISSING_ENTITY_ID)) cs[1]++;
+                if (null != unique.owner && unique.owner.equals(EntityId.MISSING_ENTITY_ID)) cs[1]++;
+                if (null != unique.spender && !unique.spender.equals(EntityId.MISSING_ENTITY_ID)) cs[2]++;
             });
-            return new RelatedEntities(cs[0], cs[1]);
+            return new RelatedEntities(cs[0], cs[1], cs[2]);
         }
     }
 

@@ -176,7 +176,6 @@ public class DumpStateCommand extends AbstractCommand {
                             description = "How to dump key summaries")
                     final EnumSet<KeyDetails> keyDetails) {
         Objects.requireNonNull(accountPath);
-        Objects.requireNonNull(keyDetails);
         if (lowLimit > highLimit)
             throw new CommandLine.ParameterException(
                     parent.getSpec().commandLine(), "--highLimit must be >= --lowLimit");
@@ -188,7 +187,7 @@ public class DumpStateCommand extends AbstractCommand {
                 accountPath,
                 lowLimit,
                 highLimit,
-                keyDetails,
+                null != keyDetails ? keyDetails : EnumSet.noneOf(KeyDetails.class),
                 doCsv ? Format.CSV : Format.ELIDED_DEFAULT_FIELDS,
                 parent.verbosity);
         finish();
@@ -212,13 +211,12 @@ public class DumpStateCommand extends AbstractCommand {
                             description = "Emit a summary line")
                     final boolean emitSummary) {
         Objects.requireNonNull(filesPath);
-        Objects.requireNonNull(keyDetails);
         init();
         System.out.println("=== files ===");
         DumpFilesSubcommand.doit(
                 parent.signedState,
                 filesPath,
-                keyDetails,
+                null != keyDetails ? keyDetails : EnumSet.noneOf(KeyDetails.class),
                 emitSummary ? EmitSummary.YES : EmitSummary.NO,
                 parent.verbosity);
         finish();
@@ -246,13 +244,12 @@ public class DumpStateCommand extends AbstractCommand {
                             description = "Emit a summary line")
                     final boolean emitSummary) {
         Objects.requireNonNull(tokensPath);
-        Objects.requireNonNull(keyDetails);
         init();
         System.out.println("=== tokens ===");
         DumpTokensSubcommand.doit(
                 parent.signedState,
                 tokensPath,
-                keyDetails,
+                null != keyDetails ? keyDetails : EnumSet.noneOf(KeyDetails.class),
                 doFeeSummary ? WithFeeSummary.YES : WithFeeSummary.NO,
                 emitSummary ? EmitSummary.YES : EmitSummary.NO,
                 parent.verbosity);
