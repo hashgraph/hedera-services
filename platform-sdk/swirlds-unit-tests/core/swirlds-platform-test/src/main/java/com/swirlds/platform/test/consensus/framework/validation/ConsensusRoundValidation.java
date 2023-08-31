@@ -30,6 +30,10 @@ import java.util.Objects;
 
 public class ConsensusRoundValidation {
     public static void validateConsensusRounds(final ConsensusOutput output1, final ConsensusOutput output2) {
+        validateIterableRounds(
+                output1.getConsensusRounds().iterator(),
+                output2.getConsensusRounds().iterator());
+
         assertEquals(
                 output1.getConsensusRounds().size(),
                 output2.getConsensusRounds().size(),
@@ -38,10 +42,6 @@ public class ConsensusRoundValidation {
                                 + "output1 has %d rounds, output2 has %d rounds",
                         output1.getConsensusRounds().size(),
                         output2.getConsensusRounds().size()));
-
-        validateIterableRounds(
-                output1.getConsensusRounds().iterator(),
-                output2.getConsensusRounds().iterator());
     }
 
     public static void validateIterableRounds(

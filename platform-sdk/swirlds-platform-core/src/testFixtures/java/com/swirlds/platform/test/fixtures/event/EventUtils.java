@@ -316,23 +316,4 @@ public abstract class EventUtils {
         }
         return map;
     }
-
-    /**
-     * Count the number of consensus events in a list of events.
-     *
-     * @return pair of counts where the left value is the number of consensus events and the right
-     *     value is the number of stale events
-     */
-    public static Pair<Integer, Integer> countConsensusAndStaleEvents(final Iterable<EventImpl> events) {
-        int numCons = 0;
-        int numStale = 0;
-        for (final EventImpl event : events) {
-            if (event.isConsensus()) {
-                numCons++;
-            } else if (event.isStale()) {
-                numStale++;
-            }
-        }
-        return Pair.of(numCons, numStale);
-    }
 }

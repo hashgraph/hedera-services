@@ -76,8 +76,18 @@ public class ConsensusTestOrchestrator {
      * @return this
      */
     public ConsensusTestOrchestrator generateEvents(final double fractionOfTotal) {
-        generateEvents((int) (totalEventNum * fractionOfTotal));
+        generateEvents(getEventFraction(fractionOfTotal));
         return this;
+    }
+
+    /**
+     * Returns a fraction of the total events defined in the input
+     *
+     * @param fractionOfTotal the fraction of events to generate
+     * @return the number of events that corresponds to the given fraction
+     */
+    public int getEventFraction(final double fractionOfTotal) {
+        return (int) (totalEventNum * fractionOfTotal);
     }
 
     /**

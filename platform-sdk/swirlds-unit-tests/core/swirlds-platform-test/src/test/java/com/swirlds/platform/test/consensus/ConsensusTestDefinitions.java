@@ -25,14 +25,11 @@ import static com.swirlds.platform.test.graph.OtherParentMatrixFactory.createShu
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.test.fixtures.RandomUtils;
-import com.swirlds.common.test.fixtures.crypto.RandomSigner;
 import com.swirlds.common.utility.Threshold;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.consensus.ConsensusConstants;
+import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.SyntheticSnapshot;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.SignedState;
@@ -54,18 +51,12 @@ import com.swirlds.platform.test.fixtures.event.source.EventSource;
 import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
 import com.swirlds.test.framework.ResourceLoader;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
-import org.junit.jupiter.api.Assertions;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.IntStream;
@@ -597,45 +588,44 @@ public final class ConsensusTestDefinitions {
 	}
 
 	public static void syntheticSnapshot(final TestInput input) {
-		final RandomSigner signer = new RandomSigner(new Random(input.seed()));
 		final long round = 100;
-		final long minGeneration = 1000;
 		final long lastConsensusOrder = 4000;
-
-		final SyntheticSnapshot syntheticSnapshot = SyntheticSnapshot.generateSyntheticSnapshot(
-				new BasicSoftwareVersion(1),
-				NodeId.FIRST_NODE_ID,
-				round,
-				minGeneration,
-				lastConsensusOrder,
-				Instant.now(),
-				ConfigurationBuilder
-						.create()
-						.withConfigDataType(ConsensusConfig.class)
-						.build()
-						.getConfigData(ConsensusConfig.class),
-				ss -> {
-					final Hash h = RandomUtils.randomHash(new Random(input.seed()));
-					ss.setHash(h);
-					return h;
-				},
-				signer
-		);
 
 		final ConsensusTestOrchestrator orchestrator =
 				OrchestratorBuilder.builder().setTestInput(input).build();
-		for (int i = 0; i < 2; i++) {
-			orchestrator.getNodes().get(i).getIntake().loadSnapshot(syntheticSnapshot.snapshot());
-			final EventImpl judge = new IndexedEvent(syntheticSnapshot.judge().getHashedData(), syntheticSnapshot.judge().getUnhashedData());
-			orchestrator.getNodes().get(i).getIntake().addLinkedEvent(judge);
-			ConsensusUtils.loadEventsIntoGenerator(
-					new EventImpl[]{judge},
-					orchestrator.getNodes().get(i).getEventEmitter().getGraphGenerator(),
-					orchestrator.getNodes().get(i).getRandom()
+		final Instant snapshotTimestamp = Instant.now();
+		orchestrator.getNodes().forEach(n->{
+			final int numEvents = orchestrator.getEventFraction(0.5);
+			n.getEventEmitter().setCheckpoint(numEvents);
+			final List<IndexedEvent> events = n.getEventEmitter().emitEvents(numEvents);
+			n.getEventEmitter().reset();
+			final Optional<IndexedEvent> maxGenEvent = events.stream().max(
+					Comparator.comparingLong(EventImpl::getGeneration)
+							.thenComparing(EventImpl::getCreatorId)
 			);
-		}
+			final ConsensusSnapshot syntheticSnapshot = SyntheticSnapshot.generateSyntheticSnapshot(
+					round,
+					lastConsensusOrder,
+					snapshotTimestamp,
+					ConfigurationBuilder
+							.create()
+							.withConfigDataType(ConsensusConfig.class)
+							.build()
+							.getConfigData(ConsensusConfig.class),
+					maxGenEvent.orElseThrow().getBaseEvent()
+			);
+			n.getIntake().loadSnapshot(syntheticSnapshot);
+		});
 
-		orchestrator.generateEvents(1);
+		orchestrator.generateEvents(0.5);
+		orchestrator.validateAndClear(
+				Validations.standard()
+						.ratios(EventRatioValidation.blank().setMaximumConsensusRatio(0))
+						// only 1 event will actually be added, that is the judge, so there can be no variation in the order
+						.remove(Validations.ValidationType.DIFFERENT_ORDER)
+		);
+
+		orchestrator.generateEvents(0.5);
 		orchestrator.validate(
 				Validations.standard().ratios(EventRatioValidation.blank().setMinimumConsensusRatio(0.8)));
 	}

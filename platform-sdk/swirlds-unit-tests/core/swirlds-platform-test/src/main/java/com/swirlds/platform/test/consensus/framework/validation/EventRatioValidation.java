@@ -16,13 +16,12 @@
 
 package com.swirlds.platform.test.consensus.framework.validation;
 
-import static com.swirlds.platform.test.fixtures.event.EventUtils.countConsensusAndStaleEvents;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import com.swirlds.base.utility.Pair;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.consensus.framework.ConsensusOutput;
+
 import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class EventRatioValidation implements ConsensusOutputValidation {
     /**
@@ -100,10 +99,15 @@ public class EventRatioValidation implements ConsensusOutputValidation {
         // For each statistic we only need to check one list since other validators can verify them
         // to be identical.
         final List<EventImpl> allEvents1 = output1.getAddedEvents();
-        final Pair<Integer, Integer> ratios = countConsensusAndStaleEvents(allEvents1);
+        final int numConsensus = output1.getConsensusRounds().stream().mapToInt(r->r.getConsensusEvents().size()).sum();
+
+        if (allEvents1.isEmpty()) {
+            // if no events were added, then there is nothing to validate
+            return;
+        }
 
         // Validate consensus ratio
-        final double consensusRatio = ((double) ratios.left()) / allEvents1.size();
+        final double consensusRatio = ((double) numConsensus) / allEvents1.size();
 
         assertTrue(
                 consensusRatio >= minimumConsensusRatio,
@@ -117,7 +121,7 @@ public class EventRatioValidation implements ConsensusOutputValidation {
                         consensusRatio, maximumConsensusRatio));
 
         // Validate stale ratio
-        final double staleRatio = ((double) ratios.right()) / allEvents1.size();
+        final double staleRatio = ((double) output1.getStaleEvents().size()) / allEvents1.size();
 
         assertTrue(
                 staleRatio >= minimumStaleRatio,
