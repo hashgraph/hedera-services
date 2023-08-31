@@ -101,6 +101,7 @@ public class AddressBookInitializer {
      * Constructs an AddressBookInitializer to initialize an address book from config.txt, the saved state from disk, or
      * the SwirldState on upgrade.
      *
+     * @param selfId            The id of this node.
      * @param currentVersion    The current version of the application.
      * @param softwareUpgrade   Indicate that the software version has upgraded.
      * @param initialState      The initial state to start from.

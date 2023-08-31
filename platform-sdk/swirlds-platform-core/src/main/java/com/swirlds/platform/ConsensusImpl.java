@@ -1089,14 +1089,15 @@ public class ConsensusImpl implements Consensus {
     }
 
     /**
-     * Checks if the event has the same index and the one provided.
+     * Checks if the index of the event creator's NodeId in the address book is the same as the provided index.
      *
-     * @param e the event to check for euqality to index
-     * @param index the index to check for equality to the event's index
-     * @return true if the event has the same index as the one provided, false otherwise
+     * @param event the event
+     * @param index an index in the address book.
+     * @return true if the index of the event creator's NodeId in the address book is the same as the provided index, false otherwise.
      */
-    private boolean hasIndex(@NonNull final EventImpl e, final int index) {
-        return addressBook.contains(e.getCreatorId()) && addressBook.getIndexOfNodeId(e.getCreatorId()) == index;
+    private boolean eventCreatorIndexMatches(@NonNull final EventImpl event, final int index) {
+        return addressBook.contains(event.getCreatorId())
+                && addressBook.getIndexOfNodeId(event.getCreatorId()) == index;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1158,7 +1159,7 @@ public class ConsensusImpl implements Consensus {
         sp = x.getSelfParent();
 
         for (int mm = 0; mm < numMembers; mm++) {
-            if (hasIndex(x, mm)) {
+            if (eventCreatorIndexMatches(x, mm)) {
                 x.setLastSee(mm, x);
             } else if (sp == null && op == null) {
                 x.setLastSee(mm, null);
@@ -1194,7 +1195,7 @@ public class ConsensusImpl implements Consensus {
         if (x == null) {
             return null;
         }
-        if (m == m2 && hasIndex(x, m2)) {
+        if (m == m2 && eventCreatorIndexMatches(x, m2)) {
             return firstSelfWitnessS(x.getSelfParent());
         }
         return firstSee(lastSee(x, m2), m);
