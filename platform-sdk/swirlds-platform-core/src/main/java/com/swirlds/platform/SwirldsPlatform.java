@@ -1073,7 +1073,7 @@ public class SwirldsPlatform implements Platform, Startable {
         components.start();
         Optional.of(tipsetEventCreator).ifPresent(Startable::start);
         replayPreconsensusEvents();
-        stateManagementComponent.dumpLatestImmutableState(StateToDiskReason.PCES_RECOVERY_DONE, true);
+        stateManagementComponent.dumpLatestImmutableState(StateToDiskReason.PCES_RECOVERY_COMPLETE, true);
     }
 
     /**
