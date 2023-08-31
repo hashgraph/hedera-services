@@ -352,10 +352,6 @@ public final class Hedera implements SwirldMain {
         // Since we now have an "app" instance, we can update the dual state accessor. This is *ONLY* used by the app to
         // produce a log summary after a freeze. We should refactor to not have a global reference to this.
         updateDualState(dualState);
-
-        logger.info("Validating ledger state...");
-        validateLedgerState(state);
-        logger.info("Ledger state ok");
     }
 
     /**
@@ -480,11 +476,6 @@ public final class Hedera implements SwirldMain {
             // com.hedera.node.app.service.mono.state.exports.NewSignedStateListener
             // Has some relationship to freeze/upgrade, but also with balance exports. This was the trigger that
             // caused us to export balance files on a certain schedule.
-
-            // TBD: notifications.register(IssListener.class, daggerApp.issListener());
-            // com.hedera.node.app.service.mono.state.forensics.ServicesIssListener
-            // This is something that MUST be implemented by the Hedera app module. We use this to respond to detected
-            // ISS events, logging, restarting, etc.
         } catch (final Throwable th) {
             logger.error("Fatal precondition violation in HederaNode#{}", daggerApp.nodeId(), th);
             daggerApp.systemExits().fail(1); // TBD: Better exit code?
@@ -508,27 +499,6 @@ public final class Hedera implements SwirldMain {
         } catch (final NoSuchAlgorithmException e) {
             logger.error(e);
             return false;
-        }
-    }
-
-    /** Verifies some aspects of the ledger state */
-    @SuppressWarnings("java:S1181") // catching Throwable instead of Exception when we do a direct System.exit()
-    private void validateLedgerState(@NonNull final HederaState state) {
-        // For a non-zero stake node, validates presence of a self-account in the address book.
-        final var selfNodeInfo = daggerApp.networkInfo().selfNodeInfo();
-        if (!selfNodeInfo.zeroStake() && selfNodeInfo.accountId() == null) {
-            logger.fatal("Node is not zero-stake, but has no known account");
-            daggerApp.systemExits().fail(1);
-        }
-
-        // Verify the ledger state. At the moment, this is a sanity check that we still have all HBARs present and
-        // accounted for. We may do more checks in the future. Every check we add slows down restart, especially when
-        // we start loading massive amounts of state from disk.
-        try {
-            daggerApp.ledgerValidator().validate(state);
-        } catch (Throwable th) {
-            logger.fatal("Ledger validation failed", th);
-            daggerApp.systemExits().fail(1);
         }
     }
 
@@ -595,7 +565,6 @@ public final class Hedera implements SwirldMain {
     private void onHandleConsensusRound(
             @NonNull final Round round, @NonNull final SwirldDualState dualState, @NonNull final HederaState state) {
         daggerApp.workingStateAccessor().setHederaState(state);
-        // TBD: Add in dual state when needed ::  daggerApp.dualStateAccessor().setDualState(dualState);
         daggerApp.handleWorkflow().handleRound(state, round);
     }
 
@@ -650,7 +619,7 @@ public final class Hedera implements SwirldMain {
 
         // And now that the entire dependency graph has been initialized, and we have config, and all migration has
         // been completed, we are prepared to initialize in-memory data structures. These specifically are loaded
-        // from information held in state.
+        // from information held in state (especially those in special files).
         initializeFeeManager(state);
         initializeExchangeRateManager(state);
         initializeThrottleManager(state);
@@ -671,46 +640,8 @@ public final class Hedera implements SwirldMain {
         //        networkCtx.markPostUpgradeScanStatus();
     }
 
-    // TODO SHOULD BE USED FOR ALL START/RESTART/GENESIS SCENARIOS
-    private void stateInitializationFlow() {
-        /*
-        final var lastThrottleExempt = bootstrapProperties.getLongProperty(ACCOUNTS_LAST_THROTTLE_EXEMPT);
-        // The last throttle-exempt account is configurable to make it easy to start dev networks
-        // without throttling
-        numberConfigurer.configureNumbers(hederaNums, lastThrottleExempt);
-
-        workingState.updateFrom(activeState);
-        log.info("Context updated with working state");
-
-        final var activeHash = activeState.runningHashLeaf().getRunningHash().getHash();
-        recordStreamManager.setInitialHash(activeHash);
-        log.info("Record running hash initialized");
-
-        if (hfs.numRegisteredInterceptors() == 0) {
-            fileUpdateInterceptors.forEach(hfs::register);
-            log.info("Registered {} file update interceptors", fileUpdateInterceptors.size());
-        }
-         */
-    }
-
-    // TODO SHOULD BE USED FOR ALL START/RESTART/GENESIS SCENARIOS
-    private void storeFlow() {
-        /*
-        backingTokenRels.rebuildFromSources();
-        backingAccounts.rebuildFromSources();
-        backingTokens.rebuildFromSources();
-        backingNfts.rebuildFromSources();
-        log.info("Backing stores rebuilt");
-
-        usageLimits.resetNumContracts();
-        aliasManager.rebuildAliasesMap(workingState.accounts(), (num, account) -> {
-            if (account.isSmartContract()) {
-                usageLimits.recordContracts(1);
-            }
-        });
-        log.info("Account aliases map rebuilt");
-         */
-    }
+    // The last throttle-exempt account is configurable to make it easy to start dev networks
+    // without throttling
 
     // TODO SHOULD BE USED FOR ALL START/RESTART/GENESIS SCENARIOS
     private void entitiesFlow() {
@@ -722,34 +653,6 @@ public final class Hedera implements SwirldMain {
 
         sigImpactHistorian.invalidateCurrentWindow();
         log.info("Signature impact history invalidated");
-
-        // Re-initialize the "observable" system files; that is, the files which have
-        // associated callbacks managed by the SysFilesCallback object. We explicitly
-        // re-mark the files are not loaded here, in case this is a reconnect.
-        networkCtxManager.setObservableFilesNotLoaded();
-        networkCtxManager.loadObservableSysFilesIfNeeded();
-         */
-    }
-
-    // Only called during genesis
-    private void createAddressBookIfMissing() {
-        // Get the address book from the platform and create a NodeAddressBook, and write the protobuf bytes of
-        // this into state. (This should be done by the File service schema. Or somebody who owns it.) To do that,
-        // we need to make the address book available in the SPI so the file service can get it. Or, is it owned
-        // by the network admin service, and the current storage is in the file service, but doesn't actually belong
-        // there. I tend to think that is the case. But we use the file service today and a special file and that is
-        // actually depended on by the mirror node. So to change that would require a HIP.
-        /*
-        writeFromBookIfMissing(fileNumbers.addressBook(), this::platformAddressBookToGrpc);
-         */
-    }
-
-    // Only called during genesis
-    private void createNodeDetailsIfMissing() {
-        // Crazy! Same contents as the address book, but this one is "node details" file. Two files with the same
-        // contents? Why?
-        /*
-        writeFromBookIfMissing(fileNumbers.nodeDetails(), this::platformAddressBookToGrpc);
          */
     }
 
