@@ -17,6 +17,8 @@
 package com.hedera.node.app.workflows.handle;
 
 import static com.hedera.node.app.service.file.impl.FileServiceImpl.BLOBS_KEY;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -49,7 +51,6 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -125,7 +126,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
         final var recordBuilder = new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW);
 
         // then
-        org.assertj.core.api.Assertions.assertThatCode(() -> subject.handleTxBody(state, txBody, recordBuilder))
+        assertThatCode(() -> subject.handleTxBody(state, txBody, recordBuilder))
                 .doesNotThrowAnyException();
     }
 
@@ -218,7 +219,8 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
         subject.handleTxBody(state, txBody, recordBuilder);
 
         // then
-        Assertions.assertEquals(ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION, recordBuilder.status());
+        assertThat(recordBuilder.status())
+            .isEqualTo(ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION);
     }
 
     @Test
@@ -247,7 +249,8 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
         subject.handleTxBody(state, txBody, recordBuilder);
 
         // then
-        Assertions.assertEquals(ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION, recordBuilder.status());
+        assertThat(recordBuilder.status())
+            .isEqualTo(ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION);
     }
 
     @Test
@@ -276,7 +279,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
         subject.handleTxBody(state, txBody, recordBuilder);
 
         // then
-        Assertions.assertEquals(ResponseCodeEnum.THROTTLE_GROUP_HAS_ZERO_OPS_PER_SEC, recordBuilder.status());
+        assertThat(recordBuilder.status()).isEqualTo(ResponseCodeEnum.THROTTLE_GROUP_HAS_ZERO_OPS_PER_SEC);
     }
 
     @Test
@@ -310,7 +313,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
         subject.handleTxBody(state, txBody, recordBuilder);
 
         // then
-        Assertions.assertEquals(ResponseCodeEnum.OPERATION_REPEATED_IN_BUCKET_GROUPS, recordBuilder.status());
+        assertThat(recordBuilder.status()).isEqualTo(ResponseCodeEnum.OPERATION_REPEATED_IN_BUCKET_GROUPS);
     }
 
     private TransactionBody generateThrottleDefFileTransaction() {
