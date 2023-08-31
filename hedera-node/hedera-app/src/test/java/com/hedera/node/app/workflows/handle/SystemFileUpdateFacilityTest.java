@@ -126,8 +126,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
         final var recordBuilder = new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW);
 
         // then
-        assertThatCode(() -> subject.handleTxBody(state, txBody, recordBuilder))
-                .doesNotThrowAnyException();
+        assertThatCode(() -> subject.handleTxBody(state, txBody, recordBuilder)).doesNotThrowAnyException();
     }
 
     @Test
@@ -219,8 +218,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
         subject.handleTxBody(state, txBody, recordBuilder);
 
         // then
-        assertThat(recordBuilder.status())
-            .isEqualTo(ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION);
+        assertThat(recordBuilder.status()).isEqualTo(ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION);
     }
 
     @Test
@@ -249,8 +247,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
         subject.handleTxBody(state, txBody, recordBuilder);
 
         // then
-        assertThat(recordBuilder.status())
-            .isEqualTo(ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION);
+        assertThat(recordBuilder.status()).isEqualTo(ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION);
     }
 
     @Test
