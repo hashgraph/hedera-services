@@ -35,6 +35,7 @@ import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.fixtures.state.FakeSchemaRegistry;
 import com.hedera.node.app.spi.fixtures.state.ListWritableQueueState;
+import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.state.WritableQueueState;
 import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.state.WorkingStateAccessor;
@@ -81,13 +82,14 @@ final class RecordCacheImplTest {
     void setUp(
             @Mock final VersionedConfiguration versionedConfig,
             @Mock final HederaConfig hederaConfig,
-            @Mock final LedgerConfig ledgerConfig) {
+            @Mock final LedgerConfig ledgerConfig,
+            @Mock final NetworkInfo networkInfo) {
         dedupeCache = new DeduplicationCacheImpl(props);
         final var registry = new FakeSchemaRegistry();
         final var state = new FakeHederaState();
         final var svc = new RecordCacheService();
         svc.registerSchemas(registry);
-        registry.migrate(svc.getServiceName(), state);
+        registry.migrate(svc.getServiceName(), state, networkInfo);
         lenient().when(wsa.getHederaState()).thenReturn(state);
         lenient().when(props.getConfiguration()).thenReturn(versionedConfig);
         lenient().when(versionedConfig.getConfigData(HederaConfig.class)).thenReturn(hederaConfig);
