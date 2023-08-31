@@ -74,7 +74,10 @@ class IngestComponentTest {
         final var selfNodeInfo = new SelfNodeInfoImpl(
                 1L,
                 AccountID.newBuilder().accountNum(1001).build(),
-                false,
+                10,
+                "127.0.0.1",
+                50211,
+                "0123456789012345678901234567890123456789012345678901234567890123",
                 "memo",
                 new HederaSoftwareVersion(
                         SemanticVersion.newBuilder().major(1).build(),

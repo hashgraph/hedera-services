@@ -61,6 +61,11 @@ public class DumpStateCommand extends AbstractCommand {
         YES
     }
 
+    enum WithFeeSummary {
+        NO,
+        YES
+    }
+
     enum Format {
         CSV,
         ELIDED_DEFAULT_FIELDS
@@ -79,7 +84,7 @@ public class DumpStateCommand extends AbstractCommand {
     // that we have to track ourselves, via `init` and `finish` methods that _each_
     // subcommand is responsible for calling.
 
-    @Command(name = "contract-bytecodes")
+    @Command(name = "contract-bytecodes", description = "Dump all contract (runtime) bytecodes")
     void contractBytecodes(
             @Option(
                             names = {"-o", "--bytecode", "--contract-bytecode"},
@@ -101,7 +106,7 @@ public class DumpStateCommand extends AbstractCommand {
                     final boolean withIds) {
         Objects.requireNonNull(bytecodePath);
         init();
-        System.out.println("=== bytecodes ===");
+        System.out.println("=== contract bytecodes ===");
         DumpContractBytecodesSubcommand.doit(
                 parent.signedState,
                 bytecodePath,
@@ -112,10 +117,10 @@ public class DumpStateCommand extends AbstractCommand {
         finish();
     }
 
-    @Command(name = "contract-stores")
+    @Command(name = "contract-stores", description = "Dump all contract stores (all of their slots)")
     void contractStores(
             @Option(
-                            names = {"-o", "--contract-store"},
+                            names = {"-o", "--store"},
                             arity = "1",
                             description = "Output file for contracts store dump")
                     @NonNull
@@ -130,7 +135,7 @@ public class DumpStateCommand extends AbstractCommand {
                     final boolean withSlots) {
         Objects.requireNonNull(storePath);
         init();
-        System.out.println("=== stores ===");
+        System.out.println("=== contract stores ===");
         DumpContractStoresSubcommand.doit(
                 parent.signedState,
                 storePath,
@@ -140,7 +145,7 @@ public class DumpStateCommand extends AbstractCommand {
         finish();
     }
 
-    @Command(name = "accounts")
+    @Command(name = "accounts", description = "Dump all accounts (EOA + smart contract)")
     void accounts(
             @Option(
                             names = {"--account"},
@@ -171,6 +176,7 @@ public class DumpStateCommand extends AbstractCommand {
                             description = "How to dump key summaries")
                     final EnumSet<KeyDetails> keyDetails) {
         Objects.requireNonNull(accountPath);
+        Objects.requireNonNull(keyDetails);
         if (lowLimit > highLimit)
             throw new CommandLine.ParameterException(
                     parent.getSpec().commandLine(), "--highLimit must be >= --lowLimit");
@@ -188,10 +194,10 @@ public class DumpStateCommand extends AbstractCommand {
         finish();
     }
 
-    @Command(name = "files")
+    @Command(name = "files", description = "Dump data files (no special files, no contracts)")
     void files(
             @Option(
-                            names = {"--files"},
+                            names = {"--file"},
                             arity = "1",
                             description = "Output file for files dump")
                     @NonNull
@@ -206,12 +212,48 @@ public class DumpStateCommand extends AbstractCommand {
                             description = "Emit a summary line")
                     final boolean emitSummary) {
         Objects.requireNonNull(filesPath);
+        Objects.requireNonNull(keyDetails);
         init();
         System.out.println("=== files ===");
         DumpFilesSubcommand.doit(
                 parent.signedState,
                 filesPath,
                 keyDetails,
+                emitSummary ? EmitSummary.YES : EmitSummary.NO,
+                parent.verbosity);
+        finish();
+    }
+
+    @Command(name = "tokens", description = "Dump fungible token types")
+    void fungible(
+            @Option(
+                            names = {"--token"},
+                            arity = "1",
+                            description = "Output file for fungibles dump")
+                    @NonNull
+                    Path tokensPath,
+            @Option(
+                            names = {"--keys"},
+                            arity = "0..*",
+                            description = "How to dump key summaries")
+                    final EnumSet<KeyDetails> keyDetails,
+            @Option(
+                            names = {"--fees"},
+                            description = "Emit a summary of the types of fees")
+                    final boolean doFeeSummary,
+            @Option(
+                            names = {"-s", "--summary"},
+                            description = "Emit a summary line")
+                    final boolean emitSummary) {
+        Objects.requireNonNull(tokensPath);
+        Objects.requireNonNull(keyDetails);
+        init();
+        System.out.println("=== tokens ===");
+        DumpTokensSubcommand.doit(
+                parent.signedState,
+                tokensPath,
+                keyDetails,
+                doFeeSummary ? WithFeeSummary.YES : WithFeeSummary.NO,
                 emitSummary ? EmitSummary.YES : EmitSummary.NO,
                 parent.verbosity);
         finish();

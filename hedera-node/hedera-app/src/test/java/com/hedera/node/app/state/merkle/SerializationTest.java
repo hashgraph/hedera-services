@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.lenient;
 
 import com.hedera.node.app.spi.fixtures.state.TestSchema;
+import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableQueueState;
@@ -47,6 +48,7 @@ import org.mockito.Mockito;
 class SerializationTest extends MerkleTestBase {
     private Path dir;
     private Configuration config;
+    private NetworkInfo networkInfo;
 
     @BeforeEach
     void setUp() throws IOException {
@@ -54,6 +56,7 @@ class SerializationTest extends MerkleTestBase {
 
         this.dir = TemporaryFileBuilder.buildTemporaryDirectory();
         this.config = Mockito.mock(Configuration.class);
+        this.networkInfo = Mockito.mock(NetworkInfo.class);
         final var hederaConfig = Mockito.mock(HederaConfig.class);
         lenient().when(config.getConfigData(HederaConfig.class)).thenReturn(hederaConfig);
     }
@@ -120,7 +123,7 @@ class SerializationTest extends MerkleTestBase {
         final var originalRegistry = new MerkleSchemaRegistry(registry, FIRST_SERVICE);
         final var schemaV1 = createV1Schema();
         originalRegistry.register(schemaV1);
-        originalRegistry.migrate(originalTree, null, v1, config);
+        originalRegistry.migrate(originalTree, null, v1, config, networkInfo);
 
         // When we serialize it to bytes and deserialize it back into a tree
         originalTree.copy(); // make a fast copy because we can only write to disk an immutable copy
@@ -132,14 +135,14 @@ class SerializationTest extends MerkleTestBase {
         // Register the MerkleHederaState so, when found in serialized bytes, it will register with
         // our migration callback, etc. (normally done by the Hedera main method)
         final Supplier<RuntimeConstructable> constructor = () -> new MerkleHederaState(
-                (tree, state) -> newRegistry.migrate((MerkleHederaState) state, v1, v1, config),
+                (tree, state) -> newRegistry.migrate((MerkleHederaState) state, v1, v1, config, networkInfo),
                 (event, meta, provider) -> {},
                 (state, platform, dualState, trigger, version) -> {});
         final var pair = new ClassConstructorPair(MerkleHederaState.class, constructor);
         registry.registerConstructable(pair);
 
         final MerkleHederaState loadedTree = parseTree(serializedBytes, dir);
-        newRegistry.migrate(loadedTree, schemaV1.getVersion(), schemaV1.getVersion(), config);
+        newRegistry.migrate(loadedTree, schemaV1.getVersion(), schemaV1.getVersion(), config, networkInfo);
         loadedTree.migrate(1);
 
         // Then, we should be able to see all our original states again

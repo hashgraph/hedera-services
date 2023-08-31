@@ -47,6 +47,7 @@ import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
+import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.state.WorkingStateAccessor;
@@ -163,6 +164,9 @@ public class NetworkAdminHandlerTestBase {
     @Mock
     private LedgerConfig ledgerConfig;
 
+    @Mock
+    private NetworkInfo networkInfo;
+
     @BeforeEach
     void commonSetUp() {
         givenValidAccount(false, Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
@@ -181,7 +185,7 @@ public class NetworkAdminHandlerTestBase {
         final var registry = new FakeSchemaRegistry();
         final var svc = new RecordCacheService();
         svc.registerSchemas(registry);
-        registry.migrate(svc.getServiceName(), state);
+        registry.migrate(svc.getServiceName(), state, networkInfo);
         lenient().when(wsa.getHederaState()).thenReturn(state);
         lenient().when(props.getConfiguration()).thenReturn(versionedConfig);
         lenient().when(versionedConfig.getConfigData(HederaConfig.class)).thenReturn(hederaConfig);
