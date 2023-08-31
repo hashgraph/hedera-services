@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.Prn
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.node.app.service.contract.impl.exec.processors.ProcessorModule;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.ExchangeRateSystemContract;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.junit.jupiter.api.Test;
@@ -37,7 +38,8 @@ class ProcessorModuleTest {
         final var hederaSystemContracts = ProcessorModule.provideHederaSystemContracts(gasCalculator);
         assertThat(hederaSystemContracts)
                 .isNotNull()
-                .hasSize(1)
-                .containsKey(Address.fromHexString(PRNG_PRECOMPILE_ADDRESS));
+                .hasSize(2)
+                .containsKey(Address.fromHexString(PRNG_PRECOMPILE_ADDRESS))
+                .containsKey(Address.fromHexString(ExchangeRateSystemContract.EXCHANGE_RATE_SYSTEM_CONTRACT_ADDRESS));
     }
 }

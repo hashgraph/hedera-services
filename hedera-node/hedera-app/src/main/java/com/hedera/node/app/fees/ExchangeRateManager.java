@@ -18,6 +18,7 @@ package com.hedera.node.app.fees;
 
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
+import com.hedera.node.app.spi.exchangerate.ExchangeRateInfo;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -44,7 +45,7 @@ import org.apache.logging.log4j.Logger;
  * rate, since we have nothing more recent to rely on.
  */
 @Singleton
-public final class ExchangeRateManager {
+public final class ExchangeRateManager implements ExchangeRateInfo {
     private static final Logger logger = LogManager.getLogger(ExchangeRateManager.class);
     private static final ExchangeRateSet DEFAULT_EXCHANGE_RATES = ExchangeRateSet.DEFAULT;
 
@@ -112,22 +113,20 @@ public final class ExchangeRateManager {
     }
 
     /**
-     * Gets the current {@link ExchangeRateSet}. MUST BE CALLED ON THE HANDLE THREAD!!
-     * @return The current {@link ExchangeRateSet}.
+     * @inheritDoc
+     * MUST BE CALLED ON THE HANDLE THREAD!!
      */
+    @Override
     @NonNull
     public ExchangeRateSet exchangeRates() {
         return exchangeRates;
     }
 
     /**
-     * Gets the {@link ExchangeRate} that should be used as of the given consensus time. MUST BE CALLED ON THE HANDLE
-     * THREAD!!
-     *
-     * @param consensusTime The consensus time. If after the expiration time of the current rate, the next rate will
-     *                      be returned. Otherwise, the current rate will be returned.
-     * @return The {@link ExchangeRate} that should be used as of the given consensus time.
+     * @inheritDoc
+     * MUST BE CALLED ON THE HANDLE THREAD!!
      */
+    @Override
     @NonNull
     public ExchangeRate activeRate(@NonNull final Instant consensusTime) {
         return consensusTime.getEpochSecond() > currentRateExpirationSeconds ? nextRate : currentRate;

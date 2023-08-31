@@ -23,9 +23,12 @@ import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.QueryScope;
 import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.ResultStatus;
+import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hedera.node.config.data.ContractsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
@@ -40,9 +43,11 @@ import javax.inject.Inject;
 @QueryScope
 public class QuerySystemContractOperations implements SystemContractOperations {
 
+    private final QueryContext context;
+
     @Inject
-    public QuerySystemContractOperations() {
-        // Dagger
+    public QuerySystemContractOperations(@NonNull final QueryContext queryContext) {
+        this.context = queryContext;
     }
 
     /**
@@ -101,5 +106,23 @@ public class QuerySystemContractOperations implements SystemContractOperations {
     @Override
     public void externalizeResult(@NonNull final ContractFunctionResult result, @NonNull final ResultStatus status) {
         throw new UnsupportedOperationException("Cannot externalize result");
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @NonNull
+    public ExchangeRate currentExchangeRate() {
+        throw new UnsupportedOperationException("Cannot get current exchange rate");
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @NonNull
+    public ContractsConfig contractsConfig() {
+        return context.configuration().getConfigData(ContractsConfig.class);
     }
 }

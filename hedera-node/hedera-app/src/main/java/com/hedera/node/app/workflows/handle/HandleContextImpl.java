@@ -37,6 +37,7 @@ import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.UnknownHederaFunctionality;
+import com.hedera.node.app.spi.exchangerate.ExchangeRateInfo;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeContext;
@@ -108,24 +109,26 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     private ReadableStoreFactory readableStoreFactory;
     private AttributeValidator attributeValidator;
     private ExpiryValidator expiryValidator;
+    private ExchangeRateInfo exchangeRateInfo;
 
     /**
      * Constructs a {@link HandleContextImpl}.
      *
-     * @param txInfo             The {@link TransactionInfo} of the transaction
-     * @param payer              The {@link AccountID} of the payer
-     * @param payerKey           The {@link Key} of the payer
-     * @param networkInfo        The {@link NetworkInfo} of the network
-     * @param category           The {@link TransactionCategory} of the transaction (either user, preceding, or child)
-     * @param recordBuilder      The main {@link SingleTransactionRecordBuilderImpl}
-     * @param stack              The {@link SavepointStackImpl} used to manage savepoints
-     * @param configuration      The current {@link Configuration}
-     * @param verifier           The {@link HandleContextVerifier} used to verify signatures and hollow accounts
-     * @param recordListBuilder  The {@link RecordListBuilder} used to build the record stream
-     * @param checker            The {@link TransactionChecker} used to check dispatched transaction
-     * @param dispatcher         The {@link TransactionDispatcher} used to dispatch child transactions
-     * @param serviceScopeLookup The {@link ServiceScopeLookup} used to look up the scope of a service
-     * @param feeManager         The {@link FeeManager} used to convert usage into fees
+     * @param txInfo                The {@link TransactionInfo} of the transaction
+     * @param payer                 The {@link AccountID} of the payer
+     * @param payerKey              The {@link Key} of the payer
+     * @param networkInfo           The {@link NetworkInfo} of the network
+     * @param category              The {@link TransactionCategory} of the transaction (either user, preceding, or child)
+     * @param recordBuilder         The main {@link SingleTransactionRecordBuilderImpl}
+     * @param stack                 The {@link SavepointStackImpl} used to manage savepoints
+     * @param configuration         The current {@link Configuration}
+     * @param verifier              The {@link HandleContextVerifier} used to verify signatures and hollow accounts
+     * @param recordListBuilder     The {@link RecordListBuilder} used to build the record stream
+     * @param checker               The {@link TransactionChecker} used to check dispatched transaction
+     * @param dispatcher            The {@link TransactionDispatcher} used to dispatch child transactions
+     * @param serviceScopeLookup    The {@link ServiceScopeLookup} used to look up the scope of a service
+     * @param feeManager            The {@link FeeManager} used to convert usage into fees
+     * @param exchangeRateInfo      The {@link ExchangeRateInfo} used to obtain exchange rate information
      * @param userTransactionConsensusTime The consensus time of the user transaction, not any child transactions
      */
     public HandleContextImpl(
@@ -145,6 +148,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             @NonNull final BlockRecordInfo blockRecordInfo,
             @NonNull final RecordCache recordCache,
             @NonNull final FeeManager feeManager,
+            @NonNull final ExchangeRateInfo exchangeRateInfo,
             @NonNull final Instant userTransactionConsensusTime) {
         this.txBody = requireNonNull(txInfo, "txInfo must not be null").txBody();
         this.payer = requireNonNull(payer, "payer must not be null");
@@ -183,6 +187,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 tokenApi.refundFees(receiver, fees, recordBuilder);
             }
         };
+        this.exchangeRateInfo = requireNonNull(exchangeRateInfo, "exchangeRateInfo must not be null");
     }
 
     private WrappedHederaState current() {
@@ -223,6 +228,12 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     @Override
     public FeeAccumulator feeAccumulator() {
         return feeAccumulator;
+    }
+
+    @NonNull
+    @Override
+    public ExchangeRateInfo exchangeRateInfo() {
+        return exchangeRateInfo;
     }
 
     @Override
@@ -497,6 +508,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 blockRecordInfo,
                 recordCache,
                 feeManager,
+                exchangeRateInfo,
                 userTransactionConsensusTime);
 
         try {

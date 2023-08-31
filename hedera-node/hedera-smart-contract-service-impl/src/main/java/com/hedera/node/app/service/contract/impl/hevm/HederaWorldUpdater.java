@@ -20,11 +20,14 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
+import com.hedera.hapi.node.transaction.ExchangeRate;
+import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations;
 import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import com.hedera.node.app.service.contract.impl.state.PendingCreation;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.ResultStatus;
+import com.hedera.node.config.data.ContractsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
@@ -238,4 +241,20 @@ public interface HederaWorldUpdater extends WorldUpdater {
      * @param status    Whether the result is an error
      */
     public void externalizeSystemContractResults(@NonNull final ContractFunctionResult result, ResultStatus status);
+
+    /**
+     * Returns the {@link ExchangeRate} for the current consensus timestamp
+     * Delegates to {@link com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations#getCurrentExchangeRate()}
+     * @return the current exchange rate
+     */
+    @NonNull
+    public ExchangeRate currentExchangeRate();
+
+    /**
+     * Returns the {@link ContractsConfig} for the current transaction
+     * Delegates to {@link SystemContractOperations#contractsConfig()}
+     * @return the current contracts config
+     */
+    @NonNull
+    public ContractsConfig contractsConfig();
 }

@@ -17,7 +17,9 @@
 package com.hedera.node.app.service.contract.impl.test.exec.scope;
 
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.MOCK_VERIFICATION_STRATEGY;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.TokenRelationship;
@@ -30,6 +32,8 @@ import com.hedera.node.app.service.contract.impl.exec.scope.QuerySystemContractO
 import com.hedera.node.app.service.contract.impl.exec.scope.ResultTranslator;
 import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.ResultStatus;
 import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hedera.node.config.data.ContractsConfig;
+import com.swirlds.config.api.Configuration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -56,11 +60,17 @@ class QuerySystemContractOperationsTest {
     @Mock
     private ResultTranslator<TokenRelationship> tokenRelResultTranslator;
 
+    @Mock
+    private Configuration configuration;
+
+    @Mock
+    private ContractsConfig contractsConfig;
+
     private QuerySystemContractOperations subject;
 
     @BeforeEach
     void setUp() {
-        subject = new QuerySystemContractOperations();
+        subject = new QuerySystemContractOperations(context);
     }
 
     @Test
@@ -83,5 +93,14 @@ class QuerySystemContractOperationsTest {
         assertThrows(
                 UnsupportedOperationException.class,
                 () -> subject.externalizeResult(ContractFunctionResult.DEFAULT, ResultStatus.IS_SUCCESS));
+        assertThrows(UnsupportedOperationException.class, () -> subject.currentExchangeRate());
+    }
+
+    @Test
+    void contractsConfigTest() {
+        given(context.configuration()).willReturn(configuration);
+        given(configuration.getConfigData(ContractsConfig.class)).willReturn(contractsConfig);
+        var config = subject.contractsConfig();
+        assertThat(config).isEqualTo(contractsConfig);
     }
 }

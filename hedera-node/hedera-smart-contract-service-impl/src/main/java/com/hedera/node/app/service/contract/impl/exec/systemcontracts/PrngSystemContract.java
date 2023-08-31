@@ -68,7 +68,8 @@ public class PrngSystemContract extends AbstractPrecompiledContract {
     }
 
     @Override
-    public @NonNull PrecompileContractResult computePrecompile(final Bytes input, @NonNull final MessageFrame frame) {
+    public @NonNull PrecompileContractResult computePrecompile(
+            @NonNull final Bytes input, @NonNull final MessageFrame frame) {
         requireNonNull(input);
         requireNonNull(frame);
 

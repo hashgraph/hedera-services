@@ -19,6 +19,7 @@ module com.hedera.node.app.service.contract.impl {
     requires com.swirlds.common;
     requires org.bouncycastle.provider;
     requires static com.github.spotbugs.annotations;
+    requires headlong;
 
     exports com.hedera.node.app.service.contract.impl;
     exports com.hedera.node.app.service.contract.impl.exec.scope;

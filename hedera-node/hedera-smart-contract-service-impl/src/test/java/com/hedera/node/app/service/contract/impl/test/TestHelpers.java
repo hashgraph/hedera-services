@@ -204,6 +204,9 @@ public class TestHelpers {
     public static final String PSEUDORANDOM_SEED_GENERATOR_SELECTOR = "0xd83bf9a1";
     public static final org.apache.tuweni.bytes.Bytes PSEUDO_RANDOM_SYSTEM_CONTRACT_ADDRESS =
             org.apache.tuweni.bytes.Bytes.fromHexString(PSEUDORANDOM_SEED_GENERATOR_SELECTOR);
+    public static final String EXCHANGE_RATE_SELECTOR = "0xd83bf9a1";
+    public static final org.apache.tuweni.bytes.Bytes EXCHANGE_RATE_SYSTEM_CONTRACT_ADDRESS =
+            org.apache.tuweni.bytes.Bytes.fromHexString(EXCHANGE_RATE_SELECTOR);
     public static final org.apache.tuweni.bytes.Bytes EXPECTED_RANDOM_NUMBER =
             org.apache.tuweni.bytes.Bytes.fromHexString(
                     "0x1234567890123456789012345678901234567890123456789012345678901234");

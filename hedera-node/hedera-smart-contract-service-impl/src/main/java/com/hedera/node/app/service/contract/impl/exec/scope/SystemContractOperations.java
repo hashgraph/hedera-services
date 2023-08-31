@@ -23,8 +23,10 @@ import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.ResultStatus;
+import com.hedera.node.config.data.ContractsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -111,4 +113,20 @@ public interface SystemContractOperations {
      * @param status    whether the result is success or an error
      */
     public void externalizeResult(@NonNull final ContractFunctionResult result, @NonNull final ResultStatus status);
+
+    /**
+     * Returns the {@Link ExchangeRate} for the current consensus time.  This will enable the translation from hbars
+     * to dollars
+     *
+     * @return ExchangeRate for the current consensus time
+     */
+    @NonNull
+    public ExchangeRate currentExchangeRate();
+
+    /**
+     * Returns the {@link com.hedera.node.config.data.ContractsConfig} for the current context
+     * @return contracts config
+     */
+    @NonNull
+    public ContractsConfig contractsConfig();
 }

@@ -42,6 +42,7 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.consensus.ConsensusSubmitMessageTransactionBody;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -141,6 +142,9 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
     private FeeManager feeManager;
 
     @Mock
+    private ExchangeRateManager exchangeRateManager;
+
+    @Mock
     private Instant consensusNow;
 
     @BeforeEach
@@ -181,6 +185,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                 blockRecordInfo,
                 recordCache,
                 feeManager,
+                exchangeRateManager,
                 consensusNow);
     }
 
@@ -210,6 +215,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             blockRecordInfo,
             recordCache,
             feeManager,
+            exchangeRateManager,
             consensusNow
         };
 
@@ -272,6 +278,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     blockRecordInfo,
                     recordCache,
                     feeManager,
+                    exchangeRateManager,
                     consensusNow);
         }
 
@@ -752,6 +759,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     blockRecordInfo,
                     recordCache,
                     feeManager,
+                    exchangeRateManager,
                     consensusNow);
         }
 
