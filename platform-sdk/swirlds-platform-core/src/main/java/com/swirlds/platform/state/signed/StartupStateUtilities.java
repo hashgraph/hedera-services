@@ -28,17 +28,21 @@ import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.utility.RecycleBin;
+import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.logging.payloads.SavedStateLoadedPayload;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventFileManager;
+import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.internal.SignedStateLoadingException;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.scratchpad.Scratchpad;
 import com.swirlds.platform.scratchpad.ScratchpadField;
+import com.swirlds.platform.state.PlatformData;
+import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -434,6 +438,21 @@ public final class StartupStateUtilities {
                     STARTUP.getMarker(),
                     "Loaded state is not in the correct hash epoch, "
                             + "this node will need to receive a state through an emergency reconnect.");
+
+            // Due to a bug in the way we handle events in state, we need to clear this state's events.
+            // This doesn't cause problems since we are just using this state to make reconnect faster.
+            logger.warn(STARTUP.getMarker(), "Removing events from state. This will alter the state's hash.");
+            final State stateNode = state.get().getState();
+            final PlatformState platformState = stateNode.getPlatformState();
+            final PlatformData platformData = platformState.getPlatformData();
+            platformData.setEvents(new EventImpl[0]);
+
+            // Fix the state's hash
+            platformData.invalidateHash();
+            platformState.invalidateHash();
+            stateNode.invalidateHash();
+            MerkleCryptoFactory.getInstance().digestTreeSync(stateNode);
+
             return state;
         }
     }
