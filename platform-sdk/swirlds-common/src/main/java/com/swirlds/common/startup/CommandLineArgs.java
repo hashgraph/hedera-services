@@ -26,11 +26,9 @@ import java.util.Set;
  *
  * @param localNodesToStart the set of nodes to start on this machine
  */
-public record CommandLineArgs(@NonNull Set<NodeId> localNodesToStart, boolean pcesRecovery) {
+public record CommandLineArgs(@NonNull Set<NodeId> localNodesToStart) {
     /** The command line option to start a set of nodes on this machine */
     public static final String OPTION_LOCAL = "-local";
-    /** When set, the platform will perform a PCES recovery and shut down */
-    public static final String OPTION_PCES_RECOVERY = "-pces-recovery";
 
     /**
      * Parse the command line arguments passed to the main method
@@ -42,15 +40,12 @@ public record CommandLineArgs(@NonNull Set<NodeId> localNodesToStart, boolean pc
         // This set contains the nodes set by the command line to start.
         // If none are passed, then IP addresses will be compared to determine which node to start.
         final Set<NodeId> localNodesToStart = new HashSet<>();
-        boolean pcesRecovery = false;
 
         // Parse command line arguments (rudimentary parsing)
         String currentOption = null;
         for (final String item : args) {
             final String arg = item.trim().toLowerCase();
-            if (arg.equals(OPTION_PCES_RECOVERY)) {
-                pcesRecovery = true;
-            } else if (arg.equals(OPTION_LOCAL)) {
+            if (arg.equals(OPTION_LOCAL)) {
                 currentOption = arg;
             } else if (currentOption != null) {
                 try {
@@ -61,6 +56,6 @@ public record CommandLineArgs(@NonNull Set<NodeId> localNodesToStart, boolean pc
             }
         }
 
-        return new CommandLineArgs(localNodesToStart, pcesRecovery);
+        return new CommandLineArgs(localNodesToStart);
     }
 }

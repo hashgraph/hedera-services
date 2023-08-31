@@ -140,15 +140,16 @@ public class Browser {
     public static void parseCommandLineArgsAndLaunch(@NonNull final String... args) {
         final CommandLineArgs commandLineArgs = CommandLineArgs.parse(args);
 
-        launch(commandLineArgs);
+        launch(commandLineArgs, false);
     }
 
     /**
      * Launch the browser with the command line arguments already parsed
      *
      * @param commandLineArgs the parsed command line arguments
+     * @param pcesRecovery if true, the platform will be started in PCES recovery mode
      */
-    public static void launch(@NonNull final CommandLineArgs commandLineArgs) {
+    public static void launch(@NonNull final CommandLineArgs commandLineArgs, boolean pcesRecovery) {
         if (STARTED.getAndSet(true)) {
             return;
         }
@@ -165,7 +166,7 @@ public class Browser {
         logger = LogManager.getLogger(Browser.class);
 
         try {
-            launchUnhandled(commandLineArgs);
+            launchUnhandled(commandLineArgs, pcesRecovery);
         } catch (final Exception e) {
             logger.error(EXCEPTION.getMarker(), "Unable to start Browser", e);
             throw new RuntimeException("Unable to start Browser", e);
@@ -176,8 +177,9 @@ public class Browser {
      * Launch the browser but do not handle any exceptions
      *
      * @param commandLineArgs the parsed command line arguments
+     * @param pcesRecovery if true, the platform will be started in PCES recovery mode
      */
-    private static void launchUnhandled(@NonNull final CommandLineArgs commandLineArgs) throws Exception {
+    private static void launchUnhandled(@NonNull final CommandLineArgs commandLineArgs, boolean pcesRecovery) throws Exception {
         Objects.requireNonNull(commandLineArgs);
 
         StartupTime.markStartupTime();
@@ -266,7 +268,7 @@ public class Browser {
             appMains.get(nodeId).init(platforms.get(nodeId), nodeId);
         }
 
-        if (commandLineArgs.pcesRecovery()) {
+        if (pcesRecovery) {
             platforms.values().forEach(SwirldsPlatform::performPcesRecovery);
             SystemExitUtils.exitSystem(SystemExitCode.NO_ERROR, "PCES recovery done");
         }

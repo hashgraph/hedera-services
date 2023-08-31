@@ -38,7 +38,7 @@ public class PcesRecoveryCommand extends AbstractCommand {
 
     @Override
     public Integer call() throws IOException, InterruptedException {
-        Browser.launch(new CommandLineArgs(Set.of(new NodeId(nodeId)), true));
+        Browser.launch(new CommandLineArgs(Set.of(new NodeId(nodeId))), true);
         return null;
     }
 }
