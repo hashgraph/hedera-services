@@ -110,6 +110,11 @@ public class HtmlGenerator {
     public static final String FILTER_CHECKBOX_LABEL = "filter-checkbox";
 
     /**
+     * Signifies checkboxes where unchecked results in ABSOLUTELY_NO_SHOW, rather than simple blacklist
+     */
+    public static final String NO_SHOW_CHECKBOX_LABEL = "no-show-checkbox";
+
+    /**
      * This label is used to make the filter column and log table full height, side by side
      */
     public static final String DOUBLE_COLUMNS_DIV_LABEL = "double-columns";
@@ -218,7 +223,7 @@ public class HtmlGenerator {
             // the checkboxes that have the ability to hide things
             let filterCheckboxes = document.getElementsByClassName("filter-checkbox");
 
-            // add a listener to each radio button
+            // add a listener to each checkbox
             for (const element of filterCheckboxes) {
                 element.addEventListener("change", function() {
                     // the classes that exist on the checkbox that is clicked
@@ -253,6 +258,45 @@ public class HtmlGenerator {
                     }
                 });
             }
+            
+            // the checkboxes that have the ability to REALLY hide things
+            let noShowCheckboxes = document.getElementsByClassName("no-show-checkbox");
+
+            // add a listener to each checkbox
+            for (const element of noShowCheckboxes) {
+                element.addEventListener("change", function() {
+                    // the classes that exist on the checkbox that is clicked
+                    let checkboxClasses = this.classList;
+
+                    // the name of the class that should be hidden
+                    let toggleClass;
+
+                    for (const element of checkboxClasses) {
+                        if (element === "no-show-checkbox") {
+                            continue;
+                        }
+
+                        toggleClass = element;
+                    }
+
+                    // these are the objects on the page which match the class to toggle (discluding the input boxes)
+                    let matchingObjects = $("." + toggleClass).not("input");
+
+                    // go through each of the matching objects, and modify the hide count according to the value of the checkbox
+                    for (const element of matchingObjects) {
+                        let currentNoShowCount = parseInt($(element).attr('no-show')) || 0;
+
+                        let newNoShowCount;
+                        if ($(this).is(":checked")) {
+                            newNoShowCount = currentNoShowCount - 1;
+                        } else {
+                            newNoShowCount = currentNoShowCount + 1;
+                        }
+
+                        $(element).attr('no-show', newNoShowCount);
+                    }
+                });
+            }
             """;
 
     /**
@@ -261,39 +305,27 @@ public class HtmlGenerator {
     private HtmlGenerator() {}
 
     /**
-     * Create show / hide radio buttons for node IDs
+     * Create show / hide checkboxes for node IDs
      *
      * @param nodeId the node ID
      * @return the radio buttons
      */
-    private static String createNodeIdFilter(@NonNull final String nodeId) {
-        final String commonRadioLabel = nodeId + "-radio";
-
+    private static String createNodeIdCheckbox(@NonNull final String nodeId) {
         // label used for filtering by node ID
         final String nodeLogicLabel = "node" + nodeId;
         // label used for colorizing by node ID
         final String nodeStylingLabel = "node-" + nodeId;
 
-        final String neutralTag = new HtmlTagFactory("input", null, true)
-                .addClasses(List.of(FILTER_RADIO_LABEL, WHITELIST_RADIO_LABEL, nodeLogicLabel))
-                .addAttribute("type", "radio")
-                .addAttribute("name", commonRadioLabel)
-                .addAttribute("value", "2")
+        final String inputTag = new HtmlTagFactory("input", null, true)
+                .addClasses(List.of(NO_SHOW_CHECKBOX_LABEL, nodeLogicLabel))
+                .addAttribute("type", "checkbox")
                 .addAttribute("checked", "checked")
                 .generateTag();
-        final String noShowTag = new HtmlTagFactory("input", null, true)
-                .addClasses(List.of(FILTER_RADIO_LABEL, ABSOLUTELY_NO_SHOW, BLACKLIST_RADIO_LABEL, nodeLogicLabel))
-                .addAttribute("type", "radio")
-                .addAttribute("name", commonRadioLabel)
-                .addAttribute("value", "4")
-                .generateTag();
 
-        final String labelTag = new HtmlTagFactory("label", nodeLogicLabel, false)
-                .addClass(nodeStylingLabel)
-                .generateTag();
+        final String labelTag = new HtmlTagFactory("label", nodeLogicLabel, false).addClass(nodeStylingLabel).generateTag();
         final String breakTag = new HtmlTagFactory("br", null, true).generateTag();
 
-        return neutralTag + "\n" + noShowTag + "\n" + "\n" + labelTag + "\n" + breakTag + "\n";
+        return inputTag + "\n" + labelTag + "\n" + breakTag + "\n";
     }
 
     /**
@@ -377,7 +409,7 @@ public class HtmlGenerator {
      */
     private static String createNodeIdFilterDiv(@NonNull final List<String> filterValues) {
         final List<String> filterRadios =
-                filterValues.stream().map(HtmlGenerator::createNodeIdFilter).toList();
+                filterValues.stream().map(HtmlGenerator::createNodeIdCheckbox).toList();
         return createInputDiv("Node ID", filterRadios);
     }
 
