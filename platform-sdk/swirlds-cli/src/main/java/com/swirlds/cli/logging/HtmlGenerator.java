@@ -460,9 +460,7 @@ public class HtmlGenerator {
                 new CssDeclaration("word-break", "break-word"),
                 new CssDeclaration("white-space", "normal"));
 
-        // TODO make these different colors
         cssFactory.addRule("." + NODE_ID_COLUMN_LABEL, new CssDeclaration("color", getHtmlColor(TIMESTAMP_COLOR)));
-        // TODO make this a better color
         cssFactory.addRule("." + ELAPSED_TIME_COLUMN_LABEL, new CssDeclaration("color", getHtmlColor(TIMESTAMP_COLOR)));
         cssFactory.addRule("." + TIMESTAMP_COLUMN_LABEL, new CssDeclaration("color", getHtmlColor(TIMESTAMP_COLOR)));
         cssFactory.addRule("." + LOG_NUMBER_COLUMN_LABEL, new CssDeclaration("color", getHtmlColor(LOG_NUMBER_COLOR)));

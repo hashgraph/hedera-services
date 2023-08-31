@@ -100,6 +100,8 @@ public class LogLine implements FormattableString {
 
     /**
      * The timezone of the timestamp in the log line
+     * <p>
+     * Currently not in use. Kept for FUTURE WORK
      */
     private final ZoneId zoneId;
 
