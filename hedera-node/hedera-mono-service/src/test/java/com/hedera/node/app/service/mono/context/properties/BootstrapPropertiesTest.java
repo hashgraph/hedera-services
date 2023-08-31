@@ -323,7 +323,7 @@ class BootstrapPropertiesTest {
             entry(BOOTSTRAP_THROTTLE_DEF_JSON_RESOURCE, "throttles.json"),
             entry(ACCOUNTS_ADDRESS_BOOK_ADMIN, 55L),
             entry(BALANCES_EXPORT_DIR_PATH, "/opt/hgcapp/accountBalances/"),
-            entry(BALANCES_EXPORT_ENABLED, true),
+            entry(BALANCES_EXPORT_ENABLED, false),
             entry(BALANCES_EXPORT_PERIOD_SECS, 900),
             entry(BALANCES_EXPORT_TOKEN_BALANCES, true),
             entry(BALANCES_NODE_BALANCE_WARN_THRESHOLD, 0L),
