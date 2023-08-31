@@ -19,6 +19,7 @@ import com.hedera.services.bdd.junit.ExpiryRecordsValidator;
 import com.hedera.services.bdd.junit.TokenReconciliationValidator;
 import com.hedera.services.bdd.junit.TransactionBodyValidator;
 import com.hedera.services.bdd.junit.validators.BlockNoValidator;
+import com.hedera.services.bdd.junit.validators.RunningHashValidator;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -93,6 +94,7 @@ class AllIntegrationTests extends DockerIntegrationTestBase {
                 new BlockNoValidator(),
                 new ExpiryRecordsValidator(),
                 new TokenReconciliationValidator(),
-                new TransactionBodyValidator()));
+                new TransactionBodyValidator(),
+                new RunningHashValidator()));
     }
 }

@@ -24,12 +24,14 @@ import static com.swirlds.common.units.UnitConstants.SECONDS_TO_MILLISECONDS;
 
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
+import com.hedera.node.app.service.mono.state.DualStateAccessor;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.swirlds.common.crypto.RunningHash;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -50,6 +52,7 @@ public class BlockManager {
 
     private final long blockPeriodMs;
     private final boolean logEveryTransaction;
+    private final DualStateAccessor dualStateAccessor;
     private final Supplier<MerkleNetworkContext> networkCtx;
     private final Supplier<RecordsRunningHashLeaf> runningHashLeaf;
 
@@ -65,12 +68,14 @@ public class BlockManager {
     public BlockManager(
             final BootstrapProperties bootstrapProperties,
             final Supplier<MerkleNetworkContext> networkCtx,
-            final Supplier<RecordsRunningHashLeaf> runningHashLeaf) {
+            final Supplier<RecordsRunningHashLeaf> runningHashLeaf,
+            final DualStateAccessor dualStateAccessor) {
         this.networkCtx = networkCtx;
         this.runningHashLeaf = runningHashLeaf;
         this.blockPeriodMs =
                 bootstrapProperties.getLongProperty(HEDERA_RECORD_STREAM_LOG_PERIOD) * SECONDS_TO_MILLISECONDS;
         this.logEveryTransaction = bootstrapProperties.getBooleanProperty(HEDERA_RECORD_STREAM_LOG_EVERY_TRANSACTION);
+        this.dualStateAccessor = dualStateAccessor;
     }
 
     /** Clears all provisional block metadata for the current transaction. */
@@ -189,7 +194,15 @@ public class BlockManager {
     private boolean willCreateNewBlock(@NonNull final Instant timestamp) {
         final var curNetworkCtx = networkCtx.get();
         final var firstBlockTime = curNetworkCtx.firstConsTimeOfCurrentBlock();
-        return firstBlockTime == null || !inSamePeriod(firstBlockTime, timestamp);
+        final var dualState = dualStateAccessor.getDualState();
+        final var lastFrozenAndCurrentFreezeTimeEqual =
+                Objects.equals(dualState.getFreezeTime(), dualState.getLastFrozenTime());
+        if (lastFrozenAndCurrentFreezeTimeEqual) {
+            dualState.setFreezeTime(null);
+        }
+        return firstBlockTime == null
+                || lastFrozenAndCurrentFreezeTimeEqual
+                || !inSamePeriod(firstBlockTime, timestamp);
     }
 
     private boolean inSamePeriod(@NonNull final Instant then, @NonNull final Instant now) {
