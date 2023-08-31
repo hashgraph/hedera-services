@@ -620,40 +620,6 @@ public final class Hedera implements SwirldMain {
         initializeThrottleManager(state);
     }
 
-    // The last throttle-exempt account is configurable to make it easy to start dev networks
-    // without throttling
-
-    // Only called during genesis
-    private void createUpdateFilesIfMissing() {
-        /*
-        final var firstUpdateNum = fileNumbers.firstSoftwareUpdateFile();
-        final var lastUpdateNum = fileNumbers.lastSoftwareUpdateFile();
-        final var specialFiles = hfs.specialFiles();
-        for (var updateNum = firstUpdateNum; updateNum <= lastUpdateNum; updateNum++) {
-            final var disFid = fileNumbers.toFid(updateNum);
-            if (!hfs.exists(disFid)) {
-                materialize(disFid, systemFileInfo(), new byte[0]);
-            } else if (!specialFiles.contains(disFid)) {
-                // This can be the case for file 0.0.150, whose metadata had
-                // been created for the legacy MerkleDiskFs. But whatever its
-                // contents were doesn't matter now. Just make sure it exists
-                // in the MerkleSpecialFiles!
-                specialFiles.update(disFid, new byte[0]);
-            }
-        }
-         */
-    }
-
-    private void doGenesisHousekeeping() {
-        /*
-        // List the node ids in the address book at genesis
-        final List<Long> genesisNodeIds = idsFromAddressBook(addressBook);
-
-        // Prepare the stake info manager for managing the new node ids
-        stakeInfoManager.prepForManaging(genesisNodeIds);
-         */
-    }
-
     private void initializeFeeManager(@NonNull final HederaState state) {
         logger.info("Initializing fee schedules");
         final var filesConfig = configProvider.getConfiguration().getConfigData(FilesConfig.class);
