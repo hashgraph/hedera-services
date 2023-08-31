@@ -258,7 +258,7 @@ public class HtmlGenerator {
                     }
                 });
             }
-            
+
             // the checkboxes that have the ability to REALLY hide things
             let noShowCheckboxes = document.getElementsByClassName("no-show-checkbox");
 
@@ -322,7 +322,9 @@ public class HtmlGenerator {
                 .addAttribute("checked", "checked")
                 .generateTag();
 
-        final String labelTag = new HtmlTagFactory("label", nodeLogicLabel, false).addClass(nodeStylingLabel).generateTag();
+        final String labelTag = new HtmlTagFactory("label", nodeLogicLabel, false)
+                .addClass(nodeStylingLabel)
+                .generateTag();
         final String breakTag = new HtmlTagFactory("br", null, true).generateTag();
 
         return inputTag + "\n" + labelTag + "\n" + breakTag + "\n";
