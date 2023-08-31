@@ -618,26 +618,10 @@ public final class Hedera implements SwirldMain {
         initializeFeeManager(state);
         initializeExchangeRateManager(state);
         initializeThrottleManager(state);
-
-        // TODO Not sure
-        //        networkCtx.markPostUpgradeScanStatus();
     }
 
     // The last throttle-exempt account is configurable to make it easy to start dev networks
     // without throttling
-
-    // TODO SHOULD BE USED FOR ALL START/RESTART/GENESIS SCENARIOS
-    private void entitiesFlow() {
-        /*
-        expiries.reviewExistingPayerRecords();
-        log.info("Payer records reviewed");
-        // Use any entities stored in state to rebuild queue of expired entities.
-        log.info("Short-lived entities reviewed");
-
-        sigImpactHistorian.invalidateCurrentWindow();
-        log.info("Signature impact history invalidated");
-         */
-    }
 
     // Only called during genesis
     private void createUpdateFilesIfMissing() {
