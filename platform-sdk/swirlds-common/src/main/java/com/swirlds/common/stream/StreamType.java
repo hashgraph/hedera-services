@@ -24,7 +24,7 @@ public interface StreamType {
      * get the description of the streamType, used for logging
      * @return the description of the streamType, used for logging
      */
-    String getDescription();
+    String getDescription(); // TODO don't merge: I just need a diff in this branch to open a draft PR for testing
 
     /**
      * get file name extension
