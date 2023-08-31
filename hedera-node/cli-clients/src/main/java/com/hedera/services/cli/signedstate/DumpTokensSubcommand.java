@@ -50,7 +50,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-/** Dump all fungible token types, from a signed state file, to a text file, in deterministic order. */
+/** Dump all fungible and non-fungible token types, from a signed state file, to a text file, in deterministic order. */
 @SuppressWarnings({"java:S106", "java:S5411", "java:S4276", "java:S1192"})
 // S106: "use of system.out/system.err instead of logger" - not needed/desirable for CLI tool
 // S5411: "Avoid using boxed "Boolean" types directly in boolean expressions" - this rule is almost always undesirable
@@ -385,7 +385,7 @@ public class DumpTokensSubcommand {
 
     @NonNull
     String formatHeader() {
-        return fieldFormatters.stream().map(Pair::left).collect(Collectors.joining(","));
+        return fieldFormatters.stream().map(Pair::left).collect(Collectors.joining(FIELD_SEPARATOR));
     }
 
     void reportOnTokens(
@@ -460,7 +460,7 @@ public class DumpTokensSubcommand {
             final var feeProfile = fees.stream()
                     .map(ThingsToStrings::toSketchyStringOfFcCustomFee)
                     .sorted()
-                    .collect(Collectors.joining(","));
+                    .collect(Collectors.joining(SUBFIELD_SEPARATOR));
             histogram.merge(feeProfile, 1, Integer::sum);
         }
 
