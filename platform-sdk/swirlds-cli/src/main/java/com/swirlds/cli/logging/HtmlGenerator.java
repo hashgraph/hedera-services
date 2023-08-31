@@ -263,27 +263,34 @@ public class HtmlGenerator {
     /**
      * Create show / hide radio buttons for node IDs
      *
-     * @param nodeName the node name
+     * @param nodeId the node ID
      * @return the radio buttons
      */
-    private static String createNodeIdFilter(@NonNull final String nodeName) {
-        final String commonRadioLabel = nodeName + "-radio";
+    private static String createNodeIdFilter(@NonNull final String nodeId) {
+        final String commonRadioLabel = nodeId + "-radio";
+
+        // label used for filtering by node ID
+        final String nodeLogicLabel = "node" + nodeId;
+        // label used for colorizing by node ID
+        final String nodeStylingLabel = "node-" + nodeId;
 
         final String neutralTag = new HtmlTagFactory("input", null, true)
-                .addClasses(List.of(FILTER_RADIO_LABEL, WHITELIST_RADIO_LABEL, nodeName))
+                .addClasses(List.of(FILTER_RADIO_LABEL, WHITELIST_RADIO_LABEL, nodeLogicLabel))
                 .addAttribute("type", "radio")
                 .addAttribute("name", commonRadioLabel)
                 .addAttribute("value", "2")
                 .addAttribute("checked", "checked")
                 .generateTag();
         final String noShowTag = new HtmlTagFactory("input", null, true)
-                .addClasses(List.of(FILTER_RADIO_LABEL, ABSOLUTELY_NO_SHOW, BLACKLIST_RADIO_LABEL, nodeName))
+                .addClasses(List.of(FILTER_RADIO_LABEL, ABSOLUTELY_NO_SHOW, BLACKLIST_RADIO_LABEL, nodeLogicLabel))
                 .addAttribute("type", "radio")
                 .addAttribute("name", commonRadioLabel)
                 .addAttribute("value", "4")
                 .generateTag();
 
-        final String labelTag = new HtmlTagFactory("label", nodeName, false).generateTag();
+        final String labelTag = new HtmlTagFactory("label", nodeLogicLabel, false)
+                .addClass(nodeStylingLabel)
+                .generateTag();
         final String breakTag = new HtmlTagFactory("br", null, true).generateTag();
 
         return neutralTag + "\n" + noShowTag + "\n" + "\n" + labelTag + "\n" + breakTag + "\n";
@@ -481,7 +488,21 @@ public class HtmlGenerator {
                 .map(LogLine::getLogLevel)
                 .distinct()
                 .forEach(logLevel -> cssFactory.addRule(
-                        "td" + "." + logLevel + "-level", new CssDeclaration("color", getHtmlColor(getLogLevelColor(logLevel)))));
+                        "td" + "." + logLevel + "-level",
+                        new CssDeclaration("color", getHtmlColor(getLogLevelColor(logLevel)))));
+
+        // create color rules for each node ID
+        logLines.stream()
+                .map(LogLine::getNodeId)
+                .distinct()
+                .filter(Objects::nonNull)
+                .forEach(nodeId -> {
+                    final String color = NodeIdColorizer.getNodeIdColor(nodeId);
+
+                    cssFactory.addRule(
+                            "td.node-" + nodeId + ", label.node-" + nodeId,
+                            new CssDeclaration("color", color == null ? DEFAULT_TEXT_COLOR : color));
+                });
     }
 
     /**
@@ -517,7 +538,7 @@ public class HtmlGenerator {
                 .distinct()
                 .filter(Objects::nonNull)
                 .sorted()
-                .map(nodeId -> "node" + nodeId)
+                .map(NodeId::toString)
                 .toList()));
 
         filterDivs.add(createColumnFilterDiv(List.of(

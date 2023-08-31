@@ -365,8 +365,8 @@ public class LogLine implements FormattableString {
         final List<String> dataCellTags = new ArrayList<>();
 
         final HtmlTagFactory nodeIdTagFactory = new HtmlTagFactory(
-                        "td", nodeId == null ? "" : "node" + escapeString(nodeId.toString()) + " ", false)
-                .addClasses(List.of(NODE_ID_COLUMN_LABEL, HIDEABLE_LABEL))
+                        "td", nodeId == null ? "" : "node" + escapeString(nodeId.toString()), false)
+                .addClasses(List.of(NODE_ID_COLUMN_LABEL, HIDEABLE_LABEL, nodeId == null ? "" : "node-" + nodeId))
                 .addAttribute(BLACKLIST_LABEL, "0")
                 .addAttribute(WHITELIST_LABEL, "0");
         dataCellTags.add(nodeIdTagFactory.generateTag());
@@ -460,8 +460,7 @@ public class LogLine implements FormattableString {
         if (additionalLines == null) {
             return mainLogRow;
         } else {
-            return new HtmlTagFactory(
-                    "tbody", mainLogRow + "\n" + additionalLines.generateHtmlString(), false)
+            return new HtmlTagFactory("tbody", mainLogRow + "\n" + additionalLines.generateHtmlString(), false)
                     .addClass(LOG_LINE_LABEL)
                     .generateTag();
         }
