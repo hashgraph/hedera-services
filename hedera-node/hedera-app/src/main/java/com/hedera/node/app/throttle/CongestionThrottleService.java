@@ -17,19 +17,22 @@
 package com.hedera.node.app.throttle;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.state.congestion.CongestionLevelStarts;
+import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Collections;
 import java.util.Set;
 import javax.inject.Singleton;
 
+@SuppressWarnings("rawtypes")
 @Singleton
 public class CongestionThrottleService implements Service {
     public static final String NAME = "CongestionThrottleService";
-    static final String HANDLE_THROTTLES = "HandleThrottles";
+    public static final String THROTTLE_USAGE_SNAPSHOTS_STATE_KEY = "THROTTLE_USAGE_SNAPSHOTS";
+    public static final String CONGESTION_LEVEL_STARTS_STATE_KEY = "CONGESTION_LEVEL_STARTS";
     private static final SemanticVersion GENESIS_VERSION = SemanticVersion.DEFAULT;
 
     @NonNull
@@ -45,8 +48,9 @@ public class CongestionThrottleService implements Service {
             @NonNull
             @Override
             public Set<StateDefinition> statesToCreate() {
-                return Collections.emptySet();
-                // TODO:  return Set.of(StateDefinition.singleton(HANDLE_THROTTLES, ???));
+                return Set.of(
+                        StateDefinition.singleton(THROTTLE_USAGE_SNAPSHOTS_STATE_KEY, ThrottleUsageSnapshots.PROTOBUF),
+                        StateDefinition.singleton(CONGESTION_LEVEL_STARTS_STATE_KEY, CongestionLevelStarts.PROTOBUF));
             }
         });
     }

@@ -125,6 +125,10 @@ public class HandleThrottleAccumulator {
         return lastTxnWasGasThrottled;
     }
 
+    public static boolean isGasThrottled(final HederaFunctionality function) {
+        return CONSENSUS_THROTTLED_FUNCTIONS.contains(function);
+    }
+
     private boolean shouldThrottleTxn(
             @NonNull final TransactionInfo txnInfo, final Instant now, final HederaState state) {
         final var function = txnInfo.functionality();
@@ -202,10 +206,6 @@ public class HandleThrottleAccumulator {
         return shouldThrottleByGas
                 && isGasThrottled(function)
                 && (gasThrottle == null || !gasThrottle.allow(now, txGasLimit));
-    }
-
-    private static boolean isGasThrottled(final HederaFunctionality function) {
-        return CONSENSUS_THROTTLED_FUNCTIONS.contains(function);
     }
 
     private boolean shouldThrottleMint(

@@ -313,6 +313,8 @@ public class HandleWorkflow {
 
             // Run all pre-checks
             final var preCheckResult = runPreChecks(consensusNow, verifier, preHandleResult);
+
+            networkUtilizationManager.resetFrom(state);
             final var isPayerThrottleExempt = throttleExempt(payer, configuration);
             if (!isPayerThrottleExempt) {
                 networkUtilizationManager.trackTxn(transactionInfo, consensusNow, state);
@@ -357,11 +359,9 @@ public class HandleWorkflow {
                     //                            handleThrottling.leakUnusedGasPreviouslyReserved(txnCtx.accessor(),
                     // excessAmount);
                     //                        }
-                    //                    }
-                    //
-                    //                    final var networkCtxNow = networkCtx.get();
-                    //                    networkCtxNow.syncThrottling(handleThrottling);
-                    //                    networkCtxNow.syncMultiplierSources(multiplierSources);
+                    //                                        }
+
+                    networkUtilizationManager.saveTo(state);
                 } catch (final HandleException e) {
                     rollback(e.getStatus(), stack, recordListBuilder);
                     feeAccumulator.charge(payer, fees);

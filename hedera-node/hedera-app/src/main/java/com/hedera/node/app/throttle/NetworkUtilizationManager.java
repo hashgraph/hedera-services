@@ -31,4 +31,8 @@ public interface NetworkUtilizationManager {
     boolean wasLastTxnGasThrottled();
 
     void trackFeePayments(Instant consensusNow, HederaState state);
+
+    void resetFrom(HederaState state);
+
+    void saveTo(HederaState state);
 }
