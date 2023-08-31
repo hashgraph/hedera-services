@@ -178,7 +178,13 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 txBody = transactionInfo.txBody();
                 final var payer = txBody.transactionIDOrThrow().accountIDOrThrow();
                 context = new QueryContextImpl(
-                        state, storeFactory, query, configProvider.getConfiguration(), recordCache, exchangeRateManager, payer);
+                        state,
+                        storeFactory,
+                        query,
+                        configProvider.getConfiguration(),
+                        recordCache,
+                        exchangeRateManager,
+                        payer);
 
                 // 4.iii Check permissions
                 queryChecker.checkPermissions(payer, function);
@@ -197,7 +203,13 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                     throw new PreCheckException(NOT_SUPPORTED);
                 }
                 context = new QueryContextImpl(
-                        state, storeFactory, query, configProvider.getConfiguration(), recordCache, exchangeRateManager, null);
+                        state,
+                        storeFactory,
+                        query,
+                        configProvider.getConfiguration(),
+                        recordCache,
+                        exchangeRateManager,
+                        null);
             }
 
             // 5. Check validity of query
