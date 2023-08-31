@@ -27,6 +27,7 @@ import static com.swirlds.cli.logging.PlatformStatusLog.STATUS_HTML_CLASS;
 
 import com.swirlds.common.system.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -355,9 +356,24 @@ public class HtmlGenerator {
      * This method creates 3 radio buttons, whitelist, blacklist, and neutral
      *
      * @param elementName the name of the element to hide
-     * @return the checkbox
+     * @return the radio filter group
      */
-    private static String createStandardRadioFilter(@NonNull final String elementName) {
+    @NonNull
+    private static String createStandardRadioFilterWithoutLabelClass(@NonNull final String elementName) {
+        return createStandardRadioFilter(elementName, null);
+    }
+
+    /**
+     * Create a set of radio buttons that can hide elements with the given name
+     * <p>
+     * This method creates 3 radio buttons, whitelist, blacklist, and neutral
+     *
+     * @param elementName the name of the element to hide
+     * @param labelClass  the class to apply to the label, for styling
+     * @return the radio filter group
+     */
+    @NonNull
+    private static String createStandardRadioFilter(@NonNull final String elementName, @Nullable String labelClass) {
         final String commonRadioLabel = elementName + "-radio";
 
         final String whitelistTag = new HtmlTagFactory("input", null, true)
@@ -380,7 +396,13 @@ public class HtmlGenerator {
                 .addAttribute("value", "3")
                 .generateTag();
 
-        final String labelTag = new HtmlTagFactory("label", elementName, false).generateTag();
+        final HtmlTagFactory labelTagFactory = new HtmlTagFactory("label", elementName, false);
+
+        if (labelClass != null) {
+            labelTagFactory.addClass(labelClass);
+        }
+
+        final String labelTag = labelTagFactory.generateTag();
         final String breakTag = new HtmlTagFactory("br", null, true).generateTag();
 
         return whitelistTag + "\n" + neutralTag + "\n" + blacklistTag + "\n" + labelTag + "\n" + breakTag + "\n";
@@ -436,10 +458,34 @@ public class HtmlGenerator {
      * @param filterValues the filter values
      * @return the filter div
      */
-    private static String createStandardFilterDiv(
+    private static String createStandardFilterDivWithoutLabelClasses(
             @NonNull final String filterName, @NonNull final List<String> filterValues) {
+
         final List<String> filterRadios = filterValues.stream()
-                .map(HtmlGenerator::createStandardRadioFilter)
+                .map(HtmlGenerator::createStandardRadioFilterWithoutLabelClass)
+                .toList();
+        return createInputDiv(filterName, filterRadios);
+    }
+
+    /**
+     * Create a standard 3 radio filter div for the given filter name and values
+     * <p>
+     * The filter div has a heading, and a series of radio buttons that can hide elements with the given names
+     * <p>
+     * The radio labels will have the classes defined in labelClasses.
+     *
+     * @param filterName   the filter name
+     * @param filterValues the filter values
+     * @param labelClasses the classes to apply to the radio labels
+     * @return the filter div
+     */
+    private static String createStandardFilterDivWithLabelClasses(
+            @NonNull final String filterName,
+            @NonNull final List<String> filterValues,
+            @NonNull final Map<String, String> labelClasses) {
+
+        final List<String> filterRadios = filterValues.stream()
+                .map(filterValue -> createStandardRadioFilter(filterValue, labelClasses.get(filterValue)))
                 .toList();
         return createInputDiv(filterName, filterRadios);
     }
@@ -586,14 +632,25 @@ public class HtmlGenerator {
                 CLASS_NAME_COLUMN_LABEL,
                 REMAINDER_OF_LINE_COLUMN_LABEL)));
 
-        filterDivs.add(createStandardFilterDiv(
+        final Map<String, String> logLevelLabels = Map.of(
+                "TRACE", "trace-label",
+                "DEBUG", "debug-label",
+                "INFO", "info-label",
+                "WARN", "warn-label",
+                "ERROR", "error-label",
+                "FATAL", "fatal-label");
+        logLevelLabels.forEach((logLevel, labelClass) -> cssFactory.addRule(
+                "." + labelClass, new CssDeclaration("color", getHtmlColor(getLogLevelColor(logLevel)))));
+        filterDivs.add(createStandardFilterDivWithLabelClasses(
                 "Log Level",
                 logLines.stream()
                         .map(LogLine::getLogLevel)
                         .distinct()
                         .sorted(Comparator.comparing(Level::toLevel))
-                        .toList()));
-        filterDivs.add(createStandardFilterDiv(
+                        .toList(),
+                logLevelLabels));
+
+        filterDivs.add(createStandardFilterDivWithoutLabelClasses(
                 "Log Marker",
                 logLines.stream().map(LogLine::getMarker).distinct().toList()));
 
