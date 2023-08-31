@@ -344,9 +344,11 @@ public final class Hedera implements SwirldMain {
         // assertion will hold true.
         assert configProvider != null : "Config Provider *must* have been set by now!";
 
-        // Since we now have an "app" instance, we can update the dual state accessor. This is *ONLY* used by the app to
-        // produce a log summary after a freeze. We should refactor to not have a global reference to this.
-        updateDualState(dualState);
+        // Some logging on what we found about freeze in the dual state
+        logger.info(
+                "Dual state includes freeze time={} and last frozen={}",
+                dualState.getFreezeTime(),
+                dualState.getLastFrozenTime());
     }
 
     /**
@@ -776,14 +778,6 @@ public final class Hedera implements SwirldMain {
 
             daggerApp.workingStateAccessor().setHederaState(state);
         }
-    }
-
-    private void updateDualState(final SwirldDualState dualState) {
-        //        daggerApp.dualStateAccessor().setDualState(dualState);
-        logger.info(
-                "Dual state includes freeze time={} and last frozen={}",
-                dualState.getFreezeTime(),
-                dualState.getLastFrozenTime());
     }
 
     private boolean isUpgrade(final HederaSoftwareVersion deployedVersion, final SoftwareVersion deserializedVersion) {

@@ -56,4 +56,4 @@ public record HederaConfig(
         @ConfigProperty(value = "workflow.verificationTimeoutMS", defaultValue = "20000") @NetworkProperty
                 long workflowVerificationTimeoutMS,
         // FUTURE: Set<HederaFunctionality>.
-        @ConfigProperty(value = "workflows.enabled", defaultValue = "") @NetworkProperty String workflowsEnabled) {}
+        @ConfigProperty(value = "workflows.enabled", defaultValue = "true") @NetworkProperty String workflowsEnabled) {}
