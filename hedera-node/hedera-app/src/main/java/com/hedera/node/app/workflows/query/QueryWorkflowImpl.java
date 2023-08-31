@@ -41,6 +41,7 @@ import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
@@ -162,8 +163,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             final var state = wrappedState.get();
             final var storeFactory = new ReadableStoreFactory(state);
             final var paymentRequired = handler.requiresNodePayment(responseType);
-            final var context = new QueryContextImpl(
-                    state, storeFactory, query, configProvider.getConfiguration(), recordCache, exchangeRateManager);
+            final QueryContext context;
             Transaction allegedPayment = null;
             TransactionBody txBody = null;
             if (paymentRequired) {
@@ -177,6 +177,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
 
                 txBody = transactionInfo.txBody();
                 final var payer = txBody.transactionIDOrThrow().accountIDOrThrow();
+                context = new QueryContextImpl(
+                        state, storeFactory, query, configProvider.getConfiguration(), recordCache, exchangeRateManager, payer);
 
                 // 4.iii Check permissions
                 queryChecker.checkPermissions(payer, function);
@@ -194,6 +196,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 if (RESTRICTED_FUNCTIONALITIES.contains(function)) {
                     throw new PreCheckException(NOT_SUPPORTED);
                 }
+                context = new QueryContextImpl(
+                        state, storeFactory, query, configProvider.getConfiguration(), recordCache, exchangeRateManager, null);
             }
 
             // 5. Check validity of query

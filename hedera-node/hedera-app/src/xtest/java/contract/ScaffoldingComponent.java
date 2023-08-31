@@ -16,11 +16,14 @@
 
 package contract;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.WorkingStateAccessor;
@@ -30,6 +33,7 @@ import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.swirlds.common.metrics.Metrics;
 import dagger.BindsInstance;
 import dagger.Component;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -72,7 +76,9 @@ public interface ScaffoldingComponent {
 
     WorkingStateAccessor workingStateAccessor();
 
-    Function<TransactionBody, HandleContext> contextFactory();
+    Function<TransactionBody, HandleContext> txnContextFactory();
+
+    BiFunction<Query, AccountID, QueryContext> queryContextFactory();
 
     FeeManager feeManager();
 

@@ -23,6 +23,7 @@ import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 import com.hedera.node.app.service.mono.state.submerkle.FcTokenAllowanceId;
 import com.hedera.node.app.service.mono.state.submerkle.FixedFeeSpec;
 import com.hedera.node.app.service.mono.state.submerkle.FractionalFeeSpec;
+import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.state.submerkle.RoyaltyFeeSpec;
 import com.hedera.node.app.service.mono.state.virtual.ContractKey;
 import com.hedera.node.app.service.mono.utils.EntityNum;
@@ -32,12 +33,19 @@ import com.swirlds.common.crypto.CryptographyHolder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CodingErrorAction;
+import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.util.Arrays;
 import java.util.HexFormat;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -370,6 +378,44 @@ public class ThingsToStrings {
                     ? "ROYAL+FALLBACK[%s]".formatted(toStringOfFixedFee(fallbackFee, FeeProfile.SKETCH))
                     : "ROYAL[]";
         };
+    }
+
+    @NonNull
+    public static String toStringOfRichInstant(@NonNull final RichInstant instant) {
+        return "%d.%d".formatted(instant.getSeconds(), instant.getNanos());
+    }
+
+    public static boolean is7BitAscii(@NonNull final byte[] bs) {
+        for (byte b : bs) if (b < 0) return false;
+        return true;
+    }
+
+    @NonNull
+    public static String to7BitAscii(@NonNull final byte[] bs) {
+        return new String(bs, StandardCharsets.US_ASCII);
+    }
+
+    static CharsetDecoder toUTF8 = StandardCharsets.UTF_8.newDecoder().onMalformedInput(CodingErrorAction.REPORT);
+
+    @NonNull
+    public static Optional<String> maybeToUTF8(@NonNull final byte[] bs) {
+        try {
+            return Optional.of(toUTF8.decode(ByteBuffer.wrap(bs)).toString());
+        } catch (final CharacterCodingException ignored) {
+            return Optional.empty();
+        }
+    }
+
+    @NonNull
+    public static String toStringPossibleHumanReadableByteArray(
+            @NonNull final String fieldSeparator, @NonNull final byte[] bs) {
+        final var maybeUTF8 = maybeToUTF8(bs);
+        return maybeUTF8.map(s -> quoteForCsv(fieldSeparator, s)).orElseGet(() -> toStringOfByteArray(bs));
+    }
+
+    @NonNull
+    public static Function<byte[], String> getMaybeStringifyByteString(@NonNull final String fieldSeparator) {
+        return bs -> toStringPossibleHumanReadableByteArray(fieldSeparator, bs);
     }
 
     private ThingsToStrings() {}
