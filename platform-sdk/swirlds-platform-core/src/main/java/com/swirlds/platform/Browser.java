@@ -179,7 +179,8 @@ public class Browser {
      * @param commandLineArgs the parsed command line arguments
      * @param pcesRecovery if true, the platform will be started in PCES recovery mode
      */
-    private static void launchUnhandled(@NonNull final CommandLineArgs commandLineArgs, boolean pcesRecovery) throws Exception {
+    private static void launchUnhandled(@NonNull final CommandLineArgs commandLineArgs, boolean pcesRecovery)
+            throws Exception {
         Objects.requireNonNull(commandLineArgs);
 
         StartupTime.markStartupTime();
