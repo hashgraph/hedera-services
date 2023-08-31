@@ -852,13 +852,16 @@ public class SwirldsPlatform implements Platform, Startable {
                 getAddressBook(),
                 signedState));
 
-        shadowGraph.initFromEvents(
-                EventUtils.prepareForShadowGraph(
-                        // we need to pass in a copy of the array, otherwise prepareForShadowGraph will rearrange the
-                        // events in the signed state which will cause issues for other components that depend on it
-                        signedState.getEvents().clone()),
-                // we need to provide the minGen from consensus so that expiry matches after a restart/reconnect
-                consensusRef.get().getMinRoundGeneration());
+        if (signedState.getEvents().length > 0) {
+            shadowGraph.initFromEvents(
+                    EventUtils.prepareForShadowGraph(
+                            // we need to pass in a copy of the array, otherwise prepareForShadowGraph will rearrange
+                            // the events in the signed state which will cause issues for other components
+                            // that depend on it
+                            signedState.getEvents().clone()),
+                    // we need to provide the minGen from consensus so that expiry matches after a restart/reconnect
+                    consensusRef.get().getMinRoundGeneration());
+        }
 
         // Data that is needed for the intake system to work
         for (final EventImpl e : signedState.getEvents()) {
