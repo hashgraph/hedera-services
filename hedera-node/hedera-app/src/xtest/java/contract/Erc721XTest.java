@@ -95,7 +95,7 @@ public class Erc721XTest extends AbstractContractXTest {
     }
 
     @Override
-    protected void handleAndCommitScenarioTransactions() {
+    protected void doScenarioOperations() {
         handleAndCommit(CONTRACT_SERVICE.handlers().contractCreateHandler(), synthCreateTxn());
         handleAndCommit(
                 CONTRACT_SERVICE.handlers().contractCallHandler(),

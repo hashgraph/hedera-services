@@ -124,7 +124,8 @@ public class QueryHederaOperations implements HederaOperations {
      */
     @Override
     public long gasPriceInTinybars() {
-        throw new AssertionError("Not implemented");
+        // TODO - implement correctly
+        return 1L;
     }
 
     /**
@@ -132,7 +133,8 @@ public class QueryHederaOperations implements HederaOperations {
      */
     @Override
     public long valueInTinybars(final long tinycents) {
-        throw new AssertionError("Not implemented");
+        // TODO - implement correctly
+        return 1L;
     }
 
     /**
