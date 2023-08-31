@@ -362,7 +362,28 @@ public class LogLine implements FormattableString {
     @NonNull
     @Override
     public String generateHtmlString() {
+        // the actual value of these elements of the line become html classes for the line itself, so that we can filter
+        // based on these values
+        final List<String> rowClassNames = Stream.of(
+                        logLevel,
+                        marker,
+                        threadName,
+                        className,
+                        nodeId == null ? "" : "node" + nodeId,
+                        HIDEABLE_LABEL,
+                        LOG_LINE_LABEL)
+                .map(LogProcessingUtils::escapeString)
+                .toList();
+
         final List<String> dataCellTags = new ArrayList<>();
+
+        final String selectCheckbox = new HtmlTagFactory("input", null, true)
+                .addClass("select-checkbox")
+                .addClasses(rowClassNames)
+                .addAttribute("type", "checkbox")
+                .generateTag();
+        final HtmlTagFactory selectCheckboxCellFactory = new HtmlTagFactory("td", selectCheckbox, false);
+        dataCellTags.add(selectCheckboxCellFactory.generateTag());
 
         final HtmlTagFactory nodeIdTagFactory = new HtmlTagFactory(
                         "td", nodeId == null ? "" : "node" + escapeString(nodeId.toString()), false)
@@ -438,19 +459,6 @@ public class LogLine implements FormattableString {
                 .addAttribute(WHITELIST_LABEL, "0");
         dataCellTags.add(remainderOfLineTagFactory.generateTag());
 
-        // the actual value of these elements of the line become html classes for the line itself, so that we can filter
-        // based on these values
-        final List<String> rowClassNames = Stream.of(
-                        logLevel,
-                        marker,
-                        threadName,
-                        className,
-                        nodeId == null ? "" : "node" + nodeId,
-                        HIDEABLE_LABEL,
-                        LOG_LINE_LABEL)
-                .map(LogProcessingUtils::escapeString)
-                .toList();
-
         final String mainLogRow = new HtmlTagFactory("tr", "\n" + String.join("\n", dataCellTags) + "\n", false)
                 .addClasses(rowClassNames)
                 .addAttribute(BLACKLIST_LABEL, "0")
@@ -462,6 +470,7 @@ public class LogLine implements FormattableString {
         } else {
             return new HtmlTagFactory("tbody", mainLogRow + "\n" + additionalLines.generateHtmlString(), false)
                     .addClass(LOG_LINE_LABEL)
+                    .addClasses(rowClassNames)
                     .generateTag();
         }
     }

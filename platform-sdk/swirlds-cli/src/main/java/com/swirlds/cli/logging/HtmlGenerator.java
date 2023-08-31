@@ -35,6 +35,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.IntStream;
 import org.apache.logging.log4j.Level;
 
 /**
@@ -298,6 +299,24 @@ public class HtmlGenerator {
                     }
                 });
             }
+            // the checkboxes that have the ability to "select" a line
+            let selectCheckboxes = document.getElementsByClassName("select-checkbox");
+            // add a listener to each checkbox
+            for (const element of selectCheckboxes) {
+                element.addEventListener("change", function() {
+                    console.log("select checkbox changed");
+                    let potentialTopLevelLine = $(this).parent();
+                    // step up parents, until you find the main log line
+                    while ($(potentialTopLevelLine).parent().hasClass("log-line")) {
+                        potentialTopLevelLine = $(potentialTopLevelLine).parent();
+                    }
+                    if ($(this).is(":checked")) {
+                        $(potentialTopLevelLine).attr('selected', true);
+                    } else {
+                        $(potentialTopLevelLine).attr('selected', false);
+                    }
+                });
+            }
             """;
 
     /**
@@ -510,9 +529,9 @@ public class HtmlGenerator {
                 new CssDeclaration("white-space", "nowrap"),
                 new CssDeclaration("vertical-align", "top"));
 
-        // hide elements that have a blacklist value that isn't 0 or NaN
+        // hide elements that have a blacklist value, as long as they don't have a whitelist value, and aren't selected
         cssFactory.addRule(
-                "[%s]:not([%s~='0']):not([%s~=\"NaN\"]):is([%s='0'])"
+                "[%s]:not([%s~='0']):not([%s~=\"NaN\"]):is([%s='0']):not([selected])"
                         .formatted(BLACKLIST_LABEL, BLACKLIST_LABEL, BLACKLIST_LABEL, WHITELIST_LABEL),
                 new CssDeclaration("display", "none"));
 
@@ -583,6 +602,13 @@ public class HtmlGenerator {
                             "td.node-" + nodeId + ", label.node-" + nodeId,
                             new CssDeclaration("color", color == null ? DEFAULT_TEXT_COLOR : color));
                 });
+
+        // add transparent borders that match node id color
+        IntStream.range(0, NodeIdColorizer.nodeIdColors.size())
+                .forEach(index -> cssFactory.addRule(
+                        "tr[selected].node" + index + ", tbody[selected].node" + index,
+                        new CssDeclaration("outline", "2px solid " + NodeIdColorizer.nodeIdColors.get(index) + "50"),
+                        new CssDeclaration("outline-offset", "-2px")));
     }
 
     /**

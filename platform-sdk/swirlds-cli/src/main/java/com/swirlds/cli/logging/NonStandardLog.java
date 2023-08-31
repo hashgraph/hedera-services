@@ -94,7 +94,7 @@ public class NonStandardLog {
         // add the non-standard contents
         final HtmlTagFactory contentsFactory = new HtmlTagFactory("td", escapeString(nonStandardText), false)
                 .addClasses(List.of(NON_STANDARD_LABEL, HIDEABLE_LABEL))
-                .addAttribute("colspan", "5")
+                .addAttribute("colspan", "6")
                 .addAttribute(BLACKLIST_LABEL, "0")
                 .addAttribute(WHITELIST_LABEL, "0");
         dataCellTags.add(contentsFactory.generateTag());
