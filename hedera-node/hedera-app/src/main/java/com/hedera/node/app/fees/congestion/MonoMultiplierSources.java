@@ -44,4 +44,20 @@ public class MonoMultiplierSources {
         }
         this.delegate.updateMultiplier(accessor, consensusTime);
     }
+
+    public Instant[] genericCongestionStarts() {
+        return delegate.genericCongestionStarts();
+    }
+
+    public Instant[] gasCongestionStarts() {
+        return delegate.gasCongestionStarts();
+    }
+
+    public void resetGenericCongestionLevelStarts(final Instant[] startTimes) {
+        delegate.resetGenericCongestionLevelStarts(startTimes);
+    }
+
+    public void resetGasCongestionLevelStarts(final Instant[] startTimes) {
+        delegate.resetGasCongestionLevelStarts(startTimes);
+    }
 }

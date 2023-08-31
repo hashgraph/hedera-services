@@ -23,6 +23,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.state.congestion.CongestionLevelStarts;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshot;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -37,6 +38,7 @@ import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.Arrays;
 import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -111,7 +113,22 @@ public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager 
             activeGasThrottle.resetUsageTo(currGasThrottleUsageSnapshot);
         }
 
-        // TODO: same for congestion
+        final var congestionLevelStarts = states.<CongestionLevelStarts>getSingleton(
+                        CongestionThrottleService.CONGESTION_LEVEL_STARTS_STATE_KEY)
+                .get();
+        if (!congestionLevelStarts.genericLevelStarts().isEmpty()) {
+            final var genericLevelStarts = congestionLevelStarts.genericLevelStarts().stream()
+                    .map(ts -> Instant.ofEpochSecond(ts.seconds(), ts.nanos()))
+                    .toArray(Instant[]::new);
+            multiplierSources.resetGenericCongestionLevelStarts(genericLevelStarts);
+        }
+
+        if (!congestionLevelStarts.gasLevelStarts().isEmpty()) {
+            final var gasLevelStarts = congestionLevelStarts.gasLevelStarts().stream()
+                    .map(ts -> Instant.ofEpochSecond(ts.seconds(), ts.nanos()))
+                    .toArray(Instant[]::new);
+            multiplierSources.resetGasCongestionLevelStarts(gasLevelStarts);
+        }
     }
 
     @Override
@@ -131,7 +148,21 @@ public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager 
 
         throttleSnapshotsState.put(throttleUsageSnapshots);
 
-        // TODO: same for congestion
+        final var congestionLevelStartsState =
+                states.<CongestionLevelStarts>getSingleton(CongestionThrottleService.CONGESTION_LEVEL_STARTS_STATE_KEY);
+        final var genericCongestionStarts = Arrays.stream(multiplierSources.genericCongestionStarts())
+                .map(inst -> new Timestamp(inst.getEpochSecond(), inst.getNano()))
+                .toList();
+        final var gasCongestionStarts = Arrays.stream(multiplierSources.gasCongestionStarts())
+                .map(inst -> new Timestamp(inst.getEpochSecond(), inst.getNano()))
+                .toList();
+
+        final var congestionLevelStarts = CongestionLevelStarts.newBuilder()
+                .genericLevelStarts(genericCongestionStarts)
+                .gasLevelStarts(gasCongestionStarts)
+                .build();
+
+        congestionLevelStartsState.put(congestionLevelStarts);
     }
 
     private DeterministicThrottle.UsageSnapshot fromPbj(ThrottleUsageSnapshot snapshot) {
