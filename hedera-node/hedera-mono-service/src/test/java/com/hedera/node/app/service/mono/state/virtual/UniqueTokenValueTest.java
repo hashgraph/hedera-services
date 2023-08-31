@@ -29,7 +29,6 @@ import com.hedera.node.app.service.mono.utils.NftNumPair;
 import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.jasperdb.files.DataFileCommon;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -405,14 +404,6 @@ class UniqueTokenValueTest {
     void equals_whenNull_doesNotMatch() {
         final UniqueTokenValue value = new UniqueTokenValue();
         assertThat(value.equals(null)).isFalse();
-    }
-
-    // Test invariants. The below tests are designed to fail if one accidentally modifies specified
-    // constants.
-    @Test
-    void reportedSize_isVariable() {
-        // This will fail if the size is accidentally swapped to a non-variable size.
-        assertThat(UniqueTokenValue.sizeInBytes()).isEqualTo(DataFileCommon.VARIABLE_DATA_SIZE);
     }
 
     @Test
