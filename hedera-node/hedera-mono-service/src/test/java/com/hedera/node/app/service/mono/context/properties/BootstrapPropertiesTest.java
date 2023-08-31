@@ -527,7 +527,7 @@ class BootstrapPropertiesTest {
             entry(ENTITIES_LIMIT_TOKEN_ASSOCIATIONS, false),
             entry(HEDERA_RECORD_STREAM_RECORD_FILE_VERSION, 6),
             entry(HEDERA_RECORD_STREAM_SIG_FILE_VERSION, 6),
-            entry(ACCOUNTS_MAX_NUM, 5_000_000L),
+            entry(ACCOUNTS_MAX_NUM, 7_000_000L),
             entry(CONTRACTS_MAX_NUM, 5_000_000L),
             entry(CONTRACTS_STORAGE_SLOT_PRICE_TIERS, "0til100M,2000til450M"),
             entry(CONTRACTS_REFERENCE_SLOT_LIFETIME, 31536000L),
