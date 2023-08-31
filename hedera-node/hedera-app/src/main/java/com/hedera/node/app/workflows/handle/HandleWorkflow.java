@@ -28,12 +28,12 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeAccumulatorImpl;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.records.BlockRecordManager;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.records.ParentRecordFinalizer;
@@ -266,7 +266,7 @@ public class HandleWorkflow {
                 transactionBytes = transaction.signedTransactionBytes();
             } else {
                 // in this case, recorder hash the transaction itself, not its bodyBytes.
-                transactionBytes = Bytes.wrap(PbjConverter.fromPbj(transaction).toByteArray());
+                transactionBytes = Transaction.PROTOBUF.toBytes(transaction);
             }
 
             // Initialize record builder list
