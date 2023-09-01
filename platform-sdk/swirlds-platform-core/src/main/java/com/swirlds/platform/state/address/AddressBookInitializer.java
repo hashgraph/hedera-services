@@ -20,6 +20,7 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
 
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.address.AddressBookValidator;
@@ -63,6 +64,8 @@ public class AddressBookInitializer {
             DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss").withZone(ZoneId.systemDefault());
     /** For logging info, warn, and error. */
     private static final Logger logger = LogManager.getLogger(AddressBookInitializer.class);
+    /** The id of this node. */
+    private final NodeId selfId;
     /** The context for the platform */
     @NonNull
     private final PlatformContext platformContext;
@@ -98,6 +101,7 @@ public class AddressBookInitializer {
      * Constructs an AddressBookInitializer to initialize an address book from config.txt, the saved state from disk, or
      * the SwirldState on upgrade.
      *
+     * @param selfId            The id of this node.
      * @param currentVersion    The current version of the application.
      * @param softwareUpgrade   Indicate that the software version has upgraded.
      * @param initialState      The initial state to start from.
@@ -105,11 +109,13 @@ public class AddressBookInitializer {
      * @param platformContext   The context for the platform.
      */
     public AddressBookInitializer(
+            @NonNull final NodeId selfId,
             @NonNull final SoftwareVersion currentVersion,
             final boolean softwareUpgrade,
             @NonNull final SignedState initialState,
             @NonNull final AddressBook configAddressBook,
             @NonNull final PlatformContext platformContext) {
+        this.selfId = Objects.requireNonNull(selfId, "The selfId must not be null.");
         this.currentVersion = Objects.requireNonNull(currentVersion, "The currentVersion must not be null.");
         this.softwareUpgrade = softwareUpgrade;
         this.configAddressBook = Objects.requireNonNull(configAddressBook, "The configAddressBook must not be null.");
@@ -239,7 +245,8 @@ public class AddressBookInitializer {
      */
     private synchronized void recordAddressBooks(@NonNull final AddressBook usedAddressBook) {
         final String date = DATE_TIME_FORMAT.format(Instant.now());
-        final String addressBookFileName = ADDRESS_BOOK_FILE_PREFIX + "_v" + currentVersion + "_" + date + ".txt";
+        final String addressBookFileName =
+                "%s_v%s_%s_node_%s.txt".formatted(ADDRESS_BOOK_FILE_PREFIX, currentVersion, date, selfId);
         final String addressBookDebugFileName = addressBookFileName + ".debug";
         try {
             final File debugFile = Path.of(this.pathToAddressBookDirectory.toString(), addressBookDebugFileName)

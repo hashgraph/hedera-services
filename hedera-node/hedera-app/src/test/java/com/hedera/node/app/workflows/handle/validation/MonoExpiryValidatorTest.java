@@ -32,7 +32,6 @@ import static org.mockito.BDDMockito.willThrow;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.node.app.config.VersionedConfigImpl;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.mono.store.AccountStore;
@@ -42,6 +41,7 @@ import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.util.function.LongSupplier;
 import org.junit.jupiter.api.BeforeEach;

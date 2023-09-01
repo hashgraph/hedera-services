@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.processors.ProcessorModule.INITIAL_CONTRACT_NONCE;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthHollowAccountCreation;
 import static java.util.Objects.requireNonNull;
@@ -110,9 +111,11 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
         final var synthTxn = TransactionBody.newBuilder()
                 .cryptoCreateAccount(synthHollowAccountCreation(evmAddress))
                 .build();
-        final var childRecordBuilder = context.dispatchChildTransaction(synthTxn, CryptoCreateRecordBuilder.class);
+        // TODO - implement proper signature VerificationAssistant
+        final var childRecordBuilder =
+                context.dispatchChildTransaction(synthTxn, CryptoCreateRecordBuilder.class, key -> true);
         // TODO - switch OK to SUCCESS once some status-setting responsibilities are clarified
-        if (childRecordBuilder.status() != OK) {
+        if (childRecordBuilder.status() != OK && childRecordBuilder.status() != SUCCESS) {
             throw new AssertionError("Not implemented");
         }
         return OK;

@@ -16,8 +16,12 @@
 
 package com.hedera.node.app.config;
 
+import com.hedera.node.config.VersionedConfigImpl;
+import com.hedera.node.config.VersionedConfiguration;
+import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.converter.SemanticVersionConverter;
 import com.hedera.node.config.data.HederaConfig;
+import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.VersionConfig;
 import com.hedera.node.config.sources.PropertyConfigSource;
 import com.swirlds.common.config.sources.SystemEnvironmentConfigSource;
@@ -49,6 +53,8 @@ public class BootstrapConfigProviderImpl extends ConfigProviderBase {
                 .withSource(new PropertyConfigSource(SEMANTIC_VERSION_PROPERTIES_DEFAULT_PATH, 500))
                 .withConfigDataType(HederaConfig.class)
                 .withConfigDataType(VersionConfig.class)
+                .withConfigDataType(LedgerConfig.class)
+                .withConverter(new BytesConverter())
                 .withConverter(new SemanticVersionConverter());
 
         try {
@@ -68,5 +74,11 @@ public class BootstrapConfigProviderImpl extends ConfigProviderBase {
     @NonNull
     public Configuration configuration() {
         return bootstrapConfig;
+    }
+
+    @NonNull
+    @Override
+    public VersionedConfiguration getConfiguration() {
+        return new VersionedConfigImpl(bootstrapConfig, 0);
     }
 }
