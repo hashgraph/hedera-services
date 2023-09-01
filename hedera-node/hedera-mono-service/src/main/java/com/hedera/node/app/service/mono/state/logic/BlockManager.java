@@ -194,13 +194,13 @@ public class BlockManager {
         final var curNetworkCtx = networkCtx.get();
         final var firstBlockTime = curNetworkCtx.firstConsTimeOfCurrentBlock();
         final var dualState = dualStateAccessor.getDualState();
-        final var lastFrozenAndCurrentFreezeTimeEqual =
+        final var isFirstTransactionAfterFreezeRestart =
                 dualState.getFreezeTime() != null && dualState.getFreezeTime().equals(dualState.getLastFrozenTime());
-        if (lastFrozenAndCurrentFreezeTimeEqual) {
+        if (isFirstTransactionAfterFreezeRestart) {
             dualState.setFreezeTime(null);
         }
         return firstBlockTime == null
-                || lastFrozenAndCurrentFreezeTimeEqual
+                || isFirstTransactionAfterFreezeRestart
                 || !inSamePeriod(firstBlockTime, timestamp);
     }
 

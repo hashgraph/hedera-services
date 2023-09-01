@@ -171,7 +171,7 @@ class BlockManagerTest {
     }
 
     @Test
-    void computesNewBlockIfPastAndCurrentFreezeTimeMatch() throws InterruptedException {
+    void computesNewBlockIfIsFirstTransactionAfterFreezeRestart() throws InterruptedException {
         given(networkContext.firstConsTimeOfCurrentBlock()).willReturn(aTime);
         given(runningHashLeaf.currentRunningHash()).willReturn(aFullBlockHash);
         given(networkContext.getAlignmentBlockNo()).willReturn(someBlockNo);
