@@ -124,7 +124,7 @@ dependencyResolutionManagement {
             version("jna-version", "5.12.1")
 
             // PBJ
-            version("pbj-version", "0.7.4")
+            version("pbj-version", "0.7.5")
 
             // Protobuf
             version("protobuf-version", "3.21.5")
