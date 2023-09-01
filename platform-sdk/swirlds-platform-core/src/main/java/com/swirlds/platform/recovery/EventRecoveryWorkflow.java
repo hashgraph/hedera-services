@@ -43,9 +43,12 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.ConsensusUtils;
 import com.swirlds.platform.consensus.SyntheticSnapshot;
+import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventFile;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.recovery.internal.EventStreamRoundIterator;
+import com.swirlds.platform.recovery.internal.RecoveredState;
 import com.swirlds.platform.recovery.internal.RecoveryPlatform;
 import com.swirlds.platform.state.MinGenInfo;
 import com.swirlds.platform.state.State;
@@ -140,7 +143,7 @@ public final class EventRecoveryWorkflow {
 
             logger.info(STARTUP.getMarker(), "Reapplying transactions");
 
-            final ReservedSignedState resultingState = reapplyTransactions(
+            final RecoveredState recoveredState = reapplyTransactions(
                     platformContext, initialState, appMain, roundIterator, finalRound, selfId, loadSigningKeys);
 
             logger.info(
@@ -149,14 +152,27 @@ public final class EventRecoveryWorkflow {
                     resultingStateDirectory);
 
             SignedStateFileWriter.writeSignedStateFilesToDirectory(
-                    selfId, resultingStateDirectory, resultingState.get(), platformContext.getConfiguration());
+                    selfId, resultingStateDirectory, recoveredState.state().get(), platformContext.getConfiguration());
             final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
             updateEmergencyRecoveryFile(
                     stateConfig, resultingStateDirectory, initialState.get().getConsensusTimestamp());
 
-            logger.info(STARTUP.getMarker(), "Recovery process completed");
+            logger.info(STARTUP.getMarker(), "Signed state written to disk");
 
-            resultingState.close();
+            final PreconsensusEventFile preconsensusEventFile = PreconsensusEventFile.of(
+                    0,
+                    recoveredState.judge().getGeneration(),
+                    recoveredState.judge().getGeneration(),
+                    Instant.now(),
+                    resultingStateDirectory,
+                    false
+            );
+            preconsensusEventFile.getMutableFile().writeEvent(recoveredState.judge());
+            preconsensusEventFile.getMutableFile().close();
+
+            recoveredState.state().close();
+
+            logger.info(STARTUP.getMarker(), "Recovery process completed");
         }
     }
 
@@ -223,7 +239,7 @@ public final class EventRecoveryWorkflow {
      * @throws IOException if there is a problem reading from the event stream file
      */
     @NonNull
-    public static ReservedSignedState reapplyTransactions(
+    public static RecoveredState reapplyTransactions(
             @NonNull final PlatformContext platformContext,
             @NonNull final ReservedSignedState initialState,
             @NonNull final SwirldMain appMain,
@@ -267,6 +283,7 @@ public final class EventRecoveryWorkflow {
         ReservedSignedState signedState = initialState;
 
         // Apply events to the state
+        GossipEvent lastEvent = null;
         while (roundIterator.hasNext()
                 && (finalRound == -1 || roundIterator.peek().getRoundNum() <= finalRound)) {
             final Round round = roundIterator.next();
@@ -279,6 +296,7 @@ public final class EventRecoveryWorkflow {
 
             signedState = handleNextRound(platformContext, signedState, round, configuration.getConfigData(ConsensusConfig.class));
             platform.setLatestState(signedState.get());
+            lastEvent = ((EventImpl) getLastEvent(round)).getBaseEvent();
         }
 
         logger.info(STARTUP.getMarker(), "Hashing resulting signed state");
@@ -298,7 +316,7 @@ public final class EventRecoveryWorkflow {
 
         platform.close();
 
-        return signedState;
+        return new RecoveredState(signedState, Objects.requireNonNull(lastEvent));
     }
 
     /**
