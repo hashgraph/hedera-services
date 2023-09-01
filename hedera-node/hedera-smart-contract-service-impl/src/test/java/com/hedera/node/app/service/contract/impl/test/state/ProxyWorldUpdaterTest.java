@@ -102,6 +102,7 @@ class ProxyWorldUpdaterTest {
 
     @Mock
     private HederaOperations hederaOperations;
+
     @Mock
     private HederaNativeOperations nativeOperations;
 
@@ -121,8 +122,8 @@ class ProxyWorldUpdaterTest {
 
     @BeforeEach
     void setUp() {
-        final var enhancement = new HederaWorldUpdater.Enhancement(
-                hederaOperations, nativeOperations, systemContractOperations);
+        final var enhancement =
+                new HederaWorldUpdater.Enhancement(hederaOperations, nativeOperations, systemContractOperations);
         subject = new ProxyWorldUpdater(enhancement, () -> evmFrameState, null);
     }
 
@@ -368,7 +369,8 @@ class ProxyWorldUpdaterTest {
 
     @Test
     void hasGivenParentIfNonNull() {
-        final var enhancement = new HederaWorldUpdater.Enhancement(hederaOperations, nativeOperations, systemContractOperations);
+        final var enhancement =
+                new HederaWorldUpdater.Enhancement(hederaOperations, nativeOperations, systemContractOperations);
         subject = new ProxyWorldUpdater(enhancement, evmFrameStateFactory, parent);
         assertTrue(subject.parentUpdater().isPresent());
         assertSame(parent, subject.parentUpdater().get());

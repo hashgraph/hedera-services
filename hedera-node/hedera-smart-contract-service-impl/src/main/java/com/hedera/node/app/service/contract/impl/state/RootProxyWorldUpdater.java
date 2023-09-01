@@ -21,8 +21,6 @@ import com.hedera.hapi.node.contract.ContractNonceInfo;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.exec.failure.ResourceExhaustedException;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
-import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
-import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations;
 import com.hedera.node.app.service.contract.impl.infra.IterableStorageManager;
 import com.hedera.node.app.service.contract.impl.infra.RentCalculator;
 import com.hedera.node.app.service.contract.impl.infra.StorageSizeValidator;
@@ -82,9 +80,7 @@ public class RootProxyWorldUpdater extends ProxyWorldUpdater {
         final var changes = evmFrameState.getStorageChanges();
         final var sizeEffects = summarizeSizeEffects(changes);
         storageSizeValidator.assertValid(
-                sizeEffects.finalSlotsUsed(),
-                enhancement.operations(),
-                sizeEffects.sizeChanges());
+                sizeEffects.finalSlotsUsed(), enhancement.operations(), sizeEffects.sizeChanges());
         // Charge rent for each increase in storage size
         chargeRentFor(sizeEffects);
         // "Rewrite" the pending storage changes to preserve per-contract linked lists
@@ -154,8 +150,7 @@ public class RootProxyWorldUpdater extends ProxyWorldUpdater {
                         rentFactors.numSlotsUsed(),
                         rentFactors.expiry());
                 final var rentInTinybars = enhancement.operations().valueInTinybars(rentInTinycents);
-                enhancement.operations().chargeStorageRent(
-                        sizeChange.contractNumber(), rentInTinybars, true);
+                enhancement.operations().chargeStorageRent(sizeChange.contractNumber(), rentInTinybars, true);
             }
         }
     }

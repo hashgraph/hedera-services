@@ -14,6 +14,7 @@ module com.hedera.node.app.service.contract.impl {
     requires transitive org.hyperledger.besu.evm;
     requires transitive tuweni.bytes;
     requires transitive tuweni.units;
+    requires transitive headlong;
     requires com.hedera.node.app.service.evm;
     requires com.google.common;
     requires com.swirlds.common;

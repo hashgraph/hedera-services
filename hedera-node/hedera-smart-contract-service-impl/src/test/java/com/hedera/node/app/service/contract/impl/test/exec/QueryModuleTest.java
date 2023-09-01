@@ -65,10 +65,9 @@ class QueryModuleTest {
 
     @Test
     void providesExpectedProxyWorldUpdater() {
-        final var enhancement = new HederaWorldUpdater.Enhancement(hederaOperations, hederaNativeOperations, systemContractOperations);
-        assertInstanceOf(
-                ProxyWorldUpdater.class,
-                QueryModule.provideProxyWorldUpdater(enhancement, factory));
+        final var enhancement =
+                new HederaWorldUpdater.Enhancement(hederaOperations, hederaNativeOperations, systemContractOperations);
+        assertInstanceOf(ProxyWorldUpdater.class, QueryModule.provideProxyWorldUpdater(enhancement, factory));
     }
 
     @Test
@@ -78,11 +77,11 @@ class QueryModuleTest {
 
     @Test
     void feesOnlyUpdaterIsProxyUpdater() {
-        final var enhancement = new HederaWorldUpdater.Enhancement(hederaOperations, hederaNativeOperations, systemContractOperations);
+        final var enhancement =
+                new HederaWorldUpdater.Enhancement(hederaOperations, hederaNativeOperations, systemContractOperations);
         assertInstanceOf(
                 ProxyWorldUpdater.class,
-                QueryModule.provideFeesOnlyUpdater(enhancement, factory)
-                        .get());
+                QueryModule.provideFeesOnlyUpdater(enhancement, factory).get());
     }
 
     @Test

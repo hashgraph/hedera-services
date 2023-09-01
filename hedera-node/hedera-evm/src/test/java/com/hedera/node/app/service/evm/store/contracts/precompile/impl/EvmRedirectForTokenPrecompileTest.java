@@ -35,5 +35,10 @@ class EvmRedirectForTokenPrecompileTest {
 
         assertTrue(decodedInput.token().length > 0);
         assertTrue(decodedInput.data().length > 0);
+
+        System.out.println(EvmRedirectForTokenPrecompile.REDIRECT_FOR_TOKEN_FUNCTION.selectorHex());
+        System.out.println(Integer.toHexString(EvmRedirectForTokenPrecompile.REDIRECT_FOR_TOKEN_SELECTOR
+                .toUnsignedBigInteger()
+                .intValue()));
     }
 }

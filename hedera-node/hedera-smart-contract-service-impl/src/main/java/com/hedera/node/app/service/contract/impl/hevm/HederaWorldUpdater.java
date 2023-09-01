@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.contract.impl.hevm;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
@@ -38,8 +40,6 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * A {@link WorldUpdater} extension with additional methods for Hedera-specific operations.

@@ -38,7 +38,6 @@ import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.function.Supplier;
 
 @Module
@@ -55,8 +54,7 @@ public interface QueryModule {
     @Provides
     @QueryScope
     static ProxyWorldUpdater provideProxyWorldUpdater(
-            @NonNull final HederaWorldUpdater.Enhancement enhancement,
-            @NonNull final EvmFrameStateFactory factory) {
+            @NonNull final HederaWorldUpdater.Enhancement enhancement, @NonNull final EvmFrameStateFactory factory) {
         return new ProxyWorldUpdater(enhancement, requireNonNull(factory), null);
     }
 
@@ -69,8 +67,7 @@ public interface QueryModule {
     @Provides
     @QueryScope
     static Supplier<HederaWorldUpdater> provideFeesOnlyUpdater(
-            @NonNull final HederaWorldUpdater.Enhancement enhancement,
-            @NonNull final EvmFrameStateFactory factory) {
+            @NonNull final HederaWorldUpdater.Enhancement enhancement, @NonNull final EvmFrameStateFactory factory) {
         return () -> new ProxyWorldUpdater(enhancement, requireNonNull(factory), null);
     }
 

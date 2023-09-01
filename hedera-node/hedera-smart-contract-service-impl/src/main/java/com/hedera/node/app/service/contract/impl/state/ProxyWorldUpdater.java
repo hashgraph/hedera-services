@@ -312,11 +312,14 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
         }
         final var number = getValidatedCreationNumber(address, balance, pendingCreation);
         if (pendingCreation.isHapiCreation()) {
-            enhancement.operations().createContract(
-                    number, requireNonNull(pendingCreation.body()), pendingCreation.aliasIfApplicable());
+            enhancement
+                    .operations()
+                    .createContract(
+                            number, requireNonNull(pendingCreation.body()), pendingCreation.aliasIfApplicable());
         } else {
-            enhancement.operations().createContract(
-                    number, pendingCreation.parentNumber(), pendingCreation.aliasIfApplicable());
+            enhancement
+                    .operations()
+                    .createContract(number, pendingCreation.parentNumber(), pendingCreation.aliasIfApplicable());
         }
         return evmFrameState.getMutableAccount(pendingCreation.address());
     }

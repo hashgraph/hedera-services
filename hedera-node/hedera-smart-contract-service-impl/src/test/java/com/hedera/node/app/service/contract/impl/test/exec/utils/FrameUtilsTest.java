@@ -26,8 +26,8 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.contract.impl.exec.operations.utils.OpUtils;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsEventSignatures;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsFunctionSelectors;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import com.hedera.node.app.service.contract.impl.infra.StorageAccessTracker;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
@@ -55,7 +55,7 @@ class FrameUtilsTest {
             OpcodeUtils.class,
             SynthTxnUtils.class,
             HtsFunctionSelectors.class,
-            HtsEventSignatures.class));
+            ReturnTypes.class));
 
     @Mock
     private MessageFrame frame;

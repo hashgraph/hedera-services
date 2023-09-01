@@ -61,6 +61,7 @@ class TransactionModuleTest {
 
     @Mock
     private HederaOperations hederaOperations;
+
     @Mock
     private HederaNativeOperations nativeOperations;
 
@@ -86,11 +87,11 @@ class TransactionModuleTest {
 
     @Test
     void feesOnlyUpdaterIsProxyUpdater() {
-        final var enhancement = new HederaWorldUpdater.Enhancement(hederaOperations, nativeOperations, systemContractOperations);
+        final var enhancement =
+                new HederaWorldUpdater.Enhancement(hederaOperations, nativeOperations, systemContractOperations);
         assertInstanceOf(
                 ProxyWorldUpdater.class,
-                TransactionModule.provideFeesOnlyUpdater(enhancement, factory)
-                        .get());
+                TransactionModule.provideFeesOnlyUpdater(enhancement, factory).get());
     }
 
     @Test

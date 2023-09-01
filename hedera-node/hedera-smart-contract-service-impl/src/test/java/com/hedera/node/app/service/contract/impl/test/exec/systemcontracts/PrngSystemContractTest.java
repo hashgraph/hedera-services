@@ -66,13 +66,15 @@ class PrngSystemContractTest {
 
     @Test
     void gasRequirementRequiresFrameToBeSupported() {
-        assertThrows(UnsupportedOperationException.class,
+        assertThrows(
+                UnsupportedOperationException.class,
                 () -> subject.gasRequirement(PSEUDO_RANDOM_SYSTEM_CONTRACT_ADDRESS));
     }
 
     @Test
     void onlyFullResultsAreSupported() {
-        assertThrows(UnsupportedOperationException.class,
+        assertThrows(
+                UnsupportedOperationException.class,
                 () -> subject.computePrecompile(PSEUDO_RANDOM_SYSTEM_CONTRACT_ADDRESS, messageFrame));
     }
 
@@ -85,7 +87,8 @@ class PrngSystemContractTest {
         given(proxyWorldUpdater.entropy()).willReturn(EXPECTED_RANDOM_NUMBER);
 
         // when:
-        var actual = subject.computeFully(PSEUDO_RANDOM_SYSTEM_CONTRACT_ADDRESS, messageFrame).result();
+        var actual = subject.computeFully(PSEUDO_RANDOM_SYSTEM_CONTRACT_ADDRESS, messageFrame)
+                .result();
 
         // then:
         assertEqualContractResult(PRECOMPILE_CONTRACT_SUCCESS_RESULT, actual);
@@ -100,7 +103,8 @@ class PrngSystemContractTest {
         given(proxyWorldUpdater.entropy()).willReturn(EXPECTED_RANDOM_NUMBER);
 
         // when:
-        var actual = subject.computeFully(PSEUDO_RANDOM_SYSTEM_CONTRACT_ADDRESS, messageFrame).result();
+        var actual = subject.computeFully(PSEUDO_RANDOM_SYSTEM_CONTRACT_ADDRESS, messageFrame)
+                .result();
 
         // then:
         assertEqualContractResult(PRECOMPILE_CONTRACT_SUCCESS_RESULT, actual);
@@ -115,7 +119,8 @@ class PrngSystemContractTest {
         given(proxyWorldUpdater.entropy()).willReturn(Bytes.wrap(ZERO_ENTROPY.toByteArray()));
 
         // when:
-        var actual = subject.computeFully(PSEUDO_RANDOM_SYSTEM_CONTRACT_ADDRESS, messageFrame).result();
+        var actual = subject.computeFully(PSEUDO_RANDOM_SYSTEM_CONTRACT_ADDRESS, messageFrame)
+                .result();
 
         // then:
         assertEqualContractResult(PRECOMPILE_CONTRACT_FAILED_RESULT, actual);

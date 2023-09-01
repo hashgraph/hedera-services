@@ -138,7 +138,8 @@ class RootProxyWorldUpdaterTest {
     }
 
     private void givenSubjectWith(@NonNull final Configuration configuration) {
-        final var enhancement = new HederaWorldUpdater.Enhancement(hederaOperations, hederaNativeOperations, systemContractOperations);
+        final var enhancement =
+                new HederaWorldUpdater.Enhancement(hederaOperations, hederaNativeOperations, systemContractOperations);
         subject = new RootProxyWorldUpdater(
                 enhancement,
                 configuration.getConfigData(ContractsConfig.class),
