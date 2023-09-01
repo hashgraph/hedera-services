@@ -86,8 +86,7 @@ public class RecordsRunningHashLeaf extends PartialMerkleLeaf implements MerkleL
 
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        runningHash = new RunningHash();
-        runningHash.setHash(in.readSerializable());
+        runningHash = new RunningHash(in.readSerializable());
 
         if (version >= RELEASE_0280_VERSION) {
             resetMinusHashes(false);
