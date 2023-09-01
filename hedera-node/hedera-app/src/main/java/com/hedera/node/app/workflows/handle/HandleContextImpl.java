@@ -33,7 +33,6 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.WritableEntityIdStore;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.UnknownHederaFunctionality;
@@ -457,11 +456,9 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         final var transaction = Transaction.newBuilder()
                 .signedTransactionBytes(signedTransactionBytes)
                 .build();
-        final var transactionBytes =
-                Bytes.wrap(PbjConverter.fromPbj(transaction).toByteArray());
         childRecordBuilder
                 .transaction(transaction)
-                .transactionBytes(transactionBytes)
+                .transactionBytes(signedTransactionBytes)
                 .memo(txBody.memo());
 
         // Set the transactionId if provided
