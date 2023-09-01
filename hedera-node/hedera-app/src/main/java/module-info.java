@@ -15,7 +15,7 @@ module com.hedera.node.app {
     requires transitive com.hedera.pbj.runtime;
     requires transitive com.swirlds.common;
     requires transitive com.swirlds.config;
-    requires transitive com.swirlds.jasperdb;
+    requires transitive com.swirlds.merkledb;
     requires transitive com.swirlds.merkle;
     requires transitive com.swirlds.virtualmap;
     requires transitive dagger;
@@ -81,4 +81,10 @@ module com.hedera.node.app {
             com.swirlds.platform;
     exports com.hedera.node.app.workflows.handle to
             com.hedera.node.app.test.fixtures;
+    exports com.hedera.node.app.state.merkle.queue to
+            com.swirlds.common,
+            com.swirlds.platform;
+    exports com.hedera.node.app.version to
+            com.swirlds.common,
+            com.swirlds.platform;
 }

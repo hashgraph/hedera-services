@@ -16,7 +16,6 @@
 
 package com.swirlds.merkledb.files;
 
-import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.collections.IndexedObject;
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;

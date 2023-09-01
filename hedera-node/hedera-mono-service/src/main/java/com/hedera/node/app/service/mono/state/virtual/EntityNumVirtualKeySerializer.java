@@ -16,66 +16,25 @@
 
 package com.hedera.node.app.service.mono.state.virtual;
 
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.jasperdb.files.hashmap.KeyIndexType;
-import com.swirlds.jasperdb.files.hashmap.KeySerializer;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import com.swirlds.merkledb.serialize.KeyIndexType;
+import com.swirlds.merkledb.serialize.KeySerializer;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 
 public class EntityNumVirtualKeySerializer implements KeySerializer<EntityNumVirtualKey> {
+
     static final long CLASS_ID = 0xc7b4f042fcf1e2a2L;
+
     static final int CURRENT_VERSION = 1;
 
     static final long DATA_VERSION = 1;
 
-    @Override
-    public int deserializeKeySize(ByteBuffer byteBuffer) {
-        return EntityNumVirtualKey.sizeInBytes();
-    }
-
-    @Override
-    public int getSerializedSize(long dataVersion) {
-        return EntityNumVirtualKey.sizeInBytes();
-    }
-
-    @Override
-    public long getCurrentDataVersion() {
-        return DATA_VERSION;
-    }
-
-    @Override
-    public KeyIndexType getIndexType() {
-        return KeyIndexType.GENERIC;
-    }
-
-    @Override
-    public EntityNumVirtualKey deserialize(ByteBuffer byteBuffer, long version) throws IOException {
-        final var key = new EntityNumVirtualKey();
-        key.deserialize(byteBuffer);
-        return key;
-    }
-
-    @Override
-    public boolean equals(ByteBuffer buffer, int version, EntityNumVirtualKey key) throws IOException {
-        return key.equals(buffer, version);
-    }
-
-    @Override
-    public int serialize(EntityNumVirtualKey key, SerializableDataOutputStream out) throws IOException {
-        key.serialize(out);
-        return EntityNumVirtualKey.sizeInBytes();
-    }
-
-    @Override
-    public void deserialize(SerializableDataInputStream in, int version) throws IOException {
-        /* No-op */
-    }
-
-    @Override
-    public void serialize(SerializableDataOutputStream out) throws IOException {
-        /* No-op */
-    }
+    // Serializer info
 
     @Override
     public long getClassId() {
@@ -85,5 +44,70 @@ public class EntityNumVirtualKeySerializer implements KeySerializer<EntityNumVir
     @Override
     public int getVersion() {
         return CURRENT_VERSION;
+    }
+
+    // Data version
+
+    @Override
+    public long getCurrentDataVersion() {
+        return DATA_VERSION;
+    }
+
+    // Key serialization
+
+    @Override
+    public KeyIndexType getIndexType() {
+        // By default, if serialized size is 8 bytes, key index type is
+        // SEQUENTIAL_INCREMENTING_LONGS,
+        // but this is not the case for EntityNumVirtualKey. Hence, override getIndexType() here
+        return KeyIndexType.GENERIC;
+    }
+
+    @Override
+    public int getSerializedSize() {
+        return EntityNumVirtualKey.sizeInBytes();
+    }
+
+    @Override
+    public void serialize(@NonNull final EntityNumVirtualKey key, @NonNull final WritableSequentialData out) {
+        Objects.requireNonNull(key);
+        Objects.requireNonNull(out);
+        key.serialize(out);
+    }
+
+    @Override
+    public int serialize(final EntityNumVirtualKey key, final ByteBuffer buffer) throws IOException {
+        Objects.requireNonNull(key);
+        Objects.requireNonNull(buffer);
+        key.serialize(buffer);
+        return EntityNumVirtualKey.sizeInBytes();
+    }
+
+    @Override
+    public EntityNumVirtualKey deserialize(@NonNull final ReadableSequentialData in) {
+        Objects.requireNonNull(in);
+        final var key = new EntityNumVirtualKey();
+        key.deserialize(in);
+        return key;
+    }
+
+    @Override
+    public EntityNumVirtualKey deserialize(final ByteBuffer buffer, final long version) throws IOException {
+        Objects.requireNonNull(buffer);
+        final var key = new EntityNumVirtualKey();
+        key.deserialize(buffer);
+        return key;
+    }
+
+    @Override
+    public boolean equals(@NonNull final BufferedData buf, @NonNull final EntityNumVirtualKey key) {
+        Objects.requireNonNull(buf);
+        return key.equalsTo(buf);
+    }
+
+    @Override
+    public boolean equals(ByteBuffer buffer, int version, EntityNumVirtualKey key) throws IOException {
+        Objects.requireNonNull(buffer);
+        return key.equalsTo(buffer, version);
     }
 }

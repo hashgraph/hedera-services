@@ -16,74 +16,54 @@
 
 package com.swirlds.demo.virtualmerkle.map.smartcontracts.bytecode;
 
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.jasperdb.files.hashmap.KeySerializer;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import com.swirlds.merkledb.serialize.AbstractFixedSizeKeySerializer;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 /**
  * This class is the serializer of {@link SmartContractByteCodeMapKey}.
  */
-public final class SmartContractByteCodeMapKeySerializer implements KeySerializer<SmartContractByteCodeMapKey> {
+public final class SmartContractByteCodeMapKeySerializer
+        extends AbstractFixedSizeKeySerializer<SmartContractByteCodeMapKey> {
 
-    private static final long CLASS_ID = 0xee36c20c7ccc69d9L;
+    private static final long CLASS_ID = 0xee36c20c7ccc69daL;
 
     private static final class ClassVersion {
         public static final int ORIGINAL = 1;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int getSerializedSize(long dataVersion) {
-        return SmartContractByteCodeMapKey.getSizeInBytes();
+    public SmartContractByteCodeMapKeySerializer() {
+        super(CLASS_ID, ClassVersion.ORIGINAL, SmartContractByteCodeMapKey.getSizeInBytes(),
+                1, SmartContractByteCodeMapKey::new);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public long getCurrentDataVersion() {
-        return 1;
+    public void serialize(@NonNull final SmartContractByteCodeMapKey key, @NonNull final WritableSequentialData out) {
+        key.serialize(out);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public SmartContractByteCodeMapKey deserialize(final ByteBuffer buffer, final long dataVersion) throws IOException {
-        SmartContractByteCodeMapKey smartContractByteCodeMapKey = new SmartContractByteCodeMapKey();
-        smartContractByteCodeMapKey.deserialize(buffer);
-        return smartContractByteCodeMapKey;
+    public SmartContractByteCodeMapKey deserialize(@NonNull final ReadableSequentialData in) {
+        final SmartContractByteCodeMapKey key = new SmartContractByteCodeMapKey();
+        key.deserialize(in);
+        return key;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public int serialize(final SmartContractByteCodeMapKey data, final SerializableDataOutputStream outputStream)
-            throws IOException {
-        data.serialize(outputStream);
-        return SmartContractByteCodeMapKey.getSizeInBytes();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int deserializeKeySize(final ByteBuffer buffer) {
-        return SmartContractByteCodeMapKey.getSizeInBytes();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean equals(
-            final ByteBuffer buffer, final int dataVersion, final SmartContractByteCodeMapKey keyToCompare)
-            throws IOException {
+    public boolean equals(@NonNull final BufferedData buffer, @NonNull final SmartContractByteCodeMapKey keyToCompare) {
         return keyToCompare.equals(buffer);
     }
 
@@ -91,31 +71,9 @@ public final class SmartContractByteCodeMapKeySerializer implements KeySerialize
      * {@inheritDoc}
      */
     @Override
-    public long getClassId() {
-        return CLASS_ID;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void serialize(final SerializableDataOutputStream out) throws IOException {
-        // nothing to serialize
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        // nothing to deserialize
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int getVersion() {
-        return ClassVersion.ORIGINAL;
+    @Deprecated(forRemoval = true)
+    public boolean equals(ByteBuffer buffer, int dataVersion, SmartContractByteCodeMapKey keyToCompare)
+            throws IOException {
+        return keyToCompare.equals(buffer);
     }
 }

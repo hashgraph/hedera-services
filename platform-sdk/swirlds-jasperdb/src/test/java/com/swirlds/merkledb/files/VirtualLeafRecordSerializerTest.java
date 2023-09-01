@@ -16,35 +16,25 @@
 
 package com.swirlds.merkledb.files;
 
-import static com.swirlds.jasperdb.utilities.HashTools.DEFAULT_DIGEST;
-import static com.swirlds.merkledb.ExampleFixedSizeVirtualValue.RANDOM_BYTES;
-import static com.swirlds.merkledb.MerkleDbTestUtils.randomString;
+import static com.swirlds.common.test.fixtures.RandomUtils.nextInt;
+import static com.swirlds.common.test.fixtures.RandomUtils.nextLong;
 import static com.swirlds.merkledb.serialize.BaseSerializer.VARIABLE_DATA_SIZE;
-import static org.apache.commons.lang3.RandomUtils.nextInt;
-import static org.apache.commons.lang3.RandomUtils.nextLong;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.DigestType;
-import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.crypto.HashBuilder;
 import com.swirlds.merkledb.ExampleByteArrayVirtualValue;
 import com.swirlds.merkledb.ExampleFixedSizeVirtualValue;
 import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.merkledb.TestType;
-import com.swirlds.merkledb.files.VirtualLeafRecordSerializer;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.merkledb.serialize.ValueSerializer;
-import com.swirlds.merkledb.utilities.ProtoUtils;
 import com.swirlds.virtualmap.VirtualLongKey;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.Random;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
@@ -146,13 +136,14 @@ class VirtualLeafRecordSerializerTest {
                     Long.BYTES
                             + testType.dataType().getKeySerializer().getSerializedSize()
                             + testType.dataType().getValueSerializer().getSerializedSize()
-                            + DEFAULT_DIGEST.digestLength(),
+                            + DigestType.SHA_384.digestLength(),
                     serializer.getSerializedSizeForVersion(version));
         } else {
             assertEquals(VARIABLE_DATA_SIZE, serializer.getSerializedSizeForVersion(version));
         }
     }
 
+    @SuppressWarnings("rawtypes")
     private static VirtualLeafRecordSerializer<VirtualLongKey, ExampleByteArrayVirtualValue> createSerializer(
             TestType testType) {
         final KeySerializer<?> keySerializer = testType.dataType().getKeySerializer();

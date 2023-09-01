@@ -180,15 +180,6 @@ class UniqueTokenKeyTest {
     }
 
     @Test
-    void deserializeKeySize_withVariousPackedLengths_returnsTheCorrectLengths() {
-        assertThat(UniqueTokenKey.deserializeKeySize(asByteBuffer(0))).isEqualTo(1);
-        assertThat(UniqueTokenKey.deserializeKeySize(asByteBuffer(0x8))).isEqualTo(9);
-        assertThat(UniqueTokenKey.deserializeKeySize(asByteBuffer(0x80))).isEqualTo(9);
-        assertThat(UniqueTokenKey.deserializeKeySize(asByteBuffer(0x34))).isEqualTo(8);
-        assertThat(UniqueTokenKey.deserializeKeySize(asByteBuffer(0x88))).isEqualTo(17);
-    }
-
-    @Test
     void getVersion_isCurrent() {
         final UniqueTokenKey key1 = new UniqueTokenKey();
         // This will fail if the version number changes and force user to update the version number

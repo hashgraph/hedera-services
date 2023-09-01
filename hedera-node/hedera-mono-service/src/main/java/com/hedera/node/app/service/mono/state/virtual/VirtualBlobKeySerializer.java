@@ -16,60 +16,26 @@
 
 package com.hedera.node.app.service.mono.state.virtual;
 
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.jasperdb.files.hashmap.KeySerializer;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import com.swirlds.merkledb.serialize.KeySerializer;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 
 public class VirtualBlobKeySerializer implements KeySerializer<VirtualBlobKey> {
+
     static final long CLASS_ID = 0xb7b4f0d24bf1ebf2L;
+
+    // Serializer version
     static final int CURRENT_VERSION = 1;
 
+    // Key data version
     static final long DATA_VERSION = 1;
 
-    @Override
-    public int deserializeKeySize(ByteBuffer byteBuffer) {
-        return VirtualBlobKey.sizeInBytes();
-    }
-
-    @Override
-    public int getSerializedSize(long dataVersion) {
-        return VirtualBlobKey.sizeInBytes();
-    }
-
-    @Override
-    public long getCurrentDataVersion() {
-        return DATA_VERSION;
-    }
-
-    @Override
-    public VirtualBlobKey deserialize(ByteBuffer byteBuffer, long version) throws IOException {
-        final var key = new VirtualBlobKey();
-        key.deserialize(byteBuffer);
-        return key;
-    }
-
-    @Override
-    public boolean equals(ByteBuffer buffer, int version, VirtualBlobKey key) throws IOException {
-        return key.getType().ordinal() == (0xff & buffer.get()) && key.getEntityNumCode() == buffer.getInt();
-    }
-
-    @Override
-    public int serialize(VirtualBlobKey key, SerializableDataOutputStream out) throws IOException {
-        key.serialize(out);
-        return VirtualBlobKey.sizeInBytes();
-    }
-
-    @Override
-    public void deserialize(SerializableDataInputStream in, int version) throws IOException {
-        /* No-op */
-    }
-
-    @Override
-    public void serialize(SerializableDataOutputStream out) throws IOException {
-        /* No-op */
-    }
+    // Serializer info
 
     @Override
     public long getClassId() {
@@ -79,5 +45,63 @@ public class VirtualBlobKeySerializer implements KeySerializer<VirtualBlobKey> {
     @Override
     public int getVersion() {
         return CURRENT_VERSION;
+    }
+
+    // Data version
+
+    @Override
+    public long getCurrentDataVersion() {
+        return DATA_VERSION;
+    }
+
+    // Key serialization
+
+    @Override
+    public int getSerializedSize() {
+        return VirtualBlobKey.sizeInBytes();
+    }
+
+    @Override
+    public void serialize(@NonNull final VirtualBlobKey key, @NonNull final WritableSequentialData out) {
+        Objects.requireNonNull(key);
+        Objects.requireNonNull(out);
+        key.serialize(out);
+    }
+
+    @Override
+    public int serialize(final VirtualBlobKey key, final ByteBuffer buffer) throws IOException {
+        Objects.requireNonNull(key);
+        Objects.requireNonNull(buffer);
+        key.serialize(buffer);
+        return getSerializedSize();
+    }
+
+    @Override
+    public VirtualBlobKey deserialize(@NonNull final ReadableSequentialData out) {
+        Objects.requireNonNull(out);
+        final var key = new VirtualBlobKey();
+        key.deserialize(out);
+        return key;
+    }
+
+    @Override
+    public VirtualBlobKey deserialize(final ByteBuffer buffer, final long version) throws IOException {
+        Objects.requireNonNull(buffer);
+        final var key = new VirtualBlobKey();
+        key.deserialize(buffer);
+        return key;
+    }
+
+    @Override
+    public boolean equals(@NonNull final BufferedData buffer, @NonNull final VirtualBlobKey key) {
+        Objects.requireNonNull(buffer);
+        Objects.requireNonNull(key);
+        return key.equalsTo(buffer);
+    }
+
+    @Override
+    public boolean equals(final ByteBuffer buffer, final int version, final VirtualBlobKey key) throws IOException {
+        Objects.requireNonNull(buffer);
+        return key.equalsTo(buffer, version);
     }
 }

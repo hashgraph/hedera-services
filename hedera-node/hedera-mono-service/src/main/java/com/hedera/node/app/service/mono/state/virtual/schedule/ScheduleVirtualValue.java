@@ -34,7 +34,11 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleSchedule;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
+import com.hedera.node.app.service.mono.state.virtual.utils.CheckedConsumerE;
+import com.hedera.node.app.service.mono.state.virtual.utils.CheckedSupplierE;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
@@ -287,122 +291,127 @@ public class ScheduleVirtualValue extends PartialMerkleLeaf
                 .orElse("<N/A>");
     }
 
-    @Override
-    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        int n = in.readInt();
-        bodyBytes = new byte[n];
-        in.readFully(bodyBytes);
-        if (in.readByte() == 1) {
-            calculatedExpirationTime = new RichInstant(in.readLong(), in.readInt());
+    int serializedSizeInBytes() {
+        int size = 0;
+        size += Integer.BYTES; // bodyBytes length
+        size += bodyBytes.length; // bodyBytes
+        if (calculatedExpirationTime == null) {
+            size += Byte.BYTES;
         } else {
-            calculatedExpirationTime = null;
+            size += Byte.BYTES;
+            size += Long.BYTES; // calculatedExpirationTime seconds
+            size += Integer.BYTES; // calculatedExpirationTime nanos
         }
-        calculatedWaitForExpiry = in.readByte() == 1;
-        executed = in.readByte() == 1;
-        deleted = in.readByte() == 1;
-        if (in.readByte() == 1) {
-            resolutionTime = new RichInstant(in.readLong(), in.readInt());
+        size += Byte.BYTES; // calculatedWaitForExpiry
+        size += Byte.BYTES; // executed
+        size += Byte.BYTES; // deleted
+        if (resolutionTime == null) {
+            size += Byte.BYTES;
         } else {
-            resolutionTime = null;
+            size += Byte.BYTES;
+            size += Long.BYTES; // resolutionTime seconds
+            size += Integer.BYTES; // resolutionTime nanos
         }
-        final int k = in.readInt();
-        for (int x = 0; x < k; ++x) {
-            n = in.readInt();
-            final byte[] bytes = new byte[n];
-            in.readFully(bytes);
-            witnessValidSignature(bytes);
+        size += Integer.BYTES; // signatories size
+        for (final byte[] k : signatories) {
+            size += Integer.BYTES; // k length
+            size += k.length; // k
         }
-        number = in.readLong();
+        size += Long.BYTES; // number
+        return size;
+    }
 
-        initFromBodyBytes();
+    private <E extends Exception> void serializeTo(
+            final CheckedConsumerE<Byte, E> writeByteFn,
+            final CheckedConsumerE<Integer, E> writeIntFn,
+            final CheckedConsumerE<Long, E> writeLongFn,
+            final CheckedConsumerE<byte[], E> writeBytesFn) throws E {
+        writeIntFn.accept(bodyBytes.length);
+        writeBytesFn.accept(bodyBytes);
+        if (calculatedExpirationTime == null) {
+            writeByteFn.accept((byte) 0);
+        } else {
+            writeByteFn.accept((byte) 1);
+            writeLongFn.accept(calculatedExpirationTime.getSeconds());
+            writeIntFn.accept(calculatedExpirationTime.getNanos());
+        }
+        writeByteFn.accept((byte) (calculatedWaitForExpiry ? 1 : 0));
+        writeByteFn.accept((byte) (executed ? 1 : 0));
+        writeByteFn.accept((byte) (deleted ? 1 : 0));
+        if (resolutionTime == null) {
+            writeByteFn.accept((byte) 0);
+        } else {
+            writeByteFn.accept((byte) 1);
+            writeLongFn.accept(resolutionTime.getSeconds());
+            writeIntFn.accept(resolutionTime.getNanos());
+        }
+        writeIntFn.accept(signatories.size());
+        for (final byte[] k : signatories) {
+            writeIntFn.accept(k.length);
+            writeBytesFn.accept(k);
+        }
+        writeLongFn.accept(number);
     }
 
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
-        out.writeInt(bodyBytes.length);
-        out.write(bodyBytes);
-        if (calculatedExpirationTime == null) {
-            out.writeByte((byte) 0);
-        } else {
-            out.writeByte((byte) 1);
-            out.writeLong(calculatedExpirationTime.getSeconds());
-            out.writeInt(calculatedExpirationTime.getNanos());
-        }
-        out.writeByte((byte) (calculatedWaitForExpiry ? 1 : 0));
-        out.writeByte((byte) (executed ? 1 : 0));
-        out.writeByte((byte) (deleted ? 1 : 0));
-        if (resolutionTime == null) {
-            out.writeByte((byte) 0);
-        } else {
-            out.writeByte((byte) 1);
-            out.writeLong(resolutionTime.getSeconds());
-            out.writeInt(resolutionTime.getNanos());
-        }
-        out.writeInt(signatories.size());
-        for (final byte[] k : signatories) {
-            out.writeInt(k.length);
-            out.write(k);
-        }
-        out.writeLong(number);
+        serializeTo(out::writeByte, out::writeInt, out::writeLong, out::write);
+    }
+
+    void serialize(final WritableSequentialData out) {
+        serializeTo(out::writeByte, out::writeInt, out::writeLong, out::writeBytes);
     }
 
     @Override
-    public void deserialize(final ByteBuffer in, final int version) throws IOException {
-        var n = in.getInt();
+    public void serialize(final ByteBuffer buffer) throws IOException {
+        serializeTo(buffer::put, buffer::putInt, buffer::putLong, buffer::put);
+    }
+
+    private <E extends Exception> void deserializeFrom(
+            final CheckedSupplierE<Byte, E> readByteFn,
+            final CheckedSupplierE<Integer, E> readIntFn,
+            final CheckedSupplierE<Long, E> readLongFn,
+            final CheckedConsumerE<byte[], E> readBytesFn) throws E {
+        var n = readIntFn.get();
         bodyBytes = new byte[n];
-        in.get(bodyBytes);
-        if (in.get() == 1) {
-            calculatedExpirationTime = new RichInstant(in.getLong(), in.getInt());
+        readBytesFn.accept(bodyBytes);
+        if (readByteFn.get() == 1) {
+            calculatedExpirationTime = new RichInstant(readLongFn.get(), readIntFn.get());
         } else {
             calculatedExpirationTime = null;
         }
-        calculatedWaitForExpiry = in.get() == 1;
-        executed = in.get() == 1;
-        deleted = in.get() == 1;
-        if (in.get() == 1) {
-            resolutionTime = new RichInstant(in.getLong(), in.getInt());
+        calculatedWaitForExpiry = readByteFn.get() == 1;
+        executed = readByteFn.get() == 1;
+        deleted = readByteFn.get() == 1;
+        if (readByteFn.get() == 1) {
+            resolutionTime = new RichInstant(readLongFn.get(), readIntFn.get());
         } else {
             resolutionTime = null;
         }
-        final int k = in.getInt();
+        final int k = readIntFn.get();
         for (int x = 0; x < k; ++x) {
-            n = in.getInt();
+            n = readIntFn.get();
             final byte[] bytes = new byte[n];
-            in.get(bytes);
+            readBytesFn.accept(bytes);
             witnessValidSignature(bytes);
         }
-        number = in.getLong();
+        number = readLongFn.get();
 
         initFromBodyBytes();
     }
 
     @Override
-    public void serialize(final ByteBuffer out) throws IOException {
-        out.putInt(bodyBytes.length);
-        out.put(bodyBytes);
-        if (calculatedExpirationTime == null) {
-            out.put((byte) 0);
-        } else {
-            out.put((byte) 1);
-            out.putLong(calculatedExpirationTime.getSeconds());
-            out.putInt(calculatedExpirationTime.getNanos());
-        }
-        out.put((byte) (calculatedWaitForExpiry ? 1 : 0));
-        out.put((byte) (executed ? 1 : 0));
-        out.put((byte) (deleted ? 1 : 0));
-        if (resolutionTime == null) {
-            out.put((byte) 0);
-        } else {
-            out.put((byte) 1);
-            out.putLong(resolutionTime.getSeconds());
-            out.putInt(resolutionTime.getNanos());
-        }
-        out.putInt(signatories.size());
-        for (final byte[] k : signatories) {
-            out.putInt(k.length);
-            out.put(k);
-        }
-        out.putLong(number);
+    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
+        deserializeFrom(in::readByte, in::readInt, in::readLong, in::readFully);
+    }
+
+    void deserialize(final ReadableSequentialData in) {
+        deserializeFrom(in::readByte, in::readInt, in::readLong, in::readBytes);
+    }
+
+    @Override
+    public void deserialize(final ByteBuffer buffer, final int version) throws IOException {
+        deserializeFrom(buffer::get, buffer::getInt, buffer::getLong, buffer::get);
     }
 
     @Override

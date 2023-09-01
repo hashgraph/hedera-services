@@ -22,9 +22,12 @@ import com.swirlds.merkledb.serialize.DataItemSerializer;
 import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.time.Instant;
 import java.util.Arrays;
 
@@ -84,11 +87,19 @@ public final class DataFileWriterJdb<D> extends DataFileWriterPbj<D> {
      * @throws IOException if I/O error(s) occurred
      */
     private void moveMmapBuffer(final int currentMmapPos) throws IOException {
-        mmapPositionInFile += currentMmapPos;
-        if (writingMmap != null) {
-            DataFileCommon.closeMmapBuffer(writingMmap);
+        try (final FileChannel channel = FileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE)) {
+            final MappedByteBuffer newMap =
+                    channel.map(MapMode.READ_WRITE, mmapPositionInFile + currentMmapPos, MMAP_BUF_SIZE);
+            // theoretically it's possible, we should check it
+            if (newMap == null) {
+                throw new IOException("Failed to map file channel to memory");
+            }
+            if (writingMmap != null) {
+                DataFileCommon.closeMmapBuffer(writingMmap);
+            }
+            writingMmap = newMap;
+            mmapPositionInFile += currentMmapPos;
         }
-        writingMmap = writingChannel.map(MapMode.READ_WRITE, mmapPositionInFile, MMAP_BUF_SIZE);
     }
 
     protected void writeHeader() {
@@ -213,14 +224,12 @@ public final class DataFileWriterJdb<D> extends DataFileWriterPbj<D> {
         final long totalFileSize = mmapPositionInFile + writingMmap.position();
         // release all the resources
         DataFileCommon.closeMmapBuffer(writingMmap);
-        writingChannel.truncate(totalFileSize);
-        // after finishWriting(), mmapPositionInFile should be equal to the file size
-        mmapPositionInFile = totalFileSize;
-        writingChannel.force(true);
-        writingChannel.close();
-        writingChannel = null;
-        // delete lock file
-        Files.delete(lockFilePath);
+
+        try (FileChannel channel = FileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE)) {
+            channel.truncate(totalFileSize);
+            // after finishWriting(), mmapPositionInFile should be equal to the file size
+            mmapPositionInFile = totalFileSize;
+        }
     }
 
     /**

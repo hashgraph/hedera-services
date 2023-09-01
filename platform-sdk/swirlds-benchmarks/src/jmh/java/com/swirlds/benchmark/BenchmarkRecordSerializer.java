@@ -16,16 +16,18 @@
 
 package com.swirlds.benchmark;
 
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.jasperdb.files.DataItemHeader;
-import com.swirlds.jasperdb.files.DataItemSerializer;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import com.swirlds.merkledb.serialize.DataItemHeader;
+import com.swirlds.merkledb.serialize.DataItemSerializer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 public class BenchmarkRecordSerializer implements DataItemSerializer<BenchmarkRecord> {
 
     @Override
-    public int getSerializedSize(final long dataVersion) {
+    public int getSerializedSize() {
         return Integer.BYTES + BenchmarkRecord.getSerializedSize();
     }
 
@@ -35,29 +37,40 @@ public class BenchmarkRecordSerializer implements DataItemSerializer<BenchmarkRe
     }
 
     @Override
-    public BenchmarkRecord deserialize(ByteBuffer buffer, long dataVersion) throws IOException {
-        int size = buffer.getInt();
+    public int getHeaderSize() {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    @Override
+    public DataItemHeader deserializeHeader(ByteBuffer buffer) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    @Override
+    public void serialize(final BenchmarkRecord data, final WritableSequentialData out) {
+        data.serialize(out);
+    }
+
+    @Override
+    public int serialize(BenchmarkRecord data, ByteBuffer buffer) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    @Override
+    public BenchmarkRecord deserialize(final ReadableSequentialData in) {
         BenchmarkRecord data = new BenchmarkRecord();
-        data.deserialize(buffer, (int) dataVersion);
+        data.deserialize(in);
         return data;
     }
 
     @Override
-    public int serialize(BenchmarkRecord data, SerializableDataOutputStream outputStream) throws IOException {
-        outputStream.writeInt(getSerializedSize());
-        data.serialize(outputStream);
-        return getSerializedSize();
+    public BenchmarkRecord deserialize(ByteBuffer buffer, long dataVersion) throws IOException {
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override
-    public int getHeaderSize() {
-        return Integer.BYTES + Long.BYTES;
+    public long extractKey(BufferedData dataItemData) {
+        return dataItemData.getLong(0);
     }
 
-    @Override
-    public DataItemHeader deserializeHeader(ByteBuffer buffer, final long dataVersion) {
-        int size = buffer.getInt();
-        long key = buffer.getLong();
-        return new DataItemHeader(size, key);
-    }
 }

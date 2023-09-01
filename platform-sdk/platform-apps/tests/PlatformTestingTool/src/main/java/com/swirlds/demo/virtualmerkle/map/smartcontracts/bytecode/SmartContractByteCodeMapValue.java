@@ -16,6 +16,9 @@
 
 package com.swirlds.demo.virtualmerkle.map.smartcontracts.bytecode;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.demo.virtualmerkle.random.PTTRandom;
@@ -89,6 +92,10 @@ public final class SmartContractByteCodeMapValue implements VirtualValue {
         return byteCode.length;
     }
 
+    int sizeInBytes() {
+        return Integer.BYTES + byteCode.length;
+    }
+
     /**
      * Returns this smart contract byte code value as a byte array.
      *
@@ -139,12 +146,9 @@ public final class SmartContractByteCodeMapValue implements VirtualValue {
         out.writeByteArray(byteCode);
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        byteCode = in.readByteArray(MAX_BYTE_CODE_BYTES);
+    void serialize(final WritableSequentialData out) {
+        out.writeInt(byteCode.length);
+        out.writeBytes(byteCode);
     }
 
     /**
@@ -154,6 +158,20 @@ public final class SmartContractByteCodeMapValue implements VirtualValue {
     public void serialize(final ByteBuffer buffer) throws IOException {
         buffer.putInt(byteCode.length);
         buffer.put(byteCode);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
+        byteCode = in.readByteArray(MAX_BYTE_CODE_BYTES);
+    }
+
+    void deserialize(final ReadableSequentialData in) {
+        final int len = in.readInt();
+        byteCode = new byte[len];
+        in.readBytes(byteCode);
     }
 
     /**

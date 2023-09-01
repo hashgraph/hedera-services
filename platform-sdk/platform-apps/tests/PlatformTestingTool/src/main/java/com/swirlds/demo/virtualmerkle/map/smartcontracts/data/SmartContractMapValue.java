@@ -16,6 +16,8 @@
 
 package com.swirlds.demo.virtualmerkle.map.smartcontracts.data;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.demo.virtualmerkle.random.PTTRandom;
@@ -171,6 +173,18 @@ public final class SmartContractMapValue implements VirtualValue {
         out.write(value);
     }
 
+    void serialize(final WritableSequentialData out) {
+        out.writeBytes(value);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void serialize(final ByteBuffer buffer) throws IOException {
+        buffer.put(value);
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -182,12 +196,8 @@ public final class SmartContractMapValue implements VirtualValue {
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void serialize(final ByteBuffer buffer) throws IOException {
-        buffer.put(value);
+    void deserialize(final ReadableSequentialData in) {
+        in.readBytes(this.value);
     }
 
     /**

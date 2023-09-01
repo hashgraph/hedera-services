@@ -16,22 +16,22 @@
 
 package com.swirlds.virtual.merkle;
 
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.jasperdb.SelfSerializableSupplier;
-import java.io.IOException;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.merkledb.serialize.ValueSerializer;
+import java.nio.ByteBuffer;
 
-public class TestValueSerializer implements SelfSerializableSupplier<TestValue> {
-    @Override
-    public long getClassId() {
-        return 53543453;
+public class TestValueSerializer implements ValueSerializer<TestValue> {
+
+    public TestValueSerializer() {
+        // required for deserialization
     }
 
     @Override
-    public void serialize(final SerializableDataOutputStream out) throws IOException {}
-
-    @Override
-    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {}
+    public long getClassId() {
+        return 53543454;
+    }
 
     @Override
     public int getVersion() {
@@ -39,7 +39,54 @@ public class TestValueSerializer implements SelfSerializableSupplier<TestValue> 
     }
 
     @Override
-    public TestValue get() {
-        return new TestValue();
+    public long getCurrentDataVersion() {
+        return 1;
+    }
+
+    @Override
+    public int getSerializedSize() {
+        return VARIABLE_DATA_SIZE;
+    }
+
+    @Override
+    public int getSerializedSize(final TestValue data) {
+        final byte[] bytes = CommonUtils.getNormalisedStringBytes(data.getValue());
+        return Integer.BYTES + bytes.length;
+    }
+
+    @Override
+    public int getTypicalSerializedSize() {
+        return 20; // guesstimation
+    }
+
+    @Override
+    public void serialize(final TestValue data, final WritableSequentialData out) {
+        final byte[] bytes = CommonUtils.getNormalisedStringBytes(data.getValue());
+        out.writeInt(bytes.length);
+        out.writeBytes(bytes);
+    }
+
+    @Override
+    @Deprecated(forRemoval = true)
+    public int serialize(TestValue data, ByteBuffer buffer) {
+        data.serialize(buffer);
+        return data.sizeInBytes();
+    }
+
+    @Override
+    public TestValue deserialize(final ReadableSequentialData in) {
+        final int size = in.readInt();
+        final byte[] bytes = new byte[size];
+        in.readBytes(bytes);
+        final String value = CommonUtils.getNormalisedStringFromBytes(bytes);
+        return new TestValue(value);
+    }
+
+    @Override
+    @Deprecated(forRemoval = true)
+    public TestValue deserialize(ByteBuffer buffer, long dataVersion) {
+        final TestValue value = new TestValue();
+        value.deserialize(buffer, (int) dataVersion);
+        return value;
     }
 }

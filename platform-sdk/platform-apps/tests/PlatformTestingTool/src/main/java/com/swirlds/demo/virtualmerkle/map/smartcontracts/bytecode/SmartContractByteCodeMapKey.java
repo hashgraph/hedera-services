@@ -88,14 +88,6 @@ public final class SmartContractByteCodeMapKey implements VirtualLongKey {
         out.writeLong(contractId);
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        contractId = in.readLong();
-    }
-
     public void serialize(final WritableSequentialData out) {
         out.writeLong(contractId);
     }
@@ -109,7 +101,15 @@ public final class SmartContractByteCodeMapKey implements VirtualLongKey {
         buffer.putLong(contractId);
     }
 
-    public void deserialize(final ReadableSequentialData in) {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
+        contractId = in.readLong();
+    }
+
+    void deserialize(final ReadableSequentialData in) {
         contractId = in.readLong();
     }
 
@@ -150,7 +150,7 @@ public final class SmartContractByteCodeMapKey implements VirtualLongKey {
      * @return {@code true} if the content from the buffer has the same data as this instance.
      *        {@code false}, otherwise.
      */
-    public boolean equals(final BufferedData buffer) {
+    boolean equals(final BufferedData buffer) {
         return buffer.readLong() == this.contractId;
     }
 

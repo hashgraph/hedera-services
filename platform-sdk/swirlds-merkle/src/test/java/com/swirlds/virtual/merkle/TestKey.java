@@ -55,21 +55,31 @@ public final class TestKey implements VirtualLongKey {
     }
 
     @Override
+    public void serialize(SerializableDataOutputStream out) throws IOException {
+        out.writeLong(k);
+    }
+
+    void serialize(final WritableSequentialData out) {
+        out.writeLong(k);
+    }
+
+    @Override
     public void serialize(final ByteBuffer buffer) {
         buffer.putLong(k);
     }
 
-    public void serialize(final WritableSequentialData out) {
-        out.writeLong(k);
+    @Override
+    public void deserialize(SerializableDataInputStream in, int version) throws IOException {
+        k = in.readLong();
+    }
+
+    void deserialize(final ReadableSequentialData in) {
+        k = in.readLong();
     }
 
     @Override
     public void deserialize(final ByteBuffer buffer) {
         k = buffer.getLong();
-    }
-
-    public void deserialize(final ReadableSequentialData in) {
-        k = in.readLong();
     }
 
     @Override
@@ -97,15 +107,5 @@ public final class TestKey implements VirtualLongKey {
     @Override
     public long getClassId() {
         return 0x155bb9565ebfad3bL;
-    }
-
-    @Override
-    public void serialize(SerializableDataOutputStream out) throws IOException {
-        out.writeLong(k);
-    }
-
-    @Override
-    public void deserialize(SerializableDataInputStream in, int version) throws IOException {
-        k = in.readLong();
     }
 }

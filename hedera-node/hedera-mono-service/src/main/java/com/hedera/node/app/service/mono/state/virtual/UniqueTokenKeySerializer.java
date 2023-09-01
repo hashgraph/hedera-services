@@ -16,20 +16,54 @@
 
 package com.hedera.node.app.service.mono.state.virtual;
 
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.jasperdb.files.DataFileCommon;
-import com.swirlds.jasperdb.files.hashmap.KeySerializer;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import com.swirlds.merkledb.serialize.KeySerializer;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
 public class UniqueTokenKeySerializer implements KeySerializer<UniqueTokenKey> {
+
     static final long CLASS_ID = 0xb3c94b6cf62aa6c4L;
 
+    // Serializer version
+    static final int CURRENT_VERSION = 1;
+
+    // Key data version
+    static final long DATA_VERSION = UniqueTokenKey.CURRENT_VERSION;
+
+    // Serializer info
+
     @Override
-    public boolean isVariableSize() {
-        return true;
+    public long getClassId() {
+        return CLASS_ID;
+    }
+
+    @Override
+    public int getVersion() {
+        return CURRENT_VERSION;
+    }
+
+    // Data version
+
+    @Override
+    public long getCurrentDataVersion() {
+        return DATA_VERSION;
+    }
+
+    // Key serialization
+
+    @Override
+    public int getSerializedSize() {
+        return VARIABLE_DATA_SIZE;
+    }
+
+    @Override
+    public int getSerializedSize(@NonNull final UniqueTokenKey key) {
+        return key.getSerializedSizeInBytes();
     }
 
     @Override
@@ -38,60 +72,45 @@ public class UniqueTokenKeySerializer implements KeySerializer<UniqueTokenKey> {
     }
 
     @Override
-    public int getSerializedSize(long dataVersion) {
-        return DataFileCommon.VARIABLE_DATA_SIZE;
+    public void serialize(@NonNull final UniqueTokenKey key, @NonNull final WritableSequentialData out) {
+        Objects.requireNonNull(key);
+        Objects.requireNonNull(out);
+        key.serializeTo(out::writeByte);
     }
 
     @Override
-    public long getCurrentDataVersion() {
-        return UniqueTokenKey.CURRENT_VERSION;
+    public int serialize(final UniqueTokenKey key, final ByteBuffer buffer) throws IOException {
+        Objects.requireNonNull(key);
+        Objects.requireNonNull(buffer);
+        return key.serializeTo(buffer::put);
+    }
+
+    @Override
+    public UniqueTokenKey deserialize(@NonNull final ReadableSequentialData in) {
+        Objects.requireNonNull(in);
+        final UniqueTokenKey tokenKey = new UniqueTokenKey();
+        tokenKey.deserializeFrom(in::readByte);
+        return tokenKey;
     }
 
     @Override
     public UniqueTokenKey deserialize(final ByteBuffer buffer, final long dataVersion) throws IOException {
         Objects.requireNonNull(buffer);
         final UniqueTokenKey tokenKey = new UniqueTokenKey();
-        tokenKey.deserialize(buffer);
+        tokenKey.deserializeFrom(buffer::get);
         return tokenKey;
     }
 
     @Override
-    public int serialize(final UniqueTokenKey tokenKey, final SerializableDataOutputStream outputStream)
-            throws IOException {
-        Objects.requireNonNull(tokenKey);
-        Objects.requireNonNull(outputStream);
-        return tokenKey.serializeTo(outputStream::write);
+    public boolean equals(@NonNull final BufferedData buffer, @NonNull final UniqueTokenKey key) {
+        Objects.requireNonNull(buffer);
+        Objects.requireNonNull(key);
+        return key.equalsTo(buffer::readByte);
     }
 
     @Override
-    public int deserializeKeySize(final ByteBuffer byteBuffer) {
-        return UniqueTokenKey.deserializeKeySize(byteBuffer);
-    }
-
-    @Override
-    public boolean equals(final ByteBuffer byteBuffer, final int dataVersion, final UniqueTokenKey uniqueTokenKey)
-            throws IOException {
-        return uniqueTokenKey.equalsTo(byteBuffer::get);
-    }
-
-    @Override
-    public long getClassId() {
-        return CLASS_ID;
-    }
-
-    @Override
-    public void deserialize(final SerializableDataInputStream serializableDataInputStream, final int i)
-            throws IOException {
-        /* no state to load, so no-op */
-    }
-
-    @Override
-    public void serialize(final SerializableDataOutputStream serializableDataOutputStream) throws IOException {
-        /* no state to save, so no-op */
-    }
-
-    @Override
-    public int getVersion() {
-        return UniqueTokenKey.CURRENT_VERSION;
+    public boolean equals(final ByteBuffer buffer, final int version, final UniqueTokenKey key) throws IOException {
+        Objects.requireNonNull(buffer);
+        return key.equalsTo(buffer::get);
     }
 }

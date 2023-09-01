@@ -25,7 +25,6 @@ import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.jasperdb.files.DataFileCommon;
 import com.swirlds.virtualmap.VirtualValue;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -43,7 +42,6 @@ public class IterableContractValue implements VirtualValue {
     public static final int ITERABLE_VERSION = 2;
 
     public static final int NON_ITERABLE_SERIALIZED_SIZE = 32;
-    public static final int ITERABLE_SERIALIZED_SIZE = DataFileCommon.VARIABLE_DATA_SIZE;
 
     public static final long RUNTIME_CONSTRUCTABLE_ID = 0xabf8bd64a87ee740L;
 
@@ -388,15 +386,15 @@ public class IterableContractValue implements VirtualValue {
         KeyPackingUtils.serializePossiblyMissingKey(nextUint256Key, nextUint256KeyNonZeroBytes, out);
     }
 
-    @Override
-    public void serialize(final ByteBuffer out) throws IOException {
-        out.put(uint256Value);
+    void serialize(final WritableSequentialData out) {
+        out.writeBytes(uint256Value);
         serializePossiblyMissingKeyToBuffer(prevUint256Key, prevUint256KeyNonZeroBytes, out);
         serializePossiblyMissingKeyToBuffer(nextUint256Key, nextUint256KeyNonZeroBytes, out);
     }
 
-    public void serialize(final WritableSequentialData out) {
-        out.writeBytes(uint256Value);
+    @Override
+    public void serialize(final ByteBuffer out) throws IOException {
+        out.put(uint256Value);
         serializePossiblyMissingKeyToBuffer(prevUint256Key, prevUint256KeyNonZeroBytes, out);
         serializePossiblyMissingKeyToBuffer(nextUint256Key, nextUint256KeyNonZeroBytes, out);
     }
@@ -411,6 +409,14 @@ public class IterableContractValue implements VirtualValue {
         deserializeKeys(in, SerializableDataInputStream::readByte);
     }
 
+    void deserialize(final ReadableSequentialData in) {
+        if (isImmutable) {
+            throw new IllegalStateException(IMMUTABLE_CONTRACT_VALUE_MANIPULATION_ERROR);
+        }
+        in.readBytes(this.uint256Value);
+        deserializeKeys(in, ReadableSequentialData::readByte);
+    }
+
     @Override
     public void deserialize(final ByteBuffer buffer, final int version) throws IOException {
         if (isImmutable) {
@@ -418,14 +424,6 @@ public class IterableContractValue implements VirtualValue {
         }
         buffer.get(this.uint256Value);
         deserializeKeys(buffer, ByteBuffer::get);
-    }
-
-    public void deserialize(final ReadableSequentialData in) {
-        if (isImmutable) {
-            throw new IllegalStateException(IMMUTABLE_CONTRACT_VALUE_MANIPULATION_ERROR);
-        }
-        in.readBytes(this.uint256Value);
-        deserializeKeys(in, ReadableSequentialData::readByte);
     }
 
     // --- Internal helpers

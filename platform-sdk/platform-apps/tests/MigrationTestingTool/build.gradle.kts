@@ -15,11 +15,14 @@
  */
 
 plugins {
-  id("com.swirlds.platform.conventions")
-  id("com.swirlds.platform.application")
+    id("com.swirlds.platform.conventions")
+    id("com.swirlds.platform.application")
 }
 
 dependencies {
-  // Individual Dependencies
-  implementation(project(":swirlds-merkle"))
+    // Individual Dependencies
+    implementation(project(":swirlds-merkle"))
+
+    // Bundle dependencies
+    implementation(libs.bundles.pbj)
 }

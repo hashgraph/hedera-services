@@ -29,7 +29,6 @@ import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.prometheus.PrometheusConfig;
 import com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -40,7 +39,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -109,8 +107,8 @@ public class DefaultMetricsProvider implements MetricsProvider, Lifecycle {
      * {@inheritDoc}
      */
     @Override
-    public Metrics createPlatformMetrics(final NodeId nodeId) {
-        CommonUtils.throwArgNull(nodeId, "selfId");
+    public Metrics createPlatformMetrics(@NonNull final NodeId nodeId) {
+        Objects.requireNonNull(nodeId, "selfId is null");
 
         final DefaultMetrics newMetrics =
                 new DefaultMetrics(nodeId, metricKeyRegistry, executor, factory, metricsConfig);
@@ -128,10 +126,10 @@ public class DefaultMetricsProvider implements MetricsProvider, Lifecycle {
 
         if (!metricsConfig.disableMetricsOutput()) {
             final String folderName = metricsConfig.csvOutputFolder();
-            final Path folderPath = Path.of(StringUtils.isBlank(folderName) ? FileUtils.getUserDir() : folderName);
+            final Path folderPath = Path.of(folderName.isBlank() ? FileUtils.getUserDir() : folderName);
 
             // setup LegacyCsvWriter
-            if (StringUtils.isNotBlank(metricsConfig.csvFileName())) {
+            if (!metricsConfig.csvFileName().isBlank()) {
                 final LegacyCsvWriter legacyCsvWriter = new LegacyCsvWriter(nodeId, folderPath, configuration);
                 snapshotService.subscribe(legacyCsvWriter::handleSnapshots);
             }

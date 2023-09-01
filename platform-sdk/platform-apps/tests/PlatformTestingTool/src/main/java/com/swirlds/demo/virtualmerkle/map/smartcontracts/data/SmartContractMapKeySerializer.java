@@ -16,46 +16,38 @@
 
 package com.swirlds.demo.virtualmerkle.map.smartcontracts.data;
 
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.jasperdb.files.hashmap.KeySerializer;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import com.swirlds.merkledb.serialize.AbstractFixedSizeKeySerializer;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 /**
  * This class is the serializer for {@link SmartContractMapKey}.
  */
-public final class SmartContractMapKeySerializer implements KeySerializer<SmartContractMapKey> {
+public final class SmartContractMapKeySerializer extends AbstractFixedSizeKeySerializer<SmartContractMapKey> {
 
-    private static final long CLASS_ID = 0x2d68463768cf4c59L;
+    private static final long CLASS_ID = 0x2d68463768cf4c5AL;
 
     private static final class ClassVersion {
         public static final int ORIGINAL = 1;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int getSerializedSize(long dataVersion) {
-        return SmartContractMapKey.getSizeInBytes();
+    public SmartContractMapKeySerializer() {
+        super(CLASS_ID, ClassVersion.ORIGINAL, SmartContractMapKey.getSizeInBytes(), 1, SmartContractMapKey::new);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public long getCurrentDataVersion() {
-        return 1;
+    public void serialize(@NonNull final SmartContractMapKey key, @NonNull final WritableSequentialData out) {
+        key.serialize(out);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public SmartContractMapKey deserialize(final ByteBuffer buffer, final long dataVersion) throws IOException {
-        final SmartContractMapKey key = new SmartContractMapKey();
-        key.deserialize(buffer);
+    public SmartContractMapKey deserialize(@NonNull final ReadableSequentialData in) {
+        final SmartContractMapKey key = newKey();
+        key.deserialize(in);
         return key;
     }
 
@@ -63,58 +55,13 @@ public final class SmartContractMapKeySerializer implements KeySerializer<SmartC
      * {@inheritDoc}
      */
     @Override
-    public int serialize(final SmartContractMapKey data, final SerializableDataOutputStream outputStream)
-            throws IOException {
-        data.serialize(outputStream);
-        return SmartContractMapKey.getSizeInBytes();
+    public boolean equals(@NonNull final BufferedData buffer, @NonNull final SmartContractMapKey keyToCompare) {
+        return keyToCompare.equals(buffer);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public int deserializeKeySize(final ByteBuffer buffer) {
-        return SmartContractMapKey.getSizeInBytes();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean equals(final ByteBuffer buffer, final int dataVersion, final SmartContractMapKey keyToCompare)
-            throws IOException {
-        return keyToCompare.equals(buffer, dataVersion);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public long getClassId() {
-        return CLASS_ID;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void serialize(final SerializableDataOutputStream out) throws IOException {
-        // nothing to serialize
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        // nothing to deserialize
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int getVersion() {
-        return ClassVersion.ORIGINAL;
+    @Deprecated(forRemoval = true)
+    public boolean equals(ByteBuffer buffer, int dataVersion, SmartContractMapKey keyToCompare) throws IOException {
+        return keyToCompare.equals(buffer);
     }
 }

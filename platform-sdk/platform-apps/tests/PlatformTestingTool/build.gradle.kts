@@ -24,8 +24,6 @@ dependencies {
     // Individual Dependencies
     compileOnly(libs.spotbugs.annotations)
     implementation(project(":swirlds-merkle"))
-    implementation(libs.commons.math3)
-    implementation(libs.commons.io)
     implementation(libs.protobuf)
 
     // Bundle Dependencies

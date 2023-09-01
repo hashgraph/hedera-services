@@ -331,9 +331,9 @@ public class DataFileReaderPbj<D> implements DataFileReader<D> {
     private BufferedData read(final long byteOffsetInFile) throws IOException {
         final int bufIndex = Math.toIntExact(byteOffsetInFile / (MMAP_BUF_SIZE / 2));
         // Try a few times. It's very unlikely (other than in tests) that a thread is
-        // interrupted more than once in short period of time, so 2 retries should be enough
+        // interrupted more than once in short period of time, so 3 retries should be enough
         final long mmapOffset = (long) bufIndex * (MMAP_BUF_SIZE / 2);
-        for (int retries = 2; retries > 0; retries--) {
+        for (int retries = 3; retries > 0; retries--) {
             try {
                 final BufferedData in = getReadBuffer(bufIndex);
                 final int tag = in.getVarInt(byteOffsetInFile - mmapOffset, false); // tag

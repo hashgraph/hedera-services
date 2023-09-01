@@ -35,7 +35,6 @@ import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.jasperdb.files.DataFileCommon;
 import com.swirlds.virtualmap.VirtualValue;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -116,14 +115,6 @@ public class UniqueTokenValue implements VirtualValue {
 
     public static UniqueTokenValue from(final MerkleUniqueToken token) {
         return new UniqueTokenValue(token);
-    }
-
-    /**
-     * Returns the size in bytes of the class (if fixed) or {@link
-     * DataFileCommon#VARIABLE_DATA_SIZE} if variable sized.
-     */
-    public static int sizeInBytes() {
-        return DataFileCommon.VARIABLE_DATA_SIZE;
     }
 
     @Override
@@ -235,13 +226,13 @@ public class UniqueTokenValue implements VirtualValue {
         deserializeFrom(inputStream::readByte, inputStream::readLong, inputStream::readFully);
     }
 
+    void deserialize(final ReadableSequentialData in) {
+        deserializeFrom(in::readByte, in::readLong, in::readBytes);
+    }
+
     @Override
     public void deserialize(final ByteBuffer byteBuffer, final int version) throws IOException {
         deserializeFrom(byteBuffer::get, byteBuffer::getLong, byteBuffer::get);
-    }
-
-    public void deserialize(final ReadableSequentialData in) {
-        deserializeFrom(in::readByte, in::readLong, in::readBytes);
     }
 
     @Override
@@ -249,13 +240,13 @@ public class UniqueTokenValue implements VirtualValue {
         serializeTo(output::writeByte, output::writeLong, (data, len) -> output.write(data, 0, len));
     }
 
+    void serialize(final WritableSequentialData out) {
+        serializeTo(out::writeByte, out::writeLong, (data, len) -> out.writeBytes(data, 0, len));
+    }
+
     @Override
     public void serialize(final ByteBuffer byteBuffer) throws IOException {
         serializeTo(byteBuffer::put, byteBuffer::putLong, (data, len) -> byteBuffer.put(data, 0, len));
-    }
-
-    public void serialize(final WritableSequentialData out) {
-        serializeTo(out::writeByte, out::writeLong, (data, len) -> out.writeBytes(data, 0, len));
     }
 
     @Override

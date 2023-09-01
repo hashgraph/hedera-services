@@ -49,8 +49,8 @@ public class CryptoBenchMerkleDb extends CryptoBench {
     protected VirtualMap<BenchmarkKey, BenchmarkValue> createEmptyMap() {
         MerkleDbTableConfig<BenchmarkKey, BenchmarkValue> tableConfig = new MerkleDbTableConfig<>(
                         (short) 1, DigestType.SHA_384,
-                        (short) 1, new BenchmarkKeyMerkleDbSerializer(),
-                        (short) 1, new BenchmarkValueMerkleDbSerializer())
+                        (short) 1, new BenchmarkKeySerializer(),
+                        (short) 1, new BenchmarkValueSerializer())
                 .preferDiskIndices(false);
         MerkleDbDataSourceBuilder<BenchmarkKey, BenchmarkValue> dataSourceBuilder =
                 new MerkleDbDataSourceBuilder<>(tableConfig);

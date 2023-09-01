@@ -26,7 +26,6 @@ import static com.swirlds.merkledb.files.DataFileCommon.fileIndexFromDataLocatio
 import static com.swirlds.merkledb.files.DataFileCommon.isFullyWrittenDataFile;
 import static java.util.Collections.singletonList;
 
-import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.merkledb.KeyRange;
 import com.swirlds.merkledb.Snapshotable;
@@ -40,6 +39,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -474,6 +474,14 @@ public class DataFileCollection<D> implements Snapshotable {
                     }
                     // update the index
                     index.putIfEqual(path, dataLocation, newLocation);
+                } catch (final ClosedByInterruptException e) {
+                    logger.info(
+                            MERKLE_DB.getMarker(),
+                            "Failed to copy data item {} / {} due to thread interruption",
+                            fileIndex,
+                            fileOffset,
+                            e);
+                    throw e;
                 } catch (final IOException z) {
                     logger.error(EXCEPTION.getMarker(), "Failed to copy data item {} / {}", fileIndex, fileOffset, z);
                     throw z;

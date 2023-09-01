@@ -98,18 +98,6 @@ public class AccountVirtualMapValue implements VirtualValue {
      * {@inheritDoc}
      */
     @Override
-    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        this.balance = in.readLong();
-        this.sendThreshold = in.readLong();
-        this.receiveThreshold = in.readLong();
-        this.requireSignature = in.readByte() == 1;
-        this.uid = in.readLong();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public void serialize(final ByteBuffer buffer) throws IOException {
         buffer.putLong(balance);
         buffer.putLong(sendThreshold);
@@ -118,12 +106,32 @@ public class AccountVirtualMapValue implements VirtualValue {
         buffer.putLong(uid);
     }
 
-    public void serialize(final WritableSequentialData out) {
+    void serialize(final WritableSequentialData out) {
         out.writeLong(balance);
         out.writeLong(sendThreshold);
         out.writeLong(receiveThreshold);
         out.writeByte(getRequireSignatureAsByte());
         out.writeLong(uid);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
+        this.balance = in.readLong();
+        this.sendThreshold = in.readLong();
+        this.receiveThreshold = in.readLong();
+        this.requireSignature = in.readByte() == 1;
+        this.uid = in.readLong();
+    }
+
+    void deserialize(final ReadableSequentialData in) {
+        this.balance = in.readLong();
+        this.sendThreshold = in.readLong();
+        this.receiveThreshold = in.readLong();
+        this.requireSignature = in.readByte() == 1;
+        this.uid = in.readLong();
     }
 
     /**
@@ -136,14 +144,6 @@ public class AccountVirtualMapValue implements VirtualValue {
         this.receiveThreshold = buffer.getLong();
         this.requireSignature = buffer.get() == 1;
         this.uid = buffer.getLong();
-    }
-
-    public void deserialize(final ReadableSequentialData in) {
-        this.balance = in.readLong();
-        this.sendThreshold = in.readLong();
-        this.receiveThreshold = in.readLong();
-        this.requireSignature = in.readByte() == 1;
-        this.uid = in.readLong();
     }
 
     /**

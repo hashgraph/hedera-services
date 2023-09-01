@@ -17,7 +17,6 @@
 package com.swirlds.merkledb.files;
 
 import static com.hedera.pbj.runtime.ProtoParserTools.TAG_FIELD_OFFSET;
-import static com.swirlds.jasperdb.utilities.HashTools.DEFAULT_DIGEST;
 import static com.swirlds.merkledb.utilities.ProtoUtils.WIRE_TYPE_VARINT;
 
 import com.hedera.pbj.runtime.FieldDefinition;
@@ -25,6 +24,7 @@ import com.hedera.pbj.runtime.FieldType;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import com.swirlds.common.crypto.DigestType;
 import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.merkledb.serialize.DataItemHeader;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
@@ -34,6 +34,7 @@ import com.swirlds.merkledb.utilities.ProtoUtils;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
@@ -47,6 +48,12 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends Virtual
             new FieldDefinition("key", FieldType.BYTES, false, true, false, 2);
     static final FieldDefinition FIELD_LEAFRECORD_VALUE =
             new FieldDefinition("value", FieldType.BYTES, false, true, false, 3);
+
+    /**
+     * The digest type to use for Virtual hashes, if this is changed then serialized version need
+     * to change
+     */
+    public static final DigestType DEFAULT_DIGEST = DigestType.SHA_384;
 
     private final long currentVersion;
 
@@ -123,7 +130,8 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends Virtual
     }
 
     @Override
-    public void serialize(VirtualLeafRecord<K, V> leafRecord, WritableSequentialData out) {
+    public void serialize(@NonNull final VirtualLeafRecord<K, V> leafRecord,
+            @NonNull final WritableSequentialData out) {
         if (leafRecord.getPath() != 0) {
             ProtoUtils.writeTag(out, FIELD_LEAFRECORD_PATH);
             out.writeVarLong(leafRecord.getPath(), false);
@@ -161,7 +169,7 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends Virtual
     }
 
     @Override
-    public VirtualLeafRecord<K, V> deserialize(ReadableSequentialData in) {
+    public VirtualLeafRecord<K, V> deserialize(@NonNull final ReadableSequentialData in) {
         // default values
         long path = 0;
         K key = null;
@@ -233,7 +241,7 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends Virtual
     }
 
     @Override
-    public long extractKey(BufferedData dataItemData) {
+    public long extractKey(final BufferedData dataItemData) {
         return dataItemData.getLong(0);
     }
 

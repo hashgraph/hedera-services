@@ -144,8 +144,23 @@ public class DataFileReaderHammerTest {
         }
 
         @Override
+        public int getHeaderSize() {
+            throw new UnsupportedOperationException("Not implemented");
+        }
+
+        @Override
+        public DataItemHeader deserializeHeader(ByteBuffer buffer) {
+            throw new UnsupportedOperationException("Not implemented");
+        }
+
+        @Override
         public void serialize(byte[] data, WritableSequentialData out) {
             out.writeBytes(data);
+        }
+
+        @Override
+        public int serialize(byte[] data, ByteBuffer buffer) throws IOException {
+            throw new UnsupportedOperationException("Not implemented");
         }
 
         @Override
@@ -153,6 +168,11 @@ public class DataFileReaderHammerTest {
             final byte[] r = new byte[size];
             in.readBytes(r);
             return r;
+        }
+
+        @Override
+        public byte[] deserialize(ByteBuffer buffer, long dataVersion) throws IOException {
+            throw new UnsupportedOperationException("Not implemented");
         }
 
         @Override

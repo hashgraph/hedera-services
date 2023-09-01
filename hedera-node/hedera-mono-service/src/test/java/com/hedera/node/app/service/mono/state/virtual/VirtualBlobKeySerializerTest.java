@@ -30,7 +30,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import org.junit.jupiter.api.Test;
@@ -45,11 +44,17 @@ class VirtualBlobKeySerializerTest {
     void gettersWork() {
         final var bin = mock(ByteBuffer.class);
 
-        assertEquals(BYTES_IN_SERIALIZED_FORM, subject.deserializeKeySize(bin));
         assertEquals(BYTES_IN_SERIALIZED_FORM, subject.getSerializedSize());
         assertEquals(DATA_VERSION, subject.getCurrentDataVersion());
         assertEquals(CLASS_ID, subject.getClassId());
         assertEquals(CURRENT_VERSION, subject.getVersion());
+    }
+
+    @Test
+    void getSerializedSizeWorks() {
+        final var virtualBlobKey = new VirtualBlobKey(FILE_DATA, entityNum);
+
+        assertEquals(BYTES_IN_SERIALIZED_FORM, subject.getSerializedSize(virtualBlobKey));
     }
 
     @Test
@@ -64,13 +69,13 @@ class VirtualBlobKeySerializerTest {
 
     @Test
     void serializeWorks() throws IOException {
-        final var out = mock(SerializableDataOutputStream.class);
+        final var out = mock(ByteBuffer.class);
         final var virtualBlobKey = new VirtualBlobKey(FILE_DATA, entityNum);
 
         assertEquals(BYTES_IN_SERIALIZED_FORM, subject.serialize(virtualBlobKey, out));
 
-        verify(out).writeByte((byte) FILE_DATA.ordinal());
-        verify(out).writeInt(entityNum);
+        verify(out).put((byte) FILE_DATA.ordinal());
+        verify(out).putInt(entityNum);
     }
 
     @Test

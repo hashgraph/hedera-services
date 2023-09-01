@@ -52,27 +52,21 @@ public class BenchmarkKey implements VirtualLongKey {
     }
 
     @Override
-    public void serialize(ByteBuffer buffer) {
-        buffer.put(keyBytes);
+    public void serialize(final SerializableDataOutputStream outputStream) throws IOException {
+        outputStream.write(keyBytes);
     }
 
-    public void serialize(final WritableSequentialData out) {
+    void serialize(final WritableSequentialData out) {
         out.writeBytes(keyBytes);
     }
 
     @Override
-    public void serialize(SerializableDataOutputStream outputStream) throws IOException {
-        outputStream.write(keyBytes);
+    public void serialize(ByteBuffer buffer) {
+        buffer.put(keyBytes);
     }
 
     @Override
-    public void deserialize(ByteBuffer buffer) {
-        keyBytes = new byte[keySize];
-        buffer.get(keyBytes);
-    }
-
-    @Override
-    public void deserialize(SerializableDataInputStream inputStream, int dataVersion) throws IOException {
+    public void deserialize(final SerializableDataInputStream inputStream, final int dataVersion) throws IOException {
         assert dataVersion == getVersion() : "dataVersion=" + dataVersion + " != getVersion()=" + getVersion();
         keyBytes = new byte[keySize];
         int n = keySize;
@@ -81,13 +75,15 @@ public class BenchmarkKey implements VirtualLongKey {
         }
     }
 
-    public void deserialize(final ReadableSequentialData in) {
+    void deserialize(final ReadableSequentialData in) {
         keyBytes = new byte[keySize];
         in.readBytes(keyBytes);
     }
 
-    public static int getSerializedSize() {
-        return keySize;
+    @Override
+    public void deserialize(ByteBuffer buffer) {
+        keyBytes = new byte[keySize];
+        buffer.get(keyBytes);
     }
 
     @Override
@@ -118,7 +114,9 @@ public class BenchmarkKey implements VirtualLongKey {
 
     public boolean equals(BufferedData buffer) {
         for (int i = 0; i < keySize; ++i) {
-            if (buffer.readByte() != keyBytes[i]) return false;
+            if (buffer.readByte() != keyBytes[i]) {
+                return false;
+            }
         }
         return true;
     }

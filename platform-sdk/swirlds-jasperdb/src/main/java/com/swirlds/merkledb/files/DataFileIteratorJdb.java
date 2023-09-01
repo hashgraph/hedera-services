@@ -16,8 +16,7 @@
 
 package com.swirlds.merkledb.files;
 
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
-
+import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.serialize.DataItemHeader;
@@ -30,7 +29,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Objects;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * Iterator class for iterating over data items in a DataFile. It is designed to be used in a while(iter.next()){...}
@@ -198,7 +196,7 @@ public final class DataFileIteratorJdb implements DataFileIterator {
     /** toString for debugging */
     @Override
     public String toString() {
-        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+        return new ToStringBuilder(this)
                 .append("fileIndex", metadata.getIndex())
                 .append("currentDataItemHeader", currentDataItemHeader)
                 .append("currentDataItemIndex", currentDataItem)

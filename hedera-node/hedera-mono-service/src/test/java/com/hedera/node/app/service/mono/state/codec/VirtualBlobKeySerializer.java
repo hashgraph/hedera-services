@@ -16,31 +16,66 @@
 
 package com.hedera.node.app.service.mono.state.codec;
 
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.jasperdb.files.hashmap.KeySerializer;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import com.swirlds.merkledb.serialize.KeySerializer;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 public class VirtualBlobKeySerializer implements KeySerializer<VirtualBlobKey> {
+
     static final long CLASS_ID = 0x6459da78c643abd6L;
+
     static final int CURRENT_VERSION = 1;
 
     static final long DATA_VERSION = 1;
 
+    // Serializer info
+
     @Override
-    public int deserializeKeySize(ByteBuffer byteBuffer) {
-        return VirtualBlobKey.sizeInBytes();
+    public long getClassId() {
+        return CLASS_ID;
     }
 
     @Override
-    public int getSerializedSize(long dataVersion) {
-        return VirtualBlobKey.sizeInBytes();
+    public int getVersion() {
+        return CURRENT_VERSION;
     }
+
+    // Key info
 
     @Override
     public long getCurrentDataVersion() {
         return DATA_VERSION;
+    }
+
+    // Key serialization
+
+    @Override
+    public int getSerializedSize() {
+        return VirtualBlobKey.sizeInBytes();
+    }
+
+    @Override
+    public void serialize(@NonNull final VirtualBlobKey key, final WritableSequentialData out) {
+        key.serialize(out);
+    }
+
+    @Override
+    public int serialize(final VirtualBlobKey key, final ByteBuffer byteBuffer) throws IOException {
+        key.serialize(byteBuffer);
+        return VirtualBlobKey.sizeInBytes();
+    }
+
+    // Key deserialization
+
+    @Override
+    public VirtualBlobKey deserialize(@NonNull final ReadableSequentialData in) {
+        final var key = new VirtualBlobKey();
+        key.deserialize(in);
+        return key;
     }
 
     @Override
@@ -51,33 +86,12 @@ public class VirtualBlobKeySerializer implements KeySerializer<VirtualBlobKey> {
     }
 
     @Override
-    public boolean equals(ByteBuffer buffer, int version, VirtualBlobKey key) throws IOException {
+    public boolean equals(@NonNull final BufferedData buf, @NonNull final VirtualBlobKey keyToCompare) {
+        return keyToCompare.equalsTo(buf);
+    }
+
+    @Override
+    public boolean equals(final ByteBuffer buffer, final int version, final VirtualBlobKey key) throws IOException {
         return key.getType().ordinal() == (0xff & buffer.get()) && key.getEntityNumCode() == buffer.getInt();
-    }
-
-    @Override
-    public int serialize(VirtualBlobKey key, SerializableDataOutputStream out) throws IOException {
-        key.serialize(out);
-        return VirtualBlobKey.sizeInBytes();
-    }
-
-    @Override
-    public void deserialize(SerializableDataInputStream in, int version) throws IOException {
-        /* No-op */
-    }
-
-    @Override
-    public void serialize(SerializableDataOutputStream out) throws IOException {
-        /* No-op */
-    }
-
-    @Override
-    public long getClassId() {
-        return CLASS_ID;
-    }
-
-    @Override
-    public int getVersion() {
-        return CURRENT_VERSION;
     }
 }

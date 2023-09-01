@@ -16,66 +16,25 @@
 
 package com.hedera.node.app.service.mono.state.virtual.schedule;
 
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.jasperdb.files.hashmap.KeyIndexType;
-import com.swirlds.jasperdb.files.hashmap.KeySerializer;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import com.swirlds.merkledb.serialize.KeyIndexType;
+import com.swirlds.merkledb.serialize.KeySerializer;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 
 public class ScheduleEqualityVirtualKeySerializer implements KeySerializer<ScheduleEqualityVirtualKey> {
+
     static final long CLASS_ID = 0xc7b4f042e2fe2417L;
+
     static final int CURRENT_VERSION = 1;
 
     static final long DATA_VERSION = 1;
 
-    @Override
-    public int deserializeKeySize(ByteBuffer byteBuffer) {
-        return ScheduleEqualityVirtualKey.sizeInBytes();
-    }
-
-    @Override
-    public int getSerializedSize(long dataVersion) {
-        return ScheduleEqualityVirtualKey.sizeInBytes();
-    }
-
-    @Override
-    public long getCurrentDataVersion() {
-        return DATA_VERSION;
-    }
-
-    @Override
-    public KeyIndexType getIndexType() {
-        return KeyIndexType.GENERIC;
-    }
-
-    @Override
-    public ScheduleEqualityVirtualKey deserialize(ByteBuffer byteBuffer, long version) throws IOException {
-        final var key = new ScheduleEqualityVirtualKey();
-        key.deserialize(byteBuffer);
-        return key;
-    }
-
-    @Override
-    public boolean equals(ByteBuffer buffer, int version, ScheduleEqualityVirtualKey key) throws IOException {
-        return key.equals(buffer, version);
-    }
-
-    @Override
-    public int serialize(ScheduleEqualityVirtualKey key, SerializableDataOutputStream out) throws IOException {
-        key.serialize(out);
-        return ScheduleEqualityVirtualKey.sizeInBytes();
-    }
-
-    @Override
-    public void deserialize(SerializableDataInputStream in, int version) throws IOException {
-        /* No-op */
-    }
-
-    @Override
-    public void serialize(SerializableDataOutputStream out) throws IOException {
-        /* No-op */
-    }
+    // Serializer info
 
     @Override
     public long getClassId() {
@@ -85,5 +44,67 @@ public class ScheduleEqualityVirtualKeySerializer implements KeySerializer<Sched
     @Override
     public int getVersion() {
         return CURRENT_VERSION;
+    }
+
+    // Data version
+
+    @Override
+    public long getCurrentDataVersion() {
+        return DATA_VERSION;
+    }
+
+    // Key serialization
+
+    @Override
+    public KeyIndexType getIndexType() {
+        return KeyIndexType.GENERIC;
+    }
+
+    @Override
+    public int getSerializedSize() {
+        return ScheduleEqualityVirtualKey.sizeInBytes();
+    }
+
+    @Override
+    public void serialize(@NonNull final ScheduleEqualityVirtualKey key, @NonNull final WritableSequentialData out) {
+        Objects.requireNonNull(key);
+        Objects.requireNonNull(out);
+        key.serialize(out);
+    }
+
+    @Override
+    public int serialize(final ScheduleEqualityVirtualKey key, final ByteBuffer buffer) throws IOException {
+        key.serialize(buffer);
+        return getSerializedSize();
+    }
+
+    // Key deserialization
+
+
+    @Override
+    public ScheduleEqualityVirtualKey deserialize(@NonNull ReadableSequentialData in) {
+        Objects.requireNonNull(in);
+        final var key = new ScheduleEqualityVirtualKey();
+        key.deserialize(in);
+        return key;
+    }
+
+    @Override
+    public ScheduleEqualityVirtualKey deserialize(final ByteBuffer buffer, final long version) throws IOException {
+        final var key = new ScheduleEqualityVirtualKey();
+        key.deserialize(buffer);
+        return key;
+    }
+
+    @Override
+    public boolean equals(@NonNull BufferedData buffer, @NonNull ScheduleEqualityVirtualKey keyToCompare) {
+        Objects.requireNonNull(buffer);
+        Objects.requireNonNull(keyToCompare);
+        return keyToCompare.equalsTo(buffer);
+    }
+
+    @Override
+    public boolean equals(ByteBuffer buffer, int version, ScheduleEqualityVirtualKey key) throws IOException {
+        return key.equalsTo(buffer, version);
     }
 }

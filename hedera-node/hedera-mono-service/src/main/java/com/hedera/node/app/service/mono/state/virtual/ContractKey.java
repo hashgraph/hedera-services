@@ -23,6 +23,7 @@ import static com.hedera.node.app.service.mono.state.virtual.KeyPackingUtils.ser
 
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -170,18 +171,19 @@ public final class ContractKey implements VirtualKey {
 
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
-        serializeReturningBytesWritten(out);
-    }
-
-    public int serializeReturningBytesWritten(final SerializableDataOutputStream out) throws IOException {
         out.write(getContractIdNonZeroBytesAndUint256KeyNonZeroBytes());
         for (int b = contractIdNonZeroBytes - 1; b >= 0; b--) {
             out.write((byte) (contractId >> (b * 8)));
         }
         serializePackedBytes(uint256Key, uint256KeyNonZeroBytes, out);
-        return 1 // total non-zero bytes count
-                + contractIdNonZeroBytes // non-zero contractId bytes
-                + uint256KeyNonZeroBytes; // non-zero uint256Key bytes
+    }
+
+    void serialize(final WritableSequentialData out) {
+        out.writeByte(getContractIdNonZeroBytesAndUint256KeyNonZeroBytes());
+        for (int b = contractIdNonZeroBytes - 1; b >= 0; b--) {
+            out.writeByte((byte) (contractId >> (b * 8)));
+        }
+        serializePackedBytesToPbj(uint256Key, uint256KeyNonZeroBytes, out);
     }
 
     @Override
@@ -193,14 +195,6 @@ public final class ContractKey implements VirtualKey {
         serializePackedBytesToBuffer(uint256Key, uint256KeyNonZeroBytes, buffer);
     }
 
-    public void serialize(final WritableSequentialData out) {
-        out.writeByte(getContractIdNonZeroBytesAndUint256KeyNonZeroBytes());
-        for (int b = contractIdNonZeroBytes - 1; b >= 0; b--) {
-            out.writeByte((byte) (contractId >> (b * 8)));
-        }
-        serializePackedBytesToPbj(uint256Key, uint256KeyNonZeroBytes, out);
-    }
-
     @Override
     public void deserialize(final SerializableDataInputStream in, final int i) throws IOException {
         final byte packedSize = in.readByte();
@@ -208,6 +202,14 @@ public final class ContractKey implements VirtualKey {
         this.uint256KeyNonZeroBytes = getUint256KeyNonZeroBytesFromPacked(packedSize);
         this.contractId = deserializeContractID(contractIdNonZeroBytes, in, SerializableDataInputStream::readByte);
         this.uint256Key = deserializeUint256Key(uint256KeyNonZeroBytes, in, SerializableDataInputStream::readByte);
+    }
+
+    void deserialize(final ReadableSequentialData in) {
+        final byte packedSize = in.readByte();
+        this.contractIdNonZeroBytes = getContractIdNonZeroBytesFromPacked(packedSize);
+        this.uint256KeyNonZeroBytes = getUint256KeyNonZeroBytesFromPacked(packedSize);
+        this.contractId = deserializeContractID(contractIdNonZeroBytes, in, ReadableSequentialData::readByte);
+        this.uint256Key = deserializeUint256Key(uint256KeyNonZeroBytes, in, ReadableSequentialData::readByte);
     }
 
     @Override
@@ -219,12 +221,23 @@ public final class ContractKey implements VirtualKey {
         this.uint256Key = deserializeUint256Key(uint256KeyNonZeroBytes, buf, ByteBuffer::get);
     }
 
-    public void deserialize(final ReadableSequentialData in) {
-        final byte packedSize = in.readByte();
-        this.contractIdNonZeroBytes = getContractIdNonZeroBytesFromPacked(packedSize);
-        this.uint256KeyNonZeroBytes = getUint256KeyNonZeroBytesFromPacked(packedSize);
-        this.contractId = deserializeContractID(contractIdNonZeroBytes, in, ReadableSequentialData::readByte);
-        this.uint256Key = deserializeUint256Key(uint256KeyNonZeroBytes, in, ReadableSequentialData::readByte);
+    boolean equalsTo(final BufferedData buf) {
+        byte packedSize = buf.readByte();
+        final byte contractIdNonZeroBytes = getContractIdNonZeroBytesFromPacked(packedSize);
+        if (contractIdNonZeroBytes != this.contractIdNonZeroBytes) {
+            return false;
+        }
+        final byte uint256KeyNonZeroBytes = getUint256KeyNonZeroBytesFromPacked(packedSize);
+        if (uint256KeyNonZeroBytes != this.uint256KeyNonZeroBytes) {
+            return false;
+        }
+        final long contractId = deserializeContractID(contractIdNonZeroBytes, buf, BufferedData::readByte);
+        if (contractId != this.contractId) {
+            return false;
+        }
+        final int[] uint256Key = deserializeUint256Key(uint256KeyNonZeroBytes, buf, BufferedData::readByte);
+        return Arrays.equals(uint256Key, this.uint256Key);
+
     }
 
     @Override

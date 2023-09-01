@@ -53,7 +53,7 @@ public class MonoServicesMain implements SwirldMain {
      * @param args ignored
      */
     public static void main(final String... args) {
-        Browser.main(null);
+        Browser.main(args);
     }
 
     @Override

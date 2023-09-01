@@ -25,8 +25,11 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.SequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import org.junit.jupiter.api.Test;
@@ -41,7 +44,6 @@ class EntityNumVirtualKeySerializerTest {
     void gettersWork() {
         final var bin = mock(ByteBuffer.class);
 
-        assertEquals(BYTES_IN_SERIALIZED_FORM, subject.deserializeKeySize(bin));
         assertEquals(BYTES_IN_SERIALIZED_FORM, subject.getSerializedSize());
         assertEquals(EntityNumVirtualKeySerializer.DATA_VERSION, subject.getCurrentDataVersion());
         assertEquals(EntityNumVirtualKeySerializer.CLASS_ID, subject.getClassId());
@@ -49,7 +51,16 @@ class EntityNumVirtualKeySerializerTest {
     }
 
     @Test
-    void deserializeWorks() throws IOException {
+    void deserializeUsingPbjWorks() {
+        final var in = mock(ReadableSequentialData.class);
+        final var expectedKey = new EntityNumVirtualKey(longKey);
+        given(in.readLong()).willReturn(longKey);
+
+        assertEquals(expectedKey, subject.deserialize(in));
+    }
+
+    @Test
+    void deserializeUsingByteBufferWorks() throws IOException {
         final var bin = mock(ByteBuffer.class);
         final var expectedKey = new EntityNumVirtualKey(longKey);
         given(bin.getLong()).willReturn(longKey);
@@ -58,13 +69,38 @@ class EntityNumVirtualKeySerializerTest {
     }
 
     @Test
-    void serializeWorks() throws IOException {
-        final var out = mock(SerializableDataOutputStream.class);
+    void serializeUsingPbjWorks() throws IOException {
+        final var out = BufferedData.allocate(32);
+        final var virtualKey = new EntityNumVirtualKey(longKey);
+
+        final long origPos = out.position();
+        subject.serialize(virtualKey, out);
+        final long finalPos = out.position();
+        assertEquals(BYTES_IN_SERIALIZED_FORM, finalPos - origPos);
+
+        assertEquals(longKey, out.getLong(0));
+    }
+
+    @Test
+    void serializeUsingByteBufferWorks() throws IOException {
+        final var out = mock(ByteBuffer.class);
         final var virtualKey = new EntityNumVirtualKey(longKey);
 
         assertEquals(BYTES_IN_SERIALIZED_FORM, subject.serialize(virtualKey, out));
 
-        verify(out).writeLong(longKey);
+        verify(out).putLong(longKey);
+    }
+
+    @Test
+    void equalsUsingBufferedDataWorks() throws IOException {
+        final var someKey = new EntityNumVirtualKey(longKey);
+        final var diffNum = new EntityNumVirtualKey(otherLongKey);
+
+        final var buf = mock(BufferedData.class);
+        given(buf.readLong()).willReturn(someKey.getKeyAsLong());
+
+        assertTrue(subject.equals(buf, someKey));
+        assertFalse(subject.equals(buf, diffNum));
     }
 
     @Test

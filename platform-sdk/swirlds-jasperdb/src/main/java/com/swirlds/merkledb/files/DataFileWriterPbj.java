@@ -19,7 +19,6 @@ package com.swirlds.merkledb.files;
 import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_ITEMS;
 import static com.swirlds.merkledb.files.DataFileCommon.PAGE_SIZE;
 import static com.swirlds.merkledb.files.DataFileCommon.createDataFilePath;
-import static com.swirlds.merkledb.files.DataFileCommon.getLockFilePath;
 
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
@@ -53,12 +52,6 @@ public class DataFileWriterPbj<D> implements DataFileWriter<D> {
     private static final int MMAP_BUF_SIZE = PAGE_SIZE * 1024 * 4;
 
     /**
-     * The file channel we are writing to. The channel isn't used directly to write bytes, but to
-     * create mapped byte buffers.
-     */
-    // Future work: make it private once DataFileWriterJdb is dropped
-    protected FileChannel writingChannel;
-    /**
      * The current mapped byte buffer used for writing. When overflowed, it is released, and another
      * buffer is mapped from the file channel.
      */
@@ -82,9 +75,6 @@ public class DataFileWriterPbj<D> implements DataFileWriter<D> {
     /** The path to the data file we are writing */
     // Future work: make it private once DataFileWriterJdb is dropped
     protected final Path path;
-    /** The path to the lock file for data file we are writing */
-    // Future work: make it private once DataFileWriterJdb is dropped
-    protected final Path lockFilePath;
     /** File metadata */
     private final DataFileMetadata metadata;
     /**
@@ -126,18 +116,12 @@ public class DataFileWriterPbj<D> implements DataFileWriter<D> {
             throws IOException {
         this.dataItemSerializer = dataItemSerializer;
         this.path = createDataFilePath(filePrefix, dataFileDir, index, creationTime, extension);
-        this.lockFilePath = getLockFilePath(path);
-        if (Files.exists(lockFilePath)) {
-            throw new IOException("Tried to start writing to data file [" + path + "] when lock file already existed");
-        }
         metadata = new DataFileMetadata(
                 0, // data item count will be updated later in finishWriting()
                 index,
                 creationTime,
                 dataItemSerializer.getCurrentDataVersion());
-        writingChannel = FileChannel.open(
-                path, StandardOpenOption.CREATE_NEW, StandardOpenOption.READ, StandardOpenOption.WRITE);
-        Files.createFile(lockFilePath);
+        Files.createFile(path);
         writeHeader();
     }
 
@@ -149,21 +133,27 @@ public class DataFileWriterPbj<D> implements DataFileWriter<D> {
      * @throws IOException if I/O error(s) occurred
      */
     private void moveWritingBuffer(final long newMmapPos) throws IOException {
-        mmapPositionInFile = newMmapPos;
-        if (writingMmap != null) {
-            DataFileCommon.closeMmapBuffer(writingMmap);
+        try (final FileChannel channel = FileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE)) {
+            final MappedByteBuffer newMmap = channel.map(MapMode.READ_WRITE, newMmapPos, MMAP_BUF_SIZE);
+            if (newMmap == null) {
+                throw new IOException("Failed to map file channel to memory");
+            }
+            if (writingMmap != null) {
+                DataFileCommon.closeMmapBuffer(writingMmap);
+            }
+            mmapPositionInFile = newMmapPos;
+            writingMmap = newMmap;
+            writingPbjData = BufferedData.wrap(writingMmap);
         }
-        writingMmap = writingChannel.map(MapMode.READ_WRITE, mmapPositionInFile, MMAP_BUF_SIZE);
-        writingPbjData = BufferedData.wrap(writingMmap);
     }
 
     // Future work: make it private
     protected void writeHeader() throws IOException {
-        writingHeaderMmap = writingChannel.map(MapMode.READ_WRITE, 0, 1024);
-        writingHeaderPbjData = BufferedData.wrap(writingHeaderMmap);
-
-        metadata.writeTo(writingHeaderPbjData);
-
+        try (final FileChannel channel = FileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE)) {
+            writingHeaderMmap = channel.map(MapMode.READ_WRITE, 0, 1024);
+            writingHeaderPbjData = BufferedData.wrap(writingHeaderMmap);
+            metadata.writeTo(writingHeaderPbjData);
+        }
         // prepare to write data items
         moveWritingBuffer(writingHeaderPbjData.position());
     }
@@ -294,15 +284,11 @@ public class DataFileWriterPbj<D> implements DataFileWriter<D> {
         // release all the resources
         DataFileCommon.closeMmapBuffer(writingHeaderMmap);
         DataFileCommon.closeMmapBuffer(writingMmap);
-        // set the right file size
-        writingChannel.truncate(totalFileSize);
-        // after finishWriting(), mmapPositionInFile should be equal to the file size
-        mmapPositionInFile = totalFileSize;
-        // close the channel
-        writingChannel.force(true);
-        writingChannel.close();
-        writingChannel = null;
-        // delete lock file
-        Files.delete(lockFilePath);
+
+        try (FileChannel channel = FileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE)) {
+            channel.truncate(totalFileSize);
+            // after finishWriting(), mmapPositionInFile should be equal to the file size
+            mmapPositionInFile = totalFileSize;
+        }
     }
 }

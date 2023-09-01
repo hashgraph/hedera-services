@@ -71,25 +71,20 @@ public class VirtualBlobKey implements VirtualKey {
     }
 
     @Override
-    public void serialize(final ByteBuffer buffer) throws IOException {
-        buffer.put((byte) type.ordinal());
-        buffer.putInt(entityNumCode);
+    public void serialize(final SerializableDataOutputStream out) throws IOException {
+        out.writeByte(type.ordinal());
+        out.writeInt(entityNumCode);
     }
 
-    public void serialize(final WritableSequentialData out) {
+    void serialize(final WritableSequentialData out) {
         out.writeByte((byte) type.ordinal());
         out.writeInt(entityNumCode);
     }
 
     @Override
-    public void deserialize(final ByteBuffer buffer) throws IOException {
-        type = BLOB_TYPES[0xff & buffer.get()];
-        entityNumCode = buffer.getInt();
-    }
-
-    public void deserialize(final ReadableSequentialData in) {
-        type = BLOB_TYPES[0xff & in.readByte()];
-        entityNumCode = in.readInt();
+    public void serialize(final ByteBuffer buffer) throws IOException {
+        buffer.put((byte) type.ordinal());
+        buffer.putInt(entityNumCode);
     }
 
     @Override
@@ -98,15 +93,20 @@ public class VirtualBlobKey implements VirtualKey {
         entityNumCode = in.readInt();
     }
 
-    @Override
-    public long getClassId() {
-        return CLASS_ID;
+    void deserialize(final ReadableSequentialData in) {
+        type = BLOB_TYPES[0xff & in.readByte()];
+        entityNumCode = in.readInt();
     }
 
     @Override
-    public void serialize(final SerializableDataOutputStream out) throws IOException {
-        out.writeByte(type.ordinal());
-        out.writeInt(entityNumCode);
+    public void deserialize(final ByteBuffer buffer) throws IOException {
+        type = BLOB_TYPES[0xff & buffer.get()];
+        entityNumCode = buffer.getInt();
+    }
+
+    @Override
+    public long getClassId() {
+        return CLASS_ID;
     }
 
     @Override
@@ -154,15 +154,14 @@ public class VirtualBlobKey implements VirtualKey {
      * Verifies if the content from the buffer is equal to this virtual blob key.
      *
      * @param buffer The buffer with data to be compared with this key
-     * @param version The version of the data inside the buffer
      * @return If the content from the buffer has the same data as this instance
-     * @throws IOException If an I/O error occurred
      */
-    public boolean equals(final ByteBuffer buffer, final int version) throws IOException {
-        return (type.ordinal() == (0xff & buffer.get())) && (entityNumCode == buffer.getInt());
+    boolean equalsTo(final BufferedData buffer) {
+        return (type.ordinal() == (0xff & buffer.readByte())) && (entityNumCode == buffer.readInt());
     }
 
-    public boolean equals(final BufferedData buffer) {
-        return (type.ordinal() == (0xff & buffer.readByte())) && (entityNumCode == buffer.readInt());
+    @Deprecated(forRemoval = true)
+    boolean equalsTo(final ByteBuffer buffer, final int version) throws IOException {
+        return (type.ordinal() == (0xff & buffer.get())) && (entityNumCode == buffer.getInt());
     }
 }

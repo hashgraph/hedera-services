@@ -41,7 +41,7 @@ public final class VirtualHashRecordSerializer implements DataItemSerializer<Vir
             new FieldDefinition("hash", FieldType.BYTES, false, true, false, 2);
 
     /**
-     * The digest type to use for Virtual Internals, if this is changed then serialized version need
+     * The digest type to use for Virtual hashes, if this is changed then serialized version need
      * to change
      */
     public static final DigestType DEFAULT_DIGEST = DigestType.SHA_384;

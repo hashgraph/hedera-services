@@ -16,7 +16,6 @@
 
 package com.swirlds.merkledb;
 
-import static org.apache.commons.lang3.RandomStringUtils.randomAlphabetic;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -28,6 +27,7 @@ import com.swirlds.virtualmap.datasource.VirtualKeySet;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -130,7 +130,7 @@ public class MerkleDbTest {
     @DisplayName("Load existing datasource")
     void testLoadExistingDatasource() throws IOException {
         final MerkleDb instance = MerkleDb.getDefaultInstance();
-        final String tableName = randomAlphabetic(10);
+        final String tableName = UUID.randomUUID().toString();
         final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig = fixedConfig();
         instance.createDataSource(tableName, tableConfig, false).close();
 
@@ -147,7 +147,7 @@ public class MerkleDbTest {
     @DisplayName("Create datasource with corrupted file structure - directory exists but metadata is missing")
     void testDataSourceUsingAbsentDir() throws IOException {
         final MerkleDb instance = MerkleDb.getDefaultInstance();
-        final String tableName = randomAlphabetic(10);
+        final String tableName = UUID.randomUUID().toString();
         final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig = fixedConfig();
         // creating empty table directory with no metadata
         Path tableStorageDir = instance.getTableDir(tableName, instance.getNextTableId() + 1);
@@ -160,7 +160,7 @@ public class MerkleDbTest {
     @DisplayName("Test creation of a virtual key set")
     void testBuildKeySet() throws IOException {
         final MerkleDb instance = MerkleDb.getDefaultInstance();
-        final String tableName = randomAlphabetic(10);
+        final String tableName = UUID.randomUUID().toString();
         final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig = fixedConfig();
         final MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dataSource =
                 instance.createDataSource(tableName, tableConfig, false);

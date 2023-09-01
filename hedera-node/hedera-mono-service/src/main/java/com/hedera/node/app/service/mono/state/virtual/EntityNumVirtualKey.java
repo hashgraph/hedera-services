@@ -113,10 +113,8 @@ public final class EntityNumVirtualKey implements VirtualLongKey {
         out.writeLong(value);
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        value = in.readLong();
+    void serialize(final WritableSequentialData out) {
+        out.writeLong(value);
     }
 
     /** {@inheritDoc} */
@@ -125,18 +123,20 @@ public final class EntityNumVirtualKey implements VirtualLongKey {
         buffer.putLong(value);
     }
 
-    public void serialize(final WritableSequentialData out) {
-        out.writeLong(value);
+    /** {@inheritDoc} */
+    @Override
+    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
+        value = in.readLong();
+    }
+
+    void deserialize(final ReadableSequentialData in) {
+        value = in.readLong();
     }
 
     /** {@inheritDoc} */
     @Override
     public void deserialize(final ByteBuffer buffer) throws IOException {
         value = buffer.getLong();
-    }
-
-    public void deserialize(final ReadableSequentialData in) {
-        value = in.readLong();
     }
 
     /** {@inheritDoc} */
@@ -159,17 +159,16 @@ public final class EntityNumVirtualKey implements VirtualLongKey {
      * Verifies if the content from {@code buffer} is equal to the content of this instance.
      *
      * @param buffer The buffer with data to be compared with this class.
-     * @param version The version of the data inside the given {@code buffer}.
      * @return {@code true} if the content from the buffer has the same data as this instance.
      *     {@code false}, otherwise.
-     * @throws IOException If an I/O error occurred
      */
-    public boolean equals(final ByteBuffer buffer, final int version) throws IOException {
-        return buffer.getLong() == this.value;
+    boolean equalsTo(final BufferedData buffer) {
+        return buffer.readLong() == this.value;
     }
 
-    public boolean equals(final BufferedData buffer) {
-        return buffer.readLong() == this.value;
+    @Deprecated(forRemoval = true)
+    boolean equalsTo(final ByteBuffer buffer, final int version) {
+        return buffer.getLong() == this.value;
     }
 
     /** {@inheritDoc} */

@@ -35,6 +35,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class MonoMapCodecAdapterTest {
+
     private static final VirtualBlobKeySerializer SERIALIZER = new VirtualBlobKeySerializer();
 
     @Mock

@@ -16,6 +16,7 @@
 
 package com.swirlds.merkle.map.test;
 
+import static com.swirlds.common.utility.CommonUtils.byteCountToDisplaySize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -29,7 +30,6 @@ import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Random;
 import java.util.function.BiConsumer;
-import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -230,7 +230,6 @@ class MerkleMapMemoryTests {
 
         final long deltaUsed = memoryStats[memoryStats.length - 1][2] - memoryStats[0][2];
 
-        System.out.printf(
-                "Total Estimated MerkleMap Usage: %,d (%s)%n", deltaUsed, FileUtils.byteCountToDisplaySize(deltaUsed));
+        System.out.printf("Total Estimated MerkleMap Usage: %,d (%s)%n", deltaUsed, byteCountToDisplaySize(deltaUsed));
     }
 }

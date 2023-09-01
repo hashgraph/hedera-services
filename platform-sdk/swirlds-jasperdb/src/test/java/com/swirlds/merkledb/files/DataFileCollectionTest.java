@@ -16,6 +16,7 @@
 
 package com.swirlds.merkledb.files;
 
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
 import static com.swirlds.merkledb.MerkleDbTestUtils.checkDirectMemoryIsCleanedUpToLessThanBaseUsage;
 import static com.swirlds.merkledb.MerkleDbTestUtils.getDirectMemoryUsedBytes;
 import static com.swirlds.merkledb.files.DataFileCollectionTestUtils.checkData;
@@ -30,7 +31,10 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.when;
 
+import com.swirlds.common.test.logging.MockAppender;
 import com.swirlds.common.units.UnitConstants;
 import com.swirlds.merkledb.KeyRange;
 import com.swirlds.merkledb.collections.CASableLongIndex;
@@ -41,7 +45,9 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -53,14 +59,18 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.mockito.Mockito;
 
 @SuppressWarnings("SameParameterValue")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -587,27 +597,7 @@ class DataFileCollectionTest {
         final LongListHeap storedOffsets = new LongListHeap(5000);
         storedOffsetsMap.put(testType, storedOffsets);
         // create 10x 100 item files
-        int count = 0;
-        for (int f = 0; f < 10; f++) {
-            fileCollection.startWriting();
-            // put in 1000 items
-            for (int i = count; i < count + 100; i++) {
-                long[] dataValue;
-                switch (testType) {
-                    default:
-                    case fixed:
-                        dataValue = new long[] {i, i + 10_000};
-                        break;
-                    case variable:
-                        dataValue = getVariableSizeDataForI(i, 10_000);
-                        break;
-                }
-                // store in file
-                storedOffsets.put(i, fileCollection.storeDataItem(dataValue));
-            }
-            fileCollection.endWriting(0, count + 100).setFileCompleted();
-            count += 100;
-        }
+        populateDataFileCollection(testType, fileCollection, storedOffsets);
         // check 10 files were created and data is correct
         assertEquals(
                 10,
@@ -646,6 +636,99 @@ class DataFileCollectionTest {
         checkData(fileCollectionMap.get(testType), storedOffsetsMap.get(testType), testType, 0, 1000, 10_000);
         // close db
         fileCollection2.close();
+    }
+
+    private static void populateDataFileCollection(
+            FilesTestType testType, DataFileCollection<long[]> fileCollection, LongListHeap storedOffsets)
+            throws IOException {
+        int count = 0;
+        for (int f = 0; f < 10; f++) {
+            fileCollection.startWriting();
+            // put in 1000 items
+            for (int i = count; i < count + 100; i++) {
+                long[] dataValue;
+                switch (testType) {
+                    default:
+                    case fixed:
+                        dataValue = new long[] {i, i + 10_000};
+                        break;
+                    case variable:
+                        dataValue = getVariableSizeDataForI(i, 10_000);
+                        break;
+                }
+                // store in file
+                storedOffsets.put(i, fileCollection.storeDataItem(dataValue));
+            }
+            fileCollection.endWriting(0, count + 100).setFileCompleted();
+            count += 100;
+        }
+    }
+
+    /**
+     * This test emulates scenario in which compaction is interrupted by thread interruption. This event shouldn't be
+     * reported as an error in the logs.
+     */
+    @Test
+    public void testClosedByInterruptException() throws IOException {
+        // mock appender to capture the log statements
+        final MockAppender mockAppender = new MockAppender("testClosedByInterruptException");
+        Logger logger = (Logger) LogManager.getLogger(DataFileCollection.class);
+        mockAppender.start();
+        logger.addAppender(mockAppender);
+        final Path dbDir = tempFileDir.resolve("testClosedByInterruptException");
+        final String storeName = "testClosedByInterruptException";
+
+        // init file collection with some content to compact
+        final DataFileCollection<long[]> fileCollection =
+                new DataFileCollection<>(dbDir, storeName, FilesTestType.fixed.dataItemSerializer, null);
+        final LongListHeap storedOffsets = new LongListHeap(5000);
+        populateDataFileCollection(FilesTestType.fixed, fileCollection, storedOffsets);
+
+        // a flag to make sure that `compactFiles` th
+        AtomicBoolean closedByInterruptFromCompaction = new AtomicBoolean(false);
+
+        final Thread thread = new Thread(() -> {
+            List<DataFileReader<long[]>> allCompletedFiles = fileCollection.getAllCompletedFiles();
+            DataFileReader<long[]> spy = Mockito.spy(allCompletedFiles.get(0));
+            try {
+                AtomicInteger count = new AtomicInteger(0);
+                when(spy.getFileType()).thenAnswer(invocation -> {
+                    // on the first call to getFileType(), we interrupt the thread
+                    Thread.currentThread().interrupt();
+                    return invocation.callRealMethod();
+                });
+
+                List<DataFileReader<long[]>> allCompletedFilesUpdated = new ArrayList<>(allCompletedFiles);
+                allCompletedFilesUpdated.set(0, spy);
+                fileCollection.compactFiles(storedOffsets, allCompletedFilesUpdated);
+            } catch (InterruptedException e) {
+                // we expect interrupted exception here
+                closedByInterruptFromCompaction.set(true);
+            } catch (IOException e) {
+                fail("Exception should not be thrown");
+            }
+            reset(spy);
+        });
+        thread.start();
+        try {
+            assertEventuallyTrue(
+                    () -> {
+                        if (!closedByInterruptFromCompaction.get()) {
+                            return false;
+                        }
+                        if (mockAppender.size() == 0) {
+                            return false;
+                        }
+                        final String logMsg = mockAppender.get(0);
+                        assertTrue(logMsg.startsWith("MERKLE_DB - INFO - Failed to copy data item 0"));
+                        assertTrue(logMsg.endsWith("due to thread interruption"));
+                        return true;
+                    },
+                    Duration.ofMillis(5000),
+                    "Compaction should not throw exception when interrupted");
+        } finally {
+            mockAppender.stop();
+        }
     }
 
     /**

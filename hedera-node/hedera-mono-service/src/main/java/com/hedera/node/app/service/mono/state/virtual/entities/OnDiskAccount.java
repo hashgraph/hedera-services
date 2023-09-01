@@ -186,27 +186,10 @@ public class OnDiskAccount implements VirtualValue, HederaAccount {
         return 256; // estimation based on mainnet state as of 05/2023
     }
 
+    // Keep it in sync with serialize()
     public int getSerializedSizeInBytes() {
         final byte[] variablePart = serializedVariablePart();
         return 1 + Integer.BYTES * ints.length + Long.BYTES * longs.length + Integer.BYTES + variablePart.length;
-    }
-
-    @Override
-    public void serialize(final ByteBuffer to) throws IOException {
-        serializeTo(to::put, to::putInt, to::putLong, data -> to.put(data, 0, data.length));
-    }
-
-    public void serialize(final WritableSequentialData to) {
-        serializeTo(to::writeByte, to::writeInt, to::writeLong, data -> to.writeBytes(data, 0, data.length));
-    }
-
-    @Override
-    public void deserialize(final ByteBuffer from, final int version) throws IOException {
-        deserializeFrom(from::get, from::getInt, from::getLong, from::get);
-    }
-
-    public void deserialize(final ReadableSequentialData in) {
-        deserializeFrom(in::readByte, in::readInt, in::readLong, in::readBytes);
     }
 
     @Override
@@ -214,9 +197,27 @@ public class OnDiskAccount implements VirtualValue, HederaAccount {
         serializeTo(out::writeByte, out::writeInt, out::writeLong, out::write);
     }
 
+    public void serialize(final WritableSequentialData to) {
+        serializeTo(to::writeByte, to::writeInt, to::writeLong, data -> to.writeBytes(data, 0, data.length));
+    }
+
+    @Override
+    public void serialize(final ByteBuffer to) throws IOException {
+        serializeTo(to::put, to::putInt, to::putLong, data -> to.put(data, 0, data.length));
+    }
+
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         deserializeFrom(in::readByte, in::readInt, in::readLong, in::readFully);
+    }
+
+    public void deserialize(final ReadableSequentialData in) {
+        deserializeFrom(in::readByte, in::readInt, in::readLong, in::readBytes);
+    }
+
+    @Override
+    public void deserialize(final ByteBuffer from, final int version) throws IOException {
+        deserializeFrom(from::get, from::getInt, from::getLong, from::get);
     }
 
     @Override
@@ -234,27 +235,21 @@ public class OnDiskAccount implements VirtualValue, HederaAccount {
         return immutable;
     }
 
-    private <E extends Exception> int serializeTo(
+    private <E extends Exception> void serializeTo(
             final CheckedConsumerE<Byte, E> writeByteFn,
             final CheckedConsumerE<Integer, E> writeIntFn,
             final CheckedConsumerE<Long, E> writeLongFn,
             final CheckedConsumerE<byte[], E> writeBytesFn)
             throws E {
-        int bytesWritten = 0;
         writeByteFn.accept(flags);
-        bytesWritten += 1;
         for (final var v : ints) {
             writeIntFn.accept(v);
         }
-        bytesWritten += Integer.BYTES * ints.length;
         for (final var v : longs) {
             writeLongFn.accept(v);
         }
-        bytesWritten += Long.BYTES * longs.length;
         final byte[] variablePart = serializedVariablePart();
         writeBytes(variablePart, writeIntFn, writeBytesFn);
-        bytesWritten += Integer.BYTES + variablePart.length; // size + data
-        return bytesWritten;
     }
 
     private <E extends Exception> void deserializeFrom(

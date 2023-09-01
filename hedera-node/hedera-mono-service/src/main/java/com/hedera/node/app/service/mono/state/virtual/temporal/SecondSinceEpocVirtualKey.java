@@ -17,6 +17,9 @@
 package com.hedera.node.app.service.mono.state.virtual.temporal;
 
 import com.hedera.node.app.service.mono.utils.MiscUtils;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualLongKey;
@@ -76,10 +79,8 @@ public final class SecondSinceEpocVirtualKey implements VirtualLongKey {
         out.writeLong(value);
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        value = in.readLong();
+    void serialize(final WritableSequentialData out) {
+        out.writeLong(value);
     }
 
     /** {@inheritDoc} */
@@ -90,9 +91,20 @@ public final class SecondSinceEpocVirtualKey implements VirtualLongKey {
 
     /** {@inheritDoc} */
     @Override
+    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
+        value = in.readLong();
+    }
+
+    void deserialize(final ReadableSequentialData in) {
+        value = in.readLong();
+    }
+
+    /** {@inheritDoc} */
+    @Override
     public void deserialize(final ByteBuffer buffer) throws IOException {
         value = buffer.getLong();
     }
+
     /** {@inheritDoc} */
     @Override
     public boolean equals(final Object o) {
@@ -113,12 +125,15 @@ public final class SecondSinceEpocVirtualKey implements VirtualLongKey {
      * Verifies if the content from {@code buffer} is equal to the content of this instance.
      *
      * @param buffer The buffer with data to be compared with this class.
-     * @param version The version of the data inside the given {@code buffer}.
      * @return {@code true} if the content from the buffer has the same data as this instance.
      *     {@code false}, otherwise.
-     * @throws IOException
      */
-    public boolean equals(final ByteBuffer buffer, final int version) throws IOException {
+    boolean equalsTo(final BufferedData buffer) {
+        return buffer.readLong() == this.value;
+    }
+
+    @Deprecated(forRemoval = true)
+    boolean equalsTo(final ByteBuffer buffer, final int version) throws IOException {
         return buffer.getLong() == this.value;
     }
 

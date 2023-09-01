@@ -21,6 +21,7 @@ import com.hedera.node.app.service.mono.store.models.NftId;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.mono.utils.NftNumPair;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -134,21 +135,6 @@ public class UniqueTokenKey implements VirtualKey {
     }
 
     /**
-     * Fetch the key size (including the stored byte length) from a ByteBuffer containing the
-     * serialized bytes.
-     *
-     * <p>Note: This method will update the position of the provided byteBuffer.
-     *
-     * @param byteBuffer the ByteBuffer to fetch data from.
-     * @return the number of bytes the key occupies (including the byte for the length field).
-     */
-    /* package */
-    static int deserializeKeySize(final ByteBuffer byteBuffer) {
-        final byte packedLength = byteBuffer.get();
-        return 1 + unpackLowerLength(packedLength) + unpackUpperLength(packedLength);
-    }
-
-    /**
      * Serializes the instance into a stream of bytes and write to the provided output.
      *
      * @param output provides a function that is called to write an output byte.
@@ -172,13 +158,13 @@ public class UniqueTokenKey implements VirtualKey {
     }
 
     @Override
-    public void serialize(final ByteBuffer byteBuffer) throws IOException {
-        serializeTo(byteBuffer::put);
+    public void serialize(final SerializableDataOutputStream outputStream) throws IOException {
+        serializeTo(outputStream::write);
     }
 
     @Override
-    public void serialize(final SerializableDataOutputStream outputStream) throws IOException {
-        serializeTo(outputStream::write);
+    public void serialize(final ByteBuffer byteBuffer) throws IOException {
+        serializeTo(byteBuffer::put);
     }
 
     /* package */ interface ByteSupplier<E extends Exception> {
@@ -194,7 +180,7 @@ public class UniqueTokenKey implements VirtualKey {
         return value;
     }
 
-    private <E extends Exception> void deserializeFrom(final ByteSupplier<E> input) throws E {
+    /* package */ <E extends Exception> void deserializeFrom(final ByteSupplier<E> input) throws E {
         final byte packedLengths = input.get();
         final int numEntityBytes = unpackUpperLength(packedLengths);
         final int numSerialBytes = unpackLowerLength(packedLengths);
@@ -204,17 +190,13 @@ public class UniqueTokenKey implements VirtualKey {
     }
 
     @Override
-    public void deserialize(final ByteBuffer byteBuffer) throws IOException {
-        deserializeFrom(byteBuffer::get);
-    }
-
-    public void deserialize(final ReadableSequentialData in) {
-        deserializeFrom(in::readByte);
+    public void deserialize(final SerializableDataInputStream inputStream, final int dataVersion) throws IOException {
+        deserializeFrom(inputStream::readByte);
     }
 
     @Override
-    public void deserialize(final SerializableDataInputStream inputStream, final int dataVersion) throws IOException {
-        deserializeFrom(inputStream::readByte);
+    public void deserialize(final ByteBuffer byteBuffer) throws IOException {
+        deserializeFrom(byteBuffer::get);
     }
 
     @Override

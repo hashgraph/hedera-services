@@ -17,22 +17,29 @@
 package com.hedera.node.app.state.merkle.disk;
 
 import com.hedera.node.app.state.merkle.StateMetadata;
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.jasperdb.SelfSerializableSupplier;
+import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.swirlds.merkledb.serialize.ValueSerializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Objects;
 
 /**
- * An implementation of {@link SelfSerializableSupplier}, required by the {@link
+ * An implementation of {@link ValueSerializer}, required by the {@link
  * com.swirlds.virtualmap.VirtualMap} for creating new {@link OnDiskValue}s.
  *
  * @param <V> The type of the value in the virtual map
  */
-public final class OnDiskValueSerializer<V> implements SelfSerializableSupplier<OnDiskValue<V>> {
-    @Deprecated(forRemoval = true)
-    private static final long CLASS_ID = 0x3992113882234885L;
+public final class OnDiskValueSerializer<V> implements ValueSerializer<OnDiskValue<V>> {
+
+    private static final long CLASS_ID = 0x3992113882234886L;
+
+    private static final long DATA_VERSION = 1;
+
+    // guesstimate of the typical size of a serialized value
+    private static final int TYPICAL_SIZE = 1024;
 
     private final StateMetadata<?, V> md;
 
@@ -50,6 +57,8 @@ public final class OnDiskValueSerializer<V> implements SelfSerializableSupplier<
         this.md = Objects.requireNonNull(md);
     }
 
+    // Serializer info
+
     /** {@inheritDoc} */
     @Override
     public long getClassId() {
@@ -63,21 +72,72 @@ public final class OnDiskValueSerializer<V> implements SelfSerializableSupplier<
         return 1;
     }
 
+    // Value info
+
     /** {@inheritDoc} */
     @Override
-    public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
-        // This class has nothing to serialize
+    public long getCurrentDataVersion() {
+        return DATA_VERSION;
+    }
+
+    // Value serialization
+
+    /** {@inheritDoc} */
+    @Override
+    public int getSerializedSize() {
+        return VARIABLE_DATA_SIZE;
     }
 
     /** {@inheritDoc} */
     @Override
-    public void deserialize(@NonNull final SerializableDataInputStream in, final int ignored) throws IOException {
-        // This class has nothing to deserialize
+    public int getSerializedSize(OnDiskValue<V> value) {
+        assert md != null;
+        final Codec<V> codec = md.stateDefinition().valueCodec();
+        return codec.measureRecord(value.getValue());
     }
 
     /** {@inheritDoc} */
     @Override
-    public OnDiskValue<V> get() {
-        return new OnDiskValue<>(md);
+    public int getTypicalSerializedSize() {
+        return TYPICAL_SIZE;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void serialize(@NonNull final OnDiskValue<V> value, @NonNull final WritableSequentialData out) {
+        assert md != null;
+        final Codec<V> codec = md.stateDefinition().valueCodec();
+        // Future work: https://github.com/hashgraph/pbj/issues/73
+        try {
+            codec.write(value.getValue(), out);
+        } catch (final IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public int serialize(final OnDiskValue<V> value, final ByteBuffer buffer) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    // Value deserialization
+
+    /** {@inheritDoc} */
+    @Override
+    public OnDiskValue<V> deserialize(@NonNull final ReadableSequentialData in) {
+        assert md != null;
+        final Codec<V> codec = md.stateDefinition().valueCodec();
+        // Future work: https://github.com/hashgraph/pbj/issues/73
+        try {
+            final V value = codec.parse(in);
+            return new OnDiskValue<>(md, value);
+        } catch (final IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public OnDiskValue<V> deserialize(final ByteBuffer buffer, final long dataVersion) throws IOException {
+        throw new UnsupportedOperationException();
     }
 }

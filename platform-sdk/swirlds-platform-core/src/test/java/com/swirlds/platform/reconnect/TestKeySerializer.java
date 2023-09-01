@@ -16,18 +16,19 @@
 
 package com.swirlds.platform.reconnect;
 
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.jasperdb.SelfSerializableSupplier;
-import com.swirlds.jasperdb.files.hashmap.KeySerializer;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import com.swirlds.merkledb.serialize.KeySerializer;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-public class TestKeySerializer implements KeySerializer<TestKey>, SelfSerializableSupplier<TestKey> {
+public class TestKeySerializer implements KeySerializer<TestKey> {
 
     @Override
     public long getClassId() {
-        return 8838920;
+        return 8838921;
     }
 
     @Override
@@ -36,7 +37,7 @@ public class TestKeySerializer implements KeySerializer<TestKey>, SelfSerializab
     }
 
     @Override
-    public int getSerializedSize(long dataVersion) {
+    public int getSerializedSize() {
         return TestKey.BYTES;
     }
 
@@ -46,21 +47,26 @@ public class TestKeySerializer implements KeySerializer<TestKey>, SelfSerializab
     }
 
     @Override
-    public int deserializeKeySize(final ByteBuffer buffer) {
-        return buffer.getInt();
+    public void serialize(final TestKey data, final WritableSequentialData out) {
+        data.serialize(out);
     }
 
     @Override
-    public void serialize(final SerializableDataOutputStream out) {
-        // nop
+    @Deprecated(forRemoval = true)
+    public int serialize(final TestKey data, final ByteBuffer buffer) {
+        data.serialize(buffer);
+        return TestKey.BYTES;
     }
 
     @Override
-    public void deserialize(final SerializableDataInputStream in, final int version) {
-        // nop
+    public TestKey deserialize(final ReadableSequentialData in) {
+        final TestKey key = new TestKey();
+        key.deserialize(in);
+        return key;
     }
 
     @Override
+    @Deprecated(forRemoval = true)
     public TestKey deserialize(final ByteBuffer buffer, final long dataVersion) {
         final TestKey key = new TestKey();
         key.deserialize(buffer);
@@ -68,19 +74,13 @@ public class TestKeySerializer implements KeySerializer<TestKey>, SelfSerializab
     }
 
     @Override
-    public int serialize(final TestKey data, final SerializableDataOutputStream outputStream) throws IOException {
-        data.serialize(outputStream);
-        return TestKey.BYTES;
+    public boolean equals(@NonNull final BufferedData buffer, @NonNull final TestKey keyToCompare) {
+        return buffer.readLong() == keyToCompare.getKeyAsLong();
     }
 
     @Override
-    public boolean equals(final ByteBuffer buffer, final int dataVersion, final TestKey keyToCompare)
-            throws IOException {
+    @Deprecated(forRemoval = true)
+    public boolean equals(ByteBuffer buffer, int dataVersion, TestKey keyToCompare) throws IOException {
         return buffer.getLong() == keyToCompare.getKeyAsLong();
-    }
-
-    @Override
-    public TestKey get() {
-        return new TestKey();
     }
 }

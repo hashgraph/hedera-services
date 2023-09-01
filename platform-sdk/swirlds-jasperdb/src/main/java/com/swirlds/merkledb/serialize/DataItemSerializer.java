@@ -27,9 +27,7 @@ public interface DataItemSerializer<D> extends BaseSerializer<D> {
      * @return size of header in bytes
      */
     @Deprecated(forRemoval = true)
-    default int getHeaderSize() {
-        throw new RuntimeException("TO IMPLEMENT");
-    }
+    int getHeaderSize();
 
     /**
      * Deserialize data item header from the given byte buffer
@@ -38,9 +36,7 @@ public interface DataItemSerializer<D> extends BaseSerializer<D> {
      * @return The read header
      */
     @Deprecated(forRemoval = true)
-    default DataItemHeader deserializeHeader(ByteBuffer buffer) {
-        throw new RuntimeException("TO IMPLEMENT");
-    }
+    DataItemHeader deserializeHeader(ByteBuffer buffer);
 
     long extractKey(BufferedData dataItemData);
 }

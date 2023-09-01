@@ -78,11 +78,7 @@ public final class SmartContractMapKey implements VirtualKey {
         return ClassVersion.ORIGINAL;
     }
 
-    public boolean equals(final ByteBuffer buffer, final int version) throws IOException {
-        return contractId == buffer.getLong() && keyValuePairIndex == buffer.getLong();
-    }
-
-    public boolean equals(final BufferedData buffer) {
+    boolean equals(final BufferedData buffer) {
         return contractId == buffer.readLong() && keyValuePairIndex == buffer.readLong();
     }
 
@@ -95,7 +91,16 @@ public final class SmartContractMapKey implements VirtualKey {
         return 2 * Long.BYTES;
     }
 
-    public void serialize(final WritableSequentialData out) {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void serialize(final SerializableDataOutputStream out) throws IOException {
+        out.writeLong(contractId);
+        out.writeLong(keyValuePairIndex);
+    }
+
+    void serialize(final WritableSequentialData out) {
         out.writeLong(contractId);
         out.writeLong(keyValuePairIndex);
     }
@@ -110,7 +115,16 @@ public final class SmartContractMapKey implements VirtualKey {
         buffer.putLong(keyValuePairIndex);
     }
 
-    public void deserialize(final ReadableSequentialData in) {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
+        contractId = in.readLong();
+        keyValuePairIndex = in.readLong();
+    }
+
+    void deserialize(final ReadableSequentialData in) {
         contractId = in.readLong();
         keyValuePairIndex = in.readLong();
     }
@@ -123,24 +137,6 @@ public final class SmartContractMapKey implements VirtualKey {
     public void deserialize(final ByteBuffer buffer) throws IOException {
         contractId = buffer.getLong();
         keyValuePairIndex = buffer.getLong();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void serialize(final SerializableDataOutputStream out) throws IOException {
-        out.writeLong(contractId);
-        out.writeLong(keyValuePairIndex);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        contractId = in.readLong();
-        keyValuePairIndex = in.readLong();
     }
 
     /**

@@ -17,6 +17,10 @@
 package com.hedera.node.app.service.mono.state.virtual.schedule;
 
 import com.google.common.base.MoreObjects;
+import com.hedera.node.app.service.mono.state.virtual.utils.CheckedConsumerE;
+import com.hedera.node.app.service.mono.state.virtual.utils.CheckedSupplierE;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
@@ -95,54 +99,71 @@ public class ScheduleEqualityVirtualValue extends PartialMerkleLeaf
         return helper.toString();
     }
 
-    @Override
-    public void deserialize(SerializableDataInputStream in, int version) throws IOException {
-        int s = in.readInt();
-        ids.clear();
-        for (int x = 0; x < s; ++x) {
-            byte[] keyBytes = new byte[in.readInt()];
-            in.readFully(keyBytes);
-            var k = new String(keyBytes, StandardCharsets.UTF_8);
-            ids.put(k, in.readLong());
+    int serializedSizeInBytes() {
+        int size = 0;
+        size += Integer.BYTES; // ids size
+        for (var e : ids.entrySet()) {
+            size += Integer.BYTES + e.getKey().getBytes(StandardCharsets.UTF_8).length + Long.BYTES;
         }
-        number = in.readLong();
+        size += Long.BYTES;
+        return size;
+    }
+
+    private <E extends Exception> void serializeTo(final CheckedConsumerE<Integer, E> writeIntFn,
+            final CheckedConsumerE<Long, E> writeLongFn,
+            final CheckedConsumerE<byte[], E> writeBytesFn) throws E {
+        writeIntFn.accept(ids.size());
+        for (var e : ids.entrySet()) {
+            var keyBytes = e.getKey().getBytes(StandardCharsets.UTF_8);
+            writeIntFn.accept(keyBytes.length);
+            writeBytesFn.accept(keyBytes);
+            writeLongFn.accept(e.getValue());
+        }
+        writeLongFn.accept(number);
+    }
+
+    @Override
+    public void serialize(final SerializableDataOutputStream out) throws IOException {
+        serializeTo(out::writeInt, out::writeLong, out::write);
+    }
+
+    void serialize(final WritableSequentialData out) {
+        serializeTo(out::writeInt, out::writeLong, out::writeBytes);
+    }
+
+    @Override
+    public void serialize(final ByteBuffer buffer) throws IOException {
+        serializeTo(buffer::putInt, buffer::putLong, buffer::put);
+    }
+
+    private <E extends Exception> void deserializeFrom(final CheckedSupplierE<Integer, E> readIntFn,
+            final CheckedSupplierE<Long, E> readLongFn,
+            final CheckedConsumerE<byte[], E> readBytesFn) throws E {
+        final int s = readIntFn.get();
+        ids.clear();
+        for (int x = 0; x < s; x++) {
+            final int l = readIntFn.get();
+            final byte[] keyBytes = new byte[l];
+            readBytesFn.accept(keyBytes);
+            final String key = new String(keyBytes, StandardCharsets.UTF_8);
+            final long value = readLongFn.get();
+            ids.put(key, value);
+        }
+        number = readLongFn.get();
+    }
+
+    @Override
+    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
+        deserializeFrom(in::readInt, in::readLong, in::readFully);
+    }
+
+    void deserialize(final ReadableSequentialData in) {
+        deserializeFrom(in::readInt, in::readLong, in::readBytes);
     }
 
     @Override
     public void deserialize(ByteBuffer in, int version) throws IOException {
-        int s = in.getInt();
-        ids.clear();
-        for (int x = 0; x < s; ++x) {
-            byte[] keyBytes = new byte[in.getInt()];
-            in.get(keyBytes);
-            var k = new String(keyBytes, StandardCharsets.UTF_8);
-            ids.put(k, in.getLong());
-        }
-        number = in.getLong();
-    }
-
-    @Override
-    public void serialize(SerializableDataOutputStream out) throws IOException {
-        out.writeInt(ids.size());
-        for (var e : ids.entrySet()) {
-            var keyBytes = e.getKey().getBytes(StandardCharsets.UTF_8);
-            out.writeInt(keyBytes.length);
-            out.write(keyBytes);
-            out.writeLong(e.getValue());
-        }
-        out.writeLong(number);
-    }
-
-    @Override
-    public void serialize(ByteBuffer out) throws IOException {
-        out.putInt(ids.size());
-        for (var e : ids.entrySet()) {
-            var keyBytes = e.getKey().getBytes(StandardCharsets.UTF_8);
-            out.putInt(keyBytes.length);
-            out.put(keyBytes);
-            out.putLong(e.getValue());
-        }
-        out.putLong(number);
+        deserializeFrom(in::getInt, in::getLong, in::get);
     }
 
     @Override

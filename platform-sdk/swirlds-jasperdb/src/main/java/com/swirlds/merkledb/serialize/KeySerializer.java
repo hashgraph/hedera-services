@@ -70,9 +70,7 @@ public interface KeySerializer<K extends VirtualKey> extends BaseSerializer<K>, 
      * @throws IOException If there was a problem writing to the buffer
      */
     @Deprecated(forRemoval = true)
-    default int serialize(K data, ByteBuffer buffer) throws IOException {
-        throw new RuntimeException("TO IMPLEMENT");
-    }
+    int serialize(K data, ByteBuffer buffer) throws IOException;
 
     /**
      * Deserialize a key from the byte buffer, where it was previously written using {@link
@@ -83,9 +81,7 @@ public interface KeySerializer<K extends VirtualKey> extends BaseSerializer<K>, 
      * @throws IOException If there was a problem reading from the buffer
      */
     @Deprecated(forRemoval = true)
-    default K deserialize(ByteBuffer buffer, long dataVersion) throws IOException {
-        throw new RuntimeException("TO IMPLEMENT");
-    }
+    K deserialize(ByteBuffer buffer, long dataVersion) throws IOException;
 
     /**
      * Compare keyToCompare's data to that contained in the given ByteBuffer. The data in the buffer

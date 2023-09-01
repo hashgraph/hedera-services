@@ -75,12 +75,6 @@ public class BenchmarkValue implements VirtualValue {
         return new BenchmarkValue(this);
     }
 
-    @Override
-    public void serialize(ByteBuffer buffer) throws IOException {
-        buffer.putInt(valueBytes.length);
-        buffer.put(valueBytes);
-    }
-
     public static int getSerializedSize() {
         return Integer.BYTES + valueSize;
     }
@@ -97,11 +91,9 @@ public class BenchmarkValue implements VirtualValue {
     }
 
     @Override
-    public void deserialize(ByteBuffer buffer, int dataVersion) throws IOException {
-        assert dataVersion == getVersion() : "dataVersion=" + dataVersion + " != getVersion()=" + getVersion();
-        int n = buffer.getInt();
-        valueBytes = new byte[n];
-        buffer.get(valueBytes);
+    public void serialize(ByteBuffer buffer) throws IOException {
+        buffer.putInt(valueBytes.length);
+        buffer.put(valueBytes);
     }
 
     public void deserialize(final ReadableSequentialData in) {
@@ -118,6 +110,14 @@ public class BenchmarkValue implements VirtualValue {
         while (n > 0) {
             n -= inputStream.read(valueBytes, valueBytes.length - n, n);
         }
+    }
+
+    @Override
+    public void deserialize(ByteBuffer buffer, int dataVersion) throws IOException {
+        assert dataVersion == getVersion() : "dataVersion=" + dataVersion + " != getVersion()=" + getVersion();
+        int n = buffer.getInt();
+        valueBytes = new byte[n];
+        buffer.get(valueBytes);
     }
 
     @Override

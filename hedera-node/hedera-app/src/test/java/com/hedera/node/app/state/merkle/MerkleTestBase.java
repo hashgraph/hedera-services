@@ -16,14 +16,17 @@
 
 package com.hedera.node.app.state.merkle;
 
+import static com.swirlds.common.io.utility.FileUtils.deleteDirectory;
+import static com.swirlds.common.io.utility.TemporaryFileBuilder.getTemporaryFileLocation;
+
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.spi.fixtures.state.StateTestBase;
 import com.hedera.node.app.spi.fixtures.state.TestSchema;
 import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.app.state.merkle.disk.OnDiskKey;
-import com.hedera.node.app.state.merkle.disk.OnDiskKeySerializerMerkleDb;
+import com.hedera.node.app.state.merkle.disk.OnDiskKeySerializer;
 import com.hedera.node.app.state.merkle.disk.OnDiskValue;
-import com.hedera.node.app.state.merkle.disk.OnDiskValueSerializerMerkleDb;
+import com.hedera.node.app.state.merkle.disk.OnDiskValueSerializer;
 import com.hedera.node.app.state.merkle.memory.InMemoryKey;
 import com.hedera.node.app.state.merkle.memory.InMemoryValue;
 import com.hedera.node.app.state.merkle.queue.QueueNode;
@@ -47,8 +50,11 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.file.Path;
+import java.util.Map;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.AfterEach;
 
 /**
  * This base class provides helpful methods and defaults for simplifying the other merkle related
@@ -197,7 +203,6 @@ public class MerkleTestBase extends StateTestBase {
             // It may have been configured during some other test, so we reset it
             registry.reset();
             registry.registerConstructables("com.swirlds.merklemap");
-            registry.registerConstructables("com.swirlds.jasperdb");
             registry.registerConstructables("com.swirlds.merkledb");
             registry.registerConstructables("com.swirlds.fcqueue");
             registry.registerConstructables("com.swirlds.virtualmap");
@@ -226,9 +231,12 @@ public class MerkleTestBase extends StateTestBase {
                 (short) 1,
                 DigestType.SHA_384,
                 (short) 1,
-                new OnDiskKeySerializerMerkleDb<>(md),
+                new OnDiskKeySerializer<>(md),
                 (short) 1,
-                new OnDiskValueSerializerMerkleDb<>(md));
+                new OnDiskValueSerializer<>(md));
+        merkleDbTableConfig.hashesRamToDiskThreshold(0);
+        merkleDbTableConfig.maxNumberOfKeys(100);
+        merkleDbTableConfig.preferDiskIndices(true);
         final var builder = new MerkleDbDataSourceBuilder<>(virtualDbPath, merkleDbTableConfig);
         return new VirtualMap<>(label, builder);
     }
@@ -299,5 +307,15 @@ public class MerkleTestBase extends StateTestBase {
         try (final var in = new MerkleDataInputStream(byteInputStream)) {
             return in.readMerkleTree(tempDir, 100);
         }
+    }
+
+    @AfterEach
+    void cleanUp() throws IOException, NoSuchFieldException, IllegalAccessException {
+        // We need to make sure that the test cleans up after itself to prevent interference with the other tests
+        Field field = MerkleDb.class.getDeclaredField("instances");
+        field.setAccessible(true);
+        ((Map<?, ?>) field.get(null)).clear();
+
+        deleteDirectory(getTemporaryFileLocation());
     }
 }

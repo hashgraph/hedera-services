@@ -16,9 +16,10 @@
 
 package com.swirlds.demo.migration.virtual;
 
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.jasperdb.files.hashmap.KeySerializer;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import com.swirlds.merkledb.serialize.KeySerializer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -27,7 +28,7 @@ import java.nio.ByteBuffer;
  */
 public class AccountVirtualMapKeySerializer implements KeySerializer<AccountVirtualMapKey> {
 
-    private static final long CLASS_ID = 0x93efc6111338834dL;
+    private static final long CLASS_ID = 0x93efc6111338834eL;
 
     private static final class ClassVersion {
         public static final int ORIGINAL = 1;
@@ -37,7 +38,23 @@ public class AccountVirtualMapKeySerializer implements KeySerializer<AccountVirt
      * {@inheritDoc}
      */
     @Override
-    public int getSerializedSize(long dataVersion) {
+    public long getClassId() {
+        return CLASS_ID;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int getVersion() {
+        return ClassVersion.ORIGINAL;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int getSerializedSize() {
         return AccountVirtualMapKey.getSizeInBytes();
     }
 
@@ -53,7 +70,34 @@ public class AccountVirtualMapKeySerializer implements KeySerializer<AccountVirt
      * {@inheritDoc}
      */
     @Override
-    public AccountVirtualMapKey deserialize(final ByteBuffer buffer, final long dataVersion) throws IOException {
+    public void serialize(final AccountVirtualMapKey key, final WritableSequentialData out) {
+        key.serialize(out);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int serialize(AccountVirtualMapKey key, ByteBuffer buffer) throws IOException {
+        key.serialize(buffer);
+        return getSerializedSize();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public AccountVirtualMapKey deserialize(final ReadableSequentialData in) {
+        final AccountVirtualMapKey key = new AccountVirtualMapKey();
+        key.deserialize(in);
+        return key;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public AccountVirtualMapKey deserialize(ByteBuffer buffer, long dataVersion) throws IOException {
         final AccountVirtualMapKey key = new AccountVirtualMapKey();
         key.deserialize(buffer);
         return key;
@@ -63,58 +107,15 @@ public class AccountVirtualMapKeySerializer implements KeySerializer<AccountVirt
      * {@inheritDoc}
      */
     @Override
-    public int serialize(final AccountVirtualMapKey data, final SerializableDataOutputStream outputStream)
-            throws IOException {
-        outputStream.writeSerializable(data, false);
-        return AccountVirtualMapKey.getSizeInBytes();
+    public boolean equals(final BufferedData buffer, final AccountVirtualMapKey keyToCompare) {
+        return keyToCompare.equals(buffer);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public int deserializeKeySize(final ByteBuffer buffer) {
-        return AccountVirtualMapKey.getSizeInBytes();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean equals(final ByteBuffer buffer, final int dataVersion, final AccountVirtualMapKey keyToCompare)
-            throws IOException {
+    public boolean equals(ByteBuffer buffer, int dataVersion, AccountVirtualMapKey keyToCompare) throws IOException {
         return keyToCompare.equals(buffer, dataVersion);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public long getClassId() {
-        return CLASS_ID;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void serialize(final SerializableDataOutputStream out) throws IOException {
-        // nothing to serialize
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        // nothing to deserialize
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int getVersion() {
-        return ClassVersion.ORIGINAL;
     }
 }

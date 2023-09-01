@@ -50,8 +50,7 @@ public class OnDiskValue<V> implements VirtualValue {
     private V value;
     private boolean immutable = false;
 
-    // Default constructor provided for ConstructableRegistry, TO BE REMOVED ASAP
-    @Deprecated(forRemoval = true)
+    // Default constructor is for deserialization
     public OnDiskValue() {
         this.codec = null;
         this.md = null;
@@ -95,37 +94,24 @@ public class OnDiskValue<V> implements VirtualValue {
 
     /** {@inheritDoc} */
     @Override
-    public void serialize(@NonNull final ByteBuffer byteBuffer) throws IOException {
-        final var output = BufferedData.wrap(byteBuffer);
-        output.skip(4);
-        codec.write(value, output);
-        final var pos = output.position();
-        output.writeInt((int) pos - 4);
-        output.position(pos);
-    }
-
-    /** {@inheritDoc} */
-    @Override
     public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
         writeToStream(out, codec, value);
     }
 
-    /** {@inheritDoc} */
     @Override
-    public void deserialize(@NonNull final ByteBuffer byteBuffer, int ignored) throws IOException {
-        final var buff = BufferedData.wrap(byteBuffer);
-        final var len = buff.readInt();
-        final var pos = buff.position();
-        final var oldLimit = buff.limit();
-        buff.limit(pos + len);
-        value = codec.parse(buff);
-        buff.limit(oldLimit);
+    public void serialize(@NonNull final ByteBuffer byteBuffer) throws IOException {
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
     @Override
     public void deserialize(@NonNull final SerializableDataInputStream in, int ignored) throws IOException {
         value = readFromStream(in, codec);
+    }
+
+    @Override
+    public void deserialize(@NonNull final ByteBuffer byteBuffer, int ignored) throws IOException {
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */

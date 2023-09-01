@@ -66,13 +66,13 @@ public interface BaseSerializer<T> {
         return getSerializedSize();
     }
 
-    default int getSerializedSize(@NonNull T data) {
+    default int getSerializedSize(@NonNull final T data) {
         Objects.requireNonNull(data);
         final int size = getSerializedSize();
         if (size != VARIABLE_DATA_SIZE) {
             return size;
         }
-        throw new RuntimeException("TO IMPLEMENT");
+        throw new RuntimeException("TO IMPLEMENT: " + getClass().getSimpleName() + ".getSerializedSize()");
     }
 
     /**
@@ -84,11 +84,9 @@ public interface BaseSerializer<T> {
      * @return Number of bytes written
      */
     @Deprecated(forRemoval = true)
-    default int serialize(T data, ByteBuffer buffer) throws IOException {
-        throw new RuntimeException("TO IMPLEMENT");
-    }
+    int serialize(T data, ByteBuffer buffer) throws IOException;
 
-    void serialize(@NonNull T dataItem, @NonNull WritableSequentialData out);
+    void serialize(@NonNull final T dataItem, @NonNull final WritableSequentialData out);
 
     /**
      * Deserialize a data item from a byte buffer, that was written with given data version.
@@ -98,9 +96,7 @@ public interface BaseSerializer<T> {
      * @return Deserialized data item
      */
     @Deprecated(forRemoval = true)
-    default T deserialize(ByteBuffer buffer, long dataVersion) throws IOException {
-        throw new RuntimeException("TO IMPLEMENT");
-    }
+    T deserialize(ByteBuffer buffer, long dataVersion) throws IOException;
 
-    T deserialize(@NonNull ReadableSequentialData in);
+    T deserialize(@NonNull final ReadableSequentialData in);
 }

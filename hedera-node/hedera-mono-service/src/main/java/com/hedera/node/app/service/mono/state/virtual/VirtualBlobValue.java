@@ -20,7 +20,6 @@ import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.jasperdb.files.DataFileCommon;
 import com.swirlds.virtualmap.VirtualValue;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -71,20 +70,9 @@ public class VirtualBlobValue implements VirtualValue {
     }
 
     @Override
-    public void deserialize(SerializableDataInputStream in, int version) throws IOException {
-        data = in.readByteArray(Integer.MAX_VALUE);
-    }
-
-    @Override
     public void serialize(SerializableDataOutputStream out) throws IOException {
         out.writeInt(data.length);
         out.write(data);
-    }
-
-    @Override
-    public void serialize(ByteBuffer buffer) throws IOException {
-        buffer.putInt(data.length);
-        buffer.put(data);
     }
 
     public void serialize(final WritableSequentialData out) {
@@ -93,16 +81,27 @@ public class VirtualBlobValue implements VirtualValue {
     }
 
     @Override
-    public void deserialize(ByteBuffer buffer, int version) throws IOException {
-        final var n = buffer.getInt();
-        data = new byte[n];
-        buffer.get(data);
+    public void serialize(ByteBuffer buffer) throws IOException {
+        buffer.putInt(data.length);
+        buffer.put(data);
+    }
+
+    @Override
+    public void deserialize(SerializableDataInputStream in, int version) throws IOException {
+        data = in.readByteArray(Integer.MAX_VALUE);
     }
 
     public void deserialize(final ReadableSequentialData in) {
         final int size = in.readInt();
         data = new byte[size];
         in.readBytes(data);
+    }
+
+    @Override
+    public void deserialize(ByteBuffer buffer, int version) throws IOException {
+        final var n = buffer.getInt();
+        data = new byte[n];
+        buffer.get(data);
     }
 
     @Override
@@ -113,10 +112,6 @@ public class VirtualBlobValue implements VirtualValue {
     @Override
     public int getVersion() {
         return CURRENT_VERSION;
-    }
-
-    public static int sizeInBytes() {
-        return DataFileCommon.VARIABLE_DATA_SIZE;
     }
 
     @Override

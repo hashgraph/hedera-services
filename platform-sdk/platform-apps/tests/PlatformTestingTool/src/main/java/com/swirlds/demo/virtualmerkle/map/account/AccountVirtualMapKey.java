@@ -77,17 +77,7 @@ public class AccountVirtualMapKey implements VirtualKey {
         out.writeLong(accountID);
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        this.realmID = in.readLong();
-        this.shardId = in.readLong();
-        this.accountID = in.readLong();
-    }
-
-    public void serialize(final WritableSequentialData out) {
+    void serialize(final WritableSequentialData out) {
         out.writeLong(realmID);
         out.writeLong(shardId);
         out.writeLong(accountID);
@@ -104,7 +94,17 @@ public class AccountVirtualMapKey implements VirtualKey {
         buffer.putLong(accountID);
     }
 
-    public void deserialize(final ReadableSequentialData in) {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
+        this.realmID = in.readLong();
+        this.shardId = in.readLong();
+        this.accountID = in.readLong();
+    }
+
+    void deserialize(final ReadableSequentialData in) {
         this.realmID = in.readLong();
         this.shardId = in.readLong();
         this.accountID = in.readLong();

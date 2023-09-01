@@ -53,7 +53,6 @@ class OnDiskTest extends MerkleTestBase {
     private static final String SERVICE_NAME = "CryptoService";
     private static final String ACCOUNT_STATE_KEY = "Account";
 
-    private Path storageDir;
     private Schema schema;
     private StateDefinition<AccountID, Account> def;
     private StateMetadata<AccountID, Account> md;
@@ -63,7 +62,7 @@ class OnDiskTest extends MerkleTestBase {
     @BeforeEach
     void setUp() throws IOException {
         setupConstructableRegistry();
-        storageDir = TemporaryFileBuilder.buildTemporaryDirectory();
+        final Path storageDir = TemporaryFileBuilder.buildTemporaryDirectory();
 
         def = StateDefinition.onDisk(ACCOUNT_STATE_KEY, AccountID.PROTOBUF, Account.PROTOBUF, 100);
 
@@ -82,15 +81,16 @@ class OnDiskTest extends MerkleTestBase {
                 (short) 1,
                 DigestType.SHA_384,
                 (short) 1,
-                new OnDiskKeySerializerMerkleDb<>(md),
+                new OnDiskKeySerializer<>(md),
                 (short) 1,
-                new OnDiskValueSerializerMerkleDb<>(md));
+                new OnDiskValueSerializer<>(md));
+        // Force all hashes to disk, to make sure we're going through all the
+        // serialization paths we can
         tableConfig.hashesRamToDiskThreshold(0);
         tableConfig.maxNumberOfKeys(100);
         tableConfig.preferDiskIndices(true);
 
         final var builder = new MerkleDbDataSourceBuilder<>(storageDir, tableConfig);
-
         virtualMap = new VirtualMap<>(StateUtils.computeLabel(SERVICE_NAME, ACCOUNT_STATE_KEY), builder);
 
         this.config = Mockito.mock(Configuration.class);

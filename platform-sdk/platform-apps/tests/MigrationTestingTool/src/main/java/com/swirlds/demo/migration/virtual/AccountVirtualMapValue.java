@@ -16,6 +16,8 @@
 
 package com.swirlds.demo.migration.virtual;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualValue;
@@ -92,16 +94,12 @@ public class AccountVirtualMapValue implements VirtualValue {
         out.writeLong(uid);
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        this.balance = in.readLong();
-        this.sendThreshold = in.readLong();
-        this.receiveThreshold = in.readLong();
-        this.requireSignature = in.readByte() == 1;
-        this.uid = in.readLong();
+    void serialize(final WritableSequentialData out) {
+        out.writeLong(balance);
+        out.writeLong(sendThreshold);
+        out.writeLong(receiveThreshold);
+        out.writeByte(getRequireSignatureAsByte());
+        out.writeLong(uid);
     }
 
     /**
@@ -114,6 +112,26 @@ public class AccountVirtualMapValue implements VirtualValue {
         buffer.putLong(receiveThreshold);
         buffer.put(getRequireSignatureAsByte());
         buffer.putLong(uid);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
+        this.balance = in.readLong();
+        this.sendThreshold = in.readLong();
+        this.receiveThreshold = in.readLong();
+        this.requireSignature = in.readByte() == 1;
+        this.uid = in.readLong();
+    }
+
+    void deserialize(final ReadableSequentialData in) {
+        this.balance = in.readLong();
+        this.sendThreshold = in.readLong();
+        this.receiveThreshold = in.readLong();
+        this.requireSignature = in.readByte() == 1;
+        this.uid = in.readLong();
     }
 
     /**

@@ -43,9 +43,7 @@ public interface DataFileWriter<D> {
     DataFileMetadata getMetadata();
 
     /**
-     * Write a data item copied from another file like during merge. The data item serializer
-     * copyItem() method will be called to give it a chance to pass the data for or upgrade the
-     * serialization as needed.
+     * Write a data item copied from another file like during merge.
      *
      * @param dataItemBytes a buffer containing the item's data
      * @return New data location in this file where it was written
