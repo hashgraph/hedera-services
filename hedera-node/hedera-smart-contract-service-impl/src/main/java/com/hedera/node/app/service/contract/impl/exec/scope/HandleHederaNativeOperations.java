@@ -92,11 +92,10 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
     @Override
     public @Nullable Nft getNft(final long tokenNumber, final long serialNo) {
         final var nftStore = context.readableStore(ReadableNftStore.class);
-        return nftStore.get(
-                NftID.newBuilder()
-                        .tokenId(TokenID.newBuilder().tokenNum(tokenNumber))
-                        .serialNumber(serialNo)
-                        .build());
+        return nftStore.get(NftID.newBuilder()
+                .tokenId(TokenID.newBuilder().tokenNum(tokenNumber))
+                .serialNumber(serialNo)
+                .build());
     }
 
     /**

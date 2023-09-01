@@ -40,6 +40,7 @@ import com.hedera.hapi.node.contract.EthereumTransactionBody;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
@@ -176,6 +177,16 @@ public class TestHelpers {
             .tokenId(FUNGIBLE_TOKEN_ID)
             .name("Fungible Token")
             .symbol("FT")
+            .decimals(6)
+            .totalSupply(666666L)
+            .tokenType(TokenType.FUNGIBLE_COMMON)
+            .build();
+
+    public static final Token UNEASONABLY_DIVISIBLE_TOKEN = Token.newBuilder()
+            .tokenId(FUNGIBLE_TOKEN_ID)
+            .name("Odd")
+            .symbol("ODD")
+            .decimals(Integer.MAX_VALUE)
             .totalSupply(666666L)
             .tokenType(TokenType.FUNGIBLE_COMMON)
             .build();
@@ -196,6 +207,8 @@ public class TestHelpers {
             AccountID.newBuilder().accountNum(191919L).build();
     public static final AccountID B_NEW_ACCOUNT_ID =
             AccountID.newBuilder().accountNum(919191L).build();
+    public static final AccountID OPERATOR_ACCOUNT_ID =
+            AccountID.newBuilder().accountNum(7777777L).build();
 
     public static final Nft TREASURY_OWNED_NFT = Nft.newBuilder()
             .metadata(Bytes.wrap("Unsold"))
@@ -216,11 +229,27 @@ public class TestHelpers {
             .build();
     public static final Address EIP_1014_ADDRESS = Address.fromHexString("0x89abcdef89abcdef89abcdef89abcdef89abcdef");
 
+    public static final Account OPERATOR =
+            Account.newBuilder().accountId(B_NEW_ACCOUNT_ID).build();
+
     public static final Account SOMEBODY = Account.newBuilder()
             .accountId(A_NEW_ACCOUNT_ID)
+            .approveForAllNftAllowances(
+                    AccountApprovalForAllAllowance.newBuilder()
+                            .tokenId(NON_FUNGIBLE_TOKEN_ID)
+                            .spenderId(OPERATOR_ACCOUNT_ID)
+                            .build(),
+                    AccountApprovalForAllAllowance.newBuilder()
+                            .tokenId(FUNGIBLE_TOKEN_ID)
+                            .spenderId(B_NEW_ACCOUNT_ID)
+                            .build(),
+                    AccountApprovalForAllAllowance.newBuilder()
+                            .tokenId(NON_FUNGIBLE_TOKEN_ID)
+                            .spenderId(B_NEW_ACCOUNT_ID)
+                            .build())
             .build();
     public static final Account ALIASED_SOMEBODY = Account.newBuilder()
-            .accountId(NON_SYSTEM_ACCOUNT_ID)
+            .accountId(A_NEW_ACCOUNT_ID)
             .alias(tuweniToPbjBytes(EIP_1014_ADDRESS))
             .build();
     public static final TokenRelation A_FUNGIBLE_RELATION = TokenRelation.newBuilder()

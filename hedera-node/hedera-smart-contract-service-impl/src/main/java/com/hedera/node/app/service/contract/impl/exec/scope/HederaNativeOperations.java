@@ -76,7 +76,7 @@ public interface HederaNativeOperations {
      * is an alias for.
      *
      * @param evmAddress the EVM address
-     * @return the account or contract number, or -1 if no such account or contract exists
+     * @return the account or contract number if it exists, otherwise {@link HederaNativeOperations#MISSING_ENTITY_NUMBER}
      */
     long resolveAlias(@NonNull Bytes evmAddress);
 

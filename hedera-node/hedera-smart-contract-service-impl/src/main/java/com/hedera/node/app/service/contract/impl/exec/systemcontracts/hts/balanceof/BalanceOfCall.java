@@ -22,10 +22,10 @@ import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeO
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.fromHeadlongAddress;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.maybeMissingNumberOf;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.maybeMissingNumberOfEvmReference;
 import static java.util.Objects.requireNonNull;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCall;
@@ -36,7 +36,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
 import java.util.Arrays;
-import org.hyperledger.besu.datatypes.Address;
 
 /**
  * Implements the token redirect {@code balanceOf()} call of the HTS system contract.
@@ -67,8 +66,8 @@ public class BalanceOfCall extends AbstractHtsCall {
      * @return the constructed {@link BalanceOfCall}
      */
     public static BalanceOfCall from(@NonNull final HtsCallAttempt attempt) {
-        final var owner = fromHeadlongAddress(
-                BALANCE_OF.decodeCall(attempt.input().toArrayUnsafe()).get(0));
+        final Address owner =
+                BALANCE_OF.decodeCall(attempt.input().toArrayUnsafe()).get(0);
         return new BalanceOfCall(attempt.enhancement(), attempt.redirectToken(), owner);
     }
 
@@ -87,7 +86,7 @@ public class BalanceOfCall extends AbstractHtsCall {
         if (token == null) {
             return gasOnly(revertResult(INVALID_TOKEN_ID, 0L));
         }
-        final var ownerNum = maybeMissingNumberOf(owner, nativeOperations());
+        final var ownerNum = maybeMissingNumberOfEvmReference(owner, nativeOperations());
         if (ownerNum == MISSING_ENTITY_NUMBER) {
             return gasOnly(revertResult(INVALID_ACCOUNT_ID, 0L));
         }

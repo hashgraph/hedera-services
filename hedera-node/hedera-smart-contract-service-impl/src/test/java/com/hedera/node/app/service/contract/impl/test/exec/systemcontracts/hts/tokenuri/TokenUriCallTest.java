@@ -14,43 +14,38 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.name;
+package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.tokenuri;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.revertOutputFor;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CIVILIAN_OWNED_NFT;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NFT_SERIAL_NO;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_FUNGIBLE_TOKEN;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_FUNGIBLE_TOKEN_ID;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.BDDMockito.given;
 
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.name.NameCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokenuri.TokenUriCall;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
 
-class NameCallTest extends HtsCallTestBase {
-    private NameCall subject;
+class TokenUriCallTest extends HtsCallTestBase {
+    private TokenUriCall subject;
 
     @Test
-    void revertsWithMissingToken() {
-        subject = new NameCall(mockEnhancement(), null);
+    void returnsUnaliasedOwnerLongZeroForPresentTokenAndNonTreasuryNft() {
+        subject = new TokenUriCall(mockEnhancement(), NON_FUNGIBLE_TOKEN, NFT_SERIAL_NO);
 
-        final var result = subject.execute().fullResult().result();
-
-        assertEquals(MessageFrame.State.REVERT, result.getState());
-        assertEquals(revertOutputFor(INVALID_TOKEN_ID), result.getOutput());
-    }
-
-    @Test
-    void returnsNameForPresentToken() {
-        subject = new NameCall(mockEnhancement(), FUNGIBLE_TOKEN);
+        given(nativeOperations.getNft(NON_FUNGIBLE_TOKEN_ID.tokenNum(), NFT_SERIAL_NO))
+                .willReturn(CIVILIAN_OWNED_NFT);
 
         final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
-                Bytes.wrap(NameCall.NAME
+                Bytes.wrap(TokenUriCall.TOKEN_URI
                         .getOutputs()
-                        .encodeElements(FUNGIBLE_TOKEN.name())
+                        .encodeElements(new String(CIVILIAN_OWNED_NFT.metadata().toByteArray()))
                         .array()),
                 result.getOutput());
     }

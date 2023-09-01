@@ -1,11 +1,20 @@
-package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.ownerof;
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ownerof.OwnerOfCall;
-import com.hedera.node.app.service.contract.impl.test.TestHelpers;
-import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
-import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.junit.jupiter.api.Test;
+package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.ownerof;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
@@ -21,6 +30,13 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.revertO
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
+
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ownerof.OwnerOfCall;
+import com.hedera.node.app.service.contract.impl.test.TestHelpers;
+import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.junit.jupiter.api.Test;
 
 class OwnerOfCallTest extends HtsCallTestBase {
 
@@ -91,7 +107,8 @@ class OwnerOfCallTest extends HtsCallTestBase {
         assertEquals(
                 Bytes.wrap(OwnerOfCall.OWNER_OF
                         .getOutputs()
-                        .encodeElements(asHeadlongAddress(ALIASED_SOMEBODY.alias().toByteArray()))
+                        .encodeElements(
+                                asHeadlongAddress(ALIASED_SOMEBODY.alias().toByteArray()))
                         .array()),
                 result.getOutput());
     }

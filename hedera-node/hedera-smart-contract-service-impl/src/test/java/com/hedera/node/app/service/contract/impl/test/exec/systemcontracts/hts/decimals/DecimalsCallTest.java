@@ -14,25 +14,28 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.name;
+package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.decimals;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_FUNGIBLE_TOKEN;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.UNEASONABLY_DIVISIBLE_TOKEN;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.revertOutputFor;
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.name.NameCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.decimals.DecimalsCall;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
 
-class NameCallTest extends HtsCallTestBase {
-    private NameCall subject;
+class DecimalsCallTest extends HtsCallTestBase {
+
+    private DecimalsCall subject;
 
     @Test
-    void revertsWithMissingToken() {
-        subject = new NameCall(mockEnhancement(), null);
+    void revertsWithNonfungibleToken() {
+        subject = new DecimalsCall(mockEnhancement(), NON_FUNGIBLE_TOKEN);
 
         final var result = subject.execute().fullResult().result();
 
@@ -41,17 +44,30 @@ class NameCallTest extends HtsCallTestBase {
     }
 
     @Test
-    void returnsNameForPresentToken() {
-        subject = new NameCall(mockEnhancement(), FUNGIBLE_TOKEN);
+    void returnsInRangeDecimalsForPresentToken() {
+        subject = new DecimalsCall(mockEnhancement(), FUNGIBLE_TOKEN);
 
         final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
-                Bytes.wrap(NameCall.NAME
+                Bytes.wrap(DecimalsCall.DECIMALS
                         .getOutputs()
-                        .encodeElements(FUNGIBLE_TOKEN.name())
+                        .encodeElements(FUNGIBLE_TOKEN.decimals())
                         .array()),
+                result.getOutput());
+    }
+
+    @Test
+    void returnsMaxDecimalsForUnreasonableToken() {
+        subject = new DecimalsCall(mockEnhancement(), UNEASONABLY_DIVISIBLE_TOKEN);
+
+        final var result = subject.execute().fullResult().result();
+
+        assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
+        assertEquals(
+                Bytes.wrap(
+                        DecimalsCall.DECIMALS.getOutputs().encodeElements(0xFF).array()),
                 result.getOutput());
     }
 }

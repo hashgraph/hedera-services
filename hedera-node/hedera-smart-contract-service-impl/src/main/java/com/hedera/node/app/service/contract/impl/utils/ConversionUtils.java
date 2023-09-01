@@ -17,8 +17,10 @@
 package com.hedera.node.app.service.contract.impl.utils;
 
 import static com.hedera.node.app.service.contract.impl.exec.processors.ProcessorModule.EVM_ADDRESS_SIZE;
+import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
+import static com.swirlds.common.utility.CommonUtils.unhex;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ContractID;
@@ -35,9 +37,9 @@ import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperatio
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -132,21 +134,7 @@ public class ConversionUtils {
      */
     public static com.esaulpaugh.headlong.abi.Address headlongAddressOf(@NonNull final Account account) {
         requireNonNull(account);
-        return account.alias().length() == EVM_ADDRESS_SIZE
-                ? toHeadlongAddress(account.alias())
-                : toHeadlongAddress(asEvmAddress(account.accountIdOrThrow().accountNumOrThrow()));
-    }
-
-    /**
-     * Given a PBJ alias, converts it to a headlong address.
-     *
-     * @param alias the PBJ alias
-     * @return the headlong address
-     */
-    public static com.esaulpaugh.headlong.abi.Address toHeadlongAddress(
-            @NonNull final com.hedera.pbj.runtime.io.buffer.Bytes alias) {
-        requireNonNull(alias);
-        return toHeadlongAddress(alias.toByteArray());
+        return toHeadlongAddress(explicitAddressOf(account));
     }
 
     /**
@@ -295,30 +283,42 @@ public class ConversionUtils {
 
     /**
      * Given an EVM address (possibly long-zero), returns the number of the corresponding Hedera entity
-     * within the given {@link HandleHederaNativeOperations}; or {@link HederaNativeOperations#MISSING_ENTITY_NUMBER} if the address is not long-zero
-     * and does not correspond to a known Hedera entity.
+     * within the given {@link HandleHederaNativeOperations}; or {@link HederaNativeOperations#MISSING_ENTITY_NUMBER}
+     * if either the address does not correspond to a known Hedera entity, or references that entity by
+     * its "non-priority" long-zero address.
      *
      * @param address       the EVM address
      * @param nativeOperations the {@link HandleHederaNativeOperations} to use for resolving aliases
-     * @return the number of the corresponding Hedera entity, or {@link HederaNativeOperations#MISSING_ENTITY_NUMBER}
+     * @return the number of the corresponding Hedera entity, if it exists and has this priority address
+     */
+    public static long maybeMissingNumberOfEvmReference(
+            @NonNull final com.esaulpaugh.headlong.abi.Address address,
+            @NonNull final HederaNativeOperations nativeOperations) {
+        final var explicit = explicitFromHeadlong(address);
+        final var number = maybeMissingNumberOf(explicit, nativeOperations);
+        if (number == MISSING_ENTITY_NUMBER) {
+            return MISSING_ENTITY_NUMBER;
+        } else {
+            final var account = nativeOperations.getAccount(number);
+            if (account == null || !Arrays.equals(explicit, explicitAddressOf(account))) {
+                return MISSING_ENTITY_NUMBER;
+            }
+            return number;
+        }
+    }
+
+    /**
+     * Given an EVM address (possibly long-zero), returns the number of the corresponding Hedera entity
+     * within the given {@link HandleHederaNativeOperations}; or {@link HederaNativeOperations#MISSING_ENTITY_NUMBER}
+     * if the address is not long-zero and does not correspond to a known Hedera entity.
+     *
+     * @param address       the EVM address
+     * @param nativeOperations the {@link HandleHederaNativeOperations} to use for resolving aliases
+     * @return the number of the corresponding Hedera entity, if it exists
      */
     public static long maybeMissingNumberOf(
             @NonNull final Address address, @NonNull final HederaNativeOperations nativeOperations) {
-        final var explicit = address.toArrayUnsafe();
-        if (isLongZeroAddress(explicit)) {
-            return longFrom(
-                    explicit[12],
-                    explicit[13],
-                    explicit[14],
-                    explicit[15],
-                    explicit[16],
-                    explicit[17],
-                    explicit[18],
-                    explicit[19]);
-        } else {
-            final var alias = aliasFrom(address);
-            return nativeOperations.resolveAlias(alias);
-        }
+        return maybeMissingNumberOf(address.toArrayUnsafe(), nativeOperations);
     }
 
     /**
@@ -497,6 +497,10 @@ public class ConversionUtils {
         return true;
     }
 
+    private static byte[] explicitFromHeadlong(@NonNull final com.esaulpaugh.headlong.abi.Address address) {
+        return unhex(address.toString().substring(2));
+    }
+
     @SuppressWarnings("java:S107")
     private static long longFrom(
             final byte b1,
@@ -527,5 +531,30 @@ public class ConversionUtils {
                 ? address
                 : asLongZeroAddress(
                         proxyUpdaterFor(frame).getHederaContractId(address).contractNumOrThrow());
+    }
+
+    private static long maybeMissingNumberOf(
+            @NonNull final byte[] explicit, @NonNull final HederaNativeOperations nativeOperations) {
+        if (isLongZeroAddress(explicit)) {
+            return longFrom(
+                    explicit[12],
+                    explicit[13],
+                    explicit[14],
+                    explicit[15],
+                    explicit[16],
+                    explicit[17],
+                    explicit[18],
+                    explicit[19]);
+        } else {
+            final var alias = com.hedera.pbj.runtime.io.buffer.Bytes.wrap(explicit);
+            return nativeOperations.resolveAlias(alias);
+        }
+    }
+
+    private static byte[] explicitAddressOf(@NonNull final Account account) {
+        requireNonNull(account);
+        return account.alias().length() == EVM_ADDRESS_SIZE
+                ? account.alias().toByteArray()
+                : asEvmAddress(account.accountIdOrThrow().accountNumOrThrow());
     }
 }

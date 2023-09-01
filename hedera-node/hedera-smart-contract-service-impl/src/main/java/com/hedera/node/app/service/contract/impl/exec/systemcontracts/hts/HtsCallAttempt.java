@@ -25,10 +25,13 @@ import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.balanceof.BalanceOfCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.decimals.DecimalsCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.isoperator.IsOperatorCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.mint.MintCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.name.NameCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ownerof.OwnerOfCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.symbol.SymbolCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokenuri.TokenUriCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.totalsupply.TotalSupplyCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.TransferCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
@@ -51,7 +54,8 @@ public class HtsCallAttempt {
     //   [x] TRANSFER,
     //   [x] MINT,
     //   [x] BALANCE_OF,
-    //   [ ] TOTAL_SUPPLY,
+    //   [x] TOTAL_SUPPLY,
+    //   [x] DECIMALS,
     //   [ ] ASSOCIATE_ONE,
     //   [ ] ASSOCIATE_MANY,
     //   [ ] DISSOCIATE_ONE,
@@ -70,7 +74,7 @@ public class HtsCallAttempt {
     //   [ ] CREATE_TOKEN,
     //   [ ] DELETE_TOKEN,
     //   [ ] UPDATE_TOKEN,
-    //   [ ] GET_BALANCE,
+    //   [x] GET_BALANCE,
     //   [ ] GET_ALLOWANCE,
     //   [ ] GET_IS_APPROVED,
     //   [ ] GET_IS_OPERATOR,
@@ -140,6 +144,8 @@ public class HtsCallAttempt {
             return MintCall.from(this, senderAddress);
         } else if (BalanceOfCall.matches(selector)) {
             return BalanceOfCall.from(this);
+        } else if (IsOperatorCall.matches(selector)) {
+            return IsOperatorCall.from(this);
         } else if (TotalSupplyCall.matches(selector)) {
             return TotalSupplyCall.from(this);
         } else if (NameCall.matches(selector)) {
@@ -148,6 +154,10 @@ public class HtsCallAttempt {
             return SymbolCall.from(this);
         } else if (OwnerOfCall.matches(selector)) {
             return OwnerOfCall.from(this);
+        } else if (TokenUriCall.matches(selector)) {
+            return TokenUriCall.from(this);
+        } else if (DecimalsCall.matches(selector)) {
+            return DecimalsCall.from(this);
         } else {
             return null;
         }

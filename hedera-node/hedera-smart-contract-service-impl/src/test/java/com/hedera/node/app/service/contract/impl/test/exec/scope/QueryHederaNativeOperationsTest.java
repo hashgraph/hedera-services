@@ -124,8 +124,6 @@ class QueryHederaNativeOperationsTest {
     void getNftUsesStore() {
         given(context.createStore(ReadableNftStore.class)).willReturn(nftStore);
         given(nftStore.get(CIVILIAN_OWNED_NFT.nftIdOrThrow())).willReturn(CIVILIAN_OWNED_NFT);
-        assertSame(
-                CIVILIAN_OWNED_NFT,
-                subject.getNft(NON_FUNGIBLE_TOKEN_ID.tokenNum(), NFT_SERIAL_NO));
+        assertSame(CIVILIAN_OWNED_NFT, subject.getNft(NON_FUNGIBLE_TOKEN_ID.tokenNum(), NFT_SERIAL_NO));
     }
 }
