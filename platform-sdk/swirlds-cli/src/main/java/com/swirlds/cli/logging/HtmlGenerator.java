@@ -76,9 +76,11 @@ public class HtmlGenerator {
     public static final String BLACKLIST_LABEL = "blacklist";
 
     /**
-     * This label is for fields we absolutely positively do not want displayed, regardless of what other filters say
+     * This label is for fields we absolutely positively do not want displayed, regardless of what filters say
+     * <p>
+     * The only thing that supersedes this are the "select" checkboxes
      */
-    public static final String ABSOLUTELY_NO_SHOW = "no-show";
+    public static final String NO_SHOW = "no-show";
 
     /**
      * This label is used to hold the value of how many whitelist filters are currently applied to a field
@@ -535,9 +537,9 @@ public class HtmlGenerator {
                         .formatted(BLACKLIST_LABEL, BLACKLIST_LABEL, BLACKLIST_LABEL, WHITELIST_LABEL),
                 new CssDeclaration("display", "none"));
 
-        // absolutely hide any elements with a no-show value of > 1
+        // strongly hide any elements with a no-show value of > 1. Only selected elements are exempt
         cssFactory.addRule(
-                "[%s]:not([%s~='0'])".formatted(ABSOLUTELY_NO_SHOW, ABSOLUTELY_NO_SHOW),
+                "[%s]:not([%s~='0']):not([selected])".formatted(NO_SHOW, NO_SHOW),
                 new CssDeclaration("display", "none !important"));
 
         // pad the log table columns

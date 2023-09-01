@@ -30,7 +30,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Stream;
 
 /**
  * A log that doesn't adhere to the standard format. Becomes part of the most recent log line.
@@ -40,20 +39,6 @@ public class NonStandardLog {
      * The original text
      */
     private String nonStandardText = "";
-
-    /**
-     * The most recent standard log line to come before this non-standard line
-     */
-    private final LogLine parentLogLine;
-
-    /**
-     * Constructor
-     *
-     * @param parentLogLine the most recent log line to come before this non-standard line
-     */
-    public NonStandardLog(@NonNull LogLine parentLogLine) {
-        this.parentLogLine = parentLogLine;
-    }
 
     public void addLogText(@NonNull final String logText) {
         if (!nonStandardText.isEmpty()) {
@@ -99,21 +84,6 @@ public class NonStandardLog {
                 .addAttribute(WHITELIST_LABEL, "0");
         dataCellTags.add(contentsFactory.generateTag());
 
-        // add classes via the parent line, so that this non-standard log will be filtered with its parent
-        final List<String> rowClassNames = Stream.of(
-                        parentLogLine.getLogLevel(),
-                        parentLogLine.getMarker(),
-                        parentLogLine.getThreadName(),
-                        parentLogLine.getClassName(),
-                        parentLogLine.getNodeId() == null ? "" : "node" + parentLogLine.getNodeId(),
-                        HIDEABLE_LABEL)
-                .map(LogProcessingUtils::escapeString)
-                .toList();
-
-        return new HtmlTagFactory("tr", "\n" + String.join("\n", dataCellTags) + "\n", false)
-                .addClasses(rowClassNames)
-                .addAttribute(BLACKLIST_LABEL, "0")
-                .addAttribute(WHITELIST_LABEL, "0")
-                .generateTag();
+        return new HtmlTagFactory("tr", "\n" + String.join("\n", dataCellTags) + "\n", false).generateTag();
     }
 }

@@ -237,7 +237,7 @@ public class LogLine implements FormattableString {
      */
     public void addNonStandardLine(@NonNull final String line) {
         if (additionalLines == null) {
-            additionalLines = new NonStandardLog(this);
+            additionalLines = new NonStandardLog();
         }
         additionalLines.addLogText(line);
     }
@@ -459,18 +459,25 @@ public class LogLine implements FormattableString {
                 .addAttribute(WHITELIST_LABEL, "0");
         dataCellTags.add(remainderOfLineTagFactory.generateTag());
 
-        final String mainLogRow = new HtmlTagFactory("tr", "\n" + String.join("\n", dataCellTags) + "\n", false)
-                .addClasses(rowClassNames)
-                .addAttribute(BLACKLIST_LABEL, "0")
-                .addAttribute(WHITELIST_LABEL, "0")
-                .generateTag();
+        final HtmlTagFactory mainLogRowFactory =
+                new HtmlTagFactory("tr", "\n" + String.join("\n", dataCellTags) + "\n", false).addClass(LOG_LINE_LABEL);
 
         if (additionalLines == null) {
-            return mainLogRow;
+            mainLogRowFactory
+                    .addClasses(rowClassNames)
+                    .addAttribute(BLACKLIST_LABEL, "0")
+                    .addAttribute(WHITELIST_LABEL, "0");
+
+            return mainLogRowFactory.generateTag();
         } else {
-            return new HtmlTagFactory("tbody", mainLogRow + "\n" + additionalLines.generateHtmlString(), false)
+            return new HtmlTagFactory(
+                            "tbody",
+                            mainLogRowFactory.generateTag() + "\n" + additionalLines.generateHtmlString(),
+                            false)
                     .addClass(LOG_LINE_LABEL)
                     .addClasses(rowClassNames)
+                    .addAttribute(BLACKLIST_LABEL, "0")
+                    .addAttribute(WHITELIST_LABEL, "0")
                     .generateTag();
         }
     }
