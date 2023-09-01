@@ -36,7 +36,6 @@ import static org.mockito.Mockito.when;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.AppTestBase;
-import com.hedera.node.app.config.VersionedConfigImpl;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.signature.SignatureExpander;
@@ -53,6 +52,7 @@ import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.verifier.BaseHandleContextVerifier;
 import com.hedera.node.app.workflows.handle.verifier.HandleContextVerifier;
 import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -242,7 +242,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
         @DisplayName("Unknown failure due to random exception during handling leads to \"unknown\" failure response")
         void timeoutExceptionDueToRandomErrorLeadsToUnknownFailureResponseTest() throws PreCheckException {
             doAnswer(invocation -> {
-                        throw new AssertionError("Random error!");
+                        throw new Exception("Random error!");
                     })
                     .when(dispatcher)
                     .dispatchPreHandle(any());
@@ -304,7 +304,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
         void preHandleFailedSyntacticCheckWithUnknownException() throws PreCheckException {
             // Given a transaction that fails due-diligence checks for some random throwable
             final Transaction platformTx = new SwirldTransaction(randomByteArray(123));
-            when(transactionChecker.parseAndCheck(any(Bytes.class))).thenThrow(new AssertionError("Random"));
+            when(transactionChecker.parseAndCheck(any(Bytes.class))).thenThrow(new RuntimeException("Random"));
 
             // When we pre-handle the transaction
             workflow.preHandle(storeFactory, NODE_1.nodeAccountID(), Stream.of(platformTx));

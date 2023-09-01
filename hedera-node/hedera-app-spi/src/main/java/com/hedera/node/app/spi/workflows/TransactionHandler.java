@@ -17,6 +17,8 @@
 package com.hedera.node.app.spi.workflows;
 
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -49,6 +51,20 @@ public interface TransactionHandler {
     // NOTE: FUTURE: This method should not be default, but should be implemented by all
     // transaction handlers. This is a temporary measure to avoid merge conflicts.
     default void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {}
+
+    /**
+     * Calculates the fees for a transaction
+     *
+     * @param feeContext the {@link FeeContext} with all information needed for the calculation
+     * @return the calculated {@link Fees}
+     * @throws NullPointerException if {@code feeContext} is {@code null}
+     */
+    // NOTE: FUTURE: This method should not be default, but should be implemented by all
+    // transaction handlers. This is a temporary measure to avoid merge conflicts.
+    @NonNull
+    default Fees calculateFees(@NonNull final FeeContext feeContext) {
+        return Fees.FREE;
+    }
 
     /**
      * Handles a transaction

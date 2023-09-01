@@ -123,7 +123,7 @@ class WritableAccountStoreTest extends CryptoHandlerTestBase {
         assertThat(readaccount).isNotNull();
         assertThat(account).isEqualTo(readaccount);
         assertEquals(1, writableStore.sizeOfAliasesState());
-        assertEquals(Set.of(alias.alias()), writableStore.modifiedAliasesInState());
+        assertEquals(Set.of(edKeyAlias), writableStore.modifiedAliasesInState());
     }
 
     @Test

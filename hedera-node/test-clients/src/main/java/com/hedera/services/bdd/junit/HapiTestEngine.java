@@ -58,7 +58,7 @@ import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.common.system.status.PlatformStatusConfig;
 import com.swirlds.config.api.spi.ConfigurationBuilderFactory;
 import com.swirlds.fchashmap.config.FCHashMapConfig;
-import com.swirlds.jasperdb.config.JasperDbConfig;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.platform.Crypto;
 import com.swirlds.platform.CryptoMetrics;
 import com.swirlds.platform.SwirldsPlatform;
@@ -153,7 +153,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
      */
     @Override
     public TestDescriptor discover(EngineDiscoveryRequest discoveryRequest, UniqueId uniqueId) {
-        final var engineDescriptor = new EngineDescriptor(uniqueId, "Hapi Test");
+        final var engineDescriptor = new HapiEngineDescriptor(uniqueId);
 
         discoveryRequest.getSelectorsByType(MethodSelector.class).forEach(selector -> {
             final var javaClass = selector.getJavaClass();
@@ -201,72 +201,36 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
      */
     @Override
     protected HapiTestEngineExecutionContext createExecutionContext(ExecutionRequest request) {
-        return new HapiTestEngineExecutionContext(null, null);
+        // Populating the data needed for the context
+        return new HapiTestEngineExecutionContext(Path.of("data"), Path.of("eventstreams"));
     }
 
-    /**
-     * Represents a class annotated with {@link HapiTestSuite}. A fresh, new consensus node will be started for each
-     * such test class, and terminated after it has been run. Each instance of this class is used both during discovery
-     * (thanks to {@link AbstractTestDescriptor}, and during test execution (thanks to the {@link Node} interface).
-     */
-    private static final class ClassTestDescriptor extends AbstractTestDescriptor
+    private static final class HapiEngineDescriptor extends EngineDescriptor
             implements Node<HapiTestEngineExecutionContext> {
-        /** The class annotated with {@link HapiTestSuite} */
-        private final Class<?> testClass;
-        /** We will skip initialization of a {@link Hedera} instance if there are no test methods */
-        private final boolean skip;
         /** The Hedera instance we are testing */
         private Hedera hedera;
 
-        /** Creates a new descriptor for the given test class. */
-        public ClassTestDescriptor(Class<?> testClass, TestDescriptor parent, EngineDiscoveryRequest discoveryRequest) {
-            super(
-                    parent.getUniqueId().append("class", testClass.getName()),
-                    testClass.getSimpleName(),
-                    ClassSource.from(testClass));
-            this.testClass = testClass;
-            setParent(parent);
-
-            // Look for any methods supported by this class.
-            ReflectionUtils.findMethods(testClass, IS_HAPI_TEST, TOP_DOWN).stream()
-                    .filter(method -> {
-                        // The selectors tell me if some specific method was selected by the IDE or command line,
-                        // so I will filter out and only include test methods that were in the selectors, if there
-                        // are any such selectors. NOTE: We're not doing class selectors and such, a more robust
-                        // implementation probably should.
-                        final var selectors = discoveryRequest.getSelectorsByType(MethodSelector.class);
-                        for (final var selector : selectors) {
-                            if (!selector.getJavaMethod().equals(method)) {
-                                return false;
-                            }
-                        }
-                        return true;
-                    })
-                    .map(method -> new MethodTestDescriptor(method, this))
-                    .forEach(this::addChild);
-
-            // Skip construction of the Hedera instance if there are no test methods
-            skip = getChildren().isEmpty();
-        }
-
-        @Override
-        public Type getType() {
-            return Type.CONTAINER;
-        }
-
-        @Override
-        public SkipResult shouldBeSkipped(HapiTestEngineExecutionContext context) {
-            return skip ? SkipResult.skip("No test methods") : SkipResult.doNotSkip();
+        public HapiEngineDescriptor(UniqueId uniqueId) {
+            super(uniqueId, "Hapi Test");
         }
 
         @Override
         public HapiTestEngineExecutionContext before(HapiTestEngineExecutionContext context) {
+            // If there are no children, then there is nothing to do.
+            if (super.getChildren().isEmpty()) {
+                return context;
+            }
+
             try {
-                // If we have a HapiTestSuite that is without tests we still want to show it as ignored,
-                // but we don't want to waste time setting up a node
-                if (allTestsSkipped()) {
-                    return new HapiTestEngineExecutionContext(null, null);
-                }
+                // Deleting the test data. Currently, we are deleting the data/saved and the eventstreams folders.
+                // We need to do that in order to be able to run all tests at the same time. Without that the tests
+                // are interfering with each other.
+                // Also, If we encounter a scenario where tests in the same suite are interfering with each other we
+                // can move this logic inside the after method in the MethodTestDescriptor class.
+                // This way we will clean up the data after each test.
+                if (context.getSavedStateDirectory() != null)
+                    FileUtils.deleteDirectory(context.getSavedStateDirectory());
+                if (context.getEventsLogDir() != null) FileUtils.deleteDirectory(context.getEventsLogDir());
 
                 final var tmpDir = Files.createTempDirectory("hapiTest");
 
@@ -282,7 +246,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                 final var registry = ConstructableRegistry.getInstance();
                 registry.reset();
                 registry.registerConstructables("com.swirlds.merklemap");
-                registry.registerConstructables("com.swirlds.jasperdb");
+                registry.registerConstructables("com.swirlds.merkledb");
                 registry.registerConstructables("com.swirlds.fcqueue");
                 registry.registerConstructables("com.swirlds.virtualmap");
                 registry.registerConstructables("com.swirlds.common.merkle");
@@ -321,7 +285,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                         .withConfigDataType(TransactionConfig.class)
                         .withConfigDataType(EventCreationConfig.class)
                         .withConfigDataType(SocketConfig.class)
-                        .withConfigDataType(JasperDbConfig.class)
+                        .withConfigDataType(MerkleDbConfig.class)
                         .withConfigDataType(ChatterConfig.class)
                         .withConfigDataType(AddressBookConfig.class)
                         .withConfigDataType(VirtualMapConfig.class)
@@ -385,11 +349,6 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                     public void recycle(@NonNull Path path) throws IOException {
                         // TODO No-op for now
                     }
-
-                    @Override
-                    public void clear() throws IOException {
-                        // TODO No-op for now
-                    }
                 };
 
                 final var initialState = GenesisStateBuilder.buildGenesisState(
@@ -405,7 +364,9 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                         "Hedera", // main class name
                         "Hedera", // swirld name
                         new BasicSoftwareVersion(Long.MAX_VALUE), // App Version :TODO USE REAL VERSION NUMBER
+                        true,
                         initialSignedState,
+                        new AddressBook(),
                         new EmergencyRecoveryManager(
                                 platformContext.getConfiguration().getConfigData(StateConfig.class),
                                 (s, exitCode) -> {
@@ -440,16 +401,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                                 "recordStream.path",
                                 tmpDir.resolve("recordStream").toString()));
 
-                // Populating the data needed for the context
-                StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
-                Path savedStateDirectory = stateConfig.savedStateDirectory();
-
-                EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
-                Path eventsLogDir = Path.of(eventConfig.eventsLogDir());
-
-                return new HapiTestEngineExecutionContext(
-                        savedStateDirectory, eventsLogDir); // <--- Actually, this is going to have connection info to
-                // connect to the node!?
+                return context;
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -457,29 +409,64 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
 
         @Override
         public void after(HapiTestEngineExecutionContext context) throws Exception {
-            if (allTestsSkipped()) {
-                return;
-            }
-
             if (hedera != null) {
                 hedera.shutdown();
                 hedera = null;
             }
+        }
+    }
 
-            // Deleting the test data. Currently, we are deleting the data/saved and the eventstreams folders.
-            // We need to do that in order to be able to run all tests at the same time. Without that the tests
-            // are interfering with each other.
-            // Also, If we encounter a scenario where tests in the same suite are interfering with each other we
-            // can move this logic inside the after method in the MethodTestDescriptor class.
-            // This way we will clean up the data after each test.
-            FileUtils.deleteDirectory(context.getSavedStateDirectory());
-            FileUtils.deleteDirectory(context.getEventsLogDir());
+    /**
+     * Represents a class annotated with {@link HapiTestSuite}. A fresh, new consensus node will be started for each
+     * such test class, and terminated after it has been run. Each instance of this class is used both during discovery
+     * (thanks to {@link AbstractTestDescriptor}, and during test execution (thanks to the {@link Node} interface).
+     */
+    private static final class ClassTestDescriptor extends AbstractTestDescriptor
+            implements Node<HapiTestEngineExecutionContext> {
+        /** The class annotated with {@link HapiTestSuite} */
+        private final Class<?> testClass;
+        /** We will skip initialization of a {@link Hedera} instance if there are no test methods */
+        private final boolean skip;
+
+        /** Creates a new descriptor for the given test class. */
+        public ClassTestDescriptor(Class<?> testClass, TestDescriptor parent, EngineDiscoveryRequest discoveryRequest) {
+            super(
+                    parent.getUniqueId().append("class", testClass.getName()),
+                    testClass.getSimpleName(),
+                    ClassSource.from(testClass));
+            this.testClass = testClass;
+            setParent(parent);
+
+            // Look for any methods supported by this class.
+            ReflectionUtils.findMethods(testClass, IS_HAPI_TEST, TOP_DOWN).stream()
+                    .filter(method -> {
+                        // The selectors tell me if some specific method was selected by the IDE or command line,
+                        // so I will filter out and only include test methods that were in the selectors, if there
+                        // are any such selectors. NOTE: We're not doing class selectors and such, a more robust
+                        // implementation probably should.
+                        final var selectors = discoveryRequest.getSelectorsByType(MethodSelector.class);
+                        for (final var selector : selectors) {
+                            if (!selector.getJavaMethod().equals(method)) {
+                                return false;
+                            }
+                        }
+                        return true;
+                    })
+                    .map(method -> new MethodTestDescriptor(method, this))
+                    .forEach(this::addChild);
+
+            // Skip construction of the Hedera instance if there are no test methods
+            skip = getChildren().isEmpty();
         }
 
-        private boolean allTestsSkipped() {
-            return getChildren().stream()
-                    .allMatch(ch ->
-                            ((MethodTestDescriptor) ch).shouldBeSkipped(null).isSkipped());
+        @Override
+        public Type getType() {
+            return Type.CONTAINER;
+        }
+
+        @Override
+        public SkipResult shouldBeSkipped(HapiTestEngineExecutionContext context) {
+            return skip ? SkipResult.skip("No test methods") : SkipResult.doNotSkip();
         }
     }
 
@@ -509,7 +496,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
         public SkipResult shouldBeSkipped(HapiTestEngineExecutionContext context) {
             final var annotation = AnnotationSupport.findAnnotation(testMethod, Disabled.class);
             if (!AnnotationSupport.isAnnotated(testMethod, HapiTest.class)) {
-                return SkipResult.skip("No @HapiTest annotation");
+                return SkipResult.skip(testMethod.getName() + " No @HapiTest annotation");
             } else if (annotation.isPresent()) {
                 final var msg = annotation.get().value();
                 return SkipResult.skip(msg == null || msg.isBlank() ? "Disabled" : msg);

@@ -63,10 +63,11 @@ public class FileSystemDeleteHandler implements TransactionHandler {
 
         final var transactionBody = context.body().systemDeleteOrThrow();
         final var fileStore = context.createStore(ReadableFileStore.class);
-        preValidate(transactionBody.fileID(), fileStore, context, true);
+        final var transactionFileId = requireNonNull(transactionBody.fileID());
+        preValidate(transactionFileId, fileStore, context, true);
 
-        var file = fileStore.getFileLeaf(transactionBody.fileID());
-        validateAndAddRequiredKeys(file.orElse(null), null, context);
+        var file = fileStore.getFileLeaf(transactionFileId);
+        validateAndAddRequiredKeys(file, null, context);
     }
 
     @Override
@@ -87,7 +88,7 @@ public class FileSystemDeleteHandler implements TransactionHandler {
         final File file = verifyNotSystemFile(ledgerConfig, fileStore, fileId);
 
         final var newExpiry = systemDeleteTransactionBody
-                .expirationTimeOrElse(new TimestampSeconds(file.expirationTime()))
+                .expirationTimeOrElse(new TimestampSeconds(file.expirationSecond()))
                 .seconds();
         // If the file is already expired, remove it from state completely otherwise change the deleted flag to be true.
         if (newExpiry <= handleContext.consensusNow().getEpochSecond()) {
@@ -96,7 +97,7 @@ public class FileSystemDeleteHandler implements TransactionHandler {
             /* Get all the fields from existing file and change deleted flag */
             final var fileBuilder = new File.Builder()
                     .fileId(file.fileId())
-                    .expirationTime(newExpiry)
+                    .expirationSecond(newExpiry)
                     .keys(file.keys())
                     .contents(file.contents())
                     .memo(file.memo())

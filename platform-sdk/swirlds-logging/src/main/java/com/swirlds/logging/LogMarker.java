@@ -197,11 +197,6 @@ public enum LogMarker {
     PLATFORM_STATUS(LogMarkerType.INFO),
 
     /**
-     * Detail information about JasperDb.
-     */
-    JASPER_DB(LogMarkerType.INFO),
-
-    /**
      * Detail information about MerkleDb.
      */
     MERKLE_DB(LogMarkerType.INFO),

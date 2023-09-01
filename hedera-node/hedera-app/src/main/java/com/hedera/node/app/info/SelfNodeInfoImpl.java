@@ -24,12 +24,16 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.spi.info.SelfNodeInfo;
 import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.swirlds.common.system.address.Address;
+import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 public record SelfNodeInfoImpl(
         long nodeId,
         @NonNull AccountID accountId,
-        boolean zeroStake,
+        long stake,
+        @NonNull String externalHostName,
+        int externalPort,
+        @NonNull String hexEncodedPublicKey,
         @NonNull String memo,
         @NonNull HederaSoftwareVersion version)
         implements SelfNodeInfo {
@@ -48,7 +52,10 @@ public record SelfNodeInfoImpl(
         return new SelfNodeInfoImpl(
                 address.getNodeId().id(),
                 parseAccount(address.getMemo()),
-                address.getWeight() <= 0,
+                address.getWeight(),
+                requireNonNull(address.getHostnameExternal()),
+                address.getPortExternal(),
+                CommonUtils.hex(requireNonNull(address.getSigPublicKey()).getEncoded()),
                 address.getMemo(),
                 version);
     }

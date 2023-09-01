@@ -787,4 +787,67 @@ class TipsetEventCreatorImplTests {
         // We should be able to create an event on the new parent.
         assertNotNull(eventCreator.maybeCreateEvent());
     }
+
+    /**
+     * Event from nodes not in the address book should not be used as parents for creating new events.
+     */
+    @Test
+    @DisplayName("Not Registering Events From NodeIds Not In AddressBook")
+    void notRegisteringEventsFromNodesNotInAddressBook() {
+        final Random random = getRandomPrintSeed();
+
+        final int networkSize = 4;
+
+        final AddressBook addressBook = new RandomAddressBookGenerator(random)
+                .setCustomWeightGenerator(x -> 1L)
+                .setSize(networkSize)
+                .build();
+
+        final FakeTime time = new FakeTime();
+
+        final NodeId nodeA = addressBook.getNodeId(0); // self
+        final NodeId nodeB = addressBook.getNodeId(1);
+        final NodeId nodeC = addressBook.getNodeId(2);
+        final NodeId nodeD = addressBook.getNodeId(3);
+        // Node 4 (E) is not in the address book.
+        final NodeId nodeE = new NodeId(nodeD.id() + 1);
+
+        // All nodes except for node 0 are fully mocked. This test is testing how node 0 behaves.
+        final TipsetEventCreator eventCreator =
+                buildEventCreator(random, time, addressBook, nodeA, () -> new ConsensusTransactionImpl[0]);
+
+        // Create some genesis events
+        final GossipEvent eventA1 = eventCreator.maybeCreateEvent();
+        assertNotNull(eventA1);
+
+        final EventImpl eventB1 = createMockEvent(random, nodeB, -1, null, -1);
+        final EventImpl eventC1 = createMockEvent(random, nodeC, -1, null, -1);
+        final EventImpl eventD1 = createMockEvent(random, nodeD, -1, null, -1);
+        final EventImpl eventE1 = createMockEvent(random, nodeE, -1, null, -1);
+
+        eventCreator.registerEvent(eventB1);
+        eventCreator.registerEvent(eventC1);
+        eventCreator.registerEvent(eventD1);
+        // Attempt to register event from a node not in the address book.
+        eventCreator.registerEvent(eventE1);
+
+        // Create the next several events.
+        // We should be able to create a total of 3 before we exhaust all possible parents in the address book.
+
+        // This will not advance the snapshot, total advancement weight is 1 (1+1/4 !> 2/3)
+        final GossipEvent eventA2 = eventCreator.maybeCreateEvent();
+        assertNotNull(eventA2);
+
+        // This will advance the snapshot, total advancement weight is 2 (2+1/4 > 2/3)
+        final GossipEvent eventA3 = eventCreator.maybeCreateEvent();
+        assertNotNull(eventA3);
+
+        // This will not advance the snapshot, total advancement weight is 1 (1+1/4 !> 2/3)
+        final GossipEvent eventA4 = eventCreator.maybeCreateEvent();
+        assertNotNull(eventA4);
+
+        // It should not be possible to create another event since we have exhausted all possible other parents in the
+        // address book.
+        assertNull(eventCreator.maybeCreateEvent());
+    }
 }

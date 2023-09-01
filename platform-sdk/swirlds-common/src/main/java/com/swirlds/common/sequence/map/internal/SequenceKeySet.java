@@ -16,11 +16,9 @@
 
 package com.swirlds.common.sequence.map.internal;
 
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
-
+import com.swirlds.base.utility.ToStringBuilder;
 import java.util.HashSet;
 import java.util.Set;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * A set of keys with a particular sequence number. This object is designed to be reused as the allowable
@@ -74,7 +72,7 @@ public class SequenceKeySet<K> {
 
     @Override
     public String toString() {
-        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+        return new ToStringBuilder(this)
                 .append("sequence number", sequenceNumber)
                 .append("size", keys.size())
                 .toString();

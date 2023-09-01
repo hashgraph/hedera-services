@@ -25,6 +25,7 @@ import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.fixtures.state.FakeSchemaRegistry;
 import com.hedera.node.app.service.networkadmin.FreezeService;
 import com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl;
+import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
@@ -39,6 +40,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class FreezeServiceImplTest {
     @Mock
     private SchemaRegistry registry;
+
+    @Mock
+    private NetworkInfo networkInfo;
 
     @Test
     void testSpi() {
@@ -76,7 +80,7 @@ class FreezeServiceImplTest {
         final var state = new FakeHederaState();
 
         subject.registerSchemas(registry);
-        registry.migrate(FreezeService.NAME, state);
+        registry.migrate(FreezeService.NAME, state, networkInfo);
         final var upgradeFileHashKeyState =
                 state.createReadableStates(FreezeService.NAME).getSingleton(UPGRADE_FILE_HASH_KEY);
         assertNotNull(upgradeFileHashKeyState.get());

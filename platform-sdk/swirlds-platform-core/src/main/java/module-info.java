@@ -43,7 +43,6 @@ module com.swirlds.platform {
     exports com.swirlds.platform.network.communication;
     exports com.swirlds.platform.network.protocol;
     exports com.swirlds.platform.network.topology;
-    exports com.swirlds.platform.network.unidirectional;
     exports com.swirlds.platform.recovery;
     exports com.swirlds.platform.state;
     exports com.swirlds.platform.stats;
@@ -106,11 +105,14 @@ module com.swirlds.platform {
     exports com.swirlds.platform.recovery.internal to
             com.swirlds.platform.test;
     exports com.swirlds.platform.uptime to
-            com.swirlds.config.impl;
+            com.swirlds.config.impl,
+            com.swirlds.common;
     exports com.swirlds.platform.gossip.sync.config to
-            com.swirlds.config.impl;
+            com.swirlds.config.impl,
+            com.swirlds.common;
     exports com.swirlds.platform.event.tipset to
-            com.swirlds.config.impl;
+            com.swirlds.config.impl,
+            com.swirlds.common;
 
     opens com.swirlds.platform.cli to
             info.picocli;
@@ -144,9 +146,6 @@ module com.swirlds.platform {
     /* JavaFX Libraries */
     requires javafx.base;
 
-    /* Apache Commons */
-    requires org.apache.commons.lang3;
-
     /* Logging Libraries */
     requires org.apache.logging.log4j;
     requires org.apache.logging.log4j.core;
@@ -157,7 +156,7 @@ module com.swirlds.platform {
 
     /* Database Libraries */
     requires com.swirlds.fchashmap;
-    requires com.swirlds.jasperdb;
+    requires com.swirlds.merkledb;
     requires com.swirlds.virtualmap;
     requires com.swirlds.fcqueue;
     requires com.swirlds.config;

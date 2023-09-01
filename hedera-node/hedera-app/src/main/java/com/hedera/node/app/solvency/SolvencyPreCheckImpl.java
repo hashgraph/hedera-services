@@ -38,12 +38,18 @@ public class SolvencyPreCheckImpl implements SolvencyPreCheck {
 
     @Override
     public void checkPayerAccountStatus(@NonNull HederaState state, @NonNull AccountID accountID)
-            throws PreCheckException {}
+            throws PreCheckException {
+        // TBD
+    }
 
     @Override
     public void checkSolvencyOfVerifiedPayer(@NonNull HederaState state, @NonNull Transaction transaction)
-            throws InsufficientBalanceException {}
+            throws InsufficientBalanceException {
+        // TBD
+    }
 
     @Override
-    public void assessWithSvcFees(@NonNull Transaction transaction) throws PreCheckException {}
+    public void assessWithSvcFees(@NonNull Transaction transaction) throws PreCheckException {
+        // TBD
+    }
 }

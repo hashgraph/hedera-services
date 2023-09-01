@@ -38,6 +38,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_A
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
@@ -78,6 +79,7 @@ public class FileCreateSuite extends HapiSuite {
                 exchangeRateControlAccountIsntCharged());
     }
 
+    // TODO:Exchange rate need to be fixed - assumptions are not matching the new values
     private HapiSpec exchangeRateControlAccountIsntCharged() {
         return defaultHapiSpec("ExchangeRateControlAccountIsntCharged")
                 .given(
@@ -90,6 +92,7 @@ public class FileCreateSuite extends HapiSuite {
                 .then(getAccountBalance(EXCHANGE_RATE_CONTROL).hasTinyBars(changeFromSnapshot("pre", 0)));
     }
 
+    @HapiTest
     private HapiSpec createFailsWithExcessiveLifetime() {
         return defaultHapiSpec("CreateFailsWithExcessiveLifetime")
                 .given()
@@ -99,6 +102,7 @@ public class FileCreateSuite extends HapiSuite {
                         .hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE));
     }
 
+    @HapiTest
     private HapiSpec createWithMemoWorks() {
         String memo = "Really quite something!";
 
@@ -110,6 +114,7 @@ public class FileCreateSuite extends HapiSuite {
                 .then(getFileInfo("memorable").hasExpectedLedgerId("0x03").hasMemo(memo));
     }
 
+    @HapiTest
     private HapiSpec createFailsWithMissingSigs() {
         KeyShape shape = listOf(SIMPLE, threshOf(2, 3), threshOf(1, 3));
         SigControl validSig = shape.signedWith(sigs(ON, sigs(ON, ON, OFF), sigs(OFF, OFF, ON)));
@@ -135,6 +140,7 @@ public class FileCreateSuite extends HapiSuite {
         return TxnUtils.replaceTxnNodeAccount(txn, badNodeAccount);
     }
 
+    @HapiTest
     private HapiSpec createFailsWithPayerAccountNotFound() {
         KeyShape shape = listOf(SIMPLE, threshOf(2, 3), threshOf(1, 3));
         SigControl validSig = shape.signedWith(sigs(ON, sigs(ON, ON, OFF), sigs(OFF, OFF, ON)));

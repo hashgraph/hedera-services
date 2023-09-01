@@ -16,28 +16,24 @@
 
 package com.swirlds.demo.virtualmerkle.random;
 
-import org.apache.commons.math3.random.RandomDataGenerator;
+import java.util.Random;
 
 /**
- * Reasons why we are using a third-party generator:
- * The API from Random to generate and accept long values uses 48 bits.
- * The API from Random does not generate longs inside an interval.
- * The ThreadLocalRandom does not accept a seed.
- *
- * Reasons why this wrapper was created:
- * Methods that accept an interval like {@link RandomDataGenerator#nextLong(long, long)} throw if {@code lower == upper}.
- * Methods that accept an interval include the upper limit as a possible outcome.
- * There is no nextByte method inside the {@link RandomDataGenerator} class.
+ * The {@code PTTRandom} class provides a set of methods for generating random numbers.
+ * It aims to offer additional utility methods not present in the standard {@link java.util.Random} class.
+ * However, there are some differences and assumptions compared to {@code java.util.Random}.
+ * <p>
+ * Always refer to method-specific documentation for more detailed information on their functionalities and assumptions.
  */
 public final class PTTRandom {
 
-    private final RandomDataGenerator random;
+    private final Random random;
 
     /**
      * Create a new {@link PTTRandom} instance.
      */
     public PTTRandom() {
-        this.random = new RandomDataGenerator();
+        this.random = new Random();
     }
 
     /**
@@ -48,8 +44,7 @@ public final class PTTRandom {
      * 		The seed used to generate random values.
      */
     public PTTRandom(final long seed) {
-        this.random = new RandomDataGenerator();
-        random.reSeed(seed);
+        this.random = new Random(seed);
     }
 
     /**
@@ -58,7 +53,7 @@ public final class PTTRandom {
      * @return a random {@code double} value from the open interval (0,1).
      */
     public double nextDouble() {
-        return random.nextUniform(0, 1);
+        return random.nextDouble();
     }
 
     /**
@@ -69,7 +64,7 @@ public final class PTTRandom {
      * @return A random {@code int} from the interval [0,upper)
      */
     public int nextInt(final int upper) {
-        return random.nextInt(0, upper - 1);
+        return random.nextInt(0, upper);
     }
 
     /**
@@ -94,10 +89,10 @@ public final class PTTRandom {
      * @return A random {@code long} from the interval [lower,upper)
      */
     public long nextLong(final long lower, final long upper) {
-        if (lower == upper || lower == upper - 1) {
+        if (lower == upper) {
             return lower;
         }
-        return random.nextLong(lower, upper - 1);
+        return random.nextLong(lower, upper);
     }
 
     /**
@@ -119,9 +114,9 @@ public final class PTTRandom {
      * @return A random {@code int} value from the interval [lower, upper)
      */
     public int nextInt(final int lower, final int upper) {
-        if (lower == upper - 1) {
+        if (lower == upper) {
             return lower;
         }
-        return random.nextInt(lower, upper - 1);
+        return random.nextInt(lower, upper);
     }
 }

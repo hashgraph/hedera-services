@@ -30,7 +30,7 @@ val log4jVersion = "2.17.1"
 val mockitoVersion = "4.6.1"
 val nettyVersion = "4.1.87.Final"
 val protobufVersion = "3.21.7"
-val swirldsVersion = "0.42.0-adhoc.xc9cb89a2"
+val swirldsVersion = "0.42.0-adhoc.x369ea419"
 val systemStubsVersion = "2.0.2"
 val testContainersVersion = "1.17.2"
 val tuweniVersion = "2.2.0"
@@ -52,7 +52,7 @@ dependencies.constraints {
         api(gav("com.google.protobuf", protobufVersion))
         api(gav("com.google.protobuf.util", protobufVersion))
         api(gav("com.hedera.hashgraph.protobuf.java.api", "0.40.0-blocks-state-SNAPSHOT")) // TODO removed through other PR
-        api(gav("com.hedera.pbj.runtime", "0.7.1"))
+        api(gav("com.hedera.pbj.runtime", "0.7.4"))
         api(gav("com.sun.jna", "5.12.1"))
         api(gav("com.swirlds.base", swirldsVersion))
         api(gav("com.swirlds.cli", swirldsVersion))

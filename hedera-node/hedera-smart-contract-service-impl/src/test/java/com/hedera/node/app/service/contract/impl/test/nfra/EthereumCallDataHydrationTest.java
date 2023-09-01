@@ -36,7 +36,6 @@ import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.contract.impl.infra.EthereumCallDataHydration;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import java.util.Optional;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -92,7 +91,7 @@ class EthereumCallDataHydrationTest {
     @Test
     void failsWithFileDeletedOnMissingCallDataFile() {
         given(fileStore.getFileLeaf(ETH_CALLDATA_FILE_ID))
-                .willReturn(Optional.of(File.newBuilder().deleted(true).build()));
+                .willReturn(File.newBuilder().deleted(true).build());
         final var ethTxn = EthereumTransactionBody.newBuilder()
                 .ethereumData(ETH_WITH_TO_ADDRESS)
                 .callData(ETH_CALLDATA_FILE_ID)
@@ -105,8 +104,7 @@ class EthereumCallDataHydrationTest {
     @Test
     void failsWithInvalidFileIdOnUnparseableCallDataFile() {
         given(fileStore.getFileLeaf(ETH_CALLDATA_FILE_ID))
-                .willReturn(Optional.of(
-                        File.newBuilder().contents(Bytes.wrap("xyz")).build()));
+                .willReturn(File.newBuilder().contents(Bytes.wrap("xyz")).build());
         final var ethTxn = EthereumTransactionBody.newBuilder()
                 .ethereumData(ETH_WITH_TO_ADDRESS)
                 .callData(ETH_CALLDATA_FILE_ID)
@@ -119,7 +117,7 @@ class EthereumCallDataHydrationTest {
     @Test
     void failsWithInvalidFileIdOnEmptyCallDataFile() {
         given(fileStore.getFileLeaf(ETH_CALLDATA_FILE_ID))
-                .willReturn(Optional.of(File.newBuilder().contents(Bytes.EMPTY).build()));
+                .willReturn(File.newBuilder().contents(Bytes.EMPTY).build());
         final var ethTxn = EthereumTransactionBody.newBuilder()
                 .ethereumData(ETH_WITH_TO_ADDRESS)
                 .callData(ETH_CALLDATA_FILE_ID)
@@ -134,8 +132,8 @@ class EthereumCallDataHydrationTest {
         final var hexedCallData = Hex.encode(CALL_DATA.toByteArray());
         final var expectedData = ETH_DATA_WITH_TO_ADDRESS.replaceCallData(CALL_DATA.toByteArray());
         given(fileStore.getFileLeaf(ETH_CALLDATA_FILE_ID))
-                .willReturn(Optional.of(
-                        File.newBuilder().contents(Bytes.wrap(hexedCallData)).build()));
+                .willReturn(
+                        File.newBuilder().contents(Bytes.wrap(hexedCallData)).build());
         final var ethTxn = EthereumTransactionBody.newBuilder()
                 .ethereumData(ETH_WITH_TO_ADDRESS)
                 .callData(ETH_CALLDATA_FILE_ID)

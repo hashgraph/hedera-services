@@ -16,23 +16,29 @@
 
 package com.hedera.node.app.service.file.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FILE_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_FILE_SIZE_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.preValidate;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateAndAddRequiredKeys;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
+import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.file.FileUpdateTransactionBody;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.node.app.hapi.fees.usage.file.FileOpsUsage;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
+import com.hedera.node.app.service.mono.fees.calculation.file.txns.FileUpdateResourceUsage;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -40,6 +46,7 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.FilesConfig;
+import com.hedera.node.config.data.LedgerConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -51,10 +58,11 @@ import javax.inject.Singleton;
 public class FileUpdateHandler implements TransactionHandler {
     private static final Timestamp EXPIRE_NEVER =
             Timestamp.newBuilder().seconds(Long.MAX_VALUE - 1).build();
+    private final FileOpsUsage fileOpsUsage;
 
     @Inject
-    public FileUpdateHandler() {
-        // Exists for injection
+    public FileUpdateHandler(final FileOpsUsage fileOpsUsage) {
+        this.fileOpsUsage = fileOpsUsage;
     }
 
     /**
@@ -71,10 +79,11 @@ public class FileUpdateHandler implements TransactionHandler {
         requireNonNull(context);
         final var transactionBody = context.body().fileUpdateOrThrow();
         final var fileStore = context.createStore(ReadableFileStore.class);
-        preValidate(transactionBody.fileID(), fileStore, context, false);
+        final var transactionFileId = requireNonNull(transactionBody.fileID());
+        preValidate(transactionFileId, fileStore, context, false);
 
-        var file = fileStore.getFileLeaf(transactionBody.fileID());
-        validateAndAddRequiredKeys(file.orElse(null), transactionBody.keys(), context);
+        var file = fileStore.getFileLeaf(transactionFileId);
+        validateAndAddRequiredKeys(file, transactionBody.keys(), context);
     }
 
     @Override
@@ -105,11 +114,19 @@ public class FileUpdateHandler implements TransactionHandler {
         final var file = maybeFile.get();
         validateFalse(file.deleted(), FILE_DELETED);
 
+        final var fees = handleContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> {
+            return new FileUpdateResourceUsage(fileOpsUsage)
+                    .usageGiven(fromPbj(handleContext.body()), sigValueObj, fromPbj(file));
+        });
+
+        handleContext.feeAccumulator().charge(handleContext.payer(), fees);
+
         // First validate this file is mutable; and the pending mutations are allowed
         // TODO: add or condition for privilege accounts from context
         validateFalse(file.keys() == null, UNAUTHORIZED);
 
         validateMaybeNewMemo(handleContext.attributeValidator(), fileUpdate);
+        validateAutoRenew(fileUpdate, handleContext);
 
         // Now we apply the mutations to a builder
         final var builder = new File.Builder();
@@ -132,7 +149,7 @@ public class FileUpdateHandler implements TransactionHandler {
                         .build())
                 .contents(fileUpdate.contents())
                 .deleted(false)
-                .expirationTime(fileUpdate.expirationTimeOrElse(EXPIRE_NEVER).seconds())
+                .expirationSecond(fileUpdate.expirationTimeOrElse(EXPIRE_NEVER).seconds())
                 .memo(fileUpdate.memo())
                 .build();
         fileStore.add(file);
@@ -164,10 +181,26 @@ public class FileUpdateHandler implements TransactionHandler {
             builder.memo(file.memo());
         }
 
-        if (op.hasExpirationTime() && op.expirationTime().seconds() > file.expirationTime()) {
-            builder.expirationTime(op.expirationTime().seconds());
+        if (op.hasExpirationTime() && op.expirationTime().seconds() > file.expirationSecond()) {
+            builder.expirationSecond(op.expirationTime().seconds());
         } else {
-            builder.expirationTime(file.expirationTime());
+            builder.expirationSecond(file.expirationSecond());
+        }
+    }
+
+    private void validateAutoRenew(FileUpdateTransactionBody op, HandleContext handleContext) {
+        if (op.hasExpirationTime()) {
+            final long startSeconds =
+                    handleContext.body().transactionID().transactionValidStart().seconds();
+            final long effectiveDuration = op.expirationTime().seconds() - startSeconds;
+
+            final var entityConfig = handleContext.configuration().getConfigData(LedgerConfig.class);
+            final long maxEntityLifetime = entityConfig.autoRenewPeriodMaxDuration();
+            final long minEntityLifetime = entityConfig.autoRenewPeriodMinDuration();
+
+            validateTrue(
+                    effectiveDuration >= minEntityLifetime && effectiveDuration <= maxEntityLifetime,
+                    AUTORENEW_DURATION_NOT_IN_RANGE);
         }
     }
 

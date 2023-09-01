@@ -61,10 +61,10 @@ public class EthereumCallDataHydration {
         }
         if (requiresHydration(body, ethTxData)) {
             final var maybeCallDataFile = fileStore.getFileLeaf(body.callDataOrThrow());
-            if (maybeCallDataFile.isEmpty()) {
+            if (maybeCallDataFile == null) {
                 return failureFrom(INVALID_FILE_ID);
             }
-            final var callDataFile = maybeCallDataFile.get();
+            final var callDataFile = maybeCallDataFile;
             if (callDataFile.deleted()) {
                 return failureFrom(FILE_DELETED);
             }
