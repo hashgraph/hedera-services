@@ -155,15 +155,15 @@ public class PlatformStatusLog implements FormattableString {
     @Override
     public String generateHtmlString() {
         return platformSpent
-                + new HtmlTagFactory("span", duration, false)
+                + new HtmlTagFactory("span", duration)
                         .addClass(STATUS_HTML_CLASS)
                         .generateTag()
                 + in
-                + new HtmlTagFactory("span", previousStatus, false)
+                + new HtmlTagFactory("span", previousStatus)
                         .addClass(STATUS_HTML_CLASS)
                         .generateTag()
                 + nowIn
-                + new HtmlTagFactory("span", newStatus, false)
+                + new HtmlTagFactory("span", newStatus)
                         .addClass(STATUS_HTML_CLASS)
                         .generateTag();
         // intentionally skip writing the remainder of the log. it is duplicate data

@@ -320,7 +320,7 @@ public class HtmlGenerator {
         final StringBuilder stringBuilder = new StringBuilder();
 
         stringBuilder
-                .append(new HtmlTagFactory("input", null, true)
+                .append(new HtmlTagFactory("input")
                         .addClasses(List.of(NO_SHOW_CHECKBOX_LABEL, nodeLogicLabel))
                         .addAttribute("type", "checkbox")
                         .addAttribute("checked", "checked")
@@ -328,11 +328,11 @@ public class HtmlGenerator {
                 .append("\n");
 
         stringBuilder
-                .append(new HtmlTagFactory("label", nodeLogicLabel, false)
+                .append(new HtmlTagFactory("label", nodeLogicLabel)
                         .addClass(nodeStylingLabel)
                         .generateTag())
                 .append("\n");
-        stringBuilder.append(new HtmlTagFactory("br", null, true).generateTag()).append("\n");
+        stringBuilder.append(new HtmlTagFactory("br").generateTag()).append("\n");
 
         return stringBuilder.toString();
     }
@@ -347,7 +347,7 @@ public class HtmlGenerator {
     private static String createCheckboxFilter(@NonNull final String elementName) {
         final StringBuilder stringBuilder = new StringBuilder();
         stringBuilder
-                .append(new HtmlTagFactory("input", null, true)
+                .append(new HtmlTagFactory("input")
                         .addClasses(List.of(FILTER_CHECKBOX_LABEL, elementName))
                         .addAttribute("type", "checkbox")
                         .addAttribute("checked", "checked")
@@ -355,9 +355,9 @@ public class HtmlGenerator {
                 .append("\n");
 
         stringBuilder
-                .append(new HtmlTagFactory("label", elementName, false).generateTag())
+                .append(new HtmlTagFactory("label", elementName).generateTag())
                 .append("\n");
-        stringBuilder.append(new HtmlTagFactory("br", null, true).generateTag()).append("\n");
+        stringBuilder.append(new HtmlTagFactory("br").generateTag()).append("\n");
 
         return stringBuilder.toString();
     }
@@ -377,7 +377,7 @@ public class HtmlGenerator {
         final StringBuilder stringBuilder = new StringBuilder();
 
         stringBuilder
-                .append(new HtmlTagFactory("input", null, true)
+                .append(new HtmlTagFactory("input")
                         .addClasses(List.of(FILTER_RADIO_LABEL, WHITELIST_LABEL, WHITELIST_RADIO_LABEL, elementName))
                         .addAttribute("type", "radio")
                         .addAttribute("name", commonRadioLabel)
@@ -385,7 +385,7 @@ public class HtmlGenerator {
                         .generateTag())
                 .append("\n");
         stringBuilder
-                .append(new HtmlTagFactory("input", null, true)
+                .append(new HtmlTagFactory("input")
                         .addClasses(List.of(FILTER_RADIO_LABEL, NEUTRALLIST_RADIO_LABEL, elementName))
                         .addAttribute("type", "radio")
                         .addAttribute("name", commonRadioLabel)
@@ -394,7 +394,7 @@ public class HtmlGenerator {
                         .generateTag())
                 .append("\n");
         stringBuilder
-                .append(new HtmlTagFactory("input", null, true)
+                .append(new HtmlTagFactory("input")
                         .addClasses(List.of(FILTER_RADIO_LABEL, BLACKLIST_LABEL, BLACKLIST_RADIO_LABEL, elementName))
                         .addAttribute("type", "radio")
                         .addAttribute("name", commonRadioLabel)
@@ -403,9 +403,9 @@ public class HtmlGenerator {
                 .append("\n");
 
         stringBuilder
-                .append(new HtmlTagFactory("label", elementName, false).generateTag())
+                .append(new HtmlTagFactory("label", elementName).generateTag())
                 .append("\n");
-        stringBuilder.append(new HtmlTagFactory("br", null, true).generateTag()).append("\n");
+        stringBuilder.append(new HtmlTagFactory("br").generateTag()).append("\n");
 
         return stringBuilder.toString();
     }
@@ -420,17 +420,15 @@ public class HtmlGenerator {
     @NonNull
     private static String createInputDiv(@NonNull final String heading, @NonNull final List<String> bodyElements) {
         final StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder
-                .append(new HtmlTagFactory("h3", heading, false).generateTag())
-                .append("\n");
+        stringBuilder.append(new HtmlTagFactory("h3", heading).generateTag()).append("\n");
 
         stringBuilder
-                .append(new HtmlTagFactory("form", "\n" + String.join("\n", bodyElements), false)
+                .append(new HtmlTagFactory("form", "\n" + String.join("\n", bodyElements))
                         .addAttribute("autocomplete", "off")
                         .generateTag())
                 .append("\n");
 
-        return new HtmlTagFactory("div", stringBuilder.toString(), false).generateTag();
+        return new HtmlTagFactory("div", stringBuilder.toString()).generateTag();
     }
 
     /**
@@ -582,16 +580,16 @@ public class HtmlGenerator {
     private static String generateHead(@NonNull final CssRuleSetFactory cssFactory) {
         final StringBuilder stringBuilder = new StringBuilder();
         stringBuilder
-                .append(new HtmlTagFactory("style", cssFactory.generateCss(), false).generateTag())
+                .append(new HtmlTagFactory("style", cssFactory.generateCss()).generateTag())
                 .append("\n");
 
         stringBuilder
-                .append(new HtmlTagFactory("script", "", false)
+                .append(new HtmlTagFactory("script", "")
                         .addAttribute("src", MIN_JS_SOURCE)
                         .generateTag())
                 .append("\n");
 
-        return new HtmlTagFactory("head", stringBuilder.toString(), false).generateTag();
+        return new HtmlTagFactory("head", stringBuilder.toString()).generateTag();
     }
 
     /**
@@ -639,11 +637,11 @@ public class HtmlGenerator {
 
         final StringBuilder containingDivBuilder = new StringBuilder();
         containingDivBuilder
-                .append(new HtmlTagFactory("h2", "Filters", false).generateTag())
+                .append(new HtmlTagFactory("h2", "Filters").generateTag())
                 .append("\n");
 
         containingDivBuilder
-                .append(new HtmlTagFactory("div", filterDivBuilder.toString(), false)
+                .append(new HtmlTagFactory("div", filterDivBuilder.toString())
                         .addClass(INDEPENDENT_SCROLL_LABEL)
                         .generateTag())
                 .append("\n");
@@ -655,7 +653,7 @@ public class HtmlGenerator {
         // make the filter columns and the log table scroll independently
         cssFactory.addRule("." + INDEPENDENT_SCROLL_LABEL, new CssDeclaration("overflow", "auto"));
 
-        return new HtmlTagFactory("div", containingDivBuilder.toString(), false).generateTag();
+        return new HtmlTagFactory("div", containingDivBuilder.toString()).generateTag();
     }
 
     /**
@@ -676,7 +674,7 @@ public class HtmlGenerator {
 
         cssFactory.addRule("." + LOG_TABLE_LABEL, new CssDeclaration("border-collapse", "collapse"));
 
-        return new HtmlTagFactory("table", stringBuilder.toString(), false)
+        return new HtmlTagFactory("table", stringBuilder.toString())
                 .addClass(LOG_TABLE_LABEL)
                 .generateTag();
     }
@@ -695,7 +693,7 @@ public class HtmlGenerator {
         final StringBuilder doubleColumnDivBuilder = new StringBuilder();
         doubleColumnDivBuilder.append(generateFiltersDiv(logLines, cssFactory)).append("\n");
         doubleColumnDivBuilder
-                .append(new HtmlTagFactory("div", generateLogTable(logLines, cssFactory), false)
+                .append(new HtmlTagFactory("div", generateLogTable(logLines, cssFactory))
                         .addClass(INDEPENDENT_SCROLL_LABEL)
                         .addClass(TABLE_INDEPENDENT_SCROLL_LABEL)
                         .generateTag())
@@ -709,7 +707,7 @@ public class HtmlGenerator {
         // this is a div surrounding the filters and the log table
         // its purpose is so that there can be 2 independently scrollable columns
         bodyBuilder
-                .append(new HtmlTagFactory("div", doubleColumnDivBuilder.toString(), false)
+                .append(new HtmlTagFactory("div", doubleColumnDivBuilder.toString())
                         .addClass(DOUBLE_COLUMNS_DIV_LABEL)
                         .generateTag())
                 .append("\n");
@@ -720,10 +718,10 @@ public class HtmlGenerator {
                 new CssDeclaration("height", "100%"));
 
         bodyBuilder
-                .append(new HtmlTagFactory("script", FILTER_JS, false).generateTag())
+                .append(new HtmlTagFactory("script", FILTER_JS).generateTag())
                 .append("\n");
 
-        return new HtmlTagFactory("body", bodyBuilder.toString(), false).generateTag();
+        return new HtmlTagFactory("body", bodyBuilder.toString()).generateTag();
     }
 
     /**
@@ -804,6 +802,6 @@ public class HtmlGenerator {
         htmlBuilder.append(generateHead(cssFactory)).append("\n");
         htmlBuilder.append(body).append("\n");
 
-        return new HtmlTagFactory("html", htmlBuilder.toString(), false).generateTag();
+        return new HtmlTagFactory("html", htmlBuilder.toString()).generateTag();
     }
 }

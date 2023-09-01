@@ -70,29 +70,29 @@ public class NonStandardLog {
         final List<String> dataCellTags = new ArrayList<>();
 
         // add some empty cells for alignment purposes
-        final HtmlTagFactory nodeIdTagFactory = new HtmlTagFactory("td", "", false)
+        final HtmlTagFactory nodeIdTagFactory = new HtmlTagFactory("td", "")
                 .addClasses(List.of(NODE_ID_COLUMN_LABEL, HIDEABLE_LABEL))
                 .addAttribute(BLACKLIST_LABEL, "0")
                 .addAttribute(WHITELIST_LABEL, "0");
         dataCellTags.add(nodeIdTagFactory.generateTag());
-        final HtmlTagFactory logStartTimeTagFactory = new HtmlTagFactory("td", "", false)
+        final HtmlTagFactory logStartTimeTagFactory = new HtmlTagFactory("td", "")
                 .addClasses(List.of(ELAPSED_TIME_COLUMN_LABEL, HIDEABLE_LABEL))
                 .addAttribute(BLACKLIST_LABEL, "0")
                 .addAttribute(WHITELIST_LABEL, "0");
         dataCellTags.add(logStartTimeTagFactory.generateTag());
-        final HtmlTagFactory timestampTagFactory = new HtmlTagFactory("td", "", false)
+        final HtmlTagFactory timestampTagFactory = new HtmlTagFactory("td", "")
                 .addClasses(List.of(TIMESTAMP_COLUMN_LABEL, HIDEABLE_LABEL))
                 .addAttribute(BLACKLIST_LABEL, "0")
                 .addAttribute(WHITELIST_LABEL, "0");
         dataCellTags.add(timestampTagFactory.generateTag());
-        final HtmlTagFactory logNumberTagFactory = new HtmlTagFactory("td", "", false)
+        final HtmlTagFactory logNumberTagFactory = new HtmlTagFactory("td", "")
                 .addClasses(List.of(LOG_NUMBER_COLUMN_LABEL, HIDEABLE_LABEL))
                 .addAttribute(BLACKLIST_LABEL, "0")
                 .addAttribute(WHITELIST_LABEL, "0");
         dataCellTags.add(logNumberTagFactory.generateTag());
 
         // add the non-standard contents
-        final HtmlTagFactory contentsFactory = new HtmlTagFactory("td", escapeString(nonStandardText), false)
+        final HtmlTagFactory contentsFactory = new HtmlTagFactory("td", escapeString(nonStandardText))
                 .addClasses(List.of(NON_STANDARD_LABEL, HIDEABLE_LABEL))
                 .addAttribute("colspan", "5")
                 .addAttribute(BLACKLIST_LABEL, "0")
@@ -110,7 +110,7 @@ public class NonStandardLog {
                 .map(LogProcessingUtils::escapeString)
                 .toList();
 
-        return new HtmlTagFactory("tr", "\n" + String.join("\n", dataCellTags) + "\n", false)
+        return new HtmlTagFactory("tr", "\n" + String.join("\n", dataCellTags) + "\n")
                 .addClasses(rowClassNames)
                 .addAttribute(BLACKLIST_LABEL, "0")
                 .addAttribute(WHITELIST_LABEL, "0")
