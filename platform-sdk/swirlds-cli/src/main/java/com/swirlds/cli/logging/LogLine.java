@@ -377,12 +377,12 @@ public class LogLine implements FormattableString {
 
         final List<String> dataCellTags = new ArrayList<>();
 
-        final String selectCheckbox = new HtmlTagFactory("input", null, true)
+        final String selectCheckbox = new HtmlTagFactory("input")
                 .addClass("select-checkbox")
                 .addClasses(rowClassNames)
                 .addAttribute("type", "checkbox")
                 .generateTag();
-        final HtmlTagFactory selectCheckboxCellFactory = new HtmlTagFactory("td", selectCheckbox, false);
+        final HtmlTagFactory selectCheckboxCellFactory = new HtmlTagFactory("td", selectCheckbox);
         dataCellTags.add(selectCheckboxCellFactory.generateTag());
 
         final HtmlTagFactory nodeIdTagFactory = new HtmlTagFactory(
@@ -458,7 +458,7 @@ public class LogLine implements FormattableString {
         dataCellTags.add(remainderOfLineTagFactory.generateTag());
 
         final HtmlTagFactory mainLogRowFactory =
-                new HtmlTagFactory("tr", "\n" + String.join("\n", dataCellTags) + "\n", false).addClass(LOG_LINE_LABEL);
+                new HtmlTagFactory("tr", "\n" + String.join("\n", dataCellTags) + "\n").addClass(LOG_LINE_LABEL);
 
         if (additionalLines == null) {
             mainLogRowFactory
@@ -469,9 +469,7 @@ public class LogLine implements FormattableString {
             return mainLogRowFactory.generateTag();
         } else {
             return new HtmlTagFactory(
-                            "tbody",
-                            mainLogRowFactory.generateTag() + "\n" + additionalLines.generateHtmlString(),
-                            false)
+                            "tbody", mainLogRowFactory.generateTag() + "\n" + additionalLines.generateHtmlString())
                     .addClass(LOG_LINE_LABEL)
                     .addClasses(rowClassNames)
                     .addAttribute(BLACKLIST_LABEL, "0")

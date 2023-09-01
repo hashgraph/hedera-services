@@ -306,7 +306,6 @@ public class HtmlGenerator {
             // add a listener to each checkbox
             for (const element of selectCheckboxes) {
                 element.addEventListener("change", function() {
-                    console.log("select checkbox changed");
                     let potentialTopLevelLine = $(this).parent();
                     // step up parents, until you find the main log line
                     while ($(potentialTopLevelLine).parent().hasClass("log-line")) {
@@ -438,14 +437,14 @@ public class HtmlGenerator {
                         .generateTag())
                 .append("\n");
 
-        final HtmlTagFactory labelTagFactory = new HtmlTagFactory("label", elementName, false);
+        final HtmlTagFactory labelTagFactory = new HtmlTagFactory("label", elementName);
 
         if (labelClass != null) {
             labelTagFactory.addClass(labelClass);
         }
 
-        final String labelTag = labelTagFactory.generateTag();
-        final String breakTag = new HtmlTagFactory("br", null, true).generateTag();
+        stringBuilder.append(labelTagFactory.generateTag()).append("\n");
+        stringBuilder.append(new HtmlTagFactory("br").generateTag()).append("\n");
 
         return stringBuilder.toString();
     }
@@ -704,18 +703,22 @@ public class HtmlGenerator {
                 "FATAL", "fatal-label");
         logLevelLabels.forEach((logLevel, labelClass) -> cssFactory.addRule(
                 "." + labelClass, new CssDeclaration("color", getHtmlColor(getLogLevelColor(logLevel)))));
-        filterDivs.add(createStandardFilterDivWithLabelClasses(
-                "Log Level",
-                logLines.stream()
-                        .map(LogLine::getLogLevel)
-                        .distinct()
-                        .sorted(Comparator.comparing(Level::toLevel))
-                        .toList(),
-                logLevelLabels));
+        filterDivBuilder
+                .append(createStandardFilterDivWithLabelClasses(
+                        "Log Level",
+                        logLines.stream()
+                                .map(LogLine::getLogLevel)
+                                .distinct()
+                                .sorted(Comparator.comparing(Level::toLevel))
+                                .toList(),
+                        logLevelLabels))
+                .append("\n");
 
-        filterDivs.add(createStandardFilterDivWithoutLabelClasses(
-                "Log Marker",
-                logLines.stream().map(LogLine::getMarker).distinct().toList()));
+        filterDivBuilder
+                .append(createStandardFilterDivWithoutLabelClasses(
+                        "Log Marker",
+                        logLines.stream().map(LogLine::getMarker).distinct().toList()))
+                .append("\n");
 
         final StringBuilder containingDivBuilder = new StringBuilder();
         containingDivBuilder
