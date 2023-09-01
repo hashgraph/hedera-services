@@ -21,4 +21,5 @@ module com.swirlds.cli {
     requires org.apache.logging.log4j;
     requires org.apache.logging.log4j.core;
     requires static com.github.spotbugs.annotations;
+    requires com.swirlds.logging;
 }

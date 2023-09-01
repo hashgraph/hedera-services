@@ -349,11 +349,6 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                     public void recycle(@NonNull Path path) throws IOException {
                         // TODO No-op for now
                     }
-
-                    @Override
-                    public void clear() throws IOException {
-                        // TODO No-op for now
-                    }
                 };
 
                 final var initialState = GenesisStateBuilder.buildGenesisState(

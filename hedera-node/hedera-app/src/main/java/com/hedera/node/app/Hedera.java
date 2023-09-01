@@ -17,7 +17,6 @@
 package com.hedera.node.app;
 
 import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 import static com.swirlds.common.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static com.swirlds.common.system.InitTrigger.GENESIS;
 import static com.swirlds.common.system.InitTrigger.RESTART;
@@ -38,8 +37,6 @@ import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
-import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
-import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.NamedDigestFactory;
 import com.hedera.node.app.service.networkadmin.ReadableRunningHashLeafStore;
 import com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl;
@@ -51,7 +48,6 @@ import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.Service;
-import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
@@ -78,7 +74,6 @@ import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
-import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -623,84 +618,6 @@ public final class Hedera implements SwirldMain {
         initializeFeeManager(state);
         initializeExchangeRateManager(state);
         initializeThrottleManager(state);
-
-        // Store the version in state
-        // TODO Who is responsible for saving this in the tree? I assumed it went into dual state... not sensible!
-        logger.debug("Saving version information in state");
-        //        final var networkCtx = stateChildren.networkCtx();
-        //        networkCtx.setStateVersion(StateVersions.CURRENT_VERSION);
-
-        // For now, we have to update the stake details manually. When we have dynamic address book,
-        // then we'll move this to be shared with all state initialization flows and not just genesis
-        // and restart.
-        logger.debug("Initializing stake details");
-        //        daggerApp.sysFilesManager().updateStakeDetails();
-
-        // TODO Not sure
-        //        networkCtx.markPostUpgradeScanStatus();
-    }
-
-    // The last throttle-exempt account is configurable to make it easy to start dev networks
-    // without throttling
-
-    // TODO SHOULD BE USED FOR ALL START/RESTART/GENESIS SCENARIOS
-    private void entitiesFlow() {
-        /*
-        expiries.reviewExistingPayerRecords();
-        log.info("Payer records reviewed");
-        // Use any entities stored in state to rebuild queue of expired entities.
-        log.info("Short-lived entities reviewed");
-
-        sigImpactHistorian.invalidateCurrentWindow();
-        log.info("Signature impact history invalidated");
-         */
-    }
-
-    // Only called during genesis
-    private void createUpdateFilesIfMissing() {
-        /*
-        final var firstUpdateNum = fileNumbers.firstSoftwareUpdateFile();
-        final var lastUpdateNum = fileNumbers.lastSoftwareUpdateFile();
-        final var specialFiles = hfs.specialFiles();
-        for (var updateNum = firstUpdateNum; updateNum <= lastUpdateNum; updateNum++) {
-            final var disFid = fileNumbers.toFid(updateNum);
-            if (!hfs.exists(disFid)) {
-                materialize(disFid, systemFileInfo(), new byte[0]);
-            } else if (!specialFiles.contains(disFid)) {
-                // This can be the case for file 0.0.150, whose metadata had
-                // been created for the legacy MerkleDiskFs. But whatever its
-                // contents were doesn't matter now. Just make sure it exists
-                // in the MerkleSpecialFiles!
-                specialFiles.update(disFid, new byte[0]);
-            }
-        }
-         */
-    }
-
-    private void doGenesisHousekeeping() {
-        /*
-        // List the node ids in the address book at genesis
-        final List<Long> genesisNodeIds = idsFromAddressBook(addressBook);
-
-        // Prepare the stake info manager for managing the new node ids
-        stakeInfoManager.prepForManaging(genesisNodeIds);
-         */
-    }
-
-    private void buildStakingInfoMap(
-            final AddressBook addressBook,
-            final BootstrapProperties bootstrapProperties,
-            final WritableKVState<EntityNum, MerkleStakingInfo> stakingInfos) {
-        final var numberOfNodes = addressBook.getSize();
-        final long maxStakePerNode = bootstrapProperties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT) / numberOfNodes;
-        final long minStakePerNode = maxStakePerNode / 2;
-        for (int i = 0; i < numberOfNodes; i++) {
-            final var nodeNum = EntityNum.fromLong(addressBook.getNodeId(i).id());
-            final var info = new MerkleStakingInfo(bootstrapProperties);
-            info.setMinStake(minStakePerNode);
-            info.setMaxStake(maxStakePerNode);
-            stakingInfos.put(nodeNum, info);
-        }
     }
 
     private void initializeFeeManager(@NonNull final HederaState state) {

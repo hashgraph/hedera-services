@@ -24,12 +24,9 @@ import picocli.CommandLine;
 /**
  * A collection of operations on log files.
  */
-@CommandLine.Command(
-        name = "swirlds-log",
-        mixinStandardHelpOptions = true,
-        description = "Operations on swirlds log files.")
+@CommandLine.Command(name = "log", mixinStandardHelpOptions = true, description = "Operations on log files.")
 @SubcommandOf(PlatformCli.class)
-public final class SwirldsLogCommand extends AbstractCommand {
+public final class LogCommand extends AbstractCommand {
 
-    private SwirldsLogCommand() {}
+    private LogCommand() {}
 }

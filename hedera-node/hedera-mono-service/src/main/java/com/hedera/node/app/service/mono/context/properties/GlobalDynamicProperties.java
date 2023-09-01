@@ -113,12 +113,11 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_FEES_NODE_REWARD_PERCENT;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_FEES_STAKING_REWARD_PERCENT;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_IS_ENABLED;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_MAX_STAKE_REWARDED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_NODE_MAX_TO_MIN_STAKE_RATIOS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_PER_HBAR_REWARD_RATE;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REQUIRE_MIN_STAKE_TO_REWARD;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_BALANCE_THRESHOLD;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_RATE;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_START_THRESH;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_SUM_OF_CONSENSUS_WEIGHTS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_AUTO_CREATIONS_ENABLED;
@@ -262,7 +261,7 @@ public class GlobalDynamicProperties implements EvmProperties {
     private boolean enableContractsNoncesExternalization;
     private KnownBlockValues knownBlockValues;
     private long exchangeRateGasReq;
-    private long stakingRewardRate;
+    private long stakingPerHbarRewardRate;
     private long stakingMaxStakeRewarded;
     private long stakingRewardBalanceThreshold;
     private long stakingStartThreshold;
@@ -270,7 +269,6 @@ public class GlobalDynamicProperties implements EvmProperties {
     private int stakingRewardPercent;
     private boolean contractAutoAssociationsEnabled;
     private boolean stakingEnabled;
-    private long maxDailyStakeRewardThPerH;
     private int recordFileVersion;
     private int recordSignatureFileVersion;
     private long maxNumAccounts;
@@ -417,12 +415,11 @@ public class GlobalDynamicProperties implements EvmProperties {
         exchangeRateGasReq = properties.getLongProperty(CONTRACTS_PRECOMPILE_EXCHANGE_RATE_GAS_COST);
         stakingMaxStakeRewarded = properties.getLongProperty(STAKING_MAX_STAKE_REWARDED);
         stakingRewardBalanceThreshold = properties.getLongProperty(STAKING_REWARD_BALANCE_THRESHOLD);
-        stakingRewardRate = properties.getLongProperty(STAKING_REWARD_RATE);
+        stakingPerHbarRewardRate = properties.getLongProperty(STAKING_PER_HBAR_REWARD_RATE);
         stakingStartThreshold = properties.getLongProperty(STAKING_START_THRESH);
         nodeRewardPercent = properties.getIntProperty(STAKING_FEES_NODE_REWARD_PERCENT);
         stakingRewardPercent = properties.getIntProperty(STAKING_FEES_STAKING_REWARD_PERCENT);
         contractAutoAssociationsEnabled = properties.getBooleanProperty(CONTRACTS_ALLOW_AUTO_ASSOCIATIONS);
-        maxDailyStakeRewardThPerH = properties.getLongProperty(STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR);
         stakingEnabled = properties.getBooleanProperty(STAKING_IS_ENABLED);
         recordFileVersion = properties.getIntProperty(HEDERA_RECORD_STREAM_RECORD_FILE_VERSION);
         recordSignatureFileVersion = properties.getIntProperty(HEDERA_RECORD_STREAM_SIG_FILE_VERSION);
@@ -810,8 +807,8 @@ public class GlobalDynamicProperties implements EvmProperties {
         return exchangeRateGasReq;
     }
 
-    public long stakingRewardRate() {
-        return stakingRewardRate;
+    public long stakingPerHbarRewardRate() {
+        return stakingPerHbarRewardRate;
     }
 
     public long getStakingStartThreshold() {
@@ -832,10 +829,6 @@ public class GlobalDynamicProperties implements EvmProperties {
 
     public boolean isStakingEnabled() {
         return stakingEnabled;
-    }
-
-    public long maxDailyStakeRewardThPerH() {
-        return maxDailyStakeRewardThPerH;
     }
 
     public int recordFileVersion() {
@@ -991,7 +984,7 @@ public class GlobalDynamicProperties implements EvmProperties {
 
     /**
      * The reward threshold balance of account {@code 0.0.800} (in tinybars). When the balance is this or more,
-     * then the reward rate set in the {@code staking.rewardRate} property is used.  When the balance is less
+     * then the reward rate set in the {@code staking.perHbarRewardRate} property is used.  When the balance is less
      * than this threshold, then a fraction of that reward rate is used.
      *
      * @return the minimum balance of account {@code 0.0.800} required for the full reward rate to be used

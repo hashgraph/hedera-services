@@ -108,12 +108,11 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_FEES_NODE_REWARD_PERCENT;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_FEES_STAKING_REWARD_PERCENT;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_IS_ENABLED;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_MAX_STAKE_REWARDED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_NODE_MAX_TO_MIN_STAKE_RATIOS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_PER_HBAR_REWARD_RATE;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REQUIRE_MIN_STAKE_TO_REWARD;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_BALANCE_THRESHOLD;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_RATE;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_START_THRESH;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_SUM_OF_CONSENSUS_WEIGHTS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_AUTO_CREATIONS_ENABLED;
@@ -338,7 +337,6 @@ class GlobalDynamicPropertiesTest {
         assertEquals(68L, subject.schedulingMaxExpirationFutureSeconds());
         assertEquals(69L, subject.maxPrecedingRecords());
         assertEquals(70L, subject.maxFollowingRecords());
-        assertEquals(76L, subject.maxDailyStakeRewardThPerH());
         assertEquals(88L, subject.traceabilityMinFreeToUsedGasThrottleRatio());
         assertEquals(89L, subject.traceabilityMaxExportsPerConsSec());
         assertEquals(101L, subject.maxStakeRewarded());
@@ -487,11 +485,10 @@ class GlobalDynamicPropertiesTest {
         assertEquals(67L, subject.schedulingMaxTxnPerSecond());
         assertEquals(68L, subject.scheduleThrottleMaxGasLimit());
         assertEquals(69L, subject.schedulingMaxExpirationFutureSeconds());
-        assertEquals(76L, subject.stakingRewardRate());
+        assertEquals(76L, subject.stakingPerHbarRewardRate());
         assertEquals(70L, subject.maxPrecedingRecords());
         assertEquals(71L, subject.maxFollowingRecords());
-        assertEquals(76L, subject.stakingRewardRate());
-        assertEquals(77L, subject.maxDailyStakeRewardThPerH());
+        assertEquals(76L, subject.stakingPerHbarRewardRate());
         assertEquals(81L, subject.maxNumAccounts());
         assertEquals(82L, subject.maxNumContracts());
         assertEquals(83L, subject.maxNumFiles());
@@ -641,10 +638,8 @@ class GlobalDynamicPropertiesTest {
         given(properties.getLongProperty(STAKING_START_THRESH)).willReturn(i + 70L);
         given(properties.getIntProperty(STAKING_FEES_NODE_REWARD_PERCENT)).willReturn(i + 71);
         given(properties.getIntProperty(STAKING_FEES_STAKING_REWARD_PERCENT)).willReturn(i + 72);
-        given(properties.getLongProperty(STAKING_REWARD_RATE)).willReturn(i + 74L);
+        given(properties.getLongProperty(STAKING_PER_HBAR_REWARD_RATE)).willReturn(i + 74L);
         given(properties.getBooleanProperty(CONTRACTS_ALLOW_AUTO_ASSOCIATIONS)).willReturn((i + 65) % 2 == 0);
-        given(properties.getLongProperty(STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR))
-                .willReturn(i + 75L);
         given(properties.getBooleanProperty(STAKING_IS_ENABLED)).willReturn((i + 73) % 2 == 0);
         given(properties.getIntProperty(HEDERA_RECORD_STREAM_RECORD_FILE_VERSION))
                 .willReturn((i + 77));

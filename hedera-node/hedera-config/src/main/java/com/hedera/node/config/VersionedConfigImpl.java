@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.config;
+package com.hedera.node.config;
 
-import com.hedera.node.config.VersionedConfiguration;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;

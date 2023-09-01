@@ -17,7 +17,6 @@
 package com.swirlds.cli.logging;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -44,26 +43,26 @@ public class HtmlTagFactory {
     private final String content;
 
     /**
-     * If true then the tag is a void tag
-     */
-    private final boolean isVoidTag;
-
-    /**
      * Construct a new HtmlTagFactory.
      *
      * @param tagName The type of HTML tag
-     * @param content The content of the HTML tag. Must be null if voidTag is true
-     * @param voidTag If the tag is a void tag
+     * @param content The content of the HTML tag
      */
-    public HtmlTagFactory(@NonNull final String tagName, @Nullable final String content, final boolean voidTag) {
+    public HtmlTagFactory(@NonNull final String tagName, @NonNull final String content) {
         this.tagName = Objects.requireNonNull(tagName);
+        this.content = Objects.requireNonNull(content);
+    }
 
-        if (voidTag && content != null) {
-            throw new IllegalArgumentException("content must be null if voidTag is true");
-        }
-
-        this.content = content;
-        this.isVoidTag = voidTag;
+    /**
+     * Construct a new HtmlTagFactory.
+     * <p>
+     * This constructor is for a void tag factory
+     *
+     * @param tagName The type of HTML tag
+     */
+    public HtmlTagFactory(@NonNull final String tagName) {
+        this.tagName = Objects.requireNonNull(tagName);
+        this.content = null;
     }
 
     /**
@@ -75,6 +74,7 @@ public class HtmlTagFactory {
      * @param values        The attribute values
      * @return this
      */
+    @NonNull
     public HtmlTagFactory addAttribute(@NonNull final String attributeName, @NonNull final List<String> values) {
         if (attributeMap.containsKey(attributeName)) {
             attributeMap.get(attributeName).addAll(values);
@@ -94,6 +94,7 @@ public class HtmlTagFactory {
      * @param value         The attribute value
      * @return this
      */
+    @NonNull
     public HtmlTagFactory addAttribute(@NonNull final String attributeName, @NonNull final String value) {
         if (attributeMap.containsKey(attributeName)) {
             attributeMap.get(attributeName).add(value);
@@ -113,6 +114,7 @@ public class HtmlTagFactory {
      * @param className The class name
      * @return this
      */
+    @NonNull
     public HtmlTagFactory addClass(@NonNull final String className) {
         return addAttribute("class", className);
     }
@@ -123,8 +125,20 @@ public class HtmlTagFactory {
      * @param classNames The class names
      * @return this
      */
+    @NonNull
     public HtmlTagFactory addClasses(@NonNull final List<String> classNames) {
         return addAttribute("class", classNames);
+    }
+
+    /**
+     * Convenience method for adding multiple class attributes.
+     *
+     * @param classNames The class names
+     * @return this
+     */
+    @NonNull
+    public HtmlTagFactory addClasses(@NonNull final String... classNames) {
+        return addClasses(List.of(classNames));
     }
 
     /**
@@ -132,6 +146,7 @@ public class HtmlTagFactory {
      *
      * @return the HTML tag
      */
+    @NonNull
     public String generateTag() {
         final StringBuilder stringBuilder = new StringBuilder();
 
@@ -150,7 +165,8 @@ public class HtmlTagFactory {
             stringBuilder.append(String.join(" ", attributeStrings));
         }
 
-        if (isVoidTag) {
+        // this is a void tag
+        if (content == null) {
             stringBuilder.append(">");
             return stringBuilder.toString();
         }
