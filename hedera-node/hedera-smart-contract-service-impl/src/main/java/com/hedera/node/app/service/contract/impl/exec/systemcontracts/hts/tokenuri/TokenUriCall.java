@@ -45,6 +45,9 @@ public class TokenUriCall extends AbstractNftViewCall {
         super(enhancement, token, serialNo);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     protected @NonNull HederaSystemContract.FullResult resultOfViewingNft(
             @NonNull final Token token, @NonNull final Nft nft) {

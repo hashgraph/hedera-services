@@ -46,6 +46,12 @@ public abstract class AbstractTokenViewCall extends AbstractHtsCall {
         }
     }
 
+    /**
+     * Returns the result of viewing the given {@code token}.
+     *
+     * @param token the token to view
+     * @return the result of viewing the given {@code token}
+     */
     @NonNull
     protected abstract HederaSystemContract.FullResult resultOfViewingToken(@NonNull Token token);
 }

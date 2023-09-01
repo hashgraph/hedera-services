@@ -16,15 +16,13 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.totalsupply;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.state.token.Token;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractTokenViewCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
@@ -36,28 +34,20 @@ import java.util.Arrays;
 /**
  * Implements the token redirect {@code totalSupply()} call of the HTS system contract.
  */
-public class TotalSupplyCall extends AbstractHtsCall {
+public class TotalSupplyCall extends AbstractTokenViewCall {
     public static final Function TOTAL_SUPPLY = new Function("totalSupply()", ReturnTypes.INT);
 
-    @Nullable
-    private final Token token;
-
     public TotalSupplyCall(@NonNull final HederaWorldUpdater.Enhancement enhancement, @Nullable final Token token) {
-        super(enhancement);
-        this.token = token;
+        super(enhancement, token);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public @NonNull PricedResult execute() {
-        // TODO - gas calculation
-        if (token == null) {
-            return gasOnly(revertResult(INVALID_TOKEN_ID, 0L));
-        }
+    protected @NonNull HederaSystemContract.FullResult resultOfViewingToken(@NonNull Token token) {
         final var output = TOTAL_SUPPLY.getOutputs().encodeElements(BigInteger.valueOf(token.totalSupply()));
-        return gasOnly(successResult(output, 0L));
+        return successResult(output, 0L);
     }
 
     /**

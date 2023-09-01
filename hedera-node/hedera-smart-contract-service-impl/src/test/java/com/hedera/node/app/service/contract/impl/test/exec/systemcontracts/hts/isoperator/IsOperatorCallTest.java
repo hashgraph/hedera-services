@@ -62,7 +62,7 @@ class IsOperatorCallTest extends HtsCallTestBase {
     }
 
     @Test
-    void checksForPresentOwnerAndOperator() {
+    void checksForPresentOwnerAndFindsApprovedOperator() {
         subject = new IsOperatorCall(mockEnhancement(), NON_FUNGIBLE_TOKEN, THE_OWNER, THE_OPERATOR);
         given(nativeOperations.getAccount(A_NEW_ACCOUNT_ID.accountNumOrThrow())).willReturn(SOMEBODY);
         given(nativeOperations.getAccount(B_NEW_ACCOUNT_ID.accountNumOrThrow())).willReturn(OPERATOR);
@@ -75,6 +75,21 @@ class IsOperatorCallTest extends HtsCallTestBase {
                 .decode(result.getOutput().toArray())
                 .get(0);
         assertTrue(verdict);
+    }
+
+    @Test
+    void checksForPresentOwnerAndDetectsNoOperator() {
+        subject = new IsOperatorCall(mockEnhancement(), NON_FUNGIBLE_TOKEN, THE_OWNER, THE_OWNER);
+        given(nativeOperations.getAccount(A_NEW_ACCOUNT_ID.accountNumOrThrow())).willReturn(SOMEBODY);
+
+        final var result = subject.execute().fullResult().result();
+
+        assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
+        final boolean verdict = IsOperatorCall.IS_APPROVED_FOR_ALL
+                .getOutputs()
+                .decode(result.getOutput().toArray())
+                .get(0);
+        assertFalse(verdict);
     }
 
     @Test

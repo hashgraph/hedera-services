@@ -48,9 +48,12 @@ public class OwnerOfCall extends AbstractNftViewCall {
         super(enhancement, token, serialNo);
     }
 
-    @NonNull
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    protected HederaSystemContract.FullResult resultOfViewingNft(@NonNull final Token token, @NonNull final Nft nft) {
+    protected @NonNull HederaSystemContract.FullResult resultOfViewingNft(
+            @NonNull final Token token, @NonNull final Nft nft) {
         requireNonNull(token);
         requireNonNull(nft);
 

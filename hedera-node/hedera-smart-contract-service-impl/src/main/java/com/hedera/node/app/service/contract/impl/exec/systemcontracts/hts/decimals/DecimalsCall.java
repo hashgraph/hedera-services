@@ -45,6 +45,9 @@ public class DecimalsCall extends AbstractTokenViewCall {
         super(enhancement, token);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     protected @NonNull HederaSystemContract.FullResult resultOfViewingToken(@NonNull final Token token) {
         // TODO - gas calculation

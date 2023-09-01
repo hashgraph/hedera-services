@@ -62,6 +62,9 @@ public class IsOperatorCall extends AbstractTokenViewCall {
         this.operator = requireNonNull(operator);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     protected @NonNull HederaSystemContract.FullResult resultOfViewingToken(@NonNull final Token token) {
         requireNonNull(token);
@@ -77,7 +80,6 @@ public class IsOperatorCall extends AbstractTokenViewCall {
         final var operatorNum = maybeMissingNumberOfEvmReference(operator, nativeOperations());
         final boolean verdict;
         if (operatorNum == MISSING_ENTITY_NUMBER) {
-            System.out.println("BOOP");
             verdict = false;
         } else {
             verdict = operatorMatches(

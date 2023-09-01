@@ -37,6 +37,9 @@ public abstract class AbstractNftViewCall extends AbstractTokenViewCall {
         this.serialNo = serialNo;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     protected @NonNull HederaSystemContract.FullResult resultOfViewingToken(@NonNull final Token token) {
         requireNonNull(token);
@@ -49,6 +52,13 @@ public abstract class AbstractNftViewCall extends AbstractTokenViewCall {
         }
     }
 
+    /**
+     * Returns the result of viewing the given NFT of the given token
+     *
+     * @param token the token
+     * @param nft the NFT
+     * @return the result of viewing the given NFT of the given token
+     */
     @NonNull
     protected abstract HederaSystemContract.FullResult resultOfViewingNft(@NonNull Token token, @NonNull Nft nft);
 }
