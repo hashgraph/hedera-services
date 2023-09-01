@@ -190,16 +190,12 @@ class BlocklistAccountCreatorTest {
     @ParameterizedTest
     @CsvSource(
             value = {
-                //                ";Failed to read blocklist resource non-existing.csv",
                 "src/test/resources/invalid-hex-blocklist.csv;Failed to parse blocklist",
                 "src/test/resources/invalid-col-count-blocklist.csv;Failed to parse blocklist",
             },
             delimiter = ';')
     void readingBlocklistResourceExceptionShouldBeLogged(String blocklistResourceName, String expectedLog) {
-        // given
-        //        given(genesisKeySource.get()).willReturn(pretendKey);
         given(properties.getStringProperty(ACCOUNTS_BLOCKLIST_RESOURCE)).willReturn(blocklistResourceName);
-        //        given(aliasManager.lookupIdBy(any())).willReturn(MISSING_NUM);
         subject = new BlocklistAccountCreator(
                 MerkleAccount::new, ids, accounts, genesisKeySource, properties, aliasManager, accountNumbers);
 
