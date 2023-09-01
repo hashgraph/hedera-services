@@ -31,7 +31,6 @@ import com.swirlds.common.crypto.RunningHash;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
-import java.util.Objects;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -196,7 +195,7 @@ public class BlockManager {
         final var firstBlockTime = curNetworkCtx.firstConsTimeOfCurrentBlock();
         final var dualState = dualStateAccessor.getDualState();
         final var lastFrozenAndCurrentFreezeTimeEqual =
-                Objects.equals(dualState.getFreezeTime(), dualState.getLastFrozenTime());
+                dualState.getFreezeTime() != null && dualState.getFreezeTime().equals(dualState.getLastFrozenTime());
         if (lastFrozenAndCurrentFreezeTimeEqual) {
             dualState.setFreezeTime(null);
         }

@@ -43,6 +43,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -91,7 +92,6 @@ class BlockManagerTest {
     void continuesWithCurrentBlockIfInSamePeriod() {
         given(networkContext.firstConsTimeOfCurrentBlock()).willReturn(aTime);
         given(networkContext.getAlignmentBlockNo()).willReturn(someBlockNo);
-        given(dualState.getLastFrozenTime()).willReturn(aTime);
 
         final var newBlockNo =
                 subject.updateAndGetAlignmentBlockNumber(someTime).blockNo();
@@ -105,7 +105,6 @@ class BlockManagerTest {
     void resetClearsBlockNo() {
         given(networkContext.firstConsTimeOfCurrentBlock()).willReturn(aTime);
         given(networkContext.getAlignmentBlockNo()).willReturn(someBlockNo);
-        given(dualState.getLastFrozenTime()).willReturn(aTime);
 
         subject.updateAndGetAlignmentBlockNumber(someTime);
         subject.reset();
@@ -186,21 +185,20 @@ class BlockManagerTest {
     }
 
     @Test
-    void computesNewBlockIfPastAndCurrentFreezeTimeAreNull() throws InterruptedException {
+    void computesSameBlockIfPastAndCurrentFreezeTimeAreNull() {
         given(networkContext.firstConsTimeOfCurrentBlock()).willReturn(aTime);
-        given(runningHashLeaf.currentRunningHash()).willReturn(aFullBlockHash);
         given(networkContext.getAlignmentBlockNo()).willReturn(someBlockNo);
-        given(dualState.getLastFrozenTime()).willReturn(null);
         given(dualState.getFreezeTime()).willReturn(null);
+        Mockito.lenient().when(dualState.getLastFrozenTime()).thenReturn(null);
 
         final var values = subject.computeBlockValues(someTime, gasLimit);
 
-        assertEquals(someBlockNo + 1, values.getNumber());
-        verify(dualState).setFreezeTime(null);
+        assertEquals(someBlockNo, values.getNumber());
+        verify(dualState, never()).setFreezeTime(null);
     }
 
     @Test
-    void computesSameBlockIfPastAndCurrentDontMatch() {
+    void computesSameBlockIfPastAndCurrentFreezeTimeDontMatch() {
         given(networkContext.firstConsTimeOfCurrentBlock()).willReturn(aTime);
         given(networkContext.getAlignmentBlockNo()).willReturn(someBlockNo);
         given(dualState.getLastFrozenTime()).willReturn(aTime);
@@ -216,7 +214,6 @@ class BlockManagerTest {
     void knowsIfBlockIsSameThenNetworkCtxApplies() {
         given(networkContext.firstConsTimeOfCurrentBlock()).willReturn(aTime);
         given(networkContext.getAlignmentBlockNo()).willReturn(someBlockNo);
-        given(dualState.getLastFrozenTime()).willReturn(aTime);
 
         final var values = subject.computeBlockValues(someTime, gasLimit);
 
@@ -230,7 +227,6 @@ class BlockManagerTest {
         given(networkContext.firstConsTimeOfCurrentBlock()).willReturn(aTime);
         given(networkContext.getAlignmentBlockNo()).willReturn(someBlockNo);
         given(networkContext.getBlockHashByNumber(someBlockNo)).willReturn(aSuffixHash);
-        given(dualState.getLastFrozenTime()).willReturn(aTime);
 
         subject.ensureProvisionalBlockMeta(someTime);
         final var hash = subject.getBlockHash(someBlockNo);
