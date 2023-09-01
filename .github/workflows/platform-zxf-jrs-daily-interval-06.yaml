@@ -97,7 +97,7 @@ jobs:
       - iss
     if: ${{ !cancelled() && always() }}
   addressBook-add-remove:
-    name: AddressBook Add/Remove
+    name: AddressBook-Add-Remove
     uses: ./.github/workflows/zxc-jrs-regression.yaml
     with:
       ref: ${{ github.event.inputs.ref }}
