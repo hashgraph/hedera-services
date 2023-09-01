@@ -190,14 +190,16 @@ class BlocklistAccountCreatorTest {
     @ParameterizedTest
     @CsvSource(
             value = {
-                "non-existing.csv;Failed to read blocklist resource non-existing.csv",
-                "invalid-hex-blocklist.csv;Failed to parse blocklist",
-                "invalid-col-count-blocklist.csv;Failed to parse blocklist",
+                //                ";Failed to read blocklist resource non-existing.csv",
+                "src/test/resources/invalid-hex-blocklist.csv;Failed to parse blocklist",
+                "src/test/resources/invalid-col-count-blocklist.csv;Failed to parse blocklist",
             },
             delimiter = ';')
-    void readingblocklistResourceExceptionShouldBeLogged(String blocklistResourceName, String expectedLog) {
+    void readingBlocklistResourceExceptionShouldBeLogged(String blocklistResourceName, String expectedLog) {
         // given
+        //        given(genesisKeySource.get()).willReturn(pretendKey);
         given(properties.getStringProperty(ACCOUNTS_BLOCKLIST_RESOURCE)).willReturn(blocklistResourceName);
+        //        given(aliasManager.lookupIdBy(any())).willReturn(MISSING_NUM);
         subject = new BlocklistAccountCreator(
                 MerkleAccount::new, ids, accounts, genesisKeySource, properties, aliasManager, accountNumbers);
 
@@ -206,5 +208,25 @@ class BlocklistAccountCreatorTest {
 
         // then
         assertThat(logCaptor.errorLogs(), contains(Matchers.startsWith(expectedLog)));
+    }
+
+    @Test
+    void readingNonExistingBlocklistShouldLogFallbackToDefaultBlocklistResource() {
+        // given
+        given(genesisKeySource.get()).willReturn(pretendKey);
+        given(properties.getStringProperty(ACCOUNTS_BLOCKLIST_RESOURCE)).willReturn("non-existing.csv");
+        given(aliasManager.lookupIdBy(any())).willReturn(MISSING_NUM);
+        subject = new BlocklistAccountCreator(
+                MerkleAccount::new, ids, accounts, genesisKeySource, properties, aliasManager, accountNumbers);
+
+        // when
+        subject.createMissingAccounts();
+
+        // then
+        assertThat(
+                logCaptor.infoLogs(),
+                contains(
+                        "Bootstrapping blocklist from 'non-existing.csv'",
+                        "Bootstrapping blocklist from default resource 'evm-addresses-blocklist.csv'"));
     }
 }
