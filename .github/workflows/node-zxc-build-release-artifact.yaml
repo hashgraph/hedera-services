@@ -185,6 +185,7 @@ jobs:
       - name: Setup Gradle
         uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
         with:
+          build-root-directory: hedera-node
           gradle-version: ${{ inputs.gradle-version }}
           gradle-home-cache-includes: |
             caches
@@ -212,7 +213,7 @@ jobs:
         id: gradle-build
         uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
         with:
-          arguments: assemble --scan
+          arguments: -p hedera-node assemble --scan
 
       - name: Compute Final Effective Version
         id: effective-version
