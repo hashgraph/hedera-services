@@ -74,6 +74,7 @@ public class HtmlTagFactory {
      * @param values        The attribute values
      * @return this
      */
+    @NonNull
     public HtmlTagFactory addAttribute(@NonNull final String attributeName, @NonNull final List<String> values) {
         if (attributeMap.containsKey(attributeName)) {
             attributeMap.get(attributeName).addAll(values);
@@ -93,6 +94,7 @@ public class HtmlTagFactory {
      * @param value         The attribute value
      * @return this
      */
+    @NonNull
     public HtmlTagFactory addAttribute(@NonNull final String attributeName, @NonNull final String value) {
         if (attributeMap.containsKey(attributeName)) {
             attributeMap.get(attributeName).add(value);
@@ -112,6 +114,7 @@ public class HtmlTagFactory {
      * @param className The class name
      * @return this
      */
+    @NonNull
     public HtmlTagFactory addClass(@NonNull final String className) {
         return addAttribute("class", className);
     }
@@ -122,8 +125,20 @@ public class HtmlTagFactory {
      * @param classNames The class names
      * @return this
      */
+    @NonNull
     public HtmlTagFactory addClasses(@NonNull final List<String> classNames) {
         return addAttribute("class", classNames);
+    }
+
+    /**
+     * Convenience method for adding multiple class attributes.
+     *
+     * @param classNames The class names
+     * @return this
+     */
+    @NonNull
+    public HtmlTagFactory addClasses(@NonNull final String... classNames) {
+        return addClasses(List.of(classNames));
     }
 
     /**
@@ -131,6 +146,7 @@ public class HtmlTagFactory {
      *
      * @return the HTML tag
      */
+    @NonNull
     public String generateTag() {
         final StringBuilder stringBuilder = new StringBuilder();
 
