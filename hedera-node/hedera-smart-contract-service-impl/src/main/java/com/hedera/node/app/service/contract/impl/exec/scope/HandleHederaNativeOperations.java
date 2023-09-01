@@ -100,7 +100,7 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
                 .build();
         // TODO - implement proper signature VerificationAssistant
         final var childRecordBuilder =
-                context.dispatchChildTransaction(synthTxn, CryptoCreateRecordBuilder.class, key -> true);
+                context.dispatchChildTransaction(synthTxn, CryptoCreateRecordBuilder.class, key -> false);
         // TODO - switch OK to SUCCESS once some status-setting responsibilities are clarified
         if (childRecordBuilder.status() != OK && childRecordBuilder.status() != SUCCESS) {
             throw new AssertionError("Not implemented");
