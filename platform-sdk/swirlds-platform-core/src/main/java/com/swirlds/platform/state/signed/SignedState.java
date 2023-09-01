@@ -427,7 +427,7 @@ public class SignedState implements SignedStateInfo {
      *
      * @return events in the platformState
      */
-    public @NonNull EventImpl[] getEvents() {
+    public @Nullable EventImpl[] getEvents() {
         return state.getPlatformState().getPlatformData().getEvents();
     }
 

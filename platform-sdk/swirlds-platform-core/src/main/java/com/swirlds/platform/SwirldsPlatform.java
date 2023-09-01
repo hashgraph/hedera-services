@@ -789,6 +789,10 @@ public class SwirldsPlatform implements Platform, Startable {
             tipsetEventCreator.setMinimumGenerationNonAncient(
                     signedState.getState().getPlatformState().getPlatformData().getMinimumGenerationNonAncient());
 
+            if (signedState.getState().getPlatformState().getPlatformData().getEvents() == null) {
+                return;
+            }
+
             // The event creator may not be started yet. To avoid filling up queues, only register
             // the latest event from each creator. These are the only ones the event creator cares about.
 
@@ -823,17 +827,21 @@ public class SwirldsPlatform implements Platform, Startable {
                 getAddressBook(),
                 signedState));
 
-        shadowGraph.initFromEvents(
-                EventUtils.prepareForShadowGraph(
-                        // we need to pass in a copy of the array, otherwise prepareForShadowGraph will rearrange the
-                        // events in the signed state which will cause issues for other components that depend on it
-                        signedState.getEvents().clone()),
-                // we need to provide the minGen from consensus so that expiry matches after a restart/reconnect
-                consensusRef.get().getMinRoundGeneration());
+        if (signedState.getEvents() != null) {
+            shadowGraph.initFromEvents(
+                    EventUtils.prepareForShadowGraph(
+                            // we need to pass in a copy of the array, otherwise prepareForShadowGraph will rearrange the
+                            // events in the signed state which will cause issues for other components that depend on it
+                            signedState.getEvents().clone()),
+                    // we need to provide the minGen from consensus so that expiry matches after a restart/reconnect
+                    consensusRef.get().getMinRoundGeneration());
 
-        // Data that is needed for the intake system to work
-        for (final EventImpl e : signedState.getEvents()) {
-            eventMapper.eventAdded(e);
+            // Data that is needed for the intake system to work
+            for (final EventImpl e : signedState.getEvents()) {
+                eventMapper.eventAdded(e);
+            }
+        } else {
+            shadowGraph.startFromGeneration(consensusRef.get().getMinGenerationNonAncient());
         }
 
         gossip.loadFromSignedState(signedState);
