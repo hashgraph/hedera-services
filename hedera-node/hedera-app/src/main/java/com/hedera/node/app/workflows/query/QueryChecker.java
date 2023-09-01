@@ -24,12 +24,13 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.TransferList;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.node.app.authorization.Authorizer;
 import com.hedera.node.app.fees.QueryFeeCheck;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
-import com.hedera.node.app.solvency.SolvencyPreCheck;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
@@ -93,20 +94,19 @@ public class QueryChecker {
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void validateAccountBalances(
-            @NonNull final AccountID payer, @NonNull final TransactionInfo transactionInfo, final long fee)
+            @NonNull final Account payer, @NonNull final TransactionInfo transactionInfo, final long fee)
             throws PreCheckException {
         requireNonNull(payer);
         requireNonNull(transactionInfo);
 
-        final var transaction = transactionInfo.transaction();
         final var txBody = transactionInfo.txBody();
 
-        solvencyPreCheck.assessWithSvcFees(transaction);
+        solvencyPreCheck.checkSolvency(transactionInfo, payer, fee);
 
         queryFeeCheck.validateQueryPaymentTransfers(txBody, fee);
 
         // A super-user cannot use an alias. Sorry, Clark Kent.
-        if (authorizer.isSuperUser(payer)) {
+        if (authorizer.isSuperUser(payer.accountIdOrThrow())) {
             return;
         }
 

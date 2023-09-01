@@ -33,7 +33,7 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.records.RecordCache;
@@ -162,17 +162,21 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
 
                 // 4.i Ingest checks
                 final var transactionInfo = ingestChecker.runAllChecks(state, allegedPayment);
+                txBody = transactionInfo.txBody();
+
+                // get payer
+                final var payerID = txBody.transactionIDOrThrow().accountIDOrThrow();
+                final var accountStore = storeFactory.getStore(ReadableAccountStore.class);
+                final var payer = accountStore.getAccountById(payerID);
 
                 // 4.ii Validate CryptoTransfer
                 queryChecker.validateCryptoTransfer(transactionInfo);
 
-                txBody = transactionInfo.txBody();
-                final var payer = txBody.transactionIDOrThrow().accountIDOrThrow();
                 context = new QueryContextImpl(
-                        state, storeFactory, query, configProvider.getConfiguration(), recordCache, payer);
+                        state, storeFactory, query, configProvider.getConfiguration(), recordCache, payerID);
 
                 // 4.iii Check permissions
-                queryChecker.checkPermissions(payer, function);
+                queryChecker.checkPermissions(payerID, function);
 
                 // 4.iv Calculate costs
                 fee = handler.computeFees(context).totalFee();
@@ -181,7 +185,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 queryChecker.validateAccountBalances(payer, transactionInfo, fee);
 
                 // 4.vi Submit payment to platform
-                final var txBytes = PbjConverter.asWrappedBytes(Transaction.PROTOBUF, allegedPayment);
+                final var txBytes = Transaction.PROTOBUF.toBytes(allegedPayment);
                 submissionManager.submit(txBody, txBytes);
             } else {
                 if (RESTRICTED_FUNCTIONALITIES.contains(function)) {

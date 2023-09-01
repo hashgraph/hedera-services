@@ -249,18 +249,18 @@ public class HandleWorkflow {
             final var preHandleResult =
                     getCurrentPreHandleResult(state, platformEvent, creator, platformTxn, configuration);
 
-            final var transactionInfo = preHandleResult.txInfo();
+            final var txInfo = preHandleResult.txInfo();
 
-            if (transactionInfo == null) {
+            if (txInfo == null) {
                 // FUTURE: Charge node generic penalty, set values in record builder, and remove log statement
                 logger.error("Non-parsable transaction from creator {}", creator);
                 return null;
             }
 
             // Get the parsed data
-            final var transaction = transactionInfo.transaction();
-            txBody = transactionInfo.txBody();
-            payer = txBody.transactionID().accountID();
+            final var transaction = txInfo.transaction();
+            txBody = txInfo.txBody();
+            payer = txInfo.payerID();
 
             final Bytes transactionBytes;
             if (transaction.signedTransactionBytes().length() > 0) {
@@ -272,9 +272,9 @@ public class HandleWorkflow {
 
             // Initialize record builder list
             recordBuilder
-                    .transaction(transactionInfo.transaction())
+                    .transaction(txInfo.transaction())
                     .transactionBytes(transactionBytes)
-                    .transactionID(txBody.transactionID())
+                    .transactionID(txInfo.transactionID())
                     .exchangeRate(exchangeRateManager.exchangeRates())
                     .memo(txBody.memo());
 
@@ -284,7 +284,7 @@ public class HandleWorkflow {
 
             // Setup context
             final var context = new HandleContextImpl(
-                    transactionInfo,
+                    txInfo,
                     payer,
                     preHandleResult.payerKey(),
                     networkInfo,

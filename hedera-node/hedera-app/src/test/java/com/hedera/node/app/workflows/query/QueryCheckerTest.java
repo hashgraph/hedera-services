@@ -23,7 +23,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALA
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.estimatedFee;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -37,15 +36,17 @@ import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.base.TransferList;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.authorization.Authorizer;
 import com.hedera.node.app.fees.QueryFeeCheck;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
-import com.hedera.node.app.solvency.SolvencyPreCheck;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.List;
@@ -99,7 +100,9 @@ class QueryCheckerTest {
     @Test
     void testValidateCryptoTransferSucceeds() {
         // given
-        final var txBody = TransactionBody.newBuilder().build();
+        final var txBody = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder().accountID(AccountID.DEFAULT).build())
+                .build();
         final var signatureMap = SignatureMap.newBuilder().build();
         final var transaction = Transaction.newBuilder().build();
         final var transactionInfo = new TransactionInfo(
@@ -112,7 +115,9 @@ class QueryCheckerTest {
     @Test
     void testValidateCryptoTransferWithWrongTransactionType() {
         // given
-        final var txBody = TransactionBody.newBuilder().build();
+        final var txBody = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder().accountID(AccountID.DEFAULT).build())
+                .build();
         final var signatureMap = SignatureMap.newBuilder().build();
         final var transaction = Transaction.newBuilder().build();
         final var transactionInfo = new TransactionInfo(
@@ -127,7 +132,9 @@ class QueryCheckerTest {
     @Test
     void testValidateCryptoTransferWithFailingValidation() throws PreCheckException {
         // given
-        final var txBody = TransactionBody.newBuilder().build();
+        final var txBody = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder().accountID(AccountID.DEFAULT).build())
+                .build();
         final var signatureMap = SignatureMap.newBuilder().build();
         final var transaction = Transaction.newBuilder().build();
         final var transactionInfo = new TransactionInfo(
@@ -146,8 +153,11 @@ class QueryCheckerTest {
     @Test
     void testValidateAccountBalancesWithIllegalArguments() {
         // given
-        final var payer = AccountID.newBuilder().build();
-        final var txBody = TransactionBody.newBuilder().build();
+        final var payerID = AccountID.newBuilder().accountNum(4711L).build();
+        final var payer = Account.newBuilder().accountId(payerID).build();
+        final var txBody = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder().accountID(payerID).build())
+                .build();
         final var signatureMap = SignatureMap.newBuilder().build();
         final var transaction = Transaction.newBuilder().build();
         final var transactionInfo =
@@ -164,7 +174,8 @@ class QueryCheckerTest {
     void testValidateAccountBalancesSucceeds() {
         // given
         final var fee = 42L;
-        final var payer = AccountID.newBuilder().build();
+        final var payerID = AccountID.newBuilder().accountNum(4711L).build();
+        final var payer = Account.newBuilder().accountId(payerID).build();
         final var accountAmount = AccountAmount.newBuilder().build();
         final var transferList =
                 TransferList.newBuilder().accountAmounts(accountAmount).build();
@@ -173,6 +184,7 @@ class QueryCheckerTest {
                 .build();
         final var nodeAccountId = AccountID.newBuilder().build();
         final var txBody = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder().accountID(payerID))
                 .cryptoTransfer(cryptoTransfer)
                 .nodeAccountID(nodeAccountId)
                 .build();
@@ -189,7 +201,8 @@ class QueryCheckerTest {
     void testValidateAccountBalancesWithFailingSolvencyPreCheck() throws PreCheckException {
         // given
         final var fee = 42L;
-        final var payer = AccountID.newBuilder().build();
+        final var payerID = AccountID.newBuilder().accountNum(4711L).build();
+        final var payer = Account.newBuilder().accountId(payerID).build();
         final var accountAmount = AccountAmount.newBuilder().build();
         final var transferList =
                 TransferList.newBuilder().accountAmounts(accountAmount).build();
@@ -198,6 +211,7 @@ class QueryCheckerTest {
                 .build();
         final var nodeAccountId = AccountID.newBuilder().build();
         final var txBody = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder().accountID(payerID))
                 .cryptoTransfer(cryptoTransfer)
                 .nodeAccountID(nodeAccountId)
                 .build();
@@ -205,21 +219,23 @@ class QueryCheckerTest {
         final var transaction = Transaction.newBuilder().build();
         final var transactionInfo =
                 new TransactionInfo(transaction, txBody, signatureMap, Bytes.EMPTY, CONSENSUS_CREATE_TOPIC);
-        doThrow(new PreCheckException(PAYER_ACCOUNT_NOT_FOUND))
+        doThrow(new InsufficientBalanceException(INSUFFICIENT_TX_FEE, fee))
                 .when(solvencyPreCheck)
-                .assessWithSvcFees(transaction);
+                .checkSolvency(transactionInfo, payer, fee);
 
         // when
         assertThatThrownBy(() -> checker.validateAccountBalances(payer, transactionInfo, fee))
-                .isInstanceOf(PreCheckException.class)
-                .has(responseCode(PAYER_ACCOUNT_NOT_FOUND));
+                .isInstanceOf(InsufficientBalanceException.class)
+                .has(responseCode(INSUFFICIENT_TX_FEE))
+                .has(estimatedFee(fee));
     }
 
     @Test
     void testValidateAccountBalancesWithFailingPaymentTransfers() throws InsufficientBalanceException {
         // given
         final var fee = 42L;
-        final var payer = AccountID.newBuilder().build();
+        final var payerID = AccountID.newBuilder().accountNum(4711L).build();
+        final var payer = Account.newBuilder().accountId(payerID).build();
         final var accountAmount = AccountAmount.newBuilder().build();
         final var transferList =
                 TransferList.newBuilder().accountAmounts(accountAmount).build();
@@ -228,6 +244,7 @@ class QueryCheckerTest {
                 .build();
         final var nodeAccountId = AccountID.newBuilder().build();
         final var txBody = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder().accountID(payerID))
                 .cryptoTransfer(cryptoTransfer)
                 .nodeAccountID(nodeAccountId)
                 .build();
@@ -250,7 +267,8 @@ class QueryCheckerTest {
     void testValidateAccountBalancesWithFailingNodePayment() throws InsufficientBalanceException {
         // given
         final var fee = 42L;
-        final var payer = AccountID.newBuilder().build();
+        final var payerID = AccountID.newBuilder().accountNum(4711L).build();
+        final var payer = Account.newBuilder().accountId(payerID).build();
         final var accountAmount = AccountAmount.newBuilder().build();
         final var transferList =
                 TransferList.newBuilder().accountAmounts(accountAmount).build();
@@ -259,6 +277,7 @@ class QueryCheckerTest {
                 .build();
         final var nodeAccountId = AccountID.newBuilder().build();
         final var txBody = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder().accountID(payerID))
                 .cryptoTransfer(cryptoTransfer)
                 .nodeAccountID(nodeAccountId)
                 .build();
@@ -281,7 +300,8 @@ class QueryCheckerTest {
     void testValidateAccountBalancesWithSuperuserAndFailingNodePayment() throws InsufficientBalanceException {
         // given
         final var fee = 42L;
-        final var payer = AccountID.newBuilder().accountNum(4711L).build();
+        final var payerID = AccountID.newBuilder().accountNum(4711L).build();
+        final var payer = Account.newBuilder().accountId(payerID).build();
         final var accountAmount = AccountAmount.newBuilder().build();
         final var transferList =
                 TransferList.newBuilder().accountAmounts(accountAmount).build();
@@ -289,15 +309,17 @@ class QueryCheckerTest {
                 .transfers(transferList)
                 .build();
         final var nodeAccountId = AccountID.newBuilder().build();
+        final var signatureMap = SignatureMap.newBuilder().build();
+        final var transaction = Transaction.newBuilder().build();
+        final var transactionID = TransactionID.newBuilder().accountID(payerID).build();
         final var txBody = TransactionBody.newBuilder()
+                .transactionID(transactionID)
                 .cryptoTransfer(cryptoTransfer)
                 .nodeAccountID(nodeAccountId)
                 .build();
-        final var signatureMap = SignatureMap.newBuilder().build();
-        final var transaction = Transaction.newBuilder().build();
         final var transactionInfo =
                 new TransactionInfo(transaction, txBody, signatureMap, Bytes.EMPTY, CONSENSUS_CREATE_TOPIC);
-        when(authorizer.isSuperUser(payer)).thenReturn(true);
+        when(authorizer.isSuperUser(payerID)).thenReturn(true);
         doThrow(new InsufficientBalanceException(INSUFFICIENT_TX_FEE, fee))
                 .when(queryFeeCheck)
                 .nodePaymentValidity(List.of(accountAmount), fee, nodeAccountId);
@@ -310,7 +332,9 @@ class QueryCheckerTest {
     void onlyAccountNumCanBeSuperuserInValidateAccountBalances() throws InsufficientBalanceException {
         // given
         final var fee = 42L;
-        final var payer = AccountID.newBuilder()
+        final var payerID = AccountID.newBuilder().accountNum(4711L).build();
+        final var payer = Account.newBuilder()
+                .accountId(payerID)
                 .alias(Bytes.wrap("acct alias".getBytes()))
                 .build();
         final var accountAmount = AccountAmount.newBuilder().build();
@@ -321,6 +345,7 @@ class QueryCheckerTest {
                 .build();
         final var nodeAccountId = AccountID.newBuilder().build();
         final var txBody = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder().accountID(payerID))
                 .cryptoTransfer(cryptoTransfer)
                 .nodeAccountID(nodeAccountId)
                 .build();

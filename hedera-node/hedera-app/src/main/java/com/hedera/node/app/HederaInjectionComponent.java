@@ -37,7 +37,6 @@ import com.hedera.node.app.service.mono.utils.NamedDigestFactory;
 import com.hedera.node.app.service.mono.utils.SystemExits;
 import com.hedera.node.app.services.ServicesInjectionModule;
 import com.hedera.node.app.services.ServicesRegistry;
-import com.hedera.node.app.solvency.SolvencyInjectionModule;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.info.SelfNodeInfo;
 import com.hedera.node.app.spi.records.RecordCache;
@@ -82,7 +81,6 @@ import javax.inject.Singleton;
             InfoInjectionModule.class,
             BlockRecordInjectionModule.class,
             ThrottleInjectionModule.class,
-            SolvencyInjectionModule.class,
             PlatformModule.class
         })
 public interface HederaInjectionComponent {
