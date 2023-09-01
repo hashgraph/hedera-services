@@ -49,6 +49,29 @@ public class BalanceOfCall extends AbstractHtsCall {
 
     private final Address owner;
 
+    /**
+     * Indicates if the given {@code selector} is a selector for {@link BalanceOfCall}.
+     *
+     * @param selector the selector to check
+     * @return {@code true} if the given {@code selector} is a selector for {@link BalanceOfCall}
+     */
+    public static boolean matches(@NonNull final byte[] selector) {
+        requireNonNull(selector);
+        return Arrays.equals(selector, BALANCE_OF.selector());
+    }
+
+    /**
+     * Constructs a {@link BalanceOfCall} from the given {@code attempt}.
+     *
+     * @param attempt the attempt to construct from
+     * @return the constructed {@link BalanceOfCall}
+     */
+    public static BalanceOfCall from(@NonNull final HtsCallAttempt attempt) {
+        final var owner = fromHeadlongAddress(
+                BALANCE_OF.decodeCall(attempt.input().toArrayUnsafe()).get(0));
+        return new BalanceOfCall(attempt.enhancement(), attempt.redirectToken(), owner);
+    }
+
     public BalanceOfCall(
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             @Nullable final Token token,
@@ -64,27 +87,16 @@ public class BalanceOfCall extends AbstractHtsCall {
         if (token == null) {
             return gasOnly(revertResult(INVALID_TOKEN_ID, 0L));
         }
-        final var ownerNum = maybeMissingNumberOf(owner, enhancement.nativeOperations());
+        final var ownerNum = maybeMissingNumberOf(owner, nativeOperations());
         if (ownerNum == MISSING_ENTITY_NUMBER) {
             return gasOnly(revertResult(INVALID_ACCOUNT_ID, 0L));
         }
 
         final var tokenNum = token.tokenIdOrThrow().tokenNum();
-        final var relation = enhancement.nativeOperations().getTokenRelation(ownerNum, tokenNum);
+        final var relation = nativeOperations().getTokenRelation(ownerNum, tokenNum);
         final var balance = relation == null ? 0 : relation.balance();
         final var output = BALANCE_OF.getOutputs().encodeElements(BigInteger.valueOf(balance));
 
         return gasOnly(successResult(output, 0L));
-    }
-
-    public static boolean matches(@NonNull final byte[] selector) {
-        requireNonNull(selector);
-        return Arrays.equals(selector, BALANCE_OF.selector());
-    }
-
-    public static BalanceOfCall from(@NonNull final HtsCallAttempt attempt) {
-        final var owner = fromHeadlongAddress(
-                BALANCE_OF.decodeCall(attempt.input().toArrayUnsafe()).get(0));
-        return new BalanceOfCall(attempt.enhancement(), attempt.redirectToken(), owner);
     }
 }

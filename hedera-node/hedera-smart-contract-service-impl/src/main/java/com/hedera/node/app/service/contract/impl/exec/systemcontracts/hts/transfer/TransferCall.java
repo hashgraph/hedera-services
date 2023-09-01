@@ -49,6 +49,12 @@ public class TransferCall implements HtsCall {
             new Function("transferFrom(address,address,uint256)", ReturnTypes.BOOL);
     public static final Function ERC_721_TRANSFER_FROM = new Function("transferFrom(address,address,uint256)");
 
+    /**
+     * Indicates if the given {@code selector} is a selector for {@link TransferCall}.
+     *
+     * @param selector the selector to check
+     * @return {@code true} if the given {@code selector} is a selector for {@link TransferCall}
+     */
     public static boolean matches(@NonNull final byte[] selector) {
         requireNonNull(selector);
         return Arrays.equals(selector, CRYPTO_TRANSFER.selector())
@@ -64,11 +70,21 @@ public class TransferCall implements HtsCall {
                 || Arrays.equals(selector, ERC_721_TRANSFER_FROM.selector());
     }
 
-    public static TransferCall from(@NonNull final HtsCallAttempt attempt, @NonNull final Address senderAddress) {
+    /**
+     * Creates a {@link TransferCall} from the given {@code attempt} and {@code senderAddress}.
+     *
+     * @param attempt the attempt to create a {@link TransferCall} from
+     * @param caller the address of the caller
+     * @return a {@link TransferCall} if the given {@code attempt} is a valid {@link TransferCall}, otherwise {@code null}
+     */
+    public static TransferCall from(@NonNull final HtsCallAttempt attempt, @NonNull final Address caller) {
         // TODO - implement this
         return new TransferCall();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public @NonNull PricedResult execute() {
         throw new AssertionError("Not implemented");

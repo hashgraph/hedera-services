@@ -23,6 +23,7 @@ import static java.util.Objects.requireNonNull;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.balanceof.BalanceOfCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.mint.MintCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.TransferCall;
@@ -34,40 +35,43 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
 /**
- * Gives easier access to some basic facts about a call received by the
- * {@link com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract},
- * including the type of call, the selector, and whether it's a token redirect.
+ * Manages the call attempted by a {@link Bytes} payload received by the {@link HtsSystemContract}.
+ * Translates a valid attempt into an appropriate {@link HtsCall} subclass, giving the {@link HtsCall}
+ * everything it will need to execute.
  */
 public class HtsCallAttempt {
     public static final Function REDIRECT_FOR_TOKEN = new Function("redirectForToken(address,bytes)");
     private static final byte[] REDIRECT_FOR_TOKEN_SELECTOR = REDIRECT_FOR_TOKEN.selector();
 
-    // TODO -
-    //   ASSOCIATE_ONE,
-    //   ASSOCIATE_MANY,
-    //   DISSOCIATE_ONE,
-    //   DISSOCIATE_MANY,
-    //   PAUSE_TOKEN,
-    //   UNPAUSE_TOKEN,
-    //   FREEZE_ACCOUNT,
-    //   UNFREEZE_ACCOUNT,
-    //   GRANT_KYC,
-    //   REVOKE_KYC,
-    //   WIPE_AMOUNT,
-    //   WIPE_SERIAL_NUMBERS,
-    //   GRANT_ALLOWANCE,
-    //   GRANT_APPROVAL,
-    //   APPROVE_OPERATOR,
-    //   CREATE_TOKEN,
-    //   DELETE_TOKEN,
-    //   UPDATE_TOKEN,
-    //   GET_BALANCE,
-    //   GET_ALLOWANCE,
-    //   GET_IS_APPROVED,
-    //   GET_IS_OPERATOR,
-    //   GET_IS_KYC,
-    //   GET_NFT_INFO,
-    //   GET_TOKEN_INFO,
+    // TODO - support all of the following:
+    //   [x] TRANSFER,
+    //   [x] MINT,
+    //   [x] BALANCE_OF,
+    //   [ ] ASSOCIATE_ONE,
+    //   [ ] ASSOCIATE_MANY,
+    //   [ ] DISSOCIATE_ONE,
+    //   [ ] DISSOCIATE_MANY,
+    //   [ ] PAUSE_TOKEN,
+    //   [ ] UNPAUSE_TOKEN,
+    //   [ ] FREEZE_ACCOUNT,
+    //   [ ] UNFREEZE_ACCOUNT,
+    //   [ ] GRANT_KYC,
+    //   [ ] REVOKE_KYC,
+    //   [ ] WIPE_AMOUNT,
+    //   [ ] WIPE_SERIAL_NUMBERS,
+    //   [ ] GRANT_ALLOWANCE,
+    //   [ ] GRANT_APPROVAL,
+    //   [ ] APPROVE_OPERATOR,
+    //   [ ] CREATE_TOKEN,
+    //   [ ] DELETE_TOKEN,
+    //   [ ] UPDATE_TOKEN,
+    //   [ ] GET_BALANCE,
+    //   [ ] GET_ALLOWANCE,
+    //   [ ] GET_IS_APPROVED,
+    //   [ ] GET_IS_OPERATOR,
+    //   [ ] GET_IS_KYC,
+    //   [ ] GET_NFT_INFO,
+    //   [ ] GET_TOKEN_INFO,
 
     private final byte[] selector;
     private final Bytes input;

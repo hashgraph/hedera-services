@@ -18,7 +18,11 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import org.hyperledger.besu.evm.precompile.PrecompiledContract.PrecompileContractResult;
 
+/**
+ * Encapsulates a call to the HTS system contract.
+ */
 public interface HtsCall {
     record PricedResult(HederaSystemContract.FullResult fullResult, long nonGasCost) {
         public static PricedResult gasOnly(HederaSystemContract.FullResult result) {
@@ -27,9 +31,10 @@ public interface HtsCall {
     }
 
     /**
-     * Execute the call, returning the result and any non-gas cost that must be sent as value with the call.
+     * Executes the call, returning the {@link PrecompileContractResult}, the gas requirement, and any
+     * non-gas cost that must be sent as value with the call.
      *
-     * @return the result and any non-gas cost
+     * @return the result, the gas requirement, and any non-gas cost
      */
     @NonNull
     PricedResult execute();

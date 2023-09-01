@@ -26,7 +26,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.contract.impl.exec.operations.utils.OpUtils;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsFunctionSelectors;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import com.hedera.node.app.service.contract.impl.infra.StorageAccessTracker;
@@ -54,7 +53,6 @@ class FrameUtilsTest {
             OpUtils.class,
             OpcodeUtils.class,
             SynthTxnUtils.class,
-            HtsFunctionSelectors.class,
             ReturnTypes.class));
 
     @Mock

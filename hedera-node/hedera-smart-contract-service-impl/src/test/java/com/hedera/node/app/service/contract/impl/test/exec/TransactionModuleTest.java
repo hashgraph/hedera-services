@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.test.exec;
 import static com.hedera.node.app.service.contract.impl.exec.TransactionModule.provideActionSidecarContentTracer;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ETH_DATA_WITH_CALL_DATA;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
@@ -105,6 +106,12 @@ class TransactionModuleTest {
         final var expectedHydration = HydratedEthTxData.successFrom(ETH_DATA_WITH_CALL_DATA);
         given(hydration.tryToHydrate(ethTxn, fileStore)).willReturn(expectedHydration);
         assertSame(expectedHydration, TransactionModule.maybeProvideHydratedEthTxData(context, hydration, fileStore));
+    }
+
+    @Test
+    void providesEnhancement() {
+        assertNotNull(
+                TransactionModule.provideEnhancement(hederaOperations, nativeOperations, systemContractOperations));
     }
 
     @Test
