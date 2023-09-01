@@ -29,6 +29,7 @@ import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusMetrics;
 import com.swirlds.platform.state.signed.SignedState;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.ArrayDeque;
@@ -1087,6 +1088,18 @@ public class ConsensusImpl implements Consensus {
         return addressBook;
     }
 
+    /**
+     * Checks if the index of the event creator's NodeId in the address book is the same as the provided index.
+     *
+     * @param event the event
+     * @param index an index in the address book.
+     * @return true if the index of the event creator's NodeId in the address book is the same as the provided index, false otherwise.
+     */
+    private boolean eventCreatorIndexMatches(@NonNull final EventImpl event, final int index) {
+        return addressBook.contains(event.getCreatorId())
+                && addressBook.getIndexOfNodeId(event.getCreatorId()) == index;
+    }
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Functions from SWIRLDS-TR-2020-01, verified by Coq proof
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1146,8 +1159,7 @@ public class ConsensusImpl implements Consensus {
         sp = x.getSelfParent();
 
         for (int mm = 0; mm < numMembers; mm++) {
-            final int xCreatorIdIndex = addressBook.getIndexOfNodeId(x.getCreatorId());
-            if (xCreatorIdIndex == mm) {
+            if (eventCreatorIndexMatches(x, mm)) {
                 x.setLastSee(mm, x);
             } else if (sp == null && op == null) {
                 x.setLastSee(mm, null);
@@ -1183,8 +1195,7 @@ public class ConsensusImpl implements Consensus {
         if (x == null) {
             return null;
         }
-        final int creatorIndex = addressBook.getIndexOfNodeId(x.getCreatorId());
-        if (m == m2 && m2 == creatorIndex) {
+        if (m == m2 && eventCreatorIndexMatches(x, m2)) {
             return firstSelfWitnessS(x.getSelfParent());
         }
         return firstSee(lastSee(x, m2), m);

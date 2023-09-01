@@ -392,7 +392,7 @@ public class Browser {
 
             // Initialize the address book from the configuration and platform saved state.
             final AddressBookInitializer addressBookInitializer = new AddressBookInitializer(
-                    appVersion, softwareUpgrade, initialState.get(), configAddressBook.copy(), platformContext);
+                    nodeId, appVersion, softwareUpgrade, initialState.get(), configAddressBook.copy(), platformContext);
 
             if (!initialState.get().isGenesisState()) {
                 final State state = initialState.get().getState();
