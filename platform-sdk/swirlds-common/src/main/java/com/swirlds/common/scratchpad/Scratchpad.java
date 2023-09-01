@@ -55,7 +55,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * A utility for "taking notes" that are preserved across restart boundaries.
  * <p>
- * A scratch pad instance is thread safe. All read operations and write operations against a scratchpad are atomic. Any
+ * A scratchpad instance is thread safe. All read operations and write operations against a scratchpad are atomic. Any
  * write that has completed is guaranteed to be visible to all subsequent reads, regardless of crashes/restarts.
  *
  * @param <K> the enum type that defines the scratchpad fields
