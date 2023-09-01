@@ -194,9 +194,9 @@ public class Scratchpad<K extends Enum<K> & ScratchpadType> {
     public <V extends SelfSerializable> V set(@NonNull final K key, @Nullable final V value) {
         logger.info(STARTUP.getMarker(), "Setting scratchpad field {}:{} to {}", id, key, value);
         try (final Locked ignored = lock.lock()) {
-            return (V) data.put(key, value);
-        } finally {
+            final V previous = (V) data.put(key, value);
             flush();
+            return previous;
         }
     }
 
