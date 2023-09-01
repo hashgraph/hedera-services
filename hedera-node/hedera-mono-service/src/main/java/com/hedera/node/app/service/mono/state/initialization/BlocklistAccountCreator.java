@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.mono.state.initialization;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_BLOCKLIST_RESOURCE;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_BLOCKLIST_PATH;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_SYSTEM_ENTITY_EXPIRY;
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asFcKeyUnchecked;
@@ -88,7 +88,7 @@ public class BlocklistAccountCreator {
             final @NonNull @CompositeProps PropertySource properties,
             final @NonNull AliasManager aliasManager,
             final @NonNull AccountNumbers accountNumbers) {
-        this.blocklistResourcePath = properties.getStringProperty(ACCOUNTS_BLOCKLIST_RESOURCE);
+        this.blocklistResourcePath = properties.getStringProperty(ACCOUNTS_BLOCKLIST_PATH);
         this.accountSupplier = Objects.requireNonNull(accountSupplier);
         this.ids = Objects.requireNonNull(ids);
         this.accounts = Objects.requireNonNull(accounts);

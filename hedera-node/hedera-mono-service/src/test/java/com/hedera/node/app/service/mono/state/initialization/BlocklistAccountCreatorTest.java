@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.mono.state.initialization;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_BLOCKLIST_RESOURCE;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_BLOCKLIST_PATH;
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
@@ -149,7 +149,7 @@ class BlocklistAccountCreatorTest {
     void successfullyEnsuresBlockedAccounts() {
         // given
         given(genesisKeySource.get()).willReturn(pretendKey);
-        given(properties.getStringProperty(ACCOUNTS_BLOCKLIST_RESOURCE)).willReturn("evm-addresses-blocklist.csv");
+        given(properties.getStringProperty(ACCOUNTS_BLOCKLIST_PATH)).willReturn("evm-addresses-blocklist.csv");
         subject = new BlocklistAccountCreator(
                 MerkleAccount::new, ids, accounts, genesisKeySource, properties, aliasManager, accountNumbers);
         given(aliasManager.lookupIdBy(any())).willReturn(MISSING_NUM);
@@ -174,7 +174,7 @@ class BlocklistAccountCreatorTest {
     void forgetCreatedBlockedAccountsWorksAsExpected() {
         // given
         given(genesisKeySource.get()).willReturn(pretendKey);
-        given(properties.getStringProperty(ACCOUNTS_BLOCKLIST_RESOURCE)).willReturn("test-blocklist.csv");
+        given(properties.getStringProperty(ACCOUNTS_BLOCKLIST_PATH)).willReturn("test-blocklist.csv");
         given(aliasManager.lookupIdBy(any())).willReturn(MISSING_NUM);
         subject = new BlocklistAccountCreator(
                 MerkleAccount::new, ids, accounts, genesisKeySource, properties, aliasManager, accountNumbers);
@@ -195,7 +195,7 @@ class BlocklistAccountCreatorTest {
             },
             delimiter = ';')
     void readingBlocklistResourceExceptionShouldBeLogged(String blocklistResourceName, String expectedLog) {
-        given(properties.getStringProperty(ACCOUNTS_BLOCKLIST_RESOURCE)).willReturn(blocklistResourceName);
+        given(properties.getStringProperty(ACCOUNTS_BLOCKLIST_PATH)).willReturn(blocklistResourceName);
         subject = new BlocklistAccountCreator(
                 MerkleAccount::new, ids, accounts, genesisKeySource, properties, aliasManager, accountNumbers);
 
@@ -210,7 +210,7 @@ class BlocklistAccountCreatorTest {
     void readingNonExistingBlocklistShouldLogFallbackToDefaultBlocklistResource() {
         // given
         given(genesisKeySource.get()).willReturn(pretendKey);
-        given(properties.getStringProperty(ACCOUNTS_BLOCKLIST_RESOURCE)).willReturn("non-existing.csv");
+        given(properties.getStringProperty(ACCOUNTS_BLOCKLIST_PATH)).willReturn("non-existing.csv");
         given(aliasManager.lookupIdBy(any())).willReturn(MISSING_NUM);
         subject = new BlocklistAccountCreator(
                 MerkleAccount::new, ids, accounts, genesisKeySource, properties, aliasManager, accountNumbers);
