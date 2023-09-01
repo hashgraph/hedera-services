@@ -97,7 +97,7 @@ public class Scratchpad<K extends Enum<K> & ScratchpadType> {
      * @param id              the unique ID of this scratchpad (creating multiple scratchpad instances on the same node
      *                        with the same unique ID has undefined (and possibly undesirable) behavior. Must not
      *                        contain any non-alphanumeric characters, with the exception of the following characters:
-     *                        "_", "-", and ".".
+     *                        "_", "-", and ".". Must not be empty.
      */
     public Scratchpad(
             @NonNull final PlatformContext platformContext,
@@ -112,6 +112,9 @@ public class Scratchpad<K extends Enum<K> & ScratchpadType> {
                 .resolve(Long.toString(selfId.id()))
                 .resolve(id);
 
+        if (id.isEmpty()) {
+            throw new IllegalArgumentException("scratchpad ID must not be empty");
+        }
         if (!id.matches("[a-zA-Z0-9_.-]+")) {
             throw new IllegalArgumentException(
                     "scratchpad ID must only contain alphanumeric characters, '_', '-', " + "and '.'");

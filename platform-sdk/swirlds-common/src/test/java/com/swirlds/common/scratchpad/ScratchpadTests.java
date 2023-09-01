@@ -24,6 +24,7 @@ import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -355,5 +356,28 @@ class ScratchpadTests {
 
     @Test
     @DisplayName("Illegal Scratchpad Id Test")
-    void illegalScratchpadIdTest() {}
+    void illegalScratchpadIdTest() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new Scratchpad<>(platformContext, selfId, TestScratchpadType.class, ""));
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new Scratchpad<>(platformContext, selfId, TestScratchpadType.class, "foobar/baz"));
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new Scratchpad<>(platformContext, selfId, TestScratchpadType.class, "foobar\\baz"));
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new Scratchpad<>(platformContext, selfId, TestScratchpadType.class, "foobar\"baz"));
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new Scratchpad<>(platformContext, selfId, TestScratchpadType.class, "foobar*baz"));
+
+        // should not throw
+        new Scratchpad<>(platformContext, selfId, TestScratchpadType.class, "foo.bar_baz-1234");
+    }
 }
