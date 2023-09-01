@@ -149,7 +149,7 @@ public class HederaSoftwareVersion implements SoftwareVersion {
 
     @Override
     public String toString() {
-        // This is called by the platform when
+        // This is called by the platform when printing information on saved states to logs
         return "HederaSoftwareVersion{" + "hapiVersion="
                 + HapiUtils.toString(hapiVersion) + ", servicesVersion="
                 + HapiUtils.toString(servicesVersion) + '}';
