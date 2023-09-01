@@ -21,5 +21,10 @@ package com.swirlds.common.scratchpad;
  */
 public interface ScratchpadType {
 
+    /**
+     * Get the field ID for this scratchpad type. Must be unique within this type.
+     *
+     * @return the field ID
+     */
     int getFieldId();
 }
