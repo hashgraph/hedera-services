@@ -22,9 +22,13 @@ import static com.swirlds.platform.util.BootstrapUtils.loadAppMain;
 import static com.swirlds.platform.util.BootstrapUtils.setupConstructableRegistry;
 
 import com.swirlds.common.config.ConsensusConfig;
+import com.swirlds.common.config.PathsConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.crypto.Cryptography;
+import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.internal.ApplicationDefinition;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.notification.NotificationEngine;
@@ -40,6 +44,8 @@ import com.swirlds.common.system.state.notifications.NewRecoveredStateListener;
 import com.swirlds.common.system.state.notifications.NewRecoveredStateNotification;
 import com.swirlds.common.utility.CompareTo;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.ApplicationDefinitionLoader;
+import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.ConsensusUtils;
 import com.swirlds.platform.consensus.SyntheticSnapshot;
@@ -119,6 +125,11 @@ public final class EventRecoveryWorkflow {
         Objects.requireNonNull(selfId, "selfId must not be null");
 
         setupConstructableRegistry();
+
+        // parameters if the app needs them
+        final ApplicationDefinition appDefinition = ApplicationDefinitionLoader.loadDefault(
+                platformContext.getConfiguration().getConfigData(PathsConfig.class).getConfigPath());
+        ParameterProvider.getInstance().setParameters(appDefinition.getAppParameters());
 
         final SwirldMain appMain = loadAppMain(mainClassName);
 
@@ -338,6 +349,7 @@ public final class EventRecoveryWorkflow {
         previousState.get().getState().throwIfImmutable();
         final State newState = previousState.get().getState().copy();
         final EventImpl lastEvent = (EventImpl) getLastEvent(round);
+        CryptographyHolder.get().digestSync(lastEvent.getBaseEvent().getHashedData());
         newState.getPlatformState()
                 .getPlatformData()
                 .setRound(round.getRoundNum())
