@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.cli;
 
-import com.swirlds.cli.commands.SwirldsLogCommand;
+import com.swirlds.cli.commands.LogCommand;
 import com.swirlds.cli.logging.LogProcessor;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
@@ -30,7 +30,7 @@ import picocli.CommandLine;
         name = "format",
         mixinStandardHelpOptions = true,
         description = "Generate an html formatted version of swirlds log files.")
-@SubcommandOf(SwirldsLogCommand.class)
+@SubcommandOf(LogCommand.class)
 public class FormatSwirldsLogCommand extends AbstractCommand {
 
     /**

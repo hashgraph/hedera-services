@@ -310,24 +310,31 @@ public class HtmlGenerator {
      * @param nodeId the node ID
      * @return the radio buttons
      */
+    @NonNull
     private static String createNodeIdCheckbox(@NonNull final String nodeId) {
         // label used for filtering by node ID
         final String nodeLogicLabel = "node" + nodeId;
         // label used for colorizing by node ID
         final String nodeStylingLabel = "node-" + nodeId;
 
-        final String inputTag = new HtmlTagFactory("input", null, true)
-                .addClasses(List.of(NO_SHOW_CHECKBOX_LABEL, nodeLogicLabel))
-                .addAttribute("type", "checkbox")
-                .addAttribute("checked", "checked")
-                .generateTag();
+        final StringBuilder stringBuilder = new StringBuilder();
 
-        final String labelTag = new HtmlTagFactory("label", nodeLogicLabel, false)
-                .addClass(nodeStylingLabel)
-                .generateTag();
-        final String breakTag = new HtmlTagFactory("br", null, true).generateTag();
+        stringBuilder
+                .append(new HtmlTagFactory("input", null, true)
+                        .addClasses(List.of(NO_SHOW_CHECKBOX_LABEL, nodeLogicLabel))
+                        .addAttribute("type", "checkbox")
+                        .addAttribute("checked", "checked")
+                        .generateTag())
+                .append("\n");
 
-        return inputTag + "\n" + labelTag + "\n" + breakTag + "\n";
+        stringBuilder
+                .append(new HtmlTagFactory("label", nodeLogicLabel, false)
+                        .addClass(nodeStylingLabel)
+                        .generateTag())
+                .append("\n");
+        stringBuilder.append(new HtmlTagFactory("br", null, true).generateTag()).append("\n");
+
+        return stringBuilder.toString();
     }
 
     /**
@@ -336,17 +343,23 @@ public class HtmlGenerator {
      * @param elementName the name of the element to hide / show
      * @return the checkbox
      */
+    @NonNull
     private static String createCheckboxFilter(@NonNull final String elementName) {
-        final String inputTag = new HtmlTagFactory("input", null, true)
-                .addClasses(List.of(FILTER_CHECKBOX_LABEL, elementName))
-                .addAttribute("type", "checkbox")
-                .addAttribute("checked", "checked")
-                .generateTag();
+        final StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder
+                .append(new HtmlTagFactory("input", null, true)
+                        .addClasses(List.of(FILTER_CHECKBOX_LABEL, elementName))
+                        .addAttribute("type", "checkbox")
+                        .addAttribute("checked", "checked")
+                        .generateTag())
+                .append("\n");
 
-        final String labelTag = new HtmlTagFactory("label", elementName, false).generateTag();
-        final String breakTag = new HtmlTagFactory("br", null, true).generateTag();
+        stringBuilder
+                .append(new HtmlTagFactory("label", elementName, false).generateTag())
+                .append("\n");
+        stringBuilder.append(new HtmlTagFactory("br", null, true).generateTag()).append("\n");
 
-        return inputTag + "\n" + labelTag + "\n" + breakTag + "\n";
+        return stringBuilder.toString();
     }
 
     /**
@@ -357,33 +370,44 @@ public class HtmlGenerator {
      * @param elementName the name of the element to hide
      * @return the checkbox
      */
+    @NonNull
     private static String createStandardRadioFilter(@NonNull final String elementName) {
         final String commonRadioLabel = elementName + "-radio";
 
-        final String whitelistTag = new HtmlTagFactory("input", null, true)
-                .addClasses(List.of(FILTER_RADIO_LABEL, WHITELIST_LABEL, WHITELIST_RADIO_LABEL, elementName))
-                .addAttribute("type", "radio")
-                .addAttribute("name", commonRadioLabel)
-                .addAttribute("value", "1")
-                .generateTag();
-        final String neutralTag = new HtmlTagFactory("input", null, true)
-                .addClasses(List.of(FILTER_RADIO_LABEL, NEUTRALLIST_RADIO_LABEL, elementName))
-                .addAttribute("type", "radio")
-                .addAttribute("name", commonRadioLabel)
-                .addAttribute("checked", "checked")
-                .addAttribute("value", "2")
-                .generateTag();
-        final String blacklistTag = new HtmlTagFactory("input", null, true)
-                .addClasses(List.of(FILTER_RADIO_LABEL, BLACKLIST_LABEL, BLACKLIST_RADIO_LABEL, elementName))
-                .addAttribute("type", "radio")
-                .addAttribute("name", commonRadioLabel)
-                .addAttribute("value", "3")
-                .generateTag();
+        final StringBuilder stringBuilder = new StringBuilder();
 
-        final String labelTag = new HtmlTagFactory("label", elementName, false).generateTag();
-        final String breakTag = new HtmlTagFactory("br", null, true).generateTag();
+        stringBuilder
+                .append(new HtmlTagFactory("input", null, true)
+                        .addClasses(List.of(FILTER_RADIO_LABEL, WHITELIST_LABEL, WHITELIST_RADIO_LABEL, elementName))
+                        .addAttribute("type", "radio")
+                        .addAttribute("name", commonRadioLabel)
+                        .addAttribute("value", "1")
+                        .generateTag())
+                .append("\n");
+        stringBuilder
+                .append(new HtmlTagFactory("input", null, true)
+                        .addClasses(List.of(FILTER_RADIO_LABEL, NEUTRALLIST_RADIO_LABEL, elementName))
+                        .addAttribute("type", "radio")
+                        .addAttribute("name", commonRadioLabel)
+                        .addAttribute("checked", "checked")
+                        .addAttribute("value", "2")
+                        .generateTag())
+                .append("\n");
+        stringBuilder
+                .append(new HtmlTagFactory("input", null, true)
+                        .addClasses(List.of(FILTER_RADIO_LABEL, BLACKLIST_LABEL, BLACKLIST_RADIO_LABEL, elementName))
+                        .addAttribute("type", "radio")
+                        .addAttribute("name", commonRadioLabel)
+                        .addAttribute("value", "3")
+                        .generateTag())
+                .append("\n");
 
-        return whitelistTag + "\n" + neutralTag + "\n" + blacklistTag + "\n" + labelTag + "\n" + breakTag + "\n";
+        stringBuilder
+                .append(new HtmlTagFactory("label", elementName, false).generateTag())
+                .append("\n");
+        stringBuilder.append(new HtmlTagFactory("br", null, true).generateTag()).append("\n");
+
+        return stringBuilder.toString();
     }
 
     /**
@@ -393,14 +417,20 @@ public class HtmlGenerator {
      * @param bodyElements the filter input buttons
      * @return the div
      */
+    @NonNull
     private static String createInputDiv(@NonNull final String heading, @NonNull final List<String> bodyElements) {
-        final String filterHeading = new HtmlTagFactory("h3", heading, false).generateTag();
+        final StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder
+                .append(new HtmlTagFactory("h3", heading, false).generateTag())
+                .append("\n");
 
-        final String form = new HtmlTagFactory("form", "\n" + String.join("\n", bodyElements), false)
-                .addAttribute("autocomplete", "off")
-                .generateTag();
+        stringBuilder
+                .append(new HtmlTagFactory("form", "\n" + String.join("\n", bodyElements), false)
+                        .addAttribute("autocomplete", "off")
+                        .generateTag())
+                .append("\n");
 
-        return new HtmlTagFactory("div", "\n" + filterHeading + "\n" + form, false).generateTag();
+        return new HtmlTagFactory("div", stringBuilder.toString(), false).generateTag();
     }
 
     /**
@@ -409,6 +439,7 @@ public class HtmlGenerator {
      * @param filterValues the different node IDs to make filters for
      * @return the node ID filter div
      */
+    @NonNull
     private static String createNodeIdFilterDiv(@NonNull final List<String> filterValues) {
         final List<String> filterRadios =
                 filterValues.stream().map(HtmlGenerator::createNodeIdCheckbox).toList();
@@ -421,6 +452,7 @@ public class HtmlGenerator {
      * @param filterValues the different column names to make filters for
      * @return the column filter div
      */
+    @NonNull
     private static String createColumnFilterDiv(@NonNull final List<String> filterValues) {
         final List<String> filterCheckboxes =
                 filterValues.stream().map(HtmlGenerator::createCheckboxFilter).toList();
@@ -436,6 +468,7 @@ public class HtmlGenerator {
      * @param filterValues the filter values
      * @return the filter div
      */
+    @NonNull
     private static String createStandardFilterDiv(
             @NonNull final String filterName, @NonNull final List<String> filterValues) {
         final List<String> filterRadios = filterValues.stream()
@@ -545,14 +578,20 @@ public class HtmlGenerator {
      * @param cssFactory the css rule factory
      * @return the head of the HTML page
      */
+    @NonNull
     private static String generateHead(@NonNull final CssRuleSetFactory cssFactory) {
-        final String cssTag = new HtmlTagFactory("style", cssFactory.generateCss(), false).generateTag();
+        final StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder
+                .append(new HtmlTagFactory("style", cssFactory.generateCss(), false).generateTag())
+                .append("\n");
 
-        final String minJsSourceTag = new HtmlTagFactory("script", "", false)
-                .addAttribute("src", MIN_JS_SOURCE)
-                .generateTag();
+        stringBuilder
+                .append(new HtmlTagFactory("script", "", false)
+                        .addAttribute("src", MIN_JS_SOURCE)
+                        .generateTag())
+                .append("\n");
 
-        return new HtmlTagFactory("head", "\n" + cssTag + "\n" + minJsSourceTag + "\n", false).generateTag();
+        return new HtmlTagFactory("head", stringBuilder.toString(), false).generateTag();
     }
 
     /**
@@ -562,12 +601,13 @@ public class HtmlGenerator {
      * @param cssFactory a factory that new rules can be added to
      * @return the generate filters div for the html page
      */
+    @NonNull
     private static String generateFiltersDiv(
             @NonNull final List<LogLine> logLines, @NonNull final CssRuleSetFactory cssFactory) {
 
-        final List<String> filterDivs = new ArrayList<>();
+        final StringBuilder filterDivBuilder = new StringBuilder();
 
-        filterDivs.add(createNodeIdFilterDiv(logLines.stream()
+        filterDivBuilder.append(createNodeIdFilterDiv(logLines.stream()
                 .map(LogLine::getNodeId)
                 .distinct()
                 .filter(Objects::nonNull)
@@ -575,7 +615,7 @@ public class HtmlGenerator {
                 .map(NodeId::toString)
                 .toList()));
 
-        filterDivs.add(createColumnFilterDiv(List.of(
+        filterDivBuilder.append(createColumnFilterDiv(List.of(
                 NODE_ID_COLUMN_LABEL,
                 ELAPSED_TIME_COLUMN_LABEL,
                 TIMESTAMP_COLUMN_LABEL,
@@ -586,24 +626,27 @@ public class HtmlGenerator {
                 CLASS_NAME_COLUMN_LABEL,
                 REMAINDER_OF_LINE_COLUMN_LABEL)));
 
-        filterDivs.add(createStandardFilterDiv(
+        filterDivBuilder.append(createStandardFilterDiv(
                 "Log Level",
                 logLines.stream()
                         .map(LogLine::getLogLevel)
                         .distinct()
                         .sorted(Comparator.comparing(Level::toLevel))
                         .toList()));
-        filterDivs.add(createStandardFilterDiv(
+        filterDivBuilder.append(createStandardFilterDiv(
                 "Log Marker",
                 logLines.stream().map(LogLine::getMarker).distinct().toList()));
 
-        final String filterDivsCombined = "\n" + String.join("\n", filterDivs) + "\n";
+        final StringBuilder containingDivBuilder = new StringBuilder();
+        containingDivBuilder
+                .append(new HtmlTagFactory("h2", "Filters", false).generateTag())
+                .append("\n");
 
-        final String filtersHeading = new HtmlTagFactory("h2", "Filters", false).generateTag();
-
-        final String scrollableFilterColumn = new HtmlTagFactory("div", filterDivsCombined, false)
-                .addClass(INDEPENDENT_SCROLL_LABEL)
-                .generateTag();
+        containingDivBuilder
+                .append(new HtmlTagFactory("div", filterDivBuilder.toString(), false)
+                        .addClass(INDEPENDENT_SCROLL_LABEL)
+                        .generateTag())
+                .append("\n");
 
         cssFactory.addRule("." + WHITELIST_RADIO_LABEL, new CssDeclaration("accent-color", "#6FD154"));
         cssFactory.addRule("." + NEUTRALLIST_RADIO_LABEL, new CssDeclaration("accent-color", "#F3D412"));
@@ -612,7 +655,7 @@ public class HtmlGenerator {
         // make the filter columns and the log table scroll independently
         cssFactory.addRule("." + INDEPENDENT_SCROLL_LABEL, new CssDeclaration("overflow", "auto"));
 
-        return new HtmlTagFactory("div", filtersHeading + "\n" + scrollableFilterColumn, false).generateTag();
+        return new HtmlTagFactory("div", containingDivBuilder.toString(), false).generateTag();
     }
 
     /**
@@ -622,15 +665,18 @@ public class HtmlGenerator {
      * @param cssFactory a factory that new rules can be added to
      * @return the log table for the HTML page
      */
+    @NonNull
     private static String generateLogTable(
             @NonNull final List<LogLine> logLines, @NonNull final CssRuleSetFactory cssFactory) {
-        final List<String> formattedLogLines =
-                logLines.stream().map(LogLine::generateHtmlString).toList();
-        final String combinedLogLines = "\n" + String.join("\n", formattedLogLines) + "\n";
+        final StringBuilder stringBuilder = new StringBuilder().append("\n");
+
+        logLines.stream()
+                .map(LogLine::generateHtmlString)
+                .forEach(logHtml -> stringBuilder.append(logHtml).append("\n"));
 
         cssFactory.addRule("." + LOG_TABLE_LABEL, new CssDeclaration("border-collapse", "collapse"));
 
-        return new HtmlTagFactory("table", combinedLogLines, false)
+        return new HtmlTagFactory("table", stringBuilder.toString(), false)
                 .addClass(LOG_TABLE_LABEL)
                 .generateTag();
     }
@@ -642,32 +688,42 @@ public class HtmlGenerator {
      * @param cssFactory a factory that new rules can be added to
      * @return the body of the HTML page
      */
+    @NonNull
     private static String generateBody(
             @NonNull final List<LogLine> logLines, @NonNull final CssRuleSetFactory cssFactory) {
 
-        final String filtersDiv = generateFiltersDiv(logLines, cssFactory);
-        final String tableDiv = new HtmlTagFactory("div", generateLogTable(logLines, cssFactory), false)
-                .addClass(INDEPENDENT_SCROLL_LABEL)
-                .addClass(TABLE_INDEPENDENT_SCROLL_LABEL)
-                .generateTag();
+        final StringBuilder doubleColumnDivBuilder = new StringBuilder();
+        doubleColumnDivBuilder.append(generateFiltersDiv(logLines, cssFactory)).append("\n");
+        doubleColumnDivBuilder
+                .append(new HtmlTagFactory("div", generateLogTable(logLines, cssFactory), false)
+                        .addClass(INDEPENDENT_SCROLL_LABEL)
+                        .addClass(TABLE_INDEPENDENT_SCROLL_LABEL)
+                        .generateTag())
+                .append("\n");
 
         // make the log table independent scroll fill 100% of width
         cssFactory.addRule("." + TABLE_INDEPENDENT_SCROLL_LABEL, new CssDeclaration("width", "100%"));
 
+        final StringBuilder bodyBuilder = new StringBuilder();
+
         // this is a div surrounding the filters and the log table
         // its purpose is so that there can be 2 independently scrollable columns
-        final String doubleColumnDiv = new HtmlTagFactory("div", filtersDiv + "\n" + tableDiv, false)
-                .addClass(DOUBLE_COLUMNS_DIV_LABEL)
-                .generateTag();
+        bodyBuilder
+                .append(new HtmlTagFactory("div", doubleColumnDivBuilder.toString(), false)
+                        .addClass(DOUBLE_COLUMNS_DIV_LABEL)
+                        .generateTag())
+                .append("\n");
 
         cssFactory.addRule(
                 "." + DOUBLE_COLUMNS_DIV_LABEL,
                 new CssDeclaration("display", "flex"),
                 new CssDeclaration("height", "100%"));
 
-        final String scriptTag = new HtmlTagFactory("script", FILTER_JS, false).generateTag();
+        bodyBuilder
+                .append(new HtmlTagFactory("script", FILTER_JS, false).generateTag())
+                .append("\n");
 
-        return new HtmlTagFactory("body", doubleColumnDiv + "\n" + scriptTag, false).generateTag();
+        return new HtmlTagFactory("body", bodyBuilder.toString(), false).generateTag();
     }
 
     /**
@@ -694,6 +750,7 @@ public class HtmlGenerator {
      * @param logLineStrings the raw log line strings
      * @return the list of log lines, which represent the raw log strings
      */
+    @NonNull
     private static List<LogLine> processNodeLogLines(
             @NonNull final NodeId nodeId, @NonNull final List<String> logLineStrings) {
         final List<LogLine> outputLines = new ArrayList<>();
@@ -723,6 +780,7 @@ public class HtmlGenerator {
      * @param logLineStrings a map of node id to the raw log line strings for that node
      * @return the HTML page
      */
+    @NonNull
     public static String generateHtmlPage(@NonNull final Map<NodeId, List<String>> logLineStrings) {
         Objects.requireNonNull(logLineStrings);
 
@@ -739,9 +797,13 @@ public class HtmlGenerator {
 
         final String body = generateBody(logLines, cssFactory);
 
-        // head must be generated last, since that's where we turn the CSS rules into a string to put into the HTML doc
-        final String head = generateHead(cssFactory);
+        final StringBuilder htmlBuilder = new StringBuilder().append("\n");
 
-        return new HtmlTagFactory("html", "\n" + head + "\n" + body + "\n", false).generateTag();
+        // head must be generated after the body, since that's where we turn the CSS rules into a string to put into the
+        // HTML doc
+        htmlBuilder.append(generateHead(cssFactory)).append("\n");
+        htmlBuilder.append(body).append("\n");
+
+        return new HtmlTagFactory("html", htmlBuilder.toString(), false).generateTag();
     }
 }
