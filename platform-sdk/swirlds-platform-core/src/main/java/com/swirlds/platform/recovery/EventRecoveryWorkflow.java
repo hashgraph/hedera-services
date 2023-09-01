@@ -51,6 +51,7 @@ import com.swirlds.platform.consensus.ConsensusUtils;
 import com.swirlds.platform.consensus.SyntheticSnapshot;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventFile;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventMutableFile;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.recovery.internal.EventStreamRoundIterator;
@@ -155,7 +156,7 @@ public final class EventRecoveryWorkflow {
             logger.info(STARTUP.getMarker(), "Reapplying transactions");
 
             final RecoveredState recoveredState = reapplyTransactions(
-                    platformContext, initialState, appMain, roundIterator, finalRound, selfId, loadSigningKeys);
+                    platformContext, initialState.getAndReserve("recoverState()"), appMain, roundIterator, finalRound, selfId, loadSigningKeys);
 
             logger.info(
                     STARTUP.getMarker(),
@@ -178,8 +179,9 @@ public final class EventRecoveryWorkflow {
                     resultingStateDirectory,
                     false
             );
-            preconsensusEventFile.getMutableFile().writeEvent(recoveredState.judge());
-            preconsensusEventFile.getMutableFile().close();
+            final PreconsensusEventMutableFile mutableFile = preconsensusEventFile.getMutableFile();
+            mutableFile.writeEvent(recoveredState.judge());
+            mutableFile.close();
 
             recoveredState.state().close();
 
