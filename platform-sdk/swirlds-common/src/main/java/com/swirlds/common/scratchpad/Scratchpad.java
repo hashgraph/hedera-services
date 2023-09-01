@@ -253,27 +253,27 @@ public class Scratchpad<K extends Enum<K> & ScratchpadType> {
             final Path scratchpadFile = files.get(files.size() - 1);
             nextScratchpadIndex = getFileIndex(scratchpadFile) + 1;
 
-            final SerializableDataInputStream in = new SerializableDataInputStream(
-                    new BufferedInputStream(new FileInputStream(scratchpadFile.toFile())));
+            try (final SerializableDataInputStream in = new SerializableDataInputStream(
+                    new BufferedInputStream(new FileInputStream(scratchpadFile.toFile())))) {
 
-            final int fileVersion = in.readInt();
-            if (fileVersion != this.fileVersion) {
-                throw new RuntimeException("scratchpad file version mismatch");
-            }
-
-            int fieldCount = in.readInt();
-
-            for (int index = 0; index < fieldCount; index++) {
-                final int fieldId = in.readInt();
-                final K key = indexToFieldMap.get(fieldId);
-                if (key == null) {
-                    throw new IOException("scratchpad file contains unknown field " + fieldId);
+                final int fileVersion = in.readInt();
+                if (fileVersion != this.fileVersion) {
+                    throw new RuntimeException("scratchpad file version mismatch");
                 }
 
-                final SelfSerializable value = in.readSerializable();
-                data.put(key, value);
-            }
+                int fieldCount = in.readInt();
 
+                for (int index = 0; index < fieldCount; index++) {
+                    final int fieldId = in.readInt();
+                    final K key = indexToFieldMap.get(fieldId);
+                    if (key == null) {
+                        throw new IOException("scratchpad file contains unknown field " + fieldId);
+                    }
+
+                    final SelfSerializable value = in.readSerializable();
+                    data.put(key, value);
+                }
+            }
         } catch (final IOException e) {
             throw new RuntimeException("unable to load scratchpad", e);
         }
@@ -287,27 +287,27 @@ public class Scratchpad<K extends Enum<K> & ScratchpadType> {
     @NonNull
     private Path flushToTemporaryFile() throws IOException {
         final Path temporaryFile = buildTemporaryFile();
-        final SerializableDataOutputStream out = new SerializableDataOutputStream(
-                new BufferedOutputStream(new FileOutputStream(temporaryFile.toFile(), false)));
+        try (final SerializableDataOutputStream out = new SerializableDataOutputStream(
+                new BufferedOutputStream(new FileOutputStream(temporaryFile.toFile(), false)))) {
 
-        out.writeInt(fileVersion);
+            out.writeInt(fileVersion);
 
-        int fieldCount = 0;
-        for (final K keys : fields) {
-            if (data.get(keys) != null) {
-                fieldCount++;
+            int fieldCount = 0;
+            for (final K keys : fields) {
+                if (data.get(keys) != null) {
+                    fieldCount++;
+                }
+            }
+            out.writeInt(fieldCount);
+
+            for (final K key : fields) {
+                final SelfSerializable value = data.get(key);
+                if (value != null) {
+                    out.writeInt(key.getFieldId());
+                    out.writeSerializable(value, true);
+                }
             }
         }
-        out.writeInt(fieldCount);
-
-        for (final K key : fields) {
-            final SelfSerializable value = data.get(key);
-            if (value != null) {
-                out.writeInt(key.getFieldId());
-                out.writeSerializable(value, true);
-            }
-        }
-        out.close();
 
         return temporaryFile;
     }
