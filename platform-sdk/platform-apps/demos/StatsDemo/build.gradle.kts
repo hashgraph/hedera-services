@@ -14,12 +14,6 @@
  * limitations under the License.
  */
 
-plugins {
-  id("com.swirlds.platform.conventions")
-  id("com.swirlds.platform.application")
-}
+plugins { id("com.hedera.hashgraph.application") }
 
-dependencies {
-  // Individual Dependencies
-  implementation(project(":swirlds-platform-core"))
-}
+application.mainClass.set("com.swirlds.demo.stats.StatsDemoMain")
