@@ -13,7 +13,7 @@ module com.hedera.node.app.service.token.impl {
     requires com.google.common;
     requires com.google.protobuf;
     requires com.swirlds.common;
-    requires com.swirlds.jasperdb;
+    requires com.swirlds.merkledb;
     requires org.apache.commons.lang3;
     requires org.apache.logging.log4j;
     requires org.slf4j;

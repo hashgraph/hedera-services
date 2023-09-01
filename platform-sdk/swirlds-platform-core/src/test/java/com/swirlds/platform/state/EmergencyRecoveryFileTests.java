@@ -47,8 +47,8 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+import java.util.UUID;
 import java.util.stream.Collectors;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.MockMakers;
@@ -322,8 +322,8 @@ public class EmergencyRecoveryFileTests {
 
     private static Location randomLocation(final Random r) throws MalformedURLException {
         return new Location(
-                RandomStringUtils.randomAlphabetic(10),
-                new URL(String.format("https://%s.com/", RandomStringUtils.randomAlphabetic(10))),
+                UUID.randomUUID().toString(),
+                new URL(String.format("https://%s.com/", UUID.randomUUID().toString())),
                 randomHash(r));
     }
 }

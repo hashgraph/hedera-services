@@ -94,7 +94,8 @@ module com.hedera.node.app.service.mono {
     exports com.hedera.node.app.service.mono.context.properties;
     exports com.hedera.node.app.service.mono.state.enums to
             com.hedera.node.app.service.mono.test.fixtures,
-            com.hedera.node.app.service.token.impl.test;
+            com.hedera.node.app.service.token.impl.test,
+            com.hedera.node.services.cli;
     exports com.hedera.node.app.service.mono.state.exports to
             com.hedera.node.app;
     exports com.hedera.node.app.service.mono.records;
@@ -267,7 +268,7 @@ module com.hedera.node.app.service.mono {
     requires transitive com.swirlds.common;
     requires transitive com.swirlds.fchashmap;
     requires transitive com.swirlds.fcqueue;
-    requires transitive com.swirlds.jasperdb;
+    requires transitive com.swirlds.merkledb;
     requires transitive com.swirlds.merkle;
     requires transitive com.swirlds.virtualmap;
     requires transitive dagger;

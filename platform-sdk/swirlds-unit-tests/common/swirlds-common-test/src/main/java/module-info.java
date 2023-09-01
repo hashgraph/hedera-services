@@ -11,11 +11,11 @@ open module com.swirlds.common.test {
     requires com.swirlds.common;
     requires org.bouncycastle.provider;
     requires org.junit.jupiter.api;
-    requires org.apache.commons.lang3;
     requires java.scripting;
     requires org.apache.logging.log4j;
     requires com.fasterxml.jackson.databind;
     requires lazysodium.java;
     requires static com.github.spotbugs.annotations;
     requires com.swirlds.common.test.fixtures;
+    requires org.apache.logging.log4j.core;
 }

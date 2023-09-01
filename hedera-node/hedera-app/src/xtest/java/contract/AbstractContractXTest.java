@@ -16,12 +16,16 @@
 
 package contract;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.NftID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.ResponseHeader;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractCallTransactionBody;
@@ -38,6 +42,8 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
+import com.hedera.hapi.node.transaction.Query;
+import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.ids.EntityIdService;
@@ -48,8 +54,9 @@ import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.spi.state.ReadableKVState;
-import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.QueryHandler;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.metrics.Metrics;
@@ -63,6 +70,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -89,9 +97,10 @@ public abstract class AbstractContractXTest {
 
     @Test
     void scenarioPasses() {
+        setupFeeManager();
         setupInitialStates();
 
-        handleAndCommitScenarioTransactions();
+        doScenarioOperations();
 
         assertExpectedAliases(finalAliases());
         assertExpectedAccounts(finalAccounts());
@@ -115,7 +124,7 @@ public abstract class AbstractContractXTest {
 
     protected abstract Map<FileID, File> initialFiles();
 
-    protected abstract Map<Bytes, AccountID> initialAliases();
+    protected abstract Map<ProtoBytes, AccountID> initialAliases();
 
     protected abstract Map<AccountID, Account> initialAccounts();
 
@@ -123,32 +132,49 @@ public abstract class AbstractContractXTest {
         return RunningHashes.DEFAULT;
     }
 
-    protected abstract void handleAndCommitScenarioTransactions();
+    protected abstract void doScenarioOperations();
 
-    protected abstract void assertExpectedStorage(
+    protected void assertExpectedStorage(
             @NonNull ReadableKVState<SlotKey, SlotValue> storage,
-            @NonNull ReadableKVState<AccountID, Account> accounts);
+            @NonNull ReadableKVState<AccountID, Account> accounts) {}
 
-    protected abstract void assertExpectedAliases(@NonNull ReadableKVState<ProtoBytes, AccountID> aliases);
+    protected void assertExpectedAliases(@NonNull ReadableKVState<ProtoBytes, AccountID> aliases) {}
 
-    protected abstract void assertExpectedAccounts(@NonNull ReadableKVState<AccountID, Account> accounts);
+    protected void assertExpectedAccounts(@NonNull ReadableKVState<AccountID, Account> accounts) {}
 
-    protected abstract void assertExpectedBytecodes(@NonNull ReadableKVState<EntityNumber, Bytecode> bytecodes);
+    protected void assertExpectedBytecodes(@NonNull ReadableKVState<EntityNumber, Bytecode> bytecodes) {}
 
     protected void handleAndCommit(@NonNull final TransactionHandler handler, @NonNull final TransactionBody... txns) {
         for (final var txn : txns) {
-            final var context = scaffoldingComponent.contextFactory().apply(txn);
+            final var context = scaffoldingComponent.txnContextFactory().apply(txn);
             handler.handle(context);
             ((SavepointStackImpl) context.savepointStack()).commitFullStack();
         }
     }
 
-    protected HandleContext handleAndCommitSingleTransaction(
+    protected void answerSingleQuery(
+            @NonNull final QueryHandler handler,
+            @NonNull final Query query,
+            @NonNull final AccountID payerId,
+            @NonNull final Consumer<Response> assertions) {
+        final var context = scaffoldingComponent.queryContextFactory().apply(query, payerId);
+        assertions.accept(handler.findResponse(context, ResponseHeader.DEFAULT));
+    }
+
+    protected void handleAndCommitSingleTransaction(
             @NonNull final TransactionHandler handler, @NonNull final TransactionBody txn) {
-        final var context = scaffoldingComponent.contextFactory().apply(txn);
+        handleAndCommitSingleTransaction(handler, txn, ResponseCodeEnum.SUCCESS);
+    }
+
+    protected void handleAndCommitSingleTransaction(
+            @NonNull final TransactionHandler handler,
+            @NonNull final TransactionBody txn,
+            @NonNull final ResponseCodeEnum expectedStatus) {
+        final var context = scaffoldingComponent.txnContextFactory().apply(txn);
         handler.handle(context);
         ((SavepointStackImpl) context.savepointStack()).commitFullStack();
-        return context;
+        final var recordBuilder = context.recordBuilder(SingleTransactionRecordBuilder.class);
+        assertEquals(expectedStatus, recordBuilder.status());
     }
 
     protected TransactionBody createCallTransactionBody(
@@ -185,6 +211,17 @@ public abstract class AbstractContractXTest {
 
     protected Address addressOf(@NonNull final Bytes address) {
         return Address.wrap(Address.toChecksumAddress(new BigInteger(1, address.toByteArray())));
+    }
+
+    protected Consumer<Response> assertingCallLocalResultIs(@NonNull final Bytes expectedResult) {
+        return response -> assertEquals(
+                expectedResult,
+                response.contractCallLocalOrThrow().functionResultOrThrow().contractCallResult());
+    }
+
+    private void setupFeeManager() {
+        var feeScheduleBytes = resourceAsBytes("feeSchedules.bin");
+        scaffoldingComponent.feeManager().update(feeScheduleBytes);
     }
 
     private void setupInitialStates() {
@@ -245,5 +282,12 @@ public abstract class AbstractContractXTest {
                 .hederaState()
                 .createReadableStates(TokenServiceImpl.NAME)
                 .get(TokenServiceImpl.ACCOUNTS_KEY);
+    }
+
+    public static com.esaulpaugh.headlong.abi.Address asHeadlongAddress(final byte[] address) {
+        final var addressBytes = org.apache.tuweni.bytes.Bytes.wrap(address);
+        final var addressAsInteger = addressBytes.toUnsignedBigInteger();
+        return com.esaulpaugh.headlong.abi.Address.wrap(
+                com.esaulpaugh.headlong.abi.Address.toChecksumAddress(addressAsInteger));
     }
 }

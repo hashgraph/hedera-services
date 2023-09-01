@@ -16,6 +16,8 @@
 
 package com.hedera.node.config.testfixtures;
 
+import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.converter.AccountIDConverter;
 import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.converter.CongestionMultipliersConverter;
@@ -68,7 +70,6 @@ import com.hedera.node.config.data.TraceabilityConfig;
 import com.hedera.node.config.data.UpgradeConfig;
 import com.hedera.node.config.data.UtilPrngConfig;
 import com.hedera.node.config.data.VersionConfig;
-import com.hedera.node.config.data.VirtualdatasourceConfig;
 import com.hedera.node.config.validation.EmulatesMapValidator;
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.EventConfig;
@@ -87,7 +88,6 @@ import com.swirlds.common.metrics.platform.prometheus.PrometheusConfig;
 import com.swirlds.common.system.status.PlatformStatusConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.fchashmap.config.FCHashMapConfig;
-import com.swirlds.jasperdb.config.JasperDbConfig;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
@@ -130,7 +130,6 @@ public final class HederaTestConfigBuilder {
                 .withConfigDataType(PrometheusConfig.class)
                 .withConfigDataType(PlatformStatusConfig.class)
                 .withConfigDataType(FCHashMapConfig.class)
-                .withConfigDataType(JasperDbConfig.class)
                 .withConfigDataType(MerkleDbConfig.class)
                 /*
                 These data types from the platform were not available on the classpath. Add if needed later.
@@ -180,7 +179,6 @@ public final class HederaTestConfigBuilder {
                 .withConfigDataType(UpgradeConfig.class)
                 .withConfigDataType(UtilPrngConfig.class)
                 .withConfigDataType(VersionConfig.class)
-                .withConfigDataType(VirtualdatasourceConfig.class)
                 .withConverter(new CongestionMultipliersConverter())
                 .withConverter(new EntityScaleFactorsConverter())
                 .withConverter(new EntityTypeConverter())
@@ -211,5 +209,16 @@ public final class HederaTestConfigBuilder {
     @NonNull
     public static Configuration createConfig() {
         return create().getOrCreateConfig();
+    }
+
+    /**
+     * Convenience method that creates and returns a {@link ConfigProvider} with the configuration of this builder as
+     * a {@link VersionedConfig} with version number 0.
+     */
+    @NonNull
+    public static ConfigProvider createConfigProvider() {
+        final var config = createConfig();
+        final var versioned = new VersionedConfigImpl(config, 0);
+        return () -> versioned;
     }
 }

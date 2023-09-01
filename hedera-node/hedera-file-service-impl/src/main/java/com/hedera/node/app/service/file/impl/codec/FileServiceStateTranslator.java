@@ -92,7 +92,10 @@ public class FileServiceStateTranslator {
         requireNonNull(fileID);
         requireNonNull(readableFileStore);
         final var optionalFile = readableFileStore.getFileLeaf(fileID);
-        return pbjToState(optionalFile.orElseThrow(() -> new IllegalArgumentException("File not found")));
+        if (optionalFile == null) {
+            throw new IllegalArgumentException("File not found");
+        }
+        return pbjToState(optionalFile);
     }
 
     /**

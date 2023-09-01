@@ -30,7 +30,6 @@ import com.hedera.node.app.service.mono.state.virtual.utils.CheckedSupplier;
 import com.hedera.node.app.service.mono.utils.NftNumPair;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.jasperdb.files.DataFileCommon;
 import com.swirlds.virtualmap.VirtualValue;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -110,14 +109,6 @@ public class UniqueTokenValue implements VirtualValue {
 
     public static UniqueTokenValue from(final MerkleUniqueToken token) {
         return new UniqueTokenValue(token);
-    }
-
-    /**
-     * Returns the size in bytes of the class (if fixed) or {@link
-     * DataFileCommon#VARIABLE_DATA_SIZE} if variable sized.
-     */
-    public static int sizeInBytes() {
-        return DataFileCommon.VARIABLE_DATA_SIZE;
     }
 
     @Override

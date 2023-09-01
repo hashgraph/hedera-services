@@ -134,7 +134,7 @@ public class VirtualMerkleLeafHasher<K extends VirtualKey, V extends VirtualValu
         try {
             final ConstructableRegistry registry = ConstructableRegistry.getInstance();
             registry.registerConstructables("com.swirlds.virtualmap");
-            registry.registerConstructables("com.swirlds.jasperdb");
+            registry.registerConstructables("com.swirlds.merkledb");
             registry.registerConstructables("com.swirlds.demo.virtualmerkle");
             registry.registerConstructables("com.swirlds.common.crypto");
         } catch (final ConstructableRegistryException e) {
@@ -155,9 +155,9 @@ public class VirtualMerkleLeafHasher<K extends VirtualKey, V extends VirtualValu
             }
         }
 
-        // JasperDbBuilder creates files in a temp folder by default. The temp folder may be on a different
-        // file system than the file(s) used to deserialize the maps. In such case, JasperDbBuilder will fail
-        // to create hard file links when constucting new data sources. To fix it, let's override the default
+        // MerkleDbDataSourceBuilder creates files in a temp folder by default. The temp folder may be on a
+        // different file system than the file(s) used to deserialize the maps. In such case, builders will fail
+        // to create hard file links when constructing new data sources. To fix it, let's override the default
         // temp location to the same file system as the files to load
         TemporaryFileBuilder.overrideTemporaryFileLocation(classFolder.resolve("tmp"));
 

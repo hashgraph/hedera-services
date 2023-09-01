@@ -19,6 +19,7 @@ package com.hedera.node.app.workflows.handle;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.NODE_DUE_DILIGENCE_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE_HANDLE_FAILURE;
@@ -266,7 +267,7 @@ public class HandleWorkflow {
             // Get the parsed data
             final var transaction = transactionInfo.transaction();
             txBody = transactionInfo.txBody();
-            payer = preHandleResult.payer();
+            payer = txBody.transactionID().accountID();
 
             final Bytes transactionBytes;
             if (transaction.signedTransactionBytes().length() > 0) {
@@ -343,6 +344,13 @@ public class HandleWorkflow {
                         final var serviceFee = new Fees(0L, 0L, fees.serviceFee());
                         feeAccumulator.refund(payer, serviceFee);
                         throw new HandleException(CONSENSUS_GAS_EXHAUSTED);
+                    }
+
+                    final var storeFactory = new ReadableStoreFactory(state);
+                    final var accountStore = storeFactory.getStore(ReadableAccountStore.class);
+                    final var payerAccount = accountStore.getAccountById(payer);
+                    if (payerAccount != null && payerAccount.deleted()) {
+                        throw new HandleException(PAYER_ACCOUNT_DELETED);
                     }
 
                     // Dispatch the transaction to the handler

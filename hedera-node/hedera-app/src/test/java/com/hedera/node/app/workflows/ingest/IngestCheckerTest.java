@@ -18,6 +18,7 @@ package com.hedera.node.app.workflows.ingest;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
@@ -44,6 +45,7 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SignatureMap;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.SignedTransaction;
@@ -58,10 +60,14 @@ import com.hedera.node.app.solvency.SolvencyPreCheck;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.state.DeduplicationCache;
+import com.hedera.node.app.state.recordcache.DeduplicationCacheImpl;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.common.system.status.PlatformStatus;
+import java.time.Instant;
 import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -99,6 +105,8 @@ class IngestCheckerTest extends AppTestBase {
     @Mock(strictness = LENIENT)
     private SolvencyPreCheck solvencyPreCheck;
 
+    private DeduplicationCache deduplicationCache;
+
     private TransactionBody txBody;
     private Transaction tx;
 
@@ -111,8 +119,10 @@ class IngestCheckerTest extends AppTestBase {
 
         txBody = TransactionBody.newBuilder()
                 .uncheckedSubmit(UncheckedSubmitBody.newBuilder().build())
-                .transactionID(
-                        TransactionID.newBuilder().accountID(ALICE.accountID()).build())
+                .transactionID(TransactionID.newBuilder()
+                        .accountID(ALICE.accountID())
+                        .transactionValidStart(
+                                Timestamp.newBuilder().seconds(Instant.now().getEpochSecond())))
                 .nodeAccountID(nodeSelfAccountId)
                 .build();
         final var signedTx = SignedTransaction.newBuilder()
@@ -126,13 +136,17 @@ class IngestCheckerTest extends AppTestBase {
                 tx, txBody, MOCK_SIGNATURE_MAP, tx.signedTransactionBytes(), HederaFunctionality.UNCHECKED_SUBMIT);
         when(transactionChecker.check(tx)).thenReturn(transactionInfo);
 
+        final var configProvider = HederaTestConfigBuilder.createConfigProvider();
+        this.deduplicationCache = new DeduplicationCacheImpl(configProvider);
+
         subject = new IngestChecker(
                 currentPlatformStatus,
                 transactionChecker,
                 throttleAccumulator,
                 solvencyPreCheck,
                 signatureExpander,
-                signatureVerifier);
+                signatureVerifier,
+                deduplicationCache);
     }
 
     @Nested
@@ -220,10 +234,24 @@ class IngestCheckerTest extends AppTestBase {
         }
     }
 
-    // TODO: #2 Test deduplication
+    @Nested
+    @DisplayName("3. Deduplication")
+    class DuplicationTests {
+        @Test
+        @DisplayName("The second of two transactions with the same transaction ID should be rejected")
+        void testThrottleFails() throws PreCheckException {
+            // Given a deduplication cache, and a transaction with an ID already in the deduplication cache
+            final var id = txBody.transactionIDOrThrow();
+            deduplicationCache.add(id);
+            // When the transaction is checked, then it throws a PreCheckException due to duplication
+            assertThatThrownBy(() -> subject.runAllChecks(state, tx))
+                    .isInstanceOf(PreCheckException.class)
+                    .hasFieldOrPropertyWithValue("responseCode", DUPLICATE_TRANSACTION);
+        }
+    }
 
     @Nested
-    @DisplayName("3. Check throttles")
+    @DisplayName("4. Check throttles")
     class ThrottleTests {
         @Test
         @DisplayName("When the transaction is throttled, the transaction should be rejected")

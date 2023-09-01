@@ -16,9 +16,7 @@
 
 package com.hedera.node.app.service.mono.state.codec;
 
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.jasperdb.files.hashmap.KeySerializer;
+import com.swirlds.merkledb.serialize.KeySerializer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -29,12 +27,12 @@ public class VirtualBlobKeySerializer implements KeySerializer<VirtualBlobKey> {
     static final long DATA_VERSION = 1;
 
     @Override
-    public int deserializeKeySize(ByteBuffer byteBuffer) {
+    public int getSerializedSize() {
         return VirtualBlobKey.sizeInBytes();
     }
 
     @Override
-    public int getSerializedSize(long dataVersion) {
+    public int deserializeKeySize(ByteBuffer byteBuffer) {
         return VirtualBlobKey.sizeInBytes();
     }
 
@@ -56,19 +54,9 @@ public class VirtualBlobKeySerializer implements KeySerializer<VirtualBlobKey> {
     }
 
     @Override
-    public int serialize(VirtualBlobKey key, SerializableDataOutputStream out) throws IOException {
-        key.serialize(out);
+    public int serialize(VirtualBlobKey key, ByteBuffer byteBuffer) throws IOException {
+        key.serialize(byteBuffer);
         return VirtualBlobKey.sizeInBytes();
-    }
-
-    @Override
-    public void deserialize(SerializableDataInputStream in, int version) throws IOException {
-        /* No-op */
-    }
-
-    @Override
-    public void serialize(SerializableDataOutputStream out) throws IOException {
-        /* No-op */
     }
 
     @Override
