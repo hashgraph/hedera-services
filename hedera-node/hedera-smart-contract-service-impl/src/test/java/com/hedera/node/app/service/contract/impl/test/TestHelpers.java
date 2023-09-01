@@ -29,6 +29,7 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
@@ -38,6 +39,8 @@ import com.hedera.hapi.node.contract.ContractNonceInfo;
 import com.hedera.hapi.node.contract.EthereumTransactionBody;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.contract.Bytecode;
+import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -171,26 +174,55 @@ public class TestHelpers {
             TokenID.newBuilder().tokenNum(9898L).build();
     public static final Token FUNGIBLE_TOKEN = Token.newBuilder()
             .tokenId(FUNGIBLE_TOKEN_ID)
+            .name("Fungible Token")
+            .symbol("FT")
+            .totalSupply(666666L)
             .tokenType(TokenType.FUNGIBLE_COMMON)
             .build();
-    public static final Token NON_FUNGIBLE_TOKEN = Token.newBuilder()
-            .tokenId(NON_FUNGIBLE_TOKEN_ID)
-            .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-            .build();
+
+    public static final long NFT_SERIAL_NO = 666L;
+
     public static final AccountID NON_SYSTEM_ACCOUNT_ID = AccountID.newBuilder()
             .accountNum(numberOfLongZero(NON_SYSTEM_LONG_ZERO_ADDRESS))
+            .build();
+
+    public static final Token NON_FUNGIBLE_TOKEN = Token.newBuilder()
+            .tokenId(NON_FUNGIBLE_TOKEN_ID)
+            .treasuryAccountId(NON_SYSTEM_ACCOUNT_ID)
+            .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
             .build();
 
     public static final AccountID A_NEW_ACCOUNT_ID =
             AccountID.newBuilder().accountNum(191919L).build();
     public static final AccountID B_NEW_ACCOUNT_ID =
             AccountID.newBuilder().accountNum(919191L).build();
+
+    public static final Nft TREASURY_OWNED_NFT = Nft.newBuilder()
+            .metadata(Bytes.wrap("Unsold"))
+            .nftId(NftID.newBuilder().tokenId(NON_FUNGIBLE_TOKEN_ID).serialNumber(NFT_SERIAL_NO))
+            .ownerId(AccountID.newBuilder().accountNum(0).build())
+            .build();
+
+    public static final Nft CIVILIAN_OWNED_NFT = Nft.newBuilder()
+            .metadata(Bytes.wrap("SOLD"))
+            .nftId(NftID.newBuilder().tokenId(NON_FUNGIBLE_TOKEN_ID).serialNumber(NFT_SERIAL_NO))
+            .ownerId(A_NEW_ACCOUNT_ID)
+            .spenderId(B_NEW_ACCOUNT_ID)
+            .build();
     public static final org.apache.tuweni.bytes.Bytes SOME_REVERT_REASON =
             org.apache.tuweni.bytes.Bytes.wrap("I prefer not to".getBytes());
     public static final ContractID NON_SYSTEM_CONTRACT_ID = ContractID.newBuilder()
             .contractNum(numberOfLongZero(NON_SYSTEM_LONG_ZERO_ADDRESS))
             .build();
     public static final Address EIP_1014_ADDRESS = Address.fromHexString("0x89abcdef89abcdef89abcdef89abcdef89abcdef");
+
+    public static final Account SOMEBODY = Account.newBuilder()
+            .accountId(A_NEW_ACCOUNT_ID)
+            .build();
+    public static final Account ALIASED_SOMEBODY = Account.newBuilder()
+            .accountId(NON_SYSTEM_ACCOUNT_ID)
+            .alias(tuweniToPbjBytes(EIP_1014_ADDRESS))
+            .build();
     public static final TokenRelation A_FUNGIBLE_RELATION = TokenRelation.newBuilder()
             .tokenId(FUNGIBLE_TOKEN_ID)
             .accountId(A_NEW_ACCOUNT_ID)

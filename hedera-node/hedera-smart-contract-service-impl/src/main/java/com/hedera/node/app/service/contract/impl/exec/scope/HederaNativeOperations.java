@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.contract.impl.state.DispatchingEvmFrameState;
@@ -59,6 +60,16 @@ public interface HederaNativeOperations {
      */
     @Nullable
     TokenRelation getTokenRelation(long accountNumber, long tokenNumber);
+
+    /**
+     * Returns the {@link Nft} with the given token number and serial number.
+     *
+     * @param tokenNumber  the token number
+     * @param serialNo  the serial number
+     * @return the NFT, or {@code null} if no such NFT exists
+     */
+    @Nullable
+    Nft getNft(long tokenNumber, long serialNo);
 
     /**
      * Given an EVM address, resolves to the account or contract number (if any) that this address

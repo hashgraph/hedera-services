@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.utils;
 
+import static com.hedera.node.app.service.contract.impl.exec.processors.ProcessorModule.EVM_ADDRESS_SIZE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static java.util.Objects.requireNonNull;
@@ -24,6 +25,7 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.ContractLoginfo;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.streams.ContractStateChange;
 import com.hedera.hapi.streams.ContractStateChanges;
@@ -33,6 +35,8 @@ import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperatio
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
@@ -51,6 +55,8 @@ public class ConversionUtils {
     public static final long EVM_ADDRESS_LENGTH_AS_LONG = 20L;
     public static final int EVM_ADDRESS_LENGTH_AS_INT = 20;
     public static final int NUM_LONG_ZEROS = 12;
+    private static final BigInteger MIN_LONG_VALUE = BigInteger.valueOf(Long.MIN_VALUE);
+    private static final BigInteger MAX_LONG_VALUE = BigInteger.valueOf(Long.MAX_VALUE);
 
     private ConversionUtils() {
         throw new UnsupportedOperationException("Utility Class");
@@ -102,6 +108,58 @@ public class ConversionUtils {
     public static Address fromHeadlongAddress(@NonNull final com.esaulpaugh.headlong.abi.Address address) {
         requireNonNull(address);
         return Address.fromHexString(address.toString());
+    }
+
+    /**
+     * Given a {@link BigInteger}, returns either its long value or zero if it is out-of-range.
+     *
+     * @param value the {@link BigInteger}
+     * @return its long value or zero if it is out-of-range
+     */
+    public static long asExactLongValueOrZero(@NonNull final BigInteger value) {
+        requireNonNull(value);
+        if (value.compareTo(MIN_LONG_VALUE) < 0 || value.compareTo(MAX_LONG_VALUE) > 0) {
+            return 0L;
+        }
+        return value.longValueExact();
+    }
+
+    /**
+     * Given an account, returns its "priority" address as a headlong address.
+     *
+     * @param account the account
+     * @return the headlong address
+     */
+    public static com.esaulpaugh.headlong.abi.Address headlongAddressOf(@NonNull final Account account) {
+        requireNonNull(account);
+        return account.alias().length() == EVM_ADDRESS_SIZE
+                ? toHeadlongAddress(account.alias())
+                : toHeadlongAddress(asEvmAddress(account.accountIdOrThrow().accountNumOrThrow()));
+    }
+
+    /**
+     * Given a PBJ alias, converts it to a headlong address.
+     *
+     * @param alias the PBJ alias
+     * @return the headlong address
+     */
+    public static com.esaulpaugh.headlong.abi.Address toHeadlongAddress(
+            @NonNull final com.hedera.pbj.runtime.io.buffer.Bytes alias) {
+        requireNonNull(alias);
+        return toHeadlongAddress(alias.toByteArray());
+    }
+
+    /**
+     * Given an explicit 20-byte array, converts it to a headlong address.
+     *
+     * @param explicit the explicit address
+     * @return the headlong address
+     */
+    public static com.esaulpaugh.headlong.abi.Address toHeadlongAddress(@NonNull final byte[] explicit) {
+        requireNonNull(explicit);
+        final var integralAddress = Bytes.wrap(explicit).toUnsignedBigInteger();
+        return com.esaulpaugh.headlong.abi.Address.wrap(
+                com.esaulpaugh.headlong.abi.Address.toChecksumAddress(integralAddress));
     }
 
     /**
@@ -417,7 +475,7 @@ public class ConversionUtils {
         return data;
     }
 
-    private static byte[] asEvmAddress(final long num) {
+    public static byte[] asEvmAddress(final long num) {
         final byte[] evmAddress = new byte[20];
         copyToLeftPaddedByteArray(num, evmAddress);
         return evmAddress;

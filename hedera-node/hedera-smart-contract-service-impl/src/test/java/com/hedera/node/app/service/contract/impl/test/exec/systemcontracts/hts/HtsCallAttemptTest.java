@@ -37,6 +37,10 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.balanc
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.mint.FungibleMintCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.mint.MintCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.mint.NonFungibleMintCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.name.NameCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ownerof.OwnerOfCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.symbol.SymbolCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.totalsupply.TotalSupplyCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.TransferCall;
 import com.swirlds.common.utility.CommonUtils;
 import java.math.BigInteger;
@@ -66,6 +70,17 @@ class HtsCallAttemptTest extends HtsCallTestBase {
     }
 
     @Test
+    void constructsOwnerOf() {
+        final var input = bytesForRedirect(
+                OwnerOfCall.OWNER_OF
+                        .encodeCallWithArgs(BigInteger.ONE)
+                        .array(),
+                NON_SYSTEM_LONG_ZERO_ADDRESS);
+        final var subject = new HtsCallAttempt(input, mockEnhancement());
+        assertInstanceOf(OwnerOfCall.class, subject.asCallFrom(EIP_1014_ADDRESS));
+    }
+
+    @Test
     void constructsBalanceOf() {
         final var input = bytesForRedirect(
                 BALANCE_OF
@@ -74,6 +89,33 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 NON_SYSTEM_LONG_ZERO_ADDRESS);
         final var subject = new HtsCallAttempt(input, mockEnhancement());
         assertInstanceOf(BalanceOfCall.class, subject.asCallFrom(EIP_1014_ADDRESS));
+    }
+
+    @Test
+    void constructsTotalSupply() {
+        final var input = bytesForRedirect(
+                TotalSupplyCall.TOTAL_SUPPLY.encodeCallWithArgs().array(),
+                NON_SYSTEM_LONG_ZERO_ADDRESS);
+        final var subject = new HtsCallAttempt(input, mockEnhancement());
+        assertInstanceOf(TotalSupplyCall.class, subject.asCallFrom(EIP_1014_ADDRESS));
+    }
+
+    @Test
+    void constructsName() {
+        final var input = bytesForRedirect(
+                NameCall.NAME.encodeCallWithArgs().array(),
+                NON_SYSTEM_LONG_ZERO_ADDRESS);
+        final var subject = new HtsCallAttempt(input, mockEnhancement());
+        assertInstanceOf(NameCall.class, subject.asCallFrom(EIP_1014_ADDRESS));
+    }
+
+    @Test
+    void constructsSymbol() {
+        final var input = bytesForRedirect(
+                SymbolCall.SYMBOL.encodeCallWithArgs().array(),
+                NON_SYSTEM_LONG_ZERO_ADDRESS);
+        final var subject = new HtsCallAttempt(input, mockEnhancement());
+        assertInstanceOf(SymbolCall.class, subject.asCallFrom(EIP_1014_ADDRESS));
     }
 
     @ParameterizedTest

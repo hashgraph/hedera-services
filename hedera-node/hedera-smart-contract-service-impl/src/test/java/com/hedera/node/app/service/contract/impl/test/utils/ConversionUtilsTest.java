@@ -23,6 +23,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_101
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_LONG_ZERO_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SOME_STORAGE_ACCESSES;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.TOPIC;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asExactLongValueOrZero;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumberedContractId;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjLogFrom;
@@ -41,6 +42,8 @@ import com.hedera.hapi.streams.StorageChange;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
+import java.math.BigInteger;
 import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -57,6 +60,18 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ConversionUtilsTest {
     @Mock
     private HederaNativeOperations nativeOperations;
+
+    @Test
+    void outOfRangeBiValuesAreZero() {
+        assertEquals(0L, asExactLongValueOrZero(BigInteger.valueOf(Long.MAX_VALUE).add(BigInteger.ONE)));
+        assertEquals(0L, asExactLongValueOrZero(BigInteger.valueOf(Long.MIN_VALUE).subtract(BigInteger.ONE)));
+    }
+
+    @Test
+    void inRangeBiValuesAreExact() {
+        assertEquals(Long.MAX_VALUE, asExactLongValueOrZero(BigInteger.valueOf(Long.MAX_VALUE)));
+        assertEquals(Long.MIN_VALUE, asExactLongValueOrZero(BigInteger.valueOf(Long.MIN_VALUE)));
+    }
 
     @Test
     void numberedIdsRequireLongZeroAddress() {

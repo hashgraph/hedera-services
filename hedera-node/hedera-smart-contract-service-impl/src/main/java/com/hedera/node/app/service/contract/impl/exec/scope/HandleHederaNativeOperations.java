@@ -23,14 +23,17 @@ import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synt
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
@@ -81,6 +84,19 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
         return relationStore.get(
                 AccountID.newBuilder().accountNum(accountNumber).build(),
                 TokenID.newBuilder().tokenNum(tokenNumber).build());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public @Nullable Nft getNft(final long tokenNumber, final long serialNo) {
+        final var nftStore = context.readableStore(ReadableNftStore.class);
+        return nftStore.get(
+                NftID.newBuilder()
+                        .tokenId(TokenID.newBuilder().tokenNum(tokenNumber))
+                        .serialNumber(serialNo)
+                        .build());
     }
 
     /**

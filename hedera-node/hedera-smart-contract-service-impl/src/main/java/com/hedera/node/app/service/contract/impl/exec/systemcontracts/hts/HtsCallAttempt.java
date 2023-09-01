@@ -26,6 +26,10 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.balanceof.BalanceOfCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.mint.MintCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.name.NameCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ownerof.OwnerOfCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.symbol.SymbolCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.totalsupply.TotalSupplyCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.TransferCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -47,6 +51,7 @@ public class HtsCallAttempt {
     //   [x] TRANSFER,
     //   [x] MINT,
     //   [x] BALANCE_OF,
+    //   [ ] TOTAL_SUPPLY,
     //   [ ] ASSOCIATE_ONE,
     //   [ ] ASSOCIATE_MANY,
     //   [ ] DISSOCIATE_ONE,
@@ -135,6 +140,14 @@ public class HtsCallAttempt {
             return MintCall.from(this, senderAddress);
         } else if (BalanceOfCall.matches(selector)) {
             return BalanceOfCall.from(this);
+        } else if (TotalSupplyCall.matches(selector)) {
+            return TotalSupplyCall.from(this);
+        } else if (NameCall.matches(selector)) {
+            return NameCall.from(this);
+        } else if (SymbolCall.matches(selector)) {
+            return SymbolCall.from(this);
+        } else if (OwnerOfCall.matches(selector)) {
+            return OwnerOfCall.from(this);
         } else {
             return null;
         }

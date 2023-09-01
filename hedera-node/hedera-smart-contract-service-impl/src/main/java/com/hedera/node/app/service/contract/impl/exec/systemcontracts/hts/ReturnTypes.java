@@ -26,4 +26,6 @@ public class ReturnTypes {
 
     public static final String INT = "(int)";
     public static final String BOOL = "(bool)";
+    public static final String STRING = "(string)";
+    public static final String ADDRESS = "(address)";
 }
