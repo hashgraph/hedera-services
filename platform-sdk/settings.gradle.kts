@@ -64,31 +64,9 @@ include(":swirlds-platform-test", "swirlds-unit-tests/core/swirlds-platform-test
 
 include(":swirlds-merkle-test", "swirlds-unit-tests/structures/swirlds-merkle-test")
 
-// includeAllBuilds("platform-apps/demos")
+includeAllBuilds("platform-apps/demos")
 
-// includeAllBuilds("platform-apps/tests")
-
-includeBuild("${rootDir}/platform-apps/demos/CryptocurrencyDemo")
-
-includeBuild("${rootDir}/platform-apps/demos/HashgraphDemo")
-
-includeBuild("${rootDir}/platform-apps/demos/HelloSwirldDemo")
-
-includeBuild("${rootDir}/platform-apps/demos/StatsDemo")
-
-includeBuild("${rootDir}/platform-apps/tests/AddressBookTestingTool")
-// Something is wrong with the build logic for ConsistencyTestingTool because it triggers or
-// increases the probability of a thread deadlock in Gradle revolving around the ExtraJavaModuleInfo
-// plugin.
-includeBuild("${rootDir}/platform-apps/tests/ConsistencyTestingTool")
-
-includeBuild("${rootDir}/platform-apps/tests/ISSTestingTool")
-
-includeBuild("${rootDir}/platform-apps/tests/MigrationTestingTool")
-
-includeBuild("${rootDir}/platform-apps/tests/PlatformTestingTool")
-
-includeBuild("${rootDir}/platform-apps/tests/StatsSigningTestingTool")
+includeAllBuilds("platform-apps/tests")
 
 fun include(name: String, path: String) {
     include(name)
