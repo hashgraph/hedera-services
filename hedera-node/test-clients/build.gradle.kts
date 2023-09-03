@@ -28,11 +28,11 @@ description = "Hedera Services Test Clients for End to End Tests (EET)"
 // It is not compiled and instead the classpath is used during compilation.
 // This is temporary. To compile as module, remove the below and fix the
 // compile errors in HapiTestEngine.
-tasks.jar { manifest { attributes("Automatic-Module-Name" to "com.hedera.node.test.clients") } }
-
-java { modularity.inferModulePath.set(false) }
-
-sourceSets.main { java.exclude("module-info.java") }
+// tasks.jar { manifest { attributes("Automatic-Module-Name" to "com.hedera.node.test.clients") } }
+//
+// java { modularity.inferModulePath.set(false) }
+//
+// sourceSets.main { java.exclude("module-info.java") }
 // -----
 
 tasks.test {
