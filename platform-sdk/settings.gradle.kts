@@ -78,8 +78,8 @@ includeBuild("${rootDir}/platform-apps/demos/StatsDemo")
 
 includeBuild("${rootDir}/platform-apps/tests/AddressBookTestingTool")
 // Something is wrong with the build logic for ConsistencyTestingTool because it triggers or
-// increases the probability of
-// a thread deadlock in Gradle revolving around the ExtraJavaModuleInfo plugin.
+// increases the probability of a thread deadlock in Gradle revolving around the ExtraJavaModuleInfo
+// plugin.
 // includeBuild("${rootDir}/platform-apps/tests/ConsistencyTestingTool")
 includeBuild("${rootDir}/platform-apps/tests/ISSTestingTool")
 
