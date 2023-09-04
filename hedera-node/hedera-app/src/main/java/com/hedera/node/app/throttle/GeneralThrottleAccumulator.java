@@ -71,9 +71,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 @Singleton
-// TODO: rename. Use more general name
-public class HandleThrottleAccumulator {
-    private static final Logger log = LogManager.getLogger(HandleThrottleAccumulator.class);
+public class GeneralThrottleAccumulator {
+
+    private static final Logger log = LogManager.getLogger(GeneralThrottleAccumulator.class);
     private static final Set<HederaFunctionality> CONSENSUS_THROTTLED_FUNCTIONS =
             EnumSet.of(CONTRACT_CALL_LOCAL, CONTRACT_CALL, CONTRACT_CREATE, ETHEREUM_TRANSACTION);
     private static final int CAPACITY_SPLIT = 1;
@@ -86,7 +86,7 @@ public class HandleThrottleAccumulator {
     private List<DeterministicThrottle> activeThrottles = Collections.emptyList();
 
     @Inject
-    public HandleThrottleAccumulator(
+    public GeneralThrottleAccumulator(
             @NonNull final ConfigProvider configProvider, @NonNull ThrottleManager throttleManager) {
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
         this.throttleManager = requireNonNull(throttleManager, "throttleManager must not be null");

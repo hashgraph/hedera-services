@@ -44,7 +44,7 @@ public interface ThrottleInjectionModule {
     @Provides
     @Singleton
     public static NetworkUtilizationManager provideNetworkUtilizationManager(
-            @NonNull final HandleThrottleAccumulator handleThrottling, @NonNull ConfigProvider configProvider) {
+            @NonNull final GeneralThrottleAccumulator handleThrottling, @NonNull ConfigProvider configProvider) {
         final var genericFeeMultiplier = new ThrottleMultiplierSource(
                 "logical TPS",
                 "TPS",
