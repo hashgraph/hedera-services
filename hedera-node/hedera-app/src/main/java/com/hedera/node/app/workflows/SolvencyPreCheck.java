@@ -76,8 +76,7 @@ public class SolvencyPreCheck {
      * @throws PreCheckException if the payer account is invalid
      */
     @NonNull
-    public Account getPayerAccount(
-            @NonNull final ReadableStoreFactory storeFactory, @NonNull final AccountID accountID)
+    public Account getPayerAccount(@NonNull final ReadableStoreFactory storeFactory, @NonNull final AccountID accountID)
             throws PreCheckException {
         final var accountStore = storeFactory.getStore(ReadableAccountStore.class);
         final var account = accountStore.getAccountById(accountID);
