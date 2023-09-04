@@ -135,13 +135,15 @@ public final class ExchangeRateManager {
     }
 
     /**
-     * Converts tinybars to tiny cents using the given exchange rate.
+     * Converts tinybars to tiny cents using the exchange rate at a given time.
      *
-     * @param rate The exchange rate to use.
      * @param amount The amount in tiny cents.
+     * @param consensusTime The consensus time to use for the exchange rate.
      * @return The amount in tinybars.
      */
-    public static long getTinybarsFromTinyCents(final ExchangeRate rate, final long amount) {
+
+    public long getTinybarsFromTinyCents(final long amount, @NonNull final Instant consensusTime) {
+        final var rate = activeRate(consensusTime);
         return getAFromB(amount, rate.hbarEquiv(), rate.centEquiv());
     }
 

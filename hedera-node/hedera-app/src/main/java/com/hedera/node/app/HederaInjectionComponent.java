@@ -22,7 +22,6 @@ import com.hedera.node.app.components.IngestInjectionComponent;
 import com.hedera.node.app.components.QueryInjectionComponent;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
-import com.hedera.node.app.fees.FeesInjectionModule;
 import com.hedera.node.app.grpc.GrpcInjectionModule;
 import com.hedera.node.app.grpc.GrpcServerManager;
 import com.hedera.node.app.info.CurrentPlatformStatus;
@@ -74,7 +73,6 @@ import javax.inject.Singleton;
             ServicesInjectionModule.class,
             WorkflowsInjectionModule.class,
             HederaStateInjectionModule.class,
-            FeesInjectionModule.class,
             GrpcInjectionModule.class,
             MetricsInjectionModule.class,
             AuthorizerInjectionModule.class,

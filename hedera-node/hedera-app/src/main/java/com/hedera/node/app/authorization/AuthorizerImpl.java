@@ -23,6 +23,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.ApiPermissionConfig;
@@ -58,6 +59,12 @@ public class AuthorizerImpl implements Authorizer {
         if (!accountID.hasAccountNum()) return false;
         long num = accountID.accountNumOrThrow();
         return num == accountsConfig.treasury() || num == accountsConfig.systemAdmin();
+    }
+
+    @Override
+    public SystemPrivilege requiresSystemPrivilege(@NonNull TransactionInfo txInfo) {
+        // TODO: Implement this
+        return SystemPrivilege.UNNECESSARY;
     }
 
     private ResponseCodeEnum permissibilityOf(

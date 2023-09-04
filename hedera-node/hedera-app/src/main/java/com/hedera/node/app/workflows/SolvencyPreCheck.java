@@ -37,9 +37,8 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.validation.ExpiryValidation;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
-import com.hedera.node.config.ConfigProvider;
-import com.hedera.node.config.data.AutoRenewConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Objects;
@@ -56,18 +55,18 @@ import javax.inject.Singleton;
 @Singleton
 public class SolvencyPreCheck {
 
-    private final ConfigProvider configProvider;
     private final ExchangeRateManager exchangeRateManager;
     private final FeeManager feeManager;
+    private final ExpiryValidation expiryValidation;
 
     @Inject
     public SolvencyPreCheck(
-            @NonNull final ConfigProvider configProvider,
             @NonNull final ExchangeRateManager exchangeRateManager,
-            @NonNull final FeeManager feeManager) {
-        this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
+            @NonNull final FeeManager feeManager,
+            @NonNull final ExpiryValidation expiryValidation) {
         this.exchangeRateManager = requireNonNull(exchangeRateManager, "exchangeRateManager must not be null");
         this.feeManager = requireNonNull(feeManager, "feeManager must not be null");
+        this.expiryValidation = requireNonNull(expiryValidation, "expiryValidation must not be null");
     }
 
     /**
@@ -126,16 +125,13 @@ public class SolvencyPreCheck {
         }
 
         if (account.tinybarBalance() < totalFees + additionalCosts) {
-            // FUTURE: Expired accounts should be checked earlier
-            final var configuration = configProvider.getConfiguration();
-            final var autoRenewEnabled = configuration.getConfigData(AutoRenewConfig.class).isAutoRenewEnabled();
-            if (autoRenewEnabled && account.tinybarBalance() <= 0 && account.expiredAndPendingRemoval()) {
-                throw new PreCheckException(ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
-            }
+            // FUTURE: This should be checked earlier
+            expiryValidation.checkAccountExpiry(account);
             throw new InsufficientBalanceException(INSUFFICIENT_PAYER_BALANCE, totalFees);
         }
     }
 
+    // FUTURE: This should be provided by the TransactionHandler: https://github.com/hashgraph/hedera-services/issues/8354
     private long estimateAdditionalCosts(@NonNull final TransactionInfo txInfo, @NonNull final Instant consensusTime) {
         return switch (txInfo.functionality()) {
             case CRYPTO_CREATE -> txInfo.txBody().cryptoCreateAccountOrThrow().initialBalance();
@@ -164,12 +160,9 @@ public class SolvencyPreCheck {
     }
 
     private long estimatedGasPriceInTinybars(@NonNull final HederaFunctionality functionality, @NonNull final Instant consensusTime) {
-        var rates = exchangeRateManager.activeRate(consensusTime);
-        var prices = feeManager.getFeeData(functionality, consensusTime, SubType.DEFAULT);
-        long priceInTinyCents = prices.servicedataOrThrow().gas() / FEE_DIVISOR_FACTOR;
-        long priceInTinyBars = ExchangeRateManager.getTinybarsFromTinyCents(rates, priceInTinyCents);
+        final var feeData = feeManager.getFeeData(functionality, consensusTime, SubType.DEFAULT);
+        final long priceInTinyCents = feeData.servicedataOrThrow().gas() / FEE_DIVISOR_FACTOR;
+        final long priceInTinyBars = exchangeRateManager.getTinybarsFromTinyCents(priceInTinyCents, consensusTime);
         return Math.max(priceInTinyBars, 1L);
     }
-
-
 }
