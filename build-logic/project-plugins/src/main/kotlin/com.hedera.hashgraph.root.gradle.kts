@@ -37,8 +37,6 @@ configureLifecycleTask("clean")
 
 configureLifecycleTask("assemble")
 
-configureLifecycleTask("check")
-
 configureLifecycleTask("build")
 
 configureLifecycleTask("spotlessCheck")
