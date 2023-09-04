@@ -24,7 +24,10 @@ import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.est
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
@@ -40,6 +43,8 @@ import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.AppTestBase;
+import com.hedera.node.app.authorization.Authorizer;
+import com.hedera.node.app.authorization.Authorizer.SystemPrivilege;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.spi.HapiUtils;
@@ -72,21 +77,28 @@ class SolvencyPreCheckTest extends AppTestBase {
     @Mock
     private ExpiryValidation expiryValidation;
 
+    @Mock(strictness = LENIENT)
+    private Authorizer authorizer;
+
     private SolvencyPreCheck subject;
 
     @BeforeEach
     void setup() {
-        subject = new SolvencyPreCheck(exchangeRateManager, feeManager, expiryValidation);
+        when(authorizer.hasPrivilegedAuthorization(any(), any(), any())).thenReturn(SystemPrivilege.UNNECESSARY);
+
+        subject = new SolvencyPreCheck(exchangeRateManager, feeManager, expiryValidation, authorizer);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithIllegalParameters() {
-        assertThatThrownBy(() -> new SolvencyPreCheck(null, feeManager, expiryValidation))
+        assertThatThrownBy(() -> new SolvencyPreCheck(null, feeManager, expiryValidation, authorizer))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new SolvencyPreCheck(exchangeRateManager, null, expiryValidation))
+        assertThatThrownBy(() -> new SolvencyPreCheck(exchangeRateManager, null, expiryValidation, authorizer))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new SolvencyPreCheck(exchangeRateManager, feeManager, null))
+        assertThatThrownBy(() -> new SolvencyPreCheck(exchangeRateManager, feeManager, null, authorizer))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new SolvencyPreCheck(exchangeRateManager, feeManager, expiryValidation, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -191,6 +203,19 @@ class SolvencyPreCheckTest extends AppTestBase {
                     .isInstanceOf(InsufficientBalanceException.class)
                     .has(responseCode(ResponseCodeEnum.INSUFFICIENT_TX_FEE))
                     .has(estimatedFee(FEE));
+        }
+
+        @Test
+        void testPrivilegedTransactionSucceeds() {
+            // given
+            final var txInfo = createTransactionInfo(FEE - 1, START, CONSENSUS_CREATE_TOPIC, null);
+            final var payer =
+                    ALICE.account().copyBuilder().tinybarBalance(FEE / 2).build();
+            when(authorizer.hasPrivilegedAuthorization(ALICE.accountID(), CONSENSUS_CREATE_TOPIC, txInfo.txBody()))
+                    .thenReturn(SystemPrivilege.AUTHORIZED);
+
+            // then
+            assertThatCode(() -> subject.checkSolvency(txInfo, payer, FEE)).doesNotThrowAnyException();
         }
 
         @Test

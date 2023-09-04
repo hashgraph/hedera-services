@@ -23,7 +23,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.node.app.workflows.TransactionInfo;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.ApiPermissionConfig;
@@ -62,7 +62,8 @@ public class AuthorizerImpl implements Authorizer {
     }
 
     @Override
-    public SystemPrivilege requiresSystemPrivilege(@NonNull TransactionInfo txInfo) {
+    public SystemPrivilege hasPrivilegedAuthorization(
+            @NonNull AccountID id, @NonNull HederaFunctionality functionality, @NonNull TransactionBody txBody) {
         // TODO: Implement this
         return SystemPrivilege.UNNECESSARY;
     }

@@ -19,7 +19,6 @@ package com.hedera.node.app.authorization;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.workflows.TransactionInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -45,14 +44,15 @@ public interface Authorizer {
     boolean isSuperUser(@NonNull AccountID id);
 
     /**
-     * Checks wether an account is exempt from paying fees.
+     * Checks whether an account is exempt from paying fees.
      *
      * @param functionality the {@link HederaFunctionality} of the transaction
      * @param txBody the {@link TransactionBody} of the transaction
      * @param id the {@link AccountID} to check
      * @return {@code true} if the account is exempt from paying fees, otherwise {@code false}
      */
-    SystemPrivilege requiresSystemPrivilege(@NonNull TransactionInfo txInfo);
+    SystemPrivilege hasPrivilegedAuthorization(
+            @NonNull AccountID id, @NonNull HederaFunctionality functionality, @NonNull TransactionBody txBody);
 
     enum SystemPrivilege {
         /** The operation does not require any system privileges. */

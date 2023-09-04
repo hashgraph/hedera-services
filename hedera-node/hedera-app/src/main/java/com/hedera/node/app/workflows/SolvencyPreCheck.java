@@ -30,6 +30,8 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.node.app.authorization.Authorizer;
+import com.hedera.node.app.authorization.Authorizer.SystemPrivilege;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -57,15 +59,18 @@ public class SolvencyPreCheck {
     private final ExchangeRateManager exchangeRateManager;
     private final FeeManager feeManager;
     private final ExpiryValidation expiryValidation;
+    private final Authorizer authorizer;
 
     @Inject
     public SolvencyPreCheck(
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final FeeManager feeManager,
-            @NonNull final ExpiryValidation expiryValidation) {
+            @NonNull final ExpiryValidation expiryValidation,
+            @NonNull final Authorizer authorizer) {
         this.exchangeRateManager = requireNonNull(exchangeRateManager, "exchangeRateManager must not be null");
         this.feeManager = requireNonNull(feeManager, "feeManager must not be null");
         this.expiryValidation = requireNonNull(expiryValidation, "expiryValidation must not be null");
+        this.authorizer = requireNonNull(authorizer, "authorizer must not be null");
     }
 
     /**
@@ -108,6 +113,12 @@ public class SolvencyPreCheck {
     public void checkSolvency(
             @NonNull final TransactionInfo txInfo, @NonNull final Account account, final long totalFees)
             throws PreCheckException {
+        // Skip solvency check for privileged transactions
+        if (authorizer.hasPrivilegedAuthorization(txInfo.payerID(), txInfo.functionality(), txInfo.txBody())
+                == SystemPrivilege.AUTHORIZED) {
+            return;
+        }
+
         if (txInfo.txBody().transactionFee() < totalFees) {
             throw new InsufficientBalanceException(INSUFFICIENT_TX_FEE, totalFees);
         }
