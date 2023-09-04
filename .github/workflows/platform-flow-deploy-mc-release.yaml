@@ -146,7 +146,7 @@ jobs:
 #          files: ${{ steps.sdk-archives.outputs.path }}/*
 
       - name: Send Slack Notification
-        uses: slackapi/slack-github-action@v1
+        uses: slackapi/slack-github-action@e28cf165c92ffef168d23c5c9000cffc8a25e117 # v1.24.0
         env:
           SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
           SLACK_WEBHOOK_URL: ${{ secrets.PLATFORM_SLACK_RELEASE_WEBHOOK }}
