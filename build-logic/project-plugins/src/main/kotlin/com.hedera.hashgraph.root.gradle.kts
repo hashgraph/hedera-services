@@ -45,6 +45,8 @@ configureLifecycleTask("spotlessApply")
 
 configureLifecycleTask("checkAllModuleInfo")
 
+configureLifecycleTask("jacocoTestReport")
+
 fun configureLifecycleTask(taskName: String) {
     tasks.named(taskName) {
         // Link the lifecycle tasks in the root project to the corresponding lifecycle tasks in the
