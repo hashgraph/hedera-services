@@ -16,6 +16,8 @@
 
 package com.hedera.node.config.testfixtures;
 
+import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.converter.AccountIDConverter;
 import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.converter.CongestionMultipliersConverter;
@@ -207,5 +209,16 @@ public final class HederaTestConfigBuilder {
     @NonNull
     public static Configuration createConfig() {
         return create().getOrCreateConfig();
+    }
+
+    /**
+     * Convenience method that creates and returns a {@link ConfigProvider} with the configuration of this builder as
+     * a {@link VersionedConfig} with version number 0.
+     */
+    @NonNull
+    public static ConfigProvider createConfigProvider() {
+        final var config = createConfig();
+        final var versioned = new VersionedConfigImpl(config, 0);
+        return () -> versioned;
     }
 }

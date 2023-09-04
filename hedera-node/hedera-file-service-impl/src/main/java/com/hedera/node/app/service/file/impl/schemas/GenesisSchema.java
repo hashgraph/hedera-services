@@ -107,7 +107,7 @@ public class GenesisSchema extends Schema {
         createGenesisNetworkProperties(bootstrapConfig, hederaConfig, filesConfig, files, ctx.configuration());
         createGenesisHapiPermissions(bootstrapConfig, hederaConfig, filesConfig, files);
         createGenesisThrottleDefinitions(bootstrapConfig, hederaConfig, filesConfig, files);
-        createGenesisSoftwareUpdateZip(bootstrapConfig, filesConfig, files);
+        createGenesisSoftwareUpdateFiles(bootstrapConfig, hederaConfig, filesConfig, files);
     }
 
     // ================================================================================================================
@@ -525,15 +525,39 @@ public class GenesisSchema extends Schema {
     }
 
     // ================================================================================================================
-    // Creates and loads the software update file into state (may be empty? NOT SURE)
+    // Creates and loads the software update file into state
 
     // Suppressing the warning that the arguments are not used. To be removed when implemented
     @SuppressWarnings("java:S1172")
-    private void createGenesisSoftwareUpdateZip(
+    private void createGenesisSoftwareUpdateFiles(
             @NonNull final BootstrapConfig bootstrapConfig,
+            @NonNull final HederaConfig hederaConfig,
             @NonNull final FilesConfig filesConfig,
             @NonNull final WritableKVState<FileID, File> files) {
-        logger.debug("Creating genesis software update zip file");
-        // TBD Implement this method
+
+        // These files all start off as an empty byte array. Only file 150 is actually used, the others are not, but
+        // may be used in the future.
+        logger.debug("Creating genesis software update files");
+        final var fileNums = filesConfig.softwareUpdateRange();
+        final var firstUpdateNum = fileNums.left();
+        final var lastUpdateNum = fileNums.right();
+        final var masterKey =
+                Key.newBuilder().ed25519(bootstrapConfig.genesisPublicKey()).build();
+        for (var updateNum = firstUpdateNum; updateNum <= lastUpdateNum; updateNum++) {
+            final var fileId = FileID.newBuilder()
+                    .shardNum(hederaConfig.shard())
+                    .realmNum(hederaConfig.realm())
+                    .fileNum(updateNum)
+                    .build();
+            logger.debug("Putting update file {} into state", updateNum);
+            files.put(
+                    fileId,
+                    File.newBuilder()
+                            .contents(Bytes.EMPTY)
+                            .fileId(fileId)
+                            .keys(KeyList.newBuilder().keys(masterKey))
+                            .expirationSecond(bootstrapConfig.systemEntityExpiry())
+                            .build());
+        }
     }
 }

@@ -22,6 +22,7 @@ import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactio
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static org.apache.tuweni.bytes.Bytes.EMPTY;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.contract.ContractCallLocalQuery;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.node.app.service.contract.impl.annotations.QueryScope;
@@ -43,12 +44,14 @@ public class HevmStaticTransactionFactory {
     private static final long INTRINSIC_GAS_LOWER_BOUND = 21_000L;
     private final ContractsConfig contractsConfig;
     private final GasCalculator gasCalculator;
+    private final AccountID payerId;
 
     @Inject
     public HevmStaticTransactionFactory(
             @NonNull final QueryContext context, @NonNull final GasCalculator gasCalculator) {
         this.contractsConfig = Objects.requireNonNull(context).configuration().getConfigData(ContractsConfig.class);
         this.gasCalculator = gasCalculator;
+        this.payerId = Objects.requireNonNull(context.payer());
     }
 
     /**
@@ -61,13 +64,7 @@ public class HevmStaticTransactionFactory {
     public HederaEvmTransaction fromHapiQuery(@NonNull final Query query) {
         final var op = query.contractCallLocalOrThrow();
         assertValidCall(op);
-        final var senderId = op.hasSenderId()
-                ? op.senderId()
-                : op.headerOrThrow()
-                        .paymentOrThrow()
-                        .bodyOrThrow()
-                        .transactionIDOrThrow()
-                        .accountIDOrThrow();
+        final var senderId = op.hasSenderId() ? op.senderIdOrThrow() : payerId;
         return new HederaEvmTransaction(
                 senderId,
                 null,

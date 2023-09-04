@@ -76,7 +76,7 @@ import java.util.Objects;
  */
 public class AssortedOpsXTest extends AbstractContractXTest {
     @Override
-    protected void handleAndCommitScenarioTransactions() {
+    protected void doScenarioOperations() {
         handleAndCommit(CONTRACT_SERVICE.handlers().contractCreateHandler(), synthCreateTxn());
         handleAndCommit(CONTRACT_SERVICE.handlers().ethereumTransactionHandler(), synthLazyCreateTxn());
         handleAndCommit(

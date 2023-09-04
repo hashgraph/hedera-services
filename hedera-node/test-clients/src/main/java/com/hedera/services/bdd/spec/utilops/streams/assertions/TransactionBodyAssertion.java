@@ -24,7 +24,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Predicate;
-import org.jetbrains.annotations.NotNull;
 import org.opentest4j.AssertionFailedError;
 
 /**
@@ -36,8 +35,8 @@ public class TransactionBodyAssertion extends BaseIdScreenedAssertion {
     private final AssertingBiConsumer<HapiSpec, TransactionBody> bodyAssertion;
 
     public TransactionBodyAssertion(
-            @NotNull final String specTxnId,
-            @NotNull final HapiSpec spec,
+            @NonNull final String specTxnId,
+            @NonNull final HapiSpec spec,
             @NonNull final Predicate<TransactionID> idFilter,
             @NonNull final AssertingBiConsumer<HapiSpec, TransactionBody> bodyAssertion) {
         super(specTxnId, spec);
@@ -46,7 +45,7 @@ public class TransactionBodyAssertion extends BaseIdScreenedAssertion {
     }
 
     @Override
-    protected boolean filter(@NotNull final TransactionID txnId) {
+    protected boolean filter(@NonNull final TransactionID txnId) {
         return idFilter.test(txnId);
     }
 
