@@ -321,7 +321,8 @@ public class HandleWorkflow {
                 if (sigVerificationFailed) {
                     // If the signature status isn't ok, only work done will be fee charging
                     // Note this is how it's implemented in mono (TopLevelTransition.java#L93), in future we may want to
-                    // not trackFeePayments() only for INVALID_SIGNATURE but for any preCheckResult.status() != SO_FAR_SO_GOOD
+                    // not trackFeePayments() only for INVALID_SIGNATURE but for any preCheckResult.status() !=
+                    // SO_FAR_SO_GOOD
                     networkUtilizationManager.trackFeePayments(consensusNow, state);
                 }
 

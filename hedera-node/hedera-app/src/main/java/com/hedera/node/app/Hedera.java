@@ -52,6 +52,7 @@ import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
+import com.hedera.node.app.throttle.CongestionThrottleService;
 import com.hedera.node.app.throttle.ThrottleManager;
 import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
@@ -223,7 +224,8 @@ public final class Hedera implements SwirldMain {
                 new UtilServiceImpl(),
                 new RecordCacheService(),
                 new BlockRecordService(),
-                new EntityIdService()));
+                new EntityIdService(),
+                new CongestionThrottleService()));
 
         // Register MerkleHederaState with the ConstructableRegistry, so we can use a constructor OTHER THAN the default
         // constructor to make sure it has the config and other info it needs to be created correctly.
