@@ -315,7 +315,6 @@ public class HandleWorkflow {
             final var preCheckResult = runPreChecks(consensusNow, verifier, preHandleResult);
 
             networkUtilizationManager.resetFrom(state);
-            networkUtilizationManager.trackTxn(transactionInfo, consensusNow, state);
 
             if (preCheckResult.status() != SO_FAR_SO_GOOD) {
                 final var sigVerificationFailed = preCheckResult.responseCodeEnum() == INVALID_SIGNATURE;
@@ -332,6 +331,7 @@ public class HandleWorkflow {
                 recordBuilder.status(preCheckResult.responseCodeEnum());
 
             } else {
+                networkUtilizationManager.trackTxn(transactionInfo, consensusNow, state);
                 feeAccumulator.charge(payer, fees);
                 try {
                     if (networkUtilizationManager.wasLastTxnGasThrottled()) {
