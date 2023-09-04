@@ -69,6 +69,7 @@ import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -76,7 +77,6 @@ import java.util.OptionalLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
-import org.jetbrains.annotations.NotNull;
 
 @HapiTestSuite
 @SuppressWarnings("java:S1192") // "string literal should not be duplicated" - this rule makes test suites worse
@@ -666,7 +666,7 @@ public class TokenInfoHTSV1SecurityModelSuite extends HapiSuite {
                 .build();
     }
 
-    @NotNull
+    @NonNull
     private ArrayList<CustomFee> getExpectedCustomFees(final HapiSpec spec) {
         final var fixedFee = FixedFee.newBuilder().setAmount(500L).build();
         final var customFixedFee = CustomFee.newBuilder()
@@ -740,7 +740,7 @@ public class TokenInfoHTSV1SecurityModelSuite extends HapiSuite {
                 .build();
     }
 
-    @NotNull
+    @NonNull
     private ArrayList<CustomFee> getCustomFeeForNFT(final HapiSpec spec) {
         final var fraction = Fraction.newBuilder()
                 .setNumerator(NUMERATOR)
