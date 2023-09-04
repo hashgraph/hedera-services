@@ -141,12 +141,12 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
     /** The AccountID of "this node" in our tests. */
     protected final AccountID nodeSelfAccountId =
             AccountID.newBuilder().shardNum(0).realmNum(0).accountNum(8).build();
-    protected Account nodeSelfAccount =
-            Account.newBuilder()
-                    .accountId(nodeSelfAccountId)
-                    .key(FAKE_ED25519_KEY_INFOS[0].publicKey())
-                    .declineReward(true)
-                    .build();
+
+    protected Account nodeSelfAccount = Account.newBuilder()
+            .accountId(nodeSelfAccountId)
+            .key(FAKE_ED25519_KEY_INFOS[0].publicKey())
+            .declineReward(true)
+            .build();
 
     protected final SelfNodeInfo selfNodeInfo = new SelfNodeInfoImpl(
             7,

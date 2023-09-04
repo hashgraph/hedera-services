@@ -153,7 +153,8 @@ class QueryWorkflowImplTest extends AppTestBase {
                 .build();
         when(queryParser.parseStrict(notNull())).thenReturn(query);
 
-        final var transactionID = TransactionID.newBuilder().accountID(ALICE.accountID()).build();
+        final var transactionID =
+                TransactionID.newBuilder().accountID(ALICE.accountID()).build();
         txBody = TransactionBody.newBuilder().transactionID(transactionID).build();
 
         final var signatureMap = SignatureMap.newBuilder().build();
@@ -209,7 +210,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                         queryParser,
                         configProvider,
                         recordCache,
-                authorizer))
+                        authorizer))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -221,7 +222,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                         queryParser,
                         configProvider,
                         recordCache,
-                authorizer))
+                        authorizer))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -233,7 +234,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                         queryParser,
                         configProvider,
                         recordCache,
-                authorizer))
+                        authorizer))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -245,7 +246,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                         queryParser,
                         configProvider,
                         recordCache,
-                authorizer))
+                        authorizer))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -257,7 +258,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                         queryParser,
                         configProvider,
                         recordCache,
-                authorizer))
+                        authorizer))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -269,7 +270,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                         queryParser,
                         configProvider,
                         recordCache,
-                authorizer))
+                        authorizer))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -281,7 +282,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                         null,
                         configProvider,
                         recordCache,
-                authorizer))
+                        authorizer))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -293,7 +294,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                         queryParser,
                         null,
                         recordCache,
-                authorizer))
+                        authorizer))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -305,7 +306,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                         queryParser,
                         configProvider,
                         null,
-                authorizer))
+                        authorizer))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -403,7 +404,8 @@ class QueryWorkflowImplTest extends AppTestBase {
                 localDispatcher,
                 queryParser,
                 configProvider,
-                recordCache, authorizer);
+                recordCache,
+                authorizer);
 
         // then
         assertThatThrownBy(() -> workflow.handleQuery(requestBuffer, responseBuffer))

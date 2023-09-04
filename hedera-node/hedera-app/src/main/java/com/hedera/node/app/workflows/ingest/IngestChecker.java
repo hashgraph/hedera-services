@@ -174,8 +174,8 @@ public final class IngestChecker {
         return txInfo;
     }
 
-    private void verifyPayerSignature(
-            @NonNull final TransactionInfo txInfo, @NonNull final Key payerKey) throws PreCheckException {
+    private void verifyPayerSignature(@NonNull final TransactionInfo txInfo, @NonNull final Key payerKey)
+            throws PreCheckException {
         // Expand the signatures
         final var expandedSigs = new HashSet<ExpandedSignaturePair>();
         signatureExpander.expand(payerKey, txInfo.signatureMap().sigPairOrThrow(), expandedSigs);

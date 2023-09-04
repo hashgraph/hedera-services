@@ -150,7 +150,8 @@ class IngestCheckerTest extends AppTestBase {
         final var configProvider = HederaTestConfigBuilder.createConfigProvider();
         this.deduplicationCache = new DeduplicationCacheImpl(configProvider);
 
-        when(solvencyPreCheck.checkPayerAccountStatus(any(), eq(ALICE.accountID()))).thenReturn(ALICE.account());
+        when(solvencyPreCheck.checkPayerAccountStatus(any(), eq(ALICE.accountID())))
+                .thenReturn(ALICE.account());
         when(dispatcher.dispatchComputeFees(any())).thenReturn(DEFAULT_FEES);
 
         subject = new IngestChecker(
@@ -334,7 +335,8 @@ class IngestCheckerTest extends AppTestBase {
         void noKeyForPayer() throws PreCheckException {
             // The tx payer is ALICE. We remove her key from state
             final var account = ALICE.account().copyBuilder().key((Key) null).build();
-            when(solvencyPreCheck.checkPayerAccountStatus(any(), eq(ALICE.accountID()))).thenReturn(account);
+            when(solvencyPreCheck.checkPayerAccountStatus(any(), eq(ALICE.accountID())))
+                    .thenReturn(account);
 
             // When the transaction is submitted, then the exception is thrown
             assertThatThrownBy(() -> subject.runAllChecks(state, tx))

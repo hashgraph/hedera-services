@@ -85,8 +85,7 @@ class QueryCheckerTest extends AppTestBase {
     @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithIllegalArguments() {
-        assertThatThrownBy(() -> new QueryChecker(null, cryptoTransferHandler, solvencyPreCheck,
-                expiryValidation))
+        assertThatThrownBy(() -> new QueryChecker(null, cryptoTransferHandler, solvencyPreCheck, expiryValidation))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryChecker(authorizer, null, solvencyPreCheck, expiryValidation))
                 .isInstanceOf(NullPointerException.class);
@@ -106,7 +105,8 @@ class QueryCheckerTest extends AppTestBase {
     void testValidateCryptoTransferSucceeds() {
         // given
         final var txBody = TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder().accountID(AccountID.DEFAULT).build())
+                .transactionID(
+                        TransactionID.newBuilder().accountID(AccountID.DEFAULT).build())
                 .build();
         final var signatureMap = SignatureMap.newBuilder().build();
         final var transaction = Transaction.newBuilder().build();
@@ -121,7 +121,8 @@ class QueryCheckerTest extends AppTestBase {
     void testValidateCryptoTransferWithWrongTransactionType() {
         // given
         final var txBody = TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder().accountID(AccountID.DEFAULT).build())
+                .transactionID(
+                        TransactionID.newBuilder().accountID(AccountID.DEFAULT).build())
                 .build();
         final var signatureMap = SignatureMap.newBuilder().build();
         final var transaction = Transaction.newBuilder().build();
@@ -138,7 +139,8 @@ class QueryCheckerTest extends AppTestBase {
     void testValidateCryptoTransferWithFailingValidation() throws PreCheckException {
         // given
         final var txBody = TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder().accountID(AccountID.DEFAULT).build())
+                .transactionID(
+                        TransactionID.newBuilder().accountID(AccountID.DEFAULT).build())
                 .build();
         final var signatureMap = SignatureMap.newBuilder().build();
         final var transaction = Transaction.newBuilder().build();
@@ -206,7 +208,8 @@ class QueryCheckerTest extends AppTestBase {
         @Test
         void testIllegalArguments() {
             // given
-            final var txInfo = createPaymentInfo(ALICE.accountID(), send(ALICE.accountID(), 8), receive(nodeSelfAccountId, 8));
+            final var txInfo =
+                    createPaymentInfo(ALICE.accountID(), send(ALICE.accountID(), 8), receive(nodeSelfAccountId, 8));
 
             // then
             assertThatThrownBy(() -> checker.validateAccountBalances(null, txInfo, 8L))
@@ -219,7 +222,8 @@ class QueryCheckerTest extends AppTestBase {
         void testHappyPath() {
             // given
             final var amount = 8L;
-            final var txInfo = createPaymentInfo(ALICE.accountID(), send(ALICE.accountID(), amount), receive(nodeSelfAccountId, amount));
+            final var txInfo = createPaymentInfo(
+                    ALICE.accountID(), send(ALICE.accountID(), amount), receive(nodeSelfAccountId, amount));
 
             // then
             assertThatCode(() -> checker.validateAccountBalances(store, txInfo, amount))
@@ -230,9 +234,11 @@ class QueryCheckerTest extends AppTestBase {
         void testSolvencyCheckFails() throws PreCheckException {
             // given
             final var amount = 8L;
-            final var txInfo = createPaymentInfo(ALICE.accountID(), send(ALICE.accountID(), amount), receive(nodeSelfAccountId, amount));
+            final var txInfo = createPaymentInfo(
+                    ALICE.accountID(), send(ALICE.accountID(), amount), receive(nodeSelfAccountId, amount));
             doThrow(new InsufficientBalanceException(INSUFFICIENT_PAYER_BALANCE, amount))
-                    .when(solvencyPreCheck).checkSolvency(txInfo, ALICE.account(), amount);
+                    .when(solvencyPreCheck)
+                    .checkSolvency(txInfo, ALICE.account(), amount);
 
             // then
             assertThatThrownBy(() -> checker.validateAccountBalances(store, txInfo, amount))
@@ -256,8 +262,11 @@ class QueryCheckerTest extends AppTestBase {
         void testOtherPayerSucceeds() {
             // given
             final long amount = 5000L;
-            final var txInfo = createPaymentInfo(ALICE.accountID(), send(ERIN.accountID(), amount), receive(nodeSelfAccountId, amount));
-            accountsState.put(ERIN.accountID(), ERIN.account().copyBuilder().tinybarBalance(amount).build());
+            final var txInfo = createPaymentInfo(
+                    ALICE.accountID(), send(ERIN.accountID(), amount), receive(nodeSelfAccountId, amount));
+            accountsState.put(
+                    ERIN.accountID(),
+                    ERIN.account().copyBuilder().tinybarBalance(amount).build());
 
             // then
             assertThatCode(() -> checker.validateAccountBalances(store, txInfo, amount))
@@ -268,8 +277,11 @@ class QueryCheckerTest extends AppTestBase {
         void testOtherPayerFailsWithInsufficientBalance() {
             // given
             final long amount = 5000L;
-            final var txInfo = createPaymentInfo(ALICE.accountID(), send(ERIN.accountID(), amount), receive(nodeSelfAccountId, amount));
-            accountsState.put(ERIN.accountID(), ERIN.account().copyBuilder().tinybarBalance(amount - 1).build());
+            final var txInfo = createPaymentInfo(
+                    ALICE.accountID(), send(ERIN.accountID(), amount), receive(nodeSelfAccountId, amount));
+            accountsState.put(
+                    ERIN.accountID(),
+                    ERIN.account().copyBuilder().tinybarBalance(amount - 1).build());
 
             // then
             assertThatThrownBy(() -> checker.validateAccountBalances(store, txInfo, amount))
@@ -282,7 +294,8 @@ class QueryCheckerTest extends AppTestBase {
         void testOtherPayerFailsIfNotFound() {
             // given
             final long amount = 5000L;
-            final var txInfo = createPaymentInfo(ALICE.accountID(), send(BOB.accountID(), amount), receive(nodeSelfAccountId, amount));
+            final var txInfo = createPaymentInfo(
+                    ALICE.accountID(), send(BOB.accountID(), amount), receive(nodeSelfAccountId, amount));
 
             // then
             assertThatThrownBy(() -> checker.validateAccountBalances(store, txInfo, amount))
@@ -300,8 +313,12 @@ class QueryCheckerTest extends AppTestBase {
                     send(BOB.accountID(), amount / 4),
                     send(ERIN.accountID(), amount / 4),
                     receive(nodeSelfAccountId, amount));
-            accountsState.put(BOB.accountID(), BOB.account().copyBuilder().tinybarBalance(amount / 4).build());
-            accountsState.put(ERIN.accountID(), ERIN.account().copyBuilder().tinybarBalance(amount / 4).build());
+            accountsState.put(
+                    BOB.accountID(),
+                    BOB.account().copyBuilder().tinybarBalance(amount / 4).build());
+            accountsState.put(
+                    ERIN.accountID(),
+                    ERIN.account().copyBuilder().tinybarBalance(amount / 4).build());
 
             // then
             assertThatCode(() -> checker.validateAccountBalances(store, txInfo, amount))
@@ -318,8 +335,12 @@ class QueryCheckerTest extends AppTestBase {
                     send(BOB.accountID(), amount / 4),
                     send(ERIN.accountID(), amount / 4),
                     receive(nodeSelfAccountId, amount));
-            accountsState.put(BOB.accountID(), BOB.account().copyBuilder().tinybarBalance(amount / 4 - 1).build());
-            accountsState.put(ERIN.accountID(), ERIN.account().copyBuilder().tinybarBalance(amount / 4).build());
+            accountsState.put(
+                    BOB.accountID(),
+                    BOB.account().copyBuilder().tinybarBalance(amount / 4 - 1).build());
+            accountsState.put(
+                    ERIN.accountID(),
+                    ERIN.account().copyBuilder().tinybarBalance(amount / 4).build());
 
             // then
             assertThatThrownBy(() -> checker.validateAccountBalances(store, txInfo, amount))
@@ -338,7 +359,9 @@ class QueryCheckerTest extends AppTestBase {
                     send(BOB.accountID(), amount / 4),
                     send(ERIN.accountID(), amount / 4),
                     receive(nodeSelfAccountId, amount));
-            accountsState.put(ERIN.accountID(), ERIN.account().copyBuilder().tinybarBalance(amount / 4).build());
+            accountsState.put(
+                    ERIN.accountID(),
+                    ERIN.account().copyBuilder().tinybarBalance(amount / 4).build());
 
             // then
             assertThatThrownBy(() -> checker.validateAccountBalances(store, txInfo, amount))
@@ -350,7 +373,8 @@ class QueryCheckerTest extends AppTestBase {
         void testWrongRecipientFails() {
             // given
             final var amount = 8L;
-            final var txInfo = createPaymentInfo(ALICE.accountID(), send(ALICE.accountID(), amount), receive(NODE_1.nodeAccountID(), amount));
+            final var txInfo = createPaymentInfo(
+                    ALICE.accountID(), send(ALICE.accountID(), amount), receive(NODE_1.nodeAccountID(), amount));
             accountsState.put(NODE_1.nodeAccountID(), NODE_1.account());
 
             // then
@@ -382,7 +406,10 @@ class QueryCheckerTest extends AppTestBase {
             final var amount = 4000L;
             final var txInfo = createPaymentInfo(
                     ALICE.accountID(),
-                    AccountAmount.newBuilder().accountID(ALICE.accountID()).amount(Long.MIN_VALUE).build(),
+                    AccountAmount.newBuilder()
+                            .accountID(ALICE.accountID())
+                            .amount(Long.MIN_VALUE)
+                            .build(),
                     receive(nodeSelfAccountId, amount));
 
             // then
@@ -397,7 +424,10 @@ class QueryCheckerTest extends AppTestBase {
             final var amount = 4000L;
             final var txInfo = createPaymentInfo(
                     ALICE.accountID(),
-                    AccountAmount.newBuilder().accountID(ERIN.accountID()).amount(Long.MIN_VALUE).build(),
+                    AccountAmount.newBuilder()
+                            .accountID(ERIN.accountID())
+                            .amount(Long.MIN_VALUE)
+                            .build(),
                     receive(nodeSelfAccountId, amount));
 
             // then
@@ -409,16 +439,18 @@ class QueryCheckerTest extends AppTestBase {
 
     @Nested
     @DisplayName("Tests for checking node payment validity")
-    class NodeValidityTests {
-    }
+    class NodeValidityTests {}
 
     private TransactionInfo createPaymentInfo(final AccountID payerID, final AccountAmount... transfers) {
         final var transactionID = TransactionID.newBuilder().accountID(payerID).build();
-        final var transferList = TransferList.newBuilder().accountAmounts(transfers).build();
+        final var transferList =
+                TransferList.newBuilder().accountAmounts(transfers).build();
         final var txBody = TransactionBody.newBuilder()
                 .transactionID(transactionID)
                 .nodeAccountID(nodeSelfAccountId)
-                .cryptoTransfer(CryptoTransferTransactionBody.newBuilder().transfers(transferList).build())
+                .cryptoTransfer(CryptoTransferTransactionBody.newBuilder()
+                        .transfers(transferList)
+                        .build())
                 .build();
         final var bodyBytes = TransactionBody.PROTOBUF.toBytes(txBody);
         final var signedTransaction = SignedTransaction.newBuilder()

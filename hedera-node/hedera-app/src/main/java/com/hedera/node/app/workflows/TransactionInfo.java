@@ -55,10 +55,13 @@ public record TransactionInfo(
         @NonNull Bytes signedBytes,
         @NonNull HederaFunctionality functionality) {
 
-    public TransactionInfo(@NonNull Transaction transaction, @NonNull TransactionBody txBody,
+    public TransactionInfo(
+            @NonNull Transaction transaction,
+            @NonNull TransactionBody txBody,
             @NonNull SignatureMap signatureMap,
-            @NonNull Bytes signedBytes, @NonNull HederaFunctionality functionality) {
-        this (
+            @NonNull Bytes signedBytes,
+            @NonNull HederaFunctionality functionality) {
+        this(
                 transaction,
                 txBody,
                 txBody.transactionIDOrThrow(),

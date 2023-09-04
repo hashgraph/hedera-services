@@ -99,17 +99,15 @@ public class QueryChecker {
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void validateAccountBalances(
-            @NonNull final ReadableAccountStore accountStore,
-            @NonNull final TransactionInfo txInfo,
-            final long fee)
+            @NonNull final ReadableAccountStore accountStore, @NonNull final TransactionInfo txInfo, final long fee)
             throws PreCheckException {
         requireNonNull(accountStore);
         requireNonNull(txInfo);
 
         final var payerID = txInfo.payerID();
         final var nodeAccountID = txInfo.txBody().nodeAccountIDOrThrow();
-        final var transfers = txInfo.txBody().cryptoTransferOrThrow().transfersOrThrow().accountAmountsOrThrow();
-
+        final var transfers =
+                txInfo.txBody().cryptoTransferOrThrow().transfersOrThrow().accountAmountsOrThrow();
 
         // Try to find account
         final var payer = accountStore.getAccountById(txInfo.payerID());

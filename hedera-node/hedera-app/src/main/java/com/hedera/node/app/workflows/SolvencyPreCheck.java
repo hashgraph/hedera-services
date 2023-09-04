@@ -5,14 +5,13 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package com.hedera.node.app.workflows;
@@ -78,7 +77,8 @@ public class SolvencyPreCheck {
      */
     @NonNull
     public Account checkPayerAccountStatus(
-            @NonNull final ReadableStoreFactory storeFactory, @NonNull final AccountID accountID) throws PreCheckException {
+            @NonNull final ReadableStoreFactory storeFactory, @NonNull final AccountID accountID)
+            throws PreCheckException {
         final var accountStore = storeFactory.getStore(ReadableAccountStore.class);
         final var account = accountStore.getAccountById(accountID);
 
@@ -107,9 +107,7 @@ public class SolvencyPreCheck {
      * status of {@code INSUFFICIENT_TX_FEE} and the fee amount that would have satisfied the check.
      */
     public void checkSolvency(
-            @NonNull final TransactionInfo txInfo,
-            @NonNull final Account account,
-            final long totalFees)
+            @NonNull final TransactionInfo txInfo, @NonNull final Account account, final long totalFees)
             throws PreCheckException {
         if (txInfo.txBody().transactionFee() < totalFees) {
             throw new InsufficientBalanceException(INSUFFICIENT_TX_FEE, totalFees);
@@ -131,25 +129,27 @@ public class SolvencyPreCheck {
         }
     }
 
-    // FUTURE: This should be provided by the TransactionHandler: https://github.com/hashgraph/hedera-services/issues/8354
+    // FUTURE: This should be provided by the TransactionHandler:
+    // https://github.com/hashgraph/hedera-services/issues/8354
     private long estimateAdditionalCosts(@NonNull final TransactionInfo txInfo, @NonNull final Instant consensusTime) {
         return switch (txInfo.functionality()) {
             case CRYPTO_CREATE -> txInfo.txBody().cryptoCreateAccountOrThrow().initialBalance();
             case CRYPTO_TRANSFER -> {
                 final var payerID = txInfo.txBody().transactionIDOrThrow().accountIDOrThrow();
-                yield - txInfo.txBody().cryptoTransferOrThrow().transfersOrThrow().accountAmountsOrThrow().stream()
+                yield -txInfo.txBody().cryptoTransferOrThrow().transfersOrThrow().accountAmountsOrThrow().stream()
                         .filter(aa -> Objects.equals(aa.accountID(), payerID))
                         .mapToLong(AccountAmount::amount)
                         .sum();
             }
             case CONTRACT_CREATE -> {
                 final var contractCreate = txInfo.txBody().contractCreateInstanceOrThrow();
-                yield contractCreate.initialBalance() - contractCreate.gas() * estimatedGasPriceInTinybars(
-                        CONTRACT_CREATE, consensusTime);
+                yield contractCreate.initialBalance()
+                        - contractCreate.gas() * estimatedGasPriceInTinybars(CONTRACT_CREATE, consensusTime);
             }
             case CONTRACT_CALL -> {
                 final var contractCall = txInfo.txBody().contractCallOrThrow();
-                yield contractCall.amount() - contractCall.gas() * estimatedGasPriceInTinybars(CONTRACT_CALL, consensusTime);
+                yield contractCall.amount()
+                        - contractCall.gas() * estimatedGasPriceInTinybars(CONTRACT_CALL, consensusTime);
             }
             case ETHEREUM_TRANSACTION -> {
                 final var ethTxn = txInfo.txBody().ethereumTransactionOrThrow();
@@ -159,7 +159,8 @@ public class SolvencyPreCheck {
         };
     }
 
-    private long estimatedGasPriceInTinybars(@NonNull final HederaFunctionality functionality, @NonNull final Instant consensusTime) {
+    private long estimatedGasPriceInTinybars(
+            @NonNull final HederaFunctionality functionality, @NonNull final Instant consensusTime) {
         final var feeData = feeManager.getFeeData(functionality, consensusTime, SubType.DEFAULT);
         final long priceInTinyCents = feeData.servicedataOrThrow().gas() / FEE_DIVISOR_FACTOR;
         final long priceInTinyBars = exchangeRateManager.getTinybarsFromTinyCents(priceInTinyCents, consensusTime);
