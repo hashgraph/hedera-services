@@ -16,7 +16,7 @@
 
 import me.champeau.gradle.igp.gitRepositories
 
-pluginManagement { @Suppress("UnstableApiUsage") includeBuild("../build-logic") }
+pluginManagement { includeBuild("../build-logic") }
 
 plugins { id("com.hedera.hashgraph.settings") }
 
@@ -98,7 +98,6 @@ gitRepositories {
 }
 
 // Define the library catalogs available for projects to make use of
-@Suppress("UnstableApiUsage")
 dependencyResolutionManagement {
     versionCatalogs {
         // The libs of this catalog are the **ONLY** ones that are authorized to be part of the

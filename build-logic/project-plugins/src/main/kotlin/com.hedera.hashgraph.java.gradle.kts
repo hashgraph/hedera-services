@@ -34,7 +34,7 @@ version = providers.fileContents(rootProject.layout.projectDirectory.versionTxt(
 java {
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(17))
-        @Suppress("UnstableApiUsage") vendor.set(JvmVendorSpec.ADOPTIUM)
+        vendor.set(JvmVendorSpec.ADOPTIUM)
     }
 }
 
