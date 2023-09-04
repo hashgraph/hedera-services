@@ -142,7 +142,7 @@ jobs:
           java-version: ${{ inputs.java-version }}
 
       - name: Setup Gradle
-        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # pin@v2.8
+        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
         with:
           build-root-directory: platform-sdk
           gradle-version: ${{ inputs.gradle-version }}
@@ -155,21 +155,21 @@ jobs:
 
       - name: Gradle Assemble
         id: gradle-build
-        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # pin@v2.8
+        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
         with:
           gradle-version: ${{ inputs.gradle-version }}
           arguments: -p platform-sdk assemble --scan
 
       - name: Gradle JavaDoc
         id: gradle-javadoc
-        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # pin@v2.8
+        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
         if: ${{ inputs.enable-javadoc && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           gradle-version: ${{ inputs.gradle-version }}
           arguments: -p platform-sdk javadoc --scan --parallel
 
       - name: Gradle Spotless Check
-        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # pin@v2.8
+        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
         if: ${{ inputs.enable-spotless-check && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           gradle-version: ${{ inputs.gradle-version }}
@@ -177,7 +177,7 @@ jobs:
 
       - name: OWASP Dependency Report
         id: gradle-dependency-report
-        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # pin@v2.8
+        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
         if: ${{ inputs.enable-owasp-analysis && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           gradle-version: ${{ inputs.gradle-version }}
@@ -192,14 +192,14 @@ jobs:
 
       - name: OWASP Dependency Check (Fails on CVE Score >= ${{ inputs.owasp-cvss-score-threshold }})
         id: gradle-dependency-check
-        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # pin@v2.8
+        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
         if: ${{ inputs.enable-owasp-analysis && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           gradle-version: ${{ inputs.gradle-version }}
           arguments: -p platform-sdk dependencyCheckAggregate --scan -PfailBuildOnCVSS=${{ inputs.owasp-cvss-score-threshold }} -PsuppressionFile=${{ github.workspace }}/platform-sdk/gradle/dep-check-suppression.xml
 
       - name: Gradle Check
-        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # pin@v2.8
+        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
         if: ${{ inputs.enable-unit-tests && steps.gradle-build.conclusion == 'success' && !cancelled() && always() }}
         with:
           gradle-version: ${{ inputs.gradle-version }}
@@ -263,7 +263,7 @@ jobs:
           echo "options=${SONAR_OPTS}" >> "${GITHUB_OUTPUT}"
 
       - name: Gradle SonarCloud Scan
-        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # pin@v2.8
+        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
         env:
           GITHUB_TOKEN: ${{ secrets.access-token }}
           SONAR_TOKEN: ${{ secrets.sonar-token }}
@@ -273,14 +273,14 @@ jobs:
           arguments: -p platform-sdk sonarqube --info --scan ${{ steps.sonar-cloud.outputs.options }}
 
       - name: Gradle JMH Jars
-        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # pin@v2.8
+        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
         if: ${{ inputs.enable-jmh-tests && steps.gradle-build.conclusion == 'success' && !cancelled() && always() }}
         with:
           gradle-version: ${{ inputs.gradle-version }}
           arguments: -p platform-sdk jmhJar --scan
 
       - name: Gradle JMH Benchmarks
-        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # pin@v2.8
+        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
         if: ${{ inputs.enable-jmh-tests && steps.gradle-build.conclusion == 'success' && !cancelled() && always() }}
         with:
           gradle-version: ${{ inputs.gradle-version }}

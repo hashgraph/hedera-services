@@ -223,7 +223,7 @@ jobs:
           java-version: ${{ inputs.java-version }}
 
       - name: Setup Gradle
-        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # pin@v2.8
+        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
         with:
           build-root-directory: platform-sdk
           gradle-version: ${{ inputs.gradle-version }}
@@ -300,14 +300,14 @@ jobs:
 
       - name: Platform Gradle Assemble
         id: platform-gradle-build
-        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # pin@v2.8
+        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
         with:
           gradle-version: ${{ inputs.gradle-version }}
           arguments: -p platform-sdk assemble --scan
 
       - name: Hedera Node Gradle Assemble
         id: hedera-gradle-build
-        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # pin@v2.8
+        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
         if: ${{ inputs.hedera-tests-enabled }}
         with:
           gradle-version: ${{ inputs.gradle-version }}
@@ -315,7 +315,7 @@ jobs:
 
       - name: Regression Gradle Assemble
         id: regression-gradle-build
-        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # pin@v2.8
+        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
         with:
           build-root-directory: platform-sdk/regression
           gradle-version: ${{ inputs.gradle-version }}

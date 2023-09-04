@@ -183,7 +183,7 @@ jobs:
           java-version: ${{ inputs.java-version }}
 
       - name: Setup Gradle
-        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # pin@v2.8
+        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
         with:
           build-root-directory: hedera-node
           gradle-version: ${{ inputs.gradle-version }}
@@ -193,25 +193,25 @@ jobs:
             jdks
 
       - name: Gradle Update Version (As Specified)
-        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # pin@v2.8
+        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
         if: ${{ inputs.version-policy == 'specified' && !cancelled() && !failure() }}
         with:
           arguments: versionAsSpecified -PnewVersion=${{ inputs.new-version }} --scan
 
       - name: Gradle Update Version (Branch Commit)
-        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # pin@v2.8
+        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
         if: ${{ inputs.version-policy != 'specified' && !cancelled() && !failure() }}
         with:
           arguments: versionAsPrefixedCommit -PcommitPrefix=${{ steps.parameters.outputs.commit-prefix }} --scan
 
       - name: Gradle Version Summary
-        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # pin@v2.8
+        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
         with:
           arguments: githubVersionSummary --scan
 
       - name: Gradle Assemble
         id: gradle-build
-        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # pin@v2.8
+        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
         with:
           arguments: -p hedera-node assemble --scan
 
