@@ -38,7 +38,7 @@ import com.hedera.node.app.solvency.SolvencyPreCheck;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.throttle.ThrottleAccumulator;
+import com.hedera.node.app.throttle.HapiThrottling;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
@@ -60,39 +60,39 @@ public final class IngestChecker {
 
     private final CurrentPlatformStatus currentPlatformStatus;
     private final TransactionChecker transactionChecker;
-    private final ThrottleAccumulator throttleAccumulator;
     private final SolvencyPreCheck solvencyPreCheck;
     private final SignatureVerifier signatureVerifier;
     private final SignatureExpander signatureExpander;
     private final DeduplicationCache deduplicationCache;
+    private final HapiThrottling hapiThrottling;
 
     /**
      * Constructor of the {@code IngestChecker}
      *
      * @param currentPlatformStatus the {@link CurrentPlatformStatus} that contains the current status of the platform
      * @param transactionChecker the {@link TransactionChecker} that pre-processes the bytes of a transaction
-     * @param throttleAccumulator the {@link ThrottleAccumulator} for throttling
      * @param solvencyPreCheck the {@link SolvencyPreCheck} that checks payer balance
      * @param signatureExpander the {@link SignatureExpander} that expands signatures
      * @param signatureVerifier the {@link SignatureVerifier} that verifies signature data
+     * @param hapiThrottling the {@link HapiThrottling} that checks transaction should be throttled
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     @Inject
     public IngestChecker(
             @NonNull final CurrentPlatformStatus currentPlatformStatus,
             @NonNull final TransactionChecker transactionChecker,
-            @NonNull final ThrottleAccumulator throttleAccumulator,
             @NonNull final SolvencyPreCheck solvencyPreCheck,
             @NonNull final SignatureExpander signatureExpander,
             @NonNull final SignatureVerifier signatureVerifier,
-            @NonNull final DeduplicationCache deduplicationCache) {
+            @NonNull final DeduplicationCache deduplicationCache,
+            @NonNull final HapiThrottling hapiThrottling) {
         this.currentPlatformStatus = requireNonNull(currentPlatformStatus);
         this.transactionChecker = requireNonNull(transactionChecker);
-        this.throttleAccumulator = requireNonNull(throttleAccumulator);
         this.solvencyPreCheck = solvencyPreCheck;
         this.signatureVerifier = requireNonNull(signatureVerifier);
         this.signatureExpander = requireNonNull(signatureExpander);
         this.deduplicationCache = requireNonNull(deduplicationCache);
+        this.hapiThrottling = requireNonNull(hapiThrottling);
     }
 
     /**
@@ -133,9 +133,8 @@ public final class IngestChecker {
             throw new PreCheckException(DUPLICATE_TRANSACTION);
         }
 
-        // TODO: change that with the HapiThrottle implementation
         // 4. Check throttles
-        if (throttleAccumulator.shouldThrottle(txInfo.txBody())) {
+        if (hapiThrottling.shouldThrottle(txInfo, state)) {
             throw new PreCheckException(BUSY);
         }
 
