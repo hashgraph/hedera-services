@@ -183,7 +183,7 @@ jobs:
           java-version: ${{ inputs.java-version }}
 
       - name: Setup Gradle
-        uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
+        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # pin@v2.8
         with:
           build-root-directory: hedera-node
           gradle-version: ${{ inputs.gradle-version }}
@@ -193,25 +193,25 @@ jobs:
             jdks
 
       - name: Gradle Update Version (As Specified)
-        uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
+        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # pin@v2.8
         if: ${{ inputs.version-policy == 'specified' && !cancelled() && !failure() }}
         with:
           arguments: versionAsSpecified -PnewVersion=${{ inputs.new-version }} --scan
 
       - name: Gradle Update Version (Branch Commit)
-        uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
+        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # pin@v2.8
         if: ${{ inputs.version-policy != 'specified' && !cancelled() && !failure() }}
         with:
           arguments: versionAsPrefixedCommit -PcommitPrefix=${{ steps.parameters.outputs.commit-prefix }} --scan
 
       - name: Gradle Version Summary
-        uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
+        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # pin@v2.8
         with:
           arguments: githubVersionSummary --scan
 
       - name: Gradle Assemble
         id: gradle-build
-        uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
+        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # pin@v2.8
         with:
           arguments: -p hedera-node assemble --scan
 
@@ -350,7 +350,7 @@ jobs:
         uses: docker/setup-qemu-action@2b82ce82d56a2a04d2637cd93a637ae1b359c0a7 # pin@v2
 
       - name: Setup Docker Buildx Support
-        uses: docker/setup-buildx-action@16c0bc4a6e6ada2cfd8afd41d22d95379cf7c32a # pin@v2
+        uses: docker/setup-buildx-action@v2
 
       - name: Docker Login
         uses: docker/login-action@465a07811f14bebb1938fbed4728c6a1ff8901fc # pin@v2
