@@ -31,6 +31,10 @@ plugins {
 
 tasks.register("checkAllModuleInfo")
 
+tasks.register("jacocoTestReport") {
+    group = "verification"
+}
+
 configureLifecycleTask("clean")
 
 configureLifecycleTask("assemble")
