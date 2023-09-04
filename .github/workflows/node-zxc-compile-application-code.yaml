@@ -18,11 +18,6 @@ name: "Z-Node XC: Compile"
 on:
   workflow_call:
     inputs:
-      enable-javadoc:
-        description: "Javadoc Enabled"
-        type: boolean
-        required: false
-        default: true
       enable-unit-tests:
         description: "Unit Testing Enabled"
         type: boolean
@@ -146,13 +141,6 @@ jobs:
         with:
           gradle-version: ${{ inputs.gradle-version }}
           arguments: -p hedera-node assemble --scan
-
-      - name: Javadoc
-        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
-        if: ${{ inputs.enable-javadoc && !cancelled() }}
-        with:
-          gradle-version: ${{ inputs.gradle-version }}
-          arguments: -p hedera-node javadoc --scan
 
       - name: Spotless Check
         uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0

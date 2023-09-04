@@ -45,7 +45,6 @@ jobs:
     uses: ./.github/workflows/node-zxc-compile-application-code.yaml
     with:
       custom-job-label: "Check"
-      enable-javadoc: false
       enable-unit-tests: false
       enable-e2e-tests: false
       enable-integration-tests: false
@@ -59,7 +58,6 @@ jobs:
     uses: ./.github/workflows/node-zxc-compile-application-code.yaml
     with:
       custom-job-label: Standard
-      enable-javadoc: false
       enable-unit-tests: true
       enable-e2e-tests: false
       enable-integration-tests: false
@@ -73,7 +71,6 @@ jobs:
     uses: ./.github/workflows/node-zxc-compile-application-code.yaml
     with:
       custom-job-label: Standard
-      enable-javadoc: false
       enable-unit-tests: false
       enable-e2e-tests: true
       enable-integration-tests: false
@@ -88,7 +85,6 @@ jobs:
     uses: ./.github/workflows/node-zxc-compile-application-code.yaml
     with:
       custom-job-label: Standard
-      enable-javadoc: false
       enable-unit-tests: false
       enable-e2e-tests: false
       enable-integration-tests: true
@@ -103,7 +99,6 @@ jobs:
     uses: ./.github/workflows/node-zxc-compile-application-code.yaml
     with:
       custom-job-label: Standard
-      enable-javadoc: false
       enable-unit-tests: false
       enable-e2e-tests: false
       enable-integration-tests: false
