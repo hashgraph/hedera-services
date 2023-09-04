@@ -14,7 +14,7 @@
 # limitations under the License.
 ##
 
-name: "Z-Node XC: Deploy Preview"
+name: "ZXC: Deploy Preview Network Release"
 on:
   workflow_call:
     inputs:

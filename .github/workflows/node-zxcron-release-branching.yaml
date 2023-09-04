@@ -14,7 +14,7 @@
 # limitations under the License.
 ##
 
-name: "Z-Node XCron: Release Branching"
+name: "ZXCron: Automatic Release Branching"
 on:
   schedule:
     - cron: '*/10 * * * *'
