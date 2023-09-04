@@ -320,6 +320,8 @@ public class HandleWorkflow {
                 final var sigVerificationFailed = preCheckResult.responseCodeEnum() == INVALID_SIGNATURE;
                 if (sigVerificationFailed) {
                     // If the signature status isn't ok, only work done will be fee charging
+                    // Note this is how it's implemented in mono (TopLevelTransition.java#L93), in future we may want to
+                    // not trackFeePayments() only for INVALID_SIGNATURE but for any preCheckResult.status() != SO_FAR_SO_GOOD
                     networkUtilizationManager.trackFeePayments(consensusNow, state);
                 }
 
@@ -335,10 +337,9 @@ public class HandleWorkflow {
                 feeAccumulator.charge(payer, fees);
                 try {
                     if (networkUtilizationManager.wasLastTxnGasThrottled()) {
-                        // Refund the service fees already charged to the payer, because the user-submitted transaction
-                        // was fully valid but network capacity was unavailable to satisfy it.
-                        final var serviceFee = new Fees(0L, 0L, fees.serviceFee());
-                        feeAccumulator.refund(payer, serviceFee);
+                        // Don't charge the payer the service fee component, because the user-submitted transaction
+                        // was fully valid but network capacity was unavailable to satisfy it
+                        fees = new Fees(fees.nodeFee(), fees.networkFee(), 0L);
                         throw new HandleException(CONSENSUS_GAS_EXHAUSTED);
                     }
 
@@ -353,7 +354,7 @@ public class HandleWorkflow {
                     dispatcher.dispatchHandle(context);
                     recordBuilder.status(SUCCESS);
 
-                    // TODO: after transaction is successfully handled update the throttles and congestion multipliers
+                    // TODO: after transaction is successfully handled update the gas throttle by leaking the unused gas
                     //                    if (isGasThrottled(op) && txnCtx.hasContractResult()) {
                     //                        final var gasUsed = txnCtx.getGasUsedForContractTxn();
                     //                        gasUsedThisConsSec += gasUsed;
