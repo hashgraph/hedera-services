@@ -15,12 +15,14 @@
  */
 
 import Utils.Companion.versionTxt
+import com.adarshr.gradle.testlogger.theme.ThemeType
 import com.autonomousapps.AbstractExtension
 import com.autonomousapps.DependencyAnalysisSubExtension
 
 plugins {
     id("java")
     id("jacoco")
+    id("com.adarshr.test-logger")
     id("com.hedera.hashgraph.jpms-modules")
     id("com.hedera.hashgraph.jpms-module-dependencies")
     id("com.hedera.hashgraph.repositories")
@@ -81,7 +83,7 @@ testing {
     @Suppress("UnstableApiUsage")
     suites {
         // Configure the normal unit test suite to use JUnit Jupiter.
-        named("test", JvmTestSuite::class) {
+        named<JvmTestSuite>("test") {
             // Enable JUnit as our test engine
             useJUnitJupiter()
             targets.all {
@@ -155,6 +157,15 @@ tasks.jacocoTestReport {
         allTestTasks.map { it.extensions.getByType<JacocoTaskExtension>().destinationFile }
     )
     shouldRunAfter(allTestTasks)
+}
+
+testlogger {
+    theme = ThemeType.MOCHA
+    slowThreshold = 10000
+    showStandardStreams = true
+    showPassedStandardStreams = false
+    showSkippedStandardStreams = false
+    showFailedStandardStreams = true
 }
 
 tasks.assemble {

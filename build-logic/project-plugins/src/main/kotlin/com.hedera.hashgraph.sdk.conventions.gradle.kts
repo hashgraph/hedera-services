@@ -14,12 +14,9 @@
  * limitations under the License.
  */
 
-import com.adarshr.gradle.testlogger.theme.ThemeType
-
 plugins {
     id("java-library")
     id("com.hedera.hashgraph.java")
-    id("com.adarshr.test-logger")
     id("com.gorylenko.gradle-git-properties")
 }
 
@@ -32,12 +29,3 @@ configurations.getByName("mainRuntimeClasspath") {
 }
 
 gitProperties { keys = listOf("git.build.version", "git.commit.id", "git.commit.id.abbrev") }
-
-testlogger {
-    theme = ThemeType.MOCHA
-    slowThreshold = 10000
-    showStandardStreams = true
-    showPassedStandardStreams = false
-    showSkippedStandardStreams = false
-    showFailedStandardStreams = true
-}
