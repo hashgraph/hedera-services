@@ -165,7 +165,7 @@ jobs:
     runs-on: [self-hosted, Linux, large, ephemeral]
     steps:
       - name: Checkout Platform Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4.0.0
         with:
           ref: ${{ inputs.ref || inputs.branch-name || '' }}
           fetch-depth: 0
@@ -182,7 +182,7 @@ jobs:
           echo "branch-name=${BRANCH_NAME}" >> "${GITHUB_OUTPUT}"
 
       - name: Checkout Regression Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4.0.0
         with:
           path: platform-sdk/regression
           repository: swirlds/swirlds-platform-regression
