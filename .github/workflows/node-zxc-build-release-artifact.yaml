@@ -213,7 +213,7 @@ jobs:
         id: gradle-build
         uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
         with:
-          arguments: -p hedera-node assemble --scan
+          arguments: assemble --scan
 
       - name: Compute Final Effective Version
         id: effective-version
