@@ -236,13 +236,6 @@ jobs:
           path: |
             hedera-node/test-clients/build/network/eet/output/**
 
-      - name: Jacoco Coverage Report
-        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
-        if: ${{ inputs.enable-unit-tests && !cancelled() }}
-        with:
-          gradle-version: ${{ inputs.gradle-version }}
-          arguments: jacocoTestReport --scan
-
       - name: Publish To Codecov
         if: ${{ inputs.enable-unit-tests && !cancelled() }}
         uses: codecov/codecov-action@eaaf4bedf32dbdc6b720b63067d99c4d77d6047d # v3.1.4
