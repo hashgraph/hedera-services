@@ -98,6 +98,7 @@ jobs:
     name: JRS Panel
     uses: ./.github/workflows/zxc-jrs-regression.yaml
     with:
+      custom-job-name: "Platform SDK"
       panel-config: "configs/suites/GCP-PRCheck-Abbrev-4N.json"
       branch-name: ${{ github.head_ref || github.ref_name }}
       slack-results-channel: "regression-test"
