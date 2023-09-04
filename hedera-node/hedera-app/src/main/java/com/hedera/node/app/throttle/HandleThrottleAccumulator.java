@@ -71,6 +71,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 @Singleton
+// TODO: rename. Use more general name
 public class HandleThrottleAccumulator {
     private static final Logger log = LogManager.getLogger(HandleThrottleAccumulator.class);
     private static final Set<HederaFunctionality> CONSENSUS_THROTTLED_FUNCTIONS =

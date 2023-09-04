@@ -25,6 +25,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * Keeps track of the amount of usage of different throttle categories (by {@code id}), and returns
  * whether the throttle has been exceeded after applying the given incremental amount.
  */
+// TODO: should we re-define that and make the HandleThrottleAccumulator implement it?
 public interface ThrottleAccumulator {
 
     /**

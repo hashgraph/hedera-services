@@ -146,6 +146,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 throw new PreCheckException(NOT_SUPPORTED);
             }
 
+            // TODO: change that with the HapiThrottle implementation
             // 3. Check query throttles
             if (throttleAccumulator.shouldThrottleQuery(function, query)) {
                 throw new PreCheckException(BUSY);

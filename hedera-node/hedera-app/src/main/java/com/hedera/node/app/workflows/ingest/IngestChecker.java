@@ -133,6 +133,7 @@ public final class IngestChecker {
             throw new PreCheckException(DUPLICATE_TRANSACTION);
         }
 
+        // TODO: change that with the HapiThrottle implementation
         // 4. Check throttles
         if (throttleAccumulator.shouldThrottle(txInfo.txBody())) {
             throw new PreCheckException(BUSY);

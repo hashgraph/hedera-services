@@ -38,6 +38,7 @@ import javax.inject.Singleton;
  * support query throttling only.
  */
 @Singleton
+// TODO: delete?
 public class MonoThrottleAccumulator implements ThrottleAccumulator {
 
     private final FunctionalityThrottling hapiThrottling;

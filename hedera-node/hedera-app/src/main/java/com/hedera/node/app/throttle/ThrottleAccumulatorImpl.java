@@ -27,6 +27,7 @@ import javax.inject.Singleton;
  * A modular implementation of the {@link ThrottleAccumulator}. TBD.
  */
 @Singleton
+// TODO: delete?
 public class ThrottleAccumulatorImpl implements ThrottleAccumulator {
 
     @Inject
