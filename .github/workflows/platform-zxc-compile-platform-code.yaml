@@ -206,7 +206,7 @@ jobs:
           arguments: -p platform-sdk check hammerTest --scan
 
       - name: Publish JUnit Test Report
-        uses: actionite/publish-unit-test-result-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # pin@v2.8
+        uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # pin@v2
         if: ${{ inputs.enable-unit-tests && steps.gradle-build.conclusion == 'success' && !cancelled() && always() }}
         with:
           check_name: 'Platform: JUnit Test Report'
