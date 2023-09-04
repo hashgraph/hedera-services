@@ -150,7 +150,7 @@ class IngestCheckerTest extends AppTestBase {
         final var configProvider = HederaTestConfigBuilder.createConfigProvider();
         this.deduplicationCache = new DeduplicationCacheImpl(configProvider);
 
-        when(solvencyPreCheck.checkPayerAccountStatus(any(), eq(ALICE.accountID())))
+        when(solvencyPreCheck.getPayerAccount(any(), eq(ALICE.accountID())))
                 .thenReturn(ALICE.account());
         when(dispatcher.dispatchComputeFees(any())).thenReturn(DEFAULT_FEES);
 
@@ -308,7 +308,7 @@ class IngestCheckerTest extends AppTestBase {
         @MethodSource("failureReasons")
         @DisplayName("If the status of the payer account is invalid, the transaction should be rejected")
         void payerAccountStatusFails(ResponseCodeEnum failureReason) throws PreCheckException {
-            doThrow(new PreCheckException(failureReason)).when(solvencyPreCheck).checkPayerAccountStatus(any(), any());
+            doThrow(new PreCheckException(failureReason)).when(solvencyPreCheck).getPayerAccount(any(), any());
 
             assertThatThrownBy(() -> subject.runAllChecks(state, tx))
                     .isInstanceOf(PreCheckException.class)
@@ -321,7 +321,7 @@ class IngestCheckerTest extends AppTestBase {
             // Given an IngestChecker that will throw a RuntimeException from checkPayerSignature
             doThrow(new RuntimeException("checkPayerAccountStatus exception"))
                     .when(solvencyPreCheck)
-                    .checkPayerAccountStatus(any(), any());
+                    .getPayerAccount(any(), any());
 
             // When the transaction is submitted, then the exception is bubbled up
             assertThatThrownBy(() -> subject.runAllChecks(state, tx))
@@ -335,7 +335,7 @@ class IngestCheckerTest extends AppTestBase {
         void noKeyForPayer() throws PreCheckException {
             // The tx payer is ALICE. We remove her key from state
             final var account = ALICE.account().copyBuilder().key((Key) null).build();
-            when(solvencyPreCheck.checkPayerAccountStatus(any(), eq(ALICE.accountID())))
+            when(solvencyPreCheck.getPayerAccount(any(), eq(ALICE.accountID())))
                     .thenReturn(account);
 
             // When the transaction is submitted, then the exception is thrown

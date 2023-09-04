@@ -69,14 +69,14 @@ public class SolvencyPreCheck {
     }
 
     /**
-     * Checks if the payer account is valid.
+     * Reads the payer account from state and validates it.
      *
      * @param storeFactory the {@link ReadableStoreFactory} used to access readable state
      * @param accountID the {@link AccountID} of the payer
      * @throws PreCheckException if the payer account is invalid
      */
     @NonNull
-    public Account checkPayerAccountStatus(
+    public Account getPayerAccount(
             @NonNull final ReadableStoreFactory storeFactory, @NonNull final AccountID accountID)
             throws PreCheckException {
         final var accountStore = storeFactory.getStore(ReadableAccountStore.class);
@@ -144,12 +144,12 @@ public class SolvencyPreCheck {
             case CONTRACT_CREATE -> {
                 final var contractCreate = txInfo.txBody().contractCreateInstanceOrThrow();
                 yield contractCreate.initialBalance()
-                        - contractCreate.gas() * estimatedGasPriceInTinybars(CONTRACT_CREATE, consensusTime);
+                        + contractCreate.gas() * estimatedGasPriceInTinybars(CONTRACT_CREATE, consensusTime);
             }
             case CONTRACT_CALL -> {
                 final var contractCall = txInfo.txBody().contractCallOrThrow();
                 yield contractCall.amount()
-                        - contractCall.gas() * estimatedGasPriceInTinybars(CONTRACT_CALL, consensusTime);
+                        + contractCall.gas() * estimatedGasPriceInTinybars(CONTRACT_CALL, consensusTime);
             }
             case ETHEREUM_TRANSACTION -> {
                 final var ethTxn = txInfo.txBody().ethereumTransactionOrThrow();
