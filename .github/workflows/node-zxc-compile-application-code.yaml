@@ -140,21 +140,21 @@ jobs:
         uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
         with:
           gradle-version: ${{ inputs.gradle-version }}
-          arguments: -p hedera-node assemble --scan
+          arguments: assemble --scan
 
       - name: Spotless Check
         uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
         if: ${{ inputs.enable-spotless-check && !cancelled() }}
         with:
           gradle-version: ${{ inputs.gradle-version }}
-          arguments: -p hedera-node spotlessCheck --scan
+          arguments: spotlessCheck --scan
 
       - name: Gradle Dependency Scopes Check
         uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
         if: ${{ inputs.enable-dependency-check && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           gradle-version: ${{ inputs.gradle-version }}
-          arguments: -p hedera-node checkAllModuleInfo --scan --continue
+          arguments: checkAllModuleInfo --scan --continue
 
       - name: Unit Testing
         id: gradle-test
@@ -162,7 +162,7 @@ jobs:
         if: ${{ inputs.enable-unit-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           gradle-version: ${{ inputs.gradle-version }}
-          arguments: -p hedera-node check --continue --scan
+          arguments: check --continue --scan
 
       - name: Publish Unit Test Report
         uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # v2.3.0
@@ -241,7 +241,7 @@ jobs:
         if: ${{ inputs.enable-unit-tests && !cancelled() }}
         with:
           gradle-version: ${{ inputs.gradle-version }}
-          arguments: -p hedera-node jacocoTestReport --scan
+          arguments: jacocoTestReport --scan
 
       - name: Publish To Codecov
         if: ${{ inputs.enable-unit-tests && !cancelled() }}
@@ -277,7 +277,7 @@ jobs:
 
           echo "options=${SONAR_OPTS}" >> "${GITHUB_OUTPUT}"
 
-      - name: SonarCloud Scan (Hedera Node)
+      - name: SonarCloud Scan
         uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
         env:
           GITHUB_TOKEN: ${{ secrets.access-token }}
@@ -296,28 +296,7 @@ jobs:
           }}
         with:
           gradle-version: ${{ inputs.gradle-version }}
-          arguments: -p hedera-node sonarqube --info --scan ${{ steps.sonar-cloud.outputs.options }}
-
-      - name: SonarCloud Scan (Platform SDK)
-        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.access-token }}
-          SONAR_TOKEN: ${{ secrets.sonar-token }}
-          SONAR_OPTS: ${{ steps.sonar-cloud.outputs.options }}
-        if: >-
-          ${{
-            inputs.enable-sonar-analysis &&
-            steps.gradle-build.conclusion == 'success' &&
-            (
-              github.event.pull_request.head.repo.full_name == github.repository ||
-              github.event_name == 'push' ||
-              github.event_name == 'workflow_dispatch'
-            ) &&
-            !cancelled()
-          }}
-        with:
-          gradle-version: ${{ inputs.gradle-version }}
-          arguments: -p platform-sdk sonarqube --info --scan ${{ steps.sonar-cloud.outputs.options }}
+          arguments: sonarqube --info --scan ${{ steps.sonar-cloud.outputs.options }}
 
       - name: Setup Snyk
         env:
