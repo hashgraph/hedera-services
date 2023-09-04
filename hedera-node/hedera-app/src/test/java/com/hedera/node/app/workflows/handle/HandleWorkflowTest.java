@@ -51,6 +51,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.state.HederaRecordCache;
+import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionScenarioBuilder;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
@@ -167,6 +168,9 @@ class HandleWorkflowTest extends AppTestBase {
     @Mock
     private SystemFileUpdateFacility systemFileUpdateFacility;
 
+    @Mock
+    private SolvencyPreCheck solvencyPreCheck;
+
     private HandleWorkflow workflow;
 
     @BeforeEach
@@ -213,7 +217,8 @@ class HandleWorkflowTest extends AppTestBase {
                 feeManager,
                 exchangeRateManager,
                 finalizer,
-                systemFileUpdateFacility);
+                systemFileUpdateFacility,
+                solvencyPreCheck);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -234,7 +239,8 @@ class HandleWorkflowTest extends AppTestBase {
                         feeManager,
                         exchangeRateManager,
                         finalizer,
-                        systemFileUpdateFacility))
+                        systemFileUpdateFacility,
+                        solvencyPreCheck))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -251,7 +257,8 @@ class HandleWorkflowTest extends AppTestBase {
                         feeManager,
                         exchangeRateManager,
                         finalizer,
-                        systemFileUpdateFacility))
+                        systemFileUpdateFacility,
+                        solvencyPreCheck))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -268,7 +275,8 @@ class HandleWorkflowTest extends AppTestBase {
                         feeManager,
                         exchangeRateManager,
                         finalizer,
-                        systemFileUpdateFacility))
+                        systemFileUpdateFacility,
+                        solvencyPreCheck))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -285,7 +293,8 @@ class HandleWorkflowTest extends AppTestBase {
                         feeManager,
                         exchangeRateManager,
                         finalizer,
-                        systemFileUpdateFacility))
+                        systemFileUpdateFacility,
+                        solvencyPreCheck))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -302,7 +311,8 @@ class HandleWorkflowTest extends AppTestBase {
                         feeManager,
                         exchangeRateManager,
                         finalizer,
-                        systemFileUpdateFacility))
+                        systemFileUpdateFacility,
+                        solvencyPreCheck))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -319,7 +329,8 @@ class HandleWorkflowTest extends AppTestBase {
                         feeManager,
                         exchangeRateManager,
                         finalizer,
-                        systemFileUpdateFacility))
+                        systemFileUpdateFacility,
+                        solvencyPreCheck))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -336,7 +347,8 @@ class HandleWorkflowTest extends AppTestBase {
                         feeManager,
                         exchangeRateManager,
                         finalizer,
-                        systemFileUpdateFacility))
+                        systemFileUpdateFacility,
+                        solvencyPreCheck))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -353,7 +365,8 @@ class HandleWorkflowTest extends AppTestBase {
                         feeManager,
                         exchangeRateManager,
                         finalizer,
-                        systemFileUpdateFacility))
+                        systemFileUpdateFacility,
+                        solvencyPreCheck))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -370,7 +383,8 @@ class HandleWorkflowTest extends AppTestBase {
                         feeManager,
                         exchangeRateManager,
                         finalizer,
-                        systemFileUpdateFacility))
+                        systemFileUpdateFacility,
+                        solvencyPreCheck))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -387,7 +401,8 @@ class HandleWorkflowTest extends AppTestBase {
                         feeManager,
                         exchangeRateManager,
                         finalizer,
-                        systemFileUpdateFacility))
+                        systemFileUpdateFacility,
+                        solvencyPreCheck))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -404,7 +419,8 @@ class HandleWorkflowTest extends AppTestBase {
                         feeManager,
                         exchangeRateManager,
                         finalizer,
-                        systemFileUpdateFacility))
+                        systemFileUpdateFacility,
+                        solvencyPreCheck))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -421,7 +437,8 @@ class HandleWorkflowTest extends AppTestBase {
                         null,
                         exchangeRateManager,
                         finalizer,
-                        systemFileUpdateFacility))
+                        systemFileUpdateFacility,
+                        solvencyPreCheck))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -438,7 +455,8 @@ class HandleWorkflowTest extends AppTestBase {
                         feeManager,
                         null,
                         finalizer,
-                        systemFileUpdateFacility))
+                        systemFileUpdateFacility,
+                        solvencyPreCheck))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -455,7 +473,8 @@ class HandleWorkflowTest extends AppTestBase {
                         feeManager,
                         exchangeRateManager,
                         null,
-                        systemFileUpdateFacility))
+                        systemFileUpdateFacility,
+                        solvencyPreCheck))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -472,7 +491,8 @@ class HandleWorkflowTest extends AppTestBase {
                         feeManager,
                         exchangeRateManager,
                         finalizer,
-                        null))
+                        null,
+                        solvencyPreCheck))
                 .isInstanceOf(NullPointerException.class);
     }
 
