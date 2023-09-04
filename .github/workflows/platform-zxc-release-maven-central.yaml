@@ -172,7 +172,7 @@ jobs:
           java-version: ${{ inputs.java-version }}
 
       - name: Setup Gradle
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # pin@v2.8
         with:
           build-root-directory: platform-sdk
           gradle-version: ${{ inputs.gradle-version }}
@@ -184,19 +184,19 @@ jobs:
             dependency-check-data
 
       - name: Apply Version Number Update (Explicit)
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # pin@v2.8
         with:
           gradle-version: ${{ inputs.gradle-version }}
           arguments: versionAsSpecified --scan -PnewVersion=${{ inputs.new-version }}
 
       - name: Version Report
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # pin@v2.8
         with:
           gradle-version: ${{ inputs.gradle-version }}
           arguments: githubVersionSummary --scan
 
       - name: Gradle Assemble
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # pin@v2.8
         if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
         with:
           gradle-version: ${{ inputs.gradle-version }}
@@ -204,14 +204,14 @@ jobs:
 
       - name: Gradle JavaDoc
         id: gradle-javadoc
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # pin@v2.8
         if: ${{ steps.gradle-build.conclusion == 'success' && !cancelled() && !failure() }}
         with:
           gradle-version: ${{ inputs.gradle-version }}
           arguments: -p platform-sdk javadoc --scan --parallel
 
       - name: Gradle Deploy
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # pin@v2.8
         if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
         env:
           OSSRH_USERNAME: ${{ secrets.ossrh-user-name }}

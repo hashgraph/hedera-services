@@ -162,7 +162,7 @@ jobs:
           java-version: ${{ inputs.java-version }}
 
       - name: Setup Gradle
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # pin@v2.8
         with:
           build-root-directory: platform-sdk
           gradle-version: ${{ inputs.gradle-version }}
@@ -204,7 +204,7 @@ jobs:
           echo "number=${{ inputs.new-version }}" >> "${GITHUB_OUTPUT}"
 
       - name: Apply Version Number Update (Explicit)
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # pin@v2.8
         if: ${{ (inputs.version-policy == 'uniform-explicit' || inputs.version-policy == 'early-access-explicit') && !cancelled() && !failure() }}
         with:
           gradle-version: ${{ inputs.gradle-version }}
@@ -212,33 +212,33 @@ jobs:
 
       - name: Update Version Numbers (Commit Locked)
         if: ${{ inputs.version-policy == 'commit-locked' && !cancelled() && !failure() }}
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # pin@v2.8
         with:
           gradle-version: ${{ inputs.gradle-version }}
           arguments: versionAsPrefixedCommit --scan -PcommitPrefix=${{ inputs.prerelease-prefix }}
 
       - name: Update Version Numbers (Snapshot Locked)
         if: ${{ inputs.version-policy == 'snapshot-locked' && !cancelled() && !failure() }}
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # pin@v2.8
         with:
           gradle-version: ${{ inputs.gradle-version }}
           arguments: versionAsSnapshot --scan
 
       - name: Version Report
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # pin@v2.8
         with:
           gradle-version: ${{ inputs.gradle-version }}
           arguments: githubVersionSummary --scan
 
       - name: Gradle Assemble
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # pin@v2.8
         if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
         with:
           gradle-version: ${{ inputs.gradle-version }}
           arguments: -p platform-sdk assemble --scan --parallel
 
       - name: Gradle Deploy
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # pin@v2.8
         if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
         with:
           gradle-version: ${{ inputs.gradle-version }}

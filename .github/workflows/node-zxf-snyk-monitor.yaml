@@ -41,13 +41,13 @@ jobs:
           java-version: 17.0.3
 
       - name: Setup Gradle
-        uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
+        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # pin@v2.8
         with:
           build-root-directory: hedera-node
           gradle-version: wrapper
 
       - name: Compile
-        uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
+        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # pin@v2.8
         with:
           gradle-version: wrapper
           arguments: -p hedera-node assemble --scan
