@@ -164,7 +164,7 @@ jobs:
       - name: Setup Google Cloud SDK
         if: ${{ inputs.dry-run-enabled != true }}
         uses: google-github-actions/setup-gcloud@e30db14379863a8c79331b04a9969f4c1e225e0b # v1.1.1
-        
+
       - name: Setup Java
         uses: actions/setup-java@cd89f46ac9d01407894225f350157564c9c7cee2 # v3.12.0
         with:
