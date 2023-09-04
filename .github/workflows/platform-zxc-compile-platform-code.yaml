@@ -125,7 +125,7 @@ jobs:
           fetch-depth: 0
 
       - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v1
+        uses: google-github-actions/auth@35b0e87d162680511bf346c299f71c9c5c379033 # v1.1.1
         if: ${{ inputs.enable-unit-tests && !cancelled() }}
         with:
           workload_identity_provider: 'projects/1052213468738/locations/global/workloadIdentityPools/junit-reporting-pool/providers/junit-report-writer'
@@ -133,7 +133,7 @@ jobs:
 
       - name: Setup Google Cloud SDK
         if: ${{ inputs.enable-unit-tests && !cancelled() }}
-        uses: google-github-actions/setup-gcloud@v1
+        uses: google-github-actions/setup-gcloud@e30db14379863a8c79331b04a9969f4c1e225e0b # v1.1.1
 
       - name: Setup Java
         uses: actions/setup-java@cd89f46ac9d01407894225f350157564c9c7cee2 # v3.12.0
@@ -184,7 +184,7 @@ jobs:
           arguments: -p platform-sdk dependencyCheckAggregate --scan -PsuppressionFile=${{ github.workspace }}/platform-sdk/gradle/dep-check-suppression.xml
 
       - name: Store OWASP Report Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
         if: ${{ inputs.enable-owasp-analysis && steps.gradle-dependency-check.conclusion == 'success' && !cancelled() }}
         with:
           name: OWASP Dependency Report
@@ -206,7 +206,7 @@ jobs:
           arguments: -p platform-sdk check hammerTest --scan
 
       - name: Publish JUnit Test Report
-        uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # pin@v2
+        uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # v2.3.0
         if: ${{ inputs.enable-unit-tests && steps.gradle-build.conclusion == 'success' && !cancelled() && always() }}
         with:
           check_name: 'Platform: JUnit Test Report'
@@ -230,7 +230,7 @@ jobs:
           echo "prefix=${PREFIX}" >> "${GITHUB_OUTPUT}"
 
       - name: Upload JUnit Reports
-        uses: google-github-actions/upload-cloud-storage@v1
+        uses: google-github-actions/upload-cloud-storage@e95a15f226403ed658d3e65f40205649f342ba2c # v1.0.3
         if: ${{ inputs.enable-unit-tests && steps.gradle-build.conclusion == 'success' && !cancelled() && always() }}
         with:
           parent: false

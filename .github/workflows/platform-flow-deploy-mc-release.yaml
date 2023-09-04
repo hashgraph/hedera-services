@@ -110,7 +110,7 @@ jobs:
 
 #      - name: Cache SDK Release Archives
 #        id: archive-cache
-#        uses: actions/cache@v3
+#        uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
 #        with:
 #          path: ~/sdk-archives
 #          key: v1-sdk-release-v${{ github.event.inputs.new-version }}-jdk${{ github.event.inputs.java-version }}-${{ runner.os }}-${{ runner.arch }}-ri${{ github.run_id }}-rn${{ github.run_number }}-ra${{ github.run_attempt }}
