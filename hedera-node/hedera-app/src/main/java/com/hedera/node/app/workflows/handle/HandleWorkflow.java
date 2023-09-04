@@ -68,7 +68,6 @@ import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfiguration;
-import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.system.Round;
@@ -316,10 +315,7 @@ public class HandleWorkflow {
             final var preCheckResult = runPreChecks(consensusNow, verifier, preHandleResult);
 
             networkUtilizationManager.resetFrom(state);
-            final var isPayerThrottleExempt = throttleExempt(payer, configuration);
-            if (!isPayerThrottleExempt) {
-                networkUtilizationManager.trackTxn(transactionInfo, consensusNow, state);
-            }
+            networkUtilizationManager.trackTxn(transactionInfo, consensusNow, state);
 
             if (preCheckResult.status() != SO_FAR_SO_GOOD) {
                 final var sigVerificationFailed = preCheckResult.responseCodeEnum() == INVALID_SIGNATURE;
@@ -338,7 +334,7 @@ public class HandleWorkflow {
             } else {
                 feeAccumulator.charge(payer, fees);
                 try {
-                    if (!isPayerThrottleExempt && networkUtilizationManager.wasLastTxnGasThrottled()) {
+                    if (networkUtilizationManager.wasLastTxnGasThrottled()) {
                         // Refund the service fees already charged to the payer, because the user-submitted transaction
                         // was fully valid but network capacity was unavailable to satisfy it.
                         final var serviceFee = new Fees(0L, 0L, fees.serviceFee());
@@ -398,13 +394,6 @@ public class HandleWorkflow {
         blockRecordManager.endUserTransaction(recordListResult.recordStream(), state);
 
         return txBody;
-    }
-
-    private boolean throttleExempt(@NonNull AccountID accountID, Configuration configuration) {
-        final var maxThrottleExemptNum =
-                configuration.getConfigData(AccountsConfig.class).lastThrottleExempt();
-        final var accountNum = accountID.accountNum();
-        return 1L <= accountNum && accountNum <= maxThrottleExemptNum;
     }
 
     @NonNull

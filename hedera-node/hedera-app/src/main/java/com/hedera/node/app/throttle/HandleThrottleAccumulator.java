@@ -48,6 +48,7 @@ import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.AutoCreationConfig;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.LazyCreationConfig;
@@ -134,6 +135,19 @@ public class HandleThrottleAccumulator {
         final var function = txnInfo.functionality();
         final var configuration = configProvider.getConfiguration();
 
+        // Note that by payer exempt from throttling we mean just that those transactions will not be throttled,
+        // such payer accounts neither impact the throttles nor are they impacted by them
+        // In the current mono-service implementation we have the same behavior, additionally it is
+        // possible that transaction can also be exempt from affecting congestion levels separate from throttle
+        // exemption
+        // but this is only possible for the case of triggered transactions which is not yet implemented (see
+        // MonoMultiplierSources.java)
+        final var payer = txnInfo.txBody().transactionID().accountID();
+        final var isPayerThrottleExempt = throttleExempt(payer, configuration);
+        if (isPayerThrottleExempt) {
+            return false;
+        }
+
         // TODO: probably not best to recreate the gasThrottle for every txn, we can do it similar to mono which is when
         // the config is updated
         long capacity;
@@ -172,6 +186,13 @@ public class HandleThrottleAccumulator {
             }
             default -> !manager.allReqsMetAt(now);
         };
+    }
+
+    private boolean throttleExempt(@NonNull AccountID accountID, Configuration configuration) {
+        final var maxThrottleExemptNum =
+                configuration.getConfigData(AccountsConfig.class).lastThrottleExempt();
+        final var accountNum = accountID.accountNum();
+        return 1L <= accountNum && accountNum <= maxThrottleExemptNum;
     }
 
     private void reclaimLastAllowedUse() {
