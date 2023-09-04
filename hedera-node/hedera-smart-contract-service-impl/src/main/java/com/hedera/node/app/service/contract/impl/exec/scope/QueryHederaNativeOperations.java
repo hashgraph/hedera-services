@@ -16,10 +16,14 @@
 
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.annotations.QueryScope;
+import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -41,17 +45,22 @@ public class QueryHederaNativeOperations implements HederaNativeOperations {
 
     @Override
     public @Nullable Account getAccount(final long number) {
-        throw new AssertionError("Not implemented");
+        final var accountStore = context.createStore(ReadableAccountStore.class);
+        return accountStore.getAccountById(
+                AccountID.newBuilder().accountNum(number).build());
     }
 
     @Override
     public @Nullable Token getToken(final long number) {
-        throw new AssertionError("Not implemented");
+        final var tokenStore = context.createStore(ReadableTokenStore.class);
+        return tokenStore.get(TokenID.newBuilder().tokenNum(number).build());
     }
 
     @Override
     public long resolveAlias(@NonNull final Bytes evmAddress) {
-        throw new AssertionError("Not implemented");
+        final var accountStore = context.createStore(ReadableAccountStore.class);
+        final var account = accountStore.getAccountIDByAlias(evmAddress);
+        return account == null ? MISSING_ENTITY_NUMBER : account.accountNumOrThrow();
     }
 
     /**

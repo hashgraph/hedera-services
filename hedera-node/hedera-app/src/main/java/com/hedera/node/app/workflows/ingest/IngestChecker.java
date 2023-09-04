@@ -17,6 +17,7 @@
 package com.hedera.node.app.workflows.ingest;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
@@ -35,6 +36,7 @@ import com.hedera.node.app.signature.SignatureExpander;
 import com.hedera.node.app.signature.SignatureVerifier;
 import com.hedera.node.app.solvency.SolvencyPreCheck;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.workflows.TransactionChecker;
@@ -62,6 +64,7 @@ public final class IngestChecker {
     private final SolvencyPreCheck solvencyPreCheck;
     private final SignatureVerifier signatureVerifier;
     private final SignatureExpander signatureExpander;
+    private final DeduplicationCache deduplicationCache;
 
     /**
      * Constructor of the {@code IngestChecker}
@@ -81,13 +84,15 @@ public final class IngestChecker {
             @NonNull final ThrottleAccumulator throttleAccumulator,
             @NonNull final SolvencyPreCheck solvencyPreCheck,
             @NonNull final SignatureExpander signatureExpander,
-            @NonNull final SignatureVerifier signatureVerifier) {
+            @NonNull final SignatureVerifier signatureVerifier,
+            @NonNull final DeduplicationCache deduplicationCache) {
         this.currentPlatformStatus = requireNonNull(currentPlatformStatus);
         this.transactionChecker = requireNonNull(transactionChecker);
         this.throttleAccumulator = requireNonNull(throttleAccumulator);
         this.solvencyPreCheck = solvencyPreCheck;
         this.signatureVerifier = requireNonNull(signatureVerifier);
         this.signatureExpander = requireNonNull(signatureExpander);
+        this.deduplicationCache = requireNonNull(deduplicationCache);
     }
 
     /**
@@ -124,7 +129,9 @@ public final class IngestChecker {
         assert functionality != HederaFunctionality.NONE;
 
         // 3. Deduplicate
-        // TODO: Integrate solution from preHandle workflow once it is merged
+        if (deduplicationCache.contains(txBody.transactionIDOrThrow())) {
+            throw new PreCheckException(DUPLICATE_TRANSACTION);
+        }
 
         // 4. Check throttles
         if (throttleAccumulator.shouldThrottle(txInfo.txBody())) {

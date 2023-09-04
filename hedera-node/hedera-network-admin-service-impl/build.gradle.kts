@@ -18,22 +18,20 @@ plugins { id("com.hedera.hashgraph.conventions") }
 
 description = "Default Hedera Network Admin Service Implementation"
 
-dependencies {
-    javaModuleDependencies {
-        annotationProcessor(gav("dagger.compiler"))
+mainModuleInfo { annotationProcessor("dagger.compiler") }
 
-        testImplementation(project(":app"))
-        testImplementation(project(":app-service-network-admin-impl"))
-        testImplementation(project(":app-service-token-impl"))
-        testImplementation(testFixtures(project(":config")))
-        testImplementation(testFixtures(project(":app")))
-        testImplementation(testFixtures(project(":app-spi")))
-        testImplementation(gav("com.swirlds.fcqueue"))
-        testImplementation(gav("org.assertj.core"))
-        testImplementation(gav("org.junit.jupiter.api"))
-        testImplementation(gav("org.mockito"))
-        testImplementation(gav("org.mockito.junit.jupiter"))
-        testCompileOnly(gav("com.github.spotbugs.annotations"))
-        testRuntimeOnly(gav("org.mockito.inline"))
-    }
+testModuleInfo {
+    requires("com.hedera.node.app")
+    requires("com.hedera.node.app.service.network.admin.impl")
+    requires("com.hedera.node.app.service.token.impl")
+    requires("com.hedera.node.app.spi.test.fixtures")
+    requires("com.hedera.node.app.test.fixtures")
+    requires("com.hedera.node.config.test.fixtures")
+    requires("com.swirlds.fcqueue")
+    requires("org.assertj.core")
+    requires("org.junit.jupiter.api")
+    requires("org.mockito")
+    requires("org.mockito.junit.jupiter")
+    requiresStatic("com.github.spotbugs.annotations")
+    runtimeOnly("org.mockito.inline")
 }

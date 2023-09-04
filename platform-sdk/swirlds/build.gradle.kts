@@ -14,29 +14,20 @@
  * limitations under the License.
  */
 
-plugins { id("com.swirlds.platform.conventions") }
+plugins { id("com.hedera.hashgraph.application") }
 
-dependencies {
-    // Individual Dependencies
-    implementation(project(":swirlds-platform-core"))
+mainModuleInfo {
+    runtimeOnly("com.swirlds.platform.core")
+    runtimeOnly("com.swirlds.merkle")
+    runtimeOnly("com.swirlds.merkle.test")
 }
 
-val copyApp =
-    tasks.register<Copy>("copyApp") {
-        from(tasks.jar)
-        into(File(rootProject.projectDir, "sdk"))
-        rename { "${project.name}.jar" }
-        shouldRunAfter(tasks.assemble)
-    }
+application.mainClass.set("com.swirlds.platform.Browser")
 
-tasks.assemble { dependsOn(copyApp) }
-
-extraJavaModuleInfo { failOnMissingModuleInfo.set(false) }
-
-dependencies {
-    runtimeOnly(project(":swirlds-merkle"))
-    runtimeOnly(project(":swirlds-unit-tests:structures:swirlds-merkle-test"))
-    runtimeOnly(libs.protobuf)
+tasks.copyApp {
+    // Adjust configuration from 'com.hedera.hashgraph.application':
+    // Copy directly into 'sdk' and not 'sdk/data/apps'
+    into(layout.projectDirectory.dir("../sdk"))
 }
 
 tasks.jar {
@@ -45,7 +36,6 @@ tasks.jar {
     inputs.files(configurations.runtimeClasspath)
     manifest {
         attributes(
-            "Main-Class" to "com.swirlds.platform.Browser",
             "Class-Path" to
                 configurations.runtimeClasspath.get().elements.map { entry ->
                     entry

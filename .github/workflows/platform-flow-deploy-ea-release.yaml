@@ -96,7 +96,7 @@ jobs:
       java-version: ${{ github.event.inputs.java-version || '17.0.3' }}
       java-distribution: ${{ github.event.inputs.java-distribution || 'temurin' }}
       gradle-version: ${{ github.event.inputs.gradle-version || 'wrapper' }}
-      deployment-profile: prerelease-channel
+      deployment-profile: PrereleaseChannel
       version-policy: early-access-explicit
       new-version: ${{ needs.prepare-release.outputs.version-number }}
       custom-job-label: "Release / Early Access"
