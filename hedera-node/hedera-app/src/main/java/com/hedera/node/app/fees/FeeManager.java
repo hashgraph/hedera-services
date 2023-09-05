@@ -144,7 +144,7 @@ public final class FeeManager {
             @NonNull final SubType subType) {
 
         // Determine which fee schedule to use, based on the consensus time
-        final var feeData = getFeeData(txInfo, consensusTime, subType);
+        final var feeData = getFeeData(txInfo.functionality(), consensusTime, subType);
 
         // Create the fee calculator
         return new FeeCalculatorImpl(
@@ -155,15 +155,15 @@ public final class FeeManager {
      * Looks up the fee data for the given transaction and its details.
      */
     @NonNull
-    private FeeData getFeeData(
-            @NonNull TransactionInfo txInfo, @NonNull Instant consensusTime, @NonNull SubType subType) {
+    public FeeData getFeeData(
+            @NonNull HederaFunctionality functionality, @NonNull Instant consensusTime, @NonNull SubType subType) {
         final var feeDataMap =
                 consensusTime.getEpochSecond() > currentScheduleExpirationSeconds ? nextFeeDataMap : currentFeeDataMap;
 
         // Now, lookup the fee data for the transaction type. If it is not known, that is, if we have no fee data for
         // that transaction, then we MUST NOT execute that transaction! We will not be able to charge appropriately
         // for it.
-        final var feeData = feeDataMap.get(new Entry(txInfo.functionality(), subType));
+        final var feeData = feeDataMap.get(new Entry(functionality, subType));
         if (feeData == null) {
             throw new HandleException(ResponseCodeEnum.NOT_SUPPORTED);
         }
