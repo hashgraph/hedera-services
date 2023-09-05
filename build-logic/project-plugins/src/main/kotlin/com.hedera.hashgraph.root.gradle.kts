@@ -31,6 +31,8 @@ plugins {
 
 tasks.register("checkAllModuleInfo")
 
+tasks.register("jacocoTestReport") { group = "verification" }
+
 configureLifecycleTask("clean")
 
 configureLifecycleTask("assemble")
@@ -44,6 +46,8 @@ configureLifecycleTask("spotlessCheck")
 configureLifecycleTask("spotlessApply")
 
 configureLifecycleTask("checkAllModuleInfo")
+
+configureLifecycleTask("jacocoTestReport")
 
 fun configureLifecycleTask(taskName: String) {
     tasks.named(taskName) {

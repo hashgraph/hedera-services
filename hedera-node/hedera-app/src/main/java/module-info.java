@@ -45,7 +45,8 @@ module com.hedera.node.app {
     requires static com.github.spotbugs.annotations;
 
     exports com.hedera.node.app to
-            com.swirlds.platform.core;
+            com.swirlds.platform.core,
+            com.hedera.node.test.clients;
     exports com.hedera.node.app.state to
             com.swirlds.common,
             com.hedera.node.app.test.fixtures;
@@ -88,4 +89,5 @@ module com.hedera.node.app {
     exports com.hedera.node.app.version to
             com.swirlds.common,
             com.swirlds.platform;
+    exports com.hedera.node.app.validation;
 }
