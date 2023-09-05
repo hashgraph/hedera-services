@@ -53,6 +53,7 @@ import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.LazyCreationConfig;
 import com.hedera.node.config.data.TokensConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hederahashgraph.api.proto.java.Query;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
@@ -103,6 +104,31 @@ public class GeneralThrottleAccumulator {
             return true;
         }
 
+        return false;
+    }
+
+    public boolean shouldThrottleQuery(HederaFunctionality queryFunction, Instant now, Query query) {
+        final var configuration = configProvider.getConfiguration();
+        final var shouldThrottleByGas =
+                configuration.getConfigData(ContractsConfig.class).throttleThrottleByGas();
+
+        resetLastAllowedUse();
+        if (isGasThrottled(queryFunction)
+                && shouldThrottleByGas
+                && (gasThrottle == null
+                        || !gasThrottle.allow(now, query.getContractCallLocal().getGas()))) {
+            reclaimLastAllowedUse();
+            return true;
+        }
+        ThrottleReqsManager manager;
+        if ((manager = functionReqs.get(queryFunction)) == null) {
+            reclaimLastAllowedUse();
+            return true;
+        }
+        if (!manager.allReqsMetAt(now)) {
+            reclaimLastAllowedUse();
+            return true;
+        }
         return false;
     }
 

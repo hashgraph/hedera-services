@@ -41,7 +41,7 @@ import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.throttle.ThrottleAccumulator;
+import com.hedera.node.app.throttle.HapiThrottling;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.ingest.IngestChecker;
 import com.hedera.node.app.workflows.ingest.SubmissionManager;
@@ -74,7 +74,6 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             List.of(NETWORK_GET_EXECUTION_TIME, GET_ACCOUNT_DETAILS);
 
     private final Function<ResponseType, AutoCloseableWrapper<HederaState>> stateAccessor;
-    private final ThrottleAccumulator throttleAccumulator;
     private final SubmissionManager submissionManager;
     private final QueryChecker queryChecker;
     private final IngestChecker ingestChecker;
@@ -83,32 +82,32 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
     private final Codec<Query> queryParser;
     private final ConfigProvider configProvider;
     private final RecordCache recordCache;
+    private final HapiThrottling hapiThrottling;
 
     /**
      * Constructor of {@code QueryWorkflowImpl}
      *
      * @param stateAccessor a {@link Function} that returns the latest immutable or latest signed
      *     state depending on the {@link ResponseType}
-     * @param throttleAccumulator the {@link ThrottleAccumulator} for throttling
      * @param submissionManager the {@link SubmissionManager} to submit transactions to the platform
      * @param queryChecker the {@link QueryChecker} with specific checks of an ingest-workflow
      * @param ingestChecker the {@link IngestChecker} to handle the crypto transfer
      * @param dispatcher the {@link QueryDispatcher} that will call query-specific methods
+     * @param hapiThrottling the {@link HapiThrottling} that checks transaction should be throttled
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     @Inject
     public QueryWorkflowImpl(
             @NonNull final Function<ResponseType, AutoCloseableWrapper<HederaState>> stateAccessor,
-            @NonNull final ThrottleAccumulator throttleAccumulator,
             @NonNull final SubmissionManager submissionManager,
             @NonNull final QueryChecker queryChecker,
             @NonNull final IngestChecker ingestChecker,
             @NonNull final QueryDispatcher dispatcher,
             @NonNull final Codec<Query> queryParser,
             @NonNull final ConfigProvider configProvider,
-            @NonNull final RecordCache recordCache) {
+            @NonNull final RecordCache recordCache,
+            @NonNull final HapiThrottling hapiThrottling) {
         this.stateAccessor = requireNonNull(stateAccessor);
-        this.throttleAccumulator = requireNonNull(throttleAccumulator);
         this.submissionManager = requireNonNull(submissionManager);
         this.ingestChecker = requireNonNull(ingestChecker);
         this.queryChecker = requireNonNull(queryChecker);
@@ -116,6 +115,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         this.queryParser = requireNonNull(queryParser);
         this.configProvider = requireNonNull(configProvider);
         this.recordCache = requireNonNull(recordCache);
+        this.hapiThrottling = requireNonNull(hapiThrottling);
     }
 
     @Override
@@ -146,9 +146,10 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 throw new PreCheckException(NOT_SUPPORTED);
             }
 
-            // TODO: change that with the HapiThrottle implementation
             // 3. Check query throttles
-            if (throttleAccumulator.shouldThrottleQuery(function, query)) {
+            if (hapiThrottling.shouldThrottleQuery(
+                    PbjConverter.toProtoQuery(query),
+                    HederaFunctionality.fromProtobufOrdinal(function.protoOrdinal()))) {
                 throw new PreCheckException(BUSY);
             }
 

@@ -18,8 +18,11 @@ package com.hedera.node.app.throttle;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.TransactionInfo;
+import com.hederahashgraph.api.proto.java.Query;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import javax.inject.Inject;
 
@@ -33,10 +36,11 @@ public class HapiThrottling {
                 requireNonNull(generalThrottleAccumulator, "generalThrottleAccumulator must not be null");
     }
 
-    public synchronized boolean shouldThrottle(TransactionInfo txnInfo, HederaState state) {
+    public synchronized boolean shouldThrottle(@NonNull TransactionInfo txnInfo, HederaState state) {
         return generalThrottleAccumulator.shouldThrottle(txnInfo, Instant.now(), state);
     }
 
-    // TODO: implement query throttling
-
+    public synchronized boolean shouldThrottleQuery(Query query, HederaFunctionality queryFunction) {
+        return generalThrottleAccumulator.shouldThrottleQuery(queryFunction, Instant.now(), query);
+    }
 }
