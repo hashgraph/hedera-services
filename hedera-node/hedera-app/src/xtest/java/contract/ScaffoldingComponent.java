@@ -19,6 +19,7 @@ package contract;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -80,4 +81,6 @@ public interface ScaffoldingComponent {
     BiFunction<Query, AccountID, QueryContext> queryContextFactory();
 
     FeeManager feeManager();
+
+    ExchangeRateManager exchangeRateManager();
 }
