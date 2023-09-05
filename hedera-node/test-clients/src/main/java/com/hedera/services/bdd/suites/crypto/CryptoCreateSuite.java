@@ -259,13 +259,19 @@ public class CryptoCreateSuite extends HapiSuite {
                         validateChargedUsd(tenAutoAssocSlots, v13PriceUsdTenAutoAssociations));
     }
 
+    @HapiTest
     public HapiSpec syntaxChecksAreAsExpected() {
         return defaultHapiSpec("SyntaxChecksAreAsExpected")
                 .given()
                 .when()
                 .then(
-                        cryptoCreate("broken").autoRenewSecs(1L).hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE),
-                        cryptoCreate("alsoBroken").entityMemo(ZERO_BYTE_MEMO).hasPrecheck(INVALID_ZERO_BYTE_IN_STRING));
+                        cryptoCreate("broken").autoRenewSecs(1L).hasPrecheckFrom(AUTORENEW_DURATION_NOT_IN_RANGE),
+                        cryptoCreate("alsoBroken")
+                                .entityMemo(ZERO_BYTE_MEMO)
+                                .hasPrecheckFrom(INVALID_ZERO_BYTE_IN_STRING));
+        // In modular code this error is thrown in handle, but it is fixed using dynamic property
+        // spec.streamlinedIngestChecks
+        // to accommodate error codes moved from Ingest to handle
     }
 
     @HapiTest
@@ -459,6 +465,7 @@ public class CryptoCreateSuite extends HapiSuite {
                                 .hasPrecheck(INVALID_ADMIN_KEY));
     }
 
+    @HapiTest
     private HapiSpec createAnAccountInvalidED25519() {
         long initialBalance = 10_000L;
         Key emptyKey = Key.newBuilder().setEd25519(ByteString.EMPTY).build();
