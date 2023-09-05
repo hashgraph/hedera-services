@@ -24,7 +24,7 @@ dependencies {
     implementation("com.adarshr:gradle-test-logger-plugin:3.2.0")
     implementation("com.autonomousapps:dependency-analysis-gradle-plugin:1.21.0")
     implementation("com.diffplug.spotless:spotless-plugin-gradle:6.19.0")
-    implementation("com.google.protobuf:protobuf-gradle-plugin:0.9.3")
+    implementation("com.google.protobuf:protobuf-gradle-plugin:0.9.4")
     implementation("com.gorylenko.gradle-git-properties:gradle-git-properties:2.4.1")
     implementation("gradle.plugin.com.github.johnrengelman:shadow:7.1.2")
     implementation(
