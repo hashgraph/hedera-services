@@ -41,6 +41,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.RecycleBin;
+import com.swirlds.common.scratchpad.Scratchpad;
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.BaseEventHashedData;
@@ -52,9 +53,8 @@ import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.internal.SignedStateLoadingException;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
+import com.swirlds.platform.recovery.RecoveryScratchpad;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
-import com.swirlds.platform.scratchpad.Scratchpad;
-import com.swirlds.platform.scratchpad.ScratchpadField;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
@@ -745,7 +745,6 @@ class StartupStateUtilitiesTests {
     void doRecoveryCleanupInitialEpochTest() throws IOException {
 
         final PlatformContext platformContext = buildContext(false);
-        final Scratchpad scratchpad = new Scratchpad(platformContext, selfId);
 
         final AtomicInteger recycleCount = new AtomicInteger(0);
         final RecycleBin recycleBin = spy(TestRecycleBin.getInstance());
@@ -782,8 +781,7 @@ class StartupStateUtilitiesTests {
         writer.write("this is a marker file");
         writer.close();
 
-        doRecoveryCleanup(
-                platformContext, scratchpad, recycleBin, selfId, swirldName, mainClassName, null, latestRound);
+        doRecoveryCleanup(platformContext, recycleBin, selfId, swirldName, mainClassName, null, latestRound);
 
         final Path signedStateDirectory = getSignedStateDirectory(mainClassName, selfId, swirldName, latestRound)
                 .getParent();
@@ -802,8 +800,10 @@ class StartupStateUtilitiesTests {
         final Hash epoch = randomHash(random);
 
         final PlatformContext platformContext = buildContext(false);
-        final Scratchpad scratchpad = new Scratchpad(platformContext, selfId);
-        scratchpad.set(ScratchpadField.EPOCH_HASH, epoch);
+
+        final Scratchpad<RecoveryScratchpad> scratchpad =
+                new Scratchpad<>(platformContext, selfId, RecoveryScratchpad.class, RecoveryScratchpad.SCRATCHPAD_ID);
+        scratchpad.set(RecoveryScratchpad.EPOCH_HASH, epoch);
 
         final AtomicInteger recycleCount = new AtomicInteger(0);
         final RecycleBin recycleBin = spy(TestRecycleBin.getInstance());
@@ -838,8 +838,7 @@ class StartupStateUtilitiesTests {
         writer.write("this is a marker file");
         writer.close();
 
-        doRecoveryCleanup(
-                platformContext, scratchpad, recycleBin, selfId, swirldName, mainClassName, epoch, latestRound);
+        doRecoveryCleanup(platformContext, recycleBin, selfId, swirldName, mainClassName, epoch, latestRound);
 
         final Path signedStateDirectory = getSignedStateDirectory(mainClassName, selfId, swirldName, latestRound)
                 .getParent();
@@ -857,7 +856,6 @@ class StartupStateUtilitiesTests {
         final Random random = getRandomPrintSeed();
 
         final PlatformContext platformContext = buildContext(false);
-        final Scratchpad scratchpad = new Scratchpad(platformContext, selfId);
 
         final AtomicInteger recycleCount = new AtomicInteger(0);
         final RecycleBin recycleBin = spy(TestRecycleBin.getInstance());
@@ -905,10 +903,12 @@ class StartupStateUtilitiesTests {
         writer.write("this is a marker file");
         writer.close();
 
-        doRecoveryCleanup(
-                platformContext, scratchpad, recycleBin, selfId, swirldName, mainClassName, epoch, epochRound);
+        doRecoveryCleanup(platformContext, recycleBin, selfId, swirldName, mainClassName, epoch, epochRound);
 
-        assertEquals(epoch, scratchpad.get(ScratchpadField.EPOCH_HASH));
+        final Scratchpad<RecoveryScratchpad> scratchpad =
+                new Scratchpad<>(platformContext, selfId, RecoveryScratchpad.class, RecoveryScratchpad.SCRATCHPAD_ID);
+
+        assertEquals(epoch, scratchpad.get(RecoveryScratchpad.EPOCH_HASH));
 
         final Path signedStateDirectory = getSignedStateDirectory(mainClassName, selfId, swirldName, latestRound)
                 .getParent();

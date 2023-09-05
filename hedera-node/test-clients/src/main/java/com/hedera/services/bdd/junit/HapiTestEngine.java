@@ -353,7 +353,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                 final var initialState = GenesisStateBuilder.buildGenesisState(
                         platformContext, addressBook, new BasicSoftwareVersion(Long.MAX_VALUE), hedera.newState());
                 final var initialSignedState =
-                        new SignedState(platformContext, initialState.get().getState(), "Genesis");
+                        new SignedState(platformContext, initialState.get().getState(), "Genesis", false);
 
                 final SwirldsPlatform platform = (SwirldsPlatform) constructor.newInstance(
                         platformContext,

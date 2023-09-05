@@ -29,6 +29,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
+import com.swirlds.common.scratchpad.Scratchpad;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldMain;
@@ -38,9 +39,8 @@ import com.swirlds.platform.event.preconsensus.PreconsensusEventFileManager;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.internal.SignedStateLoadingException;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
+import com.swirlds.platform.recovery.RecoveryScratchpad;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
-import com.swirlds.platform.scratchpad.Scratchpad;
-import com.swirlds.platform.scratchpad.ScratchpadField;
 import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
@@ -65,12 +65,17 @@ public final class StartupStateUtilities {
     /**
      * If necessary, perform cleanup in preparation for emergency recovery.
      *
-     * @param scratchpad the platform's scratchpad
-     * @param epoch      the current epoch hash
+     * @param platformContext     the platform context
+     * @param recycleBin          a utility for deleting files in a way that allows them to possibly be recovered
+     * @param selfId              the ID of this node
+     * @param swirldName          the name of this swirld
+     * @param actualMainClassName the name of the app's SwirldMain class (may be a value provided by configuration){}
+     * @param epoch               the epoch that the platform wants to be in (defined either by the emergency recovery
+     *                            file)
+     * @param initialStateRound   the round number of the initial state
      */
     public static void doRecoveryCleanup(
             @NonNull final PlatformContext platformContext,
-            @NonNull final Scratchpad scratchpad,
             @NonNull final RecycleBin recycleBin,
             @NonNull final NodeId selfId,
             @NonNull final String swirldName,
@@ -78,7 +83,12 @@ public final class StartupStateUtilities {
             @Nullable final Hash epoch,
             final long initialStateRound) {
 
-        final Hash previousEpoch = scratchpad.get(ScratchpadField.EPOCH_HASH);
+        final Scratchpad<RecoveryScratchpad> recoveryScratchpad =
+                new Scratchpad<>(platformContext, selfId, RecoveryScratchpad.class, RecoveryScratchpad.SCRATCHPAD_ID);
+        recoveryScratchpad.logContents();
+
+        final Hash previousEpoch = recoveryScratchpad.get(RecoveryScratchpad.EPOCH_HASH);
+
         if (Objects.equals(epoch, previousEpoch)) {
             // We are in the same epoch as when we were the last time he platform was shut down.
             return;
@@ -102,7 +112,7 @@ public final class StartupStateUtilities {
 
         // Write the current epoch into the scratchpad. Once this completes, the platform will not do cleanup
         // the next time it boots with this epoch hash.
-        scratchpad.set(ScratchpadField.EPOCH_HASH, epoch);
+        recoveryScratchpad.set(RecoveryScratchpad.EPOCH_HASH, epoch);
     }
 
     /**

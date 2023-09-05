@@ -136,7 +136,6 @@ import com.swirlds.platform.observers.ConsensusRoundObserver;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.observers.PreConsensusEventObserver;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
-import com.swirlds.platform.scratchpad.Scratchpad;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.iss.ConsensusHashManager;
@@ -294,11 +293,6 @@ public class SwirldsPlatform implements Platform, Startable {
     private final AtomicLong latestReconnectRound = new AtomicLong(NO_ROUND);
 
     /**
-     * A location where the platform can write data that will be preserved across restarts.
-     */
-    private final Scratchpad scratchpad;
-
-    /**
      * the browser gives the Platform what app to run. There can be multiple Platforms on one computer.
      *
      * @param platformContext          the context for this platform
@@ -392,8 +386,6 @@ public class SwirldsPlatform implements Platform, Startable {
         final AppCommunicationComponent appCommunicationComponent =
                 wiring.wireAppCommunicationComponent(notificationEngine);
 
-        scratchpad = new Scratchpad(platformContext, selfId);
-
         final Hash epochHash;
         if (emergencyRecoveryManager.getEmergencyRecoveryFile() != null) {
             epochHash = emergencyRecoveryManager.getEmergencyRecoveryFile().hash();
@@ -404,7 +396,6 @@ public class SwirldsPlatform implements Platform, Startable {
 
         StartupStateUtilities.doRecoveryCleanup(
                 platformContext,
-                scratchpad,
                 recycleBin,
                 selfId,
                 swirldName,
