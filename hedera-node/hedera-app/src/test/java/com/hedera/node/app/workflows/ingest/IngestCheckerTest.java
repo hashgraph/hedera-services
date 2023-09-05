@@ -267,9 +267,9 @@ class IngestCheckerTest extends AppTestBase {
         }
 
         @Test
-        @DisplayName("If some random exception is thrown from ThrottleAccumulator, the exception is bubbled up")
+        @DisplayName("If some random exception is thrown from HapiThrottling, the exception is bubbled up")
         void randomException() {
-            // Given a ThrottleAccumulator that will throw a RuntimeException
+            // Given a HapiThrottling that will throw a RuntimeException
             when(hapiThrottling.shouldThrottle(transactionInfo, state))
                     .thenThrow(new RuntimeException("shouldThrottle exception"));
 
