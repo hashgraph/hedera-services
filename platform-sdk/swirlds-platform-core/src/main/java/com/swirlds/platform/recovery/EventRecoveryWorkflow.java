@@ -25,7 +25,6 @@ import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.PathsConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.internal.ApplicationDefinition;
@@ -46,8 +45,6 @@ import com.swirlds.common.utility.CompareTo;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.ApplicationDefinitionLoader;
 import com.swirlds.platform.ParameterProvider;
-import com.swirlds.platform.consensus.ConsensusSnapshot;
-import com.swirlds.platform.consensus.ConsensusUtils;
 import com.swirlds.platform.consensus.SyntheticSnapshot;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventFile;
@@ -57,7 +54,6 @@ import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.recovery.internal.EventStreamRoundIterator;
 import com.swirlds.platform.recovery.internal.RecoveredState;
 import com.swirlds.platform.recovery.internal.RecoveryPlatform;
-import com.swirlds.platform.state.MinGenInfo;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
@@ -70,8 +66,6 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
-import java.util.stream.StreamSupport;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -128,8 +122,10 @@ public final class EventRecoveryWorkflow {
         setupConstructableRegistry();
 
         // parameters if the app needs them
-        final ApplicationDefinition appDefinition = ApplicationDefinitionLoader.loadDefault(
-                platformContext.getConfiguration().getConfigData(PathsConfig.class).getConfigPath());
+        final ApplicationDefinition appDefinition = ApplicationDefinitionLoader.loadDefault(platformContext
+                .getConfiguration()
+                .getConfigData(PathsConfig.class)
+                .getConfigPath());
         ParameterProvider.getInstance().setParameters(appDefinition.getAppParameters());
 
         final SwirldMain appMain = loadAppMain(mainClassName);
@@ -156,7 +152,13 @@ public final class EventRecoveryWorkflow {
             logger.info(STARTUP.getMarker(), "Reapplying transactions");
 
             final RecoveredState recoveredState = reapplyTransactions(
-                    platformContext, initialState.getAndReserve("recoverState()"), appMain, roundIterator, finalRound, selfId, loadSigningKeys);
+                    platformContext,
+                    initialState.getAndReserve("recoverState()"),
+                    appMain,
+                    roundIterator,
+                    finalRound,
+                    selfId,
+                    loadSigningKeys);
 
             logger.info(
                     STARTUP.getMarker(),
@@ -177,8 +179,7 @@ public final class EventRecoveryWorkflow {
                     recoveredState.judge().getGeneration(),
                     Instant.now(),
                     resultingStateDirectory,
-                    false
-            );
+                    false);
             final PreconsensusEventMutableFile mutableFile = preconsensusEventFile.getMutableFile();
             mutableFile.writeEvent(recoveredState.judge());
             mutableFile.close();
@@ -307,7 +308,8 @@ public final class EventRecoveryWorkflow {
                     round.getEventCount(),
                     round.getRoundNum());
 
-            signedState = handleNextRound(platformContext, signedState, round, configuration.getConfigData(ConsensusConfig.class));
+            signedState = handleNextRound(
+                    platformContext, signedState, round, configuration.getConfigData(ConsensusConfig.class));
             platform.setLatestState(signedState.get());
             lastEvent = ((EventImpl) getLastEvent(round)).getBaseEvent();
         }

@@ -32,8 +32,7 @@ import com.swirlds.platform.internal.EventImpl;
 import java.time.Instant;
 import java.util.Random;
 
-
-//TODO move to fixtures
+// TODO move to fixtures
 public class EventBuilder {
     private static final Instant DEFAULT_TIMESTAMP = Instant.ofEpochMilli(1588771316678L);
     private Random random;

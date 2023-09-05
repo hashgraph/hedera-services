@@ -18,15 +18,15 @@ package com.swirlds.platform.test.gui;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.gui.hashgraph.HashgraphGuiSource;
+import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.gui.hashgraph.internal.FinalShadowgraphGuiSource;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.state.MinGenInfo;
 import com.swirlds.platform.test.consensus.TestIntake;
+import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import java.awt.FlowLayout;
 import java.time.Instant;
-import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import java.util.List;
 import java.util.stream.Stream;
 import javax.swing.JButton;

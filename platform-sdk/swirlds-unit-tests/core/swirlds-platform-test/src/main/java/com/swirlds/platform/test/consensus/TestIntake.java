@@ -33,7 +33,6 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.linking.ParentFinder;
-import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphEventObserver;
 import com.swirlds.platform.internal.ConsensusRound;
@@ -162,7 +161,7 @@ public class TestIntake implements LoadableFromSignedState {
         return output.getConsensusRounds();
     }
 
-    public ConsensusRound getLatestRound(){
+    public ConsensusRound getLatestRound() {
         return output.getConsensusRounds().pollLast();
     }
 

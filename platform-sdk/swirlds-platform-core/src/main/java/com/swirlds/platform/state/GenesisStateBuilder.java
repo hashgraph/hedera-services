@@ -21,10 +21,10 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
-import java.time.Instant;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
 
 /**
  * Responsible for building the genesis state.

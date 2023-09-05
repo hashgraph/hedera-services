@@ -21,7 +21,6 @@ import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.common.system.events.ConsensusData;
 import com.swirlds.platform.internal.EventImpl;
-import java.util.Objects;
 
 /**
  * An event with the same behavior as a standard event but with the addition of some debugging

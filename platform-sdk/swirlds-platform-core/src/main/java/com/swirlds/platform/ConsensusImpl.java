@@ -226,7 +226,8 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus,
     @Override
     public void loadFromSignedState(final SignedState signedState) {
         reset();
-        final PlatformData platformData = signedState.getState().getPlatformState().getPlatformData();
+        final PlatformData platformData =
+                signedState.getState().getPlatformState().getPlatformData();
         if (platformData.getEvents() != null) {
             loadLegacyState(platformData);
         } else {
@@ -234,7 +235,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus,
         }
     }
 
-    private void loadLegacyState(final PlatformData platformData){
+    private void loadLegacyState(final PlatformData platformData) {
         migrationMode = true;
 
         // create all the rounds that we have events for
@@ -583,9 +584,8 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus,
             }
         }
         final long totalWeight = addressBook.getTotalWeight();
-        final boolean superMajority =
-                Threshold.SUPER_MAJORITY.isSatisfiedBy(yesWeight, totalWeight)
-                        || Threshold.SUPER_MAJORITY.isSatisfiedBy(noWeight, totalWeight);
+        final boolean superMajority = Threshold.SUPER_MAJORITY.isSatisfiedBy(yesWeight, totalWeight)
+                || Threshold.SUPER_MAJORITY.isSatisfiedBy(noWeight, totalWeight);
         final boolean countingVote = yesWeight >= noWeight;
 
         return CountingVote.get(countingVote, superMajority);
@@ -1199,7 +1199,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus,
         return getWeight(addressBook.getNodeId(nodeIndex));
     }
 
-    private boolean isIndex(final EventImpl e, final int index){
+    private boolean isIndex(final EventImpl e, final int index) {
         if (!addressBook.contains(e.getCreatorId())) {
             return false;
         }

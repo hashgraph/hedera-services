@@ -16,10 +16,6 @@
 
 package com.swirlds.platform.test.consensus;
 
-
-import java.util.stream.Stream;
-import org.junit.jupiter.params.provider.Arguments;
-
 import static com.swirlds.common.test.fixtures.WeightGenerators.BALANCED;
 import static com.swirlds.common.test.fixtures.WeightGenerators.BALANCED_REAL_WEIGHT;
 import static com.swirlds.common.test.fixtures.WeightGenerators.INCREMENTING;
@@ -27,6 +23,9 @@ import static com.swirlds.common.test.fixtures.WeightGenerators.ONE_THIRD_ZERO_W
 import static com.swirlds.common.test.fixtures.WeightGenerators.RANDOM;
 import static com.swirlds.common.test.fixtures.WeightGenerators.RANDOM_REAL_WEIGHT;
 import static com.swirlds.common.test.fixtures.WeightGenerators.SINGLE_NODE_STRONG_MINORITY;
+
+import java.util.stream.Stream;
+import org.junit.jupiter.params.provider.Arguments;
 
 public class ConsensusTestArgs {
 

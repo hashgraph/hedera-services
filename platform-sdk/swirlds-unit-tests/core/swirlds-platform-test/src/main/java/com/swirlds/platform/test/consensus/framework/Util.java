@@ -17,7 +17,6 @@
 package com.swirlds.platform.test.consensus.framework;
 
 import com.swirlds.common.utility.Threshold;
-import com.swirlds.platform.Utilities;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;

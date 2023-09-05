@@ -18,7 +18,6 @@ package com.swirlds.platform.test.fixtures.event;
 
 import static java.lang.Integer.max;
 
-import com.swirlds.base.utility.Pair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.Hash;

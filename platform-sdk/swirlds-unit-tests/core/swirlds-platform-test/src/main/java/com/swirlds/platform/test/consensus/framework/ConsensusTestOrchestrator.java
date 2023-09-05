@@ -154,8 +154,11 @@ public class ConsensusTestOrchestrator {
      */
     public void setNewEventWeight(final int nodeIndex, final double eventWeight) {
         for (final ConsensusTestNode node : nodes) {
-            //TODO dont use index
-            node.getEventEmitter().getGraphGenerator().getSource(new NodeId(nodeIndex)).setNewEventWeight(eventWeight);
+            // TODO dont use index
+            node.getEventEmitter()
+                    .getGraphGenerator()
+                    .getSource(new NodeId(nodeIndex))
+                    .setNewEventWeight(eventWeight);
         }
     }
 

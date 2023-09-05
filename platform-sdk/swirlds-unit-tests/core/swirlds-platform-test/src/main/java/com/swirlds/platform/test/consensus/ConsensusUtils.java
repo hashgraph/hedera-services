@@ -34,14 +34,13 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.test.NoOpConsensusMetrics;
 import com.swirlds.platform.test.NoOpIntakeCycleStats;
 import com.swirlds.platform.test.event.emitter.EventEmitter;
+import com.swirlds.platform.test.fixtures.event.IndexedEvent;
+import com.swirlds.platform.test.fixtures.event.generator.GraphGenerator;
+import com.swirlds.platform.test.fixtures.event.source.EventSource;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import com.swirlds.platform.test.fixtures.event.IndexedEvent;
-import com.swirlds.platform.test.fixtures.event.generator.GraphGenerator;
-import com.swirlds.platform.test.fixtures.event.source.EventSource;
-
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
@@ -111,8 +110,7 @@ public abstract class ConsensusUtils {
             final EventImpl[] events, final GraphGenerator<?> generator, final Random random) {
         Instant lastTimestamp = Instant.MIN;
         for (final Address address : generator.getAddressBook()) {
-            final EventSource<?> source =
-                    generator.getSource(address.getNodeId());
+            final EventSource<?> source = generator.getSource(address.getNodeId());
             final List<IndexedEvent> eventsByCreator = Arrays.stream(events)
                     .map(IndexedEvent.class::cast)
                     .filter(e -> e.getCreatorId().id() == address.getNodeId().id())

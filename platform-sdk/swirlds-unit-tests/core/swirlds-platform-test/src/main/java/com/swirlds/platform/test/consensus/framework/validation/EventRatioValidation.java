@@ -16,12 +16,11 @@
 
 package com.swirlds.platform.test.consensus.framework.validation;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.consensus.framework.ConsensusOutput;
-
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class EventRatioValidation implements ConsensusOutputValidation {
     /**
@@ -99,7 +98,9 @@ public class EventRatioValidation implements ConsensusOutputValidation {
         // For each statistic we only need to check one list since other validators can verify them
         // to be identical.
         final List<EventImpl> allEvents1 = output1.getAddedEvents();
-        final int numConsensus = output1.getConsensusRounds().stream().mapToInt(r->r.getConsensusEvents().size()).sum();
+        final int numConsensus = output1.getConsensusRounds().stream()
+                .mapToInt(r -> r.getConsensusEvents().size())
+                .sum();
 
         if (allEvents1.isEmpty()) {
             // if no events were added, then there is nothing to validate

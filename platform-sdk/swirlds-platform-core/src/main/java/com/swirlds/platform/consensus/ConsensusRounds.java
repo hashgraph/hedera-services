@@ -46,7 +46,10 @@ public class ConsensusRounds {
     private final ElectionRound electionRound = new ElectionRound();
 
     /** Constructs an empty object */
-    public ConsensusRounds(final ConsensusConfig config, final SequentialRingBuffer<MinGenInfo> minGenStorage, final AddressBook addressBook) {
+    public ConsensusRounds(
+            final ConsensusConfig config,
+            final SequentialRingBuffer<MinGenInfo> minGenStorage,
+            final AddressBook addressBook) {
         this.config = config;
         this.minGenStorage = minGenStorage;
         this.addressBook = addressBook;

@@ -17,10 +17,8 @@
 package com.swirlds.platform.benchmark.consensus;
 
 import com.swirlds.base.utility.Pair;
-import com.swirlds.common.config.ConfigUtils;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.test.fixtures.WeightGenerators;
-import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.ConsensusImpl;
@@ -29,12 +27,11 @@ import com.swirlds.platform.test.NoOpConsensusMetrics;
 import com.swirlds.platform.test.event.emitter.StandardEventEmitter;
 import com.swirlds.platform.test.event.source.EventSourceFactory;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
+import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
+import com.swirlds.platform.test.fixtures.event.source.EventSource;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
-import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
-import com.swirlds.platform.test.fixtures.event.source.EventSource;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;

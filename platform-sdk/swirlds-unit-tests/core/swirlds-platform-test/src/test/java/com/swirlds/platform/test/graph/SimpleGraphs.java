@@ -23,7 +23,7 @@ import com.swirlds.platform.test.event.EventBuilder;
 import java.util.List;
 import java.util.Random;
 
-//TODO move to fixtures
+// TODO move to fixtures
 public class SimpleGraphs {
     /**
      * Builds graph below:
