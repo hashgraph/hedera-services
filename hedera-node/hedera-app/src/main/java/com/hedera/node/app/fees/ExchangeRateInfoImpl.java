@@ -27,15 +27,18 @@ import java.time.Instant;
 /**
  * Default implementation of {@link ExchangeRateInfo}.
  */
-public record ExchangeRateInfoImpl(@NonNull ExchangeRateSet exchangeRateSet) implements ExchangeRateInfo {
+public class ExchangeRateInfoImpl implements ExchangeRateInfo {
 
-    public ExchangeRateInfoImpl {
-        requireNonNull(exchangeRateSet, "exchangeRateSet must not be null");
-        requireNonNull(exchangeRateSet.currentRate(), "exchangeRateSet.currentRate() must not be null");
-        requireNonNull(
-                exchangeRateSet.currentRateOrThrow().expirationTime(),
-                "exchangeRateSet.currentRate().expirationTime() must not be null");
-        requireNonNull(exchangeRateSet.nextRate(), "exchangeRateSet.nextRate() must not be null");
+    private final ExchangeRateSet exchangeRateSet;
+    private final ExchangeRate currentRate;
+    private final ExchangeRate nextRate;
+    private final long expirationSeconds;
+
+    public ExchangeRateInfoImpl(@NonNull final ExchangeRateSet exchangeRateSet) {
+        this.exchangeRateSet = requireNonNull(exchangeRateSet, "exchangeRateSet must not be null");
+        this.currentRate = exchangeRateSet.currentRateOrThrow();
+        this.nextRate = exchangeRateSet.nextRateOrThrow();
+        this.expirationSeconds = currentRate.expirationTimeOrThrow().seconds();
     }
 
     @NonNull
@@ -47,12 +50,6 @@ public record ExchangeRateInfoImpl(@NonNull ExchangeRateSet exchangeRateSet) imp
     @NonNull
     @Override
     public ExchangeRate activeRate(@NonNull Instant consensusTime) {
-        return consensusTime.getEpochSecond()
-                        > exchangeRateSet
-                                .currentRateOrThrow()
-                                .expirationTimeOrThrow()
-                                .seconds()
-                ? exchangeRateSet.nextRateOrThrow()
-                : exchangeRateSet.currentRateOrThrow();
+        return consensusTime.getEpochSecond() > expirationSeconds ? nextRate : currentRate;
     }
 }

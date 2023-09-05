@@ -91,7 +91,8 @@ public final class ExchangeRateManager {
             midnightRates = ExchangeRateSet.PROTOBUF.parse(bytes.toReadableSequentialData());
         } catch (IOException e) {
             // an error here is fatal and needs to be handled by the general initialization code
-            throw new UncheckedIOException(e);
+            throw new UncheckedIOException(
+                    "An exception occurred while parsing the midnightRates during initialization", e);
         }
         this.currentExchangeRateInfo = new ExchangeRateInfoImpl(midnightRates);
     }
