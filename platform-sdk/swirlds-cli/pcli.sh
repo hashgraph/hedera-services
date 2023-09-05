@@ -1,4 +1,4 @@
-7#!/usr/bin/env bash
+#!/usr/bin/env bash
 
 #
 # Copyright 2016-2022 Hedera Hashgraph, LLC
@@ -85,6 +85,7 @@ JVM_ARGS=()
 LOG4J_SET=false
 IGNORE_JARS=false
 COLOR=true
+NO_PIPING=false
 for ((CURRENT_INDEX=1; CURRENT_INDEX<=$#; CURRENT_INDEX++)); do
 
   # The current argument we are considering.
@@ -122,6 +123,11 @@ for ((CURRENT_INDEX=1; CURRENT_INDEX<=$#; CURRENT_INDEX++)); do
       CURRENT_INDEX=$NEXT_INDEX
 
       JVM_ARGS+=("-Xmx${NEXT_ARG}g")
+  elif [[ "$ARG" = 'jtr' ]]; then
+    # The jtr suite of commands does not want its output passed through the log colorizer or spam squelcher.
+    # Piping output streams disrupts dynamic loading bars.
+    NO_PIPING=true
+    PROGRAM_ARGS+=("${ARG}")
   else
     # The argument should be passed to the PCLI java process.
 
@@ -162,6 +168,11 @@ if [[ "$JVM_CLASSPATH" = '' ]]; then
   exit 1
 fi
 
+if [[ "$NO_PIPING" = true ]]; then
+  COLOR=false
+  SQUELCH_SPAM=false
+fi
+
 run () {
   java "${JVM_ARGS[@]}" -cp "${JVM_CLASSPATH}" $MAIN_CLASS_NAME "${PROGRAM_ARGS[@]}"
 }
@@ -172,7 +183,7 @@ colorize () {
 
 if [[ "$COLOR" = true ]]; then
   if [[ "$SQUELCH_SPAM" = true ]]; then
-    run 2>&1 #| $SQUELCH_SPAM_PATH | colorize TODO
+    run 2>&1 | $SQUELCH_SPAM_PATH | colorize
   else
     run | colorize
   fi
