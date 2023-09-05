@@ -16,10 +16,13 @@
 
 package com.hedera.node.app.workflows.handle;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE;
+import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.SAME_NODE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.NODE_DUE_DILIGENCE_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE_HANDLE_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
@@ -306,9 +309,13 @@ public class HandleWorkflow {
             fees = dispatcher.dispatchComputeFees(context);
 
             // Run all pre-checks
-            final var preCheckResult = runPreChecks(consensusNow, verifier, preHandleResult);
+            final var preCheckResult = runPreChecks(
+                    consensusNow,
+                    verifier,
+                    preHandleResult,
+                    platformEvent.getCreatorId().id());
             if (preCheckResult.status() != SO_FAR_SO_GOOD) {
-                if (preHandleResult.status() == NODE_DUE_DILIGENCE_FAILURE) {
+                if (preCheckResult.status() == NODE_DUE_DILIGENCE_FAILURE) {
                     payer = creator.accountId();
                 }
                 final var penaltyFee = new Fees(fees.nodeFee(), fees.networkFee(), 0L);
@@ -371,12 +378,25 @@ public class HandleWorkflow {
     private PreCheckResult runPreChecks(
             @NonNull final Instant consensusNow,
             @NonNull final HandleContextVerifier verifier,
-            @NonNull final PreHandleResult preHandleResult) {
+            @NonNull final PreHandleResult preHandleResult,
+            final long nodeID) {
         final var txBody = preHandleResult.txInfo().txBody();
 
         // Check if pre-handle was successful
         if (preHandleResult.status() != SO_FAR_SO_GOOD) {
             return new PreCheckResult(preHandleResult.status(), preHandleResult.responseCode());
+        }
+
+        // Check for duplicate transactions. It is perfectly normal for there to be duplicates -- it is valid for
+        // a user to intentionally submit duplicates to multiple nodes as a hedge against dishonest nodes, or for
+        // other reasons. If we find a duplicate, we *will not* execute the transaction, we will simply charge
+        // the payer (whether the payer from the transaction or the node in the event of a due diligence failure)
+        // and create an appropriate record to save in state and send to the record stream.
+        final var duplicateCheckResult = recordCache.hasDuplicate(txBody.transactionID(), nodeID);
+        if (duplicateCheckResult != NO_DUPLICATE) {
+            return new PreCheckResult(
+                    duplicateCheckResult == SAME_NODE ? NODE_DUE_DILIGENCE_FAILURE : PRE_HANDLE_FAILURE,
+                    DUPLICATE_TRANSACTION);
         }
 
         // Check the time box of the transaction

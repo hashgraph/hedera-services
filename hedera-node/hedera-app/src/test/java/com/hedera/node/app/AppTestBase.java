@@ -110,6 +110,7 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
         accountsState.put(ERIN.accountID(), ERIN.account());
         accountsState.put(STAKING_REWARD_ACCOUNT.accountID(), STAKING_REWARD_ACCOUNT.account());
         accountsState.put(FUNDING_ACCOUNT.accountID(), FUNDING_ACCOUNT.account());
+        accountsState.put(nodeSelfAccountId, nodeSelfAccount);
         accountsState.commit();
         aliasesState = new MapWritableKVState<>(ALIASES_KEY);
         final var writableStates = MapWritableStates.builder()
@@ -141,6 +142,11 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
     protected final AccountID nodeSelfAccountId =
             AccountID.newBuilder().shardNum(0).realmNum(0).accountNum(8).build();
 
+    protected Account nodeSelfAccount = Account.newBuilder()
+            .accountId(nodeSelfAccountId)
+            .key(FAKE_ED25519_KEY_INFOS[0].publicKey())
+            .declineReward(true)
+            .build();
     protected final SelfNodeInfo selfNodeInfo = new SelfNodeInfoImpl(
             7,
             nodeSelfAccountId,
