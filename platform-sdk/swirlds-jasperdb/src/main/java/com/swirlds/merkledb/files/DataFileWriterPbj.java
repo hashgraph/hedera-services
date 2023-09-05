@@ -193,8 +193,7 @@ public class DataFileWriterPbj<D> implements DataFileWriter<D> {
      * @return New data location in this file where it was written
      * @throws IOException If there was a problem writing the data item
      */
-    public synchronized long writeCopiedDataItem(final Object dataItemData)
-            throws IOException {
+    public synchronized long writeCopiedDataItem(final Object dataItemData) throws IOException {
         if (!(dataItemData instanceof BufferedData protoData)) {
             throw new IllegalArgumentException("Data item data buffer type mismatch");
         }
@@ -206,9 +205,8 @@ public class DataFileWriterPbj<D> implements DataFileWriter<D> {
         final long currentProtoLimit = protoData.limit();
         final long size = protoData.remaining();
         try {
-            ProtoUtils.writeBytes(writingPbjData, FIELD_DATAFILE_ITEMS,
-                    Math.toIntExact(size),
-                    o -> o.writeBytes(protoData));
+            ProtoUtils.writeBytes(
+                    writingPbjData, FIELD_DATAFILE_ITEMS, Math.toIntExact(size), o -> o.writeBytes(protoData));
         } catch (final BufferOverflowException e) {
             // Buffer overflow indicates the current writing mapped byte buffer needs to be
             // mapped to a new location
@@ -217,9 +215,8 @@ public class DataFileWriterPbj<D> implements DataFileWriter<D> {
             protoData.position(currentProtoPos);
             protoData.limit(currentProtoLimit);
             try {
-                ProtoUtils.writeBytes(writingPbjData, FIELD_DATAFILE_ITEMS,
-                        Math.toIntExact(size),
-                        o -> o.writeBytes(protoData));
+                ProtoUtils.writeBytes(
+                        writingPbjData, FIELD_DATAFILE_ITEMS, Math.toIntExact(size), o -> o.writeBytes(protoData));
             } catch (final BufferOverflowException t) {
                 // If still a buffer overflow, it means the mapped buffer is smaller than even a single
                 // data item
@@ -249,7 +246,9 @@ public class DataFileWriterPbj<D> implements DataFileWriter<D> {
         // write serialized data
         final int dataItemSize = dataItemSerializer.getSerializedSize(dataItem);
         try {
-            ProtoUtils.writeBytes(writingPbjData, FIELD_DATAFILE_ITEMS,
+            ProtoUtils.writeBytes(
+                    writingPbjData,
+                    FIELD_DATAFILE_ITEMS,
                     dataItemSize,
                     out -> dataItemSerializer.serialize(dataItem, out));
         } catch (final BufferOverflowException e) {
@@ -257,7 +256,9 @@ public class DataFileWriterPbj<D> implements DataFileWriter<D> {
             // mapped to a new location and retry
             moveWritingBuffer(byteOffset);
             try {
-                ProtoUtils.writeBytes(writingPbjData, FIELD_DATAFILE_ITEMS,
+                ProtoUtils.writeBytes(
+                        writingPbjData,
+                        FIELD_DATAFILE_ITEMS,
                         dataItemSize,
                         out -> dataItemSerializer.serialize(dataItem, out));
             } catch (final BufferOverflowException t) {

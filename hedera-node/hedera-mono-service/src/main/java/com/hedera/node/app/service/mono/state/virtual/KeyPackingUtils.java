@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.mono.state.virtual;
 
 import com.hedera.pbj.runtime.io.WritableSequentialData;
-import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -94,8 +93,7 @@ public class KeyPackingUtils {
         }
     }
 
-    static void serializePackedBytesToPbj(
-            final int[] packed, final byte numNonZero, final WritableSequentialData out) {
+    static void serializePackedBytesToPbj(final int[] packed, final byte numNonZero, final WritableSequentialData out) {
         for (int b = numNonZero - 1; b >= 0; b--) {
             out.writeByte(extractByte(packed, b));
         }
@@ -133,8 +131,7 @@ public class KeyPackingUtils {
      * @throws E If there was a problem reading
      */
     public static <D, E extends Exception> int[] deserializeUint256Key(
-            final byte uint256KeyNonZeroBytes, final D dataSource, final ByteReaderFunction<D, E> reader)
-            throws E {
+            final byte uint256KeyNonZeroBytes, final D dataSource, final ByteReaderFunction<D, E> reader) throws E {
         final int[] uint256 = new int[8];
         for (int i = 7; i >= 0; i--) {
             int integer = 0;

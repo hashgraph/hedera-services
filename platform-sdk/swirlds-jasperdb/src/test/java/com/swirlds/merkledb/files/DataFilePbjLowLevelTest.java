@@ -200,7 +200,7 @@ class DataFilePbjLowLevelTest {
         final int headerSize = dataFileMetadata.metadataSizeInBytes();
         // read the whole file
         BufferedData buf = BufferedData.wrap(Files.readAllBytes(dataFile), headerSize, fileSize - headerSize);
-//        LongBuffer longBuf = buf.asLongBuffer();
+        //        LongBuffer longBuf = buf.asLongBuffer();
         for (int i = 0; i < 1000; i++) {
             final int tag = buf.readVarInt(false);
             assertEquals(DataFileCommon.FIELD_DATAFILE_ITEMS.number(), tag >>> ProtoParserTools.TAG_FIELD_OFFSET);
@@ -209,9 +209,9 @@ class DataFilePbjLowLevelTest {
                 case fixed:
                     assertEquals(Long.BYTES * 2, size);
                     // check data
-//                    assertEquals(i, longBuf.get(), "unexpected data value");
+                    //                    assertEquals(i, longBuf.get(), "unexpected data value");
                     assertEquals(i, buf.readLong(), "unexpected data value");
-//                    assertEquals(i + 10_000, longBuf.get(), "unexpected value from get()");
+                    //                    assertEquals(i + 10_000, longBuf.get(), "unexpected value from get()");
                     assertEquals(i + 10_000, buf.readLong(), "unexpected value from get()");
                     break;
                 case variable:
@@ -306,7 +306,8 @@ class DataFilePbjLowLevelTest {
         final var dataFile = dataFileMap.get(testType);
         final var dataFileMetadata = dataFileMetadataMap.get(testType);
         final var listOfDataItemLocations = listOfDataItemLocationsMap.get(testType);
-        DataFileIteratorPbj fileIterator = new DataFileIteratorPbj(dataFile, dataFileMetadata, testType.dataItemSerializer);
+        DataFileIteratorPbj fileIterator =
+                new DataFileIteratorPbj(dataFile, dataFileMetadata, testType.dataItemSerializer);
         int i = 0;
         while (fileIterator.next()) {
             assertEquals(
@@ -335,7 +336,8 @@ class DataFilePbjLowLevelTest {
 
         final var dataFile = dataFileMap.get(testType);
         final var dataFileMetadata = dataFileMetadataMap.get(testType);
-        DataFileIteratorPbj fileIterator = new DataFileIteratorPbj(dataFile, dataFileMetadata, testType.dataItemSerializer);
+        DataFileIteratorPbj fileIterator =
+                new DataFileIteratorPbj(dataFile, dataFileMetadata, testType.dataItemSerializer);
         final LongArrayList newDataLocations = new LongArrayList(1000);
         while (fileIterator.next()) {
             final BufferedData itemData = fileIterator.getDataItemData();

@@ -24,11 +24,8 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken;
 import com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
-import com.hedera.node.app.service.mono.state.virtual.utils.CheckedConsumer;
-import com.hedera.node.app.service.mono.state.virtual.utils.CheckedConsumer2;
 import com.hedera.node.app.service.mono.state.virtual.utils.CheckedConsumer2E;
 import com.hedera.node.app.service.mono.state.virtual.utils.CheckedConsumerE;
-import com.hedera.node.app.service.mono.state.virtual.utils.CheckedSupplier;
 import com.hedera.node.app.service.mono.state.virtual.utils.CheckedSupplierE;
 import com.hedera.node.app.service.mono.utils.NftNumPair;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
@@ -40,7 +37,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.function.Consumer;
 
 /**
  * Represents the information stored in the virtualized merkle node associated with a unique token
@@ -163,8 +159,7 @@ public class UniqueTokenValue implements VirtualValue {
         writeNftNumPair(next, writeLongFn);
     }
 
-    private static <E extends Exception> NftNumPair readNftNumPair(
-            final CheckedSupplierE<Long, E> readLongFn)
+    private static <E extends Exception> NftNumPair readNftNumPair(final CheckedSupplierE<Long, E> readLongFn)
             throws E {
         final var tokenNum = readLongFn.get();
         final var tokenSerial = readLongFn.get();
@@ -172,14 +167,15 @@ public class UniqueTokenValue implements VirtualValue {
     }
 
     private static <E extends Exception> void writeNftNumPair(
-            final NftNumPair nftNumPair, final CheckedConsumerE<Long, E> writeLongFn)
-            throws E {
+            final NftNumPair nftNumPair, final CheckedConsumerE<Long, E> writeLongFn) throws E {
         writeLongFn.accept(nftNumPair.tokenNum());
         writeLongFn.accept(nftNumPair.serialNum());
     }
 
     private static <E extends Exception> byte[] readBytes(
-            final CheckedSupplierE<Byte, E> readByteFn, final CheckedConsumerE<byte[], E> readBytesFn, final int maxBytes)
+            final CheckedSupplierE<Byte, E> readByteFn,
+            final CheckedConsumerE<byte[], E> readBytesFn,
+            final int maxBytes)
             throws E {
         // Guard against mal-formed data by capping the max length.
         final int len = min(readByteFn.get(), maxBytes);

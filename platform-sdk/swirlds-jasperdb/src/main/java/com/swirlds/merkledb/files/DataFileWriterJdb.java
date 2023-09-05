@@ -25,7 +25,6 @@ import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
@@ -123,8 +122,7 @@ public final class DataFileWriterJdb<D> extends DataFileWriterPbj<D> {
     }
 
     @Override
-    public synchronized long writeCopiedDataItem(final Object dataItemData)
-            throws IOException {
+    public synchronized long writeCopiedDataItem(final Object dataItemData) throws IOException {
         if (!(dataItemData instanceof ByteBuffer jdbData)) {
             throw new IllegalArgumentException("Data item data buffer type mismatch");
         }

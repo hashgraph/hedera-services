@@ -349,13 +349,11 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             constructableRegistry.registerConstructable(
                     new ClassConstructorPair(OnDiskKey.class, () -> new OnDiskKey<>(md)));
             constructableRegistry.registerConstructable(
-                    new ClassConstructorPair(OnDiskKeySerializer.class,
-                            () -> new OnDiskKeySerializer<>(md)));
+                    new ClassConstructorPair(OnDiskKeySerializer.class, () -> new OnDiskKeySerializer<>(md)));
             constructableRegistry.registerConstructable(
                     new ClassConstructorPair(OnDiskValue.class, () -> new OnDiskValue<>(md)));
             constructableRegistry.registerConstructable(
-                    new ClassConstructorPair(OnDiskValueSerializer.class,
-                            () -> new OnDiskValueSerializer<>(md)));
+                    new ClassConstructorPair(OnDiskValueSerializer.class, () -> new OnDiskValueSerializer<>(md)));
             constructableRegistry.registerConstructable(
                     new ClassConstructorPair(SingletonNode.class, () -> new SingletonNode<>(md, null)));
             constructableRegistry.registerConstructable(

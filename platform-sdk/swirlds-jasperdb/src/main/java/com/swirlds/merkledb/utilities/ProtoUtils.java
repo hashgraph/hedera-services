@@ -1,15 +1,26 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.swirlds.merkledb.utilities;
 
 import static com.hedera.pbj.runtime.ProtoParserTools.TAG_FIELD_OFFSET;
 
 import com.hedera.pbj.runtime.FieldDefinition;
-import com.hedera.pbj.runtime.ProtoConstants;
 import com.hedera.pbj.runtime.ProtoParserTools;
-import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
-import com.swirlds.base.function.CheckedFunction;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.IOException;
 import java.util.function.Consumer;
 
 public class ProtoUtils {
@@ -84,13 +95,14 @@ public class ProtoUtils {
     }
 
     public static void writeTag(final WritableSequentialData out, final FieldDefinition field) {
-        final int wireType = switch (field.type()) {
-            case INT32, UINT32, INT64, UINT64 -> WIRE_TYPE_VARINT;
-            case FIXED32 -> WIRE_TYPE_FIXED_32_BIT;
-            case FIXED64 -> WIRE_TYPE_FIXED_64_BIT;
-            case BYTES, MESSAGE -> WIRE_TYPE_DELIMITED;
-            default -> throw new UnsupportedOperationException("Field type not supported: " + field.type());
-        };
+        final int wireType =
+                switch (field.type()) {
+                    case INT32, UINT32, INT64, UINT64 -> WIRE_TYPE_VARINT;
+                    case FIXED32 -> WIRE_TYPE_FIXED_32_BIT;
+                    case FIXED64 -> WIRE_TYPE_FIXED_64_BIT;
+                    case BYTES, MESSAGE -> WIRE_TYPE_DELIMITED;
+                    default -> throw new UnsupportedOperationException("Field type not supported: " + field.type());
+                };
         out.writeVarInt((field.number() << TAG_FIELD_OFFSET) | wireType, false);
     }
 

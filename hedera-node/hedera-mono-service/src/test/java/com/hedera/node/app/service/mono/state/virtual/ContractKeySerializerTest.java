@@ -88,8 +88,7 @@ class ContractKeySerializerTest {
         final var contractIdNonZeroBytes = contractKey.getContractIdNonZeroBytes();
         final var uint256KeyNonZeroBytes = contractKey.getUint256KeyNonZeroBytes();
 
-        assertEquals(1 + contractIdNonZeroBytes + uint256KeyNonZeroBytes,
-                subject.getSerializedSize(contractKey));
+        assertEquals(1 + contractIdNonZeroBytes + uint256KeyNonZeroBytes, subject.getSerializedSize(contractKey));
     }
 
     @Test

@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.service.mono.state.virtual.utils;
 
-import java.io.IOException;
-
 public interface CheckedConsumerE<T, E extends Exception> {
     void accept(T t) throws E;
 }

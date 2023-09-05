@@ -37,8 +37,12 @@ public final class SmartContractByteCodeMapKeySerializer
     }
 
     public SmartContractByteCodeMapKeySerializer() {
-        super(CLASS_ID, ClassVersion.ORIGINAL, SmartContractByteCodeMapKey.getSizeInBytes(),
-                1, SmartContractByteCodeMapKey::new);
+        super(
+                CLASS_ID,
+                ClassVersion.ORIGINAL,
+                SmartContractByteCodeMapKey.getSizeInBytes(),
+                1,
+                SmartContractByteCodeMapKey::new);
     }
 
     /**

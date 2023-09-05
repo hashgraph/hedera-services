@@ -887,11 +887,10 @@ public class DataFileCollection<D> implements Snapshotable {
      * @return The newly added DataFileReader.
      */
     private DataFileReader<D> addNewDataFileReader(
-            final Path filePath, final DataFileMetadata metadata, final boolean usePbj)
-            throws IOException {
-        final DataFileReader<D> newDataFileReader = usePbj ?
-                new DataFileReaderPbj<>(filePath, dataItemSerializer, metadata) :
-                new DataFileReaderJdb<>(filePath, dataItemSerializer, (DataFileMetadataJdb) metadata);
+            final Path filePath, final DataFileMetadata metadata, final boolean usePbj) throws IOException {
+        final DataFileReader<D> newDataFileReader = usePbj
+                ? new DataFileReaderPbj<>(filePath, dataItemSerializer, metadata)
+                : new DataFileReaderJdb<>(filePath, dataItemSerializer, (DataFileMetadataJdb) metadata);
         dataFiles.getAndUpdate(currentFileList -> {
             try {
                 return (currentFileList == null)
@@ -934,9 +933,9 @@ public class DataFileCollection<D> implements Snapshotable {
         if (logger.isTraceEnabled()) {
             setOfNewFileIndexes.add(newFileIndex);
         }
-        return usePbj ?
-                new DataFileWriterPbj<>(storeName, storeDir, newFileIndex, dataItemSerializer, creationTime) :
-                new DataFileWriterJdb<>(storeName, storeDir, newFileIndex, dataItemSerializer, creationTime);
+        return usePbj
+                ? new DataFileWriterPbj<>(storeName, storeDir, newFileIndex, dataItemSerializer, creationTime)
+                : new DataFileWriterJdb<>(storeName, storeDir, newFileIndex, dataItemSerializer, creationTime);
     }
 
     /**
@@ -975,9 +974,9 @@ public class DataFileCollection<D> implements Snapshotable {
             final DataFileReader<D>[] dataFileReaders = new DataFileReader[fullWrittenFilePaths.length];
             try {
                 for (int i = 0; i < fullWrittenFilePaths.length; i++) {
-                    dataFileReaders[i] = fullWrittenFilePaths[i].toString().endsWith(FILE_EXTENSION) ?
-                            new DataFileReaderPbj<>(fullWrittenFilePaths[i], dataItemSerializer) :
-                            new DataFileReaderJdb<>(fullWrittenFilePaths[i], dataItemSerializer);
+                    dataFileReaders[i] = fullWrittenFilePaths[i].toString().endsWith(FILE_EXTENSION)
+                            ? new DataFileReaderPbj<>(fullWrittenFilePaths[i], dataItemSerializer)
+                            : new DataFileReaderJdb<>(fullWrittenFilePaths[i], dataItemSerializer);
                 }
                 // sort the readers into data file index order
                 Arrays.sort(dataFileReaders);

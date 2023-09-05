@@ -325,7 +325,8 @@ public class ScheduleVirtualValue extends PartialMerkleLeaf
             final CheckedConsumerE<Byte, E> writeByteFn,
             final CheckedConsumerE<Integer, E> writeIntFn,
             final CheckedConsumerE<Long, E> writeLongFn,
-            final CheckedConsumerE<byte[], E> writeBytesFn) throws E {
+            final CheckedConsumerE<byte[], E> writeBytesFn)
+            throws E {
         writeIntFn.accept(bodyBytes.length);
         writeBytesFn.accept(bodyBytes);
         if (calculatedExpirationTime == null) {
@@ -371,7 +372,8 @@ public class ScheduleVirtualValue extends PartialMerkleLeaf
             final CheckedSupplierE<Byte, E> readByteFn,
             final CheckedSupplierE<Integer, E> readIntFn,
             final CheckedSupplierE<Long, E> readLongFn,
-            final CheckedConsumerE<byte[], E> readBytesFn) throws E {
+            final CheckedConsumerE<byte[], E> readBytesFn)
+            throws E {
         var n = readIntFn.get();
         bodyBytes = new byte[n];
         readBytesFn.accept(bodyBytes);

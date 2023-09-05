@@ -109,12 +109,12 @@ class DataFileReaderCloseTest {
         for (int i = 0; i < 100; i++) {
             Path filePath = null;
             try {
-                final DataFileWriterPbj<long[]> writer = new DataFileWriterPbj<>("test", tmpDir, i,
-                        serializer, Instant.now());
+                final DataFileWriterPbj<long[]> writer =
+                        new DataFileWriterPbj<>("test", tmpDir, i, serializer, Instant.now());
                 filePath = writer.getPath();
                 final DataFileMetadata metadata = writer.getMetadata();
                 final LongList index = new LongListOffHeap();
-                index.put(0, writer.storeDataItem(new long[]{i, i * 2 + 1}));
+                index.put(0, writer.storeDataItem(new long[] {i, i * 2 + 1}));
                 final DataFileReaderPbj<long[]> reader = new DataFileReaderPbj<>(filePath, serializer, metadata);
                 final int fi = i;
                 // Check the item in parallel to finish writing

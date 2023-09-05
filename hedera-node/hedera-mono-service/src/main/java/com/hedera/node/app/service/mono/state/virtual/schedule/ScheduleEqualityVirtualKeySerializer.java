@@ -79,7 +79,6 @@ public class ScheduleEqualityVirtualKeySerializer implements KeySerializer<Sched
 
     // Key deserialization
 
-
     @Override
     public ScheduleEqualityVirtualKey deserialize(@NonNull ReadableSequentialData in) {
         Objects.requireNonNull(in);

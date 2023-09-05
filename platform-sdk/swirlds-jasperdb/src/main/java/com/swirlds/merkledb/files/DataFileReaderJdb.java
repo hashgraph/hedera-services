@@ -82,8 +82,9 @@ public class DataFileReaderJdb<D> extends DataFileReaderPbj<D> {
      * @param dataItemSerializer Serializer for converting raw data to/from data items
      * @param metadata the file's metadata to save loading from file
      */
-    public DataFileReaderJdb(final Path path, final DataItemSerializer<D> dataItemSerializer,
-            DataFileMetadataJdb metadata) throws IOException {
+    public DataFileReaderJdb(
+            final Path path, final DataItemSerializer<D> dataItemSerializer, DataFileMetadataJdb metadata)
+            throws IOException {
         super(path, dataItemSerializer, metadata);
         openNewFileChannel(0);
     }

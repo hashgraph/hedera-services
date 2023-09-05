@@ -32,15 +32,16 @@ class DataFileMetadataTest {
         final long serializationVersion = 7;
 
         final DataFileMetadata base = new DataFileMetadata(dataItemCount, index, creationDate, serializationVersion);
-        final DataFileMetadata differentItemCount = new DataFileMetadata(
-                dataItemCount + 1, index, creationDate, serializationVersion);
-        final DataFileMetadata differentIndex = new DataFileMetadata(
-                dataItemCount, index + 1, creationDate, serializationVersion);
-        final DataFileMetadata differentCreationDate = new DataFileMetadata(
-                dataItemCount, index, creationDate.plusSeconds(1), serializationVersion);
-        final DataFileMetadata differentSerVersion = new DataFileMetadata(
-                dataItemCount, index, creationDate, serializationVersion + 1);
-        final DataFileMetadata otherButEqual = new DataFileMetadata(dataItemCount, index, creationDate, serializationVersion);
+        final DataFileMetadata differentItemCount =
+                new DataFileMetadata(dataItemCount + 1, index, creationDate, serializationVersion);
+        final DataFileMetadata differentIndex =
+                new DataFileMetadata(dataItemCount, index + 1, creationDate, serializationVersion);
+        final DataFileMetadata differentCreationDate =
+                new DataFileMetadata(dataItemCount, index, creationDate.plusSeconds(1), serializationVersion);
+        final DataFileMetadata differentSerVersion =
+                new DataFileMetadata(dataItemCount, index, creationDate, serializationVersion + 1);
+        final DataFileMetadata otherButEqual =
+                new DataFileMetadata(dataItemCount, index, creationDate, serializationVersion);
 
         assertEquals(base, otherButEqual, "Equivalent metadata are equal");
         assertNotEquals(base, differentItemCount, "Different item counts are unequal");

@@ -21,9 +21,7 @@ import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUti
 import com.hedera.node.app.service.mono.state.merkle.MerkleTokenRelStatus;
 import com.hedera.node.app.service.mono.state.migration.HederaTokenRel;
 import com.hedera.node.app.service.mono.state.virtual.annotations.StateSetter;
-import com.hedera.node.app.service.mono.state.virtual.utils.CheckedConsumer;
 import com.hedera.node.app.service.mono.state.virtual.utils.CheckedConsumerE;
-import com.hedera.node.app.service.mono.state.virtual.utils.CheckedSupplier;
 import com.hedera.node.app.service.mono.state.virtual.utils.CheckedSupplierE;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
@@ -240,8 +238,7 @@ public class OnDiskTokenRel implements VirtualValue, HederaTokenRel {
     }
 
     private <E extends Exception> void serializeTo(
-            final CheckedConsumerE<Byte, E> writeByteFn, final CheckedConsumerE<Long, E> writeLongFn)
-            throws E {
+            final CheckedConsumerE<Byte, E> writeByteFn, final CheckedConsumerE<Long, E> writeLongFn) throws E {
         writeByteFn.accept(flags);
         writeLongFn.accept(prev);
         writeLongFn.accept(next);
@@ -250,8 +247,7 @@ public class OnDiskTokenRel implements VirtualValue, HederaTokenRel {
     }
 
     private <E extends Exception> void deserializeFrom(
-            final CheckedSupplierE<Byte, E> readByteFn, final CheckedSupplierE<Long, E> readLongFn)
-            throws E {
+            final CheckedSupplierE<Byte, E> readByteFn, final CheckedSupplierE<Long, E> readLongFn) throws E {
         throwIfImmutable();
         flags = readByteFn.get();
         prev = readLongFn.get();

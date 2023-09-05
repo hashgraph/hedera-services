@@ -72,8 +72,8 @@ public class ScheduleEqualityVirtualValueSerializer implements ValueSerializer<S
     }
 
     @Override
-    public void serialize(@NonNull final ScheduleEqualityVirtualValue value,
-            @NonNull final WritableSequentialData out) {
+    public void serialize(
+            @NonNull final ScheduleEqualityVirtualValue value, @NonNull final WritableSequentialData out) {
         Objects.requireNonNull(value);
         Objects.requireNonNull(out);
         value.serialize(out);

@@ -66,8 +66,7 @@ public class AccountVirtualMapKeySerializer extends AbstractFixedSizeKeySerializ
      * {@inheritDoc}
      */
     @Override
-    public boolean equals(ByteBuffer buffer, int dataVersion, AccountVirtualMapKey keyToCompare)
-            throws IOException {
+    public boolean equals(ByteBuffer buffer, int dataVersion, AccountVirtualMapKey keyToCompare) throws IOException {
         return keyToCompare.equals(buffer, dataVersion);
     }
 }

@@ -237,7 +237,6 @@ public final class ContractKey implements VirtualKey {
         }
         final int[] uint256Key = deserializeUint256Key(uint256KeyNonZeroBytes, buf, BufferedData::readByte);
         return Arrays.equals(uint256Key, this.uint256Key);
-
     }
 
     @Override
@@ -271,7 +270,9 @@ public final class ContractKey implements VirtualKey {
      * @throws E If there was a problem reading
      */
     static <D, E extends Exception> long deserializeContractID(
-            final byte contractIdNonZeroBytes, final D dataSource, final KeyPackingUtils.ByteReaderFunction<D, E> reader)
+            final byte contractIdNonZeroBytes,
+            final D dataSource,
+            final KeyPackingUtils.ByteReaderFunction<D, E> reader)
             throws E {
         long contractId = 0;
         /* Bytes are encountered in order of significance (big-endian) */

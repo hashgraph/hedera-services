@@ -31,7 +31,6 @@ import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.merkledb.utilities.ProtoUtils;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteOrder;
@@ -90,10 +89,7 @@ public class DataFileMetadata {
      * @param serializationVersion Serialization version for data stored in the file
      */
     public DataFileMetadata(
-            final long itemsCount,
-            final int index,
-            final Instant creationDate,
-            final long serializationVersion) {
+            final long itemsCount, final int index, final Instant creationDate, final long serializationVersion) {
         this.itemsCount = itemsCount;
         this.index = index;
         this.creationDate = creationDate;
@@ -189,7 +185,7 @@ public class DataFileMetadata {
         this.itemsCount = count;
         assert dataItemCountHeaderOffset != 0;
         out.position(dataItemCountHeaderOffset);
-//        ProtoWriterTools.writeLong(out, FIELD_DATAFILE_ITEMS_COUNT, count);
+        //        ProtoWriterTools.writeLong(out, FIELD_DATAFILE_ITEMS_COUNT, count);
         ProtoUtils.writeTag(out, FIELD_DATAFILE_ITEMS_COUNT);
         out.writeLong(count, ByteOrder.LITTLE_ENDIAN);
     }
@@ -213,16 +209,16 @@ public class DataFileMetadata {
     // beginning of the file before reading data items, assuming file metadata is always written
     // first, then data items
     int metadataSizeInBytes() {
-        return ProtoUtils.sizeOfTag(FIELD_DATAFILE_INDEX, WIRE_TYPE_VARINT) +
-                ProtoUtils.sizeOfVarInt32(index) +
-                ProtoUtils.sizeOfTag(FIELD_DATAFILE_CREATION_SECONDS, WIRE_TYPE_VARINT) +
-                ProtoUtils.sizeOfVarInt64(creationDate.getEpochSecond()) +
-                ProtoUtils.sizeOfTag(FIELD_DATAFILE_CREATION_NANOS, WIRE_TYPE_VARINT) +
-                ProtoUtils.sizeOfVarInt64(creationDate.getNano()) +
-                ProtoUtils.sizeOfTag(FIELD_DATAFILE_ITEMS_COUNT, WIRE_TYPE_FIXED_64_BIT) +
-                Long.BYTES +
-                ProtoUtils.sizeOfTag(FIELD_DATAFILE_ITEM_VERSION, WIRE_TYPE_VARINT) +
-                ProtoUtils.sizeOfVarInt64(serializationVersion);
+        return ProtoUtils.sizeOfTag(FIELD_DATAFILE_INDEX, WIRE_TYPE_VARINT)
+                + ProtoUtils.sizeOfVarInt32(index)
+                + ProtoUtils.sizeOfTag(FIELD_DATAFILE_CREATION_SECONDS, WIRE_TYPE_VARINT)
+                + ProtoUtils.sizeOfVarInt64(creationDate.getEpochSecond())
+                + ProtoUtils.sizeOfTag(FIELD_DATAFILE_CREATION_NANOS, WIRE_TYPE_VARINT)
+                + ProtoUtils.sizeOfVarInt64(creationDate.getNano())
+                + ProtoUtils.sizeOfTag(FIELD_DATAFILE_ITEMS_COUNT, WIRE_TYPE_FIXED_64_BIT)
+                + Long.BYTES
+                + ProtoUtils.sizeOfTag(FIELD_DATAFILE_ITEM_VERSION, WIRE_TYPE_VARINT)
+                + ProtoUtils.sizeOfVarInt64(serializationVersion);
     }
 
     /** toString for debugging */

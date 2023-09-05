@@ -428,8 +428,7 @@ public class IterableContractValue implements VirtualValue {
 
     // --- Internal helpers
     private <D, E extends Exception> void deserializeKeys(
-            final D in, final KeyPackingUtils.ByteReaderFunction<D, E> reader)
-            throws E {
+            final D in, final KeyPackingUtils.ByteReaderFunction<D, E> reader) throws E {
         byte marker = reader.read(in);
         if (marker != KeyPackingUtils.MISSING_KEY_SENTINEL) {
             prevUint256KeyNonZeroBytes = marker;

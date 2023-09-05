@@ -20,9 +20,6 @@ import com.google.common.base.MoreObjects;
 import com.hedera.node.app.service.mono.store.models.NftId;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.mono.utils.NftNumPair;
-import com.hedera.pbj.runtime.io.ReadableSequentialData;
-import com.hedera.pbj.runtime.io.WritableSequentialData;
-import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
@@ -127,8 +124,7 @@ public class UniqueTokenKey implements VirtualKey {
     }
 
     private static <E extends Exception> void writePartial(
-            final long value, final int numBytes, final ByteConsumer<E> output)
-            throws E {
+            final long value, final int numBytes, final ByteConsumer<E> output) throws E {
         for (int b = numBytes - 1; b >= 0; b--) {
             output.accept((byte) (value >> (b * 8)));
         }
@@ -168,8 +164,8 @@ public class UniqueTokenKey implements VirtualKey {
         byte get() throws E;
     }
 
-    private static <E extends Exception> long decodeVariableField(
-            final ByteSupplier<E> input, final int numBytes) throws E {
+    private static <E extends Exception> long decodeVariableField(final ByteSupplier<E> input, final int numBytes)
+            throws E {
         long value = 0;
         for (int n = Math.min(8, numBytes), shift = 8 * (n - 1); n > 0; n--, shift -= 8) {
             value |= ((long) input.get() & 0xFF) << shift;

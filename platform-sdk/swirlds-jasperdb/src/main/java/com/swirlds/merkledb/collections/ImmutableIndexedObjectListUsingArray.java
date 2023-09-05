@@ -17,7 +17,6 @@
 package com.swirlds.merkledb.collections;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;

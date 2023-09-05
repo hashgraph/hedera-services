@@ -131,7 +131,8 @@ class DataFileJdbLowLevelTest {
         // tests
         assertTrue(Files.exists(writer.getPath()), "expected file does not exist");
         assertEquals(
-                createDataFilePath("test_" + testType.name(), tempFileDir, DATA_FILE_INDEX, TEST_START, FILE_EXTENSION_JDB),
+                createDataFilePath(
+                        "test_" + testType.name(), tempFileDir, DATA_FILE_INDEX, TEST_START, FILE_EXTENSION_JDB),
                 writer.getPath(),
                 "unexpected path for writer");
         // store for later tests
@@ -295,7 +296,8 @@ class DataFileJdbLowLevelTest {
         final var dataFile = dataFileMap.get(testType);
         final var dataFileMetadata = dataFileMetadataMap.get(testType);
         final var listOfDataItemLocations = listOfDataItemLocationsMap.get(testType);
-        DataFileIteratorJdb fileIterator = new DataFileIteratorJdb(dataFile, dataFileMetadata, testType.dataItemSerializer);
+        DataFileIteratorJdb fileIterator =
+                new DataFileIteratorJdb(dataFile, dataFileMetadata, testType.dataItemSerializer);
         int i = 0;
         while (fileIterator.next()) {
             assertEquals(
@@ -324,7 +326,8 @@ class DataFileJdbLowLevelTest {
 
         final var dataFile = dataFileMap.get(testType);
         final var dataFileMetadata = dataFileMetadataMap.get(testType);
-        DataFileIteratorJdb fileIterator = new DataFileIteratorJdb(dataFile, dataFileMetadata, testType.dataItemSerializer);
+        DataFileIteratorJdb fileIterator =
+                new DataFileIteratorJdb(dataFile, dataFileMetadata, testType.dataItemSerializer);
         final LongArrayList newDataLocations = new LongArrayList(1000);
         while (fileIterator.next()) {
             final ByteBuffer itemData = fileIterator.getDataItemData();

@@ -42,10 +42,8 @@ import com.swirlds.virtualmap.internal.merkle.VirtualLeafNode;
 import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Stream;
@@ -106,7 +104,7 @@ public class VirtualMerkleLeafHasher<K extends VirtualKey, V extends VirtualValu
      */
     public Hash computeNextHash(final Hash prevHash, final VirtualLeafNode<K, V> leaf) throws IOException {
         try (final ByteArrayOutputStream bout = new ByteArrayOutputStream();
-            final SerializableDataOutputStream out = new SerializableDataOutputStream(bout)) {
+                final SerializableDataOutputStream out = new SerializableDataOutputStream(bout)) {
 
             if (prevHash != null) {
                 // add Previous Hash

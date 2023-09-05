@@ -19,18 +19,13 @@ package com.swirlds.merkledb.files;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.merkledb.files.VirtualHashRecordSerializer;
-import com.swirlds.merkledb.serialize.DataItemHeader;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,14 +42,18 @@ class VirtualHashRecordSerializerTest {
     @Test
     void serializedSizeTest() {
         final Hash nonDefaultHash = new Hash(DigestType.SHA_512);
-        assertEquals(VirtualHashRecordSerializer.VARIABLE_DATA_SIZE,
-                subject.getSerializedSize(), "Serialized size should be variable");
+        assertEquals(
+                VirtualHashRecordSerializer.VARIABLE_DATA_SIZE,
+                subject.getSerializedSize(),
+                "Serialized size should be variable");
         final VirtualHashRecord data0 = new VirtualHashRecord(0L, nonDefaultHash);
-        assertEquals(1 + 1 + nonDefaultHash.getValue().length, // tag + len + hash
+        assertEquals(
+                1 + 1 + nonDefaultHash.getValue().length, // tag + len + hash
                 subject.getSerializedSize(data0),
                 "Serialized size should be 0 bytes for path and 66 bytes for hash");
         final VirtualHashRecord data1 = new VirtualHashRecord(1L, nonDefaultHash);
-        assertEquals(1 + 8 + 1 + 1 + nonDefaultHash.getValue().length, // tag + path + tag + len + hash
+        assertEquals(
+                1 + 8 + 1 + 1 + nonDefaultHash.getValue().length, // tag + path + tag + len + hash
                 subject.getSerializedSize(data1),
                 "Serialized size should be 9 bytes for path and 75 bytes for hash");
         assertEquals(1L, subject.getCurrentDataVersion(), "Current version should be 1");

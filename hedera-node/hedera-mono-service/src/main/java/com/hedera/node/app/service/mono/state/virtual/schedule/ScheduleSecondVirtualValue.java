@@ -120,8 +120,8 @@ public class ScheduleSecondVirtualValue extends PartialMerkleLeaf
         return size;
     }
 
-    private <E extends Exception> void serializeTo(final CheckedConsumerE<Integer, E> writeIntFn,
-            final CheckedConsumerE<Long, E> writeLongFn) throws E {
+    private <E extends Exception> void serializeTo(
+            final CheckedConsumerE<Integer, E> writeIntFn, final CheckedConsumerE<Long, E> writeLongFn) throws E {
         writeIntFn.accept(ids.size());
         for (var e : ids.entrySet()) {
             writeIntFn.accept(e.getValue().size());
@@ -148,8 +148,8 @@ public class ScheduleSecondVirtualValue extends PartialMerkleLeaf
         serializeTo(buffer::putInt, buffer::putLong);
     }
 
-    private <E extends Exception> void deserializeFrom(final CheckedSupplierE<Integer, E> readIntFn,
-            final CheckedSupplierE<Long, E> readLongFn) throws E {
+    private <E extends Exception> void deserializeFrom(
+            final CheckedSupplierE<Integer, E> readIntFn, final CheckedSupplierE<Long, E> readLongFn) throws E {
         int s = readIntFn.get();
         ids.clear();
         for (int x = 0; x < s; ++x) {

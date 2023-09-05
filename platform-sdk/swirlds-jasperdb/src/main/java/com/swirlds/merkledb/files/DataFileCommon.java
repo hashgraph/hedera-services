@@ -186,8 +186,12 @@ public final class DataFileCommon {
      * @param creationInstant the date and time the file was created
      * @return path to file
      */
-    static Path createDataFilePath(final String filePrefix, final Path dataFileDir, final int index,
-            final Instant creationInstant, final String extension) {
+    static Path createDataFilePath(
+            final String filePrefix,
+            final Path dataFileDir,
+            final int index,
+            final Instant creationInstant,
+            final String extension) {
         return dataFileDir.resolve(filePrefix
                 + "_"
                 + DATE_FORMAT.format(creationInstant)
@@ -257,8 +261,8 @@ public final class DataFileCommon {
             return false;
         }
         final String fileName = path.getFileName().toString();
-        return fileName.startsWith(filePrefix) &&
-                (fileName.endsWith(FILE_EXTENSION) || fileName.endsWith(FILE_EXTENSION_JDB));
+        return fileName.startsWith(filePrefix)
+                && (fileName.endsWith(FILE_EXTENSION) || fileName.endsWith(FILE_EXTENSION_JDB));
     }
 
     /**

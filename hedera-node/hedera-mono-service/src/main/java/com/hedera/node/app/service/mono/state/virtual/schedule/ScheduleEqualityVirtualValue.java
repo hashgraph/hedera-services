@@ -109,9 +109,11 @@ public class ScheduleEqualityVirtualValue extends PartialMerkleLeaf
         return size;
     }
 
-    private <E extends Exception> void serializeTo(final CheckedConsumerE<Integer, E> writeIntFn,
+    private <E extends Exception> void serializeTo(
+            final CheckedConsumerE<Integer, E> writeIntFn,
             final CheckedConsumerE<Long, E> writeLongFn,
-            final CheckedConsumerE<byte[], E> writeBytesFn) throws E {
+            final CheckedConsumerE<byte[], E> writeBytesFn)
+            throws E {
         writeIntFn.accept(ids.size());
         for (var e : ids.entrySet()) {
             var keyBytes = e.getKey().getBytes(StandardCharsets.UTF_8);
@@ -136,9 +138,11 @@ public class ScheduleEqualityVirtualValue extends PartialMerkleLeaf
         serializeTo(buffer::putInt, buffer::putLong, buffer::put);
     }
 
-    private <E extends Exception> void deserializeFrom(final CheckedSupplierE<Integer, E> readIntFn,
+    private <E extends Exception> void deserializeFrom(
+            final CheckedSupplierE<Integer, E> readIntFn,
             final CheckedSupplierE<Long, E> readLongFn,
-            final CheckedConsumerE<byte[], E> readBytesFn) throws E {
+            final CheckedConsumerE<byte[], E> readBytesFn)
+            throws E {
         final int s = readIntFn.get();
         ids.clear();
         for (int x = 0; x < s; x++) {

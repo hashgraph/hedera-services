@@ -53,8 +53,8 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.file.Path;
 import java.util.Map;
-import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.io.TempDir;
 
 /**
  * This base class provides helpful methods and defaults for simplifying the other merkle related

@@ -109,7 +109,7 @@ public class ExampleLongLongKeyVariableSize implements VirtualLongKey {
         if (numOfBytes2 >= 1) value2 |= ((long) buffer.get() & 255);
         this.value2 = value2;
     }
-    
+
     public void deserialize(final ReadableSequentialData in) {
         byte numOfBytes1 = in.readByte();
         byte numOfBytes2 = in.readByte();

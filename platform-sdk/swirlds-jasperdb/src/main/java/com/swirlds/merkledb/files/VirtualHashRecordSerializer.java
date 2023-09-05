@@ -18,7 +18,6 @@ package com.swirlds.merkledb.files;
 
 import static com.hedera.pbj.runtime.ProtoParserTools.TAG_FIELD_OFFSET;
 import static com.swirlds.merkledb.utilities.ProtoUtils.WIRE_TYPE_FIXED_64_BIT;
-import static com.swirlds.merkledb.utilities.ProtoUtils.WIRE_TYPE_VARINT;
 
 import com.hedera.pbj.runtime.FieldDefinition;
 import com.hedera.pbj.runtime.FieldType;
@@ -73,9 +72,9 @@ public final class VirtualHashRecordSerializer implements DataItemSerializer<Vir
 
     @Override
     public int getTypicalSerializedSize() {
-        return ProtoUtils.sizeOfTag(FIELD_HASHRECORD_PATH, WIRE_TYPE_FIXED_64_BIT) +
-                Long.BYTES +
-                ProtoUtils.sizeOfDelimited(FIELD_HASHRECORD_HASH, DigestType.SHA_384.digestLength());
+        return ProtoUtils.sizeOfTag(FIELD_HASHRECORD_PATH, WIRE_TYPE_FIXED_64_BIT)
+                + Long.BYTES
+                + ProtoUtils.sizeOfDelimited(FIELD_HASHRECORD_HASH, DigestType.SHA_384.digestLength());
     }
 
     @Override
@@ -83,8 +82,7 @@ public final class VirtualHashRecordSerializer implements DataItemSerializer<Vir
         // This method is only used for PBJ serialization, so estimation is for PBJ, not JDB
         int size = 0;
         if (data.path() != 0) {
-            size += ProtoUtils.sizeOfTag(FIELD_HASHRECORD_PATH, WIRE_TYPE_FIXED_64_BIT) +
-                    Long.BYTES;
+            size += ProtoUtils.sizeOfTag(FIELD_HASHRECORD_PATH, WIRE_TYPE_FIXED_64_BIT) + Long.BYTES;
         }
         size += ProtoUtils.sizeOfDelimited(FIELD_HASHRECORD_HASH, data.hash().getValue().length);
         return size;
@@ -116,7 +114,10 @@ public final class VirtualHashRecordSerializer implements DataItemSerializer<Vir
             // Use long instead of var long to keep the size fixed
             out.writeLong(hashRecord.path());
         }
-        ProtoUtils.writeBytes(out, FIELD_HASHRECORD_HASH, hashRecord.hash().getValue().length,
+        ProtoUtils.writeBytes(
+                out,
+                FIELD_HASHRECORD_HASH,
+                hashRecord.hash().getValue().length,
                 o -> o.writeBytes(hashRecord.hash().getValue()));
     }
 

@@ -105,8 +105,8 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends Virtual
     public int getSerializedSize(@NonNull final VirtualLeafRecord<K, V> data) {
         int size = 0;
         if (data.getPath() != 0) {
-            size += ProtoUtils.sizeOfTag(FIELD_LEAFRECORD_PATH, WIRE_TYPE_VARINT) +
-                    ProtoUtils.sizeOfUnsignedVarInt64(data.getPath());
+            size += ProtoUtils.sizeOfTag(FIELD_LEAFRECORD_PATH, WIRE_TYPE_VARINT)
+                    + ProtoUtils.sizeOfUnsignedVarInt64(data.getPath());
         }
         size += ProtoUtils.sizeOfDelimited(FIELD_LEAFRECORD_KEY, keySerializer.getSerializedSize(data.getKey()));
         size += ProtoUtils.sizeOfDelimited(FIELD_LEAFRECORD_VALUE, valueSerializer.getSerializedSize(data.getValue()));
@@ -130,15 +130,21 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends Virtual
     }
 
     @Override
-    public void serialize(@NonNull final VirtualLeafRecord<K, V> leafRecord,
-            @NonNull final WritableSequentialData out) {
+    public void serialize(
+            @NonNull final VirtualLeafRecord<K, V> leafRecord, @NonNull final WritableSequentialData out) {
         if (leafRecord.getPath() != 0) {
             ProtoUtils.writeTag(out, FIELD_LEAFRECORD_PATH);
             out.writeVarLong(leafRecord.getPath(), false);
         }
-        ProtoUtils.writeBytes(out, FIELD_LEAFRECORD_KEY, keySerializer.getSerializedSize(leafRecord.getKey()),
+        ProtoUtils.writeBytes(
+                out,
+                FIELD_LEAFRECORD_KEY,
+                keySerializer.getSerializedSize(leafRecord.getKey()),
                 o -> keySerializer.serialize(leafRecord.getKey(), o));
-        ProtoUtils.writeBytes(out, FIELD_LEAFRECORD_VALUE, valueSerializer.getSerializedSize(leafRecord.getValue()),
+        ProtoUtils.writeBytes(
+                out,
+                FIELD_LEAFRECORD_VALUE,
+                valueSerializer.getSerializedSize(leafRecord.getValue()),
                 o -> valueSerializer.serialize(leafRecord.getValue(), o));
     }
 

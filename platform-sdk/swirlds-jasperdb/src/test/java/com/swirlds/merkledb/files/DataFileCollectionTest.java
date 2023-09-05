@@ -208,7 +208,8 @@ class DataFileCollectionTest {
         assertEquals(
                 10,
                 Files.list(tempFileDir.resolve(testType.name()))
-                        .filter(f -> f.toString().endsWith(".pbj") || f.toString().endsWith(".jdb"))
+                        .filter(f ->
+                                f.toString().endsWith(".pbj") || f.toString().endsWith(".jdb"))
                         .count(),
                 "Temp file should not have changed since previous test in sequence");
         // examine loadedDataCallbackImpl content's map sizes as well as checking the data
@@ -421,7 +422,8 @@ class DataFileCollectionTest {
         assertEquals(
                 1,
                 Files.list(tempFileDir.resolve(testType.name()))
-                        .filter(f -> f.toString().endsWith(".pbj") || f.toString().endsWith(".jdb"))
+                        .filter(f ->
+                                f.toString().endsWith(".pbj") || f.toString().endsWith(".jdb"))
                         .count(),
                 "unexpected # of files #1");
         // After merge is complete, there should be only 1 "fully written" file, and that it is
@@ -471,7 +473,8 @@ class DataFileCollectionTest {
         assertEquals(
                 2,
                 Files.list(tempFileDir.resolve(testType.name()))
-                        .filter(f -> f.toString().endsWith(".pbj") || f.toString().endsWith(".jdb"))
+                        .filter(f ->
+                                f.toString().endsWith(".pbj") || f.toString().endsWith(".jdb"))
                         .count(),
                 "unexpected # of files");
     }
@@ -499,8 +502,20 @@ class DataFileCollectionTest {
                 // the time while we are merging
                 while (!mergeComplete.get()) {
                     try {
-                        checkData(fileCollectionMap.get(testType), storedOffsetsMap.get(testType), testType, 0, 50, 100_000);
-                        checkData(fileCollectionMap.get(testType), storedOffsetsMap.get(testType), testType, 50, 1000, 10_000);
+                        checkData(
+                                fileCollectionMap.get(testType),
+                                storedOffsetsMap.get(testType),
+                                testType,
+                                0,
+                                50,
+                                100_000);
+                        checkData(
+                                fileCollectionMap.get(testType),
+                                storedOffsetsMap.get(testType),
+                                testType,
+                                50,
+                                1000,
+                                10_000);
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -563,7 +578,8 @@ class DataFileCollectionTest {
         assertEquals(
                 1,
                 Files.list(tempFileDir.resolve(testType.name()))
-                        .filter(f -> f.toString().endsWith(".pbj") || f.toString().endsWith(".jdb"))
+                        .filter(f ->
+                                f.toString().endsWith(".pbj") || f.toString().endsWith(".jdb"))
                         .count(),
                 "unexpected # of files");
     }
@@ -627,8 +643,8 @@ class DataFileCollectionTest {
         assertEquals(
                 1,
                 Files.list(dbDir)
-                        .filter(file -> file.getFileName().toString().matches(storeName + ".*pbj") ||
-                                file.getFileName().toString().matches(storeName + ".*jdb"))
+                        .filter(file -> file.getFileName().toString().matches(storeName + ".*pbj")
+                                || file.getFileName().toString().matches(storeName + ".*jdb"))
                         .count(),
                 "expected 1 db files but had ["
                         + Arrays.toString(Files.list(dbDir).toArray())

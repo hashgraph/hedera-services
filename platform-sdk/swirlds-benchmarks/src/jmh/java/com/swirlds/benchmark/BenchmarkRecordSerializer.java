@@ -72,5 +72,4 @@ public class BenchmarkRecordSerializer implements DataItemSerializer<BenchmarkRe
     public long extractKey(BufferedData dataItemData) {
         return dataItemData.getLong(0);
     }
-
 }

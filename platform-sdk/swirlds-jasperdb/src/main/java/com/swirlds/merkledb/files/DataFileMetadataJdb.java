@@ -47,10 +47,7 @@ public final class DataFileMetadataJdb extends DataFileMetadata {
      * @param serializationVersion Serialization version for data stored in the file
      */
     public DataFileMetadataJdb(
-            final long itemsCount,
-            final int index,
-            final Instant creationDate,
-            final long serializationVersion) {
+            final long itemsCount, final int index, final Instant creationDate, final long serializationVersion) {
         super(itemsCount, index, creationDate, serializationVersion);
     }
 

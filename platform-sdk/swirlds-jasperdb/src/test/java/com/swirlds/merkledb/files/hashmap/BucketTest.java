@@ -26,7 +26,6 @@ import com.swirlds.merkledb.ExampleLongKeyVariableSize;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.virtualmap.VirtualLongKey;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.function.Function;
 import org.junit.jupiter.api.DisplayName;
@@ -220,7 +219,8 @@ class BucketTest {
         final BufferedData bbuf = BufferedData.allocate(size);
         bucket.writeTo(bbuf);
         bbuf.flip();
-        assertEquals(goodBytesStr, Arrays.toString(bbuf.getBytes(0, bbuf.length()).toByteArray()), "Expect bytes to match");
+        assertEquals(
+                goodBytesStr, Arrays.toString(bbuf.getBytes(0, bbuf.length()).toByteArray()), "Expect bytes to match");
 
         // create new bucket with good bytes and check it is the same
         final Bucket<VirtualLongKey> bucket2 = new Bucket<>(keyType.keySerializer);
@@ -274,17 +274,14 @@ class BucketTest {
         final ExampleLongKeyFixedSize.Serializer keySerializer = new ExampleLongKeyFixedSize.Serializer();
         final Bucket<ExampleLongKeyFixedSize> bucket = new Bucket<>(keySerializer);
 
-        final String emptyBucketRepr =
-                "Bucket{bucketIndex=0, entryCount=0, size=0\n" + "}";
+        final String emptyBucketRepr = "Bucket{bucketIndex=0, entryCount=0, size=0\n" + "}";
         assertEquals(emptyBucketRepr, bucket.toString(), "Empty bucket should represent as expected");
 
-        final String bucketWithIndex0Repr =
-                "Bucket{bucketIndex=0, entryCount=0, size=0\n" + "}";
+        final String bucketWithIndex0Repr = "Bucket{bucketIndex=0, entryCount=0, size=0\n" + "}";
         bucket.setBucketIndex(0);
         assertEquals(bucketWithIndex0Repr, bucket.toString(), "Empty bucket should represent as expected");
 
-        final String bucketWithIndex1Repr =
-                "Bucket{bucketIndex=1, entryCount=0, size=2\n" + "}";
+        final String bucketWithIndex1Repr = "Bucket{bucketIndex=1, entryCount=0, size=2\n" + "}";
         bucket.setBucketIndex(1);
         assertEquals(bucketWithIndex1Repr, bucket.toString(), "Empty bucket should represent as expected");
 

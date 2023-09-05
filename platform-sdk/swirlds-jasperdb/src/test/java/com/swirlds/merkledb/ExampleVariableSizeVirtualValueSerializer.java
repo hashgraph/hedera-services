@@ -20,7 +20,6 @@ import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.merkledb.serialize.BaseSerializer;
 import com.swirlds.merkledb.serialize.ValueSerializer;
-import com.swirlds.merkledb.utilities.ProtoUtils;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -66,8 +65,7 @@ public final class ExampleVariableSizeVirtualValueSerializer
     }
 
     @Override
-    public void serialize(
-            final ExampleVariableSizeVirtualValue data, final WritableSequentialData out) {
+    public void serialize(final ExampleVariableSizeVirtualValue data, final WritableSequentialData out) {
         out.writeInt(data.getId());
         final int dataLength = data.getDataLength();
         out.writeInt(dataLength);
