@@ -258,20 +258,7 @@ public class ContractCallSuite extends HapiSuite {
                         uploadInitCode(contract),
                         contractCreate(contract),
                         getContractInfo(contract).logged())
-                .when(contractCall(
-                                contract,
-                                "testCallFoo",
-                                randomHeadlongAddress(),
-                                // with values large enough to cover the hollow account creation fees (~600K):
-                                //  1. works as expected
-                                //  2. creates a hollow account
-                                //  3. record stream and sidecars are correct
-                                // with values not large enough to cover the fees (500K or less):
-                                //  1. doesn't create the hollow account
-                                //  2. the hbars are "stuck" in the HollowAccountCreator contract which is incorrect
-                                //  3. the actions sidecars contain a negative entity ID
-                                //  4. this breaks the mirror node :(
-                                BigInteger.valueOf(500_000L))
+                .when(contractCall(contract, "testCallFoo", randomHeadlongAddress(), BigInteger.valueOf(500_000L))
                         .sending(ONE_HBAR)
                         .gas(2_000_000L)
                         .via("callTransaction")
