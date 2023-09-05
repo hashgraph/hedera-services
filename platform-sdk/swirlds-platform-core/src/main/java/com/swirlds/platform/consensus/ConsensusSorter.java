@@ -19,7 +19,6 @@ package com.swirlds.platform.consensus;
 import com.swirlds.platform.Utilities;
 import com.swirlds.platform.internal.EventImpl;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 

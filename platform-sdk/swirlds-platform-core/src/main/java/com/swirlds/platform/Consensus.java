@@ -22,7 +22,6 @@ import com.swirlds.platform.consensus.RoundNumberProvider;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.LoadableFromSignedState;
-
 import java.util.List;
 
 /** An interface for classes that calculate consensus of events */

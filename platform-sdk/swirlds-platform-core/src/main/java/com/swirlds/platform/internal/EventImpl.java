@@ -41,7 +41,6 @@ import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.system.transaction.internal.SystemTransaction;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.event.EventCounter;
 import com.swirlds.platform.event.EventMetadata;
