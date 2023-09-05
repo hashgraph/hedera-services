@@ -297,15 +297,16 @@ public class CryptoCreateSuite extends HapiSuite {
         return defaultHapiSpec("createAnAccountEmptyKeyList")
                 .given()
                 .when()
-                .then(cryptoCreate(NO_KEYS)
-                        .keyShape(shape)
-                        .balance(initialBalance)
-                        .logged()
-                        .hasPrecheck(KEY_REQUIRED)
+                .then(
+                        cryptoCreate(NO_KEYS)
+                                .keyShape(shape)
+                                .balance(initialBalance)
+                                .logged()
+                                .hasPrecheck(KEY_REQUIRED)
                         // In modular code this error is thrown in handle, but it is fixed using dynamic property
                         // spec.streamlinedIngestChecks
                         // to accommodate error codes moved from Ingest to handle
-                );
+                        );
     }
 
     @HapiTest
@@ -498,7 +499,7 @@ public class CryptoCreateSuite extends HapiSuite {
                         // In modular code this error is thrown in handle, but it is fixed using dynamic property
                         // spec.streamlinedIngestChecks
                         // to accommodate error codes moved from Ingest to handle
-                );
+                        );
     }
 
     @HapiTest
@@ -700,6 +701,7 @@ public class CryptoCreateSuite extends HapiSuite {
                 }))
                 .then();
     }
+
     @HapiTest
     private HapiSpec createAnAccountWithEVMAddressAliasFromDifferentKey() {
         return defaultHapiSpec("createAnAccountWithEVMAddressAliasFromDifferentKey")

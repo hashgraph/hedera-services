@@ -23,7 +23,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_REQUIRED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl.isMirror;
-import static com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
