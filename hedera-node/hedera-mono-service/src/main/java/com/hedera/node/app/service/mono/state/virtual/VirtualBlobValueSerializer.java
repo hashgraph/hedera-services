@@ -79,9 +79,8 @@ public class VirtualBlobValueSerializer implements ValueSerializer<VirtualBlobVa
     }
 
     @Override
-    public int serialize(final VirtualBlobValue value, final ByteBuffer out) throws IOException {
+    public void serialize(final VirtualBlobValue value, final ByteBuffer out) throws IOException {
         value.serialize(out);
-        return Integer.BYTES + value.getData().length; // data size (int) + data
     }
 
     // Value deserialization

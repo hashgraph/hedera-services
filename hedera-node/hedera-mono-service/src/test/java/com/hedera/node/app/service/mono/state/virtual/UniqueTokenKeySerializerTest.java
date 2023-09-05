@@ -52,7 +52,7 @@ class UniqueTokenKeySerializerTest {
     }
 
     @Test
-    void serializeToPbj_shouldReturnExpectedBytes() throws IOException {
+    void serializeToPbj_shouldReturnExpectedBytes() {
         final ByteBuffer byteBuffer = ByteBuffer.allocate(UNIQUE_TOKEN_KEY_SIZE);
         final WritableSequentialData out = BufferedData.wrap(byteBuffer);
         final UniqueTokenKeySerializer serializer = new UniqueTokenKeySerializer();
@@ -73,9 +73,9 @@ class UniqueTokenKeySerializerTest {
     void serializeToByteBuffer_shouldReturnExpectedBytes() throws IOException {
         final ByteBuffer byteBuffer = ByteBuffer.allocate(UNIQUE_TOKEN_KEY_SIZE);
         final UniqueTokenKeySerializer serializer = new UniqueTokenKeySerializer();
-        final int len = serializer.serialize(new UniqueTokenKey(Long.MAX_VALUE, EXAMPLE_SERIAL), byteBuffer);
+        serializer.serialize(new UniqueTokenKey(Long.MAX_VALUE, EXAMPLE_SERIAL), byteBuffer);
 
-        assertThat(len).isEqualTo(UNIQUE_TOKEN_KEY_SIZE);
+        assertThat(byteBuffer.position()).isEqualTo(UNIQUE_TOKEN_KEY_SIZE);
         assertThat(byteBuffer.array())
                 .isEqualTo(Bytes.concat(
                         new byte[] {(byte) 0x88},

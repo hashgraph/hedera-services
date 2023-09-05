@@ -264,9 +264,8 @@ public class ExampleLongKeyVariableSize implements VirtualLongKey {
 
         @Override
         @Deprecated(forRemoval = true)
-        public int serialize(final ExampleLongKeyVariableSize data, final ByteBuffer buffer) throws IOException {
+        public void serialize(final ExampleLongKeyVariableSize data, final ByteBuffer buffer) throws IOException {
             data.serialize(buffer);
-            return 1 + computeNonZeroBytes(data.getKeyAsLong());
         }
 
         @Override

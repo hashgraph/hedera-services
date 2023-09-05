@@ -69,11 +69,10 @@ public class VirtualBlobKeySerializer implements KeySerializer<VirtualBlobKey> {
     }
 
     @Override
-    public int serialize(final VirtualBlobKey key, final ByteBuffer buffer) throws IOException {
+    public void serialize(final VirtualBlobKey key, final ByteBuffer buffer) throws IOException {
         Objects.requireNonNull(key);
         Objects.requireNonNull(buffer);
         key.serialize(buffer);
-        return getSerializedSize();
     }
 
     @Override

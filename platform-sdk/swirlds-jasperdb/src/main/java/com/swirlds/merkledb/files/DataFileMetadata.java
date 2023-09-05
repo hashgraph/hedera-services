@@ -48,14 +48,17 @@ import java.util.Set;
  */
 @SuppressWarnings("unused")
 // Future work: make this class final, once DataFileMetadataJdb is dropped
+// See https://github.com/hashgraph/hedera-services/issues/8344 for details
 public class DataFileMetadata {
 
     /** The file index, in a data file collection */
     // Future work: make it private final, once this class is final again
+    // https://github.com/hashgraph/hedera-services/issues/8344
     protected int index;
 
     /** The creation date of this file */
     // Future work: make it private final, once this class is final again
+    // https://github.com/hashgraph/hedera-services/issues/8344
     protected Instant creationDate;
 
     /**
@@ -66,10 +69,12 @@ public class DataFileMetadata {
      * until they are fully written, so wrong (zero) item count shouldn't be an issue.
      */
     // Future work: make it private, once this class is final again
+    // https://github.com/hashgraph/hedera-services/issues/8344
     protected volatile long itemsCount;
 
     /** Serialization version for data stored in the file */
     // Future work: make it private final, once this class is final again
+    // https://github.com/hashgraph/hedera-services/issues/8344
     protected long serializationVersion;
 
     // Set in writeTo()

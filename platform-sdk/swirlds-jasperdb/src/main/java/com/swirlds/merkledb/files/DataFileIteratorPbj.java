@@ -95,7 +95,6 @@ public final class DataFileIteratorPbj implements DataFileIterator {
         this.path = path;
         this.metadata = metadata;
         this.dataItemSerializer = dataItemSerializer;
-        /* FUTURE WORK - https://github.com/swirlds/swirlds-platform/issues/3929 */
         this.inputStream = new BufferedInputStream(
                 Files.newInputStream(path, StandardOpenOption.READ), config.iteratorInputBufferBytes());
         this.in = new ReadableStreamingData(inputStream);

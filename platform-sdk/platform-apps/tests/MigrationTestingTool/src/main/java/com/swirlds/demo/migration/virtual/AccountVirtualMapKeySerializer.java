@@ -78,9 +78,8 @@ public class AccountVirtualMapKeySerializer implements KeySerializer<AccountVirt
      * {@inheritDoc}
      */
     @Override
-    public int serialize(AccountVirtualMapKey key, ByteBuffer buffer) throws IOException {
+    public void serialize(AccountVirtualMapKey key, ByteBuffer buffer) throws IOException {
         key.serialize(buffer);
-        return getSerializedSize();
     }
 
     /**

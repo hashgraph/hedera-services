@@ -52,7 +52,7 @@ public class BenchmarkRecordSerializer implements DataItemSerializer<BenchmarkRe
     }
 
     @Override
-    public int serialize(BenchmarkRecord data, ByteBuffer buffer) {
+    public void serialize(BenchmarkRecord data, ByteBuffer buffer) {
         throw new UnsupportedOperationException("Not implemented");
     }
 

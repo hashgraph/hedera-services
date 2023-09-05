@@ -77,9 +77,8 @@ public class AccountVirtualMapValueSerializer implements ValueSerializer<Account
      * {@inheritDoc}
      */
     @Override
-    public int serialize(AccountVirtualMapValue value, ByteBuffer buffer) throws IOException {
+    public void serialize(AccountVirtualMapValue value, ByteBuffer buffer) throws IOException {
         value.serialize(buffer);
-        return getSerializedSize();
     }
 
     /**

@@ -59,12 +59,11 @@ public class TestValueSerializer implements ValueSerializer<TestValue> {
 
     @Override
     @Deprecated(forRemoval = true)
-    public int serialize(TestValue data, ByteBuffer buffer) {
+    public void serialize(TestValue data, ByteBuffer buffer) {
         final String s = data.getValue();
         final byte[] bytes = CommonUtils.getNormalisedStringBytes(s);
         buffer.putInt(bytes.length);
         buffer.put(bytes);
-        return Integer.BYTES + bytes.length;
     }
 
     @Override

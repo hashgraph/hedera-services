@@ -73,9 +73,8 @@ public class ScheduleEqualityVirtualKeySerializer implements KeySerializer<Sched
     }
 
     @Override
-    public int serialize(final ScheduleEqualityVirtualKey key, final ByteBuffer buffer) throws IOException {
+    public void serialize(final ScheduleEqualityVirtualKey key, final ByteBuffer buffer) throws IOException {
         key.serialize(buffer);
-        return getSerializedSize();
     }
 
     // Key deserialization

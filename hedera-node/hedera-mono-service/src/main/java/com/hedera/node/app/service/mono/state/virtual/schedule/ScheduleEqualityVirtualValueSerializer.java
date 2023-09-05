@@ -80,9 +80,8 @@ public class ScheduleEqualityVirtualValueSerializer implements ValueSerializer<S
     }
 
     @Override
-    public int serialize(final ScheduleEqualityVirtualValue value, final ByteBuffer buffer) throws IOException {
+    public void serialize(final ScheduleEqualityVirtualValue value, final ByteBuffer buffer) throws IOException {
         value.serialize(buffer);
-        return value.serializedSizeInBytes();
     }
 
     // Value deserialization

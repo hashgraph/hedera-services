@@ -80,13 +80,10 @@ public class OnDiskAccountValueSerializer implements ValueSerializer<OnDiskAccou
     }
 
     @Override
-    public int serialize(final OnDiskAccount value, final ByteBuffer buffer) throws IOException {
+    public void serialize(final OnDiskAccount value, final ByteBuffer buffer) throws IOException {
         Objects.requireNonNull(value);
         Objects.requireNonNull(buffer);
         value.serialize(buffer);
-        // Future work: variable part is serialized to an array twice, in serialize() above and
-        // getSerializedSizeInBytes() below
-        return value.getSerializedSizeInBytes();
     }
 
     // Value deserializatioin

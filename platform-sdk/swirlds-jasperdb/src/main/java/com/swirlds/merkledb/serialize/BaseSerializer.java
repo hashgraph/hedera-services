@@ -32,21 +32,26 @@ public interface BaseSerializer<T> {
     long getCurrentDataVersion();
 
     /**
-     * Get if the number of bytes a data item takes when serialized is variable or fixed
+     * Get if the number of bytes a data item takes when serialized is variable or fixed.
      *
      * @return true if getSerializedSize() == DataFileCommon.VARIABLE_DATA_SIZE
      */
-    // Future work: remove this method
     default boolean isVariableSize() {
         return getSerializedSize() == VARIABLE_DATA_SIZE;
     }
 
     /**
-     * Get the number of bytes a data item takes when serialized
+     * Get the number of bytes an arbitrary data item of type {@code D} takes when serialized. If
+     * serialized data items may be of different sizes, this method should return {@link
+     * #VARIABLE_DATA_SIZE}, and methods {@link #getTypicalSerializedSize()} and {@link
+     * #getSerializedSize(Object)} are mandatory to implement.
+     *
+     * <p>For fixed-sized data items, this is the only method to implement. For variable-sized
+     * data items, two more methods are needed: {@link #getTypicalSerializedSize()} and
+     * {@link #getSerializedSize(Object)}.
      *
      * @return Either a number of bytes or DataFileCommon.VARIABLE_DATA_SIZE if size is variable
      */
-    // Future work: remove this method
     int getSerializedSize();
 
     @Deprecated(forRemoval = true)
@@ -56,6 +61,7 @@ public interface BaseSerializer<T> {
 
     /**
      * For variable sized data items get the typical number of bytes an item takes when serialized.
+     * If data items are all of fixed size, there is no need to implement this method.
      *
      * @return Either for fixed size same as getSerializedSize() or an estimated typical size
      */
@@ -66,6 +72,13 @@ public interface BaseSerializer<T> {
         return getSerializedSize();
     }
 
+    /**
+     * Returns the number of bytes a given data item takes when serialized. If data items are all
+     * of fixed size, there is no need to implement this method.
+     *
+     * @param data Data item to estimate
+     * @return Number of bytes the data item will take when serialized
+     */
     default int getSerializedSize(@NonNull final T data) {
         Objects.requireNonNull(data);
         final int size = getSerializedSize();
@@ -76,17 +89,32 @@ public interface BaseSerializer<T> {
     }
 
     /**
+     * Serialize a data item buffer in protobuf format. Serialization format must be identical to
+     * {@link #deserialize(ReadableSequentialData)}.
+     *
+     * @param data The data item to serialize
+     * @param out Output buffer to write to
+     */
+    void serialize(@NonNull final T data, @NonNull final WritableSequentialData out);
+
+    /**
      * Serialize a data item including header to the byte buffer returning the size of the data
      * written. Serialization format must be identical to {@link #deserialize(ByteBuffer, long)}.
      *
      * @param data The data item to serialize
      * @param buffer Output buffer to write to
-     * @return Number of bytes written
      */
     @Deprecated(forRemoval = true)
-    int serialize(T data, ByteBuffer buffer) throws IOException;
+    void serialize(T data, ByteBuffer buffer) throws IOException;
 
-    void serialize(@NonNull final T dataItem, @NonNull final WritableSequentialData out);
+    /**
+     * Deserialize a data item from a buffer where it was previously written using {@link
+     * #serialize(Object, WritableSequentialData)} method.
+     *
+     * @param in The buffer to read from containing the data item in protobuf format
+     * @return Deserialized data item
+     */
+    T deserialize(@NonNull final ReadableSequentialData in);
 
     /**
      * Deserialize a data item from a byte buffer, that was written with given data version.
@@ -97,6 +125,4 @@ public interface BaseSerializer<T> {
      */
     @Deprecated(forRemoval = true)
     T deserialize(ByteBuffer buffer, long dataVersion) throws IOException;
-
-    T deserialize(@NonNull final ReadableSequentialData in);
 }

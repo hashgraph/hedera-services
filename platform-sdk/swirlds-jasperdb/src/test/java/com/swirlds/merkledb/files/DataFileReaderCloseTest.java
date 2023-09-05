@@ -168,11 +168,10 @@ class DataFileReaderCloseTest {
         }
 
         @Override
-        public int serialize(long[] data, ByteBuffer buffer) throws IOException {
+        public void serialize(long[] data, ByteBuffer buffer) throws IOException {
             assert data.length == 2;
             buffer.putLong(data[0]);
             buffer.putLong(data[1]);
-            return getSerializedSize();
         }
 
         @Override

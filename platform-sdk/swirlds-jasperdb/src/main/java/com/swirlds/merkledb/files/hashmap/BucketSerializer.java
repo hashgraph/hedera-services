@@ -123,8 +123,8 @@ public class BucketSerializer<K extends VirtualKey> implements DataItemSerialize
     }
 
     @Override
-    public int serialize(Bucket<K> bucket, ByteBuffer buffer) throws IOException {
-        return bucket.writeTo(buffer);
+    public void serialize(Bucket<K> bucket, ByteBuffer buffer) throws IOException {
+        bucket.writeTo(buffer);
     }
 
     @Override

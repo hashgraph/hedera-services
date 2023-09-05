@@ -79,10 +79,10 @@ public class UniqueTokenKeySerializer implements KeySerializer<UniqueTokenKey> {
     }
 
     @Override
-    public int serialize(final UniqueTokenKey key, final ByteBuffer buffer) throws IOException {
+    public void serialize(final UniqueTokenKey key, final ByteBuffer buffer) throws IOException {
         Objects.requireNonNull(key);
         Objects.requireNonNull(buffer);
-        return key.serializeTo(buffer::put);
+        key.serializeTo(buffer::put);
     }
 
     @Override

@@ -90,9 +90,8 @@ public abstract class AbstractFixedSizeKeySerializer<K extends VirtualKey> imple
     /** {@inheritDoc} */
     @Override
     @Deprecated(forRemoval = true)
-    public int serialize(final K data, final ByteBuffer buffer) throws IOException {
+    public void serialize(final K data, final ByteBuffer buffer) throws IOException {
         data.serialize(buffer);
-        return serializedKeySize;
     }
 
     /** {@inheritDoc} */

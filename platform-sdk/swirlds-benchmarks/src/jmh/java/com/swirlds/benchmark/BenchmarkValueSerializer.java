@@ -66,9 +66,8 @@ public class BenchmarkValueSerializer implements ValueSerializer<BenchmarkValue>
 
     @Override
     @Deprecated(forRemoval = true)
-    public int serialize(BenchmarkValue data, ByteBuffer buffer) throws IOException {
+    public void serialize(BenchmarkValue data, ByteBuffer buffer) throws IOException {
         data.serialize(buffer);
-        return BenchmarkValue.getSerializedSize();
     }
 
     @Override

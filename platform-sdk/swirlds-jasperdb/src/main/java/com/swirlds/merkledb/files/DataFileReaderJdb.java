@@ -37,6 +37,7 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
  */
 @SuppressWarnings({"DuplicatedCode", "NullableProblems"})
 // Future work: drop this class after all files are migrated to protobuf format
+// See https://github.com/hashgraph/hedera-services/issues/8344 for details
 public class DataFileReaderJdb<D> extends DataFileReaderPbj<D> {
 
     /** FileChannel's for each thread */

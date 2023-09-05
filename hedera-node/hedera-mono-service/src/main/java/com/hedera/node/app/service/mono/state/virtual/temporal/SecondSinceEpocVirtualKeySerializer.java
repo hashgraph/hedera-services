@@ -73,9 +73,8 @@ public class SecondSinceEpocVirtualKeySerializer implements KeySerializer<Second
     }
 
     @Override
-    public int serialize(final SecondSinceEpocVirtualKey key, final ByteBuffer buffer) throws IOException {
+    public void serialize(final SecondSinceEpocVirtualKey key, final ByteBuffer buffer) throws IOException {
         key.serialize(buffer);
-        return getSerializedSize();
     }
 
     // Key deserialization

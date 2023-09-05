@@ -92,10 +92,6 @@ public final class SmartContractByteCodeMapValue implements VirtualValue {
         return byteCode.length;
     }
 
-    int sizeInBytes() {
-        return Integer.BYTES + byteCode.length;
-    }
-
     /**
      * Returns this smart contract byte code value as a byte array.
      *

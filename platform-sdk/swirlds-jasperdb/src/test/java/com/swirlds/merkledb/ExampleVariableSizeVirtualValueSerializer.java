@@ -75,12 +75,11 @@ public final class ExampleVariableSizeVirtualValueSerializer
     }
 
     @Override
-    public int serialize(ExampleVariableSizeVirtualValue data, ByteBuffer buffer) throws IOException {
+    public void serialize(ExampleVariableSizeVirtualValue data, ByteBuffer buffer) throws IOException {
         buffer.putInt(data.getId());
         final int dataLength = data.getDataLength();
         buffer.putInt(dataLength);
         buffer.put(data.getData());
-        return Integer.BYTES + Integer.BYTES + data.getData().length;
     }
 
     @Override

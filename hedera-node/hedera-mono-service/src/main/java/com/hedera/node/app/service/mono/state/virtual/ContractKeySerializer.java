@@ -84,11 +84,10 @@ public class ContractKeySerializer implements KeySerializer<ContractKey> {
     }
 
     @Override
-    public int serialize(final ContractKey key, ByteBuffer out) throws IOException {
+    public void serialize(final ContractKey key, ByteBuffer out) throws IOException {
         Objects.requireNonNull(key);
         Objects.requireNonNull(out);
         key.serialize(out);
-        return key.getSerializedSizeInBytes();
     }
 
     // Key deserialization

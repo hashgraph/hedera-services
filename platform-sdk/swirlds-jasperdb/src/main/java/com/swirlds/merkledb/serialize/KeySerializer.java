@@ -57,33 +57,6 @@ public interface KeySerializer<K extends VirtualKey> extends BaseSerializer<K>, 
     }
 
     /**
-     * Serialize a key including header to the byte buffer returning the size of the data written.
-     * Bytes written using this method will then be used for deserialization with {@link
-     * #deserialize(ByteBuffer, long)} method.
-     *
-     * This method returns the number of bytes written to the buffer. For fixed-sized keys the
-     * size must be equal to {@link #getSerializedSize()} return value.
-     *
-     * @param data The key to serialize
-     * @param buffer The byte buffer to write to
-     * @return The size, in bytes, of the serialized key
-     * @throws IOException If there was a problem writing to the buffer
-     */
-    @Deprecated(forRemoval = true)
-    int serialize(K data, ByteBuffer buffer) throws IOException;
-
-    /**
-     * Deserialize a key from the byte buffer, where it was previously written using {@link
-     * #serialize(VirtualKey, ByteBuffer)} method.
-     *
-     * @param buffer The byte buffer to read from
-     * @return A key deserialized from the buffer
-     * @throws IOException If there was a problem reading from the buffer
-     */
-    @Deprecated(forRemoval = true)
-    K deserialize(ByteBuffer buffer, long dataVersion) throws IOException;
-
-    /**
      * Compare keyToCompare's data to that contained in the given ByteBuffer. The data in the buffer
      * is assumed to be starting at the current buffer position and in the format written by this
      * class's serialize() method. The reason for this rather than just deserializing then doing an

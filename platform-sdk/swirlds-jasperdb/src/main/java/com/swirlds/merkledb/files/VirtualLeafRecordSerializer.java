@@ -102,7 +102,7 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends Virtual
     }
 
     @Override
-    public int getSerializedSize(VirtualLeafRecord<K, V> data) {
+    public int getSerializedSize(@NonNull final VirtualLeafRecord<K, V> data) {
         int size = 0;
         if (data.getPath() != 0) {
             size += ProtoUtils.sizeOfTag(FIELD_LEAFRECORD_PATH, WIRE_TYPE_VARINT) +
@@ -144,7 +144,7 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends Virtual
 
     @Override
     @Deprecated(forRemoval = true)
-    public int serialize(VirtualLeafRecord<K, V> leafRecord, ByteBuffer buffer) throws IOException {
+    public void serialize(VirtualLeafRecord<K, V> leafRecord, ByteBuffer buffer) throws IOException {
         final int initialPos = buffer.position();
         // path
         buffer.putLong(leafRecord.getPath());
@@ -156,16 +156,11 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends Virtual
         keySerializer.serialize(leafRecord.getKey(), buffer);
         valueSerializer.serialize(leafRecord.getValue(), buffer);
 
-        final int totalSize;
         if (isVariableSize()) {
             final int finalPos = buffer.position();
-            totalSize = finalPos - initialPos;
+            final int totalSize = finalPos - initialPos;
             buffer.putInt(initialPos + Long.BYTES, totalSize);
-        } else {
-            totalSize = dataItemSerializedSize;
         }
-
-        return totalSize;
     }
 
     @Override

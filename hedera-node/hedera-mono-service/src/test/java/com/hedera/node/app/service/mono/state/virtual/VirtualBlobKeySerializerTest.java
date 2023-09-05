@@ -69,13 +69,13 @@ class VirtualBlobKeySerializerTest {
 
     @Test
     void serializeWorks() throws IOException {
-        final var out = mock(ByteBuffer.class);
+        final var out = ByteBuffer.allocate(5);
         final var virtualBlobKey = new VirtualBlobKey(FILE_DATA, entityNum);
 
-        assertEquals(BYTES_IN_SERIALIZED_FORM, subject.serialize(virtualBlobKey, out));
-
-        verify(out).put((byte) FILE_DATA.ordinal());
-        verify(out).putInt(entityNum);
+        subject.serialize(virtualBlobKey, out);
+        assertEquals(BYTES_IN_SERIALIZED_FORM, out.position());
+        assertEquals((byte) FILE_DATA.ordinal(), out.get(0));
+        assertEquals(entityNum, out.getInt(1));
     }
 
     @Test

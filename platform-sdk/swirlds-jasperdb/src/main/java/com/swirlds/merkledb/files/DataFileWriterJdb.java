@@ -44,6 +44,7 @@ import java.util.Arrays;
  * @param <D> Data item type
  */
 // Future work: remove this class after JDB format support is no longer needed
+// https://github.com/hashgraph/hedera-services/issues/8344
 public final class DataFileWriterJdb<D> extends DataFileWriterPbj<D> {
 
     /** Mapped buffer size */

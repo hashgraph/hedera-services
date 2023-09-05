@@ -59,10 +59,9 @@ public class ExampleFixedSizeDataSerializer implements DataItemSerializer<long[]
 
     @Override
     @Deprecated(forRemoval = true)
-    public int serialize(final long[] data, final ByteBuffer buffer) throws IOException {
+    public void serialize(final long[] data, final ByteBuffer buffer) throws IOException {
         buffer.putLong(data[0]);
         buffer.putLong(data[1]);
-        return getSerializedSize();
     }
 
     @Override

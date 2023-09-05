@@ -91,7 +91,6 @@ public final class DataFileIteratorJdb implements DataFileIterator {
         this.metadata = metadata;
         this.dataItemSerializer = dataItemSerializer;
         this.headerSize = dataItemSerializer.getHeaderSize();
-        /* FUTURE WORK - https://github.com/swirlds/swirlds-platform/issues/3929 */
         this.inputStream = new BufferedInputStream(
                 Files.newInputStream(path, StandardOpenOption.READ), config.iteratorInputBufferBytes());
     }

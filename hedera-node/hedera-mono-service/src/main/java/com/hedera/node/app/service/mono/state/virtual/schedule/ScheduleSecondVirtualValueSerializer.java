@@ -79,9 +79,8 @@ public class ScheduleSecondVirtualValueSerializer implements ValueSerializer<Sch
     }
 
     @Override
-    public int serialize(ScheduleSecondVirtualValue value, ByteBuffer byteBuffer) throws IOException {
+    public void serialize(ScheduleSecondVirtualValue value, ByteBuffer byteBuffer) throws IOException {
         value.serialize(byteBuffer);
-        return value.serializedSizeInBytes();
     }
 
     // Value deserialization

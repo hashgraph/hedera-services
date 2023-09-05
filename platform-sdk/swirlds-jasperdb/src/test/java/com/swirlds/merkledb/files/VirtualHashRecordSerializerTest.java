@@ -23,6 +23,8 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.merkledb.files.VirtualHashRecordSerializer;
@@ -43,13 +45,42 @@ class VirtualHashRecordSerializerTest {
     }
 
     @Test
+    void serializedSizeTest() {
+        final Hash nonDefaultHash = new Hash(DigestType.SHA_512);
+        assertEquals(VirtualHashRecordSerializer.VARIABLE_DATA_SIZE,
+                subject.getSerializedSize(), "Serialized size should be variable");
+        final VirtualHashRecord data0 = new VirtualHashRecord(0L, nonDefaultHash);
+        assertEquals(1 + 1 + nonDefaultHash.getValue().length, // tag + len + hash
+                subject.getSerializedSize(data0),
+                "Serialized size should be 0 bytes for path and 66 bytes for hash");
+        final VirtualHashRecord data1 = new VirtualHashRecord(1L, nonDefaultHash);
+        assertEquals(1 + 8 + 1 + 1 + nonDefaultHash.getValue().length, // tag + path + tag + len + hash
+                subject.getSerializedSize(data1),
+                "Serialized size should be 9 bytes for path and 75 bytes for hash");
+        assertEquals(1L, subject.getCurrentDataVersion(), "Current version should be 1");
+    }
+
+    @Test
     void serializeEnforcesDefaultDigest() {
         final ByteBuffer bbuf = mock(ByteBuffer.class);
+        final WritableSequentialData out = BufferedData.wrap(bbuf);
         final Hash nonDefaultHash = new Hash(DigestType.SHA_512);
         final VirtualHashRecord data = new VirtualHashRecord(1L, nonDefaultHash);
-        assertEquals(
-                56, subject.getSerializedSize(), "Serialized size should be 8 bytes for header + 48 bytes for digest");
-        assertEquals(1L, subject.getCurrentDataVersion(), "Current version should be 1");
+        assertThrows(IllegalArgumentException.class, () -> subject.serialize(data, bbuf));
+        assertThrows(IllegalArgumentException.class, () -> subject.serialize(data, out));
+    }
+
+    @Test
+    void serializedSizeEqualsToEstimation() {
+        final BufferedData out = BufferedData.allocate(128);
+        final Hash hash = new Hash(DigestType.SHA_384);
+        final VirtualHashRecord data0 = new VirtualHashRecord(0L, hash);
+        subject.serialize(data0, out);
+        assertEquals(subject.getSerializedSize(data0), out.position());
+        out.reset();
+        final VirtualHashRecord data1 = new VirtualHashRecord(1L, hash);
+        subject.serialize(data1, out);
+        assertEquals(subject.getSerializedSize(data1), out.position());
     }
 
     @Test

@@ -76,11 +76,10 @@ public class EntityNumVirtualKeySerializer implements KeySerializer<EntityNumVir
     }
 
     @Override
-    public int serialize(final EntityNumVirtualKey key, final ByteBuffer buffer) throws IOException {
+    public void serialize(final EntityNumVirtualKey key, final ByteBuffer buffer) throws IOException {
         Objects.requireNonNull(key);
         Objects.requireNonNull(buffer);
         key.serialize(buffer);
-        return EntityNumVirtualKey.sizeInBytes();
     }
 
     @Override

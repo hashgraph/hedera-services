@@ -134,8 +134,6 @@ class DataFileJdbLowLevelTest {
                 createDataFilePath("test_" + testType.name(), tempFileDir, DATA_FILE_INDEX, TEST_START, FILE_EXTENSION_JDB),
                 writer.getPath(),
                 "unexpected path for writer");
-//        long expectedFileSizeEstimate = testType.getDataFileLowLevelTestFileSize();
-//        assertEquals(expectedFileSizeEstimate, writer.getFileSizeEstimate(), "unexpected fileSizeEstimate");
         // store for later tests
         dataFileMap.put(testType, writer.getPath());
         dataFileMetadataMap.put(testType, dataFileMetadata);

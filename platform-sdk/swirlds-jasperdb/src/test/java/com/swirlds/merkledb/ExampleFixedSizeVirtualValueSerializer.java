@@ -65,10 +65,9 @@ public final class ExampleFixedSizeVirtualValueSerializer implements ValueSerial
     }
 
     @Override
-    public int serialize(ExampleFixedSizeVirtualValue data, ByteBuffer buffer) throws IOException {
+    public void serialize(ExampleFixedSizeVirtualValue data, ByteBuffer buffer) throws IOException {
         buffer.putInt(data.getId());
         buffer.put(data.getData());
-        return getSerializedSize();
     }
 
     @Override

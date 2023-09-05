@@ -63,9 +63,8 @@ public final class SmartContractMapValueSerializer implements ValueSerializer<Sm
     }
 
     @Override
-    public int serialize(SmartContractMapValue value, ByteBuffer buffer) throws IOException {
+    public void serialize(SmartContractMapValue value, ByteBuffer buffer) throws IOException {
         value.serialize(buffer);
-        return getSerializedSize();
     }
 
     @Override

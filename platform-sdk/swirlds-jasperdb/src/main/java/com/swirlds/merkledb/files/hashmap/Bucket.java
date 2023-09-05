@@ -262,7 +262,7 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
         }
     }
 
-    int writeTo(final ByteBuffer buffer) throws IOException {
+    void writeTo(final ByteBuffer buffer) throws IOException {
         final int initialPos = buffer.position();
         buffer.putInt(bucketIndex.get());
         buffer.putInt(0); // size, will be updated later
@@ -275,7 +275,6 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
         final int finalPos = buffer.position();
         final int serializedSize = finalPos - initialPos;
         buffer.putInt(initialPos + Integer.BYTES, serializedSize);
-        return serializedSize;
     }
 
     public static long extractKey(final BufferedData bucketBytes) {

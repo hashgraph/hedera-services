@@ -636,6 +636,7 @@ public class DataFileCollection<D> implements Snapshotable {
     }
 
     // Future work: remove this method, once JDB is no longer supported
+    // See https://github.com/hashgraph/hedera-services/issues/8344 for details
     @Deprecated(forRemoval = true)
     void startWriting(boolean usePbj) throws IOException {
         final DataFileWriter<D> activeDataFileWriter = currentDataFileWriter.get();

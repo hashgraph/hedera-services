@@ -192,10 +192,9 @@ public class ExampleLongLongKeyFixedSize implements VirtualLongKey, FastCopyable
          */
         @Override
         @Deprecated(forRemoval = true)
-        public int serialize(final ExampleLongLongKeyFixedSize data, final ByteBuffer buffer) throws IOException {
+        public void serialize(final ExampleLongLongKeyFixedSize data, final ByteBuffer buffer) throws IOException {
             buffer.putLong(data.getValue1());
             buffer.putLong(data.getValue2());
-            return getSerializedSize();
         }
 
         @Override

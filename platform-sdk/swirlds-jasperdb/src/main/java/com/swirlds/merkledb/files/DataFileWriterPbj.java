@@ -46,6 +46,7 @@ import java.time.Instant;
  * @param <D> Data item type
  */
 // Future work: make this class final after DataFileWriterJdb is dropped
+// https://github.com/hashgraph/hedera-services/issues/8344
 public class DataFileWriterPbj<D> implements DataFileWriter<D> {
 
     /** Mapped buffer size */
@@ -56,12 +57,14 @@ public class DataFileWriterPbj<D> implements DataFileWriter<D> {
      * buffer is mapped from the file channel.
      */
     // Future work: make it private once DataFileWriterJdb is dropped
+    // https://github.com/hashgraph/hedera-services/issues/8344
     protected MappedByteBuffer writingMmap;
     /**
      * Offset, in bytes, of the current mapped byte buffer in the file channel. After the file is
      * completely written and closed, this field value is equal to the file size.
      */
     // Future work: make it private once DataFileWriterJdb is dropped
+    // https://github.com/hashgraph/hedera-services/issues/8344
     protected long mmapPositionInFile = 0;
     /* */
     private BufferedData writingPbjData;
@@ -71,9 +74,11 @@ public class DataFileWriterPbj<D> implements DataFileWriter<D> {
 
     /** Serializer for converting raw data to/from data items */
     // Future work: make it private once DataFileWriterJdb is dropped
+    // https://github.com/hashgraph/hedera-services/issues/8344
     protected final DataItemSerializer<D> dataItemSerializer;
     /** The path to the data file we are writing */
     // Future work: make it private once DataFileWriterJdb is dropped
+    // https://github.com/hashgraph/hedera-services/issues/8344
     protected final Path path;
     /** File metadata */
     private final DataFileMetadata metadata;
@@ -82,6 +87,7 @@ public class DataFileWriterPbj<D> implements DataFileWriter<D> {
      * metadata
      */
     // Future work: make it private once DataFileWriterJdb is dropped
+    // https://github.com/hashgraph/hedera-services/issues/8344
     protected long dataItemCount = 0;
 
     /**
@@ -106,6 +112,7 @@ public class DataFileWriterPbj<D> implements DataFileWriter<D> {
     }
 
     // Future work: remove this extra constructor, once DataFileWriterJdb is dropped
+    // https://github.com/hashgraph/hedera-services/issues/8344
     protected DataFileWriterPbj(
             final String filePrefix,
             final Path dataFileDir,
@@ -148,6 +155,7 @@ public class DataFileWriterPbj<D> implements DataFileWriter<D> {
     }
 
     // Future work: make it private
+    // https://github.com/hashgraph/hedera-services/issues/8344
     protected void writeHeader() throws IOException {
         try (final FileChannel channel = FileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE)) {
             writingHeaderMmap = channel.map(MapMode.READ_WRITE, 0, 1024);
@@ -200,7 +208,7 @@ public class DataFileWriterPbj<D> implements DataFileWriter<D> {
         try {
             ProtoUtils.writeBytes(writingPbjData, FIELD_DATAFILE_ITEMS,
                     Math.toIntExact(size),
-                    o -> o.writeBytes(protoData)); // TODO: readBytes() vs writeBytes()
+                    o -> o.writeBytes(protoData));
         } catch (final BufferOverflowException e) {
             // Buffer overflow indicates the current writing mapped byte buffer needs to be
             // mapped to a new location
@@ -241,7 +249,6 @@ public class DataFileWriterPbj<D> implements DataFileWriter<D> {
         // write serialized data
         final int dataItemSize = dataItemSerializer.getSerializedSize(dataItem);
         try {
-//            dataItemSerializer.serialize(dataItem, writingMmap);
             ProtoUtils.writeBytes(writingPbjData, FIELD_DATAFILE_ITEMS,
                     dataItemSize,
                     out -> dataItemSerializer.serialize(dataItem, out));
@@ -250,7 +257,6 @@ public class DataFileWriterPbj<D> implements DataFileWriter<D> {
             // mapped to a new location and retry
             moveWritingBuffer(byteOffset);
             try {
-//                dataItemSerializer.serialize(dataItem, writingMmap);
                 ProtoUtils.writeBytes(writingPbjData, FIELD_DATAFILE_ITEMS,
                         dataItemSize,
                         out -> dataItemSerializer.serialize(dataItem, out));

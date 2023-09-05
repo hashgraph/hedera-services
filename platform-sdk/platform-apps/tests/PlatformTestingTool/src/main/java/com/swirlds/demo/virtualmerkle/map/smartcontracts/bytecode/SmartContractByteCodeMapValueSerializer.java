@@ -69,9 +69,8 @@ public final class SmartContractByteCodeMapValueSerializer implements ValueSeria
     }
 
     @Override
-    public int serialize(SmartContractByteCodeMapValue value, ByteBuffer buffer) throws IOException {
+    public void serialize(SmartContractByteCodeMapValue value, ByteBuffer buffer) throws IOException {
         value.serialize(buffer);
-        return value.sizeInBytes();
     }
 
     @Override

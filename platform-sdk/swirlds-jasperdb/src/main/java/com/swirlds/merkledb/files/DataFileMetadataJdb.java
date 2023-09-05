@@ -34,6 +34,7 @@ import java.util.Objects;
  */
 @SuppressWarnings("unused")
 // Future work: remove this class, once all DB files are converted to protobuf
+// https://github.com/hashgraph/hedera-services/issues/8344
 public final class DataFileMetadataJdb extends DataFileMetadata {
 
     /**

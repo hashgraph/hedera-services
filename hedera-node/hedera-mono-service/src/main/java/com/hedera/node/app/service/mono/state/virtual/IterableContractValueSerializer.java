@@ -76,11 +76,10 @@ public class IterableContractValueSerializer implements ValueSerializer<Iterable
     }
 
     @Override
-    public int serialize(final IterableContractValue value, final ByteBuffer buffer) throws IOException {
+    public void serialize(final IterableContractValue value, final ByteBuffer buffer) throws IOException {
         Objects.requireNonNull(value);
         Objects.requireNonNull(buffer);
         value.serialize(buffer);
-        return value.getSerializedSize();
     }
 
     // Value deserialization

@@ -138,10 +138,9 @@ public class UniqueTokenKey implements VirtualKey {
      * Serializes the instance into a stream of bytes and write to the provided output.
      *
      * @param output provides a function that is called to write an output byte.
-     * @return the number of bytes written out.
      * @throws E if an error is encountered while trying to write to output.
      */
-    /* package */ <E extends Exception> int serializeTo(final ByteConsumer<E> output) throws E {
+    /* package */ <E extends Exception> void serializeTo(final ByteConsumer<E> output) throws E {
         final int entityLen = computeNonZeroBytes(entityNum);
         final int tokenSerialLen = computeNonZeroBytes(tokenSerial);
 
@@ -153,8 +152,6 @@ public class UniqueTokenKey implements VirtualKey {
         output.accept(packedLengths);
         writePartial(entityNum, entityLen, output);
         writePartial(tokenSerial, tokenSerialLen, output);
-
-        return entityLen + tokenSerialLen + 1;
     }
 
     @Override

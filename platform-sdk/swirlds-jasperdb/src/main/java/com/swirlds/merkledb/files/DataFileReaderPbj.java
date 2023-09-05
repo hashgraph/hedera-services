@@ -50,6 +50,7 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
  */
 @SuppressWarnings({"DuplicatedCode", "NullableProblems"})
 // Future work: make it final again after DataFileReaderJdb is dropped
+// https://github.com/hashgraph/hedera-services/issues/8344
 public class DataFileReaderPbj<D> implements DataFileReader<D> {
 
     private static final int MMAP_BUF_SIZE = PAGE_SIZE * 1024 * 16;
@@ -71,12 +72,15 @@ public class DataFileReaderPbj<D> implements DataFileReader<D> {
     private final AtomicBoolean open = new AtomicBoolean(true);
     /** The path to the file on disk */
     // Future work: make it back private
+    // https://github.com/hashgraph/hedera-services/issues/8344
     protected final Path path;
     /** The metadata for this file read from the footer */
     // Future work: make it back private
+    // https://github.com/hashgraph/hedera-services/issues/8344
     protected final DataFileMetadata metadata;
     /** Serializer for converting raw data to/from data items */
     // Future work: make it back private
+    // https://github.com/hashgraph/hedera-services/issues/8344
     protected final DataItemSerializer<D> dataItemSerializer;
     /** A flag for if the underlying file is fully written and ready to be compacted. */
     private final AtomicBoolean fileCompleted = new AtomicBoolean(false);
@@ -352,7 +356,8 @@ public class DataFileReaderPbj<D> implements DataFileReader<D> {
                 buf.position(0);
                 buf.limit(size);
                 in.getBytes(byteOffsetInFile + sizeOfTag + sizeOfSize - mmapOffset, buf);
-//                buf.flip(); // TODO: why isn't buf position updated?
+                // Uncomment this once https://github.com/hashgraph/pbj/issues/78 is fixed
+                // buf.flip();
                 return buf;
             } catch (final ClosedByInterruptException e) {
                 // If the thread and the channel are interrupted, propagate it to the callers

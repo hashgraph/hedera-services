@@ -55,9 +55,8 @@ public class TestKeySerializer implements KeySerializer<TestKey> {
 
     @Override
     @Deprecated(forRemoval = true)
-    public int serialize(TestKey data, ByteBuffer buffer) {
+    public void serialize(TestKey data, ByteBuffer buffer) {
         data.serialize(buffer);
-        return TestKey.BYTES;
     }
 
     @Override

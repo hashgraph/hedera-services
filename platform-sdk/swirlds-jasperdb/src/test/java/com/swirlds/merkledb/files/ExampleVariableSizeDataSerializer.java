@@ -82,13 +82,12 @@ public class ExampleVariableSizeDataSerializer implements DataItemSerializer<lon
 
     @Override
     @Deprecated(forRemoval = true)
-    public int serialize(long[] data, ByteBuffer buffer) throws IOException {
+    public void serialize(long[] data, ByteBuffer buffer) throws IOException {
         int dataSizeBytes = Long.BYTES + (Long.BYTES * data.length); // Size + data
         buffer.putLong(dataSizeBytes);
         for (long d : data) {
             buffer.putLong(d);
         }
-        return dataSizeBytes;
     }
 
     @Override

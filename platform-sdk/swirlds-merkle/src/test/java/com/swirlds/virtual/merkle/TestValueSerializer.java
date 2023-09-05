@@ -68,9 +68,8 @@ public class TestValueSerializer implements ValueSerializer<TestValue> {
 
     @Override
     @Deprecated(forRemoval = true)
-    public int serialize(TestValue data, ByteBuffer buffer) {
+    public void serialize(TestValue data, ByteBuffer buffer) {
         data.serialize(buffer);
-        return data.sizeInBytes();
     }
 
     @Override

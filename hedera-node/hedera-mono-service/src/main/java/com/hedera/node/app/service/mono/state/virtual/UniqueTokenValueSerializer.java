@@ -79,11 +79,10 @@ public class UniqueTokenValueSerializer implements ValueSerializer<UniqueTokenVa
     }
 
     @Override
-    public int serialize(final UniqueTokenValue value, final ByteBuffer out) throws IOException {
+    public void serialize(final UniqueTokenValue value, final ByteBuffer out) throws IOException {
         Objects.requireNonNull(value);
         Objects.requireNonNull(out);
         value.serialize(out);
-        return value.getSerializedSize();
     }
 
     // Value deserialization

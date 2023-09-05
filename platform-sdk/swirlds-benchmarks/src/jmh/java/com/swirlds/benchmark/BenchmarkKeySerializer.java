@@ -65,9 +65,8 @@ public class BenchmarkKeySerializer implements KeySerializer<BenchmarkKey> {
 
     @Override
     @Deprecated(forRemoval = true)
-    public int serialize(final BenchmarkKey data, final ByteBuffer buffer) {
+    public void serialize(final BenchmarkKey data, final ByteBuffer buffer) {
         data.serialize(buffer);
-        return getSerializedSize();
     }
 
     @Override

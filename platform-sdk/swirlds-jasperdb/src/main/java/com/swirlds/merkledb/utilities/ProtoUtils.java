@@ -3,6 +3,7 @@ package com.swirlds.merkledb.utilities;
 import static com.hedera.pbj.runtime.ProtoParserTools.TAG_FIELD_OFFSET;
 
 import com.hedera.pbj.runtime.FieldDefinition;
+import com.hedera.pbj.runtime.ProtoConstants;
 import com.hedera.pbj.runtime.ProtoParserTools;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;

@@ -57,12 +57,12 @@ class SecondSinceEpocVirtualKeySerializerTest {
 
     @Test
     void serializeWorks() throws IOException {
-        final var out = mock(ByteBuffer.class);
+        final var out = ByteBuffer.allocate(8);
         final var virtualKey = new SecondSinceEpocVirtualKey(longKey);
 
-        assertEquals(BYTES_IN_SERIALIZED_FORM, subject.serialize(virtualKey, out));
-
-        verify(out).putLong(longKey);
+        subject.serialize(virtualKey, out);
+        assertEquals(BYTES_IN_SERIALIZED_FORM, out.position());
+        assertEquals(longKey, out.getLong(0));
     }
 
     @Test

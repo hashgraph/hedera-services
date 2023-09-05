@@ -49,9 +49,8 @@ public class VirtualKeySetSerializer extends AbstractFixedSizeKeySerializer<Virt
     /** {@inheritDoc} */
     @Override
     @Deprecated(forRemoval = true)
-    public int serialize(final VirtualLongKey data, final ByteBuffer buffer) throws IOException {
+    public void serialize(final VirtualLongKey data, final ByteBuffer buffer) throws IOException {
         buffer.putLong(data.getKeyAsLong());
-        return BYTES_PER_LONG;
     }
 
     @Override

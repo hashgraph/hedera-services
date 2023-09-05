@@ -159,7 +159,7 @@ public class DataFileReaderHammerTest {
         }
 
         @Override
-        public int serialize(byte[] data, ByteBuffer buffer) throws IOException {
+        public void serialize(byte[] data, ByteBuffer buffer) throws IOException {
             throw new UnsupportedOperationException("Not implemented");
         }
 

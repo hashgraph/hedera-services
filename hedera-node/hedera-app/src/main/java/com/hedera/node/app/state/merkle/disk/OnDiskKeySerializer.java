@@ -149,7 +149,7 @@ public final class OnDiskKeySerializer<K> implements KeySerializer<OnDiskKey<K>>
 
     @Override
     @Deprecated(forRemoval = true)
-    public int serialize(final OnDiskKey<K> key, final ByteBuffer buffer) throws IOException {
+    public void serialize(final OnDiskKey<K> key, final ByteBuffer buffer) throws IOException {
 //        final BufferedData out = BufferedData.wrap(buffer);
 //        codec.write(key.getKey(), out);
         throw new UnsupportedOperationException();

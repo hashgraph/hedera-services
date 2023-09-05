@@ -116,7 +116,7 @@ public final class OnDiskValueSerializer<V> implements ValueSerializer<OnDiskVal
     }
 
     @Override
-    public int serialize(final OnDiskValue<V> value, final ByteBuffer buffer) throws IOException {
+    public void serialize(final OnDiskValue<V> value, final ByteBuffer buffer) throws IOException {
         throw new UnsupportedOperationException();
     }
 

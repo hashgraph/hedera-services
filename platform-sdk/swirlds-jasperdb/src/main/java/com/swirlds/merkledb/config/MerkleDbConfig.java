@@ -64,6 +64,8 @@ import java.time.temporal.ChronoUnit;
  * 		The minimum elapsed time in merge period units between medium merges.
  * @param fullMergePeriod
  * 		The minimum elapsed time in merge period units between full merges.
+ * @param iteratorInputBufferBytes
+ *      Size of buffer used by data file iterators, in bytes.
  * @param reconnectKeyLeakMitigationEnabled
  * 		There currently exists a bug when a virtual map is reconnected that can
  * 		cause some deleted keys to leak into the datasource. If this method returns true then a mitigation strategy is
@@ -121,6 +123,7 @@ public record MerkleDbConfig(
         @Min(0) @ConfigProperty(defaultValue = "1") long mergeActivatePeriod,
         @Min(0) @ConfigProperty(defaultValue = "60") long mediumMergePeriod,
         @Min(0) @ConfigProperty(defaultValue = "1440") long fullMergePeriod,
+        /* FUTURE WORK - https://github.com/hashgraph/hedera-services/issues/5178 */
         @Positive @ConfigProperty(defaultValue = "16777216") int iteratorInputBufferBytes,
         @ConfigProperty(defaultValue = "false") boolean reconnectKeyLeakMitigationEnabled,
         @ConfigProperty(defaultValue = "10") int keySetBloomFilterHashCount,

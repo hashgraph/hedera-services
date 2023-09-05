@@ -17,6 +17,7 @@
 package com.swirlds.merkledb.files;
 
 import static com.hedera.pbj.runtime.ProtoParserTools.TAG_FIELD_OFFSET;
+import static com.swirlds.merkledb.utilities.ProtoUtils.WIRE_TYPE_FIXED_64_BIT;
 import static com.swirlds.merkledb.utilities.ProtoUtils.WIRE_TYPE_VARINT;
 
 import com.hedera.pbj.runtime.FieldDefinition;
@@ -30,13 +31,14 @@ import com.swirlds.merkledb.serialize.DataItemHeader;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
 import com.swirlds.merkledb.utilities.ProtoUtils;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 public final class VirtualHashRecordSerializer implements DataItemSerializer<VirtualHashRecord> {
 
     private static final FieldDefinition FIELD_HASHRECORD_PATH =
-            new FieldDefinition("path", FieldType.UINT64, false, true, false, 1);
+            new FieldDefinition("path", FieldType.FIXED64, false, true, false, 1);
     private static final FieldDefinition FIELD_HASHRECORD_HASH =
             new FieldDefinition("hash", FieldType.BYTES, false, true, false, 2);
 
@@ -52,9 +54,6 @@ public final class VirtualHashRecordSerializer implements DataItemSerializer<Vir
      */
     private static final long CURRENT_SERIALIZATION_VERSION = 1;
 
-    @Deprecated(forRemoval = true)
-    private static final int SERIALIZED_SIZE = Long.BYTES + DEFAULT_DIGEST.digestLength(); // path + hash
-
     public VirtualHashRecordSerializer() {
         // for deserialization
     }
@@ -66,24 +65,26 @@ public final class VirtualHashRecordSerializer implements DataItemSerializer<Vir
 
     @Override
     @Deprecated(forRemoval = true)
-    // TODO: is it really used anywhere?
     public int getSerializedSize() {
-        return SERIALIZED_SIZE;
+        // Once JDB support is dropped, virtual hash records can be of fixed size again
+        // https://github.com/hashgraph/hedera-services/issues/8344
+        return VARIABLE_DATA_SIZE;
     }
 
     @Override
     public int getTypicalSerializedSize() {
-        return ProtoUtils.sizeOfTag(FIELD_HASHRECORD_PATH, WIRE_TYPE_VARINT) +
-                ProtoUtils.sizeOfUnsignedVarInt64(1024) +
+        return ProtoUtils.sizeOfTag(FIELD_HASHRECORD_PATH, WIRE_TYPE_FIXED_64_BIT) +
+                Long.BYTES +
                 ProtoUtils.sizeOfDelimited(FIELD_HASHRECORD_HASH, DigestType.SHA_384.digestLength());
     }
 
     @Override
     public int getSerializedSize(VirtualHashRecord data) {
+        // This method is only used for PBJ serialization, so estimation is for PBJ, not JDB
         int size = 0;
         if (data.path() != 0) {
-            size += ProtoUtils.sizeOfTag(FIELD_HASHRECORD_PATH, WIRE_TYPE_VARINT) +
-                    ProtoUtils.sizeOfUnsignedVarInt64(data.path());
+            size += ProtoUtils.sizeOfTag(FIELD_HASHRECORD_PATH, WIRE_TYPE_FIXED_64_BIT) +
+                    Long.BYTES;
         }
         size += ProtoUtils.sizeOfDelimited(FIELD_HASHRECORD_HASH, data.hash().getValue().length);
         return size;
@@ -99,28 +100,29 @@ public final class VirtualHashRecordSerializer implements DataItemSerializer<Vir
     @Deprecated(forRemoval = true)
     public DataItemHeader deserializeHeader(ByteBuffer buffer) {
         final long path = buffer.getLong();
-        final int size = SERIALIZED_SIZE;
+        final int size = Long.BYTES + DEFAULT_DIGEST.digestLength();
         return new DataItemHeader(size, path);
     }
 
     @Override
-    public void serialize(final VirtualHashRecord hashRecord, final WritableSequentialData out) {
+    public void serialize(@NonNull final VirtualHashRecord hashRecord, @NonNull final WritableSequentialData out) {
         final DigestType digestType = hashRecord.hash().getDigestType();
         if (DEFAULT_DIGEST != digestType) {
             throw new IllegalArgumentException(
                     "Only " + DEFAULT_DIGEST + " digests allowed, but received hash with digest " + digestType);
         }
-        ProtoUtils.writeBytes(out, FIELD_HASHRECORD_HASH, hashRecord.hash().getValue().length,
-                o -> o.writeBytes(hashRecord.hash().getValue()));
         if (hashRecord.path() != 0) {
             ProtoUtils.writeTag(out, FIELD_HASHRECORD_PATH);
-            out.writeVarLong(hashRecord.path(), false);
+            // Use long instead of var long to keep the size fixed
+            out.writeLong(hashRecord.path());
         }
+        ProtoUtils.writeBytes(out, FIELD_HASHRECORD_HASH, hashRecord.hash().getValue().length,
+                o -> o.writeBytes(hashRecord.hash().getValue()));
     }
 
     @Override
     @Deprecated(forRemoval = true)
-    public int serialize(VirtualHashRecord hashRecord, ByteBuffer buffer) {
+    public void serialize(final VirtualHashRecord hashRecord, final ByteBuffer buffer) {
         final DigestType digestType = hashRecord.hash().getDigestType();
         if (DEFAULT_DIGEST != digestType) {
             throw new IllegalArgumentException(
@@ -128,11 +130,10 @@ public final class VirtualHashRecordSerializer implements DataItemSerializer<Vir
         }
         buffer.putLong(hashRecord.path());
         buffer.put(hashRecord.hash().getValue());
-        return SERIALIZED_SIZE;
     }
 
     @Override
-    public VirtualHashRecord deserialize(final ReadableSequentialData in) {
+    public VirtualHashRecord deserialize(@NonNull final ReadableSequentialData in) {
         // default values
         long path = 0;
         Hash hash = null;
@@ -156,7 +157,7 @@ public final class VirtualHashRecordSerializer implements DataItemSerializer<Vir
     }
 
     private long readPath(final ReadableSequentialData in) {
-        final long path = in.readVarLong(false);
+        final long path = in.readLong();
         return path;
     }
 

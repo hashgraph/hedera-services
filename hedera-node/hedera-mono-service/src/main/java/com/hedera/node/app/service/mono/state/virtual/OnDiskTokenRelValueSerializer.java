@@ -74,11 +74,10 @@ public class OnDiskTokenRelValueSerializer implements ValueSerializer<OnDiskToke
     }
 
     @Override
-    public int serialize(final OnDiskTokenRel value, final ByteBuffer out) throws IOException {
+    public void serialize(final OnDiskTokenRel value, final ByteBuffer out) throws IOException {
         Objects.requireNonNull(value);
         Objects.requireNonNull(out);
         value.serialize(out);
-        return getSerializedSize();
     }
 
     // Value deserialization
