@@ -40,8 +40,6 @@ import java.time.Instant;
 import java.util.stream.LongStream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Parses the exchange rate information and makes it available to the workflows.
@@ -64,7 +62,6 @@ import org.apache.logging.log4j.Logger;
 public final class ExchangeRateManager implements ExchangeRateInfo {
     private static final Logger logger = LogManager.getLogger(ExchangeRateManager.class);
     private static final ExchangeRateSet DEFAULT_EXCHANGE_RATES = ExchangeRateSet.DEFAULT;
-
     private static final BigInteger ONE_HUNDRED = BigInteger.valueOf(100);
 
     private final ConfigProvider configProvider;
