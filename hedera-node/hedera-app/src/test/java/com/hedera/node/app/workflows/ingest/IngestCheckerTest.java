@@ -62,6 +62,7 @@ import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.state.recordcache.DeduplicationCacheImpl;
+import com.hedera.node.app.throttle.HapiThrottling;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
@@ -94,7 +95,7 @@ class IngestCheckerTest extends AppTestBase {
     TransactionChecker transactionChecker;
 
     @Mock(strictness = LENIENT)
-    ThrottleAccumulator throttleAccumulator;
+    ThrottleAccumulator throttleAccumulator; // TODO: delete and fix the tests
 
     @Mock(strictness = LENIENT)
     private SignatureExpander signatureExpander;
@@ -104,6 +105,9 @@ class IngestCheckerTest extends AppTestBase {
 
     @Mock(strictness = LENIENT)
     private SolvencyPreCheck solvencyPreCheck;
+
+    @Mock(strictness = LENIENT)
+    private HapiThrottling hapiThrottling;
 
     private DeduplicationCache deduplicationCache;
 
@@ -142,11 +146,11 @@ class IngestCheckerTest extends AppTestBase {
         subject = new IngestChecker(
                 currentPlatformStatus,
                 transactionChecker,
-                throttleAccumulator,
                 solvencyPreCheck,
                 signatureExpander,
                 signatureVerifier,
-                deduplicationCache);
+                deduplicationCache,
+                hapiThrottling);
     }
 
     @Nested

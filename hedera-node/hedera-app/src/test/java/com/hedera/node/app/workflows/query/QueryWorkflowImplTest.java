@@ -65,6 +65,7 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.app.spi.workflows.QueryHandler;
 import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.throttle.HapiThrottling;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.ingest.IngestChecker;
@@ -103,7 +104,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     private Function<ResponseType, AutoCloseableWrapper<HederaState>> stateAccessor;
 
     @Mock
-    private ThrottleAccumulator throttleAccumulator;
+    private ThrottleAccumulator throttleAccumulator; // TODO: delete and fix the tests
 
     @Mock
     private SubmissionManager submissionManager;
@@ -131,6 +132,9 @@ class QueryWorkflowImplTest extends AppTestBase {
 
     @Mock(strictness = LENIENT)
     private RecordCache recordCache;
+
+    @Mock(strictness = LENIENT)
+    private HapiThrottling hapiThrottling;
 
     private Query query;
     private Transaction payment;
@@ -185,14 +189,14 @@ class QueryWorkflowImplTest extends AppTestBase {
 
         workflow = new QueryWorkflowImpl(
                 stateAccessor,
-                throttleAccumulator,
                 submissionManager,
                 queryChecker,
                 ingestChecker,
                 dispatcher,
                 queryParser,
                 configProvider,
-                recordCache);
+                recordCache,
+                hapiThrottling);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -200,101 +204,112 @@ class QueryWorkflowImplTest extends AppTestBase {
     void testConstructorWithIllegalParameters() {
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         null,
-                        throttleAccumulator,
                         submissionManager,
                         queryChecker,
                         ingestChecker,
                         dispatcher,
                         queryParser,
                         configProvider,
-                        recordCache))
+                        recordCache,
+                        hapiThrottling))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new QueryWorkflowImpl(
+                        stateAccessor,
+                        submissionManager,
+                        queryChecker,
+                        ingestChecker,
+                        dispatcher,
+                        queryParser,
+                        configProvider,
+                        recordCache,
+                        hapiThrottling))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
                         null,
-                        submissionManager,
                         queryChecker,
                         ingestChecker,
                         dispatcher,
                         queryParser,
                         configProvider,
-                        recordCache))
+                        recordCache,
+                        hapiThrottling))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
-                        throttleAccumulator,
-                        null,
-                        queryChecker,
-                        ingestChecker,
-                        dispatcher,
-                        queryParser,
-                        configProvider,
-                        recordCache))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new QueryWorkflowImpl(
-                        stateAccessor,
-                        throttleAccumulator,
                         submissionManager,
                         null,
                         ingestChecker,
                         dispatcher,
                         queryParser,
                         configProvider,
-                        recordCache))
+                        recordCache,
+                        hapiThrottling))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
-                        throttleAccumulator,
                         submissionManager,
                         queryChecker,
                         null,
                         dispatcher,
                         queryParser,
                         configProvider,
-                        recordCache))
+                        recordCache,
+                        hapiThrottling))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
-                        throttleAccumulator,
                         submissionManager,
                         queryChecker,
                         ingestChecker,
                         null,
                         queryParser,
                         configProvider,
-                        recordCache))
+                        recordCache,
+                        hapiThrottling))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
-                        throttleAccumulator,
                         submissionManager,
                         queryChecker,
                         ingestChecker,
                         dispatcher,
                         null,
                         configProvider,
-                        recordCache))
+                        recordCache,
+                        hapiThrottling))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
-                        throttleAccumulator,
                         submissionManager,
                         queryChecker,
                         ingestChecker,
                         dispatcher,
                         queryParser,
                         null,
-                        recordCache))
+                        recordCache,
+                        hapiThrottling))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
-                        throttleAccumulator,
                         submissionManager,
                         queryChecker,
                         ingestChecker,
                         dispatcher,
                         queryParser,
                         configProvider,
+                        null,
+                        hapiThrottling))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new QueryWorkflowImpl(
+                        stateAccessor,
+                        submissionManager,
+                        queryChecker,
+                        ingestChecker,
+                        dispatcher,
+                        queryParser,
+                        configProvider,
+                        recordCache,
                         null))
                 .isInstanceOf(NullPointerException.class);
     }
@@ -386,14 +401,14 @@ class QueryWorkflowImplTest extends AppTestBase {
         final var responseBuffer = newEmptyBuffer();
         workflow = new QueryWorkflowImpl(
                 stateAccessor,
-                throttleAccumulator,
                 submissionManager,
                 queryChecker,
                 ingestChecker,
                 localDispatcher,
                 queryParser,
                 configProvider,
-                recordCache);
+                recordCache,
+                hapiThrottling);
 
         // then
         assertThatThrownBy(() -> workflow.handleQuery(requestBuffer, responseBuffer))
