@@ -26,6 +26,9 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
+/**
+ * Implementation support for view calls that require an extant token.
+ */
 public abstract class AbstractTokenViewCall extends AbstractHtsCall {
     @Nullable
     private final Token token;

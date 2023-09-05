@@ -77,7 +77,7 @@ public class HtsCallAttempt {
     //   [x] GET_BALANCE,
     //   [ ] GET_ALLOWANCE,
     //   [ ] GET_IS_APPROVED,
-    //   [ ] GET_IS_OPERATOR,
+    //   [x] GET_IS_OPERATOR,
     //   [ ] GET_IS_KYC,
     //   [ ] GET_NFT_INFO,
     //   [ ] GET_TOKEN_INFO,
