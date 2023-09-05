@@ -77,11 +77,11 @@ public final class JrsTestReader {
 
             // A bit of a hack, but there isn't a clean API to convert date info to an instant.
 
-            final String instantString = year + "-" + ALIGNED_RIGHT.pad(Integer.toString(month), '0', 2)
-                    + "-" + ALIGNED_RIGHT.pad(Integer.toString(day), '0', 2)
-                    + "T" + ALIGNED_RIGHT.pad(Integer.toString(hour), '0', 2)
-                    + ":" + ALIGNED_RIGHT.pad(Integer.toString(minute), '0', 2)
-                    + ":" + ALIGNED_RIGHT.pad(Integer.toString(second), '0', 2)
+            final String instantString = year + "-" + ALIGNED_RIGHT.pad(Integer.toString(month), '0', 2, false)
+                    + "-" + ALIGNED_RIGHT.pad(Integer.toString(day), '0', 2, false)
+                    + "T" + ALIGNED_RIGHT.pad(Integer.toString(hour), '0', 2, false)
+                    + ":" + ALIGNED_RIGHT.pad(Integer.toString(minute), '0', 2, false)
+                    + ":" + ALIGNED_RIGHT.pad(Integer.toString(second), '0', 2, false)
                     + "Z";
 
             return Instant.parse(instantString);
