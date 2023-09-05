@@ -18,7 +18,7 @@ package com.swirlds.platform.cli;
 
 import static com.swirlds.common.constructable.GenerateClassId.generateAndPrintClassId;
 
-import com.swirlds.cli.commands.DevCommand;
+import com.swirlds.cli.PlatformCli;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
 import picocli.CommandLine;
@@ -27,7 +27,7 @@ import picocli.CommandLine;
         name = "generate-uid",
         mixinStandardHelpOptions = true,
         description = "Generate a random class ID for a serializable object.")
-@SubcommandOf(DevCommand.class)
+@SubcommandOf(PlatformCli.class)
 public final class GenerateUidCommand extends AbstractCommand {
 
     private GenerateUidCommand() {}

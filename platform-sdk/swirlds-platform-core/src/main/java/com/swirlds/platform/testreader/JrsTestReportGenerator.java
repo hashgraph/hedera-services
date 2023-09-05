@@ -352,7 +352,6 @@ public final class JrsTestReportGenerator {
     }
 
     private static void generateStatusCell(@NonNull final StringBuilder sb, @NonNull final TestStatus status) {
-        // TODO move this to the CSS
         final String statusColor;
         if (status == TestStatus.PASS) {
             statusColor = "#3cb371";
