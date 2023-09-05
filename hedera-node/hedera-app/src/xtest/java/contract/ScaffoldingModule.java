@@ -26,6 +26,7 @@ import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.records.BlockRecordManager;
@@ -193,9 +194,10 @@ public interface ScaffoldingModule {
     static BiFunction<Query, AccountID, QueryContext> provideQueryContextFactory(
             @NonNull final HederaState state,
             @NonNull final RecordCache recordCache,
-            @NonNull final Configuration configuration) {
+            @NonNull final Configuration configuration,
+            @NonNull final ExchangeRateManager exchangeRateManager) {
         return (query, payerId) -> new QueryContextImpl(
-                state, new ReadableStoreFactory(state), query, configuration, recordCache, payerId);
+                state, new ReadableStoreFactory(state), query, configuration, recordCache, exchangeRateManager, payerId);
     }
 
     @Provides
