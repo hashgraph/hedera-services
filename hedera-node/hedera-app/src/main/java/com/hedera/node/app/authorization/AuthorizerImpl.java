@@ -23,6 +23,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.ApiPermissionConfig;
@@ -38,11 +39,13 @@ import javax.inject.Singleton;
 public class AuthorizerImpl implements Authorizer {
     private final ConfigProvider configProvider;
     private final AccountsConfig accountsConfig;
+    private final PrivilegesVerifier privilegedTransactionChecker;
 
     @Inject
-    public AuthorizerImpl(@NonNull final ConfigProvider configProvider) {
+    public AuthorizerImpl(@NonNull final ConfigProvider configProvider, @NonNull PrivilegesVerifier privilegedTransactionChecker) {
         this.configProvider = requireNonNull(configProvider);
         this.accountsConfig = configProvider.getConfiguration().getConfigData(AccountsConfig.class);
+        this.privilegedTransactionChecker = requireNonNull(privilegedTransactionChecker);
     }
 
     /** {@inheritDoc} */
@@ -58,6 +61,14 @@ public class AuthorizerImpl implements Authorizer {
         if (!accountID.hasAccountNum()) return false;
         long num = accountID.accountNumOrThrow();
         return num == accountsConfig.treasury() || num == accountsConfig.systemAdmin();
+    }
+
+    @Override
+    public SystemPrivilege hasPrivilegedAuthorization(
+            @NonNull final AccountID accountID,
+            @NonNull final HederaFunctionality functionality,
+            @NonNull final TransactionBody txBody) {
+        return privilegedTransactionChecker.hasPrivileges(accountID, functionality, txBody);
     }
 
     private ResponseCodeEnum permissibilityOf(

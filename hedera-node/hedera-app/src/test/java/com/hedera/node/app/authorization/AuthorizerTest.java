@@ -28,9 +28,15 @@ import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 final class AuthorizerTest {
     private ConfigProvider configProvider;
+    @Mock
+    private PrivilegesVerifier privilegesVerifier;
     private AccountID accountID;
     private HederaFunctionality hapiFunction;
 
@@ -46,7 +52,7 @@ final class AuthorizerTest {
     @DisplayName("Account ID is null throws")
     void accountIdIsNullThrows() {
         // given:
-        final var authorizer = new AuthorizerImpl(configProvider);
+        final var authorizer = new AuthorizerImpl(configProvider, privilegesVerifier);
 
         // expect:
         //noinspection DataFlowIssue
@@ -57,7 +63,7 @@ final class AuthorizerTest {
     @DisplayName("Hapi function is null throws")
     void hapiFunctionIsNullThrows() {
         // given:
-        final var authorizer = new AuthorizerImpl(configProvider);
+        final var authorizer = new AuthorizerImpl(configProvider, privilegesVerifier);
 
         // expect:
         //noinspection DataFlowIssue
@@ -74,7 +80,7 @@ final class AuthorizerTest {
                         .getOrCreateConfig(),
                 1);
 
-        final var authorizer = new AuthorizerImpl(configProvider);
+        final var authorizer = new AuthorizerImpl(configProvider, privilegesVerifier);
         accountID = AccountID.newBuilder().accountNum(1234L).build();
 
         // expect:
@@ -92,7 +98,7 @@ final class AuthorizerTest {
                         .getOrCreateConfig(),
                 1);
 
-        final var authorizer = new AuthorizerImpl(configProvider);
+        final var authorizer = new AuthorizerImpl(configProvider, privilegesVerifier);
         accountID = AccountID.newBuilder().accountNum(1234L).build();
 
         // expect:
