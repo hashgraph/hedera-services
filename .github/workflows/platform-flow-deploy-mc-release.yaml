@@ -56,7 +56,7 @@ jobs:
 
       - name: Check for Tag Existence
         id: tag
-        uses: mukunku/tag-exists-action@v1.2.0
+        uses: mukunku/tag-exists-action@v1.3.0
         env:
           GITHUB_TOKEN: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
         with:
