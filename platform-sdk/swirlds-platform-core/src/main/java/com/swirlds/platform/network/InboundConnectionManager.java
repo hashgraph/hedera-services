@@ -99,7 +99,7 @@ public class InboundConnectionManager implements ConnectionManager {
         try (final LockedResource<Connection> lockedConn = lock.lockInterruptibly()) {
             final Connection old = lockedConn.getResource();
             if (old.connected()) {
-                logger.error(
+                logger.warn(
                         SOCKET_EXCEPTIONS.getMarker(),
                         "{} got new connection from {}, disconnecting old one",
                         old.getSelfId(),

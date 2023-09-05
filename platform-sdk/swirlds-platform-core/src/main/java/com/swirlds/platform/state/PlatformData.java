@@ -476,7 +476,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
      * @see PlatformState#getInfoString()
      */
     public String getInfoString() {
-        return new TextTable()
+        final String dataTable = new TextTable()
                 .setBordersEnabled(false)
                 .addRow("Round", round)
                 .addRow("Consensus events running hash", hashEventsCons == null ? "null" : hashEventsCons.toMnemonic())
@@ -488,6 +488,10 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
                 .addRow("Events hash code", Arrays.hashCode(events))
                 //TODO add snapshot info
                 .render();
+
+        // the unabbreviated running hash is printed separately because it is too long to fit into the table, which
+        // doesn't support wrapping well
+        return dataTable + "Consensus events running hash: " + hashEventsCons;
     }
 
     /**

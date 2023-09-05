@@ -31,4 +31,6 @@ public interface QueryComponent {
         QueryComponent create(
                 @BindsInstance @NonNull QueryContext context, @BindsInstance @NonNull Instant approxConsensusTime);
     }
+
+    ContextQueryProcessor contextQueryProcessor();
 }

@@ -18,6 +18,7 @@ package com.hedera.node.app.workflows.handle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.NODE_DUE_DILIGENCE_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE_HANDLE_FAILURE;
@@ -28,12 +29,12 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeAccumulatorImpl;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.records.BlockRecordManager;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.records.ParentRecordFinalizer;
@@ -259,14 +260,14 @@ public class HandleWorkflow {
             // Get the parsed data
             final var transaction = transactionInfo.transaction();
             txBody = transactionInfo.txBody();
-            payer = preHandleResult.payer();
+            payer = txBody.transactionID().accountID();
 
             final Bytes transactionBytes;
             if (transaction.signedTransactionBytes().length() > 0) {
                 transactionBytes = transaction.signedTransactionBytes();
             } else {
                 // in this case, recorder hash the transaction itself, not its bodyBytes.
-                transactionBytes = Bytes.wrap(PbjConverter.fromPbj(transaction).toByteArray());
+                transactionBytes = Transaction.PROTOBUF.toBytes(transaction);
             }
 
             // Initialize record builder list
@@ -317,6 +318,13 @@ public class HandleWorkflow {
             } else {
                 feeAccumulator.charge(payer, fees);
                 try {
+                    final var storeFactory = new ReadableStoreFactory(state);
+                    final var accountStore = storeFactory.getStore(ReadableAccountStore.class);
+                    final var payerAccount = accountStore.getAccountById(payer);
+                    if (payerAccount != null && payerAccount.deleted()) {
+                        throw new HandleException(PAYER_ACCOUNT_DELETED);
+                    }
+
                     // Dispatch the transaction to the handler
                     dispatcher.dispatchHandle(context);
                     recordBuilder.status(SUCCESS);

@@ -139,7 +139,7 @@ public final class StringFormattingUtils {
                 sb.append(parts.get(index));
             } else {
                 final String digits = Integer.toString(parts.get(index));
-                ALIGNED_RIGHT.pad(sb, digits, '0', 3);
+                ALIGNED_RIGHT.pad(sb, digits, '0', 3, false);
             }
 
             if (index + 1 < parts.size()) {
@@ -184,7 +184,7 @@ public final class StringFormattingUtils {
             sb.append(".");
             final double shiftedFraction = Math.abs(value - wholePart) * shift;
             final long roundedFraction = Math.round(shiftedFraction);
-            ALIGNED_RIGHT.pad(sb, Long.toString(roundedFraction), '0', decimalPlaces);
+            ALIGNED_RIGHT.pad(sb, Long.toString(roundedFraction), '0', decimalPlaces, false);
         }
     }
 

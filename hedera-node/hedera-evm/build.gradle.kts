@@ -23,14 +23,12 @@ group = "com.hedera.evm"
 
 description = "Hedera EVM - API"
 
-dependencies {
-    javaModuleDependencies {
-        annotationProcessor(gav("dagger.compiler"))
+mainModuleInfo { annotationProcessor("dagger.compiler") }
 
-        testImplementation(gav("org.hyperledger.besu.plugin.api"))
-        testImplementation(gav("org.junit.jupiter.api"))
-        testImplementation(gav("org.mockito"))
-        testImplementation(gav("org.mockito.junit.jupiter"))
-        testRuntimeOnly(gav("org.mockito.inline"))
-    }
+testModuleInfo {
+    requires("org.hyperledger.besu.plugin.api")
+    requires("org.junit.jupiter.api")
+    requires("org.mockito")
+    requires("org.mockito.junit.jupiter")
+    runtimeOnly("org.mockito.inline")
 }

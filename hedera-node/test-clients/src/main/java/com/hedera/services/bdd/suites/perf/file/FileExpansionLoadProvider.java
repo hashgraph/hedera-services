@@ -33,6 +33,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_FILE_SIZE_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -93,11 +94,10 @@ public class FileExpansionLoadProvider extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            runFileExpansions(),
-        });
+        return List.of(runFileExpansions());
     }
 
+    @HapiTest
     private HapiSpec runFileExpansions() {
         return HapiSpec.defaultHapiSpec("RunFileExpansions")
                 .given(

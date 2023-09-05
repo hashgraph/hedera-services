@@ -23,6 +23,8 @@ import java.util.Set;
 
 /** An implementation of {@link ReadableStates} that is always empty. */
 public final class EmptyReadableStates implements ReadableStates {
+    public static final ReadableStates INSTANCE = new EmptyReadableStates();
+
     @NonNull
     @Override
     public <K, V> ReadableKVState<K, V> get(@NonNull final String stateKey) {

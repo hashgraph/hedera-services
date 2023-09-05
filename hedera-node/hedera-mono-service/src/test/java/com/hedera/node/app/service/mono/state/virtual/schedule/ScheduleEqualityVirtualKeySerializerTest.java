@@ -26,7 +26,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import org.junit.jupiter.api.Test;
@@ -59,12 +58,12 @@ class ScheduleEqualityVirtualKeySerializerTest {
 
     @Test
     void serializeWorks() throws IOException {
-        final var out = mock(SerializableDataOutputStream.class);
+        final var out = mock(ByteBuffer.class);
         final var virtualKey = new ScheduleEqualityVirtualKey(longKey);
 
         assertEquals(BYTES_IN_SERIALIZED_FORM, subject.serialize(virtualKey, out));
 
-        verify(out).writeLong(longKey);
+        verify(out).putLong(longKey);
     }
 
     @Test
