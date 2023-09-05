@@ -13,9 +13,8 @@ AddressBook, AddressBook-restart-force-use-config-addressbook-1k-4m, platform, h
 AddressBook, AddressBook-restart-saved-state-same-version-1k-4m, platform, https://www.notion.so/swirldslabs/AddressBook-AddressBook-restart-saved-state-same-version-1k-4m-ab47a4cf50a6485cba2403a3d6f369d0
 AddressBook, AddressBook-restart-upgrade-weight-behavior2-1k-4m, platform, https://www.notion.so/swirldslabs/AddressBook-AddressBook-restart-upgrade-weight-behavior2-1k-4m-bff8d1a2ccd249aab4077f3d104e7f7b
 AddressBook, AddressBook-restart-upgrade-force-use-config-addressbook-1k-4m, platform, https://www.notion.so/swirldslabs/AddressBook-AddressBook-upgrade-force-use-config-addressbook-1k-4m-700ef19dbca44efd8d16394fff60556d
-
-AddressBook-Add-Remove, AddressBook-restart-upgrade-add-node-1k-4m, platform, https://www.notion.so/swirldslabs/AddressBook-Add-Remove-AddressBook-restart-upgrade-add-node-1k-4m-aa0c0148fd514bc7bb4f78a9e8fafefe
-AddressBook-Add-Remove, AddressBook-restart-upgrade-remove-node-1k-4m, platform, https://www.notion.so/swirldslabs/AddressBook-Add-Remove-AddressBook-restart-upgrade-remove-node-1k-4m-e2dce8f8bcfc4b52b01b50a5af49fc5e
+AddressBook, AddressBook-restart-upgrade-add-node-1k-4m, platform, https://www.notion.so/swirldslabs/AddressBook-Add-Remove-AddressBook-restart-upgrade-add-node-1k-4m-aa0c0148fd514bc7bb4f78a9e8fafefe
+AddressBook, AddressBook-restart-upgrade-remove-node-1k-4m, platform, https://www.notion.so/swirldslabs/AddressBook-Add-Remove-AddressBook-restart-upgrade-remove-node-1k-4m-e2dce8f8bcfc4b52b01b50a5af49fc5e
 
 Assorted, FCMFCQ-Assorted-500-3m, platform, https://www.notion.so/swirldslabs/Assorted-FCMFCQ-Assorted-500-3m-04e1a9d1a735425fa6ce7ce813b83749
 
