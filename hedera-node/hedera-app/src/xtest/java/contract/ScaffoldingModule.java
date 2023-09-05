@@ -197,7 +197,13 @@ public interface ScaffoldingModule {
             @NonNull final Configuration configuration,
             @NonNull final ExchangeRateManager exchangeRateManager) {
         return (query, payerId) -> new QueryContextImpl(
-                state, new ReadableStoreFactory(state), query, configuration, recordCache, exchangeRateManager, payerId);
+                state,
+                new ReadableStoreFactory(state),
+                query,
+                configuration,
+                recordCache,
+                exchangeRateManager,
+                payerId);
     }
 
     @Provides
