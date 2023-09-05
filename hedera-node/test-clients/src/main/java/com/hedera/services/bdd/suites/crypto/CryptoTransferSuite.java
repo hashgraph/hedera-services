@@ -121,6 +121,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -1568,6 +1569,7 @@ public class CryptoTransferSuite extends HapiSuite {
                         validateChargedUsdWithin(nftXferTxnWithCustomFee, expectedNftXferWithCustomFeePriceUsd, 0.3));
     }
 
+    @HapiTest
     private HapiSpec okToSetInvalidPaymentHeaderForCostAnswer() {
         return defaultHapiSpec("OkToSetInvalidPaymentHeaderForCostAnswer")
                 .given(cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L))
@@ -1718,6 +1720,7 @@ public class CryptoTransferSuite extends HapiSuite {
         return String.format(fmt, d);
     }
 
+    @HapiTest
     private HapiSpec transferToNonAccountEntitiesReturnsInvalidAccountId() {
         AtomicReference<String> invalidAccountId = new AtomicReference<>();
 
@@ -1782,6 +1785,7 @@ public class CryptoTransferSuite extends HapiSuite {
                         .fee(ONE_HUNDRED_HBARS));
     }
 
+    @HapiTest
     private HapiSpec specialAccountsBalanceCheck() {
         return defaultHapiSpec("SpecialAccountsBalanceCheck")
                 .given()
@@ -1800,6 +1804,7 @@ public class CryptoTransferSuite extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
     private HapiSpec vanillaTransferSucceeds() {
         long initialBalance = HapiSpecSetup.getDefaultInstance().defaultBalance();
 

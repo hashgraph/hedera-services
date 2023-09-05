@@ -28,6 +28,12 @@ sonarqube {
     properties {
         property("sonar.host.url", "https://sonarcloud.io")
         property("sonar.organization", "hashgraph")
+        property("sonar.projectKey", "com.hedera.hashgraph:hedera-services")
+        property("sonar.projectName", "Hedera Services")
+        property(
+            "sonar.projectDescription",
+            "Hedera Services (crypto, file, contract, consensus) on the Platform"
+        )
         property("sonar.projectVersion", project.version)
         property("sonar.links.homepage", "https://github.com/hashgraph/hedera-services")
         property("sonar.links.ci", "https://github.com/hashgraph/hedera-services/actions")

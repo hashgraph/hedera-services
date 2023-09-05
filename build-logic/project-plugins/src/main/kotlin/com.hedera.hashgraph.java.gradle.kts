@@ -162,6 +162,11 @@ tasks.assemble {
     dependsOn(tasks.testClasses)
 }
 
+tasks.check {
+    // 'check' runs all checks, including all test checks
+    dependsOn(tasks.jacocoTestReport)
+}
+
 // Do not report dependencies from one source set to another as 'required'.
 // In particular, in case of test fixtures, the analysis would suggest to
 // add as testModuleInfo { require(...) } to the main module. This is
