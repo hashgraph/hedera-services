@@ -55,7 +55,7 @@ jobs:
       java-version: ${{ github.event.inputs.java-version || '17.0.3' }}
       java-distribution: ${{ github.event.inputs.java-distribution || 'temurin' }}
       gradle-version: ${{ github.event.inputs.gradle-version || 'wrapper' }}
-      deployment-profile: adhoc-commit
+      deployment-profile: AdhocCommit
       version-policy: commit-locked
       prerelease-prefix: adhoc
       custom-job-label: "Release / Adhoc"

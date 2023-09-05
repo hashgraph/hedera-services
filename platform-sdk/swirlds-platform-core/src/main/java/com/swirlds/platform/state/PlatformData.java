@@ -37,7 +37,7 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.NoSuchElementException;
-import org.apache.commons.lang3.builder.EqualsBuilder;
+import java.util.Objects;
 
 /**
  * A collection of miscellaneous platform data.
@@ -528,46 +528,47 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
      * @see PlatformState#getInfoString()
      */
     public String getInfoString() {
-        return new TextTable()
+        final String dataTable = new TextTable()
                 .setBordersEnabled(false)
-                .addRow("Round", round)
-                .addRow("Number of consensus events", numEventsCons)
-                .addRow("Consensus events running hash", hashEventsCons == null ? "null" : hashEventsCons.toMnemonic())
-                .addRow("Consensus timestamp", consensusTimestamp)
-                .addRow("Last timestamp", lastTransactionTimestamp)
-                .addRow("Rounds non-ancient", roundsNonAncient)
-                .addRow("Creation software version", creationSoftwareVersion)
-                .addRow("Epoch hash", epochHash == null ? "null" : epochHash.toMnemonic())
-                .addRow("Min gen info hash code", minGenInfo == null ? "null" : minGenInfo.hashCode())
-                .addRow("Events hash code", Arrays.hashCode(events))
+                .addRow("Round:", round)
+                .addRow("Number of consensus events:", numEventsCons)
+                .addRow("Consensus timestamp:", consensusTimestamp)
+                .addRow("Last timestamp:", lastTransactionTimestamp)
+                .addRow("Rounds non-ancient:", roundsNonAncient)
+                .addRow("Creation software version:", creationSoftwareVersion)
+                .addRow("Epoch hash:", epochHash == null ? "null" : epochHash.toMnemonic())
+                .addRow("Min gen info hash code:", minGenInfo == null ? "null" : minGenInfo.hashCode())
+                .addRow("Events hash code:", Arrays.hashCode(events))
+                .addRow(
+                        "Consensus events running mnemonic:",
+                        hashEventsCons == null ? "null" : hashEventsCons.toMnemonic())
                 .render();
+
+        // the unabbreviated running hash is printed separately because it is too long to fit into the table, which
+        // doesn't support wrapping well
+        return dataTable + "Consensus events running hash: " + hashEventsCons;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
+    public boolean equals(final Object other) {
+        if (this == other) {
             return true;
         }
-
-        if (o == null || getClass() != o.getClass()) {
+        if (other == null || getClass() != other.getClass()) {
             return false;
         }
-
-        final PlatformData that = (PlatformData) o;
-
-        return new EqualsBuilder()
-                .append(round, that.round)
-                .append(numEventsCons, that.numEventsCons)
-                .append(hashEventsCons, that.hashEventsCons)
-                .append(events, that.events)
-                .append(consensusTimestamp, that.consensusTimestamp)
-                .append(minGenInfo, that.minGenInfo)
-                .append(epochHash, that.epochHash)
-                .append(roundsNonAncient, that.roundsNonAncient)
-                .isEquals();
+        final PlatformData that = (PlatformData) other;
+        return round == that.round
+                && numEventsCons == that.numEventsCons
+                && Objects.equals(hashEventsCons, that.hashEventsCons)
+                && Arrays.equals(events, that.events)
+                && Objects.equals(consensusTimestamp, that.consensusTimestamp)
+                && Objects.equals(minGenInfo, that.minGenInfo)
+                && Objects.equals(epochHash, that.epochHash)
+                && Objects.equals(roundsNonAncient, that.roundsNonAncient);
     }
 
     /**

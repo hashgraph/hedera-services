@@ -283,7 +283,6 @@ public class CryptoCreateSuite extends HapiSuite {
                         .hasPrecheck(KEY_REQUIRED));
     }
 
-    @HapiTest
     private HapiSpec createAnAccountEmptyKeyList() {
         KeyShape shape = listOf(0);
         long initialBalance = 10_000L;
@@ -459,7 +458,6 @@ public class CryptoCreateSuite extends HapiSuite {
                                 .hasPrecheck(INVALID_ADMIN_KEY));
     }
 
-    @HapiTest
     private HapiSpec createAnAccountInvalidED25519() {
         long initialBalance = 10_000L;
         Key emptyKey = Key.newBuilder().setEd25519(ByteString.EMPTY).build();

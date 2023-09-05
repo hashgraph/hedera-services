@@ -18,7 +18,6 @@ package com.swirlds.demo.platform.expiration;
 
 import com.swirlds.merkle.map.test.pta.MapKey;
 import java.util.Objects;
-import org.apache.commons.lang3.builder.EqualsBuilder;
 
 /**
  * Provides a process object useful for tracking the time of the
@@ -51,18 +50,15 @@ public class ExpirationRecordEntry implements Comparable<ExpirationRecordEntry> 
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) {
+    public boolean equals(final Object other) {
+        if (this == other) {
             return true;
         }
-        if (!(o instanceof ExpirationRecordEntry)) {
+        if (other == null || getClass() != other.getClass()) {
             return false;
         }
-        ExpirationRecordEntry that = (ExpirationRecordEntry) o;
-        return new EqualsBuilder()
-                .append(this.mapKey, that.mapKey)
-                .append(this.earliestExpiry, that.earliestExpiry)
-                .isEquals();
+        final ExpirationRecordEntry that = (ExpirationRecordEntry) other;
+        return earliestExpiry == that.earliestExpiry && Objects.equals(mapKey, that.mapKey);
     }
 
     @Override

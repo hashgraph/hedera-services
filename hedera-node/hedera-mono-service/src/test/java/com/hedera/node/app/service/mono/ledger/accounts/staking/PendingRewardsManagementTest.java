@@ -91,17 +91,17 @@ class PendingRewardsManagementTest {
     @Test
     void pendingRewardsIsUpdatedBasedOnLastPeriodRewardRateAndStakeRewardStart() {
         given800Balance(1_000_000_000_000L);
-        given(dynamicProperties.maxDailyStakeRewardThPerH()).willReturn(lastPeriodRewardRate);
         given(networkCtx.getTotalStakedRewardStart()).willReturn(totalStakedRewardStart);
-        given(dynamicProperties.stakingRewardRate()).willReturn(rewardRate);
+        given(dynamicProperties.stakingPerHbarRewardRate()).willReturn(lastPeriodRewardRate);
         given(dynamicProperties.maxStakeRewarded()).willReturn(Long.MAX_VALUE);
         given(stakingInfos.keySet()).willReturn(Set.of(onlyNodeNum));
         given(stakingInfos.getForModify(onlyNodeNum)).willReturn(info);
         given(info.getStake()).willReturn(125_000L * HBARS_TO_TINYBARS);
         given(info.stakeRewardStartMinusUnclaimed()).willReturn(stakeRewardStart - unclaimedStakeRewardStart);
         given(dynamicProperties.requireMinStakeToReward()).willReturn(true);
+        final var periodRewardRate = (lastPeriodRewardRate * totalStakedRewardStart / HBARS_TO_TINYBARS);
         given(info.updateRewardSumHistory(
-                        rewardRate / (totalStakedRewardStart / HBARS_TO_TINYBARS), lastPeriodRewardRate, true))
+                        periodRewardRate / (totalStakedRewardStart / HBARS_TO_TINYBARS), lastPeriodRewardRate, true))
                 .willReturn(lastPeriodRewardRate);
         given(info.reviewElectionsAndRecomputeStakes()).willReturn(updatedStakeRewardStart);
         given(dynamicProperties.isStakingEnabled()).willReturn(true);
@@ -118,7 +118,7 @@ class PendingRewardsManagementTest {
         given800Balance(123);
         given(networkCtx.pendingRewards()).willReturn(124L);
 
-        Assertions.assertEquals(0, subject.rewardRateForEndingPeriod(1234));
+        Assertions.assertEquals(0, subject.perHbarRewardRateForEndingPeriod(1234));
     }
 
     private void given800Balance(final long balance) {

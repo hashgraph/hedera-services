@@ -36,7 +36,6 @@ import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
-import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -58,12 +57,10 @@ import org.apache.logging.log4j.Logger;
 @Singleton
 public class FileAppendHandler implements TransactionHandler {
     private static final Logger logger = LogManager.getLogger(FileAppendHandler.class);
-    private HederaFileNumbers fileNumbers;
 
     @Inject
-    public FileAppendHandler(@NonNull final HederaFileNumbers fileNumbers) {
+    public FileAppendHandler() {
         // Exists for injection
-        this.fileNumbers = fileNumbers;
     }
 
     /**
@@ -80,10 +77,11 @@ public class FileAppendHandler implements TransactionHandler {
 
         final var transactionBody = context.body().fileAppendOrThrow();
         final var fileStore = context.createStore(ReadableFileStore.class);
-        preValidate(transactionBody.fileID(), fileStore, context, false);
+        final var transactionFileId = requireNonNull(transactionBody.fileID());
+        preValidate(transactionFileId, fileStore, context, false);
 
-        var file = fileStore.getFileLeaf(transactionBody.fileID());
-        validateAndAddRequiredKeys(file.orElse(null), null, context);
+        var file = fileStore.getFileLeaf(transactionFileId);
+        validateAndAddRequiredKeys(file, null, context);
     }
 
     @Override
@@ -116,7 +114,7 @@ public class FileAppendHandler implements TransactionHandler {
         }
         final var file = optionalFile.get();
 
-        feeCalculation(handleContext, fileAppend, file);
+        feeCalculation(handleContext, fileAppend, file, fileServiceConfig);
 
         // TODO: skip at least the mutability check for privileged "payer" accounts
 
@@ -148,7 +146,11 @@ public class FileAppendHandler implements TransactionHandler {
         fileStore.put(fileBuilder.build());
     }
 
-    private void feeCalculation(HandleContext handleContext, FileAppendTransactionBody fileAppend, File file) {
+    private void feeCalculation(
+            HandleContext handleContext,
+            FileAppendTransactionBody fileAppend,
+            File file,
+            @NonNull FilesConfig fileServiceConfig) {
         final var dataLength =
                 (fileAppend.contents() != null) ? fileAppend.contents().length() : 0;
 
@@ -157,7 +159,12 @@ public class FileAppendHandler implements TransactionHandler {
          * PR conversation: 8089
          */
         final long effectiveLifeTime;
-        if (fileNumbers.isSoftwareUpdateFile(file.fileId().fileNum())) {
+        final var fileNum = file.fileId().fileNum();
+        final var firstSoftwareUpdateFile =
+                fileServiceConfig.softwareUpdateRange().left();
+        final var lastSoftwareUpdateFile =
+                fileServiceConfig.softwareUpdateRange().right();
+        if (firstSoftwareUpdateFile <= fileNum && fileNum <= lastSoftwareUpdateFile) {
             effectiveLifeTime = THREE_MONTHS_IN_SECONDS;
         } else {
             final var effCreationTime =

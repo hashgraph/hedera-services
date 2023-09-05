@@ -378,31 +378,47 @@ public class ScheduleVirtualValue extends PartialMerkleLeaf
 
     @Override
     public void serialize(final ByteBuffer out) throws IOException {
+        serializeReturningBytesWritten(out);
+    }
+
+    public int serializeReturningBytesWritten(ByteBuffer out) {
+        int bytesWritten = 0;
         out.putInt(bodyBytes.length);
+        bytesWritten += Integer.BYTES;
         out.put(bodyBytes);
+        bytesWritten += bodyBytes.length;
         if (calculatedExpirationTime == null) {
             out.put((byte) 0);
+            bytesWritten += Byte.BYTES;
         } else {
             out.put((byte) 1);
             out.putLong(calculatedExpirationTime.getSeconds());
             out.putInt(calculatedExpirationTime.getNanos());
+            bytesWritten += Byte.BYTES + Long.BYTES + Integer.BYTES;
         }
         out.put((byte) (calculatedWaitForExpiry ? 1 : 0));
         out.put((byte) (executed ? 1 : 0));
         out.put((byte) (deleted ? 1 : 0));
+        bytesWritten += 3 * Byte.BYTES;
         if (resolutionTime == null) {
             out.put((byte) 0);
+            bytesWritten += Byte.BYTES;
         } else {
             out.put((byte) 1);
             out.putLong(resolutionTime.getSeconds());
             out.putInt(resolutionTime.getNanos());
+            bytesWritten += Byte.BYTES + Long.BYTES + Integer.BYTES;
         }
         out.putInt(signatories.size());
+        bytesWritten += Integer.BYTES;
         for (final byte[] k : signatories) {
             out.putInt(k.length);
             out.put(k);
+            bytesWritten += Integer.BYTES + k.length;
         }
         out.putLong(number);
+        bytesWritten += Long.BYTES;
+        return bytesWritten;
     }
 
     @Override

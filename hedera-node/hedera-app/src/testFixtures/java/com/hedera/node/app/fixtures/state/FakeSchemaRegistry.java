@@ -21,6 +21,7 @@ import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.node.app.spi.fixtures.state.ListWritableQueueState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
+import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.state.EmptyReadableStates;
 import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.ReadableStates;
@@ -45,7 +46,10 @@ public class FakeSchemaRegistry implements SchemaRegistry {
     private final List<Schema> schemas = new LinkedList<>();
 
     @SuppressWarnings("rawtypes")
-    public void migrate(@NonNull final String serviceName, @NonNull final FakeHederaState state) {
+    public void migrate(
+            @NonNull final String serviceName,
+            @NonNull final FakeHederaState state,
+            @NonNull final NetworkInfo networkInfo) {
         // For each schema, create the underlying raw data sources (maps, or lists) and the writable states that
         // will wrap them. Then call the schema's migrate method to populate those states, and commit each of them
         // to the underlying data sources. At that point, we have properly migrated the state.
@@ -97,6 +101,11 @@ public class FakeSchemaRegistry implements SchemaRegistry {
                 @Override
                 public GenesisRecordsConsensusHook genesisRecordsBuilder() {
                     return new NoOpGenesisRecordsConsensusHook();
+                }
+
+                @Override
+                public NetworkInfo networkInfo() {
+                    return networkInfo;
                 }
             });
 

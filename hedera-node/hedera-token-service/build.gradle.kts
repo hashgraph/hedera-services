@@ -16,9 +16,7 @@
 
 plugins {
     id("com.hedera.hashgraph.conventions")
-    `java-test-fixtures`
+    id("java-test-fixtures")
 }
 
 description = "Hedera Token Service API"
-
-dependencies { javaModuleDependencies { testCompileOnly(gav("com.github.spotbugs.annotations")) } }

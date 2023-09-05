@@ -100,7 +100,6 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Optional;
 import java.util.function.Consumer;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.junit.jupiter.api.BeforeEach;
@@ -331,7 +330,7 @@ class HevmTransactionFactoryTest {
     @Test
     void fromHapiCreationValidatesInitcodeDeletionStatus() {
         given(fileStore.getFileLeaf(INITCODE_FILE_ID))
-                .willReturn(Optional.of(File.newBuilder().deleted(true).build()));
+                .willReturn(File.newBuilder().deleted(true).build());
         assertCreateFailsWith(FILE_DELETED, b -> b.memo(SOME_MEMO)
                 .adminKey(AN_ED25519_KEY)
                 .fileID(INITCODE_FILE_ID)
@@ -344,7 +343,7 @@ class HevmTransactionFactoryTest {
     @Test
     void fromHapiCreationValidatesInitcodeNotEmpty() {
         given(fileStore.getFileLeaf(INITCODE_FILE_ID))
-                .willReturn(Optional.of(File.newBuilder().build()));
+                .willReturn(File.newBuilder().build());
         assertCreateFailsWith(CONTRACT_FILE_EMPTY, b -> b.memo(SOME_MEMO)
                 .adminKey(AN_ED25519_KEY)
                 .fileID(INITCODE_FILE_ID)
@@ -357,7 +356,7 @@ class HevmTransactionFactoryTest {
     @Test
     void fromHapiCreationTranslatesHexParsingException() {
         given(fileStore.getFileLeaf(INITCODE_FILE_ID))
-                .willReturn(Optional.of(File.newBuilder().contents(CALL_DATA).build()));
+                .willReturn(File.newBuilder().contents(CALL_DATA).build());
         assertCreateFailsWith(ERROR_DECODING_BYTESTRING, b -> b.memo(SOME_MEMO)
                 .adminKey(AN_ED25519_KEY)
                 .constructorParameters(Bytes.wrap(new byte[] {(byte) 0xab}))
@@ -395,7 +394,7 @@ class HevmTransactionFactoryTest {
     @Test
     void fromHapiCreationAppendsConstructorArgsIfPresent() {
         given(fileStore.getFileLeaf(INITCODE_FILE_ID))
-                .willReturn(Optional.of(File.newBuilder().contents(INITCODE).build()));
+                .willReturn(File.newBuilder().contents(INITCODE).build());
         String hexedPayload = new String(INITCODE.toByteArray()) + CommonUtils.hex(CONSTRUCTOR_PARAMS.toByteArray());
         final var expectedPayload = Bytes.wrap(CommonUtils.unhex(hexedPayload));
         final var transaction = getManufacturedCreation(b -> b.memo(SOME_MEMO)

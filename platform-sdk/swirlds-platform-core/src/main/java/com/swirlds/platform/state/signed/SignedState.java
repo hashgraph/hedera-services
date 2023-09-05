@@ -48,7 +48,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -370,21 +369,15 @@ public class SignedState implements SignedStateInfo {
      * {@inheritDoc}
      */
     @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
+    public boolean equals(final Object other) {
+        if (this == other) {
             return true;
         }
-
-        if (o == null || getClass() != o.getClass()) {
+        if (other == null || getClass() != other.getClass()) {
             return false;
         }
-
-        final SignedState that = (SignedState) o;
-
-        return new EqualsBuilder()
-                .append(sigSet, that.sigSet)
-                .append(state, that.state)
-                .isEquals();
+        final SignedState that = (SignedState) other;
+        return Objects.equals(sigSet, that.sigSet) && Objects.equals(state, that.state);
     }
 
     /**

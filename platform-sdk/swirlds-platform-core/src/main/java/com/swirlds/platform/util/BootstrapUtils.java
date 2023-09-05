@@ -58,12 +58,12 @@ import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.status.PlatformStatusConfig;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.common.utility.StackTrace;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.source.ConfigSource;
 import com.swirlds.fchashmap.config.FCHashMapConfig;
 import com.swirlds.gui.WindowConfig;
-import com.swirlds.jasperdb.config.JasperDbConfig;
 import com.swirlds.logging.payloads.NodeAddressMismatchPayload;
 import com.swirlds.logging.payloads.SavedStateLoadedPayload;
 import com.swirlds.merkledb.config.MerkleDbConfig;
@@ -80,6 +80,7 @@ import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.dispatch.DispatchConfiguration;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig;
 import com.swirlds.platform.event.tipset.EventCreationConfig;
+import com.swirlds.platform.gossip.ProtocolConfig;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.health.OSHealthChecker;
@@ -101,7 +102,8 @@ import com.swirlds.platform.uptime.UptimeConfig;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.awt.*;
+import java.awt.Dimension;
+import java.awt.GraphicsEnvironment;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -117,8 +119,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import javax.swing.*;
-import org.apache.commons.lang3.exception.ExceptionUtils;
+import javax.swing.JFrame;
+import javax.swing.UIManager;
+import javax.swing.UnsupportedLookAndFeelException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -189,7 +192,6 @@ public final class BootstrapUtils {
                 .withConfigDataType(TemporaryFileConfig.class)
                 .withConfigDataType(ReconnectConfig.class)
                 .withConfigDataType(FCHashMapConfig.class)
-                .withConfigDataType(JasperDbConfig.class)
                 .withConfigDataType(MerkleDbConfig.class)
                 .withConfigDataType(ChatterConfig.class)
                 .withConfigDataType(AddressBookConfig.class)
@@ -210,7 +212,8 @@ public final class BootstrapUtils {
                 .withConfigDataType(PathsConfig.class)
                 .withConfigDataType(SocketConfig.class)
                 .withConfigDataType(PlatformStatusConfig.class)
-                .withConfigDataType(TransactionConfig.class);
+                .withConfigDataType(TransactionConfig.class)
+                .withConfigDataType(ProtocolConfig.class);
 
         // Assume all locally run instances provide the same configuration definitions to the configuration builder.
         if (!appMains.isEmpty()) {
@@ -407,7 +410,7 @@ public final class BootstrapUtils {
             CommonUtils.tellUserConsolePopup(
                     "ERROR",
                     "ERROR: There are problems starting class " + appDefinition.getMainClassName() + "\n"
-                            + ExceptionUtils.getStackTrace(e));
+                            + StackTrace.getStackTrace(e));
             logger.error(EXCEPTION.getMarker(), "Problems with class {}", appDefinition.getMainClassName(), e);
             throw new RuntimeException("Problems with class " + appDefinition.getMainClassName(), e);
         }
