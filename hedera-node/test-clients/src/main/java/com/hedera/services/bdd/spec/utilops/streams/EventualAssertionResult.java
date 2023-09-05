@@ -22,6 +22,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 public class EventualAssertionResult {
+    private final boolean hasPassedIfNothingFailed;
     private final Duration timeout;
 
     private final CountDownLatch ready = new CountDownLatch(1);
@@ -29,10 +30,18 @@ public class EventualAssertionResult {
     private AssertionResult result;
 
     public EventualAssertionResult(final Duration timeout) {
+        this(false, timeout);
+    }
+
+    public EventualAssertionResult(boolean hasPassedIfNothingFailed, final Duration timeout) {
+        this.hasPassedIfNothingFailed = hasPassedIfNothingFailed;
         this.timeout = timeout;
     }
 
     public AssertionResult get() throws InterruptedException {
+        if (hasPassedIfNothingFailed && result == null) {
+            return AssertionResult.success();
+        }
         if (!ready.await(timeout.toMillis(), TimeUnit.MILLISECONDS)) {
             return AssertionResult.timeout(timeout);
         }

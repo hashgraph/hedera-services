@@ -179,6 +179,7 @@ public class HederaTracer implements HederaOperationTracer {
             if (CodeV0.EMPTY_CODE.equals(messageFrame.getCode())) {
                 // code can be empty when calling precompiles too, but we handle
                 // that in tracePrecompileCall, after precompile execution is completed
+                System.out.println("setting " + recipient + " in SPOT #2");
                 action.setRecipientAccount(recipient);
             } else {
                 action.setRecipientContract(recipient);
@@ -207,6 +208,7 @@ public class HederaTracer implements HederaOperationTracer {
                         final var recipientAsHederaId = EntityId.fromAddress(
                                 asMirrorAddress(Address.wrap(Bytes.of(action.getInvalidSolidityAddress())), frame));
                         action.setTargetedAddress(null);
+                        System.out.println("setting " + recipientAsHederaId + " in SPOT #1");
                         action.setRecipientAccount(recipientAsHederaId);
                     }
                 } else {
