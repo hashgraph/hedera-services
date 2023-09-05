@@ -25,8 +25,8 @@ import java.nio.file.Path;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-@DisplayName("ShellCommand Test")
-class ShellCommandTest {
+@DisplayName("VirtualTerminal Tests")
+class VirtualTerminalTests {
 
     @Test
     @DisplayName("Successful Command With Output Test")

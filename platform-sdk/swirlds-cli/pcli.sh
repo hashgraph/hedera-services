@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+7#!/usr/bin/env bash
 
 #
 # Copyright 2016-2022 Hedera Hashgraph, LLC

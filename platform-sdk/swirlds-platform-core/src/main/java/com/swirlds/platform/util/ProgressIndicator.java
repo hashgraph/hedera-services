@@ -41,7 +41,6 @@ public class ProgressIndicator {
     private int lineNumber = 0;
     private boolean colorEnabled = true;
     private final int threshold;
-    private String endOfLineMessage = "";
 
     public ProgressIndicator(final int threshold) {
         this.threshold = threshold;
@@ -78,7 +77,6 @@ public class ProgressIndicator {
      * Increment the progress indicator.
      */
     public synchronized void increment() {
-
         final int previousProgress = count / threshold;
         count++;
         final int currentProgress = count / threshold;
@@ -91,9 +89,8 @@ public class ProgressIndicator {
         final int charactersOnCurrentLine = currentProgress % CHARACTERS_PER_LINE;
         final boolean endOfLine = charactersOnCurrentLine % CHARACTERS_PER_LINE == 0;
 
-        final String line = (charactersOnCurrentLine > 0 ? "\r" : "")
-                + generateCurrentLine(lineNumber, charactersOnCurrentLine)
-                + endOfLineMessage;
+        final String line =
+                (charactersOnCurrentLine > 0 ? "\r" : "") + generateCurrentLine(lineNumber, charactersOnCurrentLine);
 
         System.out.print(line);
         System.out.flush();
@@ -101,32 +98,6 @@ public class ProgressIndicator {
             System.out.println();
             lineNumber++;
         }
-
-        //        final int characterIndex = currentProgress % LOADING_CHARACTERS.length;
-        //        final int colorIndex = currentProgress % COLORS.length;
-        //
-        //        final String string;
-        //        if (colorEnabled) {
-        //            string = COLORS[colorIndex].apply(LOADING_CHARACTERS[characterIndex]);
-        //        } else {
-        //            string = LOADING_CHARACTERS[characterIndex];
-        //        }
-        //        System.out.print(string);
-        //
-        //        if (currentProgress % CHARACTERS_PER_LINE == 0) {
-        //            System.out.println("  " + endOfLineMessage);
-        //        } else {
-        //            System.out.flush();
-        //        }
-    }
-
-    /**
-     * Set a message that will be displayed when we reach the end of a line
-     *
-     * @param endOfLineMessage the message to display
-     */
-    public synchronized void setEndOfLineMessage(@NonNull final String endOfLineMessage) {
-        this.endOfLineMessage = endOfLineMessage;
     }
 
     /**

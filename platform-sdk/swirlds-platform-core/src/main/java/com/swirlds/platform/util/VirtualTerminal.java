@@ -37,46 +37,87 @@ public final class VirtualTerminal {
     private boolean throwOnError;
     private boolean progressIndicatorEnabled;
 
-    private final ProgressIndicator progressIndicator = new ProgressIndicator(1); // TODO probably remove
+    private final ProgressIndicator progressIndicator = new ProgressIndicator(1);
 
     public VirtualTerminal() {}
 
+    /**
+     * Set if stdout should be printed to System.out.
+     *
+     * @param printStdout if true, stdout will be printed to System.out
+     * @return this
+     */
     @NonNull
     public VirtualTerminal setPrintStdout(boolean printStdout) {
         this.printStdout = printStdout;
         return this;
     }
 
+    /**
+     * Set if stderr should be printed to System.err.
+     *
+     * @param printStderr if true, stderr will be printed to System.err
+     * @return this
+     */
     @NonNull
     public VirtualTerminal setPrintStderr(boolean printStderr) {
         this.printStderr = printStderr;
         return this;
     }
 
+    /**
+     * Set if the command should be printed to System.out.
+     *
+     * @param printCommand if true, the command will be printed to System.out
+     * @return this
+     */
     @NonNull
     public VirtualTerminal setPrintCommand(boolean printCommand) {
         this.printCommand = printCommand;
         return this;
     }
 
+    /**
+     * Set if the exit code should be printed to System.out.
+     *
+     * @param printExitCode if true, the exit code will be printed to System.out
+     * @return this
+     */
     @NonNull
     public VirtualTerminal setPrintExitCode(boolean printExitCode) {
         this.printExitCode = printExitCode;
         return this;
     }
 
+    /**
+     * Set if an exception should be thrown if the command fails.
+     *
+     * @param throwOnError if true, an exception will be thrown if the command fails
+     * @return this
+     */
     @NonNull
     public VirtualTerminal setThrowOnError(boolean throwOnError) {
         this.throwOnError = throwOnError;
         return this;
     }
 
+    /**
+     * Set if the progress indicator should be incremented after each command.
+     *
+     * @param progressIndicatorEnabled if true, the progress indicator will be incremented after each command
+     * @return this
+     */
     @NonNull
     public VirtualTerminal setProgressIndicatorEnabled(boolean progressIndicatorEnabled) {
         this.progressIndicatorEnabled = progressIndicatorEnabled;
         return this;
     }
 
+    /**
+     * Get the progress indicator.
+     *
+     * @return the progress indicator
+     */
     @NonNull
     public ProgressIndicator getProgressIndicator() {
         return progressIndicator;
@@ -122,7 +163,7 @@ public final class VirtualTerminal {
             return new CommandResult(exitCode, outString, errString);
         } finally {
             if (progressIndicatorEnabled) {
-                progressIndicator.increment(); // TODO should this be kept?
+                progressIndicator.increment();
             }
         }
     }
