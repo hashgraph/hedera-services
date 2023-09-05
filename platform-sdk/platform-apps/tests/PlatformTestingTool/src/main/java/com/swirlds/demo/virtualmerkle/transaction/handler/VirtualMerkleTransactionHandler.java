@@ -24,6 +24,7 @@ import static com.swirlds.merkle.map.test.lifecycle.TransactionType.DeleteNotExi
 import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Update;
 import static com.swirlds.merkle.map.test.lifecycle.TransactionType.UpdateNotExistentAccount;
 
+import com.swirlds.base.utility.Triple;
 import com.swirlds.demo.merkle.map.MapValueData;
 import com.swirlds.demo.merkle.map.internal.ExpectedFCMFamily;
 import com.swirlds.demo.platform.fs.stresstest.proto.CreateAccount;
@@ -47,7 +48,6 @@ import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualValue;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
@@ -108,9 +108,9 @@ public class VirtualMerkleTransactionHandler {
                     consensusTimestamp,
                     virtualMerkleTransaction,
                     expectedFCMFamily,
-                    expectedMapInfo.getLeft(),
-                    expectedMapInfo.getMiddle(),
-                    expectedMapInfo.getRight());
+                    expectedMapInfo.left(),
+                    expectedMapInfo.middle(),
+                    expectedMapInfo.right());
             return;
         }
 

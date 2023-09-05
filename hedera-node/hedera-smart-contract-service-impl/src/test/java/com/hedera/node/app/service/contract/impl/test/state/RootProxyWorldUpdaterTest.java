@@ -23,6 +23,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.contract.ContractNonceInfo;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
+import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations;
 import com.hedera.node.app.service.contract.impl.infra.IterableStorageManager;
 import com.hedera.node.app.service.contract.impl.infra.RentCalculator;
 import com.hedera.node.app.service.contract.impl.infra.StorageSizeValidator;
@@ -73,6 +74,9 @@ class RootProxyWorldUpdaterTest {
 
     @Mock
     private HederaOperations hederaOperations;
+
+    @Mock
+    private SystemContractOperations systemContractOperations;
 
     @Mock
     private ContractStateStore store;
@@ -131,6 +135,7 @@ class RootProxyWorldUpdaterTest {
     private void givenSubjectWith(@NonNull final Configuration configuration) {
         subject = new RootProxyWorldUpdater(
                 hederaOperations,
+                systemContractOperations,
                 configuration.getConfigData(ContractsConfig.class),
                 () -> evmFrameState,
                 rentCalculator,

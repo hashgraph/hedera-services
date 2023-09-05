@@ -17,6 +17,7 @@
 package com.hedera.test.utils;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.state.ReadableKVState;
@@ -26,7 +27,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 public class TestFixturesKeyLookup implements ReadableAccountStore {
-    private final ReadableKVState<Bytes, AccountID> aliases;
+    private final ReadableKVState<ProtoBytes, AccountID> aliases;
     private final ReadableKVState<AccountID, Account> accounts;
 
     public TestFixturesKeyLookup(@NonNull final ReadableStates states) {
@@ -39,7 +40,7 @@ public class TestFixturesKeyLookup implements ReadableAccountStore {
     public Account getAccountById(@NonNull AccountID accountID) {
         final var alias = accountID.alias();
         if (alias != null && alias.length() > 0) {
-            final var num = aliases.get(alias);
+            final var num = aliases.get(new ProtoBytes(alias));
             if (num == null) {
                 return null;
             } else {
@@ -66,6 +67,6 @@ public class TestFixturesKeyLookup implements ReadableAccountStore {
     @Override
     @Nullable
     public AccountID getAccountIDByAlias(@NonNull final Bytes alias) {
-        return aliases.get(alias);
+        return aliases.get(new ProtoBytes(alias));
     }
 }

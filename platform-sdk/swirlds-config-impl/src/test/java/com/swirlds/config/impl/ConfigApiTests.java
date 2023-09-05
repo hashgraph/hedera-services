@@ -366,11 +366,8 @@ class ConfigApiTests {
                 .build();
         // then
         assertEquals(
-                7,
+                6,
                 configuration.getPropertyNames().count(),
-                "It must be possible to read config properties from the old file format");
-        assertTrue(
-                configuration.exists("maxOutgoingSyncs"),
                 "It must be possible to read config properties from the old file format");
         assertTrue(
                 configuration.exists("state.saveStatePeriod"),
@@ -391,10 +388,6 @@ class ConfigApiTests {
                 configuration.exists("loadKeysFromPfxFiles"),
                 "It must be possible to read config properties from the old file format");
 
-        assertEquals(
-                1,
-                configuration.getValue("maxOutgoingSyncs", Integer.class),
-                "It must be possible to read config properties from the old file format");
         assertEquals(
                 0,
                 configuration.getValue("state.saveStatePeriod", Integer.class),

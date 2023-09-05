@@ -224,7 +224,7 @@ class ConsensusGetTopicInfoTest extends ConsensusTestBase {
                 .adminKey(key)
                 .runningHash(Bytes.wrap("runningHash"))
                 .sequenceNumber(topic.sequenceNumber())
-                .expirationTime(Timestamp.newBuilder().seconds(topic.expiry()))
+                .expirationTime(Timestamp.newBuilder().seconds(topic.expirationSecond()))
                 .submitKey(key)
                 .autoRenewAccount(topic.autoRenewAccountId())
                 .autoRenewPeriod(WELL_KNOWN_AUTO_RENEW_PERIOD)

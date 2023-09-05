@@ -28,11 +28,11 @@ import com.hedera.node.app.state.merkle.MerkleTestBase;
 import com.hedera.node.app.state.merkle.StateMetadata;
 import com.hedera.node.app.state.merkle.StateUtils;
 import com.hedera.node.config.data.HederaConfig;
+import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.jasperdb.JasperDbBuilder;
-import com.swirlds.jasperdb.VirtualLeafRecordSerializer;
-import com.swirlds.jasperdb.files.DataFileCommon;
+import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
+import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -78,24 +78,21 @@ class OnDiskTest extends MerkleTestBase {
 
         md = new StateMetadata<>(SERVICE_NAME, schema, def);
 
-        final var builder = new JasperDbBuilder<OnDiskKey<AccountID>, OnDiskValue<Account>>()
+        final MerkleDbTableConfig<OnDiskKey<AccountID>, OnDiskValue<Account>> tableConfig = new MerkleDbTableConfig<>(
+                        (short) 1,
+                        DigestType.SHA_384,
+                        (short) 1,
+                        new OnDiskKeySerializer<>(md),
+                        (short) 1,
+                        new OnDiskValueSerializer<>(md))
                 // Force all hashes to disk, to make sure we're going through all the
                 // serialization paths we can
                 .hashesRamToDiskThreshold(0)
-                .storageDir(storageDir)
-                .maxNumOfKeys(100)
-                .preferDiskBasedIndexes(true)
-                .keySerializer(new OnDiskKeySerializer<>(md))
-                .virtualLeafRecordSerializer(new VirtualLeafRecordSerializer<>(
-                        (short) 1,
-                        DataFileCommon.VARIABLE_DATA_SIZE,
-                        new OnDiskKeySerializer<>(md),
-                        (short) 1,
-                        DataFileCommon.VARIABLE_DATA_SIZE,
-                        new OnDiskValueSerializer<>(md),
-                        false));
+                .maxNumberOfKeys(100)
+                .preferDiskIndices(true);
 
-        virtualMap = new VirtualMap<>(StateUtils.computeLabel(SERVICE_NAME, ACCOUNT_STATE_KEY), builder);
+        final var dsBuilder = new MerkleDbDataSourceBuilder<>(storageDir, tableConfig);
+        virtualMap = new VirtualMap<>(StateUtils.computeLabel(SERVICE_NAME, ACCOUNT_STATE_KEY), dsBuilder);
 
         this.config = Mockito.mock(Configuration.class);
         final var hederaConfig = Mockito.mock(HederaConfig.class);

@@ -34,9 +34,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
 
 class VirtualMapFactoryTest {
 
@@ -54,16 +52,9 @@ class VirtualMapFactoryTest {
         return Stream.of(Arguments.of(false), Arguments.of(true), Arguments.of((Boolean) null));
     }
 
-    @ParameterizedTest
-    @MethodSource("falseTrueNull")
-    void virtualizedUniqueTokenStorage_whenEmpty_canProperlyInsertAndFetchValues(Boolean useMerkleDb) {
-        final VirtualMap<UniqueTokenKey, UniqueTokenValue> map;
-        if (useMerkleDb != null) {
-            map = subject.newVirtualizedUniqueTokenStorage(useMerkleDb);
-        } else {
-            map = subject.newVirtualizedUniqueTokenStorage();
-        }
-
+    @Test
+    void virtualizedUniqueTokenStorage_whenEmpty_canProperlyInsertAndFetchValues() {
+        final VirtualMap<UniqueTokenKey, UniqueTokenValue> map = subject.newVirtualizedUniqueTokenStorage();
         assertThat(map.isEmpty()).isTrue();
 
         map.put(
@@ -77,15 +68,9 @@ class VirtualMapFactoryTest {
         assertThat(value.getMetadata()).isEqualTo("hello world".getBytes());
     }
 
-    @ParameterizedTest
-    @MethodSource("falseTrueNull")
-    void newOnDiskTokensRels_whenEmpty_canProperlyInsertAndFetchValues(Boolean useMerkleDb) {
-        final VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> map;
-        if (useMerkleDb != null) {
-            map = subject.newOnDiskTokenRels(useMerkleDb);
-        } else {
-            map = subject.newOnDiskTokenRels();
-        }
+    @Test
+    void newOnDiskTokensRels_whenEmpty_canProperlyInsertAndFetchValues() {
+        final VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> map = subject.newOnDiskTokenRels();
 
         assertThat(map.isEmpty()).isTrue();
 
@@ -99,16 +84,9 @@ class VirtualMapFactoryTest {
         assertThat(valueFromMap).isEqualTo(value);
     }
 
-    @ParameterizedTest
-    @MethodSource("falseTrueNull")
-    void newVirtualizedIterableStorage_whenEmpty_canProperlyInsertAndFetchValues(Boolean useMerkleDb) {
-        final VirtualMap<ContractKey, IterableContractValue> map;
-
-        if (useMerkleDb != null) {
-            map = subject.newVirtualizedIterableStorage(useMerkleDb);
-        } else {
-            map = subject.newVirtualizedIterableStorage();
-        }
+    @Test
+    void newVirtualizedIterableStorage_whenEmpty_canProperlyInsertAndFetchValues() {
+        final VirtualMap<ContractKey, IterableContractValue> map = subject.newVirtualizedIterableStorage();
 
         assertThat(map.isEmpty()).isTrue();
 
@@ -120,15 +98,10 @@ class VirtualMapFactoryTest {
         assertThat(valueFromMap).isEqualTo(value);
     }
 
-    @ParameterizedTest
-    @MethodSource("falseTrueNull")
-    void newScheduleListStorage_whenEmpty_canProperlyInsertAndFetchValues(Boolean useMerkleDb) {
+    @Test
+    void newContractStorage_whenEmpty_canProperlyInsertAndFetchValues() {
         final VirtualMap<ContractKey, IterableContractValue> map;
-        if (useMerkleDb != null) {
-            map = subject.newVirtualizedIterableStorage(useMerkleDb);
-        } else {
-            map = subject.newVirtualizedIterableStorage();
-        }
+        map = subject.newVirtualizedIterableStorage();
 
         assertThat(map.isEmpty()).isTrue();
 
@@ -185,15 +158,9 @@ class VirtualMapFactoryTest {
         assertThat(valueFromMap).isEqualTo(value);
     }
 
-    @ParameterizedTest
-    @MethodSource("falseTrueNull")
-    void newOnDiskAccountStorage_whenEmpty_canProperlyInsertAndFetchValues(Boolean useMerkleDb) {
-        final VirtualMap<EntityNumVirtualKey, OnDiskAccount> map;
-        if (useMerkleDb != null) {
-            map = subject.newOnDiskAccountStorage(useMerkleDb);
-        } else {
-            map = subject.newOnDiskAccountStorage();
-        }
+    @Test
+    void newOnDiskAccountStorage_whenEmpty_canProperlyInsertAndFetchValues() {
+        final VirtualMap<EntityNumVirtualKey, OnDiskAccount> map = subject.newOnDiskAccountStorage();
 
         assertThat(map.isEmpty()).isTrue();
 
@@ -205,15 +172,9 @@ class VirtualMapFactoryTest {
         assertThat(valueFromMap).isEqualTo(value);
     }
 
-    @ParameterizedTest
-    @MethodSource("falseTrueNull")
-    void newVirtualizedBlobs_whenEmpty_canProperlyInsertAndFetchValues(Boolean useMerkleDb) {
-        final VirtualMap<VirtualBlobKey, VirtualBlobValue> map;
-        if (useMerkleDb != null) {
-            map = subject.newVirtualizedBlobs(useMerkleDb);
-        } else {
-            map = subject.newVirtualizedBlobs();
-        }
+    @Test
+    void newVirtualizedBlobs_whenEmpty_canProperlyInsertAndFetchValues() {
+        final VirtualMap<VirtualBlobKey, VirtualBlobValue> map = subject.newVirtualizedBlobs();
 
         assertThat(map.isEmpty()).isTrue();
 

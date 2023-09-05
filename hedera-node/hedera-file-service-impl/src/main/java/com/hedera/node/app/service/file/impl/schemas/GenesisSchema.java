@@ -31,7 +31,10 @@ import com.hedera.hapi.node.base.FeeSchedule;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
+import com.hedera.hapi.node.base.NodeAddress;
+import com.hedera.hapi.node.base.NodeAddressBook;
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.base.ServicesConfigurationList;
 import com.hedera.hapi.node.base.Setting;
 import com.hedera.hapi.node.base.SubType;
@@ -41,6 +44,7 @@ import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
+import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.StateDefinition;
@@ -97,36 +101,90 @@ public class GenesisSchema extends Schema {
         final var filesConfig = ctx.configuration().getConfigData(FilesConfig.class);
         final var hederaConfig = ctx.configuration().getConfigData(HederaConfig.class);
         final WritableKVState<FileID, File> files = ctx.newStates().get(BLOBS_KEY);
-        createGenesisAddressBook(bootstrapConfig, filesConfig, files);
-        createGenesisNodeDetails(bootstrapConfig, filesConfig, files);
+        createGenesisAddressBookAndNodeDetails(bootstrapConfig, hederaConfig, filesConfig, files, ctx.networkInfo());
         createGenesisFeeSchedule(bootstrapConfig, hederaConfig, filesConfig, files);
         createGenesisExchangeRate(bootstrapConfig, hederaConfig, filesConfig, files);
         createGenesisNetworkProperties(bootstrapConfig, hederaConfig, filesConfig, files, ctx.configuration());
         createGenesisHapiPermissions(bootstrapConfig, hederaConfig, filesConfig, files);
         createGenesisThrottleDefinitions(bootstrapConfig, hederaConfig, filesConfig, files);
-        createGenesisSoftwareUpdateZip(bootstrapConfig, filesConfig, files);
+        createGenesisSoftwareUpdateFiles(bootstrapConfig, hederaConfig, filesConfig, files);
     }
 
     // ================================================================================================================
     // Creates and loads the Address Book into state
 
-    private void createGenesisAddressBook(
+    private void createGenesisAddressBookAndNodeDetails(
             @NonNull final BootstrapConfig bootstrapConfig,
+            @NonNull final HederaConfig hederaConfig,
             @NonNull final FilesConfig filesConfig,
-            @NonNull final WritableKVState<FileID, File> files) {
-        logger.debug("Creating genesis address book file");
-        // TBD Implement this method
-    }
+            @NonNull final WritableKVState<FileID, File> files,
+            @NonNull final NetworkInfo networkInfo) {
 
-    // ================================================================================================================
-    // Creates and loads the Node Details into state
+        logger.debug("Creating genesis address book and node details files");
 
-    private void createGenesisNodeDetails(
-            @NonNull final BootstrapConfig bootstrapConfig,
-            @NonNull final FilesConfig filesConfig,
-            @NonNull final WritableKVState<FileID, File> files) {
-        logger.debug("Creating genesis node details file");
-        // TBD Implement this method
+        logger.trace("Converting NetworkInfo to NodeAddressBook");
+        final var nodeAddresses = new ArrayList<NodeAddress>();
+        for (final var nodeInfo : networkInfo.addressBook()) {
+            nodeAddresses.add(NodeAddress.newBuilder()
+                    .ipAddress(Bytes.wrap(nodeInfo.externalHostName()))
+                    .rsaPubKey(nodeInfo.hexEncodedPublicKey())
+                    .nodeId(nodeInfo.nodeId())
+                    .stake(nodeInfo.stake())
+                    .memo(Bytes.wrap(nodeInfo.memo()))
+                    .serviceEndpoint(ServiceEndpoint.newBuilder()
+                            .ipAddressV4(Bytes.wrap(nodeInfo.externalHostName()))
+                            .port(nodeInfo.externalPort())
+                            .build())
+                    .nodeAccountId(nodeInfo.accountId())
+                    .build());
+        }
+
+        final var nodeAddressBook =
+                NodeAddressBook.newBuilder().nodeAddress(nodeAddresses).build();
+        final var nodeAddressBookProto = NodeAddressBook.PROTOBUF.toBytes(nodeAddressBook);
+
+        // Create the master key that will own both of these special files
+        final var masterKey = KeyList.newBuilder()
+                .keys(Key.newBuilder()
+                        .ed25519(bootstrapConfig.genesisPublicKey())
+                        .build())
+                .build();
+
+        // Create the address book file
+        final var addressBookFileNum = filesConfig.addressBook();
+        final var addressBookFileId = FileID.newBuilder()
+                .shardNum(hederaConfig.shard())
+                .realmNum(hederaConfig.realm())
+                .fileNum(addressBookFileNum)
+                .build();
+
+        logger.trace("Add address book into {}", addressBookFileNum);
+        files.put(
+                addressBookFileId,
+                File.newBuilder()
+                        .contents(nodeAddressBookProto)
+                        .fileId(addressBookFileId)
+                        .keys(masterKey)
+                        .expirationSecond(bootstrapConfig.systemEntityExpiry())
+                        .build());
+
+        // Create the node details
+        final var nodeInfoFileNum = filesConfig.nodeDetails();
+        final var nodeInfoFileId = FileID.newBuilder()
+                .shardNum(hederaConfig.shard())
+                .realmNum(hederaConfig.realm())
+                .fileNum(nodeInfoFileNum)
+                .build();
+
+        logger.trace("Add node info into {}", nodeInfoFileNum);
+        files.put(
+                nodeInfoFileId,
+                File.newBuilder()
+                        .contents(nodeAddressBookProto)
+                        .fileId(nodeInfoFileId)
+                        .keys(masterKey)
+                        .expirationSecond(bootstrapConfig.systemEntityExpiry())
+                        .build());
     }
 
     // ================================================================================================================
@@ -156,7 +214,7 @@ public class GenesisSchema extends Schema {
                             .contents(CurrentAndNextFeeSchedule.PROTOBUF.toBytes(feeSchedule))
                             .fileId(fileId)
                             .keys(KeyList.newBuilder().keys(masterKey))
-                            .expirationTime(bootstrapConfig.systemEntityExpiry())
+                            .expirationSecond(bootstrapConfig.systemEntityExpiry())
                             .build());
         } catch (IOException | NullPointerException e) {
             throw new IllegalArgumentException(
@@ -278,7 +336,7 @@ public class GenesisSchema extends Schema {
                         .contents(ExchangeRateSet.PROTOBUF.toBytes(exchangeRateSet))
                         .fileId(fileId)
                         .keys(KeyList.newBuilder().keys(masterKey))
-                        .expirationTime(bootstrapConfig.systemEntityExpiry())
+                        .expirationSecond(bootstrapConfig.systemEntityExpiry())
                         .build());
     }
 
@@ -317,7 +375,7 @@ public class GenesisSchema extends Schema {
                         .contents(ServicesConfigurationList.PROTOBUF.toBytes(servicesConfigList))
                         .fileId(fileId)
                         .keys(KeyList.newBuilder().keys(masterKey))
-                        .expirationTime(bootstrapConfig.systemEntityExpiry())
+                        .expirationSecond(bootstrapConfig.systemEntityExpiry())
                         .build());
     }
 
@@ -391,7 +449,7 @@ public class GenesisSchema extends Schema {
                                 .build()))
                         .fileId(fileId)
                         .keys(KeyList.newBuilder().keys(masterKey))
-                        .expirationTime(bootstrapConfig.systemEntityExpiry())
+                        .expirationSecond(bootstrapConfig.systemEntityExpiry())
                         .build());
     }
 
@@ -462,18 +520,42 @@ public class GenesisSchema extends Schema {
                         .contents(Bytes.wrap(throttleDefinitionsProtoBytes))
                         .fileId(fileId)
                         .keys(KeyList.newBuilder().keys(masterKey))
-                        .expirationTime(bootstrapConfig.systemEntityExpiry())
+                        .expirationSecond(bootstrapConfig.systemEntityExpiry())
                         .build());
     }
 
     // ================================================================================================================
-    // Creates and loads the software update file into state (may be empty? NOT SURE)
+    // Creates and loads the software update file into state
 
-    private void createGenesisSoftwareUpdateZip(
+    private void createGenesisSoftwareUpdateFiles(
             @NonNull final BootstrapConfig bootstrapConfig,
+            @NonNull final HederaConfig hederaConfig,
             @NonNull final FilesConfig filesConfig,
             @NonNull final WritableKVState<FileID, File> files) {
-        logger.debug("Creating genesis software update zip file");
-        // TBD Implement this method
+
+        // These files all start off as an empty byte array. Only file 150 is actually used, the others are not, but
+        // may be used in the future.
+        logger.debug("Creating genesis software update files");
+        final var fileNums = filesConfig.softwareUpdateRange();
+        final var firstUpdateNum = fileNums.left();
+        final var lastUpdateNum = fileNums.right();
+        final var masterKey =
+                Key.newBuilder().ed25519(bootstrapConfig.genesisPublicKey()).build();
+        for (var updateNum = firstUpdateNum; updateNum <= lastUpdateNum; updateNum++) {
+            final var fileId = FileID.newBuilder()
+                    .shardNum(hederaConfig.shard())
+                    .realmNum(hederaConfig.realm())
+                    .fileNum(updateNum)
+                    .build();
+            logger.debug("Putting update file {} into state", updateNum);
+            files.put(
+                    fileId,
+                    File.newBuilder()
+                            .contents(Bytes.EMPTY)
+                            .fileId(fileId)
+                            .keys(KeyList.newBuilder().keys(masterKey))
+                            .expirationSecond(bootstrapConfig.systemEntityExpiry())
+                            .build());
+        }
     }
 }

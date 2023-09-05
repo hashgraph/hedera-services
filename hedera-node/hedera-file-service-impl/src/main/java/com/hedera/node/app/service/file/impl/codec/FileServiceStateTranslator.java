@@ -67,7 +67,7 @@ public class FileServiceStateTranslator {
                 .fileNum(fileID.getFileNum())
                 .realmNum(fileID.getRealmNum())
                 .shardNum(fileID.getShardNum()));
-        fileBuilder.expirationTime(metadata.getExpiry());
+        fileBuilder.expirationSecond(metadata.getExpiry());
         if (metadata.getWacl() != null) {
             fileBuilder.keys(PbjConverter.asPbjKey(metadata.getWacl()).keyList());
         }
@@ -92,7 +92,10 @@ public class FileServiceStateTranslator {
         requireNonNull(fileID);
         requireNonNull(readableFileStore);
         final var optionalFile = readableFileStore.getFileLeaf(fileID);
-        return pbjToState(optionalFile.orElseThrow(() -> new IllegalArgumentException("File not found")));
+        if (optionalFile == null) {
+            throw new IllegalArgumentException("File not found");
+        }
+        return pbjToState(optionalFile);
     }
 
     /**
@@ -108,7 +111,7 @@ public class FileServiceStateTranslator {
                         Key.newBuilder().keyList(file.keys()).build(), 1)
                 : null;
         com.hedera.node.app.service.mono.files.HFileMeta hFileMeta =
-                new HFileMeta(file.deleted(), keys, file.expirationTime(), file.memo());
+                new HFileMeta(file.deleted(), keys, file.expirationSecond(), file.memo());
         final byte[] data = (file.contents() == null) ? null : file.contents().toByteArray();
         return new FileMetadataAndContent(data, hFileMeta);
     }

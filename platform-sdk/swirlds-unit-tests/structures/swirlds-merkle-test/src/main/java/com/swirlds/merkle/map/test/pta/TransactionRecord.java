@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Objects;
-import org.apache.commons.lang3.builder.EqualsBuilder;
 
 public class TransactionRecord extends AbstractSerializableHashable implements FastCopyable, Serializable {
     private static final long CLASS_ID = 0xcdd5ad651cf2c4d7L;
@@ -106,16 +105,18 @@ public class TransactionRecord extends AbstractSerializableHashable implements F
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        TransactionRecord that = (TransactionRecord) o;
-        return new EqualsBuilder()
-                .append(this.index, that.index)
-                .append(this.balance, that.balance)
-                .append(this.content, that.content)
-                .append(this.expirationTime, that.expirationTime)
-                .isEquals();
+    public boolean equals(final Object other) {
+        if (this == other) {
+            return true;
+        }
+        if (other == null || getClass() != other.getClass()) {
+            return false;
+        }
+        final TransactionRecord that = (TransactionRecord) other;
+        return index == that.index
+                && balance == that.balance
+                && expirationTime == that.expirationTime
+                && Arrays.equals(content, that.content);
     }
 
     @Override

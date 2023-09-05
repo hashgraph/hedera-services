@@ -18,15 +18,14 @@ package com.swirlds.common.metrics;
 
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_11_3;
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
+import com.swirlds.base.utility.ToStringBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.EnumSet;
 import java.util.Objects;
 import java.util.function.DoubleBinaryOperator;
 import java.util.function.DoubleSupplier;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * A {@code DoubleAccumulator} accumulates a {@code double}-value.
@@ -311,7 +310,7 @@ public interface DoubleAccumulator extends Metric {
          */
         @Override
         public String toString() {
-            return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+            return new ToStringBuilder(this)
                     .appendSuper(super.toString())
                     .append("initialValue", initialValue)
                     .toString();

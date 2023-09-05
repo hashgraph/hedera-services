@@ -41,6 +41,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
@@ -242,6 +243,7 @@ public class CryptoGetInfoRegression extends HapiSuite {
                 .then(getAccountInfo("1.2.3").hasCostAnswerPrecheck(INVALID_ACCOUNT_ID));
     }
 
+    @HapiTest
     private HapiSpec failsForMalformedPayment() {
         return defaultHapiSpec("FailsForMalformedPayment")
                 .given(newKeyNamed("wrong").shape(SIMPLE))
@@ -274,6 +276,7 @@ public class CryptoGetInfoRegression extends HapiSuite {
                 .then(getAccountInfo(GENESIS).useEmptyTxnAsAnswerPayment().hasAnswerOnlyPrecheck(NOT_SUPPORTED));
     }
 
+    @HapiTest
     private HapiSpec failsForDeletedAccount() {
         return defaultHapiSpec("FailsForDeletedAccount")
                 .given(cryptoCreate("toBeDeleted"))

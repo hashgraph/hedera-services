@@ -92,7 +92,7 @@ public class StatsSigningTestingToolMain implements SwirldMain {
      */
     private Platform platform;
 
-    private TransactionPool transactionPool;
+    private SttTransactionPool sttTransactionPool;
 
     private static final BasicSoftwareVersion softwareVersion = new BasicSoftwareVersion(1);
 
@@ -176,7 +176,7 @@ public class StatsSigningTestingToolMain implements SwirldMain {
                         "Stats Signing Demo v. 1.3\nThis writes statistics to a log file,"
                                 + " such as the number of transactions per second.");
 
-        transactionPool = new TransactionPool(
+        sttTransactionPool = new SttTransactionPool(
                 platform.getSelfId(),
                 signedTransPoolSize,
                 bytesPerTrans,
@@ -260,7 +260,7 @@ public class StatsSigningTestingToolMain implements SwirldMain {
             }
 
             // Retrieve a random signed transaction from the pool
-            transaction = transactionPool.transaction();
+            transaction = sttTransactionPool.transaction();
 
             if (!platform.createTransaction(transaction)) {
                 break; // if the queue is full, the stop adding to it
@@ -276,7 +276,7 @@ public class StatsSigningTestingToolMain implements SwirldMain {
 
     @Override
     public SwirldState newState() {
-        return new StatsSigningTestingToolState(() -> transactionPool);
+        return new StatsSigningTestingToolState(() -> sttTransactionPool);
     }
 
     /**

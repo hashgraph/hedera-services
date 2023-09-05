@@ -640,7 +640,8 @@ class DispatchingEvmFrameStateTest {
     void extantAccountIsHollowOnlyIfHasAnEmptyKey() {
         given(nativeOperations.resolveAlias(Bytes.wrap(EVM_ADDRESS.toArrayUnsafe())))
                 .willReturn(ACCOUNT_NUM);
-        givenWellKnownAccount(accountWith(ACCOUNT_NUM).key(Key.newBuilder().keyList(KeyList.DEFAULT)));
+        givenWellKnownAccount(accountWith(ACCOUNT_NUM)
+                .key(Key.newBuilder().keyList(KeyList.DEFAULT).build()));
         assertTrue(subject.isHollowAccount(EVM_ADDRESS));
     }
 
@@ -709,7 +710,7 @@ class DispatchingEvmFrameStateTest {
     private Account.Builder accountWith(final long num) {
         return Account.newBuilder()
                 .accountId(AccountID.newBuilder().accountNum(num))
-                .expiry(EXPIRY)
+                .expirationSecond(EXPIRY)
                 .contractKvPairsNumber(NUM_KV_SLOTS);
     }
 }

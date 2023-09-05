@@ -59,6 +59,8 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.config.data.FilesConfig;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.hedera.node.config.types.LongPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import org.junit.jupiter.api.BeforeEach;
@@ -122,9 +124,9 @@ class FileCreateTest extends FileTestBase {
     void setUp() {
         subject = new FileCreateHandler();
         fileStore = new WritableFileStore(writableStates);
-        config = new FilesConfig(101L, 121L, 112L, 111L, 122L, 102L, 123L, 1000000L, 1024, 150L);
+        config = HederaTestConfigBuilder.createConfig().getConfigData(FilesConfig.class);
         lenient().when(handleContext.configuration()).thenReturn(configuration);
-        lenient().when(configuration.getConfigData(FilesConfig.class)).thenReturn(config);
+        lenient().when(configuration.getConfigData(any())).thenReturn(config);
         lenient().when(handleContext.writableStore(WritableFileStore.class)).thenReturn(fileStore);
     }
 
@@ -212,7 +214,7 @@ class FileCreateTest extends FileTestBase {
         final var actualFile = createdFile.get();
         assertEquals("memo", actualFile.memo());
         assertEquals(keys, actualFile.keys());
-        assertEquals(1_234_567L, actualFile.expirationTime());
+        assertEquals(1_234_567L, actualFile.expirationSecond());
         assertEquals(contentsBytes, actualFile.contents());
         assertEquals(fileId, actualFile.fileId());
         assertFalse(actualFile.deleted());
@@ -243,7 +245,7 @@ class FileCreateTest extends FileTestBase {
         final var actualFile = createdFile.get();
         assertEquals("memo", actualFile.memo());
         assertEquals(keys, actualFile.keys());
-        assertEquals(1_234_567L, actualFile.expirationTime());
+        assertEquals(1_234_567L, actualFile.expirationSecond());
         assertEquals(contentsBytes, actualFile.contents());
         assertEquals(fileId, actualFile.fileId());
         assertFalse(actualFile.deleted());
@@ -301,7 +303,7 @@ class FileCreateTest extends FileTestBase {
 
         assertEquals(2, fileStore.sizeOfState());
 
-        config = new FilesConfig(1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1, 150L);
+        config = new FilesConfig(1L, 1L, 1L, 1L, 1L, 1L, new LongPair(150L, 159L), 1L, 1L, 1, 150L);
         given(configuration.getConfigData(any())).willReturn(config);
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));

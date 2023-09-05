@@ -275,7 +275,9 @@ public class WinBrowser extends JFrame {
      */
     public void goTab(ScrollableJPanel contents) {
         requestFocus(true);
-        tabbed.setSelectedComponent(contents);
+        if (contents != null) {
+            tabbed.setSelectedComponent(contents);
+        }
         prePaintThenRepaint();
     }
 }

@@ -16,8 +16,11 @@
 
 package com.hedera.node.app.spi.fees;
 
+import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hederahashgraph.api.proto.java.FeeData;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.function.Function;
 
 /**
  * Used to help calculate the fees for a given transaction. The calculator is available on the {@link HandleContext},
@@ -48,6 +51,15 @@ public interface FeeCalculator {
      */
     @NonNull
     FeeCalculator addBytesPerTransaction(long bytes);
+
+    @NonNull
+    FeeCalculator addStorageBytesSeconds(long seconds);
+
+    @NonNull
+    FeeCalculator addNetworkRamByteSeconds(long amount);
+
+    @NonNull
+    Fees legacyCalculate(@NonNull final Function<SigValueObj, FeeData> callback);
 
     /**
      * Calculates and returns the {@link Fees} for the transaction.

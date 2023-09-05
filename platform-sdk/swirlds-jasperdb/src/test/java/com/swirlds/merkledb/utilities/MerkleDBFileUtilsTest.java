@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.exceptions.NotImplementedException;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -33,7 +34,6 @@ import java.nio.channels.WritableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
-import org.apache.commons.lang3.NotImplementedException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -433,7 +433,8 @@ class MerkleDBFileUtilsTest {
     @CsvSource({
         "0,0,60,1234567890abcdefghijklmnopqrstuvwxyz........hello.world,55",
         "0,3,60,AAA1234567890abcdefghijklmnopqrstuvwxyz........hello.world,55",
-        "0,48,60,AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA1234567890abcdefghijklmnopqrstuvwxyz......." + ".hello"
+        "0,48,60,AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA1234567890abcdefghijklmnopqrstuvwxyz......."
+                + ".hello"
                 + ".world,55",
         "3,0,60,4567890abcdefghijklmnopqrstuvwxyz........hello.worldAAA,52",
         "3,3,60,AAA4567890abcdefghijklmnopqrstuvwxyz........hello.world,52",
@@ -474,7 +475,8 @@ class MerkleDBFileUtilsTest {
     @CsvSource({
         "0,0,60,1234567890abcdefghijklmnopqrstuvwxyz........hello.world,55",
         "0,3,60,AAA1234567890abcdefghijklmnopqrstuvwxyz........hello.world,55",
-        "0,48,60,AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA1234567890abcdefghijklmnopqrstuvwxyz......." + ".hello"
+        "0,48,60,AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA1234567890abcdefghijklmnopqrstuvwxyz......."
+                + ".hello"
                 + ".world,55",
         "3,0,60,4567890abcdefghijklmnopqrstuvwxyz........hello.worldAAA,52",
         "3,3,60,AAA4567890abcdefghijklmnopqrstuvwxyz........hello.world,52",

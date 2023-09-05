@@ -28,6 +28,7 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.ids.EntityIdService;
@@ -37,6 +38,7 @@ import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
@@ -61,7 +63,7 @@ import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilde
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.handle.validation.AttributeValidatorImpl;
 import com.hedera.node.app.workflows.handle.validation.ExpiryValidatorImpl;
-import com.hedera.node.app.workflows.handle.verifier.ChildHandleContextVerifier;
+import com.hedera.node.app.workflows.handle.verifier.DelegateHandleContextVerifier;
 import com.hedera.node.app.workflows.handle.verifier.HandleContextVerifier;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -70,13 +72,14 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
  * The default implementation of {@link HandleContext}.
  */
-public class HandleContextImpl implements HandleContext {
+public class HandleContextImpl implements HandleContext, FeeContext {
     private static final Logger logger = LogManager.getLogger(HandleContextImpl.class);
 
     private final TransactionBody txBody;
@@ -363,9 +366,12 @@ public class HandleContextImpl implements HandleContext {
     @Override
     @NonNull
     public <T> T dispatchPrecedingTransaction(
-            @NonNull final TransactionBody txBody, @NonNull final Class<T> recordBuilderClass) {
+            @NonNull final TransactionBody txBody,
+            @NonNull final Class<T> recordBuilderClass,
+            @NonNull final Predicate<Key> callback) {
         requireNonNull(txBody, "txBody must not be null");
         requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
+        requireNonNull(callback, "callback must not be null");
 
         if (category != TransactionCategory.USER) {
             throw new IllegalArgumentException("Only user-transactions can dispatch preceding transactions");
@@ -381,7 +387,7 @@ public class HandleContextImpl implements HandleContext {
 
         // run the transaction
         final var precedingRecordBuilder = recordListBuilder.addPreceding(configuration());
-        dispatchSyntheticTxn(txBody, PRECEDING, verifier, precedingRecordBuilder);
+        dispatchSyntheticTxn(txBody, PRECEDING, precedingRecordBuilder, callback);
 
         return castRecordBuilder(precedingRecordBuilder, recordBuilderClass);
     }
@@ -391,18 +397,9 @@ public class HandleContextImpl implements HandleContext {
     public <T> T dispatchChildTransaction(
             @NonNull final TransactionBody txBody,
             @NonNull final Class<T> recordBuilderClass,
-            @NonNull final VerificationAssistant callback) {
-        final var childVerifier = new ChildHandleContextVerifier(verifier, callback);
+            @NonNull final Predicate<Key> callback) {
         final var childRecordBuilder = recordListBuilder.addChild(configuration());
-        return dispatchChildTransaction(txBody, childVerifier, childRecordBuilder, recordBuilderClass);
-    }
-
-    @Override
-    @NonNull
-    public <T> T dispatchChildTransaction(
-            @NonNull final TransactionBody txBody, @NonNull final Class<T> recordBuilderClass) {
-        final var childRecordBuilder = recordListBuilder.addChild(configuration());
-        return dispatchChildTransaction(txBody, verifier, childRecordBuilder, recordBuilderClass);
+        return doDispatchChildTransaction(txBody, childRecordBuilder, recordBuilderClass, callback);
     }
 
     @NonNull
@@ -410,40 +407,27 @@ public class HandleContextImpl implements HandleContext {
     public <T> T dispatchRemovableChildTransaction(
             @NonNull final TransactionBody txBody,
             @NonNull final Class<T> recordBuilderClass,
-            @NonNull final VerificationAssistant callback) {
-        final var childVerifier = new ChildHandleContextVerifier(verifier, callback);
+            @NonNull final Predicate<Key> callback) {
         final var childRecordBuilder = recordListBuilder.addRemovableChild(configuration());
-        return dispatchChildTransaction(txBody, childVerifier, childRecordBuilder, recordBuilderClass);
-    }
-
-    @Override
-    @NonNull
-    public <T> T dispatchRemovableChildTransaction(
-            @NonNull final TransactionBody txBody, @NonNull final Class<T> recordBuilderClass) {
-        final var childRecordBuilder = recordListBuilder.addRemovableChild(configuration());
-        return dispatchChildTransaction(txBody, verifier, childRecordBuilder, recordBuilderClass);
+        return doDispatchChildTransaction(txBody, childRecordBuilder, recordBuilderClass, callback);
     }
 
     @NonNull
-    private <T> T dispatchChildTransaction(
+    private <T> T doDispatchChildTransaction(
             @NonNull final TransactionBody txBody,
-            @NonNull final HandleContextVerifier childVerifier,
             @NonNull final SingleTransactionRecordBuilderImpl childRecordBuilder,
-            @NonNull final Class<T> recordBuilderClass) {
+            @NonNull final Class<T> recordBuilderClass,
+            @NonNull final Predicate<Key> callback) {
+        requireNonNull(txBody, "txBody must not be null");
+        requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
+        requireNonNull(callback, "callback must not be null");
+
         if (category == PRECEDING) {
             throw new IllegalArgumentException("A preceding transaction cannot have child transactions");
         }
 
-        // create a savepoint
-        stack.createSavepoint();
-
         // run the child-transaction
-        dispatchSyntheticTxn(txBody, CHILD, childVerifier, childRecordBuilder);
-
-        // rollback if the child-transaction failed
-        if (childRecordBuilder.status() != ResponseCodeEnum.OK) {
-            stack.rollback();
-        }
+        dispatchSyntheticTxn(txBody, CHILD, childRecordBuilder, callback);
 
         return castRecordBuilder(childRecordBuilder, recordBuilderClass);
     }
@@ -451,8 +435,27 @@ public class HandleContextImpl implements HandleContext {
     private void dispatchSyntheticTxn(
             @NonNull final TransactionBody txBody,
             @NonNull final TransactionCategory childCategory,
-            @NonNull final HandleContextVerifier childVerifier,
-            @NonNull final SingleTransactionRecordBuilderImpl childRecordBuilder) {
+            @NonNull final SingleTransactionRecordBuilderImpl childRecordBuilder,
+            @NonNull final Predicate<Key> callback) {
+        // Initialize record builder list
+        final var bodyBytes = TransactionBody.PROTOBUF.toBytes(txBody);
+        final var signedTransaction =
+                SignedTransaction.newBuilder().bodyBytes(bodyBytes).build();
+        final var signedTransactionBytes = SignedTransaction.PROTOBUF.toBytes(signedTransaction);
+        final var transaction = Transaction.newBuilder()
+                .signedTransactionBytes(signedTransactionBytes)
+                .build();
+        childRecordBuilder
+                .transaction(transaction)
+                .transactionBytes(signedTransactionBytes)
+                .memo(txBody.memo());
+
+        // Set the transactionId if provided
+        final var transactionID = txBody.transactionID();
+        if (transactionID != null) {
+            childRecordBuilder.transactionID(transactionID);
+        }
+
         try {
             // Synthetic transaction bodies do not have transaction ids, node account
             // ids, and so on; hence we don't need to validate them with the checker
@@ -471,6 +474,8 @@ public class HandleContextImpl implements HandleContext {
             childRecordBuilder.status(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
             return;
         }
+
+        final var childVerifier = new DelegateHandleContextVerifier(callback);
 
         final var childContext = new HandleContextImpl(
                 new TransactionInfo(Transaction.DEFAULT, txBody, SignatureMap.DEFAULT, Bytes.EMPTY, function),
@@ -493,6 +498,7 @@ public class HandleContextImpl implements HandleContext {
 
         try {
             dispatcher.dispatchHandle(childContext);
+            childRecordBuilder.status(ResponseCodeEnum.SUCCESS);
             childStack.commitFullStack();
         } catch (HandleException e) {
             childRecordBuilder.status(e.getStatus());

@@ -60,11 +60,14 @@ import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * An implementation of {@link SwirldState} and {@link HederaState}. The Hashgraph Platform
@@ -85,6 +88,7 @@ import java.util.Set;
  * consider nesting service nodes in a MerkleMap, or some other such approach to get a binary tree.
  */
 public class MerkleHederaState extends PartialNaryMerkleInternal implements MerkleInternal, SwirldState, HederaState {
+    private static final Logger logger = LogManager.getLogger(MerkleHederaState.class);
 
     /** Used when asked for a service's readable states that we don't have */
     private static final ReadableStates EMPTY_READABLE_STATES = new EmptyReadableStates();
@@ -236,6 +240,31 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
     @Override
     public int getVersion() {
         return CURRENT_VERSION;
+    }
+
+    /**
+     * To be called ONLY at node shutdown. Attempts to gracefully close any virtual maps. This method is a bit of a
+     * hack, ideally there would be something more generic at the platform level that virtual maps could hook into
+     * to get shutdown in an orderly way.
+     */
+    public void close() {
+        logger.info("Closing MerkleHederaState");
+        for (final var svc : services.values()) {
+            for (final var md : svc.values()) {
+                final var index =
+                        findNodeIndex(md.serviceName(), md.stateDefinition().stateKey());
+                if (index >= 0) {
+                    final var node = getChild(index);
+                    if (node instanceof VirtualMap<?, ?> virtualMap) {
+                        try {
+                            virtualMap.getDataSource().close();
+                        } catch (IOException e) {
+                            logger.warn("Unable to close data source for virtual map {}", md.serviceName(), e);
+                        }
+                    }
+                }
+            }
+        }
     }
 
     /**

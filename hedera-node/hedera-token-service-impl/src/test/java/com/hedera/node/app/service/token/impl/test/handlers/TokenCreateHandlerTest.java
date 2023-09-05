@@ -62,7 +62,6 @@ import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.TokenCreateTransactionBody;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.config.VersionedConfigImpl;
 import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
@@ -82,6 +81,7 @@ import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilde
 import com.hedera.node.app.workflows.handle.validation.StandardizedAttributeValidator;
 import com.hedera.node.app.workflows.handle.validation.StandardizedExpiryValidator;
 import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -152,7 +152,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(token.tokenId()).isEqualTo(newTokenId);
         assertThat(token.totalSupply()).isEqualTo(1000L);
         assertThat(token.tokenType()).isEqualTo(TokenType.FUNGIBLE_COMMON);
-        assertThat(token.expiry())
+        assertThat(token.expirationSecond())
                 .isEqualTo(consensusInstant.plusSeconds(autoRenewSecs).getEpochSecond());
         assertThat(token.freezeKey()).isEqualTo(A_COMPLEX_KEY);
         assertThat(token.kycKey()).isEqualTo(A_COMPLEX_KEY);
@@ -160,7 +160,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(token.wipeKey()).isEqualTo(A_COMPLEX_KEY);
         assertThat(token.supplyKey()).isEqualTo(A_COMPLEX_KEY);
         assertThat(token.feeScheduleKey()).isEqualTo(A_COMPLEX_KEY);
-        assertThat(token.autoRenewSecs()).isEqualTo(autoRenewSecs);
+        assertThat(token.autoRenewSeconds()).isEqualTo(autoRenewSecs);
         assertThat(token.autoRenewAccountId()).isEqualTo(autoRenewAccountId);
         assertThat(token.decimals()).isZero();
         assertThat(token.name()).isEqualTo("TestToken");
@@ -209,7 +209,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(token.tokenId()).isEqualTo(newTokenId);
         assertThat(token.totalSupply()).isEqualTo(1000L);
         assertThat(token.tokenType()).isEqualTo(TokenType.FUNGIBLE_COMMON);
-        assertThat(token.expiry())
+        assertThat(token.expirationSecond())
                 .isEqualTo(consensusInstant.plusSeconds(autoRenewSecs).getEpochSecond());
         assertThat(token.freezeKey()).isEqualTo(A_COMPLEX_KEY);
         assertThat(token.kycKey()).isEqualTo(A_COMPLEX_KEY);
@@ -217,7 +217,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(token.wipeKey()).isEqualTo(A_COMPLEX_KEY);
         assertThat(token.supplyKey()).isEqualTo(A_COMPLEX_KEY);
         assertThat(token.feeScheduleKey()).isEqualTo(A_COMPLEX_KEY);
-        assertThat(token.autoRenewSecs()).isEqualTo(autoRenewSecs);
+        assertThat(token.autoRenewSeconds()).isEqualTo(autoRenewSecs);
         assertThat(token.autoRenewAccountId()).isEqualTo(autoRenewAccountId);
         assertThat(token.decimals()).isZero();
         assertThat(token.name()).isEqualTo("TestToken");
@@ -397,7 +397,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(token.tokenId()).isEqualTo(newTokenId);
         assertThat(token.totalSupply()).isZero();
         assertThat(token.tokenType()).isEqualTo(TokenType.NON_FUNGIBLE_UNIQUE);
-        assertThat(token.expiry())
+        assertThat(token.expirationSecond())
                 .isEqualTo(consensusInstant.plusSeconds(autoRenewSecs).getEpochSecond());
         assertThat(token.freezeKey()).isEqualTo(A_COMPLEX_KEY);
         assertThat(token.kycKey()).isEqualTo(A_COMPLEX_KEY);
@@ -405,7 +405,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(token.wipeKey()).isEqualTo(A_COMPLEX_KEY);
         assertThat(token.supplyKey()).isEqualTo(A_COMPLEX_KEY);
         assertThat(token.feeScheduleKey()).isEqualTo(A_COMPLEX_KEY);
-        assertThat(token.autoRenewSecs()).isEqualTo(autoRenewSecs);
+        assertThat(token.autoRenewSeconds()).isEqualTo(autoRenewSecs);
         assertThat(token.autoRenewAccountId()).isEqualTo(autoRenewAccountId);
         assertThat(token.decimals()).isZero();
         assertThat(token.name()).isEqualTo("TestToken");
