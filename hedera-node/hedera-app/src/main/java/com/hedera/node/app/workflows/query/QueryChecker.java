@@ -149,7 +149,7 @@ public class QueryChecker {
                 }
 
                 // Make sure the node receives enough
-                if (amount > 0 && nodeAccountID.equals(transfer.accountIDOrThrow())) {
+                if (amount >= 0 && nodeAccountID.equals(transfer.accountIDOrThrow())) {
                     nodeReceivesSome = true;
                     if (amount < fee) {
                         throw new InsufficientBalanceException(INSUFFICIENT_TX_FEE, fee);
