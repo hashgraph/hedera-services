@@ -57,6 +57,7 @@ extraJavaModuleInfo {
     module("io.grpc:grpc-stub", "grpc.stub") {
         exportAllPackages()
         requireAllDefinedDependencies()
+        requires("java.logging")
     }
     module("io.grpc:grpc-testing", "grpc.testing") {
         exportAllPackages()
