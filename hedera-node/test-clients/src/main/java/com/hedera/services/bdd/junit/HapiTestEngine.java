@@ -17,7 +17,7 @@
 package com.hedera.services.bdd.junit;
 
 import static java.util.Objects.requireNonNull;
-import static org.junit.platform.commons.util.ReflectionUtils.HierarchyTraversalMode.TOP_DOWN;
+import static org.junit.platform.commons.support.HierarchyTraversalMode.TOP_DOWN;
 
 import com.hedera.node.app.Hedera;
 import com.hedera.node.config.data.AccountsConfig;
@@ -93,7 +93,6 @@ import org.apache.logging.log4j.core.config.Configurator;
 import org.junit.jupiter.api.Disabled;
 import org.junit.platform.commons.support.AnnotationSupport;
 import org.junit.platform.commons.support.ReflectionSupport;
-import org.junit.platform.commons.util.ReflectionUtils;
 import org.junit.platform.engine.EngineDiscoveryRequest;
 import org.junit.platform.engine.ExecutionRequest;
 import org.junit.platform.engine.Filter;
@@ -349,11 +348,6 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                     public void recycle(@NonNull Path path) throws IOException {
                         // TODO No-op for now
                     }
-
-                    @Override
-                    public void clear() throws IOException {
-                        // TODO No-op for now
-                    }
                 };
 
                 final var initialState = GenesisStateBuilder.buildGenesisState(
@@ -443,7 +437,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
             setParent(parent);
 
             // Look for any methods supported by this class.
-            ReflectionUtils.findMethods(testClass, IS_HAPI_TEST, TOP_DOWN).stream()
+            ReflectionSupport.findMethods(testClass, IS_HAPI_TEST, TOP_DOWN).stream()
                     .filter(method -> {
                         // The selectors tell me if some specific method was selected by the IDE or command line,
                         // so I will filter out and only include test methods that were in the selectors, if there

@@ -38,7 +38,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -54,6 +53,7 @@ import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.AppTestBase;
+import com.hedera.node.app.authorization.Authorizer;
 import com.hedera.node.app.service.file.impl.handlers.FileGetInfoHandler;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.stats.HapiOpCounters;
@@ -96,9 +96,6 @@ class QueryWorkflowImplTest extends AppTestBase {
     private static final int BUFFER_SIZE = 1024 * 6;
     private static final long DEFAULT_CONFIG_VERSION = 1L;
 
-    @Mock
-    private HederaState state;
-
     @Mock(strictness = LENIENT)
     private Function<ResponseType, AutoCloseableWrapper<HederaState>> stateAccessor;
 
@@ -132,10 +129,12 @@ class QueryWorkflowImplTest extends AppTestBase {
     @Mock(strictness = LENIENT)
     private RecordCache recordCache;
 
+    @Mock
+    private Authorizer authorizer;
+
     private Query query;
     private Transaction payment;
     private TransactionBody txBody;
-    private AccountID payer;
     private Bytes requestBuffer;
     private TransactionInfo transactionInfo;
 
@@ -143,6 +142,8 @@ class QueryWorkflowImplTest extends AppTestBase {
 
     @BeforeEach
     void setup() throws IOException, PreCheckException {
+        setupStandardStates();
+
         when(stateAccessor.apply(any())).thenReturn(new AutoCloseableWrapper<>(state, () -> {}));
         requestBuffer = Bytes.wrap(new byte[] {1, 2, 3});
         payment = Transaction.newBuilder().build();
@@ -152,8 +153,8 @@ class QueryWorkflowImplTest extends AppTestBase {
                 .build();
         when(queryParser.parseStrict(notNull())).thenReturn(query);
 
-        payer = AccountID.newBuilder().accountNum(42L).build();
-        final var transactionID = TransactionID.newBuilder().accountID(payer).build();
+        final var transactionID =
+                TransactionID.newBuilder().accountID(ALICE.accountID()).build();
         txBody = TransactionBody.newBuilder().transactionID(transactionID).build();
 
         final var signatureMap = SignatureMap.newBuilder().build();
@@ -192,7 +193,8 @@ class QueryWorkflowImplTest extends AppTestBase {
                 dispatcher,
                 queryParser,
                 configProvider,
-                recordCache);
+                recordCache,
+                authorizer);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -207,7 +209,8 @@ class QueryWorkflowImplTest extends AppTestBase {
                         dispatcher,
                         queryParser,
                         configProvider,
-                        recordCache))
+                        recordCache,
+                        authorizer))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -218,7 +221,8 @@ class QueryWorkflowImplTest extends AppTestBase {
                         dispatcher,
                         queryParser,
                         configProvider,
-                        recordCache))
+                        recordCache,
+                        authorizer))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -229,7 +233,8 @@ class QueryWorkflowImplTest extends AppTestBase {
                         dispatcher,
                         queryParser,
                         configProvider,
-                        recordCache))
+                        recordCache,
+                        authorizer))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -240,7 +245,8 @@ class QueryWorkflowImplTest extends AppTestBase {
                         dispatcher,
                         queryParser,
                         configProvider,
-                        recordCache))
+                        recordCache,
+                        authorizer))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -251,7 +257,8 @@ class QueryWorkflowImplTest extends AppTestBase {
                         dispatcher,
                         queryParser,
                         configProvider,
-                        recordCache))
+                        recordCache,
+                        authorizer))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -262,7 +269,8 @@ class QueryWorkflowImplTest extends AppTestBase {
                         null,
                         queryParser,
                         configProvider,
-                        recordCache))
+                        recordCache,
+                        authorizer))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -273,7 +281,8 @@ class QueryWorkflowImplTest extends AppTestBase {
                         dispatcher,
                         null,
                         configProvider,
-                        recordCache))
+                        recordCache,
+                        authorizer))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -284,7 +293,8 @@ class QueryWorkflowImplTest extends AppTestBase {
                         dispatcher,
                         queryParser,
                         null,
-                        recordCache))
+                        recordCache,
+                        authorizer))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -295,7 +305,8 @@ class QueryWorkflowImplTest extends AppTestBase {
                         dispatcher,
                         queryParser,
                         configProvider,
-                        null))
+                        null,
+                        authorizer))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -393,7 +404,8 @@ class QueryWorkflowImplTest extends AppTestBase {
                 localDispatcher,
                 queryParser,
                 configProvider,
-                recordCache);
+                recordCache,
+                authorizer);
 
         // then
         assertThatThrownBy(() -> workflow.handleQuery(requestBuffer, responseBuffer))
@@ -520,12 +532,39 @@ class QueryWorkflowImplTest extends AppTestBase {
     }
 
     @Test
+    void testPaidQueryForSuperUserDoesNotSubmitCryptoTransfer() throws PreCheckException, IOException {
+        // given
+        given(handler.computeFees(any(QueryContext.class))).willReturn(new Fees(100L, 0L, 100L));
+        given(handler.requiresNodePayment(any())).willReturn(true);
+        when(handler.findResponse(any(), any()))
+                .thenReturn(Response.newBuilder()
+                        .fileGetInfo(FileGetInfoResponse.newBuilder()
+                                .header(ResponseHeader.newBuilder().build())
+                                .build())
+                        .build());
+        final var responseBuffer = newEmptyBuffer();
+        given(authorizer.isSuperUser(ALICE.accountID())).willReturn(true);
+
+        // when
+        workflow.handleQuery(requestBuffer, responseBuffer);
+
+        // then
+        final var response = parseResponse(responseBuffer);
+        final var header = response.fileGetInfoOrThrow().headerOrThrow();
+        Assertions.assertThat(header.nodeTransactionPrecheckCode()).isEqualTo(OK);
+        Assertions.assertThat(header.responseType()).isEqualTo(ANSWER_ONLY);
+        Assertions.assertThat(header.cost()).isZero();
+
+        verify(submissionManager, never()).submit(any(), any());
+    }
+
+    @Test
     void testPaidQueryWithInsufficientPermissionFails() throws PreCheckException, IOException {
         // given
         when(handler.requiresNodePayment(ANSWER_ONLY)).thenReturn(true);
         doThrow(new PreCheckException(NOT_SUPPORTED))
                 .when(queryChecker)
-                .checkPermissions(payer, HederaFunctionality.FILE_GET_INFO);
+                .checkPermissions(ALICE.accountID(), HederaFunctionality.FILE_GET_INFO);
         final var responseBuffer = newEmptyBuffer();
 
         // when
@@ -546,7 +585,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         when(handler.requiresNodePayment(ANSWER_ONLY)).thenReturn(true);
         doThrow(new InsufficientBalanceException(INSUFFICIENT_TX_FEE, 12345L))
                 .when(queryChecker)
-                .validateAccountBalances(payer, transactionInfo, 200L);
+                .validateAccountBalances(any(), eq(transactionInfo), eq(200L));
         final var responseBuffer = newEmptyBuffer();
 
         // when
