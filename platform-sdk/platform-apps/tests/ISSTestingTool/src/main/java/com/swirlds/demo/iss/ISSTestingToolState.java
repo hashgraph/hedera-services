@@ -117,6 +117,7 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
         this.plannedLogErrorList = new LinkedList<>(that.plannedLogErrorList);
         this.genesisTimestamp = that.genesisTimestamp;
         this.selfId = that.selfId;
+        this.scratchPad = that.scratchPad;
         that.immutable = true;
     }
 
