@@ -16,11 +16,6 @@
 
 plugins { id("com.hedera.hashgraph.root") }
 
-sonarqube.properties {
-    property("sonar.projectKey", "com.swirlds:swirlds-platform")
-    property("sonar.projectName", "Platform SDK")
-}
-
 val sdkDir = layout.projectDirectory.dir("sdk")
 
 tasks.register<JavaExec>("run") {
