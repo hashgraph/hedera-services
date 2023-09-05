@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
+import static com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations.ZERO_ENTROPY;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
@@ -29,6 +31,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import javax.inject.Inject;
 
 /**
@@ -102,7 +105,8 @@ public class QueryHederaOperations implements HederaOperations {
      */
     @Override
     public @NonNull Bytes entropy() {
-        throw new AssertionError("Not implemented");
+        return Optional.ofNullable(context.blockRecordInfo().getNMinus3RunningHash())
+                .orElse(ZERO_ENTROPY);
     }
 
     /**
@@ -120,7 +124,8 @@ public class QueryHederaOperations implements HederaOperations {
      */
     @Override
     public long gasPriceInTinybars() {
-        throw new AssertionError("Not implemented");
+        // TODO - implement correctly
+        return 1L;
     }
 
     /**
@@ -128,7 +133,8 @@ public class QueryHederaOperations implements HederaOperations {
      */
     @Override
     public long valueInTinybars(final long tinycents) {
-        throw new AssertionError("Not implemented");
+        // TODO - implement correctly
+        return 1L;
     }
 
     /**

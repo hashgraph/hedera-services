@@ -20,7 +20,6 @@ import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.serialize.KeySerializer;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
 public class BenchmarkKeySerializer implements KeySerializer<BenchmarkKey> {

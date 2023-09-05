@@ -45,9 +45,8 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.FilesConfig;
-import com.hederahashgraph.api.proto.java.Duration;
+import com.hedera.node.config.data.LedgerConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -127,7 +126,7 @@ public class FileUpdateHandler implements TransactionHandler {
         validateFalse(file.keys() == null, UNAUTHORIZED);
 
         validateMaybeNewMemo(handleContext.attributeValidator(), fileUpdate);
-        //        validateExpirationTime(fileUpdate, file, handleContext);
+        validateAutoRenew(fileUpdate, handleContext);
 
         // Now we apply the mutations to a builder
         final var builder = new File.Builder();
@@ -189,19 +188,18 @@ public class FileUpdateHandler implements TransactionHandler {
         }
     }
 
-    private void validateExpirationTime(FileUpdateTransactionBody op, File file, HandleContext handleContext) {
+    private void validateAutoRenew(FileUpdateTransactionBody op, HandleContext handleContext) {
         if (op.hasExpirationTime()) {
-            final var effectiveDuration = Duration.newBuilder()
-                    .setSeconds(op.expirationTime().seconds() - file.expirationSecond())
-                    .build();
-            final var maxEntityLifetime = handleContext
-                    .configuration()
-                    .getConfigData(EntitiesConfig.class)
-                    .maxLifetime();
-            final var now = handleContext.consensusNow().getEpochSecond();
-            final var expiryGivenMaxLifetime = now + maxEntityLifetime;
+            final long startSeconds =
+                    handleContext.body().transactionID().transactionValidStart().seconds();
+            final long effectiveDuration = op.expirationTime().seconds() - startSeconds;
+
+            final var entityConfig = handleContext.configuration().getConfigData(LedgerConfig.class);
+            final long maxEntityLifetime = entityConfig.autoRenewPeriodMaxDuration();
+            final long minEntityLifetime = entityConfig.autoRenewPeriodMinDuration();
+
             validateTrue(
-                    effectiveDuration.getSeconds() > now && effectiveDuration.getSeconds() <= expiryGivenMaxLifetime,
+                    effectiveDuration >= minEntityLifetime && effectiveDuration <= maxEntityLifetime,
                     AUTORENEW_DURATION_NOT_IN_RANGE);
         }
     }

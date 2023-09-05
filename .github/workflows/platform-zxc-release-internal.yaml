@@ -92,7 +92,7 @@ jobs:
     runs-on: [self-hosted, Linux, medium, ephemeral]
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4.0.0
         with:
           submodules: true
           token: ${{ secrets.access-token }}
@@ -145,7 +145,7 @@ jobs:
 
       - name: Authenticate to Google Cloud
         id: google-auth
-        uses: google-github-actions/auth@v1
+        uses: google-github-actions/auth@35b0e87d162680511bf346c299f71c9c5c379033 # v1.1.1
         if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
         with:
           workload_identity_provider: 'projects/229164983194/locations/global/workloadIdentityPools/registry-identity-pool/providers/gh-provider'
@@ -153,16 +153,16 @@ jobs:
 
       - name: Setup Google Cloud SDK
         if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
-        uses: google-github-actions/setup-gcloud@v1
+        uses: google-github-actions/setup-gcloud@e30db14379863a8c79331b04a9969f4c1e225e0b # v1.1.1
 
       - name: Setup Java
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@cd89f46ac9d01407894225f350157564c9c7cee2 # v3.12.0
         with:
           distribution: ${{ inputs.java-distribution }}
           java-version: ${{ inputs.java-version }}
 
       - name: Setup Gradle
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
         with:
           build-root-directory: platform-sdk
           gradle-version: ${{ inputs.gradle-version }}
@@ -204,51 +204,45 @@ jobs:
           echo "number=${{ inputs.new-version }}" >> "${GITHUB_OUTPUT}"
 
       - name: Apply Version Number Update (Explicit)
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
         if: ${{ (inputs.version-policy == 'uniform-explicit' || inputs.version-policy == 'early-access-explicit') && !cancelled() && !failure() }}
         with:
-          build-root-directory: platform-sdk
           gradle-version: ${{ inputs.gradle-version }}
           arguments: versionAsSpecified --scan -PnewVersion=${{ steps.verify-explicit-version.outputs.number }}
 
       - name: Update Version Numbers (Commit Locked)
         if: ${{ inputs.version-policy == 'commit-locked' && !cancelled() && !failure() }}
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
         with:
-          build-root-directory: platform-sdk
           gradle-version: ${{ inputs.gradle-version }}
           arguments: versionAsPrefixedCommit --scan -PcommitPrefix=${{ inputs.prerelease-prefix }}
 
       - name: Update Version Numbers (Snapshot Locked)
         if: ${{ inputs.version-policy == 'snapshot-locked' && !cancelled() && !failure() }}
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
         with:
-          build-root-directory: platform-sdk
           gradle-version: ${{ inputs.gradle-version }}
           arguments: versionAsSnapshot --scan
 
       - name: Version Report
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
         with:
-          build-root-directory: platform-sdk
           gradle-version: ${{ inputs.gradle-version }}
           arguments: githubVersionSummary --scan
 
       - name: Gradle Assemble
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
         if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
         with:
-          build-root-directory: platform-sdk
           gradle-version: ${{ inputs.gradle-version }}
-          arguments: assemble --scan --parallel
+          arguments: -p platform-sdk assemble --scan --parallel
 
       - name: Gradle Deploy
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
         if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
         with:
-          build-root-directory: platform-sdk
           gradle-version: ${{ inputs.gradle-version }}
-          arguments: release-${{ inputs.deployment-profile }} --scan
+          arguments: -p platform-sdk release${{ inputs.deployment-profile }} --scan
 
       - name: Commit Version Changes
         uses: EndBug/add-and-commit@v9

@@ -19,6 +19,7 @@ package com.hedera.services.bdd.suites.file;
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -49,6 +50,7 @@ public class FetchSystemFiles extends HapiSuite {
     }
 
     /** Fetches the system files from a running network and saves them to the local file system. */
+    @HapiTest
     private HapiSpec fetchFiles() {
         return customHapiSpec("FetchFiles")
                 .withProperties(Map.of(

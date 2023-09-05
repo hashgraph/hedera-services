@@ -20,7 +20,6 @@ import static com.swirlds.common.io.utility.FileUtils.deleteDirectory;
 import static com.swirlds.common.merkle.iterators.MerkleIterationOrder.BREADTH_FIRST;
 import static com.swirlds.test.framework.ResourceLoader.loadLog4jContext;
 import static com.swirlds.virtualmap.VirtualMapTestUtils.createMap;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -62,26 +61,20 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.lang.management.ManagementFactory;
-import java.lang.management.ThreadInfo;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
-import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Tags;
@@ -91,7 +84,6 @@ import org.junit.jupiter.api.io.TempDir;
 @SuppressWarnings("ALL")
 class VirtualMapTests extends VirtualTestBase {
 
-    public static final String ATTACH_LISTENER_THREAD_NAME = "Attach Listener";
     /**
      * Temporary directory provided by JUnit
      */

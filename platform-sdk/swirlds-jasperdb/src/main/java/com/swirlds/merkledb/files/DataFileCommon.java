@@ -192,7 +192,7 @@ public final class DataFileCommon {
                 + "_"
                 + DATE_FORMAT.format(creationInstant)
                 + "_"
-                + ALIGNED_RIGHT.pad(Integer.toString(index), '_', PRINTED_INDEX_FIELD_WIDTH)
+                + ALIGNED_RIGHT.pad(Integer.toString(index), '_', PRINTED_INDEX_FIELD_WIDTH, false)
                 + extension);
     }
 

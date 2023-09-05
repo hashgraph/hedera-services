@@ -28,17 +28,17 @@ open module com.swirlds.merkledb {
     exports com.swirlds.merkledb.serialize;
     exports com.swirlds.merkledb.utilities;
 
+    requires transitive com.swirlds.common;
+    requires transitive com.swirlds.config.api;
+    requires transitive com.swirlds.virtualmap;
+    requires com.hedera.pbj.runtime;
     requires com.swirlds.base;
-    requires com.swirlds.common;
     requires com.swirlds.logging;
-    requires com.swirlds.virtualmap;
-    requires org.eclipse.collections.impl;
-    requires org.eclipse.collections.api;
-    requires org.apache.logging.log4j;
     requires java.management;
     requires jdk.management;
     requires jdk.unsupported;
-    requires com.swirlds.config;
-    requires com.hedera.pbj.runtime;
+    requires org.apache.logging.log4j;
+    requires org.eclipse.collections.api;
+    requires org.eclipse.collections.impl;
     requires static com.github.spotbugs.annotations;
 }

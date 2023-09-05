@@ -22,6 +22,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
@@ -34,10 +35,8 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * Some utilities related to synthetic transaction bodies.
  */
 public class SynthTxnUtils {
-    // This key can no longer be an empty key list as it fails validation.  Use this key for now
-    public static final Key IMMUTABILITY_SENTINEL_KEY = Key.newBuilder()
-            .contractID(ContractID.newBuilder().contractNum(1).build())
-            .build();
+    public static final Key IMMUTABILITY_SENTINEL_KEY =
+            Key.newBuilder().keyList(KeyList.DEFAULT).build();
 
     public static final long THREE_MONTHS_IN_SECONDS = 7776000L;
     public static final Duration DEFAULT_AUTO_RENEW_PERIOD =

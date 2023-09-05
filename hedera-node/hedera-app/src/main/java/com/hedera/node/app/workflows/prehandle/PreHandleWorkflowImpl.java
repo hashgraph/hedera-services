@@ -17,6 +17,7 @@
 package com.hedera.node.app.workflows.prehandle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hedera.node.app.spi.HapiUtils.isHollow;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
@@ -158,19 +159,20 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         // Also register this txID as having been seen (we don't actually do deduplication in the pre-handle because
         // deduplication needs to be done deterministically, but we will keep track of the fact that we have seen this
         // transaction ID, so we can give proper results in the different receipt queries)
-        final var txId = txInfo.txBody().transactionID();
-        assert txId != null : "TransactionID should never be null, transactionChecker forbids it";
-        deduplicationCache.add(txId);
+        deduplicationCache.add(txInfo.transactionID());
 
         // 2. Get Payer Account
-        final var payer = txId.accountID();
-        assert payer != null : "Payer account cannot be null, transactionChecker forbids it";
+        final var payer = txInfo.payerID();
         final var payerAccount = accountStore.getAccountById(payer);
         if (payerAccount == null) {
             // If the payer account doesn't exist, then we cannot gather signatures for it, and will need to do
             // so later during the handle phase. Technically, we could still try to gather and verify the other
             // signatures, but that might be tricky and complicated with little gain. So just throw.
             return preHandleFailure(creator, null, PAYER_ACCOUNT_NOT_FOUND, txInfo, null, null);
+        } else if (payerAccount.deleted()) {
+            // this check is not guaranteed, it should be checked again in handle phase. If the payer account is
+            // deleted, we skip the signature verification.
+            return preHandleFailure(creator, null, PAYER_ACCOUNT_DELETED, txInfo, null, null);
         }
 
         // Bootstrap the expanded signature pairs by grabbing all prefixes that are "full" keys already

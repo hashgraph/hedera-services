@@ -49,6 +49,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELE
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
@@ -122,6 +123,7 @@ public class Hip17UnhappyTokensSuite extends HapiSuite {
                 );
     }
 
+    @HapiTest
     private HapiSpec canStillGetNftInfoWhenDeleted() {
         return defaultHapiSpec("canStillGetNftInfoWhenDeleted")
                 .given(
@@ -201,6 +203,7 @@ public class Hip17UnhappyTokensSuite extends HapiSuite {
                 .then(tokenFreeze(NFTdeleted, TOKEN_TREASURY).hasPrecheck(OK).hasKnownStatus(TOKEN_WAS_DELETED));
     }
 
+    @HapiTest
     private HapiSpec cannotDissociateNftWhenDeleted() {
         return defaultHapiSpec("cannotDissociateNftWhenDeleted")
                 .given(
