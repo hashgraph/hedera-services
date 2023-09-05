@@ -211,17 +211,6 @@ class QueryWorkflowImplTest extends AppTestBase {
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
-                        submissionManager,
-                        queryChecker,
-                        ingestChecker,
-                        dispatcher,
-                        queryParser,
-                        configProvider,
-                        recordCache,
-                        hapiThrottling))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new QueryWorkflowImpl(
-                        stateAccessor,
                         null,
                         queryChecker,
                         ingestChecker,
@@ -474,12 +463,11 @@ class QueryWorkflowImplTest extends AppTestBase {
         Assertions.assertThat(header.cost()).isZero();
     }
 
-    // TODO: fix test
     @Test
     void testThrottleFails() throws IOException {
         // given
-        //        when(throttleAccumulator.shouldThrottleQuery(eq(HederaFunctionality.FILE_GET_INFO), any()))
-        //                .thenReturn(true);
+        when(hapiThrottling.shouldThrottleQuery(any(), eq(HederaFunctionality.FILE_GET_INFO)))
+                .thenReturn(true);
         final var responseBuffer = newEmptyBuffer();
 
         // when

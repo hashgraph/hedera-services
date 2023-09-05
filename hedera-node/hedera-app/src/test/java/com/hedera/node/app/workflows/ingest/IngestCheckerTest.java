@@ -17,6 +17,7 @@
 package com.hedera.node.app.workflows.ingest;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
@@ -105,6 +106,7 @@ class IngestCheckerTest extends AppTestBase {
 
     private DeduplicationCache deduplicationCache;
 
+    private TransactionInfo transactionInfo;
     private TransactionBody txBody;
     private Transaction tx;
 
@@ -130,7 +132,7 @@ class IngestCheckerTest extends AppTestBase {
                 .signedTransactionBytes(asBytes(SignedTransaction.PROTOBUF, signedTx))
                 .build();
 
-        final var transactionInfo = new TransactionInfo(
+        transactionInfo = new TransactionInfo(
                 tx, txBody, MOCK_SIGNATURE_MAP, tx.signedTransactionBytes(), HederaFunctionality.UNCHECKED_SUBMIT);
         when(transactionChecker.check(tx)).thenReturn(transactionInfo);
 
@@ -248,35 +250,35 @@ class IngestCheckerTest extends AppTestBase {
         }
     }
 
-    // TODO: fix test
-    //    @Nested
-    //    @DisplayName("4. Check throttles")
-    //    class ThrottleTests {
-    //        @Test
-    //        @DisplayName("When the transaction is throttled, the transaction should be rejected")
-    //        void testThrottleFails() {
-    //            // Given a throttle on CONSENSUS_CREATE_TOPIC transactions (i.e. it is time to throttle)
-    //            when(throttleAccumulator.shouldThrottle(eq(txBody))).thenReturn(true);
-    //
-    //            // When the transaction is submitted
-    //            assertThatThrownBy(() -> subject.runAllChecks(state, tx))
-    //                    .isInstanceOf(PreCheckException.class)
-    //                    .hasFieldOrPropertyWithValue("responseCode", BUSY);
-    //        }
-    //
-    //        @Test
-    //        @DisplayName("If some random exception is thrown from ThrottleAccumulator, the exception is bubbled up")
-    //        void randomException() {
-    //            // Given a ThrottleAccumulator that will throw a RuntimeException
-    //            when(throttleAccumulator.shouldThrottle(eq(txBody)))
-    //                    .thenThrow(new RuntimeException("shouldThrottle exception"));
-    //
-    //            // When the transaction is submitted, then the exception is bubbled up
-    //            assertThatThrownBy(() -> subject.runAllChecks(state, tx))
-    //                    .isInstanceOf(RuntimeException.class)
-    //                    .hasMessageContaining("shouldThrottle exception");
-    //        }
-    //    }
+    @Nested
+    @DisplayName("4. Check throttles")
+    class ThrottleTests {
+
+        @Test
+        @DisplayName("When the transaction is throttled, the transaction should be rejected")
+        void testThrottleFails() {
+            // Given a throttle on CONSENSUS_CREATE_TOPIC transactions (i.e. it is time to throttle)
+            when(hapiThrottling.shouldThrottle(transactionInfo, state)).thenReturn(true);
+
+            // When the transaction is submitted
+            assertThatThrownBy(() -> subject.runAllChecks(state, tx))
+                    .isInstanceOf(PreCheckException.class)
+                    .hasFieldOrPropertyWithValue("responseCode", BUSY);
+        }
+
+        @Test
+        @DisplayName("If some random exception is thrown from ThrottleAccumulator, the exception is bubbled up")
+        void randomException() {
+            // Given a ThrottleAccumulator that will throw a RuntimeException
+            when(hapiThrottling.shouldThrottle(transactionInfo, state))
+                    .thenThrow(new RuntimeException("shouldThrottle exception"));
+
+            // When the transaction is submitted, then the exception is bubbled up
+            assertThatThrownBy(() -> subject.runAllChecks(state, tx))
+                    .isInstanceOf(RuntimeException.class)
+                    .hasMessageContaining("shouldThrottle exception");
+        }
+    }
 
     @Nested
     @DisplayName("5.a Check account status")
