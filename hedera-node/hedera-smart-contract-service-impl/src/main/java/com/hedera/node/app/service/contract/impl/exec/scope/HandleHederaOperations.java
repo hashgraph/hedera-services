@@ -295,7 +295,7 @@ public class HandleHederaOperations implements HederaOperations {
         final var recordBuilder = context.dispatchChildTransaction(
                 TransactionBody.newBuilder().cryptoCreateAccount(body).build(),
                 CryptoCreateRecordBuilder.class,
-                key -> true);
+                key -> false);
         // TODO - switch OK to SUCCESS once some status-setting responsibilities are clarified
         if (recordBuilder.status() != OK && recordBuilder.status() != SUCCESS) {
             throw new AssertionError("Not implemented");

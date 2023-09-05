@@ -30,12 +30,12 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeAccumulatorImpl;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.records.BlockRecordManager;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.records.ParentRecordFinalizer;
@@ -68,7 +68,6 @@ import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfiguration;
-import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.system.Round;
@@ -274,7 +273,7 @@ public class HandleWorkflow {
                 transactionBytes = transaction.signedTransactionBytes();
             } else {
                 // in this case, recorder hash the transaction itself, not its bodyBytes.
-                transactionBytes = Bytes.wrap(PbjConverter.fromPbj(transaction).toByteArray());
+                transactionBytes = Transaction.PROTOBUF.toBytes(transaction);
             }
 
             // Initialize record builder list
@@ -316,15 +315,14 @@ public class HandleWorkflow {
             final var preCheckResult = runPreChecks(consensusNow, verifier, preHandleResult);
 
             networkUtilizationManager.resetFrom(state);
-            final var isPayerThrottleExempt = throttleExempt(payer, configuration);
-            if (!isPayerThrottleExempt) {
-                networkUtilizationManager.trackTxn(transactionInfo, consensusNow, state);
-            }
 
             if (preCheckResult.status() != SO_FAR_SO_GOOD) {
                 final var sigVerificationFailed = preCheckResult.responseCodeEnum() == INVALID_SIGNATURE;
                 if (sigVerificationFailed) {
                     // If the signature status isn't ok, only work done will be fee charging
+                    // Note this is how it's implemented in mono (TopLevelTransition.java#L93), in future we may want to
+                    // not trackFeePayments() only for INVALID_SIGNATURE but for any preCheckResult.status() !=
+                    // SO_FAR_SO_GOOD
                     networkUtilizationManager.trackFeePayments(consensusNow, state);
                 }
 
@@ -336,13 +334,13 @@ public class HandleWorkflow {
                 recordBuilder.status(preCheckResult.responseCodeEnum());
 
             } else {
+                networkUtilizationManager.trackTxn(transactionInfo, consensusNow, state);
                 feeAccumulator.charge(payer, fees);
                 try {
-                    if (!isPayerThrottleExempt && networkUtilizationManager.wasLastTxnGasThrottled()) {
-                        // Refund the service fees already charged to the payer, because the user-submitted transaction
-                        // was fully valid but network capacity was unavailable to satisfy it.
-                        final var serviceFee = new Fees(0L, 0L, fees.serviceFee());
-                        feeAccumulator.refund(payer, serviceFee);
+                    if (networkUtilizationManager.wasLastTxnGasThrottled()) {
+                        // Don't charge the payer the service fee component, because the user-submitted transaction
+                        // was fully valid but network capacity was unavailable to satisfy it
+                        fees = new Fees(fees.nodeFee(), fees.networkFee(), 0L);
                         throw new HandleException(CONSENSUS_GAS_EXHAUSTED);
                     }
 
@@ -357,7 +355,7 @@ public class HandleWorkflow {
                     dispatcher.dispatchHandle(context);
                     recordBuilder.status(SUCCESS);
 
-                    // TODO: after transaction is successfully handled update the throttles and congestion multipliers
+                    // TODO: after transaction is successfully handled update the gas throttle by leaking the unused gas
                     //                    if (isGasThrottled(op) && txnCtx.hasContractResult()) {
                     //                        final var gasUsed = txnCtx.getGasUsedForContractTxn();
                     //                        gasUsedThisConsSec += gasUsed;
@@ -398,13 +396,6 @@ public class HandleWorkflow {
         blockRecordManager.endUserTransaction(recordListResult.recordStream(), state);
 
         return txBody;
-    }
-
-    private boolean throttleExempt(@NonNull AccountID accountID, Configuration configuration) {
-        final var maxThrottleExemptNum =
-                configuration.getConfigData(AccountsConfig.class).lastThrottleExempt();
-        final var accountNum = accountID.accountNum();
-        return 1L <= accountNum && accountNum <= maxThrottleExemptNum;
     }
 
     @NonNull
