@@ -17,12 +17,3 @@
 plugins { id("com.hedera.hashgraph.root") }
 
 description = "Hedera Services Node"
-
-sonarqube.properties {
-    property("sonar.projectKey", "com.hedera.hashgraph:hedera-services")
-    property("sonar.projectName", "Hedera Services")
-    property(
-        "sonar.projectDescription",
-        "Hedera Services (crypto, file, contract, consensus) on the Platform"
-    )
-}
