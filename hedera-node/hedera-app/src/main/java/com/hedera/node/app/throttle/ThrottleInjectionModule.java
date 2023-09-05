@@ -23,7 +23,6 @@ import com.hedera.node.app.service.mono.fees.congestion.ThrottleMultiplierSource
 import com.hedera.node.app.throttle.impl.NetworkUtilizationManagerImpl;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.FeesConfig;
-import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -35,10 +34,6 @@ import org.apache.logging.log4j.Logger;
 @Module
 public interface ThrottleInjectionModule {
     Logger log = LogManager.getLogger(ThrottleInjectionModule.class);
-
-    @Binds
-    @Singleton
-    ThrottleAccumulator bindThrottleAccumulator(ThrottleAccumulatorImpl throttleAccumulator);
 
     /** Provides an implementation of the {@link com.hedera.node.app.throttle.NetworkUtilizationManager}. */
     @Provides
