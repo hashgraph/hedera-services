@@ -204,12 +204,7 @@ public class HandleWorkflow {
         final Instant consensusNow = platformTxn.getConsensusTimestamp();
 
         // handle user transaction
-        final var txBody = handleUserTransaction(consensusNow, state, platformEvent, creator, platformTxn);
-
-        // Notify responsible facility if system-file was uploaded
-        if (txBody != null) {
-            systemFileUpdateFacility.handleTxBody(state, txBody);
-        }
+        handleUserTransaction(consensusNow, state, platformEvent, creator, platformTxn);
 
         // TODO: handle long scheduled transactions
 
@@ -217,8 +212,7 @@ public class HandleWorkflow {
         // TODO: and have their own start/end. So system transactions are handled like separate user transactions.
     }
 
-    @Nullable
-    private TransactionBody handleUserTransaction(
+    private void handleUserTransaction(
             @NonNull final Instant consensusNow,
             @NonNull final HederaState state,
             @NonNull final ConsensusEvent platformEvent,
@@ -258,7 +252,7 @@ public class HandleWorkflow {
             if (transactionInfo == null) {
                 // FUTURE: Charge node generic penalty, set values in record builder, and remove log statement
                 logger.error("Non-parsable transaction from creator {}", creator);
-                return null;
+                return;
             }
 
             // Get the parsed data
@@ -326,6 +320,10 @@ public class HandleWorkflow {
                     // Dispatch the transaction to the handler
                     dispatcher.dispatchHandle(context);
                     recordBuilder.status(SUCCESS);
+
+                    // Notify responsible facility if system-file was uploaded
+                    systemFileUpdateFacility.handleTxBody(stack, txBody);
+
                 } catch (final HandleException e) {
                     rollback(e.getStatus(), stack, recordListBuilder);
                     feeAccumulator.charge(payer, fees);
@@ -352,8 +350,6 @@ public class HandleWorkflow {
                 recordListResult.userTransactionRecord().transactionRecord(),
                 consensusNow);
         blockRecordManager.endUserTransaction(recordListResult.recordStream(), state);
-
-        return txBody;
     }
 
     @NonNull

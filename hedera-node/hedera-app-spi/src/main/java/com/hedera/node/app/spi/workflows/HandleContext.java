@@ -20,7 +20,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.spi.exchangerate.ExchangeRateInfo;
+import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.info.NetworkInfo;
@@ -134,9 +134,9 @@ public interface HandleContext {
     FeeAccumulator feeAccumulator();
 
     /**
-     * Gets a {@link ExchangeRateManager} which provides information about the current exchange rate from .
+     * Gets a {@link ExchangeRateInfo} which provides information about the current exchange rate.
      *
-     * @return The {@link FeeAccumulator} to use.
+     * @return The {@link ExchangeRateInfo} .
      */
     @NonNull
     ExchangeRateInfo exchangeRateInfo();

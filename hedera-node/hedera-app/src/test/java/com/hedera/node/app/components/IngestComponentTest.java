@@ -89,7 +89,7 @@ class IngestComponentTest {
 
         final var configProvider = new ConfigProviderImpl(false);
         final var throttleManager = new ThrottleManager();
-        final var exchangeRateManager = new ExchangeRateManager();
+        final var exchangeRateManager = new ExchangeRateManager(configProvider);
         app = DaggerHederaInjectionComponent.builder()
                 .initTrigger(InitTrigger.GENESIS)
                 .platform(platform)

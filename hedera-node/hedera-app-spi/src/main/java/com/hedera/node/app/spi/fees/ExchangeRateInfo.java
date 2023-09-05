@@ -14,23 +14,23 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.exchangerate;
+package com.hedera.node.app.spi.fees;
 
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 
-/**
- * Interface for exchange rate information.  Used to expose some of the functionality of the ExchangeRateManager
- */
 public interface ExchangeRateInfo {
+
     /**
-     * Gets the current {@link ExchangeRateSet}
+     * Gets the current {@link ExchangeRateSet}.
+     *
      * @return The current {@link ExchangeRateSet}.
      */
     @NonNull
-    public ExchangeRateSet exchangeRates();
+    ExchangeRateSet exchangeRates();
+
     /**
      * Gets the {@link ExchangeRate} that should be used as of the given consensus time.
      *
@@ -39,5 +39,5 @@ public interface ExchangeRateInfo {
      * @return The {@link ExchangeRate} that should be used as of the given consensus time.
      */
     @NonNull
-    public ExchangeRate activeRate(@NonNull final Instant consensusTime);
+    ExchangeRate activeRate(@NonNull final Instant consensusTime);
 }

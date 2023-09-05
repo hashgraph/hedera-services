@@ -31,7 +31,7 @@ import com.hedera.node.app.service.contract.impl.exec.scope.HandleSystemContract
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils;
 import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.ResultStatus;
-import com.hedera.node.app.spi.exchangerate.ExchangeRateInfo;
+import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;

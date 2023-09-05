@@ -115,7 +115,6 @@ public class TokenAssociationSpecs extends HapiSuite {
                 .then(tokenAssociate(DEFAULT_PAYER, "0.0.0").hasKnownStatus(INVALID_TOKEN_ID));
     }
 
-    @HapiTest
     public HapiSpec associatedContractsMustHaveAdminKeys() {
         String misc = "someToken";
         String contract = "defaultContract";
