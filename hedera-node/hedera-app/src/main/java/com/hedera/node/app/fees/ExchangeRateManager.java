@@ -21,6 +21,7 @@ import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.node.app.spi.exchangerate.ExchangeRateInfo;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.math.BigInteger;
 import java.time.Instant;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -130,5 +131,26 @@ public final class ExchangeRateManager implements ExchangeRateInfo {
     @NonNull
     public ExchangeRate activeRate(@NonNull final Instant consensusTime) {
         return consensusTime.getEpochSecond() > currentRateExpirationSeconds ? nextRate : currentRate;
+    }
+
+    /**
+     * Converts tinybars to tiny cents using the exchange rate at a given time.
+     *
+     * @param amount The amount in tiny cents.
+     * @param consensusTime The consensus time to use for the exchange rate.
+     * @return The amount in tinybars.
+     */
+    public long getTinybarsFromTinyCents(final long amount, @NonNull final Instant consensusTime) {
+        final var rate = activeRate(consensusTime);
+        return getAFromB(amount, rate.hbarEquiv(), rate.centEquiv());
+    }
+
+    private static long getAFromB(final long bAmount, final int aEquiv, final int bEquiv) {
+        final var aMultiplier = BigInteger.valueOf(aEquiv);
+        final var bDivisor = BigInteger.valueOf(bEquiv);
+        return BigInteger.valueOf(bAmount)
+                .multiply(aMultiplier)
+                .divide(bDivisor)
+                .longValueExact();
     }
 }

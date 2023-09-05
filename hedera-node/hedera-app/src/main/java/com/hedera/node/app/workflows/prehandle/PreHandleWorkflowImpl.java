@@ -159,13 +159,10 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         // Also register this txID as having been seen (we don't actually do deduplication in the pre-handle because
         // deduplication needs to be done deterministically, but we will keep track of the fact that we have seen this
         // transaction ID, so we can give proper results in the different receipt queries)
-        final var txId = txInfo.txBody().transactionID();
-        assert txId != null : "TransactionID should never be null, transactionChecker forbids it";
-        deduplicationCache.add(txId);
+        deduplicationCache.add(txInfo.transactionID());
 
         // 2. Get Payer Account
-        final var payer = txId.accountID();
-        assert payer != null : "Payer account cannot be null, transactionChecker forbids it";
+        final var payer = txInfo.payerID();
         final var payerAccount = accountStore.getAccountById(payer);
         if (payerAccount == null) {
             // If the payer account doesn't exist, then we cannot gather signatures for it, and will need to do
