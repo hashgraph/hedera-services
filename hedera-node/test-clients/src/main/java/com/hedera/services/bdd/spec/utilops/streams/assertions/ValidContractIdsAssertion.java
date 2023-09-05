@@ -42,7 +42,9 @@ public class ValidContractIdsAssertion implements RecordStreamAssertion {
                 // No-op
             }
         }
-        return true;
+        // This validator never officially passes until the end of the test (i.e., it
+        // should run on every sidecar record)
+        return false;
     }
 
     private void validateStateChangeIds(List<ContractStateChange> stateChanges) {
@@ -81,6 +83,11 @@ public class ValidContractIdsAssertion implements RecordStreamAssertion {
                     + String.format("%d.%d.%d", id.getShardNum(), id.getRealmNum(), id.getContractNum())
                     + " is not valid");
         }
+    }
+
+    @Override
+    public String toString() {
+        return this.getClass().getSimpleName();
     }
 
     private void assertValid(AccountID id) {
