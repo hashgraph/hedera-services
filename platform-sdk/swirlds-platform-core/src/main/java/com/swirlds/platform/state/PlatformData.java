@@ -486,7 +486,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
                 .addRow("Epoch hash", epochHash == null ? "null" : epochHash.toMnemonic())
                 .addRow("Min gen info hash code", minGenInfo == null ? "null" : minGenInfo.hashCode())
                 .addRow("Events hash code", Arrays.hashCode(events))
-                // TODO add snapshot info
+                .addRow("Snapshot hash code", snapshot == null ? "null" : snapshot.hashCode())
                 .render();
 
         // the unabbreviated running hash is printed separately because it is too long to fit into the table, which

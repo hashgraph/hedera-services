@@ -635,13 +635,13 @@ public class SwirldsPlatform implements Platform, Startable {
                 this::loadReconnectState,
                 this::clearAllPipelines);
 
+        consensusRef.set(new ConsensusImpl(
+                platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
+                consensusMetrics,
+                getAddressBook()));
+
         if (startedFromGenesis) {
             initialMinimumGenerationNonAncient = 0;
-
-            consensusRef.set(new ConsensusImpl(
-                    platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
-                    consensusMetrics,
-                    getAddressBook()));
         } else {
             initialMinimumGenerationNonAncient =
                     initialState.getState().getPlatformState().getPlatformData().getMinimumGenerationNonAncient();
@@ -840,11 +840,7 @@ public class SwirldsPlatform implements Platform, Startable {
     private void loadStateIntoConsensusAndEventMapper(@NonNull final SignedState signedState) {
         Objects.requireNonNull(signedState);
 
-        consensusRef.set(new ConsensusImpl(
-                platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
-                consensusMetrics,
-                getAddressBook(),
-                signedState));
+        consensusRef.get().loadFromSignedState(signedState);
 
         if (signedState.getEvents() != null) {
             shadowGraph.initFromEvents(

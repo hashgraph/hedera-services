@@ -21,6 +21,7 @@ import com.swirlds.platform.internal.EventImpl;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
 
 /** Sorts consensus events into their consensus order */
 public class ConsensusSorter implements Comparator<EventImpl> {
@@ -49,8 +50,8 @@ public class ConsensusSorter implements Comparator<EventImpl> {
         }
 
         // subsort ties by extended median timestamp
-        final ArrayList<Instant> recTimes1 = e1.getRecTimes();
-        final ArrayList<Instant> recTimes2 = e2.getRecTimes();
+        final List<Instant> recTimes1 = e1.getRecTimes();
+        final List<Instant> recTimes2 = e2.getRecTimes();
 
         final int m1 = recTimes1.size() / 2; // middle position of e1 (the later of the two middles, if even length)
         final int m2 = recTimes2.size() / 2; // middle position of e2 (the later of the two middles, if even length)

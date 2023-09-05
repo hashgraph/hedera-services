@@ -32,6 +32,7 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.components.EventIntake;
+import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
@@ -98,7 +99,12 @@ class EventIntakeTest {
         when(consensus.getMaxRoundGeneration()).thenAnswer(i -> minNonAncient.get() + 1);
         when(consensus.addEvent(any(EventImpl.class), any(AddressBook.class))).thenAnswer(i -> {
             minNonAncient.set(20);
-            return List.of(new ConsensusRound(List.of(consEvent1, consEvent2), generations));
+            return List.of(new ConsensusRound(
+                    List.of(consEvent1, consEvent2),
+                    added,
+                    generations,
+                    mock(ConsensusSnapshot.class)
+            ));
         });
 
         // add an event

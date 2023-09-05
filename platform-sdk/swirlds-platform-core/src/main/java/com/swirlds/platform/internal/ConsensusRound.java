@@ -50,23 +50,14 @@ public class ConsensusRound implements Round {
     private final Instant consensusTimestamp;
 
     /**
-     * @deprecated this is currently used only by unit tests, should be removed before merging to
-     *     develop
-     */
-    @Deprecated(forRemoval = true)
-    public ConsensusRound(final List<EventImpl> consensusEvents, final GraphGenerations generations) {
-        throw new RuntimeException("dont use this");
-    }
-
-    /**
      * Same as {@link #ConsensusRound(List, EventImpl, GraphGenerations, long, ConsensusSnapshot)} but the
      * round number is derived from the snapshot
      */
     public ConsensusRound(
-            final List<EventImpl> consensusEvents,
+            @NonNull final List<EventImpl> consensusEvents,
             @NonNull final EventImpl keystoneEvent,
-            final GraphGenerations generations,
-            final ConsensusSnapshot snapshot) {
+            @NonNull final GraphGenerations generations,
+            @NonNull final ConsensusSnapshot snapshot) {
         this(consensusEvents, keystoneEvent, generations, snapshot.round(), snapshot);
     }
 

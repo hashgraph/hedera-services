@@ -154,15 +154,6 @@ public class EventImpl extends EventMetadata
         this(gossipEvent, new ConsensusData(), selfParent, otherParent);
     }
 
-    /*
-     * This constructor is used in {@link StreamEventParser} when parsing events from stream
-     *
-     * @param consensusEvent the consensus data to contain within this event
-     */
-    // public EventImpl(final DetailedConsensusEvent consensusEvent) {
-    //    buildFromConsensusEvent(consensusEvent);
-    // }
-
     public EventImpl(
             final BaseEventHashedData baseEventHashedData,
             final BaseEventUnhashedData baseEventUnhashedData,
@@ -178,10 +169,10 @@ public class EventImpl extends EventMetadata
             final EventImpl selfParent,
             final EventImpl otherParent) {
         super(selfParent, otherParent);
-        CommonUtils.throwArgNull(baseEvent, "baseEvent");
-        CommonUtils.throwArgNull(baseEvent.getHashedData(), "baseEventDataHashed");
-        CommonUtils.throwArgNull(baseEvent.getUnhashedData(), "baseEventDataNotHashed");
-        CommonUtils.throwArgNull(consensusData, "consensusData");
+        Objects.requireNonNull(baseEvent, "baseEvent");
+        Objects.requireNonNull(baseEvent.getHashedData(), "baseEventDataHashed");
+        Objects.requireNonNull(baseEvent.getUnhashedData(), "baseEventDataNotHashed");
+        Objects.requireNonNull(consensusData, "consensusData");
 
         this.baseEvent = baseEvent;
         this.consensusData = consensusData;

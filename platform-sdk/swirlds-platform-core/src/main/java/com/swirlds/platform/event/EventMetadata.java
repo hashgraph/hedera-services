@@ -23,6 +23,7 @@ import com.swirlds.platform.internal.EventImpl;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * A class that stores temporary data that is used while calculating consensus inside the platform.
@@ -74,7 +75,7 @@ public class EventMetadata implements Clearable {
     /**
      * the time at which each unique famous witness in the received round first received this event
      */
-    private ArrayList<Instant> recTimes;
+    private List<Instant> recTimes;
     /**
      * the created round of this event (max of parents', plus either 0 or 1. 1 if no parents. 0 if
      * neg infinity)
@@ -364,7 +365,7 @@ public class EventMetadata implements Clearable {
      * @return the time at which each unique famous witness in the received round first received
      *     this event
      */
-    public ArrayList<Instant> getRecTimes() {
+    public List<Instant> getRecTimes() {
         return recTimes;
     }
 
@@ -372,7 +373,7 @@ public class EventMetadata implements Clearable {
      * @param recTimes the time at which each unique famous witness in the received round first
      *     received this event
      */
-    public void setRecTimes(final ArrayList<Instant> recTimes) {
+    public void setRecTimes(final List<Instant> recTimes) {
         this.recTimes = recTimes;
     }
 

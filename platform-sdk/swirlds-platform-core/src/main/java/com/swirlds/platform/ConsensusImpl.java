@@ -138,7 +138,7 @@ import org.apache.logging.log4j.Logger;
  * adds up to more than 2/3 of the total stake", and "witnesses created by members whose stake is
  * more than 2/3 of the total".
  */
-public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus, LoadableFromSignedState {
+public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus {
 
     private static final Logger logger = LogManager.getLogger(ConsensusImpl.class);
     /** consensus configuration */
@@ -201,26 +201,6 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus,
         this.addressBook = addressBook;
 
         this.rounds = new ConsensusRounds(config, getStorage(), addressBook);
-    }
-
-    /**
-     * Constructs an object to keep track of elections and calculate consensus. It will read from
-     * the given state to process all its events, and to read and store its lastRoundReceived.
-     *
-     * @param config consensus configuration
-     * @param consensusMetrics metrics related to consensus
-     * @param addressBook the global address book, which never changes
-     * @param signedState a state to read from
-     * @deprecated use {@link #loadFromSignedState(SignedState)} on an existing instance
-     */
-    @Deprecated(forRemoval = true)
-    public ConsensusImpl(
-            final ConsensusConfig config,
-            final ConsensusMetrics consensusMetrics,
-            final AddressBook addressBook,
-            final SignedState signedState) {
-        this(config, consensusMetrics, addressBook);
-        loadFromSignedState(signedState);
     }
 
     @Override
@@ -703,7 +683,6 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus,
 
         return new ConsensusRound(
                 consensusEvents,
-                // TODO can this be null?
                 recentEvents.get(recentEvents.size() - 1),
                 new Generations(this),
                 new ConsensusSnapshot(
@@ -759,7 +738,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus,
         event.setRoundReceived(receivedRound);
         event.setConsensus(true);
 
-        final ArrayList<Instant> times = event.getRecTimes(); // list of when e1 first became ancestor of each ufw
+        final List<Instant> times = event.getRecTimes(); // list of when e1 first became ancestor of each ufw
         // sort ascending the received times. Used to find the median now, and the extended median
         // later.
         Collections.sort(times);
