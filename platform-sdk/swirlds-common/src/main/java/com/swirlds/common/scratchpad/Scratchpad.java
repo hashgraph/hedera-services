@@ -226,7 +226,7 @@ public class Scratchpad<K extends Enum<K> & ScratchpadType> {
      * is to delete all data associated with it.
      */
     public void clear() {
-        logger.info(STARTUP.getMarker(), "Setting scratchpad {}", id);
+        logger.info(STARTUP.getMarker(), "Clearing scratchpad {}", id);
         try (final Locked ignored = lock.lock()) {
             data.clear();
             FileUtils.deleteDirectory(scratchpadDirectory);
@@ -345,7 +345,7 @@ public class Scratchpad<K extends Enum<K> & ScratchpadType> {
         final List<Path> files = new ArrayList<>();
 
         try (final DirectoryStream<Path> stream = Files.newDirectoryStream(scratchpadDirectory)) {
-            for (final var path : stream) {
+            for (final Path path : stream) {
                 if (path.toString().endsWith(SCRATCHPAD_FILE_EXTENSION)) {
                     files.add(path);
                 }
