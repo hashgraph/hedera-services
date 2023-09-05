@@ -30,7 +30,7 @@ configurations.getByName("mainRuntimeClasspath") {
 
 gitProperties { keys = listOf("git.build.version", "git.commit.id", "git.commit.id.abbrev") }
 
-// === Remove the following once 'test' tasks are allowed to run in parallel ===
+// !!! Remove the following once 'test' tasks are allowed to run in parallel ===
 val allProjects =
     rootProject.subprojects
         .map { it.name }
@@ -55,4 +55,4 @@ if (myIndex > 0) {
         mustRunAfter(tasks.test)
         mustRunAfter(":$predecessorProject:hammerTest")
     }
-} // ======
+}
