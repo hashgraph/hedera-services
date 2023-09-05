@@ -36,12 +36,12 @@ import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenType;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.NotNull;
 
 @HapiTestSuite
 public class ContractBurnHTSSuite extends HapiSuite {
@@ -195,7 +195,7 @@ public class ContractBurnHTSSuite extends HapiSuite {
                 .then(getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN, 2));
     }
 
-    @NotNull
+    @NonNull
     private String getNestedContractAddress(String outerContract, HapiSpec spec) {
         return HapiPropertySource.asHexedSolidityAddress(spec.registry().getContractId(outerContract));
     }

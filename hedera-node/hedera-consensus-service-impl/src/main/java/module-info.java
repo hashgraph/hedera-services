@@ -9,8 +9,10 @@ module com.hedera.node.app.service.consensus.impl {
     requires transitive com.swirlds.merkle;
     requires transitive dagger;
     requires transitive javax.inject;
+    requires com.hedera.node.app.hapi.utils;
     requires com.hedera.node.config;
-    requires com.swirlds.config;
+    requires com.swirlds.config.api;
+    requires org.apache.logging.log4j;
     requires static com.github.spotbugs.annotations;
 
     provides com.hedera.node.app.service.consensus.ConsensusService with

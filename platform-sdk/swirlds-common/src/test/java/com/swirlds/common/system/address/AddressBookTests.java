@@ -331,7 +331,7 @@ class AddressBookTests {
     @DisplayName("Serialization Test")
     @Tag(TIME_CONSUMING)
     void serializationTest() throws IOException, ConstructableRegistryException {
-        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
+        ConstructableRegistry.getInstance().registerConstructables("com.swirlds.common.system");
 
         final AddressBook original = new RandomAddressBookGenerator(getRandomPrintSeed())
                 .setSize(100)
