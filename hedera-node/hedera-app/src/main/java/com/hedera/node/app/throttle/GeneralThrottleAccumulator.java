@@ -42,6 +42,7 @@ import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleBucket;
 import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleGroup;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.hapi.utils.throttles.GasLimitDeterministicThrottle;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.throttling.ThrottleReqsManager;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.state.HederaState;
@@ -112,6 +113,19 @@ public class GeneralThrottleAccumulator {
         final var configuration = configProvider.getConfiguration();
         final var shouldThrottleByGas =
                 configuration.getConfigData(ContractsConfig.class).throttleThrottleByGas();
+
+        // Note that by payer exempt from throttling we mean just that those transactions will not be throttled,
+        // such payer accounts neither impact the throttles nor are they impacted by them
+        // In the current mono-service implementation we have the same behavior, additionally it is
+        // possible that transaction can also be exempt from affecting congestion levels separate from throttle
+        // exemption
+        // but this is only possible for the case of triggered transactions which is not yet implemented (see
+        // MonoMultiplierSources.java)
+        final var payer = PbjConverter.toPbj(query.getAccountDetails().getAccountId());
+        final var isPayerThrottleExempt = throttleExempt(payer, configuration);
+        if (isPayerThrottleExempt) {
+            return false;
+        }
 
         resetLastAllowedUse();
         if (isGasThrottled(queryFunction)
