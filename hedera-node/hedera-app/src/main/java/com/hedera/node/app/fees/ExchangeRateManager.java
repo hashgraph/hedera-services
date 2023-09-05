@@ -232,4 +232,25 @@ public final class ExchangeRateManager {
                                 .signum()
                         >= 0;
     }
+
+    /**
+     * Converts tinybars to tiny cents using the exchange rate at a given time.
+     *
+     * @param amount The amount in tiny cents.
+     * @param consensusTime The consensus time to use for the exchange rate.
+     * @return The amount in tinybars.
+     */
+    public long getTinybarsFromTinyCents(final long amount, @NonNull final Instant consensusTime) {
+        final var rate = activeRate(consensusTime);
+        return getAFromB(amount, rate.hbarEquiv(), rate.centEquiv());
+    }
+
+    private static long getAFromB(final long bAmount, final int aEquiv, final int bEquiv) {
+        final var aMultiplier = BigInteger.valueOf(aEquiv);
+        final var bDivisor = BigInteger.valueOf(bEquiv);
+        return BigInteger.valueOf(bAmount)
+                .multiply(aMultiplier)
+                .divide(bDivisor)
+                .longValueExact();
+    }
 }

@@ -45,6 +45,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -106,6 +107,7 @@ public class TokenAssociationSpecs extends HapiSuite {
         return true;
     }
 
+    @HapiTest
     public HapiSpec handlesUseOfDefaultTokenId() {
         return defaultHapiSpec("HandlesUseOfDefaultTokenId")
                 .given()
@@ -113,6 +115,7 @@ public class TokenAssociationSpecs extends HapiSuite {
                 .then(tokenAssociate(DEFAULT_PAYER, "0.0.0").hasKnownStatus(INVALID_TOKEN_ID));
     }
 
+    @HapiTest
     public HapiSpec associatedContractsMustHaveAdminKeys() {
         String misc = "someToken";
         String contract = "defaultContract";

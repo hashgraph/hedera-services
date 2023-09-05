@@ -22,7 +22,6 @@ import com.hedera.node.app.components.IngestInjectionComponent;
 import com.hedera.node.app.components.QueryInjectionComponent;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
-import com.hedera.node.app.fees.FeesInjectionModule;
 import com.hedera.node.app.grpc.GrpcInjectionModule;
 import com.hedera.node.app.grpc.GrpcServerManager;
 import com.hedera.node.app.info.CurrentPlatformStatus;
@@ -37,7 +36,6 @@ import com.hedera.node.app.service.mono.utils.NamedDigestFactory;
 import com.hedera.node.app.service.mono.utils.SystemExits;
 import com.hedera.node.app.services.ServicesInjectionModule;
 import com.hedera.node.app.services.ServicesRegistry;
-import com.hedera.node.app.solvency.SolvencyInjectionModule;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.info.SelfNodeInfo;
 import com.hedera.node.app.spi.records.RecordCache;
@@ -75,14 +73,12 @@ import javax.inject.Singleton;
             ServicesInjectionModule.class,
             WorkflowsInjectionModule.class,
             HederaStateInjectionModule.class,
-            FeesInjectionModule.class,
             GrpcInjectionModule.class,
             MetricsInjectionModule.class,
             AuthorizerInjectionModule.class,
             InfoInjectionModule.class,
             BlockRecordInjectionModule.class,
             ThrottleInjectionModule.class,
-            SolvencyInjectionModule.class,
             PlatformModule.class
         })
 public interface HederaInjectionComponent {

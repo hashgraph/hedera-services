@@ -33,8 +33,10 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.authorization.Authorizer;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
@@ -85,6 +87,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
     private final Codec<Query> queryParser;
     private final ConfigProvider configProvider;
     private final RecordCache recordCache;
+    private final Authorizer authorizer;
     private final ExchangeRateManager exchangeRateManager;
 
     /**
@@ -100,6 +103,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
      * @param queryParser the {@link Codec} to parse a query
      * @param configProvider the {@link ConfigProvider} to get the current configuration
      * @param recordCache the {@link RecordCache}
+     * @param authorizer the {@link Authorizer} to check permissions and special privileges
      * @param exchangeRateManager the {@link ExchangeRateManager} to get the {@link ExchangeRateInfo}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
@@ -114,6 +118,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             @NonNull final Codec<Query> queryParser,
             @NonNull final ConfigProvider configProvider,
             @NonNull final RecordCache recordCache,
+            @NonNull final Authorizer authorizer,
             @NonNull final ExchangeRateManager exchangeRateManager) {
         this.stateAccessor = requireNonNull(stateAccessor, "stateAccessor must not be null");
         this.throttleAccumulator = requireNonNull(throttleAccumulator, "throttleAccumulator must not be null");
@@ -125,6 +130,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
         this.recordCache = requireNonNull(recordCache, "recordCache must not be null");
         this.exchangeRateManager = requireNonNull(exchangeRateManager, "exchangeRateManager must not be null");
+        this.authorizer = requireNonNull(authorizer, "authorizer must not be null");
     }
 
     @Override
@@ -171,12 +177,10 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
 
                 // 4.i Ingest checks
                 final var transactionInfo = ingestChecker.runAllChecks(state, allegedPayment);
-
-                // 4.ii Validate CryptoTransfer
-                queryChecker.validateCryptoTransfer(transactionInfo);
-
                 txBody = transactionInfo.txBody();
-                final var payer = txBody.transactionIDOrThrow().accountIDOrThrow();
+
+                // get payer
+                final var payerID = transactionInfo.payerID();
                 context = new QueryContextImpl(
                         state,
                         storeFactory,
@@ -184,20 +188,28 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                         configProvider.getConfiguration(),
                         recordCache,
                         exchangeRateManager,
-                        payer);
+                        payerID);
 
-                // 4.iii Check permissions
-                queryChecker.checkPermissions(payer, function);
+                // A super-user does not have to pay for a query and has all permissions
+                if (!authorizer.isSuperUser(payerID)) {
 
-                // 4.iv Calculate costs
-                fee = handler.computeFees(context).totalFee();
+                    // 4.ii Validate CryptoTransfer
+                    queryChecker.validateCryptoTransfer(transactionInfo);
 
-                // 4.v Check account balances
-                queryChecker.validateAccountBalances(payer, transactionInfo, fee);
+                    // 4.iii Check permissions
+                    queryChecker.checkPermissions(payerID, function);
 
-                // 4.vi Submit payment to platform
-                final var txBytes = PbjConverter.asWrappedBytes(Transaction.PROTOBUF, allegedPayment);
-                submissionManager.submit(txBody, txBytes);
+                    // 4.iv Calculate costs
+                    fee = handler.computeFees(context).totalFee();
+
+                    // 4.v Check account balances
+                    final var accountStore = storeFactory.getStore(ReadableAccountStore.class);
+                    queryChecker.validateAccountBalances(accountStore, transactionInfo, fee);
+
+                    // 4.vi Submit payment to platform
+                    final var txBytes = Transaction.PROTOBUF.toBytes(allegedPayment);
+                    submissionManager.submit(txBody, txBytes);
+                }
             } else {
                 if (RESTRICTED_FUNCTIONALITIES.contains(function)) {
                     throw new PreCheckException(NOT_SUPPORTED);
