@@ -198,6 +198,7 @@ public class CryptoCreateSuite extends HapiSuite {
                         sourcing(() -> getTxnRecord(creation).logged()));
     }
 
+    @HapiTest
     /* Prior to 0.13.0, a "canonical" CryptoCreate (one sig, 3 month auto-renew) cost 1¢. */
     private HapiSpec usdFeeAsExpected() {
         double preV13PriceUsd = 0.01;
@@ -265,10 +266,8 @@ public class CryptoCreateSuite extends HapiSuite {
                 .given()
                 .when()
                 .then(
-                        cryptoCreate("broken").autoRenewSecs(1L).hasPrecheckFrom(AUTORENEW_DURATION_NOT_IN_RANGE),
-                        cryptoCreate("alsoBroken")
-                                .entityMemo(ZERO_BYTE_MEMO)
-                                .hasPrecheckFrom(INVALID_ZERO_BYTE_IN_STRING));
+                        cryptoCreate("broken").autoRenewSecs(1L).hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE),
+                        cryptoCreate("alsoBroken").entityMemo(ZERO_BYTE_MEMO).hasPrecheck(INVALID_ZERO_BYTE_IN_STRING));
         // In modular code this error is thrown in handle, but it is fixed using dynamic property
         // spec.streamlinedIngestChecks
         // to accommodate error codes moved from Ingest to handle
