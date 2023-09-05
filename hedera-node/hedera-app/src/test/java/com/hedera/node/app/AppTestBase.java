@@ -147,6 +147,7 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
             .key(FAKE_ED25519_KEY_INFOS[0].publicKey())
             .declineReward(true)
             .build();
+
     protected final SelfNodeInfo selfNodeInfo = new SelfNodeInfoImpl(
             7,
             nodeSelfAccountId,

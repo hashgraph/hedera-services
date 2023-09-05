@@ -269,7 +269,6 @@ public class ContractCreateSuite extends HapiSuite {
                                 .has(contractWith().isDeleted())));
     }
 
-    @HapiTest
     private HapiSpec createEmptyConstructor() {
         return defaultHapiSpec("createEmptyConstructor")
                 .given(uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
@@ -309,7 +308,6 @@ public class ContractCreateSuite extends HapiSuite {
                         getAccountBalance(bBeneficiary).logged());
     }
 
-    @HapiTest
     private HapiSpec createFailsIfMissingSigs() {
         final var shape = listOf(SIMPLE, threshOf(2, 3), threshOf(1, 3));
         final var validSig = shape.signedWith(sigs(ON, sigs(ON, ON, OFF), sigs(OFF, OFF, ON)));
@@ -545,7 +543,6 @@ public class ContractCreateSuite extends HapiSuite {
                         contractListWithPropertiesInheritedFrom("createChildCallResult", 1, PARENT_INFO));
     }
 
-    @HapiTest
     HapiSpec newAccountsCanUsePureContractIdKey() {
         final var contract = "CreateTrivial";
         final var contractControlled = "contractControlled";
