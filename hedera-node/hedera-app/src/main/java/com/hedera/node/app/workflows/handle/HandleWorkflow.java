@@ -315,7 +315,7 @@ public class HandleWorkflow {
                     fees,
                     platformEvent.getCreatorId().id());
             if (validationResult.status() != SO_FAR_SO_GOOD) {
-                if (preHandleResult.status() == NODE_DUE_DILIGENCE_FAILURE) {
+                if (validationResult.status() == NODE_DUE_DILIGENCE_FAILURE) {
                     payer = creator.accountId();
                 }
                 final var penaltyFee = new Fees(fees.nodeFee(), fees.networkFee(), 0L);
