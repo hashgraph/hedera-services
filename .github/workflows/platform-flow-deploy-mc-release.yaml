@@ -52,7 +52,7 @@ jobs:
     runs-on: [self-hosted, Linux, medium, ephemeral]
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4.0.0
 
       - name: Check for Tag Existence
         id: tag
@@ -98,7 +98,7 @@ jobs:
     if: ${{ github.event.inputs.dry-run-enabled != 'true' }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4.0.0
         with:
           ref: ${{ github.ref_name }}
 
@@ -110,7 +110,7 @@ jobs:
 
 #      - name: Cache SDK Release Archives
 #        id: archive-cache
-#        uses: actions/cache@v3
+#        uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
 #        with:
 #          path: ~/sdk-archives
 #          key: v1-sdk-release-v${{ github.event.inputs.new-version }}-jdk${{ github.event.inputs.java-version }}-${{ runner.os }}-${{ runner.arch }}-ri${{ github.run_id }}-rn${{ github.run_number }}-ra${{ github.run_attempt }}
@@ -146,7 +146,7 @@ jobs:
 #          files: ${{ steps.sdk-archives.outputs.path }}/*
 
       - name: Send Slack Notification
-        uses: slackapi/slack-github-action@v1
+        uses: slackapi/slack-github-action@e28cf165c92ffef168d23c5c9000cffc8a25e117 # v1.24.0
         env:
           SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
           SLACK_WEBHOOK_URL: ${{ secrets.PLATFORM_SLACK_RELEASE_WEBHOOK }}
