@@ -23,6 +23,7 @@ import static com.swirlds.logging.LogMarker.STARTUP;
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
 import com.swirlds.base.time.Time;
+import com.swirlds.common.config.PathsConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.io.config.RecycleBinConfig;
 import com.swirlds.common.metrics.IntegerGauge;
@@ -97,9 +98,10 @@ public class RecycleBinImpl implements RecycleBin, Startable, Stoppable {
 
         final RecycleBinConfig recycleBinConfig = configuration.getConfigData(RecycleBinConfig.class);
         final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
+        final PathsConfig pathsConfig = configuration.getConfigData(PathsConfig.class);
 
         maximumFileAge = recycleBinConfig.maximumFileAge();
-        recycleBinPath = recycleBinConfig.getStorageLocation(stateConfig, selfId);
+        recycleBinPath = recycleBinConfig.getStorageLocation(stateConfig, pathsConfig, selfId);
         Files.createDirectories(recycleBinPath);
         topLevelRecycledFileCount = countRecycledFiles(recycleBinPath);
 

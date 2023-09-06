@@ -17,7 +17,6 @@
 package com.swirlds.platform.cli;
 
 import com.swirlds.cli.utility.AbstractCommand;
-import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.logging.LogMarker;
 import com.swirlds.platform.util.FileSigningUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -46,7 +45,7 @@ public abstract class SignCommand extends AbstractCommand {
      * <p>
      * Defaults to the current working directory
      */
-    private List<Path> pathsToSign = List.of(FileUtils.getAbsolutePath());
+    private List<Path> pathsToSign = List.of(Path.of("."));
 
     /**
      * The directory where signature files will be generated. Defaults to in-place signatures (null)

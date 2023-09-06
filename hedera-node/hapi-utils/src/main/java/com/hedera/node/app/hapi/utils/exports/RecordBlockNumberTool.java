@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.hapi.utils.exports;
 
-import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
-
 import com.hedera.services.stream.proto.RecordStreamFile;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -128,9 +126,7 @@ public class RecordBlockNumberTool {
         }
 
         final String logConfigPath = System.getProperty(LOG_CONFIG_PROPERTY);
-        final File logConfigFile = logConfigPath == null
-                ? getAbsolutePath().resolve(DEFAULT_LOG_CONFIG).toFile()
-                : new File(logConfigPath);
+        final File logConfigFile = logConfigPath == null ? new File(DEFAULT_LOG_CONFIG) : new File(logConfigPath);
         if (logConfigFile.exists()) {
             final LoggerContext context = (LoggerContext) LogManager.getContext(false);
             context.setConfigLocation(logConfigFile.toURI());

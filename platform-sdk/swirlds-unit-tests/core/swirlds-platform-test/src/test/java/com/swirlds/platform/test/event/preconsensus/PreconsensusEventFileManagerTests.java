@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.base.time.Time;
+import com.swirlds.common.config.PathsConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
@@ -805,10 +806,11 @@ class PreconsensusEventFileManagerTests {
             throws IOException {
 
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
+        final PathsConfig pathsConfig = platformContext.getConfiguration().getConfigData(PathsConfig.class);
         final RecycleBinConfig recycleBinConfig =
                 platformContext.getConfiguration().getConfigData(RecycleBinConfig.class);
 
-        final Path recycleBinDirectory = recycleBinConfig.getStorageLocation(stateConfig, new NodeId(0));
+        final Path recycleBinDirectory = recycleBinConfig.getStorageLocation(stateConfig, pathsConfig, new NodeId(0));
 
         final Set<Path> recycledFiles = new HashSet<>();
         try (final Stream<Path> stream = Files.walk(recycleBinDirectory)) {

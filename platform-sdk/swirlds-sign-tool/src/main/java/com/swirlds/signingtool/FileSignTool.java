@@ -16,7 +16,6 @@
 
 package com.swirlds.signingtool;
 
-import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.computeEntireHash;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.computeMetaHash;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.readFirstIntFromFile;
@@ -373,9 +372,7 @@ public class FileSignTool {
         }
 
         final String logConfigPath = System.getProperty(LOG_CONFIG_PROPERTY);
-        final File logConfigFile = logConfigPath == null
-                ? getAbsolutePath().resolve(DEFAULT_LOG_CONFIG).toFile()
-                : new File(logConfigPath);
+        final File logConfigFile = logConfigPath == null ? new File(DEFAULT_LOG_CONFIG) : new File(logConfigPath);
         if (logConfigFile.exists()) {
             final LoggerContext context = (LoggerContext) LogManager.getContext(false);
             context.setConfigLocation(logConfigFile.toURI());

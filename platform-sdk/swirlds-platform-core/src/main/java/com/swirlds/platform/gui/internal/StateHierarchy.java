@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.gui.internal;
 
-import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
 
 import com.swirlds.common.utility.CommonUtils;
@@ -48,7 +47,7 @@ public class StateHierarchy {
      * 		the name of the virtual data/apps/*.jar file, or null if none.
      */
     public StateHierarchy(final String fromAppName) {
-        final Path appsDirPath = getAbsolutePath().resolve("data").resolve("apps");
+        final Path appsDirPath = Path.of("data/apps").toAbsolutePath().normalize();
         final List<Path> appFiles = rethrowIO(() -> Files.list(appsDirPath)
                 .filter(path -> path.toString().endsWith(".jar"))
                 .toList());

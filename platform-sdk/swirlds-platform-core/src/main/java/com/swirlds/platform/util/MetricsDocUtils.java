@@ -18,14 +18,13 @@ package com.swirlds.platform.util;
 
 import static com.swirlds.logging.LogMarker.STARTUP;
 
-import com.swirlds.common.io.utility.FileUtils;
+import com.swirlds.common.config.PathsConfig;
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.SwirldsPlatform;
-import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
@@ -74,9 +73,11 @@ public final class MetricsDocUtils {
         }
 
         final String metricsContents = generateMetricsDocContentsInTSV(combinedMetrics);
-        final String filePath = FileUtils.getUserDir()
-                + File.separator
-                + configuration.getConfigData(MetricsConfig.class).metricsDocFileName();
+        final PathsConfig pathsConfig = configuration.getConfigData(PathsConfig.class);
+        final String filePath = pathsConfig
+                .getAbsolutePath(pathsConfig.workingDirPath())
+                .resolve(configuration.getConfigData(MetricsConfig.class).metricsDocFileName())
+                .toString();
 
         try (final OutputStream outputStream = new FileOutputStream(filePath)) {
             outputStream.write(metricsContents.getBytes(StandardCharsets.UTF_8));

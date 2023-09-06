@@ -16,11 +16,8 @@
 
 package com.swirlds.common.config;
 
-import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
-
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
-import java.nio.file.Path;
 import java.time.Duration;
 
 /**
@@ -89,12 +86,4 @@ public record BasicConfig(
         @ConfigProperty(defaultValue = "1") long pingTransFreq,
         @ConfigProperty(defaultValue = "60s") Duration hangingThreadDuration,
         @ConfigProperty(defaultValue = "data/saved") String emergencyRecoveryFileLoadDir,
-        @ConfigProperty(defaultValue = "0") long genesisFreezeTime) {
-
-    /**
-     * @return Absolute path to the emergency recovery file load directory.
-     */
-    public Path getEmergencyRecoveryFileLoadDir() {
-        return getAbsolutePath().resolve(emergencyRecoveryFileLoadDir());
-    }
-}
+        @ConfigProperty(defaultValue = "0") long genesisFreezeTime) {}

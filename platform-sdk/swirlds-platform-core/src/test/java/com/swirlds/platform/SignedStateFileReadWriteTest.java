@@ -16,7 +16,6 @@
 
 package com.swirlds.platform;
 
-import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.io.utility.FileUtils.throwIfFileExists;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.platform.state.signed.SignedStateFileReader.readStateFile;
@@ -41,6 +40,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
+import com.swirlds.common.config.PathsConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -174,13 +174,20 @@ class SignedStateFileReadWriteTest {
     @Test
     @DisplayName("getSignedStateBaseDirectory() Test")
     void getSignedStateBaseDirectoryTest() {
-        changeConfigAndConfigHolder("data/saved");
+        final Configuration configuration = changeConfigAndConfigHolder("data/saved");
+        final PathsConfig pathsConfig = configuration.getConfigData(PathsConfig.class);
 
-        assertEquals(getAbsolutePath("./data/saved"), getSignedStatesBaseDirectory(), "unexpected saved state file");
+        assertEquals(
+                pathsConfig.getAbsolutePath("./data/saved"),
+                getSignedStatesBaseDirectory(),
+                "unexpected saved state file");
 
         changeConfigAndConfigHolder("foo/bar/baz");
 
-        assertEquals(getAbsolutePath("./foo/bar/baz"), getSignedStatesBaseDirectory(), "unexpected saved state file");
+        assertEquals(
+                pathsConfig.getAbsolutePath("./foo/bar/baz"),
+                getSignedStatesBaseDirectory(),
+                "unexpected saved state file");
 
         changeConfigAndConfigHolder("data/saved");
     }
@@ -188,17 +195,18 @@ class SignedStateFileReadWriteTest {
     @Test
     @DisplayName("getSignedStatesDirectoryForApp() Test")
     void getSignedStatesDirectoryForAppTest() {
-        changeConfigAndConfigHolder("data/saved");
+        final Configuration configuration = changeConfigAndConfigHolder("data/saved");
+        final PathsConfig pathsConfig = configuration.getConfigData(PathsConfig.class);
 
         assertEquals(
-                getAbsolutePath("./data/saved/com.swirlds.foobar"),
+                pathsConfig.getAbsolutePath("./data/saved/com.swirlds.foobar"),
                 getSignedStatesDirectoryForApp("com.swirlds.foobar"),
                 "unexpected saved state file");
 
         changeConfigAndConfigHolder("foo/bar/baz");
 
         assertEquals(
-                getAbsolutePath("./foo/bar/baz/com.swirlds.barfoo"),
+                pathsConfig.getAbsolutePath("./foo/bar/baz/com.swirlds.barfoo"),
                 getSignedStatesDirectoryForApp("com.swirlds.barfoo"),
                 "unexpected saved state file");
 
@@ -208,17 +216,18 @@ class SignedStateFileReadWriteTest {
     @Test
     @DisplayName("getSignedStatesDirectoryForNode() Test")
     void getSignedStatesDirectoryForNodeTest() {
-        changeConfigAndConfigHolder("data/saved");
+        final Configuration configuration = changeConfigAndConfigHolder("data/saved");
+        final PathsConfig pathsConfig = configuration.getConfigData(PathsConfig.class);
 
         assertEquals(
-                getAbsolutePath("./data/saved/com.swirlds.foobar/1234"),
+                pathsConfig.getAbsolutePath("./data/saved/com.swirlds.foobar/1234"),
                 getSignedStatesDirectoryForNode("com.swirlds.foobar", new NodeId(1234)),
                 "unexpected saved state file");
 
         changeConfigAndConfigHolder("foo/bar/baz");
 
         assertEquals(
-                getAbsolutePath("./foo/bar/baz/com.swirlds.barfoo/4321"),
+                pathsConfig.getAbsolutePath("./foo/bar/baz/com.swirlds.barfoo/4321"),
                 getSignedStatesDirectoryForNode("com.swirlds.barfoo", new NodeId(4321)),
                 "unexpected saved state file");
 
@@ -228,17 +237,18 @@ class SignedStateFileReadWriteTest {
     @Test
     @DisplayName("getSignedStatesDirectoryForSwirld() Test")
     void getSignedStatesDirectoryForSwirldTest() {
-        changeConfigAndConfigHolder("data/saved");
+        final Configuration configuration = changeConfigAndConfigHolder("data/saved");
+        final PathsConfig pathsConfig = configuration.getConfigData(PathsConfig.class);
 
         assertEquals(
-                getAbsolutePath("./data/saved/com.swirlds.foobar/1234/mySwirld"),
+                pathsConfig.getAbsolutePath("./data/saved/com.swirlds.foobar/1234/mySwirld"),
                 getSignedStatesDirectoryForSwirld("com.swirlds.foobar", new NodeId(1234), "mySwirld"),
                 "unexpected saved state file");
 
         changeConfigAndConfigHolder("foo/bar/baz");
 
         assertEquals(
-                getAbsolutePath("./foo/bar/baz/com.swirlds.barfoo/4321/myOtherSwirld"),
+                pathsConfig.getAbsolutePath("./foo/bar/baz/com.swirlds.barfoo/4321/myOtherSwirld"),
                 getSignedStatesDirectoryForSwirld("com.swirlds.barfoo", new NodeId(4321), "myOtherSwirld"),
                 "unexpected saved state file");
 
@@ -248,17 +258,18 @@ class SignedStateFileReadWriteTest {
     @Test
     @DisplayName("getSignedStateDirectory() Test")
     void getSignedStateDirectoryTest() {
-        changeConfigAndConfigHolder("data/saved");
+        final Configuration configuration = changeConfigAndConfigHolder("data/saved");
+        final PathsConfig pathsConfig = configuration.getConfigData(PathsConfig.class);
 
         assertEquals(
-                getAbsolutePath("./data/saved/com.swirlds.foobar/1234/mySwirld/1337"),
+                pathsConfig.getAbsolutePath("./data/saved/com.swirlds.foobar/1234/mySwirld/1337"),
                 getSignedStateDirectory("com.swirlds.foobar", new NodeId(1234), "mySwirld", 1337),
                 "unexpected saved state file");
 
         changeConfigAndConfigHolder("foo/bar/baz");
 
         assertEquals(
-                getAbsolutePath("./foo/bar/baz/com.swirlds.barfoo/4321/myOtherSwirld/42"),
+                pathsConfig.getAbsolutePath("./foo/bar/baz/com.swirlds.barfoo/4321/myOtherSwirld/42"),
                 getSignedStateDirectory("com.swirlds.barfoo", new NodeId(4321), "myOtherSwirld", 42),
                 "unexpected saved state file");
 

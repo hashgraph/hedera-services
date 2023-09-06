@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.util;
 
-import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
 import static com.swirlds.common.system.SystemExitCode.NODE_ADDRESS_MISMATCH;
 import static com.swirlds.common.system.SystemExitUtils.exitSystem;
@@ -357,7 +356,8 @@ public final class BootstrapUtils {
         final ThreadConfig threadConfig = configuration.getConfigData(ThreadConfig.class);
 
         if (threadConfig.threadDumpPeriodMs() > 0) {
-            final Path dir = getAbsolutePath(threadConfig.threadDumpLogDir());
+            final var pathsConfig = configuration.getConfigData(PathsConfig.class);
+            final Path dir = pathsConfig.getAbsolutePath(threadConfig.threadDumpLogDir());
             if (!Files.exists(dir)) {
                 rethrowIO(() -> Files.createDirectories(dir));
             }

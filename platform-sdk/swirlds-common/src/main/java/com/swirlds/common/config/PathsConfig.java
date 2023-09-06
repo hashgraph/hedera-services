@@ -16,11 +16,11 @@
 
 package com.swirlds.common.config;
 
-import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
 
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 
 /**
@@ -37,6 +37,8 @@ import java.nio.file.Path;
  *     path to data/apps/
  * @param logPath
  * 	   path to log4j2.xml (which might not exist)
+ * @param workingDirPath
+ *     path to the current working directory, i.e. "."
  */
 @ConfigData("paths")
 public record PathsConfig(
@@ -45,7 +47,8 @@ public record PathsConfig(
         @ConfigProperty(defaultValue = ".") String settingsUsedDir,
         @ConfigProperty(defaultValue = "data/keys") String keysDirPath,
         @ConfigProperty(defaultValue = "data/apps") String appsDirPath,
-        @ConfigProperty(defaultValue = "log4j2.xml") String logPath) {
+        @ConfigProperty(defaultValue = "log4j2.xml") String logPath,
+        @ConfigProperty(defaultValue = ".") Path workingDirPath) {
 
     /**
      * path to config.txt (which might not exist)
@@ -99,5 +102,46 @@ public record PathsConfig(
      */
     public Path getLogPath() {
         return rethrowIO(() -> getAbsolutePath(logPath));
+    }
+
+    /**
+     * path to the current working directory, i.e. "."
+     *
+     * @return absolute path to the current working directory
+     */
+    public Path getWorkingDirPath() {
+        return getAbsolutePath(workingDirPath);
+    }
+
+    /**
+     * Get an absolute path to the current working directory, i.e. ".".
+     */
+    public @NonNull Path getAbsolutePath() {
+        return getAbsolutePath(".");
+    }
+
+    /**
+     * Get an absolute path to a particular location described by a string, starting in the current working directory.
+     * For example, if the current execution directory is "/user/home" and this method is invoked with "foo", then a
+     * {@link Path} at "/user/home/foo" is returned. Resolves "~".
+     *
+     * @param path a description of the path, e.g. "foo", "/foobar", "foo/bar"
+     * @return an absolute Path to the requested location
+     */
+    public @NonNull Path getAbsolutePath(@NonNull final String path) {
+        final var expandedPath = path.replaceFirst("^~", System.getProperty("user.home"));
+        return workingDirPath.resolve(expandedPath).toAbsolutePath().normalize();
+    }
+
+    /**
+     * Get an absolute path to a particular location described by a string, starting in the current working directory.
+     * For example, if the current execution directory is "/user/home" and this method is invoked with "foo", then a
+     * {@link Path} at "/user/home/foo" is returned. Resolves "~".
+     *
+     * @param path a non-absolute path
+     * @return an absolute Path to the requested location
+     */
+    public @NonNull Path getAbsolutePath(@NonNull final Path path) {
+        return getAbsolutePath(path.toString());
     }
 }

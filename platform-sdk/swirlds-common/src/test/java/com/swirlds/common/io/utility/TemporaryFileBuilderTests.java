@@ -17,7 +17,6 @@
 package com.swirlds.common.io.utility;
 
 import static com.swirlds.common.io.utility.FileUtils.deleteDirectory;
-import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.io.utility.TemporaryFileBuilder.buildTemporaryDirectory;
 import static com.swirlds.common.io.utility.TemporaryFileBuilder.buildTemporaryFile;
 import static com.swirlds.common.io.utility.TemporaryFileBuilder.getTemporaryFileLocation;
@@ -117,7 +116,7 @@ public class TemporaryFileBuilderTests {
 
         final Path originalTemporaryFileLocation = getTemporaryFileLocation();
 
-        overrideTemporaryFileLocation(getAbsolutePath("foobar"));
+        overrideTemporaryFileLocation(Path.of("foobar").toAbsolutePath().normalize());
         final Path file = buildTemporaryFile();
         assertEquals("foobar", file.getParent().getFileName().toString(), "invalid location");
         deleteDirectory(getTemporaryFileLocation());

@@ -18,7 +18,6 @@ package com.hedera.node.app.hapi.utils.exports;
 
 import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.readMaybeCompressedRecordStreamFile;
 import static com.hedera.services.stream.proto.SignatureType.SHA_384_WITH_RSA;
-import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.utility.CommonUtils.hex;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -438,9 +437,7 @@ public class FileSignTool {
         }
 
         final String logConfigPath = System.getProperty(LOG_CONFIG_PROPERTY);
-        final File logConfigFile = logConfigPath == null
-                ? getAbsolutePath().resolve(DEFAULT_LOG_CONFIG).toFile()
-                : new File(logConfigPath);
+        final File logConfigFile = logConfigPath == null ? new File(DEFAULT_LOG_CONFIG) : new File(logConfigPath);
         if (logConfigFile.exists()) {
             final LoggerContext context = (LoggerContext) LogManager.getContext(false);
             context.setConfigLocation(logConfigFile.toURI());

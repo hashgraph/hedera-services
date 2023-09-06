@@ -18,7 +18,6 @@ package com.swirlds.common.io.utility;
 
 import static com.swirlds.common.io.utility.FileUtils.deleteDirectoryAndLog;
 import static com.swirlds.common.io.utility.FileUtils.executeAndRename;
-import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.io.utility.FileUtils.hardLinkTree;
 import static com.swirlds.common.io.utility.FileUtils.throwIfFileExists;
 import static com.swirlds.common.io.utility.FileUtils.writeAndFlush;
@@ -92,33 +91,6 @@ class FileUtilsTests {
             }
             file.delete();
         }
-    }
-
-    @Test
-    @DisplayName("absolutePath() From Start Test")
-    void absolutePathFromStartTest() throws IOException {
-        final File start = new File("start");
-
-        assertEquals(start.getCanonicalFile().toPath(), getAbsolutePath("start"), "invalid path");
-
-        final File expected = new File(start.getCanonicalFile() + "/foo/bar/baz.txt");
-        assertEquals(
-                expected.toPath(),
-                getAbsolutePath("start").resolve("foo").resolve("bar").resolve("baz.txt"),
-                "file does not match expected");
-    }
-
-    @Test
-    @DisplayName("absolutePath() From Current Working Directory Test")
-    void absolutePathFromCurrentWorkingDirectoryTest() throws IOException {
-
-        assertEquals(new File(".").getCanonicalFile().toPath(), getAbsolutePath(), "invalid path");
-
-        final File expected = new File(new File(".").getCanonicalFile() + "/foo/bar/baz.txt");
-        assertEquals(
-                expected.toPath(),
-                getAbsolutePath().resolve("foo").resolve("bar").resolve("baz.txt"),
-                "invalid path");
     }
 
     /**

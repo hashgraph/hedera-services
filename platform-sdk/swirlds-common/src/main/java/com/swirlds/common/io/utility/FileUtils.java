@@ -29,7 +29,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.FileAlreadyExistsException;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -72,38 +71,6 @@ public final class FileUtils {
         } catch (final IOException e) {
             throw new UncheckedIOException(e);
         }
-    }
-
-    /**
-     * Get an absolute path to the current working directory, i.e. ".".
-     */
-    public static @NonNull Path getAbsolutePath() {
-        return getAbsolutePath(".");
-    }
-
-    /**
-     * Get an absolute path to a particular location described by a string, starting in the current working directory.
-     * For example, if the current execution directory is "/user/home" and this method is invoked with "foo", then a
-     * {@link Path} at "/user/home/foo" is returned. Resolves "~".
-     *
-     * @param pathDescription a description of the path, e.g. "foo", "/foobar", "foo/bar"
-     * @return an absolute Path to the requested location
-     */
-    public static @NonNull Path getAbsolutePath(@NonNull final String pathDescription) {
-        final String expandedPath = pathDescription.replaceFirst("^~", System.getProperty("user.home"));
-        return FileSystems.getDefault().getPath(expandedPath).toAbsolutePath().normalize();
-    }
-
-    /**
-     * Get an absolute path to a particular location described by a string, starting in the current working directory.
-     * For example, if the current execution directory is "/user/home" and this method is invoked with "foo", then a
-     * {@link Path} at "/user/home/foo" is returned. Resolves "~".
-     *
-     * @param path a non-absolute path
-     * @return an absolute Path to the requested location
-     */
-    public static @NonNull Path getAbsolutePath(@NonNull final Path path) {
-        return getAbsolutePath(path.toString());
     }
 
     /**
@@ -285,15 +252,6 @@ public final class FileUtils {
             // make sure the data is actually written to disk
             fileOut.getFD().sync();
         }
-    }
-
-    /**
-     * Returns the user directory path specified by the {@code user.dir} system property.
-     *
-     * @return the user directory path
-     */
-    public static @NonNull String getUserDir() {
-        return System.getProperty("user.dir");
     }
 
     /**

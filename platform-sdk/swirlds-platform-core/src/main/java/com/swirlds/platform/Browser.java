@@ -374,8 +374,11 @@ public class Browser {
         // time this class is used.
         final BasicConfig basicConfig = configuration.getConfigData(BasicConfig.class);
         final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
+        final PathsConfig pathsConfig = configuration.getConfigData(PathsConfig.class);
         final EmergencyRecoveryManager emergencyRecoveryManager = new EmergencyRecoveryManager(
-                stateConfig, new Shutdown()::shutdown, basicConfig.getEmergencyRecoveryFileLoadDir());
+                stateConfig,
+                new Shutdown()::shutdown,
+                pathsConfig.getAbsolutePath(basicConfig.emergencyRecoveryFileLoadDir()));
 
         final ReservedSignedState initialState = getInitialState(
                 platformContext,

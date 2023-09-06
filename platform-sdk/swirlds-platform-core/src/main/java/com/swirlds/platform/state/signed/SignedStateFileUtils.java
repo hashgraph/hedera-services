@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.state.signed;
 
-import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.logging.LogMarker.STATE_TO_DISK;
 
+import com.swirlds.common.config.PathsConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.io.utility.FileUtils;
@@ -81,7 +81,8 @@ public final class SignedStateFileUtils {
      */
     public static Path getSignedStatesBaseDirectory() {
         final StateConfig stateConfig = ConfigurationHolder.getConfigData(StateConfig.class);
-        return getAbsolutePath(stateConfig.savedStateDirectory());
+        final PathsConfig pathsConfig = ConfigurationHolder.getConfigData(PathsConfig.class);
+        return pathsConfig.getAbsolutePath(stateConfig.savedStateDirectory());
     }
 
     /**

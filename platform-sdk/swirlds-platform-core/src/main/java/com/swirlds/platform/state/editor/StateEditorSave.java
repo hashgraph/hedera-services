@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.state.editor;
 
-import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.platform.state.editor.StateEditorUtils.formatFile;
 import static com.swirlds.platform.state.signed.SavedStateMetadata.NO_NODE_ID;
 import static com.swirlds.platform.state.signed.SignedStateFileWriter.writeSignedStateFilesToDirectory;
@@ -45,7 +44,7 @@ public class StateEditorSave extends StateEditorOperation {
 
     @CommandLine.Parameters(description = "The directory where the saved state should be written.")
     private void setFileName(final Path directory) {
-        this.directory = pathMustNotExist(getAbsolutePath(directory));
+        this.directory = pathMustNotExist(directory.toAbsolutePath().normalize());
     }
 
     /**

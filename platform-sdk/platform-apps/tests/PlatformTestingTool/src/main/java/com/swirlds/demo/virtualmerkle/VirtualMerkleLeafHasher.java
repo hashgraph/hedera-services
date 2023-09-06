@@ -16,7 +16,6 @@
 
 package com.swirlds.demo.virtualmerkle;
 
-import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.merkle.iterators.MerkleIterationOrder.BREADTH_FIRST;
 import static com.swirlds.common.utility.CommonUtils.hex;
 
@@ -147,7 +146,7 @@ public class VirtualMerkleLeafHasher<K extends VirtualKey, V extends VirtualValu
         final String scByteCodeName = "smartContractByteCode.vmap";
 
         final List<Path> roundsFolders;
-        final Path classFolder = getAbsolutePath(args[0]);
+        final Path classFolder = Path.of(args[0]).toAbsolutePath().normalize();
         try (final Stream<Path> classFolderList = Files.list(classFolder)) {
             final Path nodeFolder = classFolderList.toList().get(0);
             try (final Stream<Path> swirldIdList = Files.list(nodeFolder.resolve("123"))) {

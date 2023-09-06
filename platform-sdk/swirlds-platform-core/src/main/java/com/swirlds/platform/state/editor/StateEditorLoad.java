@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.state.editor;
 
-import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.platform.state.editor.StateEditorUtils.formatFile;
 import static com.swirlds.platform.state.editor.StateEditorUtils.formatNodeType;
 import static com.swirlds.platform.state.editor.StateEditorUtils.formatParent;
@@ -53,7 +52,7 @@ public class StateEditorLoad extends StateEditorOperation {
 
     @CommandLine.Parameters(index = "0", description = "The location on disk where the subtree should be loaded from.")
     private void setFileName(final Path fileName) {
-        this.fileName = pathMustExist(getAbsolutePath(fileName));
+        this.fileName = pathMustExist(fileName.toAbsolutePath().normalize());
     }
 
     @CommandLine.Parameters(index = "1", arity = "0..1", description = "The route where the node should be copied to.")

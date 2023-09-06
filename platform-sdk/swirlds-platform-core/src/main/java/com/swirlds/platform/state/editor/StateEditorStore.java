@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.state.editor;
 
-import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.platform.state.editor.StateEditorUtils.formatFile;
 import static com.swirlds.platform.state.editor.StateEditorUtils.formatNode;
 
@@ -49,7 +48,7 @@ public class StateEditorStore extends StateEditorOperation {
 
     @CommandLine.Parameters(description = "The location on disk where the subtree should be stored.")
     private void setFileName(final Path fileName) {
-        this.fileName = pathMustNotExist(getAbsolutePath(fileName));
+        this.fileName = pathMustNotExist(fileName.toAbsolutePath().normalize());
     }
 
     /**
