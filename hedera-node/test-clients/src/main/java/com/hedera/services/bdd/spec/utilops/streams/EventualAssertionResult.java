@@ -18,7 +18,6 @@ package com.hedera.services.bdd.spec.utilops.streams;
 
 import com.hedera.services.bdd.spec.utilops.streams.assertions.AssertionResult;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -40,9 +39,7 @@ public class EventualAssertionResult {
     }
 
     public AssertionResult get() throws InterruptedException {
-        System.out.println("Sleeping for " + timeout.toMillis() + "ms" + " @ " + Instant.now());
         if (!ready.await(timeout.toMillis(), TimeUnit.MILLISECONDS)) {
-            System.out.println("Slept for " + timeout.toMillis() + "ms" + " @ " + Instant.now());
             if (hasPassedIfNothingFailed && result == null) {
                 return AssertionResult.success();
             } else {
