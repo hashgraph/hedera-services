@@ -103,8 +103,6 @@ public class MiscViewsXTest extends AbstractContractXTest {
                 assertingCallLocalResultIs(UNCOVERED_SECRET));
         doPrngQuery();
         doExchangeRateQuery();
-        // TODO - uncomment once 0x168 precompile is implemented
-        //        doExchangeRateQuery();
         // TODO - uncomment once 0x167 precompile is implemented for ERC-20 redirects
         //        doErc20Queries();
         // TODO - uncomment once 0x167 precompile is implemented for ERC-721 redirects

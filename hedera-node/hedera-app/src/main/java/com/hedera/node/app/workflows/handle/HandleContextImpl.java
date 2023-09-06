@@ -30,6 +30,7 @@ import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.WritableEntityIdStore;
@@ -104,6 +105,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     private final Function<SubType, FeeCalculator> feeCalculatorCreator;
     private final FeeManager feeManager;
     private final Instant userTransactionConsensusTime;
+    private final ExchangeRateManager exchangeRateManager;
 
     private ReadableStoreFactory readableStoreFactory;
     private AttributeValidator attributeValidator;
@@ -127,7 +129,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
      * @param dispatcher            The {@link TransactionDispatcher} used to dispatch child transactions
      * @param serviceScopeLookup    The {@link ServiceScopeLookup} used to look up the scope of a service
      * @param feeManager            The {@link FeeManager} used to convert usage into fees
-     * @param exchangeRateInfo      The {@link ExchangeRateInfo} used to obtain exchange rate information
+     * @param exchangeRateManager   The {@link ExchangeRateManager} used to obtain exchange rate information
      * @param userTransactionConsensusTime The consensus time of the user transaction, not any child transactions
      */
     public HandleContextImpl(
@@ -147,7 +149,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             @NonNull final BlockRecordInfo blockRecordInfo,
             @NonNull final RecordCache recordCache,
             @NonNull final FeeManager feeManager,
-            @NonNull final ExchangeRateInfo exchangeRateInfo,
+            @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final Instant userTransactionConsensusTime) {
         this.txBody = requireNonNull(txInfo, "txInfo must not be null").txBody();
         this.payer = requireNonNull(payer, "payer must not be null");
@@ -186,7 +188,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 tokenApi.refundFees(receiver, fees, recordBuilder);
             }
         };
-        this.exchangeRateInfo = requireNonNull(exchangeRateInfo, "exchangeRateInfo must not be null");
+        this.exchangeRateManager = requireNonNull(exchangeRateManager, "exchangeRateManager must not be null");
     }
 
     private WrappedHederaState current() {
@@ -232,6 +234,9 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     @NonNull
     @Override
     public ExchangeRateInfo exchangeRateInfo() {
+        if (exchangeRateInfo == null) {
+            exchangeRateInfo = exchangeRateManager.exchangeRateInfo(current());
+        }
         return exchangeRateInfo;
     }
 
@@ -505,7 +510,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 blockRecordInfo,
                 recordCache,
                 feeManager,
-                exchangeRateInfo,
+                exchangeRateManager,
                 userTransactionConsensusTime);
 
         try {

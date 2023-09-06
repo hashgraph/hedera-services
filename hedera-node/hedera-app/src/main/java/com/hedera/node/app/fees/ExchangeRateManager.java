@@ -59,9 +59,8 @@ import javax.inject.Singleton;
  * rate, since we have nothing more recent to rely on.
  */
 @Singleton
-public final class ExchangeRateManager implements ExchangeRateInfo {
-    private static final Logger logger = LogManager.getLogger(ExchangeRateManager.class);
-    private static final ExchangeRateSet DEFAULT_EXCHANGE_RATES = ExchangeRateSet.DEFAULT;
+public final class ExchangeRateManager {
+
     private static final BigInteger ONE_HUNDRED = BigInteger.valueOf(100);
 
     private final ConfigProvider configProvider;
@@ -142,20 +141,22 @@ public final class ExchangeRateManager implements ExchangeRateInfo {
     }
 
     /**
-     * @inheritDoc
-     * MUST BE CALLED ON THE HANDLE THREAD!!
+     * Gets the current {@link ExchangeRateSet}. MUST BE CALLED ON THE HANDLE THREAD!!
+     * @return The current {@link ExchangeRateSet}.
      */
-    @Override
     @NonNull
     public ExchangeRateSet exchangeRates() {
         return currentExchangeRateInfo.exchangeRates();
     }
 
     /**
-     * @inheritDoc
-     * MUST BE CALLED ON THE HANDLE THREAD!!
+     * Gets the {@link ExchangeRate} that should be used as of the given consensus time. MUST BE CALLED ON THE HANDLE
+     * THREAD!!
+     *
+     * @param consensusTime The consensus time. If after the expiration time of the current rate, the next rate will
+     *                      be returned. Otherwise, the current rate will be returned.
+     * @return The {@link ExchangeRate} that should be used as of the given consensus time.
      */
-    @Override
     @NonNull
     public ExchangeRate activeRate(@NonNull final Instant consensusTime) {
         return currentExchangeRateInfo.activeRate(consensusTime);

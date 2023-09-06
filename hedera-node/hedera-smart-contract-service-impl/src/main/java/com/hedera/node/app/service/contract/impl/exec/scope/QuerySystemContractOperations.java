@@ -31,6 +31,7 @@ import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.data.ContractsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Instant;
 import javax.inject.Inject;
 
 /**
@@ -114,7 +115,7 @@ public class QuerySystemContractOperations implements SystemContractOperations {
     @Override
     @NonNull
     public ExchangeRate currentExchangeRate() {
-        throw new UnsupportedOperationException("Cannot get current exchange rate");
+        return context.exchangeRateInfo().activeRate(Instant.now());
     }
 
     /**

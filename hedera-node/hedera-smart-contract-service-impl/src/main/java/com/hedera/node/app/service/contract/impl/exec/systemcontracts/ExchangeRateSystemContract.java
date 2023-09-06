@@ -48,7 +48,6 @@ public class ExchangeRateSystemContract extends AbstractPrecompiledContract {
     @Inject
     public ExchangeRateSystemContract(@NonNull final GasCalculator gasCalculator) {
         super(PRECOMPILE_NAME, gasCalculator);
-        // this.contractsConfig = requireNonNull(configuration).getConfigData(ContractsConfig.class);
     }
 
     @Override
@@ -75,6 +74,7 @@ public class ExchangeRateSystemContract extends AbstractPrecompiledContract {
                                 fromAToB(amount, activeRate.centEquiv(), activeRate.hbarEquiv()));
                         default -> null;
                     };
+            requireNonNull(result);
             return PrecompileContractResult.success(result);
         } catch (Exception ignore) {
             return PrecompileContractResult.halt(Bytes.EMPTY, Optional.of(ExceptionalHaltReason.INVALID_OPERATION));
