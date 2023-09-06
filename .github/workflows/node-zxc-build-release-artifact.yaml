@@ -65,7 +65,7 @@ on:
       bucket-name:
         required: true
       jenkins-integration-url:
-        required: true
+        required: false
 
 defaults:
   run:
