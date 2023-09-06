@@ -35,8 +35,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 final class AuthorizerTest {
     private ConfigProvider configProvider;
+
     @Mock
     private PrivilegesVerifier privilegesVerifier;
+
     private AccountID accountID;
     private HederaFunctionality hapiFunction;
 

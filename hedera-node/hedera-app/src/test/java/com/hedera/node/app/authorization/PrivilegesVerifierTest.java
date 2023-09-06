@@ -5,14 +5,13 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package com.hedera.node.app.authorization;
@@ -81,24 +80,33 @@ class PrivilegesVerifierTest {
         }
 
         boolean canPerformNonCryptoUpdate(final long accountNum, final long fileNum) {
-            final var accountID = com.hedera.hapi.node.base.AccountID.newBuilder().accountNum(accountNum).build();
-            final var fileID = com.hedera.hapi.node.base.FileID.newBuilder().fileNum(fileNum).build();
+            final var accountID = com.hedera.hapi.node.base.AccountID.newBuilder()
+                    .accountNum(accountNum)
+                    .build();
+            final var fileID = com.hedera.hapi.node.base.FileID.newBuilder()
+                    .fileNum(fileNum)
+                    .build();
             final var fileUpdateTxBody = com.hedera.hapi.node.transaction.TransactionBody.newBuilder()
-                    .fileUpdate(com.hedera.hapi.node.file.FileUpdateTransactionBody.newBuilder().fileID(fileID).build())
+                    .fileUpdate(com.hedera.hapi.node.file.FileUpdateTransactionBody.newBuilder()
+                            .fileID(fileID)
+                            .build())
                     .build();
             final var fileAppendTxBody = com.hedera.hapi.node.transaction.TransactionBody.newBuilder()
-                    .fileAppend(com.hedera.hapi.node.file.FileAppendTransactionBody.newBuilder().fileID(fileID).build())
+                    .fileAppend(com.hedera.hapi.node.file.FileAppendTransactionBody.newBuilder()
+                            .fileID(fileID)
+                            .build())
                     .build();
-            return delegate.hasPrivileges(accountID, HederaFunctionality.FILE_UPDATE, fileUpdateTxBody) == SystemPrivilege.AUTHORIZED
-                    && delegate.hasPrivileges(accountID, HederaFunctionality.FILE_APPEND, fileAppendTxBody) == SystemPrivilege.AUTHORIZED;
+            return delegate.hasPrivileges(accountID, HederaFunctionality.FILE_UPDATE, fileUpdateTxBody)
+                            == SystemPrivilege.AUTHORIZED
+                    && delegate.hasPrivileges(accountID, HederaFunctionality.FILE_APPEND, fileAppendTxBody)
+                            == SystemPrivilege.AUTHORIZED;
         }
     }
 
     @BeforeEach
     void setUp() {
         final var configuration = HederaTestConfigBuilder.createConfig();
-        final ConfigProvider configProvider =
-                () -> new VersionedConfigImpl(configuration, 1L);
+        final ConfigProvider configProvider = () -> new VersionedConfigImpl(configuration, 1L);
 
         subject = new Wrapper(configProvider);
     }
@@ -106,8 +114,7 @@ class PrivilegesVerifierTest {
     @SuppressWarnings("DataFlowIssue")
     @Test
     void testConstructorWithIllegalParameters() {
-        assertThatThrownBy(() -> new PrivilegesVerifier(null))
-                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new PrivilegesVerifier(null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
@@ -668,5 +675,4 @@ class PrivilegesVerifierTest {
     private AccountID account(long num) {
         return AccountID.newBuilder().setAccountNum(num).build();
     }
-
 }

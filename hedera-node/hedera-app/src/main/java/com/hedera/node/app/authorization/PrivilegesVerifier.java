@@ -5,14 +5,13 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package com.hedera.node.app.authorization;
@@ -40,9 +39,10 @@ import javax.inject.Inject;
 /**
  * Checks whether an account is authorized to perform a system transaction that requires
  * privileged access.
+ *
+ * <p>The checks in this class do not require access to state, and thus can be performed at any time.
  */
 public class PrivilegesVerifier {
-
 
     private final AccountsConfig accountsConfig;
     private final FilesConfig filesConfig;
@@ -55,8 +55,8 @@ public class PrivilegesVerifier {
         final var configuration = configProvider.getConfiguration();
         this.accountsConfig = configuration.getConfigData(AccountsConfig.class);
         this.filesConfig = configuration.getConfigData(FilesConfig.class);
-        this.numReservedSystemEntities = configuration.getConfigData(LedgerConfig.class)
-                .numReservedSystemEntities();
+        this.numReservedSystemEntities =
+                configuration.getConfigData(LedgerConfig.class).numReservedSystemEntities();
     }
 
     /**
@@ -72,24 +72,31 @@ public class PrivilegesVerifier {
             @NonNull final HederaFunctionality functionality,
             @NonNull final TransactionBody txBody) {
         return switch (functionality) {
-            // Authorization privileges for special transactions
+                // Authorization privileges for special transactions
             case FREEZE -> checkFreeze(accountID);
             case SYSTEM_DELETE -> checkSystemDelete(accountID, txBody.systemDeleteOrThrow());
             case SYSTEM_UNDELETE -> checkSystemUndelete(accountID, txBody.systemUndeleteOrThrow());
             case UNCHECKED_SUBMIT -> checkUncheckedSubmit(accountID);
 
-            // Authorization privileges for file updates and appends
-            case FILE_UPDATE -> checkFileChange(accountID, txBody.fileUpdateOrThrow().fileIDOrThrow().fileNum());
-            case FILE_APPEND -> checkFileChange(accountID, txBody.fileAppendOrThrow().fileIDOrThrow().fileNum());
-            case CONTRACT_UPDATE -> checkFileChange(accountID, txBody.contractUpdateInstanceOrThrow().contractIDOrThrow().contractNumOrThrow());
+                // Authorization privileges for file updates and appends
+            case FILE_UPDATE -> checkFileChange(
+                    accountID, txBody.fileUpdateOrThrow().fileIDOrThrow().fileNum());
+            case FILE_APPEND -> checkFileChange(
+                    accountID, txBody.fileAppendOrThrow().fileIDOrThrow().fileNum());
+            case CONTRACT_UPDATE -> checkFileChange(
+                    accountID,
+                    txBody.contractUpdateInstanceOrThrow().contractIDOrThrow().contractNumOrThrow());
 
-            // Authorization for crypto updates
+                // Authorization for crypto updates
             case CRYPTO_UPDATE -> checkCryptoUpdate(accountID, txBody.cryptoUpdateAccountOrThrow());
 
-            // Authorization for deletes
-            case FILE_DELETE -> checkEntityDelete(txBody.fileDeleteOrThrow().fileIDOrThrow().fileNum());
-            case CRYPTO_DELETE -> checkEntityDelete(txBody.cryptoDeleteOrThrow().deleteAccountIDOrThrow().accountNumOrThrow());
-            case CONTRACT_DELETE -> checkEntityDelete(txBody.contractDeleteInstanceOrThrow().contractIDOrThrow().contractNumOrThrow());
+                // Authorization for deletes
+            case FILE_DELETE -> checkEntityDelete(
+                    txBody.fileDeleteOrThrow().fileIDOrThrow().fileNum());
+            case CRYPTO_DELETE -> checkEntityDelete(
+                    txBody.cryptoDeleteOrThrow().deleteAccountIDOrThrow().accountNumOrThrow());
+            case CONTRACT_DELETE -> checkEntityDelete(
+                    txBody.contractDeleteInstanceOrThrow().contractIDOrThrow().contractNumOrThrow());
 
             default -> SystemPrivilege.UNNECESSARY;
         };
@@ -140,16 +147,22 @@ public class PrivilegesVerifier {
         return hasFreezePrivilege(accountID) ? AUTHORIZED : UNAUTHORIZED;
     }
 
-    private SystemPrivilege checkSystemDelete(@NonNull final AccountID accountID, @NonNull final SystemDeleteTransactionBody op) {
-        final var entityNum = op.hasFileID()? op.fileIDOrThrow().fileNum() : op.contractIDOrThrow().contractNumOrThrow();
+    private SystemPrivilege checkSystemDelete(
+            @NonNull final AccountID accountID, @NonNull final SystemDeleteTransactionBody op) {
+        final var entityNum = op.hasFileID()
+                ? op.fileIDOrThrow().fileNum()
+                : op.contractIDOrThrow().contractNumOrThrow();
         if (isSystemEntity(entityNum)) {
             return IMPERMISSIBLE;
         }
         return hasSystemDeletePrivilege(accountID) ? AUTHORIZED : UNAUTHORIZED;
     }
 
-    private SystemPrivilege checkSystemUndelete(@NonNull final AccountID accountID, @NonNull final SystemUndeleteTransactionBody op) {
-        final var entityNum = op.hasFileID()? op.fileIDOrThrow().fileNum() : op.contractIDOrThrow().contractNumOrThrow();
+    private SystemPrivilege checkSystemUndelete(
+            @NonNull final AccountID accountID, @NonNull final SystemUndeleteTransactionBody op) {
+        final var entityNum = op.hasFileID()
+                ? op.fileIDOrThrow().fileNum()
+                : op.contractIDOrThrow().contractNumOrThrow();
         if (isSystemEntity(entityNum)) {
             return IMPERMISSIBLE;
         }
@@ -167,34 +180,38 @@ public class PrivilegesVerifier {
         if (entityNum == filesConfig.addressBook() || entityNum == filesConfig.nodeDetails()) {
             return hasAddressBookPrivilege(accountID) ? AUTHORIZED : UNAUTHORIZED;
         } else if (entityNum == filesConfig.networkProperties() || entityNum == filesConfig.hapiPermissions()) {
-            return hasAddressBookPrivilege(accountID) || hasExchangeRatePrivilige(accountID) ? AUTHORIZED : UNAUTHORIZED;
+            return hasAddressBookPrivilege(accountID) || hasExchangeRatePrivilige(accountID)
+                    ? AUTHORIZED
+                    : UNAUTHORIZED;
         } else if (entityNum == filesConfig.feeSchedules()) {
             return hasFeeSchedulePrivilige(accountID) ? AUTHORIZED : UNAUTHORIZED;
         } else if (entityNum == filesConfig.exchangeRates()) {
             return hasExchangeRatePrivilige(accountID) ? AUTHORIZED : UNAUTHORIZED;
-        } else if (filesConfig.softwareUpdateRange().left() <= entityNum && entityNum <= filesConfig.softwareUpdateRange().right()) {
+        } else if (filesConfig.softwareUpdateRange().left() <= entityNum
+                && entityNum <= filesConfig.softwareUpdateRange().right()) {
             return hasFreezePrivilege(accountID) ? AUTHORIZED : UNAUTHORIZED;
         } else if (entityNum == filesConfig.throttleDefinitions()) {
-            return hasAddressBookPrivilege(accountID) || hasExchangeRatePrivilige(accountID) ? AUTHORIZED : UNAUTHORIZED;
+            return hasAddressBookPrivilege(accountID) || hasExchangeRatePrivilige(accountID)
+                    ? AUTHORIZED
+                    : UNAUTHORIZED;
         }
         return UNAUTHORIZED;
     }
 
     private SystemPrivilege checkCryptoUpdate(
-            @NonNull final AccountID accountID,
-            @NonNull final CryptoUpdateTransactionBody op) {
+            @NonNull final AccountID accountID, @NonNull final CryptoUpdateTransactionBody op) {
         final long targetNum = op.accountIDToUpdateOrThrow().accountNumOrThrow();
         if (!isSystemEntity(targetNum)) {
             return UNNECESSARY;
         }
         if (targetNum == accountsConfig.treasury()) {
-            return isTreasury(accountID)? AUTHORIZED : UNAUTHORIZED;
+            return isTreasury(accountID) ? AUTHORIZED : UNAUTHORIZED;
         } else {
-            return isSuperUser(accountID)? AUTHORIZED : UNNECESSARY;
+            return isSuperUser(accountID) ? AUTHORIZED : UNNECESSARY;
         }
     }
 
     private SystemPrivilege checkEntityDelete(final long entityNum) {
-        return isSystemEntity(entityNum)? IMPERMISSIBLE : UNNECESSARY;
+        return isSystemEntity(entityNum) ? IMPERMISSIBLE : UNNECESSARY;
     }
 }

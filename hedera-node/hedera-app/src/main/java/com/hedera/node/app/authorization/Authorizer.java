@@ -43,7 +43,6 @@ public interface Authorizer {
      */
     boolean isSuperUser(@NonNull AccountID id);
 
-
     /**
      * Checks whether an account is exempt from paying fees.
      *

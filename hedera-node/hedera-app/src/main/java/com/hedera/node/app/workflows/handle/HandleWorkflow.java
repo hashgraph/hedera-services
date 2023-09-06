@@ -30,6 +30,8 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.authorization.Authorizer;
+import com.hedera.node.app.authorization.Authorizer.SystemPrivilege;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeAccumulatorImpl;
 import com.hedera.node.app.fees.FeeManager;
@@ -105,6 +107,7 @@ public class HandleWorkflow {
     private final ParentRecordFinalizer transactionFinalizer;
     private final SystemFileUpdateFacility systemFileUpdateFacility;
     private final SolvencyPreCheck solvencyPreCheck;
+    private final Authorizer authorizer;
 
     @Inject
     public HandleWorkflow(
@@ -123,7 +126,8 @@ public class HandleWorkflow {
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final ParentRecordFinalizer transactionFinalizer,
             @NonNull final SystemFileUpdateFacility systemFileUpdateFacility,
-            @NonNull final SolvencyPreCheck solvencyPreCheck) {
+            @NonNull final SolvencyPreCheck solvencyPreCheck,
+            @NonNull final Authorizer authorizer) {
         this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow, "preHandleWorkflow must not be null");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
@@ -141,6 +145,7 @@ public class HandleWorkflow {
         this.systemFileUpdateFacility =
                 requireNonNull(systemFileUpdateFacility, "systemFileUpdateFacility must not be null");
         this.solvencyPreCheck = requireNonNull(solvencyPreCheck, "solvencyPreCheck must not be null");
+        this.authorizer = requireNonNull(authorizer, "authorizer must not be null");
     }
 
     /**
@@ -306,7 +311,7 @@ public class HandleWorkflow {
             // Run all pre-checks
             final var validationResult = validate(consensusNow, verifier, preHandleResult, readableStoreFactory, fees);
             if (validationResult.status() != SO_FAR_SO_GOOD) {
-                if (preHandleResult.status() == NODE_DUE_DILIGENCE_FAILURE) {
+                if (validationResult.status() == NODE_DUE_DILIGENCE_FAILURE) {
                     payer = creator.accountId();
                 }
                 final var penaltyFee = new Fees(fees.nodeFee(), fees.networkFee(), 0L);
@@ -367,11 +372,22 @@ public class HandleWorkflow {
             @NonNull final PreHandleResult preHandleResult,
             @NonNull final ReadableStoreFactory storeFactory,
             @NonNull final Fees fees) {
-        final var txBody = preHandleResult.txInfo().txBody();
+        final var payerID = preHandleResult.payer();
+        final var txInfo = preHandleResult.txInfo();
+        final var functionality = txInfo.functionality();
+        final var txBody = txInfo.txBody();
 
         // Check if pre-handle was successful
         if (preHandleResult.status() != SO_FAR_SO_GOOD) {
             return new ValidationResult(preHandleResult.status(), preHandleResult.responseCode());
+        }
+
+        // Check the status and solvency of the payer
+        try {
+            final var payer = solvencyPreCheck.getPayerAccount(storeFactory, payerID);
+            solvencyPreCheck.checkSolvency(txInfo, payer, fees.totalWithoutServiceFee());
+        } catch (final PreCheckException e) {
+            return new ValidationResult(NODE_DUE_DILIGENCE_FAILURE, e.responseCode());
         }
 
         // Check the time box of the transaction
@@ -381,12 +397,18 @@ public class HandleWorkflow {
             return new ValidationResult(PRE_HANDLE_FAILURE, e.responseCode());
         }
 
-        // Check the status and solvency of the payer
-        try {
-            final var payer = solvencyPreCheck.getPayerAccount(storeFactory, preHandleResult.payer());
-            solvencyPreCheck.checkSolvency(preHandleResult.txInfo(), payer, fees.totalWithoutServiceFee());
-        } catch (final PreCheckException e) {
-            return new ValidationResult(NODE_DUE_DILIGENCE_FAILURE, e.responseCode());
+        // Check if the payer has the required permissions
+        if (!authorizer.isAuthorized(payerID, functionality)) {
+            return new ValidationResult(PRE_HANDLE_FAILURE, ResponseCodeEnum.UNAUTHORIZED);
+        }
+
+        // Check if the transaction is privileged and if the payer has the required privileges
+        final var privileges = authorizer.hasPrivilegedAuthorization(payerID, functionality, txBody);
+        if (privileges == SystemPrivilege.UNAUTHORIZED) {
+            return new ValidationResult(PRE_HANDLE_FAILURE, ResponseCodeEnum.AUTHORIZATION_FAILED);
+        }
+        if (privileges == SystemPrivilege.IMPERMISSIBLE) {
+            return new ValidationResult(PRE_HANDLE_FAILURE, ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE);
         }
 
         // Check all signature verifications. This will also wait, if validation is still ongoing.

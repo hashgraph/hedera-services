@@ -43,7 +43,8 @@ public class AuthorizerImpl implements Authorizer {
     private final PrivilegesVerifier privilegedTransactionChecker;
 
     @Inject
-    public AuthorizerImpl(@NonNull final ConfigProvider configProvider, @NonNull PrivilegesVerifier privilegedTransactionChecker) {
+    public AuthorizerImpl(
+            @NonNull final ConfigProvider configProvider, @NonNull PrivilegesVerifier privilegedTransactionChecker) {
         this.configProvider = requireNonNull(configProvider);
         this.accountsConfig = configProvider.getConfiguration().getConfigData(AccountsConfig.class);
         this.privilegedTransactionChecker = requireNonNull(privilegedTransactionChecker);
