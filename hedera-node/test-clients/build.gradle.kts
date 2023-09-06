@@ -71,12 +71,12 @@ eetModuleInfo {
 tasks.itest {
     systemProperty("junit.jupiter.execution.parallel.enabled", false)
     systemProperty("TAG", "services-node:" + project.version)
-    systemProperty("networkWorkspaceDir", File(project.buildDir, "network/itest"))
+    systemProperty("networkWorkspaceDir", layout.buildDirectory.dir("network/itest").get().asFile)
 }
 
 tasks.eet {
     systemProperty("TAG", "services-node:" + project.version)
-    systemProperty("networkWorkspaceDir", File(project.buildDir, "network/eet"))
+    systemProperty("networkWorkspaceDir", layout.buildDirectory.dir("network/itest").get().asFile)
 }
 
 tasks.shadowJar {

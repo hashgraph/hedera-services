@@ -70,12 +70,14 @@ jmhModuleInfo {
 
 // Replace variables in semantic-version.properties with build variables
 tasks.processResources {
+    inputs.property("protoVersion", libs.versions.hapi.proto.get())
+    inputs.property("hederaServicesVersion", project.version)
     filesMatching("semantic-version.properties") {
         filter { line: String ->
             if (line.contains("hapi-proto.version")) {
-                "hapi.proto.version=" + libs.versions.hapi.proto.get()
+                "hapi.proto.version=${inputs.properties["protoVersion"]}"
             } else if (line.contains("project.version")) {
-                "hedera.services.version=" + project.version
+                "hedera.services.version=${inputs.properties["hederaServicesVersion"]}"
             } else {
                 line
             }
