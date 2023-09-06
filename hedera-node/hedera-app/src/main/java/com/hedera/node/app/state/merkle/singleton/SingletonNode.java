@@ -23,6 +23,9 @@ import com.swirlds.common.merkle.impl.PartialBinaryMerkleInternal;
 import com.swirlds.common.utility.Labeled;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+import static com.hedera.node.app.state.TransactionStateLogger.logSingletonRead;
+import static com.hedera.node.app.state.TransactionStateLogger.logSingletonWrite;
+
 /**
  * A merkle node with a string (the label) as the left child, and the merkle node value as the right
  * child. We actually support a raw type (any type!) as the value, and we serialize it and put it
@@ -77,11 +80,15 @@ public class SingletonNode<T> extends PartialBinaryMerkleInternal implements Lab
 
     public T getValue() {
         final ValueLeaf<T> right = getRight();
+        // Log to transaction state log, what was read
+        logSingletonRead(getLabel(),right);
         return right.getValue();
     }
 
     public void setValue(T value) {
         ValueLeaf<T> right = getRight();
         right.setValue(value);
+        // Log to transaction state log, what was written
+        logSingletonWrite(getLabel(),value);
     }
 }

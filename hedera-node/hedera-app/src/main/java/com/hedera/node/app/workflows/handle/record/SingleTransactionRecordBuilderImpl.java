@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.handle.record;
 
+import static com.hedera.node.app.state.TransactionStateLogger.logEndTransactionRecord;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
@@ -205,6 +206,9 @@ public class SingleTransactionRecordBuilderImpl
                         pair.getValue(),
                         new OneOf<>(TransactionSidecarRecord.SidecarRecordsOneOfType.BYTECODE, pair.getKey())))
                 .forEach(transactionSidecarRecords::add);
+
+        // Log end of user transaction to transaction state log
+        logEndTransactionRecord(transactionID, transactionRecord);
 
         return new SingleTransactionRecord(transaction, transactionRecord, transactionSidecarRecords);
     }

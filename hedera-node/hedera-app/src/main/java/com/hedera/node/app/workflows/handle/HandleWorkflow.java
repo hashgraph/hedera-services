@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.state.TransactionStateLogger.*;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.SAME_NODE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.NODE_DUE_DILIGENCE_FAILURE;
@@ -169,6 +170,9 @@ public class HandleWorkflow {
         // with the block record manager.
         final var userTransactionsHandled = new AtomicBoolean(false);
 
+        // log start of round to transaction state log
+        logStartRound(round);
+
         // handle each event in the round
         for (final ConsensusEvent event : round) {
             final var creator = networkInfo.nodeInfo(event.getCreatorId().id());
@@ -181,6 +185,9 @@ public class HandleWorkflow {
                 logger.warn("Received event from node {} which is not in the address book", event.getCreatorId());
                 return;
             }
+
+            // log start of event to transaction state log
+            logStartEvent(event, creator);
 
             // handle each transaction of the event
             for (final var it = event.consensusTransactionIterator(); it.hasNext(); ) {
@@ -285,6 +292,13 @@ public class HandleWorkflow {
                 transactionBytes = Transaction.PROTOBUF.toBytes(transaction);
             }
 
+            // Log start of user transaction to transaction state log
+            logStartUserTransaction(platformTxn, txBody, payer);
+            logStartUserTransactionPreHandleResultP2(preHandleResult.payer(), preHandleResult.payerKey(),
+                    preHandleResult.status(), preHandleResult.responseCode());
+            logStartUserTransactionPreHandleResultP3(preHandleResult.txInfo(), preHandleResult.requiredKeys(),
+                    preHandleResult.verificationResults());
+
             // Initialize record builder list
             recordBuilder
                     .transaction(transactionInfo.transaction())
@@ -369,7 +383,7 @@ public class HandleWorkflow {
         // Commit all state changes
         stack.commitFullStack();
 
-        // store all records at once
+        // store all records at once, build() records end of transaction to log
         final var recordListResult = recordListBuilder.build();
         recordCache.add(
                 creator.nodeId(),

@@ -59,6 +59,24 @@
       </DefaultRolloverStrategy>
     </RollingFile>
 
+    <!-- Transaction state logs -->
+    <RollingFile name="TransactionStateLogs" fileName="output/transaction-state/state-changes.log"
+                 filePattern="transaction-state/state-changes-%d{yyyy-MM-dd}-%i.log.gz">
+      <PatternLayout>
+        <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p %-4L %c{1} - %m{nolookups}%n</pattern>
+      </PatternLayout>
+      <Policies>
+        <SizeBasedTriggeringPolicy size="100 MB"/>
+      </Policies>
+      <DefaultRolloverStrategy max="10">
+        <Delete basePath="output" maxDepth="3">
+          <IfFileName glob="swirlds-hashstream/swirlds-hashstream-*.log.gz">
+            <IfLastModified age="P3D"/>
+          </IfFileName>
+        </Delete>
+      </DefaultRolloverStrategy>
+    </RollingFile>
+
   </Appenders>
   <Loggers>
     <Root level="FATAL">
@@ -185,6 +203,11 @@
 
         <MarkerFilter marker="DISABLED"               onMatch="DENY"   onMismatch="DENY" />
       </Filters>
+    </Logger>
+
+    <!-- Send transaction state logs to their own appender   -->
+    <Logger name="com.hedera.node.app.state.TransactionStateLogger" level="trace" additivity="false">
+      <AppenderRef ref="TransactionStateLogs"/>
     </Logger>
 
     <Logger name="com.hedera" level="info" additivity="false">

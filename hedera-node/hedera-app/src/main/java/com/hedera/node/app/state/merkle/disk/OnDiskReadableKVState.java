@@ -26,6 +26,8 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 
+import static com.hedera.node.app.state.TransactionStateLogger.*;
+
 /**
  * An implementation of {@link ReadableKVState} backed by a {@link VirtualMap}, resulting in a state
  * that is stored on disk.
@@ -57,13 +59,19 @@ public final class OnDiskReadableKVState<K, V> extends ReadableKVStateBase<K, V>
     protected V readFromDataSource(@NonNull K key) {
         final var k = new OnDiskKey<>(md, key);
         final var v = virtualMap.get(k);
-        return v == null ? null : v.getValue();
+        final var value = v == null ? null : v.getValue();
+        // Log to transaction state log, what was read
+        logMapGet(getStateKey(), key, value);
+        return value;
     }
 
     /** {@inheritDoc} */
     @NonNull
     @Override
     protected Iterator<K> iterateFromDataSource() {
+        // Log to transaction state log, what was iterated
+        logMapIterate(getStateKey(), virtualMap);
+
         final var itr = virtualMap.treeIterator();
         return new Iterator<>() {
             private K next = null;
@@ -100,6 +108,9 @@ public final class OnDiskReadableKVState<K, V> extends ReadableKVStateBase<K, V>
     /** {@inheritDoc} */
     @Override
     public long size() {
-        return virtualMap.size();
+        final var size = virtualMap.size();
+        // Log to transaction state log, size of map
+        logMapGetSize(getStateKey(), size);
+        return size;
     }
 }
