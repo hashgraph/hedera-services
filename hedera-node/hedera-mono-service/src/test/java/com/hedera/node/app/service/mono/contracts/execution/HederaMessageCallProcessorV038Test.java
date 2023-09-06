@@ -408,7 +408,7 @@ class HederaMessageCallProcessorV038Test {
 
         subject.start(frame, hederaTracer);
 
-        verify(frame).decrementRemainingGas(frame.getRemainingGas());
+        verify(frame).decrementRemainingGas(initialGas);
         verify(frame).setState(EXCEPTIONAL_HALT);
         verify(frame, times(1)).getState();
         verify(hederaTracer).traceAccountCreationResult(frame, Optional.of(FAILURE_DURING_LAZY_ACCOUNT_CREATE));
