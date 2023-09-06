@@ -130,6 +130,12 @@ public class EventualRecordStreamAssertion extends EventualAssertion {
         }
     }
 
+    public void unsubscribe() {
+        if (unsubscribe != null) {
+            unsubscribe.run();
+        }
+    }
+
     @Override
     public String toString() {
         return "Eventually{" + assertion + "}";

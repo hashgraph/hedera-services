@@ -57,7 +57,7 @@ public class ValidContractIdsAssertion implements RecordStreamAssertion {
 
     private void validateActionIds(List<ContractAction> actions) {
         for (final var action : actions) {
-            System.out.println("VALIDATING " + action);
+            //            System.out.println("VALIDATING " + action);
             if (action.hasCallingAccount()) {
                 assertValid(action.getCallingAccount());
             } else if (action.hasCallingContract()) {
