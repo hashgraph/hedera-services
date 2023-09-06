@@ -381,9 +381,9 @@ jobs:
          echo "docker-registry=${DOCKER_REGISTRY}" >>"${GITHUB_OUTPUT}"
 
          DOCKER_TAG_BASE="gcr.io/hedera-registry"
-         if [[ "${{ inputs.version-policy }}" == "branch-commit" ]]; then
+         if [[ "${{ inputs.version-policy }}" == "branch-commit" && "${{ inputs.dry-run-enabled }}" != true ]]; then
             DOCKER_TAG_BASE="us-docker.pkg.dev/swirlds-registry/local-node"
-         elif [[ "${{ inputs.dry-run-enabled }}" == true ]]; then
+         else
             DOCKER_TAG_BASE="localhost:5000"
          fi
           
