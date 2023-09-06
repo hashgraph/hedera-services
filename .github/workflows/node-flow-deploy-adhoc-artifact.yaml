@@ -11,7 +11,7 @@ on:
         description: "Java JDK Version:"
         type: string
         required: false
-        default: "17.0.8.1"
+        default: "17.0.8"
       java-distribution:
         description: "Java JDK Distribution:"
         type: string
@@ -36,7 +36,7 @@ jobs:
       version-policy: branch-commit
       trigger-env-deploy: none
       dry-run-enabled: ${{ github.event.inputs.dry-run-enabled == 'true' }}
-      java-version: ${{ github.event.inputs.java-version || '17.0.8.1' }}
+      java-version: ${{ github.event.inputs.java-version || '17.0.8' }}
       java-distribution: ${{ github.event.inputs.java-distribution || 'temurin' }}
       gradle-version: ${{ github.event.inputs.gradle-version || 'wrapper' }}
 
