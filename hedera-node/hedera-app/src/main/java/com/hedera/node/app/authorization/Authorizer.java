@@ -46,9 +46,9 @@ public interface Authorizer {
     /**
      * Checks whether an account is exempt from paying fees.
      *
+     * @param id the {@link AccountID} to check
      * @param functionality the {@link HederaFunctionality} of the transaction
      * @param txBody the {@link TransactionBody} of the transaction
-     * @param id the {@link AccountID} to check
      * @return {@code true} if the account is exempt from paying fees, otherwise {@code false}
      */
     SystemPrivilege hasPrivilegedAuthorization(
