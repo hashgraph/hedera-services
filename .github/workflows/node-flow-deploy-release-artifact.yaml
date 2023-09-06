@@ -49,23 +49,6 @@ defaults:
     shell: bash
 
 jobs:
-  release-adhoc:
-    name: Release / Adhoc
-    if: ${{ github.event_name == 'workflow_dispatch' }}
-    uses: ./.github/workflows/node-zxc-build-release-artifact.yaml
-    with:
-      version-policy: branch-commit
-      trigger-env-deploy: none
-      dry-run-enabled: ${{ github.event.inputs.dry-run-enabled == 'true' }}
-      java-version: ${{ github.event.inputs.java-version || '17.0.7' }}
-      java-distribution: ${{ github.event.inputs.java-distribution || 'temurin' }}
-      gradle-version: ${{ github.event.inputs.gradle-version || 'wrapper' }}
-
-    secrets:
-      access-token: ${{ secrets.GITHUB_TOKEN }}
-      bucket-name: ${{ secrets.RELEASE_ARTIFACT_BUCKET_NAME }}
-      jenkins-integration-url: ${{ secrets.RELEASE_JENKINS_INTEGRATION_URL }}
-
   prepare-tag-release:
     name: Release / Tag / Prepare
     runs-on: [self-hosted, Linux, medium, ephemeral]

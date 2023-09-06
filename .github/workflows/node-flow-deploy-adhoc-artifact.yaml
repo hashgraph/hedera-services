@@ -1,0 +1,45 @@
+name: "Node: Deploy Adhoc Artifact"
+on:
+  workflow_dispatch:
+    inputs:
+      dry-run-enabled:
+        description: "Perform Dry Run"
+        type: boolean
+        required: false
+        default: false
+      java-version:
+        description: "Java JDK Version:"
+        type: string
+        required: false
+        default: "17.0.8.1"
+      java-distribution:
+        description: "Java JDK Distribution:"
+        type: string
+        required: false
+        default: "temurin"
+      gradle-version:
+        description: "Gradle Version:"
+        type: string
+        required: false
+        default: "wrapper"
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  release-adhoc:
+    name: Release / Adhoc
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    uses: ./.github/workflows/node-zxc-build-release-artifact.yaml
+    with:
+      version-policy: branch-commit
+      trigger-env-deploy: none
+      dry-run-enabled: ${{ github.event.inputs.dry-run-enabled == 'true' }}
+      java-version: ${{ github.event.inputs.java-version || '17.0.8.1' }}
+      java-distribution: ${{ github.event.inputs.java-distribution || 'temurin' }}
+      gradle-version: ${{ github.event.inputs.gradle-version || 'wrapper' }}
+
+    secrets:
+      access-token: ${{ secrets.GITHUB_TOKEN }}
+      bucket-name: ${{ secrets.RELEASE_ARTIFACT_BUCKET_NAME }}
