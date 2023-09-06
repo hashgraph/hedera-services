@@ -43,8 +43,8 @@ class ProcessorModuleTest {
 
     @Test
     void provideHederaSystemContracts() {
-        final var hederaSystemContracts =
-                ProcessorModule.provideHederaSystemContracts(htsSystemContract, exchangeRateSystemContract, prngSystemContract);
+        final var hederaSystemContracts = ProcessorModule.provideHederaSystemContracts(
+                htsSystemContract, exchangeRateSystemContract, prngSystemContract);
         assertThat(hederaSystemContracts)
                 .isNotNull()
                 .hasSize(3)
