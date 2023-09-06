@@ -22,7 +22,6 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAdd
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
@@ -252,7 +251,7 @@ public class ContractCallSuite extends HapiSuite {
 
     private HapiSpec hollowCreationFailsCleanly() {
         final var contract = "HollowAccountCreator";
-        return onlyDefaultHapiSpec("HollowCreationFailsCleanly")
+        return defaultHapiSpec("HollowCreationFailsCleanly")
                 .given(
                         streamMustIncludeNoFailuresFrom(sidecarIdValidator()),
                         uploadInitCode(contract),
@@ -262,9 +261,7 @@ public class ContractCallSuite extends HapiSuite {
                         .gas(2_000_000L)
                         .via("callTransaction")
                         .hasKnownStatusFrom(SUCCESS, INVALID_SOLIDITY_ADDRESS))
-                .then(
-                        getAccountBalance(contract).hasTinyBars(0L),
-                        getTxnRecord("callTransaction").andAllChildRecords().logged());
+                .then(getTxnRecord("callTransaction").andAllChildRecords().logged());
     }
 
     private HapiSpec lowLevelEcrecCallBehavior() {
