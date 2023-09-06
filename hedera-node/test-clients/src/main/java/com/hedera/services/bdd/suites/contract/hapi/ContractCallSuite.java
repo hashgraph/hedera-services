@@ -256,15 +256,14 @@ public class ContractCallSuite extends HapiSuite {
                 .given(
                         streamMustIncludeNoFailuresFrom(sidecarIdValidator()),
                         uploadInitCode(contract),
-                        contractCreate(contract),
-                        getContractInfo(contract).logged())
+                        contractCreate(contract))
                 .when(contractCall(contract, "testCallFoo", randomHeadlongAddress(), BigInteger.valueOf(500_000L))
                         .sending(ONE_HBAR)
                         .gas(2_000_000L)
                         .via("callTransaction")
                         .hasKnownStatusFrom(SUCCESS, INVALID_SOLIDITY_ADDRESS))
                 .then(
-                        getContractInfo(contract).logged(),
+                        getAccountBalance(contract).hasTinyBars(0L),
                         getTxnRecord("callTransaction").andAllChildRecords().logged());
     }
 
