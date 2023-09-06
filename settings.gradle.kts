@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-pluginManagement { @Suppress("UnstableApiUsage") includeBuild("build-logic") }
+pluginManagement { includeBuild("build-logic") }
 
 plugins { id("com.hedera.hashgraph.settings") }
 

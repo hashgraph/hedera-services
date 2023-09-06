@@ -16,9 +16,12 @@
 
 package com.hedera.node.app.workflows.handle;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE;
+import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.SAME_NODE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.NODE_DUE_DILIGENCE_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE_HANDLE_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
@@ -204,12 +207,7 @@ public class HandleWorkflow {
         final Instant consensusNow = platformTxn.getConsensusTimestamp();
 
         // handle user transaction
-        final var txBody = handleUserTransaction(consensusNow, state, platformEvent, creator, platformTxn);
-
-        // Notify responsible facility if system-file was uploaded
-        if (txBody != null) {
-            systemFileUpdateFacility.handleTxBody(state, txBody);
-        }
+        handleUserTransaction(consensusNow, state, platformEvent, creator, platformTxn);
 
         // TODO: handle long scheduled transactions
 
@@ -217,8 +215,7 @@ public class HandleWorkflow {
         // TODO: and have their own start/end. So system transactions are handled like separate user transactions.
     }
 
-    @Nullable
-    private TransactionBody handleUserTransaction(
+    private void handleUserTransaction(
             @NonNull final Instant consensusNow,
             @NonNull final HederaState state,
             @NonNull final ConsensusEvent platformEvent,
@@ -258,7 +255,7 @@ public class HandleWorkflow {
             if (transactionInfo == null) {
                 // FUTURE: Charge node generic penalty, set values in record builder, and remove log statement
                 logger.error("Non-parsable transaction from creator {}", creator);
-                return null;
+                return;
             }
 
             // Get the parsed data
@@ -310,9 +307,15 @@ public class HandleWorkflow {
             fees = dispatcher.dispatchComputeFees(context);
 
             // Run all pre-checks
-            final var validationResult = validate(consensusNow, verifier, preHandleResult, readableStoreFactory, fees);
+            final var validationResult = validate(
+                    consensusNow,
+                    verifier,
+                    preHandleResult,
+                    readableStoreFactory,
+                    fees,
+                    platformEvent.getCreatorId().id());
             if (validationResult.status() != SO_FAR_SO_GOOD) {
-                if (preHandleResult.status() == NODE_DUE_DILIGENCE_FAILURE) {
+                if (validationResult.status() == NODE_DUE_DILIGENCE_FAILURE) {
                     payer = creator.accountId();
                 }
                 final var penaltyFee = new Fees(fees.nodeFee(), fees.networkFee(), 0L);
@@ -325,6 +328,10 @@ public class HandleWorkflow {
                     // Dispatch the transaction to the handler
                     dispatcher.dispatchHandle(context);
                     recordBuilder.status(SUCCESS);
+
+                    // Notify responsible facility if system-file was uploaded
+                    systemFileUpdateFacility.handleTxBody(stack, txBody);
+
                 } catch (final HandleException e) {
                     rollback(e.getStatus(), stack, recordListBuilder);
                     feeAccumulator.charge(payer, fees);
@@ -351,8 +358,6 @@ public class HandleWorkflow {
                 recordListResult.userTransactionRecord().transactionRecord(),
                 consensusNow);
         blockRecordManager.endUserTransaction(recordListResult.recordStream(), state);
-
-        return txBody;
     }
 
     @NonNull
@@ -370,12 +375,25 @@ public class HandleWorkflow {
             @NonNull final HandleContextVerifier verifier,
             @NonNull final PreHandleResult preHandleResult,
             @NonNull final ReadableStoreFactory storeFactory,
-            @NonNull final Fees fees) {
+            @NonNull final Fees fees,
+            final long nodeID) {
         final var txBody = preHandleResult.txInfo().txBody();
 
         // Check if pre-handle was successful
         if (preHandleResult.status() != SO_FAR_SO_GOOD) {
             return new ValidationResult(preHandleResult.status(), preHandleResult.responseCode());
+        }
+
+        // Check for duplicate transactions. It is perfectly normal for there to be duplicates -- it is valid for
+        // a user to intentionally submit duplicates to multiple nodes as a hedge against dishonest nodes, or for
+        // other reasons. If we find a duplicate, we *will not* execute the transaction, we will simply charge
+        // the payer (whether the payer from the transaction or the node in the event of a due diligence failure)
+        // and create an appropriate record to save in state and send to the record stream.
+        final var duplicateCheckResult = recordCache.hasDuplicate(txBody.transactionID(), nodeID);
+        if (duplicateCheckResult != NO_DUPLICATE) {
+            return new ValidationResult(
+                    duplicateCheckResult == SAME_NODE ? NODE_DUE_DILIGENCE_FAILURE : PRE_HANDLE_FAILURE,
+                    DUPLICATE_TRANSACTION);
         }
 
         // Check the time box of the transaction
