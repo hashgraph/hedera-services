@@ -31,6 +31,8 @@ plugins {
 
 spotless { kotlinGradle { target("build-logic/**/*.gradle.kts") } }
 
+val productVersion = layout.projectDirectory.versionTxt().asFile.readText().trim()
+
 tasks.register("githubVersionSummary") {
     group = "github"
     doLast {
@@ -50,7 +52,7 @@ tasks.register("githubVersionSummary") {
 
 tasks.register("showVersion") {
     group = "versioning"
-    doLast { println(project.version) }
+    doLast { println(productVersion) }
 }
 
 tasks.register("versionAsPrefixedCommit") {
@@ -59,8 +61,7 @@ tasks.register("versionAsPrefixedCommit") {
         gitData.lastCommitHash?.let {
             val prefix = providers.gradleProperty("commitPrefix").getOrElse("adhoc")
             val newPrerel = prefix + ".x" + it.take(8)
-            val currVer =
-                SemVer.parse(layout.projectDirectory.versionTxt().asFile.readText().trim())
+            val currVer = SemVer.parse(productVersion)
             try {
                 val newVer = SemVer(currVer.major, currVer.minor, currVer.patch, newPrerel)
                 Utils.updateVersion(rootProject, newVer)
@@ -74,7 +75,7 @@ tasks.register("versionAsPrefixedCommit") {
 tasks.register("versionAsSnapshot") {
     group = "versioning"
     doLast {
-        val currVer = SemVer.parse(layout.projectDirectory.versionTxt().asFile.readText().trim())
+        val currVer = SemVer.parse(productVersion)
         val newVer = SemVer(currVer.major, currVer.minor, currVer.patch, "SNAPSHOT")
 
         Utils.updateVersion(rootProject, newVer)
