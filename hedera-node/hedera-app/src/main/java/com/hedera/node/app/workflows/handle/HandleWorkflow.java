@@ -406,6 +406,13 @@ public class HandleWorkflow {
             }
         }
 
+        for (final var hollowAccount : preHandleResult.hollowAccounts()) {
+            final var verification = verifier.verificationFor(hollowAccount.alias());
+            if (verification.failed()) {
+                return new ValidationResult(PRE_HANDLE_FAILURE, INVALID_SIGNATURE);
+            }
+        }
+
         return new ValidationResult(SO_FAR_SO_GOOD, OK);
     }
 
@@ -520,6 +527,7 @@ public class HandleWorkflow {
                 previousResult.responseCode(),
                 previousResult.txInfo(),
                 context.requiredNonPayerKeys(),
+                context.requiredHollowAccounts(),
                 verifications,
                 previousResult.innerResult(),
                 previousResult.configVersion());
