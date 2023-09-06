@@ -360,7 +360,7 @@ public class GracePeriodRestrictionsSuite extends HapiSuite {
                         cryptoCreate(civilian),
                         cryptoCreate(detachedAccount).balance(0L).autoRenewSecs(2))
                 .when(
-                        sleepFor(1_500L),
+                        sleepFor(2_500L),
                         // Add a triggering transfer to let the ENTITY_EXPIRATION task
                         // mark the detached account as expired-and-pending-removal
                         cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L)))

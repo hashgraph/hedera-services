@@ -76,9 +76,6 @@ class QuerySystemContractOperationsTest {
                 () -> subject.getAccountAndExternalizeResult(1L, 2L, accountResultTranslator));
         assertThrows(
                 UnsupportedOperationException.class,
-                () -> subject.getRelationshipAndExternalizeResult(1L, 2L, 3L, tokenRelResultTranslator));
-        assertThrows(
-                UnsupportedOperationException.class,
                 () -> subject.dispatch(TransactionBody.DEFAULT, MOCK_VERIFICATION_STRATEGY));
         assertThrows(
                 UnsupportedOperationException.class,

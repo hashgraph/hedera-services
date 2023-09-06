@@ -37,6 +37,7 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class AuthorizerImpl implements Authorizer {
+
     private final ConfigProvider configProvider;
     private final AccountsConfig accountsConfig;
     private final PrivilegesVerifier privilegedTransactionChecker;
