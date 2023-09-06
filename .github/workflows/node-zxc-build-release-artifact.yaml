@@ -14,7 +14,7 @@
 # limitations under the License.
 ##
 
-name: "ZXC: Build Release Artifact"
+name: "ZXC: [Node] Build Release Artifact"
 on:
   workflow_call:
     inputs:
