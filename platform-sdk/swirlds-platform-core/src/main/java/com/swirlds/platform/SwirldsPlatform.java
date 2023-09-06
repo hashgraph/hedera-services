@@ -143,7 +143,7 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateManager;
 import com.swirlds.platform.state.signed.SourceOfSignedState;
-import com.swirlds.platform.state.signed.StartupStateUtilities;
+import com.swirlds.platform.state.signed.StartupStateUtils;
 import com.swirlds.platform.stats.StatConstructor;
 import com.swirlds.platform.system.Shutdown;
 import com.swirlds.platform.threading.PauseAndLoad;
@@ -394,7 +394,7 @@ public class SwirldsPlatform implements Platform, Startable {
                     initialState.getState().getPlatformState().getPlatformData().getEpochHash();
         }
 
-        StartupStateUtilities.doRecoveryCleanup(
+        StartupStateUtils.doRecoveryCleanup(
                 platformContext,
                 recycleBin,
                 selfId,

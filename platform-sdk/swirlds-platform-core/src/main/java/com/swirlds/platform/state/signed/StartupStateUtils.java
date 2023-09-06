@@ -56,11 +56,11 @@ import org.apache.logging.log4j.Logger;
 /**
  * Utilities for loading and manipulating state files at startup time.
  */
-public final class StartupStateUtilities {
+public final class StartupStateUtils {
 
-    private static final Logger logger = LogManager.getLogger(StartupStateUtilities.class);
+    private static final Logger logger = LogManager.getLogger(StartupStateUtils.class);
 
-    private StartupStateUtilities() {}
+    private StartupStateUtils() {}
 
     /**
      * If necessary, perform cleanup in preparation for emergency recovery.
@@ -150,7 +150,7 @@ public final class StartupStateUtilities {
         Objects.requireNonNull(configAddressBook);
         Objects.requireNonNull(emergencyRecoveryManager);
 
-        final ReservedSignedState loadedState = StartupStateUtilities.loadStateFile(
+        final ReservedSignedState loadedState = StartupStateUtils.loadStateFile(
                 platformContext,
                 recycleBin,
                 selfId,

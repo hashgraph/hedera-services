@@ -21,7 +21,7 @@ import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomInstant;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.getSignedStateDirectory;
 import static com.swirlds.platform.state.signed.SignedStateFileWriter.writeSignedStateToDisk;
-import static com.swirlds.platform.state.signed.StartupStateUtilities.doRecoveryCleanup;
+import static com.swirlds.platform.state.signed.StartupStateUtils.doRecoveryCleanup;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -55,6 +55,8 @@ import com.swirlds.platform.internal.SignedStateLoadingException;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.recovery.RecoveryScratchpad;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
+import com.swirlds.platform.recovery.emergencyfile.Recovery;
+import com.swirlds.platform.recovery.emergencyfile.State;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
@@ -77,7 +79,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 @DisplayName("StartupStateUtilities Tests")
-class StartupStateUtilitiesTests {
+class StartupStateUtilsTests {
 
     /**
      * Temporary directory provided by JUnit
@@ -119,7 +121,7 @@ class StartupStateUtilitiesTests {
     }
 
     /**
-     * Write a state to disk in a location that will be discovered by {@link StartupStateUtilities}.
+     * Write a state to disk in a location that will be discovered by {@link StartupStateUtils}.
      *
      * @return the signed state that was written to disk
      */
@@ -182,7 +184,7 @@ class StartupStateUtilitiesTests {
     void genesisTest() throws SignedStateLoadingException {
         final PlatformContext platformContext = buildContext(false);
 
-        final SignedState loadedState = StartupStateUtilities.loadStateFile(
+        final SignedState loadedState = StartupStateUtils.loadStateFile(
                         platformContext,
                         TestRecycleBin.getInstance(),
                         selfId,
@@ -210,7 +212,7 @@ class StartupStateUtilitiesTests {
             latestState = writeState(random, platformContext, latestRound, null, false);
         }
 
-        final SignedState loadedState = StartupStateUtilities.loadStateFile(
+        final SignedState loadedState = StartupStateUtils.loadStateFile(
                         platformContext,
                         TestRecycleBin.getInstance(),
                         selfId,
@@ -242,7 +244,7 @@ class StartupStateUtilitiesTests {
             writeState(random, platformContext, latestRound, null, corrupted);
         }
 
-        assertThrows(SignedStateLoadingException.class, () -> StartupStateUtilities.loadStateFile(
+        assertThrows(SignedStateLoadingException.class, () -> StartupStateUtils.loadStateFile(
                         platformContext,
                         TestRecycleBin.getInstance(),
                         selfId,
@@ -285,7 +287,7 @@ class StartupStateUtilitiesTests {
                 .when(recycleBin)
                 .recycle(any());
 
-        final SignedState loadedState = StartupStateUtilities.loadStateFile(
+        final SignedState loadedState = StartupStateUtils.loadStateFile(
                         platformContext,
                         recycleBin,
                         selfId,
@@ -343,12 +345,12 @@ class StartupStateUtilitiesTests {
                 .when(emergencyRecoveryManager)
                 .emergencyStateLoaded();
 
-        final EmergencyRecoveryFile emergencyRecoveryFile = mock(EmergencyRecoveryFile.class);
+        final State state = new State(epochRound, epoch, null);
+        final Recovery recovery = new Recovery(state, null, null, null);
+        final EmergencyRecoveryFile emergencyRecoveryFile = new EmergencyRecoveryFile(recovery);
         when(emergencyRecoveryManager.getEmergencyRecoveryFile()).thenReturn(emergencyRecoveryFile);
-        when(emergencyRecoveryFile.hash()).thenReturn(epoch);
-        when(emergencyRecoveryFile.round()).thenReturn(epochRound);
 
-        final SignedState loadedState = StartupStateUtilities.loadStateFile(
+        final SignedState loadedState = StartupStateUtils.loadStateFile(
                         platformContext,
                         TestRecycleBin.getInstance(),
                         selfId,
@@ -399,12 +401,12 @@ class StartupStateUtilitiesTests {
                 .when(emergencyRecoveryManager)
                 .emergencyStateLoaded();
 
-        final EmergencyRecoveryFile emergencyRecoveryFile = mock(EmergencyRecoveryFile.class);
+        final State state = new State(epochRound, epoch, null);
+        final Recovery recovery = new Recovery(state, null, null, null);
+        final EmergencyRecoveryFile emergencyRecoveryFile = new EmergencyRecoveryFile(recovery);
         when(emergencyRecoveryManager.getEmergencyRecoveryFile()).thenReturn(emergencyRecoveryFile);
-        when(emergencyRecoveryFile.hash()).thenReturn(epoch);
-        when(emergencyRecoveryFile.round()).thenReturn(epochRound);
 
-        final SignedState loadedState = StartupStateUtilities.loadStateFile(
+        final SignedState loadedState = StartupStateUtils.loadStateFile(
                         platformContext,
                         TestRecycleBin.getInstance(),
                         selfId,
@@ -458,12 +460,12 @@ class StartupStateUtilitiesTests {
                 .when(emergencyRecoveryManager)
                 .emergencyStateLoaded();
 
-        final EmergencyRecoveryFile emergencyRecoveryFile = mock(EmergencyRecoveryFile.class);
+        final State state = new State(epochRound, epoch, null);
+        final Recovery recovery = new Recovery(state, null, null, null);
+        final EmergencyRecoveryFile emergencyRecoveryFile = new EmergencyRecoveryFile(recovery);
         when(emergencyRecoveryManager.getEmergencyRecoveryFile()).thenReturn(emergencyRecoveryFile);
-        when(emergencyRecoveryFile.hash()).thenReturn(epoch);
-        when(emergencyRecoveryFile.round()).thenReturn(epochRound);
 
-        final SignedState loadedState = StartupStateUtilities.loadStateFile(
+        final SignedState loadedState = StartupStateUtils.loadStateFile(
                         platformContext,
                         TestRecycleBin.getInstance(),
                         selfId,
@@ -523,12 +525,12 @@ class StartupStateUtilitiesTests {
                 .when(emergencyRecoveryManager)
                 .emergencyStateLoaded();
 
-        final EmergencyRecoveryFile emergencyRecoveryFile = mock(EmergencyRecoveryFile.class);
+        final State state = new State(epochRound, epoch, null);
+        final Recovery recovery = new Recovery(state, null, null, null);
+        final EmergencyRecoveryFile emergencyRecoveryFile = new EmergencyRecoveryFile(recovery);
         when(emergencyRecoveryManager.getEmergencyRecoveryFile()).thenReturn(emergencyRecoveryFile);
-        when(emergencyRecoveryFile.hash()).thenReturn(epoch);
-        when(emergencyRecoveryFile.round()).thenReturn(epochRound);
 
-        final SignedState loadedState = StartupStateUtilities.loadStateFile(
+        final SignedState loadedState = StartupStateUtils.loadStateFile(
                         platformContext,
                         TestRecycleBin.getInstance(),
                         selfId,
@@ -579,12 +581,12 @@ class StartupStateUtilitiesTests {
                 .when(emergencyRecoveryManager)
                 .emergencyStateLoaded();
 
-        final EmergencyRecoveryFile emergencyRecoveryFile = mock(EmergencyRecoveryFile.class);
+        final State state = new State(epochRound, epoch, null);
+        final Recovery recovery = new Recovery(state, null, null, null);
+        final EmergencyRecoveryFile emergencyRecoveryFile = new EmergencyRecoveryFile(recovery);
         when(emergencyRecoveryManager.getEmergencyRecoveryFile()).thenReturn(emergencyRecoveryFile);
-        when(emergencyRecoveryFile.hash()).thenReturn(epoch);
-        when(emergencyRecoveryFile.round()).thenReturn(epochRound);
 
-        final SignedState loadedState = StartupStateUtilities.loadStateFile(
+        final SignedState loadedState = StartupStateUtils.loadStateFile(
                         platformContext,
                         TestRecycleBin.getInstance(),
                         selfId,
@@ -619,7 +621,7 @@ class StartupStateUtilitiesTests {
         }
 
         final Hash epoch = randomHash(random);
-        final long epochRound = random.nextInt(1_000, 10_000);
+        final long epochRound = latestRound + 1;
 
         final AtomicBoolean emergencyStateLoaded = new AtomicBoolean(false);
 
@@ -632,20 +634,21 @@ class StartupStateUtilitiesTests {
                 .when(emergencyRecoveryManager)
                 .emergencyStateLoaded();
 
-        final EmergencyRecoveryFile emergencyRecoveryFile = mock(EmergencyRecoveryFile.class);
+        final State state = new State(epochRound, epoch, null);
+        final Recovery recovery = new Recovery(state, null, null, null);
+        final EmergencyRecoveryFile emergencyRecoveryFile = new EmergencyRecoveryFile(recovery);
         when(emergencyRecoveryManager.getEmergencyRecoveryFile()).thenReturn(emergencyRecoveryFile);
-        when(emergencyRecoveryFile.hash()).thenReturn(epoch);
-        when(emergencyRecoveryFile.round()).thenReturn(epochRound);
 
-        assertThrows(SignedStateLoadingException.class, () -> StartupStateUtilities.loadStateFile(
+        assertThrows(
+                SignedStateLoadingException.class,
+                () -> StartupStateUtils.loadStateFile(
                         platformContext,
                         TestRecycleBin.getInstance(),
                         selfId,
                         mainClassName,
                         swirldName,
                         new BasicSoftwareVersion(1),
-                        emergencyRecoveryManager)
-                .get());
+                        emergencyRecoveryManager));
     }
 
     @ParameterizedTest
@@ -694,12 +697,12 @@ class StartupStateUtilitiesTests {
                 .when(emergencyRecoveryManager)
                 .emergencyStateLoaded();
 
-        final EmergencyRecoveryFile emergencyRecoveryFile = mock(EmergencyRecoveryFile.class);
+        final State state = new State(epochRound, epoch, null);
+        final Recovery recovery = new Recovery(state, null, null, null);
+        final EmergencyRecoveryFile emergencyRecoveryFile = new EmergencyRecoveryFile(recovery);
         when(emergencyRecoveryManager.getEmergencyRecoveryFile()).thenReturn(emergencyRecoveryFile);
-        when(emergencyRecoveryFile.hash()).thenReturn(epoch);
-        when(emergencyRecoveryFile.round()).thenReturn(epochRound);
 
-        final SignedState loadedState = StartupStateUtilities.loadStateFile(
+        final SignedState loadedState = StartupStateUtils.loadStateFile(
                         platformContext,
                         recycleBin,
                         selfId,
