@@ -251,7 +251,6 @@ jobs:
 
       - name: Cache Build Artifacts
         uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
-        if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
         with:
           path: ~/artifact-build
           key: node-build-artifacts-${{ needs.validate.outputs.version }}-${{ github.sha }}
