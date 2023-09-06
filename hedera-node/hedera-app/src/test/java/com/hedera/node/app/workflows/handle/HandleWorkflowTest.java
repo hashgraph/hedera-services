@@ -58,6 +58,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.state.HederaRecordCache;
+import com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionScenarioBuilder;
@@ -163,7 +164,7 @@ class HandleWorkflowTest extends AppTestBase {
     @Mock(strictness = LENIENT)
     private SwirldTransaction platformTxn;
 
-    @Mock
+    @Mock(strictness = LENIENT)
     private HederaRecordCache recordCache;
 
     @Mock
@@ -230,7 +231,9 @@ class HandleWorkflowTest extends AppTestBase {
 
         when(dispatcher.dispatchComputeFees(any())).thenReturn(DEFAULT_FEES);
         when(networkInfo.nodeInfo(nodeSelfId.id())).thenReturn(selfNodeInfo);
-        when(exchangeRateManager.exchangeRates()).thenReturn(ExchangeRateSet.DEFAULT);
+        when(exchangeRateManager.exchangeRates()).thenReturn(EXCHANGE_RATE_SET);
+        when(recordCache.hasDuplicate(any(), eq(nodeSelfId.id())))
+                .thenReturn(HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE);
         when(authorizer.isAuthorized(eq(ALICE.accountID()), any())).thenReturn(true);
         when(authorizer.hasPrivilegedAuthorization(eq(ALICE.accountID()), any(), any()))
                 .thenReturn(Authorizer.SystemPrivilege.UNNECESSARY);
@@ -602,8 +605,6 @@ class HandleWorkflowTest extends AppTestBase {
     @Test
     @DisplayName("Successful execution of simple case")
     void testHappyPath() {
-        // given
-        when(exchangeRateManager.exchangeRates()).thenReturn(EXCHANGE_RATE_SET);
         // when
         workflow.handleRound(state, round);
 
@@ -692,7 +693,6 @@ class HandleWorkflowTest extends AppTestBase {
         void testPreHandleSuccess() {
             // given
             when(platformTxn.getMetadata()).thenReturn(null);
-            when(exchangeRateManager.exchangeRates()).thenReturn(EXCHANGE_RATE_SET);
 
             // when
             workflow.handleRound(state, round);
@@ -803,7 +803,7 @@ class HandleWorkflowTest extends AppTestBase {
                     })
                     .when(signatureExpander)
                     .expand(eq(Set.of(bobsKey)), any(), any());
-            when(exchangeRateManager.exchangeRates()).thenReturn(EXCHANGE_RATE_SET);
+
             // when
             workflow.handleRound(state, round);
 
@@ -891,7 +891,7 @@ class HandleWorkflowTest extends AppTestBase {
                             argThat(set -> set.size() == 1
                                     && bobsKey.equals(set.iterator().next().key()))))
                     .thenReturn(verificationResults);
-            when(exchangeRateManager.exchangeRates()).thenReturn(EXCHANGE_RATE_SET);
+
             // when
             workflow.handleRound(state, round);
 
@@ -964,7 +964,6 @@ class HandleWorkflowTest extends AppTestBase {
                     null,
                     CONFIG_VERSION);
             when(platformTxn.getMetadata()).thenReturn(preHandleResult);
-            when(exchangeRateManager.exchangeRates()).thenReturn(EXCHANGE_RATE_SET);
             doAnswer(invocation -> {
                         final var context = invocation.getArgument(0, PreHandleContext.class);
                         context.optionalKey(bobsKey);
@@ -1018,7 +1017,6 @@ class HandleWorkflowTest extends AppTestBase {
                     null,
                     CONFIG_VERSION);
             when(platformTxn.getMetadata()).thenReturn(preHandleResult);
-            when(exchangeRateManager.exchangeRates()).thenReturn(EXCHANGE_RATE_SET);
             doAnswer(invocation -> {
                         final var context = invocation.getArgument(0, PreHandleContext.class);
                         context.optionalKey(bobsKey);
@@ -1079,7 +1077,7 @@ class HandleWorkflowTest extends AppTestBase {
                             argThat(set -> set.size() == 1
                                     && bobsKey.equals(set.iterator().next().key()))))
                     .thenReturn(verificationResults);
-            when(exchangeRateManager.exchangeRates()).thenReturn(EXCHANGE_RATE_SET);
+
             // when
             workflow.handleRound(state, round);
 
@@ -1125,7 +1123,7 @@ class HandleWorkflowTest extends AppTestBase {
                             argThat(set -> set.size() == 1
                                     && bobsKey.equals(set.iterator().next().key()))))
                     .thenReturn(verificationResults);
-            when(exchangeRateManager.exchangeRates()).thenReturn(EXCHANGE_RATE_SET);
+
             // when
             workflow.handleRound(state, round);
 
@@ -1166,7 +1164,6 @@ class HandleWorkflowTest extends AppTestBase {
                     null,
                     CONFIG_VERSION);
             when(platformTxn.getMetadata()).thenReturn(preHandleResult);
-            when(exchangeRateManager.exchangeRates()).thenReturn(EXCHANGE_RATE_SET);
             doAnswer(invocation -> {
                         final var context = invocation.getArgument(0, PreHandleContext.class);
                         context.requireKey(bobsKey);
@@ -1229,6 +1226,36 @@ class HandleWorkflowTest extends AppTestBase {
     @Nested
     @DisplayName("Tests for general validations before handle is called")
     final class ValidationTest {
+
+        @Test
+        @DisplayName("Reject transaction, if it is a duplicate from another node")
+        void testDuplicateFromOtherNode() {
+            // given
+            when(recordCache.hasDuplicate(OK_RESULT.txInfo().txBody().transactionID(), selfNodeInfo.nodeId()))
+                    .thenReturn(DuplicateCheckResult.OTHER_NODE);
+
+            // when
+            workflow.handleRound(state, round);
+
+            // then
+            assertThat(accountsState.get(ALICE.accountID()).tinybarBalance()).isLessThan(DEFAULT_FEES.totalFee());
+            assertThat(accountsState.get(nodeSelfAccountId).tinybarBalance()).isEqualTo(DEFAULT_FEES.totalFee());
+        }
+
+        @Test
+        @DisplayName("Reject transaction, if it is a duplicate from same node")
+        void testDuplicateFromSameNode() {
+            // given
+            when(recordCache.hasDuplicate(OK_RESULT.txInfo().txBody().transactionID(), selfNodeInfo.nodeId()))
+                    .thenReturn(DuplicateCheckResult.SAME_NODE);
+
+            // when
+            workflow.handleRound(state, round);
+
+            // then
+            assertThat(accountsState.get(ALICE.accountID()).tinybarBalance()).isEqualTo(DEFAULT_FEES.totalFee());
+            assertThat(accountsState.get(nodeSelfAccountId).tinybarBalance()).isLessThan(DEFAULT_FEES.totalFee());
+        }
 
         @ParameterizedTest
         @EnumSource(names = {"INVALID_TRANSACTION_DURATION", "TRANSACTION_EXPIRED", "INVALID_TRANSACTION_START"})
