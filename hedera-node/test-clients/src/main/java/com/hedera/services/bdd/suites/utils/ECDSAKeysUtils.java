@@ -30,6 +30,6 @@ public class ECDSAKeysUtils {
     }
 
     public static Address randomHeadlongAddress() {
-        return Address.wrap(Address.toChecksumAddress(new BigInteger(genRandomBytes(20))));
+        return Address.wrap(Address.toChecksumAddress(new BigInteger(1, genRandomBytes(20))));
     }
 }
