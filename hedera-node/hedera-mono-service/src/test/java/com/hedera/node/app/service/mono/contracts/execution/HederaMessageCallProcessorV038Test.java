@@ -415,8 +415,9 @@ class HederaMessageCallProcessorV038Test {
         verify(hederaTracer)
                 .tracePostExecution(
                         eq(frame),
-                        argThat(result ->
-                                isSameResult(result, new Operation.OperationResult(initialGas, INSUFFICIENT_GAS))));
+                        argThat(result -> isSameResult(
+                                result,
+                                new Operation.OperationResult(initialGas, FAILURE_DURING_LAZY_ACCOUNT_CREATE))));
         verifyNoMoreInteractions(autoCreationLogic);
         verify(hederaTracer, never()).tracePrecompileCall(any(), anyLong(), any());
     }
