@@ -16,13 +16,10 @@
 
 package com.hedera.services.bdd.spec.utilops.streams.assertions;
 
-import com.hedera.services.stream.proto.ContractAction;
-import com.hedera.services.stream.proto.ContractBytecode;
-import com.hedera.services.stream.proto.ContractStateChange;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
-import java.util.List;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 public class ValidContractIdsAssertion implements RecordStreamAssertion {
     @Override
@@ -33,10 +30,9 @@ public class ValidContractIdsAssertion implements RecordStreamAssertion {
     @Override
     public boolean testSidecar(TransactionSidecarRecord sidecar) throws AssertionError {
         switch (sidecar.getSidecarRecordsCase()) {
-            case STATE_CHANGES -> validateStateChangeIds(
-                    sidecar.getStateChanges().getContractStateChangesList());
-            case ACTIONS -> validateActionIds(sidecar.getActions().getContractActionsList());
-            case BYTECODE -> validateBytecodeIds(sidecar.getBytecode());
+            case STATE_CHANGES -> validateStateChangeIds(sidecar);
+            case ACTIONS -> validateActionIds(sidecar);
+            case BYTECODE -> validateBytecodeIds(sidecar);
             case SIDECARRECORDS_NOT_SET -> {
                 // No-op
             }
@@ -46,41 +42,35 @@ public class ValidContractIdsAssertion implements RecordStreamAssertion {
         return false;
     }
 
-    private void validateStateChangeIds(List<ContractStateChange> stateChanges) {
+    private void validateStateChangeIds(@NonNull final TransactionSidecarRecord sidecar) {
+        final var stateChanges = sidecar.getStateChanges().getContractStateChangesList();
         for (final var change : stateChanges) {
             if (change.hasContractId()) {
-                assertValid(change.getContractId());
+                assertValid(change.getContractId(), "stateChange#contractId", sidecar);
             }
         }
     }
 
-    private void validateActionIds(List<ContractAction> actions) {
+    private void validateActionIds(@NonNull final TransactionSidecarRecord sidecar) {
+        final var actions = sidecar.getActions().getContractActionsList();
         for (final var action : actions) {
             if (action.hasCallingAccount()) {
-                assertValid(action.getCallingAccount());
+                assertValid(action.getCallingAccount(), "action#callingAccount", sidecar);
             } else if (action.hasCallingContract()) {
-                assertValid(action.getCallingContract());
+                assertValid(action.getCallingContract(), "action#callingContract", sidecar);
             }
 
             if (action.hasRecipientAccount()) {
-                assertValid(action.getRecipientAccount());
+                assertValid(action.getRecipientAccount(), "action#recipientAccount", sidecar);
             } else if (action.hasRecipientContract()) {
-                assertValid(action.getRecipientContract());
+                assertValid(action.getRecipientContract(), "action#recipientContract", sidecar);
             }
         }
     }
 
-    private void validateBytecodeIds(ContractBytecode bytecode) {
-        assertValid(bytecode.getContractId());
-    }
-
-    private void assertValid(ContractID id) {
-        final var isValid = isValid(id.getShardNum(), id.getRealmNum(), id.getContractNum());
-        if (!isValid) {
-            throw new AssertionError("Contract id "
-                    + String.format("%d.%d.%d", id.getShardNum(), id.getRealmNum(), id.getContractNum())
-                    + " is not valid");
-        }
+    private void validateBytecodeIds(@NonNull final TransactionSidecarRecord sidecar) {
+        final var bytecode = sidecar.getBytecode();
+        assertValid(bytecode.getContractId(), "bytecode#contractId", sidecar);
     }
 
     @Override
@@ -88,12 +78,30 @@ public class ValidContractIdsAssertion implements RecordStreamAssertion {
         return this.getClass().getSimpleName();
     }
 
-    private void assertValid(AccountID id) {
-        final var isValid = isValid(id.getShardNum(), id.getRealmNum(), id.getAccountNum());
-        if (!isValid) {
-            throw new AssertionError("Account id "
-                    + String.format("%d.%d.%d", id.getShardNum(), id.getRealmNum(), id.getAccountNum())
-                    + " is not valid");
+    private void assertValid(
+            @NonNull final ContractID id,
+            @NonNull final String label,
+            @NonNull final TransactionSidecarRecord sidecar) {
+        assertValid(id.getShardNum(), id.getRealmNum(), id.getContractNum(), "Contract", label, sidecar);
+    }
+
+    private void assertValid(
+            @NonNull final AccountID id, @NonNull final String label, @NonNull final TransactionSidecarRecord sidecar) {
+        assertValid(id.getShardNum(), id.getRealmNum(), id.getAccountNum(), "Account", label, sidecar);
+    }
+
+    private void assertValid(
+            final long shardNum,
+            final long realmNum,
+            final long entityNum,
+            @NonNull final String type,
+            @NonNull final String label,
+            @NonNull final TransactionSidecarRecord sidecar) {
+        if (!isValid(shardNum, realmNum, entityNum)) {
+            throw new AssertionError(type + " id (from "
+                    + label + " field) "
+                    + String.format("%d.%d.%d", shardNum, realmNum, entityNum)
+                    + " is not valid in sidecar record " + sidecar);
         }
     }
 
