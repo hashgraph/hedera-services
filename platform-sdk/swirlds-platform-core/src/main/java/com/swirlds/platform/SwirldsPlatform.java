@@ -1023,10 +1023,16 @@ public class SwirldsPlatform implements Platform, Startable {
 
     /**
      * Build the preconsensus event file manager.
+     *
+     * @param startingRound            the round number of the initial state being loaded into the system
+     * @param softwareUpgrade          whether or not this node is starting up after a software upgrade
+     * @param emergencyRecoveryManager the emergency recovery manager
      */
     @NonNull
     private PreconsensusEventFileManager buildPreconsensusEventFileManager(
-            final boolean softwareUpgrade, @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
+            final long startingRound,
+            final boolean softwareUpgrade,
+            @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
         try {
             if (emergencyRecoveryManager.isEmergencyRecoveryFilePresent()) {
                 logger.info(
@@ -1204,8 +1210,8 @@ public class SwirldsPlatform implements Platform, Startable {
     }
 
     /**
-     * Clears the preconsensus event stream if a software upgrade has occurred and the configuration specifies that
-     * the stream should be cleared on software upgrade.
+     * Clears the preconsensus event stream if a software upgrade has occurred and the configuration specifies that the
+     * stream should be cleared on software upgrade.
      *
      * @param softwareUpgrade true if a software upgrade has occurred
      * @throws UncheckedIOException if the required changes on software upgrade cannot be performed

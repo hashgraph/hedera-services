@@ -87,7 +87,14 @@ public class PreconsensusEventFileManager {
     /**
      * Tracks all files currently on disk.
      */
-    private final RandomAccessDeque<PreconsensusEventFile> files;
+    private final RandomAccessDeque<PreconsensusEventFile> files = new RandomAccessDeque<>(INITIAL_RING_BUFFER_SIZE);
+
+    /**
+     * When streaming files at startup time, this is the index of the first file to consider. Note that the file at this
+     * index may not contain any events in the requested generational range. This is just the first file that we may
+     * legally begin streaming from, regardless of generations.
+     */
+    private final int firstFileIndex;
 
     /**
      * The minimum amount of time that must pass before a file becomes eligible for deletion.
@@ -99,6 +106,7 @@ public class PreconsensusEventFileManager {
      */
     private long totalFileByteCount = 0;
 
+
     /**
      * Instantiate an event file collection. Loads all event files in the specified directory.
      *
@@ -106,12 +114,14 @@ public class PreconsensusEventFileManager {
      * @param time            provides wall clock time
      * @param recycleBin      can remove files in a way that allows them to be possibly recovered for debugging
      * @param selfId          the ID of this node
+     * @param startingRound   the round number of the initial state of the system
      */
     public PreconsensusEventFileManager(
             @NonNull final PlatformContext platformContext,
             @NonNull final Time time,
             @NonNull final RecycleBin recycleBin,
-            @NonNull final NodeId selfId)
+            @NonNull final NodeId selfId,
+            final long startingRound)
             throws IOException {
 
         Objects.requireNonNull(platformContext, "platformContext");
@@ -127,21 +137,138 @@ public class PreconsensusEventFileManager {
         databaseDirectory = getDatabaseDirectory(platformContext, selfId);
         this.recycleBin = Objects.requireNonNull(recycleBin);
 
+        readFilesFromDisk(preconsensusEventStreamConfig.permitGaps());
+
+        firstFileIndex = getFirstFileIndex(startingRound);
+        final long initialOrigin = getInitialOrigin(startingRound);
+
+        resolveDiscontinuities(initialOrigin);
+        initializeMetrics();
+    }
+
+    /**
+     * Get the directory where event files are stored. If that directory doesn't exist, create it.
+     *
+     * @param platformContext the platform context for this node
+     * @param selfId          the ID of this node
+     * @return the directory where event files are stored
+     */
+    @NonNull
+    private static Path getDatabaseDirectory(
+            @NonNull final PlatformContext platformContext, @NonNull final NodeId selfId) throws IOException {
+
+        final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
+        final PreconsensusEventStreamConfig preconsensusEventStreamConfig =
+                platformContext.getConfiguration().getConfigData(PreconsensusEventStreamConfig.class);
+
+        final Path savedStateDirectory = stateConfig.savedStateDirectory();
+        final Path databaseDirectory = savedStateDirectory
+                .resolve(preconsensusEventStreamConfig.databaseDirectory())
+                .resolve(Long.toString(selfId.id()));
+
         if (!Files.exists(databaseDirectory)) {
             Files.createDirectories(databaseDirectory);
         }
 
-        files = new RandomAccessDeque<>(INITIAL_RING_BUFFER_SIZE);
+        return databaseDirectory;
+    }
 
+    // TODO should these helper methods be static?
+
+    /**
+     * Scan the file system for event files and add them to the collection of tracked files.
+     *
+     * @param permitGaps if gaps are permitted in sequence number
+     */
+    private void readFilesFromDisk(final boolean permitGaps) throws IOException {
         try (final Stream<Path> fileStream = Files.walk(databaseDirectory)) {
             fileStream
                     .filter(f -> !Files.isDirectory(f))
                     .map(PreconsensusEventFileManager::parseFile)
                     .filter(Objects::nonNull)
                     .sorted()
-                    .forEachOrdered(buildFileHandler(preconsensusEventStreamConfig.permitGaps()));
+                    .forEachOrdered(buildFileHandler(permitGaps));
+        }
+    }
+
+    /**
+     * Get the index of the first file to consider when streaming files at startup time.
+     */
+    private int getFirstFileIndex(final long startingRound) {
+        // When streaming from the preconsensus event stream, we need to start at
+        // the file with the largest origin that does not exceed the starting round.
+        for (int firstFileIndex = 0; firstFileIndex < files.size(); firstFileIndex++) {
+            final PreconsensusEventFile file = files.get(firstFileIndex);
+            if (file.getMaximumGeneration() >= startingRound) {
+                return firstFileIndex;
+            }
         }
 
+        // None of the files are compatible with the starting round.
+        return files.size();
+    }
+
+    /**
+     * Get the current origin of the stream at startup time.
+     *
+     * @param startingRound the round number of the initial state of the system
+     * @return the current origin of the stream at startup time
+     */
+    private long getInitialOrigin(final long startingRound) {
+        if (firstFileIndex >= files.size()) {
+            // None of the files are compatible with the starting round, so the starting round becomes the origin.
+            return startingRound;
+        }
+        // We are continuing the stream without a discontinuity, carry forward the previous origin.
+        return files.get(firstFileIndex).getOrigin();
+    }
+
+    /**
+     * If there is a discontinuity in the stream after the location where we will begin streaming, delete all files that
+     * come after the discontinuity.
+     *
+     * @param initialOrigin the origin of the stream at startup time
+     */
+    private void resolveDiscontinuities(final long initialOrigin) throws IOException {
+        if (files.size() <= firstFileIndex) {
+            // None of the stream files are compatible with the starting round
+            return;
+        }
+
+        // For all files that come after the first file, any change in origin indicates a discontinuity.
+        // No discontinuities are permitted after the first file, so it is necessary to delete these files.
+
+        int firstIndexToDelete = firstFileIndex;
+        for (; firstIndexToDelete < files.size(); firstIndexToDelete++) {
+            final PreconsensusEventFile file = files.get(firstIndexToDelete);
+            if (file.getOrigin() != initialOrigin) {
+                break;
+            }
+        }
+
+        final PreconsensusEventFile lastUndeletedFile = firstIndexToDelete > 0 ?
+                files.get(firstIndexToDelete - 1) : null;
+
+        logger.warn(STARTUP.getMarker(), """
+                        Discontinuity detected in the preconsensus event stream. Purging {} file(s).
+                            Last undeleted file: {}
+                            First deleted file:  {}
+                            Last deleted file:   {}""",
+                files.size() - firstIndexToDelete,
+                lastUndeletedFile,
+                files.get(firstIndexToDelete),
+                files.getLast());
+
+        // Delete files in reverse order so that if we crash we don't leave gaps in the sequence number if we crash.
+        while (files.size() >= firstIndexToDelete) {
+            files.removeLast().deleteFile(databaseDirectory, recycleBin);
+        }
+    }
+
+    /**
+     * Initialize metrics given the files currently on disk.
+     */
+    private void initializeMetrics() throws IOException {
         // Measure the size of each file.
         for (final PreconsensusEventFile file : files) {
             totalFileByteCount += Files.size(file.getPath());
@@ -160,26 +287,6 @@ public class PreconsensusEventFileManager {
             metrics.getPreconsensusEventFileOldestSeconds().set(0);
         }
         updateFileSizeMetrics();
-    }
-
-    /**
-     * Get the directory where event files are stored.
-     *
-     * @param platformContext the platform context for this node
-     * @param selfId          the ID of this node
-     * @return the directory where event files are stored
-     */
-    private static Path getDatabaseDirectory(
-            @NonNull final PlatformContext platformContext, @NonNull final NodeId selfId) {
-
-        final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
-        final PreconsensusEventStreamConfig preconsensusEventStreamConfig =
-                platformContext.getConfiguration().getConfigData(PreconsensusEventStreamConfig.class);
-
-        final Path savedStateDirectory = stateConfig.savedStateDirectory();
-        return savedStateDirectory
-                .resolve(preconsensusEventStreamConfig.databaseDirectory())
-                .resolve(Long.toString(selfId.id()));
     }
 
     /**
@@ -288,27 +395,21 @@ public class PreconsensusEventFileManager {
      * </p>
      *
      * <p>
-     * Note: this iterator is not thread safe when events are actively being written. A future task will be to make it
-     * thread safe. Until then, don't use this iterator while events are being written.
+     * Note: this method only works at system startup time, using this iterator after startup has undefined behavior. A
+     * future task will be to enable event iteration after startup.
      * </p>
      *
-     * @param minimumGeneration  the desired minimum generation, iterator is guaranteed to walk over all files that may
-     *                           contain events with a generation greater or equal to this value. A value of
-     *                           {@link #NO_MINIMUM_GENERATION} will cause the returned iterator to walk over all
-     *                           available event files.
-     * @param fixDiscontinuities if true, any discontinuities after the requested minimum generation will be "fixed" by
-     *                           deleting all data following the first discontinuity.
+     * @param minimumGeneration the desired minimum generation, iterator is guaranteed to walk over all files that may
+     *                          contain events with a generation greater or equal to this value. A value of
+     *                          {@link #NO_MINIMUM_GENERATION} will cause the returned iterator to walk over all
+     *                          available event files.
      * @return an unmodifiable iterator that walks over event files in order
      */
-    public @NonNull Iterator<PreconsensusEventFile> getFileIterator(
-            final long minimumGeneration, final boolean fixDiscontinuities) {
+    public @NonNull Iterator<PreconsensusEventFile> getFileIterator(final long minimumGeneration) {
 
         // Edge case: we want all events regardless of generation
         if (minimumGeneration == NO_MINIMUM_GENERATION) {
-            if (fixDiscontinuities) {
-                scanForDiscontinuities(0);
-            }
-            return new UnmodifiableIterator<>(files.iterator());
+            return new UnmodifiableIterator<>(files.iterator(firstFileIndex));
         }
 
         // Edge case: there are no files
@@ -328,10 +429,7 @@ public class PreconsensusEventFileManager {
                     minimumGeneration,
                     files.getFirst().getMinimumGeneration());
 
-            if (fixDiscontinuities) {
-                scanForDiscontinuities(0);
-            }
-            return new UnmodifiableIterator<>(files.iterator());
+            return new UnmodifiableIterator<>(files.iterator(firstFileIndex));
         }
 
         // Edge case: all of our data comes before the requested starting generation
@@ -348,37 +446,16 @@ public class PreconsensusEventFileManager {
 
         // Standard case: we need to stream data starting from a file somewhere in the middle of stream
         final int fileCount = files.size();
-        for (int index = 0; index < fileCount; index++) {
+        for (int index = firstFileIndex; index < fileCount; index++) {
             final PreconsensusEventFile file = files.get(index);
             if (file.getMaximumGeneration() >= minimumGeneration) {
                 // We have found the first file that may contain events at the requested generation.
-                if (fixDiscontinuities) {
-                    scanForDiscontinuities(index);
-                }
                 return new UnmodifiableIterator<>(files.iterator(index));
             }
         }
 
         // It should not be possible to reach this point.
         throw new IllegalStateException("Failed to find a file that may contain events at the requested generation");
-    }
-
-    /**
-     * Scan the event files starting at a specified index. If discontinuities are found at or after this index, perform
-     * necessary cleanup on the event stream.
-     *
-     * @param startingIndex the file index to start scanning at
-     */
-    private void scanForDiscontinuities(final int startingIndex) {
-        final int fileCount = files.size();
-        for (int index = startingIndex; index < fileCount; index++) {
-            final PreconsensusEventFile file = files.get(index);
-            if (file.marksDiscontinuity()) {
-                // We have found a discontinuity, remove this and all following files.
-                resolveDiscontinuity(index);
-                return;
-            }
-        }
     }
 
     /**
@@ -442,22 +519,17 @@ public class PreconsensusEventFileManager {
      * </p>
      *
      * <p>
-     * Note: this iterator is not thread safe when events are actively being written. A future task will be to make it
-     * thread safe. Until then, don't use this iterator while events are being written.
-     * </p>
+     * Note: this method only works at system startup time, using this iterator after startup has undefined behavior. A
+     * future task will be to enable event iteration after startup.
      *
-     * @param minimumGeneration  the desired minimum generation, iterator is guaranteed to return all available events
-     *                           with a generation greater or equal to this value. No events with a smaller generation
-     *                           will be returned. A value of {@link #NO_MINIMUM_GENERATION} will cause the returned
-     *                           iterator to walk over all available events.
-     * @param fixDiscontinuities if true, any discontinuities after the requested minimum generation will be "fixed" by
-     *                           deleting all data following the first discontinuity.
+     * @param minimumGeneration the desired minimum generation, iterator is guaranteed to return all available events
+     *                          with a generation greater or equal to this value. No events with a smaller generation
+     *                          will be returned. A value of {@link #NO_MINIMUM_GENERATION} will cause the returned
+     *                          iterator to walk over all available events.
      * @return an iterator that walks over events
      */
-    public @NonNull PreconsensusEventMultiFileIterator getEventIterator(
-            final long minimumGeneration, final boolean fixDiscontinuities) {
-        return new PreconsensusEventMultiFileIterator(
-                minimumGeneration, getFileIterator(minimumGeneration, fixDiscontinuities));
+    public @NonNull PreconsensusEventMultiFileIterator getEventIterator(final long minimumGeneration) {
+        return new PreconsensusEventMultiFileIterator(minimumGeneration, getFileIterator(minimumGeneration));
     }
 
     /**
@@ -473,6 +545,15 @@ public class PreconsensusEventFileManager {
     }
 
     /**
+     * Register a discontinuity in the stream.
+     *
+     * @param newOriginRound the new origin for stream files written after this method is called
+     */
+    public void registerDiscontinuity(final long newOriginRound) {
+        // TODO
+    }
+
+    /**
      * Create a new event file descriptor for the next event file, and start tracking it. (Note, this method doesn't
      * actually open the file, it just permits the file to be opened by the caller.)
      *
@@ -482,20 +563,6 @@ public class PreconsensusEventFileManager {
      */
     public @NonNull PreconsensusEventFile getNextFileDescriptor(
             final long minimumGeneration, final long maximumGeneration) {
-        return getNextFileDescriptor(minimumGeneration, maximumGeneration, false);
-    }
-
-    /**
-     * Create a new event file descriptor for the next event file, and start tracking it. (Note, this method doesn't
-     * actually open the file, it just permits the file to be opened by the caller.)
-     *
-     * @param minimumGeneration the minimum generation that can be stored in the file
-     * @param maximumGeneration the maximum generation that can be stored in the file
-     * @param discontinuity     true if the file is being created due to a discontinuity in the event stream
-     * @return a new event file descriptor
-     */
-    public @NonNull PreconsensusEventFile getNextFileDescriptor(
-            final long minimumGeneration, final long maximumGeneration, final boolean discontinuity) {
 
         if (minimumGeneration > maximumGeneration) {
             throw new IllegalArgumentException("minimum generation must be less than or equal to maximum generation");
@@ -517,12 +584,12 @@ public class PreconsensusEventFileManager {
         }
 
         final PreconsensusEventFile descriptor = PreconsensusEventFile.of(
+                time.now(),
                 getNextSequenceNumber(),
                 minimumGenerationForFile,
                 maximumGenerationForFile,
-                time.now(),
-                databaseDirectory,
-                discontinuity);
+                -1, // TODO!!!
+                databaseDirectory);
 
         if (files.size() > 0) {
             // There are never enough sanity checks. This is the same sanity check that is run when we parse
