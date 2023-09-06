@@ -77,7 +77,7 @@ permissions:
 
 jobs:
   validate:
-    name: ${{ inputs.custom-job-label || 'Artifact' }}
+    name: Validate
     runs-on: [ self-hosted, Linux, large, ephemeral ]
     outputs:
       branch-name: ${{ steps.parameters.outputs.branch-name }}
@@ -167,7 +167,6 @@ jobs:
 
       - name: Cache Build Version
         uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
-        if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
         with:
           path: version.txt
           key: node-build-version-${{ steps.effective-version.outputs.number }}-${{ github.sha }}
