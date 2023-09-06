@@ -18,7 +18,6 @@ package com.hedera.node.app.workflows.handle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.NODE_DUE_DILIGENCE_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE_HANDLE_FAILURE;
@@ -29,12 +28,12 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeAccumulatorImpl;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.records.BlockRecordManager;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.records.ParentRecordFinalizer;
@@ -52,6 +51,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
@@ -104,6 +104,7 @@ public class HandleWorkflow {
     private final ExchangeRateManager exchangeRateManager;
     private final ParentRecordFinalizer transactionFinalizer;
     private final SystemFileUpdateFacility systemFileUpdateFacility;
+    private final SolvencyPreCheck solvencyPreCheck;
 
     @Inject
     public HandleWorkflow(
@@ -121,7 +122,8 @@ public class HandleWorkflow {
             @NonNull final FeeManager feeManager,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final ParentRecordFinalizer transactionFinalizer,
-            @NonNull final SystemFileUpdateFacility systemFileUpdateFacility) {
+            @NonNull final SystemFileUpdateFacility systemFileUpdateFacility,
+            @NonNull final SolvencyPreCheck solvencyPreCheck) {
         this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow, "preHandleWorkflow must not be null");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
@@ -138,6 +140,7 @@ public class HandleWorkflow {
         this.transactionFinalizer = requireNonNull(transactionFinalizer, "transactionFinalizer must not be null");
         this.systemFileUpdateFacility =
                 requireNonNull(systemFileUpdateFacility, "systemFileUpdateFacility must not be null");
+        this.solvencyPreCheck = requireNonNull(solvencyPreCheck, "solvencyPreCheck must not be null");
     }
 
     /**
@@ -201,12 +204,7 @@ public class HandleWorkflow {
         final Instant consensusNow = platformTxn.getConsensusTimestamp();
 
         // handle user transaction
-        final var txBody = handleUserTransaction(consensusNow, state, platformEvent, creator, platformTxn);
-
-        // Notify responsible facility if system-file was uploaded
-        if (txBody != null) {
-            systemFileUpdateFacility.handleTxBody(state, txBody);
-        }
+        handleUserTransaction(consensusNow, state, platformEvent, creator, platformTxn);
 
         // TODO: handle long scheduled transactions
 
@@ -214,8 +212,7 @@ public class HandleWorkflow {
         // TODO: and have their own start/end. So system transactions are handled like separate user transactions.
     }
 
-    @Nullable
-    private TransactionBody handleUserTransaction(
+    private void handleUserTransaction(
             @NonNull final Instant consensusNow,
             @NonNull final HederaState state,
             @NonNull final ConsensusEvent platformEvent,
@@ -229,6 +226,7 @@ public class HandleWorkflow {
         // Setup helpers
         final var configuration = configProvider.getConfiguration();
         final var stack = new SavepointStackImpl(state);
+        final var readableStoreFactory = new ReadableStoreFactory(stack);
         final var feeAccumulator = createFeeAccumulator(stack, configuration, recordBuilder);
 
         final var tokenServiceContext = new TokenServiceContextImpl(configuration, stack, recordListBuilder);
@@ -247,34 +245,34 @@ public class HandleWorkflow {
         Fees fees = null;
         try {
             final var preHandleResult =
-                    getCurrentPreHandleResult(state, platformEvent, creator, platformTxn, configuration);
+                    getCurrentPreHandleResult(readableStoreFactory, creator, platformTxn, configuration);
 
             final var transactionInfo = preHandleResult.txInfo();
 
             if (transactionInfo == null) {
                 // FUTURE: Charge node generic penalty, set values in record builder, and remove log statement
                 logger.error("Non-parsable transaction from creator {}", creator);
-                return null;
+                return;
             }
 
             // Get the parsed data
             final var transaction = transactionInfo.transaction();
             txBody = transactionInfo.txBody();
-            payer = txBody.transactionID().accountID();
+            payer = transactionInfo.payerID();
 
             final Bytes transactionBytes;
             if (transaction.signedTransactionBytes().length() > 0) {
                 transactionBytes = transaction.signedTransactionBytes();
             } else {
                 // in this case, recorder hash the transaction itself, not its bodyBytes.
-                transactionBytes = Bytes.wrap(PbjConverter.fromPbj(transaction).toByteArray());
+                transactionBytes = Transaction.PROTOBUF.toBytes(transaction);
             }
 
             // Initialize record builder list
             recordBuilder
                     .transaction(transactionInfo.transaction())
                     .transactionBytes(transactionBytes)
-                    .transactionID(txBody.transactionID())
+                    .transactionID(transactionInfo.transactionID())
                     .exchangeRate(exchangeRateManager.exchangeRates())
                     .memo(txBody.memo());
 
@@ -306,28 +304,25 @@ public class HandleWorkflow {
             fees = dispatcher.dispatchComputeFees(context);
 
             // Run all pre-checks
-            final var preCheckResult = runPreChecks(consensusNow, verifier, preHandleResult);
-            if (preCheckResult.status() != SO_FAR_SO_GOOD) {
+            final var validationResult = validate(consensusNow, verifier, preHandleResult, readableStoreFactory, fees);
+            if (validationResult.status() != SO_FAR_SO_GOOD) {
                 if (preHandleResult.status() == NODE_DUE_DILIGENCE_FAILURE) {
                     payer = creator.accountId();
                 }
                 final var penaltyFee = new Fees(fees.nodeFee(), fees.networkFee(), 0L);
                 feeAccumulator.charge(payer, penaltyFee);
-                recordBuilder.status(preCheckResult.responseCodeEnum());
+                recordBuilder.status(validationResult.responseCodeEnum());
 
             } else {
                 feeAccumulator.charge(payer, fees);
                 try {
-                    final var storeFactory = new ReadableStoreFactory(state);
-                    final var accountStore = storeFactory.getStore(ReadableAccountStore.class);
-                    final var payerAccount = accountStore.getAccountById(payer);
-                    if (payerAccount != null && payerAccount.deleted()) {
-                        throw new HandleException(PAYER_ACCOUNT_DELETED);
-                    }
-
                     // Dispatch the transaction to the handler
                     dispatcher.dispatchHandle(context);
                     recordBuilder.status(SUCCESS);
+
+                    // Notify responsible facility if system-file was uploaded
+                    systemFileUpdateFacility.handleTxBody(stack, txBody);
+
                 } catch (final HandleException e) {
                     rollback(e.getStatus(), stack, recordListBuilder);
                     feeAccumulator.charge(payer, fees);
@@ -354,8 +349,6 @@ public class HandleWorkflow {
                 recordListResult.userTransactionRecord().transactionRecord(),
                 consensusNow);
         blockRecordManager.endUserTransaction(recordListResult.recordStream(), state);
-
-        return txBody;
     }
 
     @NonNull
@@ -368,41 +361,52 @@ public class HandleWorkflow {
         return new FeeAccumulatorImpl(tokenApi, recordBuilder);
     }
 
-    private PreCheckResult runPreChecks(
+    private ValidationResult validate(
             @NonNull final Instant consensusNow,
             @NonNull final HandleContextVerifier verifier,
-            @NonNull final PreHandleResult preHandleResult) {
+            @NonNull final PreHandleResult preHandleResult,
+            @NonNull final ReadableStoreFactory storeFactory,
+            @NonNull final Fees fees) {
         final var txBody = preHandleResult.txInfo().txBody();
 
         // Check if pre-handle was successful
         if (preHandleResult.status() != SO_FAR_SO_GOOD) {
-            return new PreCheckResult(preHandleResult.status(), preHandleResult.responseCode());
+            return new ValidationResult(preHandleResult.status(), preHandleResult.responseCode());
         }
 
         // Check the time box of the transaction
         try {
             checker.checkTimeBox(txBody, consensusNow);
         } catch (final PreCheckException e) {
-            return new PreCheckResult(PRE_HANDLE_FAILURE, e.responseCode());
+            return new ValidationResult(PRE_HANDLE_FAILURE, e.responseCode());
+        }
+
+        // Check the status and solvency of the payer
+        try {
+            final var payer = solvencyPreCheck.getPayerAccount(storeFactory, preHandleResult.payer());
+            solvencyPreCheck.checkSolvency(preHandleResult.txInfo(), payer, fees.totalWithoutServiceFee());
+        } catch (final PreCheckException e) {
+            return new ValidationResult(NODE_DUE_DILIGENCE_FAILURE, e.responseCode());
         }
 
         // Check all signature verifications. This will also wait, if validation is still ongoing.
         final var payerKeyVerification = verifier.verificationFor(preHandleResult.payerKey());
         if (payerKeyVerification.failed()) {
-            return new PreCheckResult(NODE_DUE_DILIGENCE_FAILURE, INVALID_SIGNATURE);
+            return new ValidationResult(NODE_DUE_DILIGENCE_FAILURE, INVALID_SIGNATURE);
         }
 
         for (final var key : preHandleResult.requiredKeys()) {
             final var verification = verifier.verificationFor(key);
             if (verification.failed()) {
-                return new PreCheckResult(PRE_HANDLE_FAILURE, INVALID_SIGNATURE);
+                return new ValidationResult(PRE_HANDLE_FAILURE, INVALID_SIGNATURE);
             }
         }
 
-        return new PreCheckResult(SO_FAR_SO_GOOD, OK);
+        return new ValidationResult(SO_FAR_SO_GOOD, OK);
     }
 
-    private record PreCheckResult(@NonNull PreHandleResult.Status status, @NonNull ResponseCodeEnum responseCodeEnum) {}
+    private record ValidationResult(
+            @NonNull PreHandleResult.Status status, @NonNull ResponseCodeEnum responseCodeEnum) {}
 
     private void rollback(
             @NonNull final ResponseCodeEnum status,
@@ -422,8 +426,7 @@ public class HandleWorkflow {
      */
     @NonNull
     private PreHandleResult getCurrentPreHandleResult(
-            @NonNull final HederaState state,
-            @NonNull final ConsensusEvent platformEvent,
+            @NonNull final ReadableStoreFactory storeFactory,
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction platformTxn,
             @NonNull final VersionedConfiguration configuration)
@@ -443,13 +446,12 @@ public class HandleWorkflow {
 
             // If pre-handle was successful, we need to add signatures that were not known at the time of pre-handle.
             if (preHandleResult.status() == SO_FAR_SO_GOOD) {
-                return addMissingSignatures(state, preHandleResult, configuration);
+                return addMissingSignatures(storeFactory, preHandleResult, configuration);
             }
         }
 
         // If we reach this point, either pre-handle was not run or it failed but may succeed now.
         // Therefore, we simply rerun pre-handle.
-        final var storeFactory = new ReadableStoreFactory(state);
         final var accountStore = storeFactory.getStore(ReadableAccountStore.class);
         return preHandleWorkflow.preHandleTransaction(creator.accountId(), storeFactory, accountStore, platformTxn);
     }
@@ -469,7 +471,7 @@ public class HandleWorkflow {
      */
     @NonNull
     private PreHandleResult addMissingSignatures(
-            @NonNull final HederaState state,
+            @NonNull final ReadableStoreFactory storeFactory,
             @NonNull final PreHandleResult previousResult,
             @NonNull final Configuration configuration)
             throws PreCheckException {
@@ -479,7 +481,6 @@ public class HandleWorkflow {
         final var signedBytes = txInfo.signedBytes();
 
         // extract keys and hollow accounts again
-        final var storeFactory = new ReadableStoreFactory(state);
         final var context = new PreHandleContextImpl(storeFactory, txBody, configuration, dispatcher);
         dispatcher.dispatchPreHandle(context);
 
