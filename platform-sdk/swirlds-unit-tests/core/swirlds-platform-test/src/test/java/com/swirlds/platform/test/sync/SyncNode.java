@@ -61,6 +61,7 @@ public class SyncNode {
 
     private final int numNodes;
     private final EventEmitter<?> eventEmitter;
+    private int eventsEmitted = 0;
     private final TestingSyncManager syncManager;
     private final ShadowGraph shadowGraph;
     private final Consensus consensus;
@@ -155,6 +156,8 @@ public class SyncNode {
                     "SyncNode.setEventGenerator(ShuffledEventGenerator) must be called prior to generateAndAdd"
                             + "(int)");
         }
+        eventsEmitted +=numEvents;
+        eventEmitter.setCheckpoint(eventsEmitted);
         final List<IndexedEvent> newEvents = eventEmitter.emitEvents(numEvents);
 
         for (final IndexedEvent newEvent : newEvents) {

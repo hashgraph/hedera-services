@@ -119,7 +119,7 @@ public class IndexedEvent extends EventImpl {
         if (other == null || getClass() != other.getClass()) {
             return false;
         }
-        return !super.equals(other);
+        return super.equals(other);
     }
 
     @Override
