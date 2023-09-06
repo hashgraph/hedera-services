@@ -399,13 +399,14 @@ public class HandleWorkflow {
             return new ValidationResult(NODE_DUE_DILIGENCE_FAILURE, INVALID_SIGNATURE);
         }
 
+        // verify all the keys
         for (final var key : preHandleResult.requiredKeys()) {
             final var verification = verifier.verificationFor(key);
             if (verification.failed()) {
                 return new ValidationResult(PRE_HANDLE_FAILURE, INVALID_SIGNATURE);
             }
         }
-
+        // If there are any hollow accounts whose signatures need to be verified, verify them
         for (final var hollowAccount : preHandleResult.hollowAccounts()) {
             final var verification = verifier.verificationFor(hollowAccount.alias());
             if (verification.failed()) {
@@ -495,6 +496,11 @@ public class HandleWorkflow {
         final var context = new PreHandleContextImpl(storeFactory, txBody, configuration, dispatcher);
         dispatcher.dispatchPreHandle(context);
 
+        // re-expand keys only if any of the keys have changed
+        final var previousResults = previousResult.verificationResults();
+        final var currentRequiredPayerKeys = context.requiredNonPayerKeys();
+        final var currentOptionalPayerKeys = context.optionalNonPayerKeys();
+
         // prepare signature verification
         final var verifications = new HashMap<Key, SignatureVerificationFuture>();
         final var payerKey = previousResult.payerKey();
@@ -502,6 +508,7 @@ public class HandleWorkflow {
 
         // expand all keys
         final var expanded = new HashSet<ExpandedSignaturePair>();
+        signatureExpander.expand(sigPairs, expanded);
         signatureExpander.expand(context.requiredNonPayerKeys(), sigPairs, expanded);
         signatureExpander.expand(context.optionalNonPayerKeys(), sigPairs, expanded);
 

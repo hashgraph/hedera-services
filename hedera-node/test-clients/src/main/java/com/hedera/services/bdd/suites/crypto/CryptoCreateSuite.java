@@ -35,15 +35,14 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_ALREADY_ASSIGNED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
@@ -197,7 +196,7 @@ public class CryptoCreateSuite extends HapiSuite {
                         sourcing(() -> getTxnRecord(creation).logged()));
     }
 
-//    @HapiTest
+    //    @HapiTest
     /* Prior to 0.13.0, a "canonical" CryptoCreate (one sig, 3 month auto-renew) cost 1¢. */
     private HapiSpec usdFeeAsExpected() {
         double preV13PriceUsd = 0.01;
@@ -224,41 +223,41 @@ public class CryptoCreateSuite extends HapiSuite {
                                 .autoRenewSecs(THREE_MONTHS_IN_SECONDS)
                                 .payingWith(CIVILIAN)
                                 .feeUsd(preV13PriceUsd)
-//                                .hasPrecheck(INSUFFICIENT_TX_FEE)
-//                        getAccountBalance(CIVILIAN).hasTinyBars(ONE_HUNDRED_HBARS),
-//                        cryptoCreate("noAutoAssoc")
-//                                .key(CIVILIAN)
-//                                .balance(0L)
-//                                .via(noAutoAssocSlots)
-//                                .blankMemo()
-//                                .autoRenewSecs(THREE_MONTHS_IN_SECONDS)
-//                                .signedBy(CIVILIAN)
-//                                .payingWith(CIVILIAN),
-//                        cryptoCreate("oneAutoAssoc")
-//                                .key(CIVILIAN)
-//                                .balance(0L)
-//                                .maxAutomaticTokenAssociations(1)
-//                                .via(oneAutoAssocSlot)
-//                                .blankMemo()
-//                                .autoRenewSecs(THREE_MONTHS_IN_SECONDS)
-//                                .signedBy(CIVILIAN)
-//                                .payingWith(CIVILIAN),
-//                        cryptoCreate("tenAutoAssoc")
-//                                .key(CIVILIAN)
-//                                .balance(0L)
-//                                .maxAutomaticTokenAssociations(10)
-//                                .via(tenAutoAssocSlots)
-//                                .blankMemo()
-//                                .autoRenewSecs(THREE_MONTHS_IN_SECONDS)
-//                                .signedBy(CIVILIAN)
-//                                .payingWith(CIVILIAN),
-//                        getTxnRecord(tenAutoAssocSlots).logged()
-                )
+                        //                                .hasPrecheck(INSUFFICIENT_TX_FEE)
+                        //                        getAccountBalance(CIVILIAN).hasTinyBars(ONE_HUNDRED_HBARS),
+                        //                        cryptoCreate("noAutoAssoc")
+                        //                                .key(CIVILIAN)
+                        //                                .balance(0L)
+                        //                                .via(noAutoAssocSlots)
+                        //                                .blankMemo()
+                        //                                .autoRenewSecs(THREE_MONTHS_IN_SECONDS)
+                        //                                .signedBy(CIVILIAN)
+                        //                                .payingWith(CIVILIAN),
+                        //                        cryptoCreate("oneAutoAssoc")
+                        //                                .key(CIVILIAN)
+                        //                                .balance(0L)
+                        //                                .maxAutomaticTokenAssociations(1)
+                        //                                .via(oneAutoAssocSlot)
+                        //                                .blankMemo()
+                        //                                .autoRenewSecs(THREE_MONTHS_IN_SECONDS)
+                        //                                .signedBy(CIVILIAN)
+                        //                                .payingWith(CIVILIAN),
+                        //                        cryptoCreate("tenAutoAssoc")
+                        //                                .key(CIVILIAN)
+                        //                                .balance(0L)
+                        //                                .maxAutomaticTokenAssociations(10)
+                        //                                .via(tenAutoAssocSlots)
+                        //                                .blankMemo()
+                        //                                .autoRenewSecs(THREE_MONTHS_IN_SECONDS)
+                        //                                .signedBy(CIVILIAN)
+                        //                                .payingWith(CIVILIAN),
+                        //                        getTxnRecord(tenAutoAssocSlots).logged()
+                        )
                 .then(
-//                        validateChargedUsd(noAutoAssocSlots, v13PriceUsd),
-//                        validateChargedUsd(oneAutoAssocSlot, v13PriceUsdOneAutoAssociation),
-//                        validateChargedUsd(tenAutoAssocSlots, v13PriceUsdTenAutoAssociations)
-                );
+                        //                        validateChargedUsd(noAutoAssocSlots, v13PriceUsd),
+                        //                        validateChargedUsd(oneAutoAssocSlot, v13PriceUsdOneAutoAssociation),
+                        //                        validateChargedUsd(tenAutoAssocSlots, v13PriceUsdTenAutoAssociations)
+                        );
     }
 
     @HapiTest
@@ -702,7 +701,7 @@ public class CryptoCreateSuite extends HapiSuite {
                 .then();
     }
 
-    //    @HapiTest
+    @HapiTest
     private HapiSpec createAnAccountWithEVMAddressAliasFromDifferentKey() {
         return defaultHapiSpec("createAnAccountWithEVMAddressAliasFromDifferentKey")
                 .given(
@@ -714,13 +713,13 @@ public class CryptoCreateSuite extends HapiSuite {
                     final var addressBytes = recoverAddressFromPubKey(tmp);
                     assert addressBytes.length > 0;
                     final var evmAddressBytes = ByteString.copyFrom(addressBytes);
-                    //                    final var op =
-                    //                            // try to create without signature for the alias
-                    //                            cryptoCreate(ACCOUNT)
-                    //                                    .key(ED_KEY)
-                    //                                    .alias(evmAddressBytes)
-                    //                                    .balance(100 * ONE_HBAR)
-                    //                                    .hasKnownStatus(INVALID_SIGNATURE);
+                    final var op =
+                            // try to create without signature for the alias
+                            cryptoCreate(ACCOUNT)
+                                    .key(ED_KEY)
+                                    .alias(evmAddressBytes)
+                                    .balance(100 * ONE_HBAR)
+                                    .hasKnownStatus(INVALID_SIGNATURE);
                     final var op2 =
                             // create with proper signatures
                             cryptoCreate(ACCOUNT)
@@ -730,14 +729,14 @@ public class CryptoCreateSuite extends HapiSuite {
                                     .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY))
                                     .balance(100 * ONE_HBAR);
                     allRunFor(spec, op2);
-                    //                    var hapiGetAccountInfo = getAccountInfo(ACCOUNT)
-                    //                            .has(accountWith()
-                    //                                    .key(ED_KEY)
-                    //                                    .evmAddress(evmAddressBytes)
-                    //                                    .autoRenew(THREE_MONTHS_IN_SECONDS)
-                    //                                    .receiverSigReq(false))
-                    //                            .logged();
-                    //                    allRunFor(spec, hapiGetAccountInfo);
+                    var hapiGetAccountInfo = getAccountInfo(ACCOUNT)
+                            .has(accountWith()
+                                    .key(ED_KEY)
+                                    .evmAddress(evmAddressBytes)
+                                    .autoRenew(THREE_MONTHS_IN_SECONDS)
+                                    .receiverSigReq(false))
+                            .logged();
+                    allRunFor(spec, hapiGetAccountInfo);
                 }))
                 .then();
     }
