@@ -413,7 +413,7 @@ jobs:
         with:
           push: ${{ inputs.dry-run-enabled != true }}
           load: ${{ inputs.dry-run-enabled == true }}
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ inputs.dry-run-enabled != true && 'linux/amd64,linux/arm64' || 'linux/amd64' }}
           context: hedera-node/infrastructure/docker/containers/local-node/network-node-haveged
           tags: ${{ steps.set-registry.outputs.docker-tag-base }}/network-node-haveged:${{ needs.validate.outputs.version }}
 
@@ -422,7 +422,7 @@ jobs:
         with:
           push: ${{ inputs.dry-run-enabled != true }}
           load: ${{ inputs.dry-run-enabled == true }}
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ inputs.dry-run-enabled != true && 'linux/amd64,linux/arm64' || 'linux/amd64' }}
           context: hedera-node/infrastructure/docker/containers/local-node/network-node-base
           tags: ${{ steps.set-registry.outputs.docker-tag-base }}/network-node-base:${{ needs.validate.outputs.version }}
 
@@ -431,7 +431,7 @@ jobs:
         with:
           push: ${{ inputs.dry-run-enabled != true }}
           load: ${{ inputs.dry-run-enabled == true }}
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ inputs.dry-run-enabled != true && 'linux/amd64,linux/arm64' || 'linux/amd64' }}
           build-args: |
            IMAGE_TAG=${{ needs.validate.outputs.version }}
            IMAGE_PREFIX=${{ steps.set-registry.outputs.docker-tag-base }}/
