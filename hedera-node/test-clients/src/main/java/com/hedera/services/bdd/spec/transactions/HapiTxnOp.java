@@ -197,7 +197,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
         if (!acceptAnyPrecheck) {
             final var expectedIngestStatus = getExpectedPrecheck();
             if (expectedIngestStatus != OK
-                    && !spec.setup().streamlinedIngestChecks().contains(expectedIngestStatus)) {
+                    && spec.setup().streamlinedIngestChecks().contains(expectedIngestStatus)) {
                 expectedStatus = Optional.of(expectedIngestStatus);
                 permissiblePrechecks = Optional.of(EnumSet.of(OK, expectedIngestStatus));
             }

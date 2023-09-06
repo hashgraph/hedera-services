@@ -84,13 +84,6 @@ class HandleSystemContractOperationsTest {
     }
 
     @Test
-    void getRelationshipNotImplementedYet() {
-        assertThrows(
-                AssertionError.class,
-                () -> subject.getRelationshipAndExternalizeResult(1L, 2L, 3L, entity -> Bytes.EMPTY));
-    }
-
-    @Test
     void dispatchNotImplementedYet() {
         assertThrows(AssertionError.class, () -> subject.dispatch(TransactionBody.DEFAULT, MOCK_VERIFICATION_STRATEGY));
     }

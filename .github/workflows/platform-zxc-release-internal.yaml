@@ -235,7 +235,7 @@ jobs:
         if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
         with:
           gradle-version: ${{ inputs.gradle-version }}
-          arguments: -p platform-sdk assemble --scan --parallel
+          arguments: -p platform-sdk assemble --scan
 
       - name: Gradle Deploy
         uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0

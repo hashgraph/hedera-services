@@ -94,6 +94,17 @@ public class ConversionUtils {
     }
 
     /**
+     * Given a headlong address, converts it to a Besu {@link Address}.
+     *
+     * @param address the headlong address
+     * @return the Besu {@link Address}
+     */
+    public static Address fromHeadlongAddress(@NonNull final com.esaulpaugh.headlong.abi.Address address) {
+        requireNonNull(address);
+        return Address.fromHexString(address.toString());
+    }
+
+    /**
      * Given a list of Besu {@link Log}s, converts them to a list of PBJ {@link ContractLoginfo}.
      *
      * @param logs the Besu {@link Log}s
@@ -230,11 +241,11 @@ public class ConversionUtils {
      * and does not correspond to a known Hedera entity.
      *
      * @param address       the EVM address
-     * @param extFrameScope the {@link HandleHederaNativeOperations} to use for resolving aliases
+     * @param nativeOperations the {@link HandleHederaNativeOperations} to use for resolving aliases
      * @return the number of the corresponding Hedera entity, or {@link HederaNativeOperations#MISSING_ENTITY_NUMBER}
      */
     public static long maybeMissingNumberOf(
-            @NonNull final Address address, @NonNull final HederaNativeOperations extFrameScope) {
+            @NonNull final Address address, @NonNull final HederaNativeOperations nativeOperations) {
         final var explicit = address.toArrayUnsafe();
         if (isLongZeroAddress(explicit)) {
             return longFrom(
@@ -248,7 +259,7 @@ public class ConversionUtils {
                     explicit[19]);
         } else {
             final var alias = aliasFrom(address);
-            return extFrameScope.resolveAlias(alias);
+            return nativeOperations.resolveAlias(alias);
         }
     }
 

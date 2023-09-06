@@ -32,8 +32,6 @@ import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
-import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
-import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.ResultStatus;
 import com.hedera.node.config.data.ContractsConfig;
@@ -81,16 +79,11 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      * The {@link EvmFrameState} managing this {@code ProxyWorldUpdater}'s state.
      */
     protected final EvmFrameState evmFrameState;
-    /**
-     * The scope in which this {@code ProxyWorldUpdater} operates; stored in case we need to
-     * create a "stacked" updater in a child scope via {@link #updater()}.
-     */
-    protected final HederaOperations hederaOperations;
 
     /**
-     * Operations which are needed by system contracts.
+     * Enhancements needed by Hedera EVM customizations and system contracts.
      */
-    protected final SystemContractOperations systemContractOperations;
+    protected final Enhancement enhancement;
 
     /**
      * If our {@code CreateOperation}s used the addresses prescribed by the {@code CREATE} and
@@ -115,15 +108,18 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
     protected PendingCreation pendingCreation;
 
     public ProxyWorldUpdater(
-            @NonNull final HederaOperations hederaOperations,
-            @NonNull final SystemContractOperations systemContractOperations,
+            @NonNull final Enhancement enhancement,
             @NonNull final EvmFrameStateFactory evmFrameStateFactory,
             @Nullable final WorldUpdater parent) {
         this.parent = parent;
-        this.hederaOperations = requireNonNull(hederaOperations);
-        this.systemContractOperations = requireNonNull(systemContractOperations);
+        this.enhancement = requireNonNull(enhancement);
         this.evmFrameStateFactory = requireNonNull(evmFrameStateFactory);
         this.evmFrameState = evmFrameStateFactory.get();
+    }
+
+    @Override
+    public @NonNull Enhancement enhancement() {
+        return enhancement;
     }
 
     /**
@@ -162,7 +158,7 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
 
     @Override
     public @NonNull Bytes entropy() {
-        return pbjToTuweniBytes(hederaOperations.entropy());
+        return pbjToTuweniBytes(enhancement.operations().entropy());
     }
 
     @Override
@@ -184,13 +180,13 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
     @Override
     public void collectFee(@NonNull final AccountID payerId, final long amount) {
         requireNonNull(payerId);
-        hederaOperations.collectFee(payerId, amount);
+        enhancement.operations().collectFee(payerId, amount);
     }
 
     @Override
     public void refundFee(@NonNull final AccountID payerId, final long amount) {
         requireNonNull(payerId);
-        hederaOperations.refundFee(payerId, amount);
+        enhancement.operations().refundFee(payerId, amount);
     }
 
     /**
@@ -208,7 +204,7 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
     @Override
     public Optional<ExceptionalHaltReason> tryLazyCreation(
             @NonNull final Address recipient, @NonNull final MessageFrame frame) {
-        final var gasCost = hederaOperations.lazyCreationCostInGas();
+        final var gasCost = enhancement.operations().lazyCreationCostInGas();
         if (gasCost > frame.getRemainingGas()) {
             return Optional.of(INSUFFICIENT_GAS);
         }
@@ -318,11 +314,14 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
         }
         final var number = getValidatedCreationNumber(address, balance, pendingCreation);
         if (pendingCreation.isHapiCreation()) {
-            hederaOperations.createContract(
-                    number, requireNonNull(pendingCreation.body()), pendingCreation.aliasIfApplicable());
+            enhancement
+                    .operations()
+                    .createContract(
+                            number, requireNonNull(pendingCreation.body()), pendingCreation.aliasIfApplicable());
         } else {
-            hederaOperations.createContract(
-                    number, pendingCreation.parentNumber(), pendingCreation.aliasIfApplicable());
+            enhancement
+                    .operations()
+                    .createContract(number, pendingCreation.parentNumber(), pendingCreation.aliasIfApplicable());
         }
         return evmFrameState.getMutableAccount(pendingCreation.address());
     }
@@ -333,9 +332,9 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
     @Override
     public void deleteAccount(@NonNull final Address address) {
         if (isLongZero(address)) {
-            hederaOperations.deleteUnaliasedContract(numberOfLongZero(address));
+            enhancement.operations().deleteUnaliasedContract(numberOfLongZero(address));
         } else {
-            hederaOperations.deleteAliasedContract(aliasFrom(address));
+            enhancement.operations().deleteAliasedContract(aliasFrom(address));
         }
     }
 
@@ -347,7 +346,7 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
         // It might seem like we should have a call to evmFrameState.revert() here; but remember the
         // EvmFrameState is just a convenience wrapper around the Scope to let us use Besu types, and
         // ultimately the Scope is the one tracking and managing all changes
-        hederaOperations.revert();
+        enhancement.operations().revert();
     }
 
     /**
@@ -358,7 +357,7 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
     public void commit() {
         // It might seem like we should have a call to evmFrameState.commit() here; but remember the
         // EvmFrameState is just a mutable view of the scope's state that lets us use Besu types
-        hederaOperations.commit();
+        enhancement.operations().commit();
     }
 
     /**
@@ -374,8 +373,8 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      */
     @Override
     public @NonNull ProxyWorldUpdater updater() {
-        final var child =
-                new ProxyWorldUpdater(hederaOperations.begin(), systemContractOperations, evmFrameStateFactory, this);
+        enhancement.operations().begin();
+        final var child = new ProxyWorldUpdater(enhancement, evmFrameStateFactory, this);
         // Hand off any pending creation to the child updater; this a bit of a hack, but
         // lets the TransactionProcessor client code "flow" as naturally as possible,
         // without need to defer setting up creation until the initial frame is built
@@ -398,7 +397,7 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      */
     @Override
     public @NonNull Collection<? extends Account> getTouchedAccounts() {
-        final var modifiedNumbers = hederaOperations.getModifiedAccountNumbers();
+        final var modifiedNumbers = enhancement.operations().getModifiedAccountNumbers();
         final List<Account> touched = new ArrayList<>();
         for (final var number : modifiedNumbers) {
             // Returns null if the account has been deleted
@@ -424,7 +423,7 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
     @Override
     public void externalizeSystemContractResults(
             @NonNull final ContractFunctionResult result, final ResultStatus status) {
-        systemContractOperations.externalizeResult(result, status);
+        enhancement.systemOperations().externalizeResult(result, status);
     }
 
     /**
@@ -433,7 +432,7 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
     @Override
     @NonNull
     public ExchangeRate currentExchangeRate() {
-        return systemContractOperations.currentExchangeRate();
+        return enhancement().systemOperations().currentExchangeRate();
     }
 
     /**
@@ -442,7 +441,7 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
     @Override
     @NonNull
     public ContractsConfig contractsConfig() {
-        return systemContractOperations.contractsConfig();
+        return enhancement().systemOperations().contractsConfig();
     }
 
     private long getValidatedCreationNumber(
@@ -456,7 +455,7 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
         if (!requireNonNull(address).equals(pendingAddress)) {
             throw new IllegalStateException(CANNOT_CREATE + address + " with " + pendingAddress + " pending");
         }
-        final var pendingNumber = hederaOperations.peekNextEntityNumber();
+        final var pendingNumber = enhancement.operations().peekNextEntityNumber();
         if (pendingNumber != knownPendingCreation.number()) {
             throw new IllegalStateException(CANNOT_CREATE + address + " with number " + pendingNumber + " ("
                     + knownPendingCreation.number() + ") pending");
@@ -468,7 +467,7 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
             @Nullable final Address origin,
             @Nullable final ContractCreateTransactionBody body,
             @Nullable final Address alias) {
-        final var number = hederaOperations.peekNextEntityNumber();
+        final var number = enhancement.operations().peekNextEntityNumber();
         pendingCreation = new PendingCreation(
                 alias == null ? asLongZeroAddress(number) : alias,
                 number,

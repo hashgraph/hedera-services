@@ -77,7 +77,7 @@ class ExchangeRateSystemContractTest {
         given(updater.contractsConfig()).willReturn(contractsConfig);
         given(contractsConfig.precompileExchangeRateGasCost()).willReturn(REQUIRED_GAS);
 
-        subject.computePrecompile(Bytes.EMPTY, frame);
+        subject.computeFully(Bytes.EMPTY, frame);
         var actual = subject.gasRequirement(EXCHANGE_RATE_SYSTEM_CONTRACT_ADDRESS);
 
         assertEquals(REQUIRED_GAS, actual);
@@ -88,9 +88,9 @@ class ExchangeRateSystemContractTest {
         givenRate(someRate);
 
         final var someInput = tinycentsInput(someTinycentAmount);
-        final var result = subject.computePrecompile(someInput, frame);
+        final var result = subject.computeFully(someInput, frame);
 
-        assertThat(result.getOutput()).isEqualTo(unpackedBytesFor(someTinybarAmount));
+        assertThat(result.output()).isEqualTo(unpackedBytesFor(someTinybarAmount));
     }
 
     @Test
@@ -98,9 +98,9 @@ class ExchangeRateSystemContractTest {
         givenRate(someRate);
 
         final var positiveInput = tinybarsInput(someTinybarAmount);
-        final var result = subject.computePrecompile(positiveInput, frame);
+        final var result = subject.computeFully(positiveInput, frame);
 
-        assertThat(result.getOutput()).isEqualTo(unpackedBytesFor(someTinycentAmount));
+        assertThat(result.output()).isEqualTo(unpackedBytesFor(someTinycentAmount));
     }
 
     @Test
@@ -108,9 +108,9 @@ class ExchangeRateSystemContractTest {
         givenRate(someRate);
 
         final var zeroInput = tinycentsInput(0);
-        final var result = subject.computePrecompile(zeroInput, frame);
+        final var result = subject.computeFully(zeroInput, frame);
 
-        assertThat(result.getOutput()).isEqualTo(unpackedBytesFor(0));
+        assertThat(result.output()).isEqualTo(unpackedBytesFor(0));
     }
 
     @Test
@@ -118,26 +118,26 @@ class ExchangeRateSystemContractTest {
         final var underflowInput = tinycentsInput(Bytes.wrap(
                 BigInteger.valueOf(Long.MAX_VALUE).multiply(BigInteger.TEN).toByteArray()));
 
-        final var result = subject.computePrecompile(underflowInput, frame);
-        assertThat(result.getOutput()).isEqualTo(Bytes.EMPTY);
-        assertThat(result.getHaltReason().get()).isEqualTo(ExceptionalHaltReason.INVALID_OPERATION);
+        final var result = subject.computeFully(underflowInput, frame);
+        assertThat(result.output()).isEqualTo(Bytes.EMPTY);
+        assertThat(result.result().getHaltReason().get()).isEqualTo(ExceptionalHaltReason.INVALID_OPERATION);
     }
 
     @Test
     void selectorMustBeFullyPresent() {
         final var fragmentSelector = Bytes.of(0xab);
-        final var result = subject.computePrecompile(fragmentSelector, frame);
-        assertThat(result.getOutput()).isEqualTo(Bytes.EMPTY);
-        assertThat(result.getHaltReason().get()).isEqualTo(ExceptionalHaltReason.INVALID_OPERATION);
+        final var result = subject.computeFully(fragmentSelector, frame);
+        assertThat(result.output()).isEqualTo(Bytes.EMPTY);
+        assertThat(result.result().getHaltReason().get()).isEqualTo(ExceptionalHaltReason.INVALID_OPERATION);
     }
 
     @Test
     void selectorMustBeRecognized() {
         final var fragmentSelector = Bytes.of((byte) 0xab, (byte) 0xab, (byte) 0xab, (byte) 0xab);
         final var input = Bytes.concatenate(fragmentSelector, Bytes32.ZERO);
-        final var result = subject.computePrecompile(input, frame);
-        assertThat(result.getOutput()).isEqualTo(Bytes.EMPTY);
-        assertThat(result.getHaltReason().get()).isEqualTo(ExceptionalHaltReason.INVALID_OPERATION);
+        final var result = subject.computeFully(input, frame);
+        assertThat(result.output()).isEqualTo(Bytes.EMPTY);
+        assertThat(result.result().getHaltReason().get()).isEqualTo(ExceptionalHaltReason.INVALID_OPERATION);
     }
 
     private static Bytes tinycentsInput(final long validAmount) {

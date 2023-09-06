@@ -30,9 +30,8 @@ import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-import org.hyperledger.besu.evm.precompile.AbstractPrecompiledContract;
 
-public class ExchangeRateSystemContract extends AbstractPrecompiledContract {
+public class ExchangeRateSystemContract extends AbstractFullContract implements HederaSystemContract {
 
     private static final String PRECOMPILE_NAME = "ExchangeRate";
     private static final BigIntegerType WORD_DECODER = TypeFactory.create("uint256");
@@ -57,7 +56,7 @@ public class ExchangeRateSystemContract extends AbstractPrecompiledContract {
 
     @Override
     @NonNull
-    public PrecompileContractResult computePrecompile(@NonNull Bytes input, @NonNull MessageFrame messageFrame) {
+    public FullResult computeFully(@NonNull Bytes input, @NonNull MessageFrame messageFrame) {
         requireNonNull(input);
         requireNonNull(messageFrame);
         try {
@@ -75,9 +74,11 @@ public class ExchangeRateSystemContract extends AbstractPrecompiledContract {
                         default -> null;
                     };
             requireNonNull(result);
-            return PrecompileContractResult.success(result);
+            return new FullResult(PrecompileContractResult.success(result), gasRequirement);
         } catch (Exception ignore) {
-            return PrecompileContractResult.halt(Bytes.EMPTY, Optional.of(ExceptionalHaltReason.INVALID_OPERATION));
+            return new FullResult(
+                    PrecompileContractResult.halt(Bytes.EMPTY, Optional.of(ExceptionalHaltReason.INVALID_OPERATION)),
+                    gasRequirement);
         }
     }
 
