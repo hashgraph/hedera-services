@@ -22,7 +22,7 @@ on:
         type: string
         required: false
         default: "wrapper"
-Intentionally broken
+
 defaults:
   run:
     shell: bash
