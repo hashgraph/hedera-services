@@ -50,7 +50,7 @@ defaults:
 
 jobs:
   prepare-tag-release:
-    name: Release / Tag / Prepare
+    name: Prepare Release [Tag]
     runs-on: [self-hosted, Linux, medium, ephemeral]
     if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
     outputs:
@@ -84,7 +84,7 @@ jobs:
           echo "prerelease=${PRERELEASE_FLAG}" >>"${GITHUB_OUTPUT}"
 
   release-tag:
-    name: Release / Tag
+    name: Release [Tag]
     uses: ./.github/workflows/node-zxc-build-release-artifact.yaml
     needs:
       - prepare-tag-release
@@ -98,7 +98,7 @@ jobs:
       jenkins-integration-url: ${{ secrets.RELEASE_JENKINS_INTEGRATION_URL }}
 
   release-branch:
-    name: Release / Branch
+    name: Release [Branch]
     uses: ./.github/workflows/node-zxc-build-release-artifact.yaml
     if: ${{ github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/v') }}
     with:

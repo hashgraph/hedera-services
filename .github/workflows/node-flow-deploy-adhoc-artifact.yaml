@@ -29,7 +29,7 @@ defaults:
 
 jobs:
   release-adhoc:
-    name: Release / Adhoc
+    name: Release [Adhoc]
     if: ${{ github.event_name == 'workflow_dispatch' }}
     uses: ./.github/workflows/node-zxc-build-release-artifact.yaml
     with:
