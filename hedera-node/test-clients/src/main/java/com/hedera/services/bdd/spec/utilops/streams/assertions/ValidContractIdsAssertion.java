@@ -32,7 +32,6 @@ public class ValidContractIdsAssertion implements RecordStreamAssertion {
 
     @Override
     public boolean testSidecar(TransactionSidecarRecord sidecar) throws AssertionError {
-        System.out.println("Validating contract ids in sidecar " + sidecar);
         switch (sidecar.getSidecarRecordsCase()) {
             case STATE_CHANGES -> validateStateChangeIds(
                     sidecar.getStateChanges().getContractStateChangesList());
@@ -57,7 +56,6 @@ public class ValidContractIdsAssertion implements RecordStreamAssertion {
 
     private void validateActionIds(List<ContractAction> actions) {
         for (final var action : actions) {
-            //            System.out.println("VALIDATING " + action);
             if (action.hasCallingAccount()) {
                 assertValid(action.getCallingAccount());
             } else if (action.hasCallingContract()) {
