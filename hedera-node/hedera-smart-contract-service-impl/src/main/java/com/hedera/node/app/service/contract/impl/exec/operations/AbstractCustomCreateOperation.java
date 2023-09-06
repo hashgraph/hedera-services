@@ -119,7 +119,7 @@ public abstract class AbstractCustomCreateOperation extends AbstractOperation {
         final var account =
                 frame.getWorldUpdater().getAccount(frame.getRecipientAddress()).getMutable();
         frame.clearReturnData();
-        if (value.compareTo(account.getBalance()) > 0 || frame.getMessageStackDepth() >= MAX_STACK_DEPTH) {
+        if (value.compareTo(account.getBalance()) > 0 || frame.getDepth() >= MAX_STACK_DEPTH) {
             fail(frame);
         } else {
             spawnChildMessage(frame);
@@ -151,7 +151,6 @@ public abstract class AbstractCustomCreateOperation extends AbstractOperation {
         frame.decrementRemainingGas(childGasStipend);
         final var childFrame = MessageFrame.builder()
                 .type(MessageFrame.Type.CONTRACT_CREATION)
-                .messageFrameStack(frame.getMessageFrameStack())
                 .worldUpdater(frame.getWorldUpdater().updater())
                 .initialGas(childGasStipend)
                 .address(contractAddress)
@@ -164,7 +163,6 @@ public abstract class AbstractCustomCreateOperation extends AbstractOperation {
                 .apparentValue(value)
                 .code(CodeFactory.createCode(inputData, 0, false))
                 .blockValues(frame.getBlockValues())
-                .depth(frame.getMessageStackDepth() + 1)
                 .completer(child -> complete(frame, child))
                 .miningBeneficiary(frame.getMiningBeneficiary())
                 .blockHashLookup(frame.getBlockHashLookup())
@@ -191,7 +189,6 @@ public abstract class AbstractCustomCreateOperation extends AbstractOperation {
         frame.incrementGasRefund(childFrame.getGasRefund());
         frame.popStackItems(getStackItemsConsumed());
         if (childFrame.getState() == MessageFrame.State.COMPLETED_SUCCESS) {
-            frame.mergeWarmedUpFields(childFrame);
             final var creation = childFrame.getContractAddress();
             frame.pushStackItem(Words.fromAddress(creation));
             onSuccess(frame, creation);

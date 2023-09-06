@@ -83,7 +83,7 @@ public abstract class AbstractEvmRecordingCreateOperation extends AbstractOperat
 
         frame.clearReturnData();
 
-        if (value.compareTo(account.getBalance()) > 0 || frame.getMessageStackDepth() >= MAX_STACK_DEPTH) {
+        if (value.compareTo(account.getBalance()) > 0 || frame.getDepth() >= MAX_STACK_DEPTH) {
             fail(frame);
         } else {
             spawnChildMessage(frame);
@@ -138,7 +138,6 @@ public abstract class AbstractEvmRecordingCreateOperation extends AbstractOperat
 
         final MessageFrame childFrame = MessageFrame.builder()
                 .type(MessageFrame.Type.CONTRACT_CREATION)
-                .messageFrameStack(frame.getMessageFrameStack())
                 .worldUpdater(frame.getWorldUpdater().updater())
                 .initialGas(childGasStipend)
                 .address(contractAddress)
@@ -151,7 +150,6 @@ public abstract class AbstractEvmRecordingCreateOperation extends AbstractOperat
                 .apparentValue(value)
                 .code(CodeFactory.createCode(inputData, 0, false))
                 .blockValues(frame.getBlockValues())
-                .depth(frame.getMessageStackDepth() + 1)
                 .completer(child -> complete(frame, child))
                 .miningBeneficiary(frame.getMiningBeneficiary())
                 .blockHashLookup(frame.getBlockHashLookup())
@@ -174,7 +172,6 @@ public abstract class AbstractEvmRecordingCreateOperation extends AbstractOperat
         frame.popStackItems(getStackItemsConsumed());
 
         if (childFrame.getState() == MessageFrame.State.COMPLETED_SUCCESS) {
-            frame.mergeWarmedUpFields(childFrame);
             frame.pushStackItem(Words.fromAddress(childFrame.getContractAddress()));
             createOperationExternalizer.externalize(frame, childFrame);
         } else {

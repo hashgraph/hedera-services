@@ -268,7 +268,7 @@ class HederaTracerTest {
         given(firstChildFrame.getRemainingGas()).willReturn(initialGasChild);
         given(firstChildFrame.getInputData()).willReturn(Bytes.EMPTY);
         given(firstChildFrame.getValue()).willReturn(Wei.ZERO);
-        given(firstChildFrame.getMessageStackDepth()).willReturn(1);
+        given(firstChildFrame.getDepth()).willReturn(1);
         given(firstChildFrame.getWorldUpdater()).willReturn(worldUpdater);
         given(contractAliases.resolveForEvm(accountReceiver)).willReturn(accountReceiver);
         dequeMock.addFirst(firstChildFrame);
@@ -311,7 +311,7 @@ class HederaTracerTest {
         given(childFrame2.getRemainingGas()).willReturn(500L);
         given(childFrame2.getInputData()).willReturn(Bytes.EMPTY);
         given(childFrame2.getValue()).willReturn(Wei.of(543L));
-        given(childFrame2.getMessageStackDepth()).willReturn(1);
+        given(childFrame2.getDepth()).willReturn(1);
         given(childFrame2.getWorldUpdater()).willReturn(worldUpdater);
         dequeMock.addFirst(childFrame2);
         // trace second child
@@ -486,7 +486,7 @@ class HederaTracerTest {
         assertEquals(OP_CALL, syntheticInvalidAddressAction.getCallOperationType());
         assertEquals(0, syntheticInvalidAddressAction.getValue());
         assertArrayEquals(new byte[0], syntheticInvalidAddressAction.getInput());
-        assertEquals(messageFrame.getMessageStackDepth() + 1, syntheticInvalidAddressAction.getCallDepth());
+        assertEquals(messageFrame.getDepth() + 1, syntheticInvalidAddressAction.getCallDepth());
         assertEquals(EntityId.fromAddress(accountReceiver), syntheticInvalidAddressAction.getCallingContract());
         assertArrayEquals(contract.toArrayUnsafe(), syntheticInvalidAddressAction.getInvalidSolidityAddress());
         assertArrayEquals(

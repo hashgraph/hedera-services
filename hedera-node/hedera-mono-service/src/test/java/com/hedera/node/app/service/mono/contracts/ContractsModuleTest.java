@@ -394,7 +394,7 @@ class ContractsModuleTest {
         assertEquals("BALANCE", balanceOperation.getName());
         assertNull(result.getHaltReason());
         assertEquals(2600, result.getGasCost());
-        assertEquals(UInt256.ZERO, bytesCaptor.getValue());
+        assertEquals(Bytes.EMPTY, bytesCaptor.getValue());
     }
 
     @Test

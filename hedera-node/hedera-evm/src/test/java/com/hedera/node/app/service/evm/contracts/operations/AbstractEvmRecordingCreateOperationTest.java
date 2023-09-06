@@ -144,7 +144,7 @@ class AbstractEvmRecordingCreateOperationTest {
     @Test
     void failsWithExcessStackDepth() {
         givenSpawnPrereqs();
-        given(frame.getMessageStackDepth()).willReturn(1024);
+        given(frame.getDepth()).willReturn(1024);
 
         assertSameResult(EMPTY_HALT_RESULT, subject.execute(frame, evm));
         verify(frame).pushStackItem(UInt256.ZERO);
@@ -196,7 +196,7 @@ class AbstractEvmRecordingCreateOperationTest {
         given(updater.getAccount(recipient)).willReturn(recipientAccount);
         given(recipientAccount.getMutable()).willReturn(mutableAccount);
         given(mutableAccount.getBalance()).willReturn(Wei.of(value));
-        given(frame.getMessageStackDepth()).willReturn(1023);
+        given(frame.getDepth()).willReturn(1023);
         given(frame.getStackItem(anyInt())).willReturn(Bytes.ofUnsignedLong(1));
         given(externalizer.shouldFailBasedOnLazyCreation(eq(frame), any())).willReturn(true);
 
@@ -228,7 +228,7 @@ class AbstractEvmRecordingCreateOperationTest {
         given(updater.getAccount(recipient)).willReturn(recipientAccount);
         given(recipientAccount.getMutable()).willReturn(mutableAccount);
         given(mutableAccount.getBalance()).willReturn(Wei.of(value));
-        given(frame.getMessageStackDepth()).willReturn(1023);
+        given(frame.getDepth()).willReturn(1023);
     }
 
     private void assertSameResult(final Operation.OperationResult expected, final Operation.OperationResult actual) {

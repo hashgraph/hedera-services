@@ -465,7 +465,7 @@ class ActionStackTest {
         given(parentFrame.getRemainingGas()).willReturn(REMAINING_GAS);
         given(parentFrame.getInputData()).willReturn(pbjToTuweniBytes(CALL_DATA));
         given(parentFrame.getValue()).willReturn(WEI_VALUE);
-        given(parentFrame.getMessageStackDepth()).willReturn(STACK_DEPTH);
+        given(parentFrame.getDepth()).willReturn(STACK_DEPTH);
         given(parentFrame.getCode()).willReturn(CONTRACT_CODE);
         given(parentFrame.getContractAddress()).willReturn(EIP_1014_ADDRESS);
 
@@ -496,7 +496,7 @@ class ActionStackTest {
         given(parentFrame.getRemainingGas()).willReturn(REMAINING_GAS);
         given(parentFrame.getInputData()).willReturn(pbjToTuweniBytes(CALL_DATA));
         given(parentFrame.getValue()).willReturn(WEI_VALUE);
-        given(parentFrame.getMessageStackDepth()).willReturn(STACK_DEPTH);
+        given(parentFrame.getDepth()).willReturn(STACK_DEPTH);
         given(parentFrame.getCode()).willReturn(CodeV0.EMPTY_CODE);
         given(parentFrame.getContractAddress()).willReturn(EIP_1014_ADDRESS);
 
@@ -524,7 +524,7 @@ class ActionStackTest {
         given(parentFrame.getRemainingGas()).willReturn(REMAINING_GAS);
         given(parentFrame.getInputData()).willReturn(pbjToTuweniBytes(CALL_DATA));
         given(parentFrame.getValue()).willReturn(WEI_VALUE);
-        given(parentFrame.getMessageStackDepth()).willReturn(STACK_DEPTH);
+        given(parentFrame.getDepth()).willReturn(STACK_DEPTH);
         given(parentFrame.getContractAddress()).willReturn(EIP_1014_ADDRESS);
         given(parentFrame.getWorldUpdater()).willReturn(worldUpdater);
 
@@ -558,7 +558,7 @@ class ActionStackTest {
         given(childFrame.getRemainingGas()).willReturn(REMAINING_GAS);
         given(childFrame.getInputData()).willReturn(pbjToTuweniBytes(CALL_DATA));
         given(childFrame.getValue()).willReturn(WEI_VALUE);
-        given(childFrame.getMessageStackDepth()).willReturn(STACK_DEPTH);
+        given(childFrame.getDepth()).willReturn(STACK_DEPTH);
         given(childFrame.getContractAddress()).willReturn(EIP_1014_ADDRESS);
         given(childFrame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.get(EIP_1014_ADDRESS)).willReturn(account);

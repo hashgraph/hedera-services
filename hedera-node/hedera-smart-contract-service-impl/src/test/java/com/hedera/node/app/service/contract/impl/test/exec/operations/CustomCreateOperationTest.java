@@ -100,7 +100,7 @@ class CustomCreateOperationTest extends CreateOperationTestBase {
     @Test
     void failsWithExcessStackDepth() {
         givenSpawnPrereqs();
-        given(frame.getMessageStackDepth()).willReturn(1024);
+        given(frame.getDepth()).willReturn(1024);
         given(gasCalculator.createOperationGasCost(frame)).willReturn(GAS_COST);
 
         final var expected = new Operation.OperationResult(GAS_COST, null);

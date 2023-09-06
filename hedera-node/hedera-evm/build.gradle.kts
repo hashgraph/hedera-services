@@ -26,7 +26,6 @@ description = "Hedera EVM - API"
 mainModuleInfo { annotationProcessor("dagger.compiler") }
 
 testModuleInfo {
-    requires("org.hyperledger.besu.plugin.api")
     requires("org.junit.jupiter.api")
     requires("org.mockito")
     requires("org.mockito.junit.jupiter")
