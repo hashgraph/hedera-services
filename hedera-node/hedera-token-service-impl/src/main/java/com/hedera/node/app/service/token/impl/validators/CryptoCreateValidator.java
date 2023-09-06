@@ -17,12 +17,12 @@
 package com.hedera.node.app.service.token.impl.validators;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ALIAS_ALREADY_ASSIGNED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.BAD_ENCODING;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_REQUIRED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl.isMirror;
-import static com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
@@ -83,15 +83,19 @@ public class CryptoCreateValidator {
     private void validateKey(
             @NonNull final CryptoCreateTransactionBody op, @NonNull final AttributeValidator attributeValidator) {
         final var key = op.key();
-        if (!key.equals(IMMUTABILITY_SENTINEL_KEY)) {
-            if (isEmpty(key)) {
+
+        if (isEmpty(key)) {
+            if (key.hasThresholdKey() || key.hasKeyList()) {
                 throw new HandleException(KEY_REQUIRED);
+            } else {
+                throw new HandleException(BAD_ENCODING);
             }
-            if (!isValid(key)) {
-                throw new HandleException(INVALID_ADMIN_KEY);
-            }
-            attributeValidator.validateKey(key);
         }
+
+        if (!isValid(key)) {
+            throw new HandleException(INVALID_ADMIN_KEY);
+        }
+        attributeValidator.validateKey(key);
     }
 
     private void validateKeyAndAliasProvidedCase(
