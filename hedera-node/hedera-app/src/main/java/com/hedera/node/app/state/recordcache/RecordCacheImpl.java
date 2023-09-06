@@ -151,6 +151,17 @@ public class RecordCacheImpl implements HederaRecordCache {
         queue.add(new TransactionRecordEntry(nodeId, payerAccountId, transactionRecord));
     }
 
+    @NonNull
+    @Override
+    public DuplicateCheckResult hasDuplicate(@NonNull TransactionID transactionID, long nodeId) {
+        final var history = histories.get(transactionID);
+        if (history == null) {
+            return DuplicateCheckResult.NO_DUPLICATE;
+        }
+
+        return history.nodeIds().contains(nodeId) ? DuplicateCheckResult.SAME_NODE : DuplicateCheckResult.OTHER_NODE;
+    }
+
     /**
      * Called during {@link #rebuild()} or {@link #add(long, AccountID, TransactionRecord, Instant)}, this method adds
      * the given {@link TransactionRecord} to the internal lookup data structures.

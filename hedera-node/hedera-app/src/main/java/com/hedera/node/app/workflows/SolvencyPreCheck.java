@@ -145,6 +145,9 @@ public class SolvencyPreCheck {
         return switch (txInfo.functionality()) {
             case CRYPTO_CREATE -> txInfo.txBody().cryptoCreateAccountOrThrow().initialBalance();
             case CRYPTO_TRANSFER -> {
+                if (!txInfo.txBody().cryptoTransferOrThrow().hasTransfers()) {
+                    yield 0L;
+                }
                 final var payerID = txInfo.txBody().transactionIDOrThrow().accountIDOrThrow();
                 yield -txInfo.txBody().cryptoTransferOrThrow().transfersOrThrow().accountAmountsOrThrow().stream()
                         .filter(aa -> Objects.equals(aa.accountID(), payerID))

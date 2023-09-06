@@ -16,12 +16,14 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.processors;
 
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract.HTS_PRECOMPILE_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.PrngSystemContract.PRNG_PRECOMPILE_ADDRESS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.node.app.service.contract.impl.exec.processors.ProcessorModule;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.PrngSystemContract;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -30,14 +32,19 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ProcessorModuleTest {
     @Mock
-    GasCalculator gasCalculator;
+    private HtsSystemContract htsSystemContract;
+
+    @Mock
+    private PrngSystemContract prngSystemContract;
 
     @Test
     void provideHederaSystemContracts() {
-        final var hederaSystemContracts = ProcessorModule.provideHederaSystemContracts(gasCalculator);
+        final var hederaSystemContracts =
+                ProcessorModule.provideHederaSystemContracts(htsSystemContract, prngSystemContract);
         assertThat(hederaSystemContracts)
                 .isNotNull()
-                .hasSize(1)
-                .containsKey(Address.fromHexString(PRNG_PRECOMPILE_ADDRESS));
+                .hasSize(2)
+                .containsKey(Address.fromHexString(PRNG_PRECOMPILE_ADDRESS))
+                .containsKey(Address.fromHexString(HTS_PRECOMPILE_ADDRESS));
     }
 }

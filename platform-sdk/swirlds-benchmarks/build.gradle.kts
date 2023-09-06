@@ -28,6 +28,7 @@ jmhModuleInfo {
     requires("com.swirlds.virtualmap")
     requires("jmh.core")
     requires("org.apache.logging.log4j")
+    runtimeOnly("com.swirlds.config.impl")
 }
 
 jmh {

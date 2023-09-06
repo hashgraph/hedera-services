@@ -14,12 +14,9 @@
  * limitations under the License.
  */
 
-import com.adarshr.gradle.testlogger.theme.ThemeType
-
 plugins {
     id("java-library")
     id("com.hedera.hashgraph.java")
-    id("com.adarshr.test-logger")
     id("com.gorylenko.gradle-git-properties")
 }
 
@@ -33,11 +30,29 @@ configurations.getByName("mainRuntimeClasspath") {
 
 gitProperties { keys = listOf("git.build.version", "git.commit.id", "git.commit.id.abbrev") }
 
-testlogger {
-    theme = ThemeType.MOCHA
-    slowThreshold = 10000
-    showStandardStreams = true
-    showPassedStandardStreams = false
-    showSkippedStandardStreams = false
-    showFailedStandardStreams = true
+// !!! Remove the following once 'test' tasks are allowed to run in parallel ===
+val allProjects =
+    rootProject.subprojects
+        .map { it.name }
+        .filter {
+            it !in
+                listOf(
+                    "swirlds",
+                    "swirlds-benchmarks",
+                    "swirlds-sign-tool"
+                ) // these are application/benchmark projects
+        }
+        .sorted()
+val myIndex = allProjects.indexOf(name)
+
+if (myIndex > 0) {
+    val predecessorProject = allProjects[myIndex - 1]
+    tasks.test {
+        mustRunAfter(":$predecessorProject:test")
+        mustRunAfter(":$predecessorProject:hammerTest")
+    }
+    tasks.named("hammerTest") {
+        mustRunAfter(tasks.test)
+        mustRunAfter(":$predecessorProject:hammerTest")
+    }
 }
