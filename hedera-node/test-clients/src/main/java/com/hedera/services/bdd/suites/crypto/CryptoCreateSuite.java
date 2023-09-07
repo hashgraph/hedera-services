@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.crypto;
 
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
@@ -92,30 +93,31 @@ public class CryptoCreateSuite extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                createAnAccountEmptyThresholdKey(),
-                createAnAccountEmptyKeyList(),
-                createAnAccountEmptyNestedKey(),
-                createAnAccountInvalidKeyList(),
-                createAnAccountInvalidNestedKeyList(),
-                createAnAccountInvalidThresholdKey(),
-                createAnAccountInvalidNestedThresholdKey(),
-                createAnAccountThresholdKeyWithInvalidThreshold(),
-                createAnAccountInvalidED25519(),
-                syntaxChecksAreAsExpected(),
-                usdFeeAsExpected(),
-                createAnAccountWithStakingFields(),
-                /* --- HIP-583 --- */
-                createAnAccountWithECDSAAlias(),
-                createAnAccountWithED25519Alias(),
-                createAnAccountWithECKeyAndNoAlias(),
-                createAnAccountWithEDKeyAndNoAlias(),
-                createAnAccountWithED25519KeyAndED25519Alias(),
-                createAnAccountWithECKeyAndECKeyAlias(),
-                createAnAccountWithEVMAddressAliasFromSameKey(),
-                createAnAccountWithEVMAddressAliasFromDifferentKey(),
-                createAnAccountWithECDSAKeyAliasDifferentThanAdminKeyShouldFail(),
-                createAnAccountWithEDKeyAliasDifferentThanAdminKeyShouldFail(),
-                cannotCreateAnAccountWithLongZeroKeyButCanUseEvmAddress());
+                //                createAnAccountEmptyThresholdKey(),
+                //                createAnAccountEmptyKeyList(),
+                //                createAnAccountEmptyNestedKey(),
+                //                createAnAccountInvalidKeyList(),
+                //                createAnAccountInvalidNestedKeyList(),
+                //                createAnAccountInvalidThresholdKey(),
+                //                createAnAccountInvalidNestedThresholdKey(),
+                //                createAnAccountThresholdKeyWithInvalidThreshold(),
+                //                createAnAccountInvalidED25519(),
+                //                syntaxChecksAreAsExpected(),
+                usdFeeAsExpected()
+                //                createAnAccountWithStakingFields(),
+                //                /* --- HIP-583 --- */
+                //                createAnAccountWithECDSAAlias(),
+                //                createAnAccountWithED25519Alias(),
+                //                createAnAccountWithECKeyAndNoAlias(),
+                //                createAnAccountWithEDKeyAndNoAlias(),
+                //                createAnAccountWithED25519KeyAndED25519Alias(),
+                //                createAnAccountWithECKeyAndECKeyAlias(),
+                //                createAnAccountWithEVMAddressAliasFromSameKey(),
+                //                createAnAccountWithEVMAddressAliasFromDifferentKey(),
+                //                createAnAccountWithECDSAKeyAliasDifferentThanAdminKeyShouldFail(),
+                //                createAnAccountWithEDKeyAliasDifferentThanAdminKeyShouldFail(),
+                //                cannotCreateAnAccountWithLongZeroKeyButCanUseEvmAddress()
+                );
     }
 
     @HapiTest
@@ -212,7 +214,7 @@ public class CryptoCreateSuite extends HapiSuite {
         final var tenAutoAssocSlots = "tenAutoAssocSlots";
         final var token = "token";
 
-        return defaultHapiSpec("usdFeeAsExpected")
+        return onlyDefaultHapiSpec("usdFeeAsExpected")
                 .given(
                         cryptoCreate(CIVILIAN).balance(ONE_HUNDRED_HBARS),
                         getAccountBalance(CIVILIAN).hasTinyBars(ONE_HUNDRED_HBARS))

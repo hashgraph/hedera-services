@@ -53,6 +53,8 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.validators.CryptoCreateValidator;
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -135,8 +137,6 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         requireNonNull(handleContext);
         final var txnBody = handleContext.body();
         final var op = txnBody.cryptoCreateAccount();
-
-        calculateFees(handleContext, op);
         final var accountStore = handleContext.writableStore(WritableAccountStore.class);
 
         // FUTURE: Use the config and check if accounts can be created.
@@ -324,20 +324,21 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         return op.hasKey() && !op.alias().equals(Bytes.EMPTY);
     }
 
-    private void calculateFees(
-            @NonNull final HandleContext handleContext, @NonNull final CryptoCreateTransactionBody op) {
+    @Override
+    @NonNull
+    public Fees calculateFees(@NonNull final FeeContext feeContext) {
         // Variable bytes plus two additional longs for balance and auto-renew period; plus a boolean for receiver sig
         // required.
+        final var op = feeContext.body().cryptoCreateAccountOrThrow();
         final var keySize = op.hasKey() ? getAccountKeyStorageSize(fromPbj(op.keyOrThrow())) : 0L;
         final var baseSize = op.memo().length() + keySize + (op.maxAutomaticTokenAssociations() > 0 ? INT_SIZE : 0L);
         final var lifeTime = op.autoRenewPeriodOrElse(Duration.DEFAULT).seconds();
-        final var fees = handleContext
+        return feeContext
                 .feeCalculator(SubType.DEFAULT)
                 .addBytesPerTransaction(baseSize + 2 * LONG_SIZE + BOOL_SIZE)
                 .addRamByteSeconds((CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + baseSize) * lifeTime)
                 .addRamByteSeconds(op.maxAutomaticTokenAssociations() * lifeTime * CREATE_SLOT_MULTIPLIER)
                 .addNetworkRamByteSeconds(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs())
                 .calculate();
-        handleContext.feeAccumulator().charge(handleContext.payer(), fees);
     }
 }
