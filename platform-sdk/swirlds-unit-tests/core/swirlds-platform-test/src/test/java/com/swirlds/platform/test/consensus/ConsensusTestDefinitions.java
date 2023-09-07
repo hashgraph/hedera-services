@@ -332,14 +332,15 @@ public final class ConsensusTestDefinitions {
 
     /** One node has a tendency to use stale other parents. */
     public static void usesStaleOtherParents(final TestInput input) {
-        // Setup: pick one node to use stale other-parents
-        final int staleNodeProvider = input.numberOfNodes() - 1;
         final ConsensusTestOrchestrator orchestrator =
                 OrchestratorBuilder.builder().setTestInput(input).build();
-        // TODO dont use index
-        orchestrator.configGenerators(g -> g.getSource(new NodeId(staleNodeProvider))
-                .setRecentEventRetentionSize(5000)
-                .setRequestedOtherParentAgeDistribution(integerPowerDistribution(0.002, 300)));
+        orchestrator.configGenerators(g -> {
+            // Setup: pick one node to use stale other-parents
+            final NodeId staleNodeProvider = g.getAddressBook().getNodeId(0);
+            g.getSource(staleNodeProvider)
+                    .setRecentEventRetentionSize(5000)
+                    .setRequestedOtherParentAgeDistribution(integerPowerDistribution(0.002, 300));
+        });
         orchestrator.generateAllEvents();
         orchestrator.validateAndClear(Validations.standard()
                 .ratios(EventRatioValidation.standard()
@@ -349,12 +350,10 @@ public final class ConsensusTestDefinitions {
 
     /** One node has a tendency to provide stale other parents (when they are requested). */
     public static void providesStaleOtherParents(final TestInput input) {
-        // Setup: pick one node to provide stale other-parents
-        final int staleNodeProvider = input.numberOfNodes() - 1;
         final ConsensusTestOrchestrator orchestrator =
                 OrchestratorBuilder.builder().setTestInput(input).build();
-        // TODO dont use index
-        orchestrator.configGenerators(g -> g.getSource(new NodeId(staleNodeProvider))
+        // Setup: pick one node to provide stale other-parents
+        orchestrator.configGenerators(g -> g.getSource(g.getAddressBook().getNodeId(0))
                 .setRecentEventRetentionSize(5000)
                 .setProvidedOtherParentAgeDistribution(integerPowerDistribution(0.002, 300)));
         orchestrator.generateAllEvents();
