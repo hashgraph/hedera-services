@@ -37,7 +37,7 @@ class VirtualTerminalTests {
 
         assertTrue(result.isSuccessful());
         assertEquals(0, result.exitCode());
-        assertEquals("Hello World!", result.out());
+        assertEquals("Hello World!\n", result.out());
         assertEquals("", result.error());
     }
 
@@ -76,7 +76,7 @@ class VirtualTerminalTests {
         final CommandResult result = terminal.run("rm", "foo/bar/baz");
 
         assertFalse(result.isSuccessful());
-        assertEquals("rm: foo/bar/baz: No such file or directory", result.error());
+        assertEquals("rm: foo/bar/baz: No such file or directory\n", result.error());
         assertEquals(1, result.exitCode());
     }
 }
