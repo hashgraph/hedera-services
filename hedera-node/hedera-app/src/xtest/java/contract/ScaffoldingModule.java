@@ -26,6 +26,9 @@ import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.authorization.AuthorizerImpl;
+import com.hedera.node.app.authorization.PrivilegesVerifier;
+import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
@@ -38,6 +41,8 @@ import com.hedera.node.app.records.impl.producers.StreamFileProducerSingleThread
 import com.hedera.node.app.records.impl.producers.formats.BlockRecordWriterFactoryImpl;
 import com.hedera.node.app.records.impl.producers.formats.v6.BlockRecordFormatV6;
 import com.hedera.node.app.service.mono.config.HederaNumbers;
+import com.hedera.node.app.service.token.CryptoSignatureWaivers;
+import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakeRewardCalculator;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakeRewardCalculatorImpl;
 import com.hedera.node.app.services.ServiceScopeLookup;
@@ -113,6 +118,14 @@ public interface ScaffoldingModule {
     @Singleton
     static NetworkInfo provideNetworkInfo() {
         return new FakeNetworkInfo();
+    }
+
+    @Provides
+    @Singleton
+    static CryptoSignatureWaivers provideCryptoSignatureWaivers() {
+        final var configProvider = new ConfigProviderImpl();
+        final var authorizer = new AuthorizerImpl(configProvider, new PrivilegesVerifier(configProvider));
+        return new CryptoSignatureWaiversImpl(authorizer);
     }
 
     @Binds
