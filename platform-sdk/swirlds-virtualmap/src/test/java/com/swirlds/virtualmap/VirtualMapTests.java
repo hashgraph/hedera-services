@@ -18,6 +18,7 @@ package com.swirlds.virtualmap;
 
 import static com.swirlds.common.io.utility.FileUtils.deleteDirectory;
 import static com.swirlds.common.merkle.iterators.MerkleIterationOrder.BREADTH_FIRST;
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
 import static com.swirlds.test.framework.ResourceLoader.loadLog4jContext;
 import static com.swirlds.virtualmap.VirtualMapTestUtils.createMap;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -62,6 +63,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -879,7 +882,7 @@ class VirtualMapTests extends VirtualTestBase {
         VirtualMap<TestKey, TestValue> map0 = createMap();
         map0.registerMetrics(metrics);
 
-        int flushCount = 0;
+        long flushCount = 0;
         final int totalCount = 1000;
         for (int i = 0; i < totalCount; i++) {
             VirtualMap<TestKey, TestValue> map1 = map0.copy();
@@ -911,7 +914,11 @@ class VirtualMapTests extends VirtualTestBase {
         if (!(metric instanceof Counter counterMetric)) {
             throw new AssertionError("flushCount metric is not a counter");
         }
-        assertEquals(flushCount, counterMetric.get());
+        assertEventuallyEquals(
+                flushCount,
+                () -> counterMetric.get(),
+                Duration.of(1, ChronoUnit.SECONDS),
+                "Expected flush count (%s) to match actual value (%s)".formatted(flushCount, counterMetric.get()));
     }
 
     /*
