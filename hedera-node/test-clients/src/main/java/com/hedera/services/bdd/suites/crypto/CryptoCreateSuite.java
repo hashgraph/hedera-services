@@ -93,31 +93,30 @@ public class CryptoCreateSuite extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                //                createAnAccountEmptyThresholdKey(),
-                //                createAnAccountEmptyKeyList(),
-                //                createAnAccountEmptyNestedKey(),
-                //                createAnAccountInvalidKeyList(),
-                //                createAnAccountInvalidNestedKeyList(),
-                //                createAnAccountInvalidThresholdKey(),
-                //                createAnAccountInvalidNestedThresholdKey(),
-                //                createAnAccountThresholdKeyWithInvalidThreshold(),
-                //                createAnAccountInvalidED25519(),
-                //                syntaxChecksAreAsExpected(),
-                usdFeeAsExpected()
-                //                createAnAccountWithStakingFields(),
-                //                /* --- HIP-583 --- */
-                //                createAnAccountWithECDSAAlias(),
-                //                createAnAccountWithED25519Alias(),
-                //                createAnAccountWithECKeyAndNoAlias(),
-                //                createAnAccountWithEDKeyAndNoAlias(),
-                //                createAnAccountWithED25519KeyAndED25519Alias(),
-                //                createAnAccountWithECKeyAndECKeyAlias(),
-                //                createAnAccountWithEVMAddressAliasFromSameKey(),
-                //                createAnAccountWithEVMAddressAliasFromDifferentKey(),
-                //                createAnAccountWithECDSAKeyAliasDifferentThanAdminKeyShouldFail(),
-                //                createAnAccountWithEDKeyAliasDifferentThanAdminKeyShouldFail(),
-                //                cannotCreateAnAccountWithLongZeroKeyButCanUseEvmAddress()
-                );
+                createAnAccountEmptyThresholdKey(),
+                createAnAccountEmptyKeyList(),
+                createAnAccountEmptyNestedKey(),
+                createAnAccountInvalidKeyList(),
+                createAnAccountInvalidNestedKeyList(),
+                createAnAccountInvalidThresholdKey(),
+                createAnAccountInvalidNestedThresholdKey(),
+                createAnAccountThresholdKeyWithInvalidThreshold(),
+                createAnAccountInvalidED25519(),
+                syntaxChecksAreAsExpected(),
+                usdFeeAsExpected(),
+                createAnAccountWithStakingFields(),
+                /* --- HIP-583 --- */
+                createAnAccountWithECDSAAlias(),
+                createAnAccountWithED25519Alias(),
+                createAnAccountWithECKeyAndNoAlias(),
+                createAnAccountWithEDKeyAndNoAlias(),
+                createAnAccountWithED25519KeyAndED25519Alias(),
+                createAnAccountWithECKeyAndECKeyAlias(),
+                createAnAccountWithEVMAddressAliasFromSameKey(),
+                createAnAccountWithEVMAddressAliasFromDifferentKey(),
+                createAnAccountWithECDSAKeyAliasDifferentThanAdminKeyShouldFail(),
+                createAnAccountWithEDKeyAliasDifferentThanAdminKeyShouldFail(),
+                cannotCreateAnAccountWithLongZeroKeyButCanUseEvmAddress());
     }
 
     @HapiTest
