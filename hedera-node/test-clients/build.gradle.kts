@@ -23,34 +23,6 @@ plugins {
 
 description = "Hedera Services Test Clients for End to End Tests (EET)"
 
-// -----
-// module-info.java is ony used to define dependencies for now.
-// It is not compiled and instead the classpath is used during compilation.
-// This is temporary. To compile as module, remove the below and fix the
-// compile errors in HapiTestEngine.
-// tasks.jar { manifest { attributes("Automatic-Module-Name" to "com.hedera.node.test.clients") } }
-//
-// java { modularity.inferModulePath.set(false) }
-//
-// sourceSets.main { java.exclude("module-info.java") }
-// -----
-
-tasks.test {
-    // Disable these EET tests from being executed as part of the gradle "test" task.
-    // We should maybe remove them from src/test into src/eet,
-    // so it can be part of an eet test task instead. See issue #3412
-    // (https://github.com/hashgraph/hedera-services/issues/3412).
-    exclude("**/*")
-}
-
-tasks.itest { systemProperty("itests", System.getProperty("itests")) }
-
-sourceSets {
-    // Needed because "resource" directory is misnamed. See
-    // https://github.com/hashgraph/hedera-services/issues/3361
-    main { resources { srcDir("src/main/resource") } }
-}
-
 itestModuleInfo {
     requires("com.hedera.node.test.clients")
     requires("com.hedera.node.hapi")
@@ -68,7 +40,38 @@ eetModuleInfo {
     requires("org.testcontainers.junit.jupiter")
 }
 
+sourceSets {
+    // Needed because "resource" directory is misnamed. See
+    // https://github.com/hashgraph/hedera-services/issues/3361
+    main { resources { srcDir("src/main/resource") } }
+}
+
+// IntelliJ uses adhoc-created JavaExec tasks when running a 'main()' method.
+tasks.withType<JavaExec> {
+    // Do not yet run things on the '--module-path'
+    modularity.inferModulePath.set(false)
+}
+
+// This task runs the 'HapiTestEngine' tests (residing in src/main/java).
+// IntelliJ picks up this task when running tests through in the IDE.
+tasks.register<Test>("hapiTest") {
+    testClassesDirs = sourceSets.main.get().output.classesDirs
+    classpath = sourceSets.main.get().runtimeClasspath
+
+    // Do not yet run things on the '--module-path'
+    modularity.inferModulePath.set(false)
+}
+
+tasks.test {
+    // Disable these EET tests from being executed as part of the gradle "test" task.
+    // We should maybe remove them from src/test into src/eet,
+    // so it can be part of an eet test task instead. See issue #3412
+    // (https://github.com/hashgraph/hedera-services/issues/3412).
+    exclude("**/*")
+}
+
 tasks.itest {
+    systemProperty("itests", System.getProperty("itests"))
     systemProperty("junit.jupiter.execution.parallel.enabled", false)
     systemProperty("TAG", "services-node:" + project.version)
     systemProperty("networkWorkspaceDir", layout.buildDirectory.dir("network/itest").get().asFile)
