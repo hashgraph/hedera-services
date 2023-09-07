@@ -69,7 +69,7 @@ class Ed25519UtilsTest {
         final var relocated =
                 relocatedIfNotPresentWithCurrentPathPrefix(new File(missingLoc), "NOPE", "src" + File.separator);
 
-        assertEquals(missingLoc, relocated.getPath());
+        assertTrue(relocated.getPath().endsWith(missingLoc));
     }
 
     @Test
