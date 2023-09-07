@@ -54,9 +54,19 @@ val internal: Configuration =
 dependencies { "internal"(platform("com.hedera.hashgraph:hedera-dependency-versions")) }
 
 sourceSets.all {
-    configurations.getByName(annotationProcessorConfigurationName) { extendsFrom(internal) }
     configurations.getByName(compileClasspathConfigurationName) { extendsFrom(internal) }
     configurations.getByName(runtimeClasspathConfigurationName) { extendsFrom(internal) }
+
+    dependencies {
+        // For dependencies of annotation processors use versions from 'hedera-dependency-versions',
+        // but not 'runtime' dependencies of the platform (JAVA_API instead of JAVA_RUNTIME).
+        annotationProcessorConfigurationName("com.hedera.hashgraph:hedera-dependency-versions") {
+            attributes {
+                attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.JAVA_API))
+                attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category.REGULAR_PLATFORM))
+            }
+        }
+    }
 }
 
 tasks.withType<AbstractArchiveTask>().configureEach {
