@@ -307,7 +307,8 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
 
         final var stakedNode = account.stakedNodeId();
         final var stakedAccount = account.stakedAccountId();
-        if (stakedNode != null) {
+        if (stakedNode != null && stakedNode != -1) {
+            // -1 is a special value to remove the account's staked node ID.
             stakingInfo.stakedNodeId(stakedNode);
             addNodeStakeMeta(stakingInfo, account, stakingInfoStore, stakingRewardsStore);
         } else if (stakedAccount != null) {
