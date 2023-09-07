@@ -32,6 +32,7 @@ import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.test.fixtures.state.DummySwirldState;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
@@ -44,6 +45,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * A utility for generating random signed states.
@@ -165,7 +169,20 @@ public class RandomSignedStateGenerator {
                 .setHashEventsCons(hashEventsConsInstance)
                 .setConsensusTimestamp(consensusTimestampInstance)
                 .setCreationSoftwareVersion(softwareVersionInstance)
-                .setRoundsNonAncient(roundsNonAncientInstance);
+                .setRoundsNonAncient(roundsNonAncientInstance)
+                .setSnapshot(
+                        new ConsensusSnapshot(
+                                roundInstance,
+                                Stream.generate(() -> randomHash(random))
+                                        .limit(10)
+                                        .toList(),
+                                IntStream.range(0,roundsNonAncientInstance)
+                                        .mapToObj(i -> new MinGenInfo(roundInstance - i, 0L))
+                                        .toList(),
+                                roundInstance,
+                                consensusTimestampInstance
+                        )
+                );
 
         final SignedState signedState = new SignedState(
                 TestPlatformContextBuilder.create().build(),
