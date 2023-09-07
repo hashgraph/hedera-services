@@ -1,4 +1,4 @@
-name: "Node: Deploy Adhoc Artifact"
+name: "Node: Deploy Adhoc Release"
 on:
   workflow_dispatch:
     inputs:
