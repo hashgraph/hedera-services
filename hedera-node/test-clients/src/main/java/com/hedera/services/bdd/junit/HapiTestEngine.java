@@ -20,6 +20,7 @@ import static java.util.Objects.requireNonNull;
 import static org.junit.platform.commons.support.HierarchyTraversalMode.TOP_DOWN;
 
 import com.hedera.node.app.Hedera;
+import com.hedera.node.config.converter.ScaleFactorConverter;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.data.TokensConfig;
@@ -301,6 +302,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                         .withConfigDataType(ConsensusConfig.class)
                         .withConfigDataType(AccountsConfig.class)
                         .withConfigDataType(TokensConfig.class)
+                        .withConverter(new ScaleFactorConverter())
                         .withConfigDataType(StakingConfig.class)
                         // 2. Configure Settings
                         .withSource(new LegacyFileConfigSource(tmpDir.resolve("settings.txt")))
