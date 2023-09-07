@@ -1276,10 +1276,16 @@ class PreconsensusEventFileManagerTests {
         // attempt to start a non-existent generation
         assertIteratorEquality(files.iterator(), manager.getFileIterator(nonExistentGeneration, false));
 
-        manager.clear();
+        PreconsensusEventFileManager.clear(platformContext, TestRecycleBin.getInstance(), new NodeId(0));
+
+        // The old manager will have been corrupted (we never clear after instantiation in production envs).
+        // Any new manager created will not find any files.
+
+        final PreconsensusEventFileManager manager2 = new PreconsensusEventFileManager(
+                platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0));
 
         assertIteratorEquality(
                 Collections.emptyIterator(),
-                manager.getFileIterator(PreconsensusEventFileManager.NO_MINIMUM_GENERATION, false));
+                manager2.getFileIterator(PreconsensusEventFileManager.NO_MINIMUM_GENERATION, false));
     }
 }
