@@ -26,6 +26,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.threading.framework.BlockingQueueInserter;
 import com.swirlds.common.threading.framework.MultiQueueThread;
 import com.swirlds.common.threading.framework.config.MultiQueueThreadConfiguration;
+import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
 import com.swirlds.common.threading.futures.StandardFuture;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.internal.EventImpl;
@@ -106,6 +107,9 @@ public class AsyncTipsetEventCreationManager implements Lifecycle {
                 .setIdleCallback(eventCreator::maybeCreateEvent)
                 .setBatchHandledCallback(eventCreator::maybeCreateEvent)
                 .setWaitForWorkDuration(eventCreationConfig.creationQueueWaitForWorkPeriod())
+                .setMetricsConfiguration(new QueueThreadMetricsConfiguration(platformContext.getMetrics())
+                        .enableMaxSizeMetric()
+                        .enableBusyTimeMetric())
                 .build();
 
         eventInserter = workQueue.getInserter(EventImpl.class);

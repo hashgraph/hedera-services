@@ -1028,19 +1028,17 @@ public class SwirldsPlatform implements Platform, Startable {
     private PreconsensusEventFileManager buildPreconsensusEventFileManager(
             final boolean softwareUpgrade, @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
         try {
-            final PreconsensusEventFileManager manager =
-                    new PreconsensusEventFileManager(platformContext, Time.getCurrent(), recycleBin, selfId);
-
             if (emergencyRecoveryManager.isEmergencyRecoveryFilePresent()) {
                 logger.info(
                         STARTUP.getMarker(),
                         "This node was started in emergency recovery mode, "
                                 + "clearing the preconsensus event stream.");
-                manager.clear();
+                PreconsensusEventFileManager.clear(platformContext, recycleBin, selfId);
             }
 
-            clearPCESOnSoftwareUpgradeIfConfigured(softwareUpgrade, manager);
-            return manager;
+            clearPCESOnSoftwareUpgradeIfConfigured(softwareUpgrade);
+
+            return new PreconsensusEventFileManager(platformContext, Time.getCurrent(), recycleBin, selfId);
         } catch (final IOException e) {
             throw new UncheckedIOException("unable load preconsensus files", e);
         }
@@ -1210,22 +1208,16 @@ public class SwirldsPlatform implements Platform, Startable {
      * the stream should be cleared on software upgrade.
      *
      * @param softwareUpgrade true if a software upgrade has occurred
-     * @param fileManager     the preconsensus event file manager
      * @throws UncheckedIOException if the required changes on software upgrade cannot be performed
      */
-    public void clearPCESOnSoftwareUpgradeIfConfigured(
-            final boolean softwareUpgrade, @NonNull final PreconsensusEventFileManager fileManager) {
+    public void clearPCESOnSoftwareUpgradeIfConfigured(final boolean softwareUpgrade) {
         final boolean clearOnSoftwareUpgrade = platformContext
                 .getConfiguration()
                 .getConfigData(PreconsensusEventStreamConfig.class)
                 .clearOnSoftwareUpgrade();
         if (softwareUpgrade && clearOnSoftwareUpgrade) {
-            try {
-                logger.info(STARTUP.getMarker(), "Clearing the preconsensus event stream on software upgrade.");
-                fileManager.clear();
-            } catch (final IOException e) {
-                throw new UncheckedIOException("Failed to clear the preconsensus event stream on software upgrade.", e);
-            }
+            logger.info(STARTUP.getMarker(), "Clearing the preconsensus event stream on software upgrade.");
+            PreconsensusEventFileManager.clear(platformContext, recycleBin, selfId);
         }
     }
 }
