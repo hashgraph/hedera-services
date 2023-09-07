@@ -16,10 +16,10 @@
 
 package com.hedera.node.app.authorization;
 
-import static com.hedera.node.app.authorization.Authorizer.SystemPrivilege.AUTHORIZED;
-import static com.hedera.node.app.authorization.Authorizer.SystemPrivilege.IMPERMISSIBLE;
-import static com.hedera.node.app.authorization.Authorizer.SystemPrivilege.UNAUTHORIZED;
-import static com.hedera.node.app.authorization.Authorizer.SystemPrivilege.UNNECESSARY;
+import static com.hedera.node.app.spi.authorization.Authorizer.SystemPrivilege.AUTHORIZED;
+import static com.hedera.node.app.spi.authorization.Authorizer.SystemPrivilege.IMPERMISSIBLE;
+import static com.hedera.node.app.spi.authorization.Authorizer.SystemPrivilege.UNAUTHORIZED;
+import static com.hedera.node.app.spi.authorization.Authorizer.SystemPrivilege.UNNECESSARY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -28,7 +28,7 @@ import com.hedera.hapi.node.file.SystemDeleteTransactionBody;
 import com.hedera.hapi.node.file.SystemUndeleteTransactionBody;
 import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.authorization.Authorizer.SystemPrivilege;
+import com.hedera.node.app.spi.authorization.Authorizer.SystemPrivilege;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.FilesConfig;
@@ -62,33 +62,33 @@ public class PrivilegesVerifier {
     /**
      * Checks whether an account is exempt from paying fees.
      *
-     * @param accountID the {@link AccountID} to check
+     * @param payerId the payer {@link AccountID} for the transaction
      * @param functionality the {@link HederaFunctionality} of the transaction
      * @param txBody the {@link TransactionBody} of the transaction
      * @return {@code true} if the account is exempt from paying fees, otherwise {@code false}
      */
     public SystemPrivilege hasPrivileges(
-            @NonNull final AccountID accountID,
+            @NonNull final AccountID payerId,
             @NonNull final HederaFunctionality functionality,
             @NonNull final TransactionBody txBody) {
         return switch (functionality) {
                 // Authorization privileges for special transactions
-            case FREEZE -> checkFreeze(accountID);
-            case SYSTEM_DELETE -> checkSystemDelete(accountID, txBody.systemDeleteOrThrow());
-            case SYSTEM_UNDELETE -> checkSystemUndelete(accountID, txBody.systemUndeleteOrThrow());
-            case UNCHECKED_SUBMIT -> checkUncheckedSubmit(accountID);
+            case FREEZE -> checkFreeze(payerId);
+            case SYSTEM_DELETE -> checkSystemDelete(payerId, txBody.systemDeleteOrThrow());
+            case SYSTEM_UNDELETE -> checkSystemUndelete(payerId, txBody.systemUndeleteOrThrow());
+            case UNCHECKED_SUBMIT -> checkUncheckedSubmit(payerId);
 
                 // Authorization privileges for file updates and appends
             case FILE_UPDATE -> checkFileChange(
-                    accountID, txBody.fileUpdateOrThrow().fileIDOrThrow().fileNum());
+                    payerId, txBody.fileUpdateOrThrow().fileIDOrThrow().fileNum());
             case FILE_APPEND -> checkFileChange(
-                    accountID, txBody.fileAppendOrThrow().fileIDOrThrow().fileNum());
+                    payerId, txBody.fileAppendOrThrow().fileIDOrThrow().fileNum());
             case CONTRACT_UPDATE -> checkFileChange(
-                    accountID,
+                    payerId,
                     txBody.contractUpdateInstanceOrThrow().contractIDOrThrow().contractNumOrThrow());
 
                 // Authorization for crypto updates
-            case CRYPTO_UPDATE -> checkCryptoUpdate(accountID, txBody.cryptoUpdateAccountOrThrow());
+            case CRYPTO_UPDATE -> checkCryptoUpdate(payerId, txBody.cryptoUpdateAccountOrThrow());
 
                 // Authorization for deletes
             case FILE_DELETE -> checkEntityDelete(
@@ -199,15 +199,22 @@ public class PrivilegesVerifier {
     }
 
     private SystemPrivilege checkCryptoUpdate(
-            @NonNull final AccountID accountID, @NonNull final CryptoUpdateTransactionBody op) {
-        final long targetNum = op.accountIDToUpdateOrThrow().accountNumOrThrow();
+            @NonNull final AccountID payerId, @NonNull final CryptoUpdateTransactionBody op) {
+        final var targetId = op.accountIDToUpdateOrThrow();
+        final long targetNum = targetId.accountNumOrThrow();
+        final var treasury = accountsConfig.treasury();
+        final var payerNum = payerId.accountNumOrThrow();
+
         if (!isSystemEntity(targetNum)) {
             return UNNECESSARY;
-        }
-        if (targetNum == accountsConfig.treasury()) {
-            return isTreasury(accountID) ? AUTHORIZED : UNAUTHORIZED;
         } else {
-            return isSuperUser(accountID) ? AUTHORIZED : UNNECESSARY;
+            if (payerNum == treasury) {
+                return AUTHORIZED;
+            } else if (payerNum == accountsConfig.systemAdmin()) {
+                return isTreasury(targetId) ? UNAUTHORIZED : AUTHORIZED;
+            } else {
+                return isTreasury(targetId) ? UNAUTHORIZED : UNNECESSARY;
+            }
         }
     }
 

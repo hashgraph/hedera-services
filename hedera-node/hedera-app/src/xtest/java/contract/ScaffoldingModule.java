@@ -38,8 +38,6 @@ import com.hedera.node.app.records.impl.producers.StreamFileProducerSingleThread
 import com.hedera.node.app.records.impl.producers.formats.BlockRecordWriterFactoryImpl;
 import com.hedera.node.app.records.impl.producers.formats.v6.BlockRecordFormatV6;
 import com.hedera.node.app.service.mono.config.HederaNumbers;
-import com.hedera.node.app.service.token.CryptoSignatureWaivers;
-import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakeRewardCalculator;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakeRewardCalculatorImpl;
 import com.hedera.node.app.services.ServiceScopeLookup;
@@ -115,12 +113,6 @@ public interface ScaffoldingModule {
     @Singleton
     static NetworkInfo provideNetworkInfo() {
         return new FakeNetworkInfo();
-    }
-
-    @Provides
-    @Singleton
-    static CryptoSignatureWaivers provideCryptoSignatureWaivers() {
-        return new CryptoSignatureWaiversImpl(new FakeHederaNumbers());
     }
 
     @Binds
