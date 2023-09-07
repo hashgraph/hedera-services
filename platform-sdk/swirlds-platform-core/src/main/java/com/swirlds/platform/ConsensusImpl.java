@@ -686,7 +686,8 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
             if (lastConsensusTime == null) {
                 // if this is the first round ever, and there are no events (which is usually the case)
                 // we take the median of all the judge created times
-                final List<Instant> judgeTimes = judges.stream().map(EventImpl::getTimeCreated).sorted().toList();
+                final List<Instant> judgeTimes =
+                        judges.stream().map(EventImpl::getTimeCreated).sorted().toList();
                 lastConsensusTime = judgeTimes.get(judgeTimes.size() / 2);
             } else {
                 // if we have reached consensus before, we simply increase the lastConsensusTime by the min amount
@@ -780,9 +781,8 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
             numConsensus++;
 
             // the minimum timestamp for this event
-            final Instant minTimestamp = lastConsensusTime == null
-                    ? null
-                    : ConsensusUtils.calcMinTimestampForNextEvent(lastConsensusTime);
+            final Instant minTimestamp =
+                    lastConsensusTime == null ? null : ConsensusUtils.calcMinTimestampForNextEvent(lastConsensusTime);
             // advance this event's consensus timestamp to be at least minTimestamp
             if (minTimestamp != null && e.getConsensusTimestamp().isBefore(minTimestamp)) {
                 e.setConsensusTimestamp(minTimestamp);

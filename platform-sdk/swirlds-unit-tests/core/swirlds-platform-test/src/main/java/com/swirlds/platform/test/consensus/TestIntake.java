@@ -83,13 +83,10 @@ public class TestIntake implements LoadableFromSignedState {
         final EventObserverDispatcher dispatcher =
                 new EventObserverDispatcher(new ShadowGraphEventObserver(shadowGraph), output);
 
-        final PlatformContext platformContext = TestPlatformContextBuilder
-                .create()
-                .withConfiguration(
-                        new TestConfigBuilder()
-                                .withValue("event.asyncPrehandle", false)
-                                .getOrCreateConfig()
-                )
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(new TestConfigBuilder()
+                        .withValue("event.asyncPrehandle", false)
+                        .getOrCreateConfig())
                 .build();
 
         intake = new EventIntake(

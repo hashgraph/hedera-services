@@ -156,7 +156,7 @@ public class SyncNode {
                     "SyncNode.setEventGenerator(ShuffledEventGenerator) must be called prior to generateAndAdd"
                             + "(int)");
         }
-        eventsEmitted +=numEvents;
+        eventsEmitted += numEvents;
         eventEmitter.setCheckpoint(eventsEmitted);
         final List<IndexedEvent> newEvents = eventEmitter.emitEvents(numEvents);
 

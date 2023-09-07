@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.test.consensus.framework;
 
-import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.event.EventConstants;
 import com.swirlds.platform.state.signed.SignedState;
@@ -177,7 +176,7 @@ public class ConsensusTestOrchestrator {
         return nodes;
     }
 
-    public AddressBook getAddressBook(){
+    public AddressBook getAddressBook() {
         return nodes.get(0).getEventEmitter().getGraphGenerator().getAddressBook();
     }
 }

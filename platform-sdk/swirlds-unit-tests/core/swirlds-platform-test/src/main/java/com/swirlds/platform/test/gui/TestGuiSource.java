@@ -126,7 +126,7 @@ public class TestGuiSource {
         });
         final JButton loadSavedSnapshot = new JButton("Load saved snapshot");
         loadSavedSnapshot.addActionListener(e -> {
-            if(savedSnapshot == null){
+            if (savedSnapshot == null) {
                 System.out.println("No saved snapshot");
                 return;
             }

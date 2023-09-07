@@ -134,7 +134,7 @@ public class EventEmitterTests {
 
         emitter.setCheckpoint(numberOfEvents);
         emitter.skip(numberOfEvents);
-        emitter.setCheckpoint(numberOfEvents*2);
+        emitter.setCheckpoint(numberOfEvents * 2);
         final List<IndexedEvent> events1 = emitter.emitEvents(numberOfEvents);
         assertEquals(numberOfEvents, events1.size());
 
@@ -142,7 +142,7 @@ public class EventEmitterTests {
 
         emitterCopy.setCheckpoint(numberOfEvents);
         emitterCopy.skip(numberOfEvents);
-        emitterCopy.setCheckpoint(numberOfEvents*2);
+        emitterCopy.setCheckpoint(numberOfEvents * 2);
         final List<IndexedEvent> events2 = emitterCopy.emitEvents(numberOfEvents);
         assertEquals(numberOfEvents, events2.size());
 

@@ -22,7 +22,6 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.platform.state.MinGenInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Collection;
