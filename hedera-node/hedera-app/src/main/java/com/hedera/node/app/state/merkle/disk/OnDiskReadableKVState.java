@@ -26,7 +26,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 
-import static com.hedera.node.app.state.TransactionStateLogger.*;
+import static com.hedera.node.app.state.logging.TransactionStateLogger.*;
 
 /**
  * An implementation of {@link ReadableKVState} backed by a {@link VirtualMap}, resulting in a state

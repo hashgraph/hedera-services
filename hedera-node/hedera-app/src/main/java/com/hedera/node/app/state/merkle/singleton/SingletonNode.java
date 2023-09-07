@@ -23,8 +23,8 @@ import com.swirlds.common.merkle.impl.PartialBinaryMerkleInternal;
 import com.swirlds.common.utility.Labeled;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-import static com.hedera.node.app.state.TransactionStateLogger.logSingletonRead;
-import static com.hedera.node.app.state.TransactionStateLogger.logSingletonWrite;
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logSingletonRead;
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logSingletonWrite;
 
 /**
  * A merkle node with a string (the label) as the left child, and the merkle node value as the right

@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.workflows.handle.record;
 
-import static com.hedera.node.app.state.TransactionStateLogger.logEndTransactionRecord;
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logEndTransactionRecord;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;

@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.state.merkle.queue;
 
-import static com.hedera.node.app.state.TransactionStateLogger.*;
+import static com.hedera.node.app.state.logging.TransactionStateLogger.*;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.state.merkle.StateMetadata;

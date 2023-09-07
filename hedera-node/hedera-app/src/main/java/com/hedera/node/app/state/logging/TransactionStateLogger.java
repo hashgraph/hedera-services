@@ -1,4 +1,4 @@
-package com.hedera.node.app.state;
+package com.hedera.node.app.state.logging;
 
 import com.hedera.hapi.node.base.*;
 import com.hedera.hapi.node.transaction.TransactionBody;
