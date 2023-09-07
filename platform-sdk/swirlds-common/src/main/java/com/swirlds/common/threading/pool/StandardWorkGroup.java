@@ -26,6 +26,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -51,7 +52,12 @@ public class StandardWorkGroup {
     private volatile boolean hasExceptions;
 
     private final AtomicBoolean firstException = new AtomicBoolean(true);
-    private final Runnable onException;
+    private final Runnable abortAction;
+    private final Function<Throwable, Boolean> exceptionListener;
+
+    public StandardWorkGroup(final ThreadManager threadManager, final String groupName, final Runnable abortAction) {
+        this(threadManager, groupName, abortAction, null);
+    }
 
     /**
      * Create a new work group.
@@ -66,12 +72,22 @@ public class StandardWorkGroup {
      * 		if there is additional cleanup required then this method
      * 		can be used to perform that cleanup. Method is called at most
      * 		one time. If argument is null then no additional action is taken.
+     * @param exceptionListener
+     *      If a non-<code>InterruptedException</code> exception is encountered, it is passed to this
+     *      listener. If the listener returns {@code true}, the exception is considered handled, and
+     *      no further action is performed. If the listener returns {@code false}, it indicates the
+     *      exception should be processed by the default handler, which is to log it appropriately
      */
-    public StandardWorkGroup(final ThreadManager threadManager, final String groupName, final Runnable abortAction) {
+    public StandardWorkGroup(
+            final ThreadManager threadManager,
+            final String groupName,
+            final Runnable abortAction,
+            final Function<Throwable, Boolean> exceptionListener) {
         this.groupName = groupName;
         this.futures = new ConcurrentFuturePool<>(this::handleError);
 
-        this.onException = abortAction;
+        this.abortAction = abortAction;
+        this.exceptionListener = exceptionListener;
 
         final ThreadConfiguration configuration = new ThreadConfiguration(threadManager)
                 .setComponent("work group " + groupName)
@@ -155,11 +171,17 @@ public class StandardWorkGroup {
      */
     public void handleError(final Throwable ex) {
         if (!(ex instanceof InterruptedException)) {
-            logger.error(EXCEPTION.getMarker(), "Work Group Exception [ groupName = {} ]", groupName, ex);
-            hasExceptions = true;
+            boolean exceptionHandled = false;
+            if (exceptionListener != null) {
+                exceptionHandled = exceptionListener.apply(ex);
+            }
+            if (!exceptionHandled) {
+                logger.error(EXCEPTION.getMarker(), "Work Group Exception [ groupName = {} ]", groupName, ex);
+            }
 
-            if (onException != null && firstException.getAndSet(false)) {
-                onException.run();
+            hasExceptions = true;
+            if (abortAction != null && firstException.getAndSet(false)) {
+                abortAction.run();
             }
 
             executorService.shutdownNow();
