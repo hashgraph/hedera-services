@@ -24,6 +24,8 @@ import com.swirlds.platform.state.MinGenInfo;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.LongStream;
+
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -47,9 +49,9 @@ public class ConsensusRounds {
 
     /** Constructs an empty object */
     public ConsensusRounds(
-            final ConsensusConfig config,
-            final SequentialRingBuffer<MinGenInfo> minGenStorage,
-            final AddressBook addressBook) {
+            @NonNull final ConsensusConfig config,
+            @NonNull final SequentialRingBuffer<MinGenInfo> minGenStorage,
+            @NonNull final AddressBook addressBook) {
         this.config = config;
         this.minGenStorage = minGenStorage;
         this.addressBook = addressBook;
@@ -77,7 +79,7 @@ public class ConsensusRounds {
      *
      * @param witness the new witness
      */
-    public void newWitness(final EventImpl witness) {
+    public void newWitness(@NonNull final EventImpl witness) {
         // track the latest known round created
         maxRoundCreated = Math.max(witness.getRoundCreated(), maxRoundCreated);
         if (!isElectionRound(witness.getRoundCreated())) {
@@ -116,7 +118,7 @@ public class ConsensusRounds {
      * @param event the event to check
      * @return true if its older
      */
-    public boolean isOlderThanDecidedRoundGeneration(final EventImpl event) {
+    public boolean isOlderThanDecidedRoundGeneration(@NonNull final EventImpl event) {
         return isAnyRoundDecided() // if no round has been decided, it can't be older
                 && minGenStorage.get(getLastRoundDecided()).minimumGeneration() > event.getGeneration();
     }
@@ -145,7 +147,7 @@ public class ConsensusRounds {
      * @param event the event to check
      * @return true if it is a judge in the last round that was decided
      */
-    public boolean isLastDecidedJudge(final EventImpl event) {
+    public boolean isLastDecidedJudge(@NonNull final EventImpl event) {
         return event.isJudge() && event.getRoundCreated() == getLastRoundDecided();
     }
 
@@ -163,7 +165,7 @@ public class ConsensusRounds {
     /**
      * @return the round we are currently voting on
      */
-    public ElectionRound getElectionRound() {
+    public @NonNull ElectionRound getElectionRound() {
         return electionRound;
     }
 
@@ -185,7 +187,7 @@ public class ConsensusRounds {
      *
      * @param minGen a list of round numbers and round generation pairs, in ascending round numbers
      */
-    public void loadFromMinGen(final List<MinGenInfo> minGen) {
+    public void loadFromMinGen(@NonNull final List<MinGenInfo> minGen) {
         minGenStorage.reset(minGen.get(0).round());
         for (final MinGenInfo roundGenPair : minGen) {
             minGenStorage.add(roundGenPair.round(), roundGenPair);
@@ -196,7 +198,7 @@ public class ConsensusRounds {
     /**
      * @return A list of {@link MinGenInfo} for all decided and non-ancient rounds
      */
-    public List<MinGenInfo> getMinGenInfo() {
+    public @NonNull List<MinGenInfo> getMinGenInfo() {
         final long oldestNonAncientRound =
                 RoundCalculationUtils.getOldestNonAncientRound(config.roundsNonAncient(), getLastRoundDecided());
         return LongStream.range(oldestNonAncientRound, getFameDecidedBelow())

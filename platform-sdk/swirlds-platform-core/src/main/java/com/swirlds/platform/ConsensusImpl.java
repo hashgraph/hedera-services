@@ -49,6 +49,9 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -191,7 +194,9 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
      * @param addressBook the global address book, which never changes
      */
     public ConsensusImpl(
-            final ConsensusConfig config, final ConsensusMetrics consensusMetrics, final AddressBook addressBook) {
+            @NonNull final ConsensusConfig config,
+            @NonNull final ConsensusMetrics consensusMetrics,
+            @NonNull final AddressBook addressBook) {
         super(config, new SequentialRingBuffer<>(ConsensusConstants.ROUND_FIRST, config.roundsExpired() * 2));
         this.config = config;
         this.consensusMetrics = consensusMetrics;
@@ -203,7 +208,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
     }
 
     @Override
-    public void loadFromSignedState(final SignedState signedState) {
+    public void loadFromSignedState(@NonNull final SignedState signedState) {
         reset();
         final PlatformData platformData =
                 signedState.getState().getPlatformState().getPlatformData();
@@ -252,7 +257,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
      * <p>NOTE: once the snapshot starts being saved in the signed state, {@link
      * #loadFromSignedState(SignedState)} will call into this method
      */
-    public void loadSnapshot(final ConsensusSnapshot snapshot) {
+    public void loadSnapshot(@NonNull final ConsensusSnapshot snapshot) {
         reset();
         initJudges = new InitJudges(snapshot.round(), new HashSet<>(snapshot.judgeHashes()));
         rounds.loadFromMinGen(snapshot.minGens());
@@ -290,7 +295,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
      * @return A list of consensus rounds, or null if no consensus was reached
      */
     @Override
-    public List<ConsensusRound> addEvent(final EventImpl event, final AddressBook addressBook) {
+    public @Nullable List<ConsensusRound> addEvent(@NonNull final EventImpl event, @NonNull final AddressBook addressBook) {
         recentEvents.add(event);
         final List<ConsensusRound> toReturn = new ArrayList<>();
         // set its round to undefined so that it gets calculated

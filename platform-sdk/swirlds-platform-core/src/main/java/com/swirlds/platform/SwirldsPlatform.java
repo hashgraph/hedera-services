@@ -808,6 +808,7 @@ public class SwirldsPlatform implements Platform, Startable {
             tipsetEventCreator.setMinimumGenerationNonAncient(
                     signedState.getState().getPlatformState().getPlatformData().getMinimumGenerationNonAncient());
 
+            // newer states will not have events, so we need to check for null
             if (signedState.getState().getPlatformState().getPlatformData().getEvents() == null) {
                 return;
             }
@@ -842,6 +843,7 @@ public class SwirldsPlatform implements Platform, Startable {
 
         consensusRef.get().loadFromSignedState(signedState);
 
+        // old states will have events in them that need to be loaded, newer states will not
         if (signedState.getEvents() != null) {
             shadowGraph.initFromEvents(
                     EventUtils.prepareForShadowGraph(

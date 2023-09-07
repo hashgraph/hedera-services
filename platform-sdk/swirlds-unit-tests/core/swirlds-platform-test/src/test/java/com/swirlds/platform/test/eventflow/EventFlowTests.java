@@ -544,7 +544,7 @@ class EventFlowTests {
         final Set<Long> expectedRounds = new HashSet<>();
         for (final ConsensusRound round : consensusRounds) {
             final long roundNum = round.getRoundNum();
-            if (round.isComplete() && (roundNum == 1 || roundNum % signedStateFreq == 0)) {
+            if (round.getEventCount() == 0 && (roundNum == 1 || roundNum % signedStateFreq == 0)) {
                 expectedRounds.add(roundNum);
             }
         }

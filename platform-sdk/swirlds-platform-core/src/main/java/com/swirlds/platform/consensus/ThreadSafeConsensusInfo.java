@@ -19,6 +19,7 @@ package com.swirlds.platform.consensus;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.logging.LogMarker;
 import com.swirlds.platform.state.MinGenInfo;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -69,12 +70,12 @@ public class ThreadSafeConsensusInfo implements GraphGenerations, RoundNumberPro
      * @param config consensus configuration
      * @param storage round storage
      */
-    public ThreadSafeConsensusInfo(final ConsensusConfig config, final SequentialRingBuffer<MinGenInfo> storage) {
+    public ThreadSafeConsensusInfo(@NonNull final ConsensusConfig config, @NonNull final SequentialRingBuffer<MinGenInfo> storage) {
         this.config = config;
         this.storage = storage;
     }
 
-    public SequentialRingBuffer<MinGenInfo> getStorage() {
+    public @NonNull SequentialRingBuffer<MinGenInfo> getStorage() {
         return storage;
     }
 

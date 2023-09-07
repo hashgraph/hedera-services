@@ -36,8 +36,6 @@ public class ConsensusRound implements Round {
     private final List<EventImpl> consensusEvents;
     /** the consensus generations when this round reached consensus */
     private final GraphGenerations generations;
-    /** this round's number */
-    private final long roundNum;
     /** the last event in the round */
     private final EventImpl lastEvent;
     /** The number of application transactions in this round */
@@ -46,20 +44,6 @@ public class ConsensusRound implements Round {
     private final ConsensusSnapshot snapshot;
     /** The event that, when added to the hashgraph, caused this round to reach consensus. */
     private final EventImpl keystoneEvent;
-    /** The consensus timestamp of this round. */
-    private final Instant consensusTimestamp;
-
-    /**
-     * Same as {@link #ConsensusRound(List, EventImpl, GraphGenerations, long, ConsensusSnapshot)} but the
-     * round number is derived from the snapshot
-     */
-    public ConsensusRound(
-            @NonNull final List<EventImpl> consensusEvents,
-            @NonNull final EventImpl keystoneEvent,
-            @NonNull final GraphGenerations generations,
-            @NonNull final ConsensusSnapshot snapshot) {
-        this(consensusEvents, keystoneEvent, generations, snapshot.round(), snapshot);
-    }
 
     /**
      * Create a new instance with the provided consensus info.
@@ -67,23 +51,21 @@ public class ConsensusRound implements Round {
      * @param consensusEvents the events in the round, in consensus order
      * @param keystoneEvent   the event that, when added to the hashgraph, caused this round to reach consensus
      * @param generations the consensus generations for this round
-     * @param roundNum the round number
      * @param snapshot snapshot of consensus at this round
      */
-    private ConsensusRound(
+    public ConsensusRound(
             @NonNull final List<EventImpl> consensusEvents,
             @NonNull final EventImpl keystoneEvent,
             @NonNull final GraphGenerations generations,
-            final long roundNum,
             @NonNull final ConsensusSnapshot snapshot) {
         Objects.requireNonNull(consensusEvents, "consensusEvents must not be null");
         Objects.requireNonNull(keystoneEvent, "keystoneEvent must not be null");
         Objects.requireNonNull(generations, "generations must not be null");
+        Objects.requireNonNull(snapshot, "snapshot must not be null");
 
         this.consensusEvents = Collections.unmodifiableList(consensusEvents);
         this.keystoneEvent = keystoneEvent;
         this.generations = generations;
-        this.roundNum = roundNum;
         this.snapshot = snapshot;
 
         for (final EventImpl e : consensusEvents) {
@@ -91,23 +73,6 @@ public class ConsensusRound implements Round {
         }
 
         lastEvent = consensusEvents.isEmpty() ? null : consensusEvents.get(consensusEvents.size() - 1);
-        // FUTURE WORK: once we properly handle rounds with no events, we need to define the consensus timestamp of a
-        // round with no events as 1 nanosecond later than the previous round.
-
-        // TODO fix this
-        // consensusTimestamp = consensusEvents.get(consensusEvents.size() - 1).getLastTransTime();
-        consensusTimestamp = snapshot.consensusTimestamp();
-    }
-
-    /**
-     * @return true if this round is complete (contains the last event of the round)
-     * @deprecated an incomplete round is a concept introduced by the old recovery workflow. the new
-     *     workflow does not use this class so a round is never incomplete. also, a round might have
-     *     no consensus events and still be a complete round.
-     */
-    @Deprecated(forRemoval = true)
-    public boolean isComplete() {
-        return lastEvent != null;
     }
 
     /**
@@ -158,7 +123,7 @@ public class ConsensusRound implements Round {
     /** {@inheritDoc} */
     @Override
     public long getRoundNum() {
-        return roundNum;
+        return snapshot.round();
     }
 
     /** {@inheritDoc} */
@@ -179,7 +144,7 @@ public class ConsensusRound implements Round {
     @NonNull
     @Override
     public Instant getConsensusTimestamp() {
-        return consensusTimestamp;
+        return snapshot.consensusTimestamp();
     }
 
     /**
@@ -218,7 +183,7 @@ public class ConsensusRound implements Round {
     @Override
     public String toString() {
         return new ToStringBuilder(this)
-                .append("round", roundNum)
+                .append("round", snapshot.round())
                 .append("consensus events", EventUtils.toShortStrings(consensusEvents))
                 .toString();
     }

@@ -93,11 +93,11 @@ public class ConsensusSnapshot implements SelfSerializable {
         return round;
     }
 
-    public Collection<Hash> judgeHashes() {
+    public @NonNull Collection<Hash> judgeHashes() {
         return judgeHashes;
     }
 
-    public List<MinGenInfo> minGens() {
+    public @NonNull List<MinGenInfo> minGens() {
         return minGens;
     }
 
@@ -105,7 +105,7 @@ public class ConsensusSnapshot implements SelfSerializable {
         return nextConsensusNumber;
     }
 
-    public Instant consensusTimestamp() {
+    public @NonNull Instant consensusTimestamp() {
         return consensusTimestamp;
     }
 
