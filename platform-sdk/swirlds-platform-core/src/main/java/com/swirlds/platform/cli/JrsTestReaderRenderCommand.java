@@ -85,6 +85,7 @@ public class JrsTestReaderRenderCommand extends AbstractCommand {
     }
 
     @Override
+    @NonNull
     public Integer call() {
         if (Files.exists(output)) {
             try {
