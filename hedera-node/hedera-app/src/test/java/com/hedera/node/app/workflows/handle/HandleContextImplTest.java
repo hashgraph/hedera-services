@@ -39,6 +39,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.consensus.ConsensusSubmitMessageTransactionBody;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -150,6 +151,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
 
     private static TransactionBody defaultTransactionBody() {
         return TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder().accountID(ALICE.accountID()))
                 .consensusSubmitMessage(ConsensusSubmitMessageTransactionBody.DEFAULT)
                 .build();
     }
@@ -804,6 +806,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         void testDispatchSucceeds(Consumer<HandleContext> contextDispatcher) throws PreCheckException {
             // given
             final var txBody = TransactionBody.newBuilder()
+                    .transactionID(TransactionID.newBuilder().accountID(ALICE.accountID()))
                     .consensusSubmitMessage(ConsensusSubmitMessageTransactionBody.DEFAULT)
                     .build();
             final var context = createContext(txBody, TransactionCategory.USER);
@@ -826,6 +829,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         void testDispatchPreHandleFails(Consumer<HandleContext> contextDispatcher) throws PreCheckException {
             // given
             final var txBody = TransactionBody.newBuilder()
+                    .transactionID(TransactionID.newBuilder().accountID(ALICE.accountID()))
                     .consensusSubmitMessage(ConsensusSubmitMessageTransactionBody.DEFAULT)
                     .build();
             doThrow(new PreCheckException(ResponseCodeEnum.INVALID_TOPIC_ID))
@@ -851,6 +855,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         void testDispatchHandleFails(Consumer<HandleContext> contextDispatcher) {
             // given
             final var txBody = TransactionBody.newBuilder()
+                    .transactionID(TransactionID.newBuilder().accountID(ALICE.accountID()))
                     .consensusSubmitMessage(ConsensusSubmitMessageTransactionBody.DEFAULT)
                     .build();
             doThrow(new HandleException(ResponseCodeEnum.ACCOUNT_DOES_NOT_OWN_WIPED_NFT))

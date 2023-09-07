@@ -198,6 +198,7 @@ public class CryptoCreateSuite extends HapiSuite {
                         sourcing(() -> getTxnRecord(creation).logged()));
     }
 
+    @HapiTest
     /* Prior to 0.13.0, a "canonical" CryptoCreate (one sig, 3 month auto-renew) cost 1¢. */
     private HapiSpec usdFeeAsExpected() {
         double preV13PriceUsd = 0.01;
@@ -259,6 +260,7 @@ public class CryptoCreateSuite extends HapiSuite {
                         validateChargedUsd(tenAutoAssocSlots, v13PriceUsdTenAutoAssociations));
     }
 
+    @HapiTest
     public HapiSpec syntaxChecksAreAsExpected() {
         return defaultHapiSpec("SyntaxChecksAreAsExpected")
                 .given()
@@ -266,6 +268,9 @@ public class CryptoCreateSuite extends HapiSuite {
                 .then(
                         cryptoCreate("broken").autoRenewSecs(1L).hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE),
                         cryptoCreate("alsoBroken").entityMemo(ZERO_BYTE_MEMO).hasPrecheck(INVALID_ZERO_BYTE_IN_STRING));
+        // In modular code this error is thrown in handle, but it is fixed using dynamic property
+        // spec.streamlinedIngestChecks
+        // to accommodate error codes moved from Ingest to handle
     }
 
     @HapiTest
@@ -283,7 +288,6 @@ public class CryptoCreateSuite extends HapiSuite {
                         .hasPrecheck(KEY_REQUIRED));
     }
 
-    @HapiTest
     private HapiSpec createAnAccountEmptyKeyList() {
         KeyShape shape = listOf(0);
         long initialBalance = 10_000L;
@@ -291,11 +295,16 @@ public class CryptoCreateSuite extends HapiSuite {
         return defaultHapiSpec("createAnAccountEmptyKeyList")
                 .given()
                 .when()
-                .then(cryptoCreate(NO_KEYS)
-                        .keyShape(shape)
-                        .balance(initialBalance)
-                        .logged()
-                        .hasPrecheck(KEY_REQUIRED));
+                .then(
+                        cryptoCreate(NO_KEYS)
+                                .keyShape(shape)
+                                .balance(initialBalance)
+                                .logged()
+                                .hasPrecheck(KEY_REQUIRED)
+                        // In modular code this error is thrown in handle, but it is fixed using dynamic property
+                        // spec.streamlinedIngestChecks
+                        // to accommodate error codes moved from Ingest to handle
+                        );
     }
 
     @HapiTest
@@ -459,6 +468,7 @@ public class CryptoCreateSuite extends HapiSuite {
                                 .hasPrecheck(INVALID_ADMIN_KEY));
     }
 
+    @HapiTest
     private HapiSpec createAnAccountInvalidED25519() {
         long initialBalance = 10_000L;
         Key emptyKey = Key.newBuilder().setEd25519(ByteString.EMPTY).build();
@@ -483,7 +493,11 @@ public class CryptoCreateSuite extends HapiSuite {
                                 .balance(initialBalance)
                                 .signedBy(GENESIS)
                                 .logged()
-                                .hasPrecheck(BAD_ENCODING));
+                                .hasPrecheck(BAD_ENCODING)
+                        // In modular code this error is thrown in handle, but it is fixed using dynamic property
+                        // spec.streamlinedIngestChecks
+                        // to accommodate error codes moved from Ingest to handle
+                        );
     }
 
     @HapiTest
@@ -686,6 +700,7 @@ public class CryptoCreateSuite extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
     private HapiSpec createAnAccountWithEVMAddressAliasFromDifferentKey() {
         return defaultHapiSpec("createAnAccountWithEVMAddressAliasFromDifferentKey")
                 .given(

@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.exec.scope;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.contract.impl.state.DispatchingEvmFrameState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -48,6 +49,16 @@ public interface HederaNativeOperations {
      */
     @Nullable
     Token getToken(long number);
+
+    /**
+     * Returns the {@link TokenRelation} between the account and token with the given numbers.
+     *
+     * @param accountNumber the account number
+     * @param tokenNumber  the token number
+     * @return the relationship, or {@code null} if no such relationship exists
+     */
+    @Nullable
+    TokenRelation getTokenRelation(long accountNumber, long tokenNumber);
 
     /**
      * Given an EVM address, resolves to the account or contract number (if any) that this address

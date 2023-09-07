@@ -14,15 +14,17 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.fees;
+package com.swirlds.common.scratchpad;
 
-import dagger.Binds;
-import dagger.Module;
-import javax.inject.Singleton;
+/**
+ * Defines a {@link Scratchpad} type. Implementations must be enums.
+ */
+public interface ScratchpadType {
 
-@Module
-public interface FeesInjectionModule {
-    @Binds
-    @Singleton
-    QueryFeeCheck bindQueryFeeCheck(QueryFeeCheckImpl queryFeeCheck);
+    /**
+     * Get the field ID for this scratchpad type. Must be unique within this type.
+     *
+     * @return the field ID
+     */
+    int getFieldId();
 }
