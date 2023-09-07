@@ -289,7 +289,8 @@ public class SyncGossip extends AbstractGossip {
                                             reconnectController,
                                             new DefaultSignedStateValidator(platformContext),
                                             fallenBehindManager,
-                                            platformContext.getConfiguration()),
+                                            platformContext.getConfiguration(),
+                                            time),
                                     new SyncProtocol(
                                             otherId,
                                             syncShadowgraphSynchronizer,

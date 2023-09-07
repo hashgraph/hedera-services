@@ -18,8 +18,11 @@ package com.swirlds.platform.reconnect;
 
 import static com.swirlds.logging.LogMarker.RECONNECT;
 
+import com.swirlds.base.time.Time;
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.threading.manager.ThreadManager;
+import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.metrics.ReconnectMetrics;
@@ -53,6 +56,12 @@ public class ReconnectProtocol implements Protocol {
     private final FallenBehindManager fallenBehindManager;
     private final Configuration configuration;
     private ReservedSignedState teacherState;
+    /** A rate limited logger for when rejecting teacher role due to state being null. */
+    private final RateLimitedLogger stateNullLogger;
+    /** A rate limited logger for when rejecting teacher role due to state being incomplete. */
+    private final RateLimitedLogger stateIncompleteLogger;
+    /** A rate limited logger for when rejecting teacher role due to falling behind. */
+    private final RateLimitedLogger fallenBehindLogger;
 
     /**
      * @param threadManager           responsible for creating and managing threads
@@ -75,7 +84,8 @@ public class ReconnectProtocol implements Protocol {
             @NonNull final ReconnectController reconnectController,
             @NonNull final SignedStateValidator validator,
             @NonNull final FallenBehindManager fallenBehindManager,
-            @NonNull final Configuration configuration) {
+            @NonNull final Configuration configuration,
+            @NonNull final Time time) {
         this.threadManager = Objects.requireNonNull(threadManager, "threadManager must not be null");
         this.peerId = Objects.requireNonNull(peerId, "peerId must not be null");
         this.teacherThrottle = Objects.requireNonNull(teacherThrottle, "teacherThrottle must not be null");
@@ -88,6 +98,14 @@ public class ReconnectProtocol implements Protocol {
         this.validator = Objects.requireNonNull(validator, "validator must not be null");
         this.fallenBehindManager = Objects.requireNonNull(fallenBehindManager, "fallenBehindManager must not be null");
         this.configuration = Objects.requireNonNull(configuration, "configuration must not be null");
+        Objects.requireNonNull(time);
+
+        final Duration minimumTimeBetweenReconnects =
+                configuration.getConfigData(ReconnectConfig.class).minimumTimeBetweenReconnects();
+
+        stateNullLogger = new RateLimitedLogger(logger, time, minimumTimeBetweenReconnects);
+        stateIncompleteLogger = new RateLimitedLogger(logger, time, minimumTimeBetweenReconnects);
+        fallenBehindLogger = new RateLimitedLogger(logger, time, minimumTimeBetweenReconnects);
     }
 
     /** {@inheritDoc} */
@@ -118,6 +136,11 @@ public class ReconnectProtocol implements Protocol {
     public boolean shouldAccept() {
         // we should not be the teacher if we have fallen behind
         if (fallenBehindManager.hasFallenBehind()) {
+            fallenBehindLogger.info(
+                    RECONNECT.getMarker(),
+                    "Rejecting reconnect request from node {} because this node has fallen behind",
+                    peerId);
+            reconnectMetrics.recordReconnectRejection(peerId);
             return false;
         }
 
@@ -125,10 +148,11 @@ public class ReconnectProtocol implements Protocol {
         teacherState = lastCompleteSignedState.get();
 
         if (teacherState.isNull()) {
-            logger.info(
+            stateNullLogger.info(
                     RECONNECT.getMarker(),
                     "Rejecting reconnect request from node {} due to lack of a fully signed state",
                     peerId);
+            reconnectMetrics.recordReconnectRejection(peerId);
             return false;
         }
 
@@ -136,12 +160,13 @@ public class ReconnectProtocol implements Protocol {
             // this is only possible if signed state manager violates its contractual obligations
             teacherState.close();
             teacherState = null;
-            logger.error(
+            stateIncompleteLogger.error(
                     RECONNECT.getMarker(),
                     "Rejecting reconnect request from node {} due to lack of a fully signed state."
                             + " The signed state manager attempted to provide a state that was not"
                             + " fully signed, which should not be possible.",
                     peerId);
+            reconnectMetrics.recordReconnectRejection(peerId);
             return false;
         }
 
@@ -153,6 +178,7 @@ public class ReconnectProtocol implements Protocol {
         } else {
             teacherState.close();
             teacherState = null;
+            reconnectMetrics.recordReconnectRejection(peerId);
             return false;
         }
     }
