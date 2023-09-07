@@ -123,6 +123,7 @@ class HandleWorkflowTest extends AppTestBase {
                 code,
                 new TransactionScenarioBuilder().txInfo(),
                 Set.of(),
+                Set.of(),
                 Map.of(key, FakeSignatureVerificationFuture.goodFuture(key)),
                 null,
                 CONFIG_VERSION);
@@ -676,6 +677,7 @@ class HandleWorkflowTest extends AppTestBase {
                     ResponseCodeEnum.OK,
                     new TransactionScenarioBuilder().txInfo(),
                     Set.of(),
+                    Set.of(),
                     Map.of(key, FakeSignatureVerificationFuture.goodFuture(key)),
                     null,
                     CONFIG_VERSION - 1L);
@@ -785,6 +787,7 @@ class HandleWorkflowTest extends AppTestBase {
                     ResponseCodeEnum.OK,
                     new TransactionScenarioBuilder().txInfo(),
                     Set.of(bobsKey),
+                    Set.of(),
                     verificationResults,
                     null,
                     CONFIG_VERSION);
@@ -838,6 +841,7 @@ class HandleWorkflowTest extends AppTestBase {
                     ResponseCodeEnum.OK,
                     new TransactionScenarioBuilder().txInfo(),
                     Set.of(bobsKey),
+                    Set.of(),
                     verificationResults,
                     null,
                     CONFIG_VERSION);
@@ -960,6 +964,7 @@ class HandleWorkflowTest extends AppTestBase {
                     ResponseCodeEnum.OK,
                     new TransactionScenarioBuilder().txInfo(),
                     Set.of(),
+                    Set.of(),
                     verificationResults,
                     null,
                     CONFIG_VERSION);
@@ -1012,6 +1017,7 @@ class HandleWorkflowTest extends AppTestBase {
                     Status.SO_FAR_SO_GOOD,
                     ResponseCodeEnum.OK,
                     new TransactionScenarioBuilder().txInfo(),
+                    Set.of(),
                     Set.of(),
                     verificationResults,
                     null,
@@ -1160,6 +1166,7 @@ class HandleWorkflowTest extends AppTestBase {
                     ResponseCodeEnum.OK,
                     new TransactionScenarioBuilder().txInfo(),
                     Set.of(erinsKey),
+                    Set.of(),
                     preHandleVerificationResults,
                     null,
                     CONFIG_VERSION);
