@@ -44,6 +44,7 @@ import org.hyperledger.besu.datatypes.Address;
 public class EntityId implements SelfSerializable {
     private static final long DEFAULT_SHARD = 0L;
     private static final long DEFAULT_REALM = 0L;
+    public static final int NUM_LONG_ZEROS = 12;
 
     static final int MERKLE_VERSION = 1;
     static final long RUNTIME_CONSTRUCTABLE_ID = 0xf35ba643324efa37L;
@@ -240,6 +241,10 @@ public class EntityId implements SelfSerializable {
 
     public static EntityId fromAddress(final Address address) {
         final var evmAddress = address.toArrayUnsafe();
+        if (!isLongZeroAddress(evmAddress)) {
+            throw new IllegalArgumentException(
+                    "Only addresses in the long-zero subspace can be converted to entity ids");
+        }
         return new EntityId(
                 Ints.fromByteArray(Arrays.copyOfRange(evmAddress, 0, 4)),
                 Longs.fromByteArray(Arrays.copyOfRange(evmAddress, 4, 12)),
@@ -297,5 +302,14 @@ public class EntityId implements SelfSerializable {
     public Address toEvmAddress() {
         final var evmAddress = asEvmAddress(num);
         return Address.wrap(Bytes.wrap(evmAddress));
+    }
+
+    private static boolean isLongZeroAddress(final byte[] explicit) {
+        for (int i = 0; i < NUM_LONG_ZEROS; i++) {
+            if (explicit[i] != 0) {
+                return false;
+            }
+        }
+        return true;
     }
 }

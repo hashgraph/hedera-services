@@ -33,16 +33,6 @@ import org.apache.logging.log4j.Logger;
  */
 public class DefaultSignedStateValidator implements SignedStateValidator {
     private static final Logger logger = LogManager.getLogger(DefaultSignedStateValidator.class);
-    private static final String STATE_TOO_EARLY_MESSAGE =
-            """
-		Received signed state is for a round smaller than, or a consensus earlier than, we started with. \
-		Original round %d, received round %d. Original timestamp %s, received timestamp %s.""";
-    private static final String STATE_TOO_EARLY_LOG_MESSAGE =
-            """
-		State is too old. Failed reconnect state:
-		{}
-		Original reconnect state:
-		{}""";
 
     private final int hashDepth;
 
@@ -64,12 +54,12 @@ public class DefaultSignedStateValidator implements SignedStateValidator {
     }
 
     /**
-     * Check the signed state against metadata from a prior state, and throw if the new state is older.
-     * After a reconnect, there is a slight possibility the teacher sent older state than we already had.  In that
-     * case we do not want to keep the state, but try again with a different teacher.  This method checks that the
-     * received state is at least as new as the state we started with, and throws if the received state is not
-     * acceptable.
-     * @param signedState a newly received signed state from a reconnect process.
+     * Check the signed state against metadata from a prior state, and throw if the new state is older. After a
+     * reconnect, there is a slight possibility the teacher sent older state than we already had.  In that case we do
+     * not want to keep the state, but try again with a different teacher.  This method checks that the received state
+     * is at least as new as the state we started with, and throws if the received state is not acceptable.
+     *
+     * @param signedState       a newly received signed state from a reconnect process.
      * @param previousStateData The validation data from the current address book and prior state, before reconnect.
      * @throws SignedStateInvalidException if the signed state is not at least as new as the previous state.
      */
@@ -85,14 +75,21 @@ public class DefaultSignedStateValidator implements SignedStateValidator {
                         .isBefore(previousStateData.consensusTimestamp())) {
             logger.error(
                     LogMarker.SIGNED_STATE.getMarker(),
-                    STATE_TOO_EARLY_LOG_MESSAGE,
+                    """
+                            State is too old. Failed reconnect state:
+                            {}
+                            Original reconnect state:
+                            {}""",
                     signedState.getState().getInfoString(hashDepth),
                     previousStateData.getInfoString());
-            throw new SignedStateInvalidException(STATE_TOO_EARLY_MESSAGE.formatted(
-                    previousStateData.round(),
-                    signedState.getRound(),
-                    previousStateData.consensusTimestamp(),
-                    signedState.getConsensusTimestamp()));
+            throw new SignedStateInvalidException(("Received signed state is for a round smaller than or a "
+                            + "consensus earlier than what we started with. Original round %d, received round %d. "
+                            + "Original timestamp %s, received timestamp %s.")
+                    .formatted(
+                            previousStateData.round(),
+                            signedState.getRound(),
+                            previousStateData.consensusTimestamp(),
+                            signedState.getConsensusTimestamp()));
         }
     }
 }

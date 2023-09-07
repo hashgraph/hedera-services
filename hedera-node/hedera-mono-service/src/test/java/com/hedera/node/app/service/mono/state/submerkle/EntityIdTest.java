@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
@@ -107,6 +108,13 @@ class EntityIdTest {
         final var expected = EntityId.fromGrpcTokenId(tokenIdFromEvmAddress(typedAddress));
         final var actual = EntityId.fromAddress(typedAddress);
         assertEquals(expected, actual);
+    }
+
+    @Test
+    void throwsIfConvertedAddressNotLongZero() {
+        final byte[] mockAddr = unhex("102030400000000000000000000000000cdefbbb");
+        final var typedAddress = Address.wrap(Bytes.wrap(mockAddr));
+        assertThrows(IllegalArgumentException.class, () -> EntityId.fromAddress(typedAddress));
     }
 
     @Test

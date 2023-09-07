@@ -262,7 +262,6 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
      * @param hashDepth the depth of the tree to visit and print
      */
     public String getInfoString(final int hashDepth) {
-
         final PlatformData data = getPlatformState().getPlatformData();
         final Hash epochHash = data.getNextEpochHash();
         final Hash hashEventsCons = data.getHashEventsCons();

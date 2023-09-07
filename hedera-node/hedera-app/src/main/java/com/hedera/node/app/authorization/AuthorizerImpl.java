@@ -37,13 +37,17 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class AuthorizerImpl implements Authorizer {
+
     private final ConfigProvider configProvider;
     private final AccountsConfig accountsConfig;
+    private final PrivilegesVerifier privilegedTransactionChecker;
 
     @Inject
-    public AuthorizerImpl(@NonNull final ConfigProvider configProvider) {
+    public AuthorizerImpl(
+            @NonNull final ConfigProvider configProvider, @NonNull PrivilegesVerifier privilegedTransactionChecker) {
         this.configProvider = requireNonNull(configProvider);
         this.accountsConfig = configProvider.getConfiguration().getConfigData(AccountsConfig.class);
+        this.privilegedTransactionChecker = requireNonNull(privilegedTransactionChecker);
     }
 
     /** {@inheritDoc} */
@@ -63,9 +67,10 @@ public class AuthorizerImpl implements Authorizer {
 
     @Override
     public SystemPrivilege hasPrivilegedAuthorization(
-            @NonNull AccountID id, @NonNull HederaFunctionality functionality, @NonNull TransactionBody txBody) {
-        // TODO: Implement this
-        return SystemPrivilege.UNNECESSARY;
+            @NonNull final AccountID accountID,
+            @NonNull final HederaFunctionality functionality,
+            @NonNull final TransactionBody txBody) {
+        return privilegedTransactionChecker.hasPrivileges(accountID, functionality, txBody);
     }
 
     private ResponseCodeEnum permissibilityOf(

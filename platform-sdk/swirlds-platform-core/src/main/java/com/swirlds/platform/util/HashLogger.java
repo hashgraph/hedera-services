@@ -117,7 +117,7 @@ public class HashLogger {
         logQueue.offer(() -> log(signedState)); // NOSONAR: silently drop message if unable to queue.
     }
 
-    private Message generateLogMessage(final SignedState signedState) {
+    private Message generateLogMessage(@NonNull final SignedState signedState) {
         final State state = signedState.getState();
         final String platformInfo = state.getInfoString(stateConfig.debugHashDepth());
 
