@@ -161,15 +161,15 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
      * numbers in events, so it must be part of the signed state.
      */
     private long numConsensus = 0;
+
     /**
-     * The minimum consensus timestamp for the next event that reaches consensus. This is null if no
-     * event has reached consensus yet. As each event reaches its consensus, its timestamp is moved
-     * forward (if necessary) to be at least this time. And then minTimestamp is moved forward by n
-     * * {@link ConsensusConstants#MIN_TRANS_TIMESTAMP_INCR_NANOS} nanoseconds, if the event had n
-     * transactions (or n=1 if no transactions). Then minTimestamp is rounded up to the nearest
-     * multiple of {@link ConsensusConstants#MIN_TRANS_TIMESTAMP_INCR_NANOS}
+     * The last consensus timestamp. This is equal to the consensus time of the last transaction in
+     * the last event that reached consensus. This is null if no event has reached consensus yet.
+     * As each event reaches its consensus, its timestamp is moved forward (if necessary) to be
+     * after this time by n {@link ConsensusConstants#MIN_TRANS_TIMESTAMP_INCR_NANOS} nanoseconds,
+     * if the event had n transactions (or n=1 if no transactions).
      */
-    private Instant minTimestamp = null;
+    private Instant lastConsensusTime = null;
     /**
      * if consensus is not starting from genesis, this instance is used to accurately calculate the
      * round for events
@@ -232,8 +232,8 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
             numConsensus = event.getConsensusOrder() + 1;
         }
 
-        // The minTimestamp is just above the last transaction that has been handled
-        minTimestamp = ConsensusUtils.calcMinTimestampForNextEvent(platformData.getConsensusTimestamp());
+        // The lastConsensusTime is equal to the last transaction that has been handled
+        lastConsensusTime = platformData.getConsensusTimestamp();
 
         logger.debug(
                 STARTUP.getMarker(),
@@ -258,7 +258,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         rounds.loadFromMinGen(snapshot.minGens());
         update(rounds.getFameDecidedBelow());
         numConsensus = snapshot.nextConsensusNumber();
-        minTimestamp = snapshot.minConsensusTimestamp();
+        lastConsensusTime = snapshot.consensusTimestamp();
     }
 
     /** Reset this instance to a state of a newly created instance */
@@ -266,7 +266,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         recentEvents.clear();
         rounds.reset();
         numConsensus = 0;
-        minTimestamp = null;
+        lastConsensusTime = null;
         initJudges = null;
         update(rounds.getFameDecidedBelow());
     }
@@ -680,6 +680,19 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         // all rounds before this round are now decided, and appropriate events marked consensus
         consensusMetrics.consensusReachedOnRound();
 
+        // lastConsensusTime is updated above with the last transaction in the last event that reached consensus
+        // if no events reach consensus, then we need to calculate the lastConsensusTime differently
+        if (consensusEvents.isEmpty()) {
+            if (lastConsensusTime == null) {
+                // if this is the first round ever, and there are no events (which is usually the case)
+                // we take the median of all the judge created times
+                final List<Instant> judgeTimes = judges.stream().map(EventImpl::getTimeCreated).sorted().toList();
+                lastConsensusTime = judgeTimes.get(judgeTimes.size() / 2);
+            } else {
+                // if we have reached consensus before, we simply increase the lastConsensusTime by the min amount
+                lastConsensusTime = ConsensusUtils.calcMinTimestampForNextEvent(lastConsensusTime);
+            }
+        }
         return new ConsensusRound(
                 consensusEvents,
                 recentEvents.get(recentEvents.size() - 1),
@@ -689,7 +702,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
                         ConsensusUtils.getHashes(judges),
                         rounds.getMinGenInfo(),
                         numConsensus,
-                        minTimestamp));
+                        lastConsensusTime));
     }
 
     /**
@@ -766,12 +779,15 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
             e.setConsensusOrder(numConsensus);
             numConsensus++;
 
-            // advance this event's consensus timestamp to be at least minTimestamp. Update
-            // minTimestamp
+            // the minimum timestamp for this event
+            final Instant minTimestamp = lastConsensusTime == null
+                    ? null
+                    : ConsensusUtils.calcMinTimestampForNextEvent(lastConsensusTime);
+            // advance this event's consensus timestamp to be at least minTimestamp
             if (minTimestamp != null && e.getConsensusTimestamp().isBefore(minTimestamp)) {
                 e.setConsensusTimestamp(minTimestamp);
             }
-            minTimestamp = ConsensusUtils.calcMinTimestampForNextEvent(e.getLastTransTime());
+            lastConsensusTime = e.getLastTransTime();
         }
         if (last != null) {
             last.setLastInRoundReceived(true);

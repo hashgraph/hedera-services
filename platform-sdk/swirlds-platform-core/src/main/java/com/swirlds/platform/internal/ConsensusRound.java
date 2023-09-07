@@ -96,7 +96,7 @@ public class ConsensusRound implements Round {
 
         // TODO fix this
         // consensusTimestamp = consensusEvents.get(consensusEvents.size() - 1).getLastTransTime();
-        consensusTimestamp = snapshot.minConsensusTimestamp();
+        consensusTimestamp = snapshot.consensusTimestamp();
     }
 
     /**

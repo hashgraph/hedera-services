@@ -22,7 +22,7 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.platform.state.MinGenInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Collection;
@@ -43,7 +43,7 @@ public class ConsensusSnapshot implements SelfSerializable {
     private List<Hash> judgeHashes;
     private List<MinGenInfo> minGens;
     private long nextConsensusNumber;
-    private Instant minConsensusTimestamp;
+    private Instant consensusTimestamp;
 
     public ConsensusSnapshot() {}
 
@@ -56,22 +56,20 @@ public class ConsensusSnapshot implements SelfSerializable {
      * 		the round generation numbers for all non-ancient rounds
      * @param nextConsensusNumber
      * 		the consensus order of the next event that will reach consensus
-     * @param minConsensusTimestamp
-     * 		the minimum consensus timestamp for the next event that reaches
-     * 		consensus. this is null if no event has reached consensus yet
+     * @param consensusTimestamp
+     * 		the consensus time of this snapshot
      */
     public ConsensusSnapshot(
             long round,
             @NonNull List<Hash> judgeHashes,
             @NonNull List<MinGenInfo> minGens,
             long nextConsensusNumber,
-            // minConsensusTimestamp is null if no event has reached consensus yet, typically in round 1
-            @Nullable Instant minConsensusTimestamp) {
+            @NonNull Instant consensusTimestamp) {
         this.round = round;
         this.judgeHashes = judgeHashes;
         this.minGens = minGens;
         this.nextConsensusNumber = nextConsensusNumber;
-        this.minConsensusTimestamp = minConsensusTimestamp;
+        this.consensusTimestamp = consensusTimestamp;
     }
 
     @Override
@@ -80,7 +78,7 @@ public class ConsensusSnapshot implements SelfSerializable {
         out.writeSerializableList(judgeHashes, false, true);
         MinGenInfo.serializeList(minGens, out);
         out.writeLong(nextConsensusNumber);
-        out.writeInstant(minConsensusTimestamp);
+        out.writeInstant(consensusTimestamp);
     }
 
     @Override
@@ -89,7 +87,7 @@ public class ConsensusSnapshot implements SelfSerializable {
         judgeHashes = in.readSerializableList(MAX_JUDGES, false, Hash::new);
         minGens = MinGenInfo.deserializeList(in);
         nextConsensusNumber = in.readLong();
-        minConsensusTimestamp = in.readInstant();
+        consensusTimestamp = in.readInstant();
     }
 
     public long round() {
@@ -108,8 +106,8 @@ public class ConsensusSnapshot implements SelfSerializable {
         return nextConsensusNumber;
     }
 
-    public Instant minConsensusTimestamp() {
-        return minConsensusTimestamp;
+    public Instant consensusTimestamp() {
+        return consensusTimestamp;
     }
 
     /**
@@ -155,7 +153,7 @@ public class ConsensusSnapshot implements SelfSerializable {
                 .append(mg.minimumGeneration())
                 .append('\n'));
         sb.append("nextConsensusNumber: ").append(nextConsensusNumber).append('\n');
-        sb.append("minConsensusTimestamp: ").append(minConsensusTimestamp).append('\n');
+        sb.append("minConsensusTimestamp: ").append(consensusTimestamp).append('\n');
         return sb.toString();
     }
 
@@ -168,12 +166,12 @@ public class ConsensusSnapshot implements SelfSerializable {
                 && nextConsensusNumber == snapshot.nextConsensusNumber
                 && judgeHashes.equals(snapshot.judgeHashes)
                 && minGens.equals(snapshot.minGens)
-                && Objects.equals(minConsensusTimestamp, snapshot.minConsensusTimestamp);
+                && Objects.equals(consensusTimestamp, snapshot.consensusTimestamp);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(round, judgeHashes, minGens, nextConsensusNumber, minConsensusTimestamp);
+        return Objects.hash(round, judgeHashes, minGens, nextConsensusNumber, consensusTimestamp);
     }
 
     /**
