@@ -565,18 +565,25 @@ public class HandleWorkflow {
                 previousResult.configVersion());
     }
 
+    /**
+     * Checks if any of the keys changed from previous result to current result.
+     * Only if keys changed we need to re-expand and re-verify the signatures.
+     * @param previousResults previous result from signature verification
+     * @param context current context
+     * @return true if any of the keys changed
+     */
     private boolean haveKeyChanges(
             final Map<Key, SignatureVerificationFuture> previousResults, final PreHandleContextImpl context) {
-        final var currentRequiredPayerKeys = context.requiredNonPayerKeys();
-        final var currentOptionalPayerKeys = context.optionalNonPayerKeys();
+        final var currentRequiredNonPayerKeys = context.requiredNonPayerKeys();
+        final var currentOptionalNonPayerKeys = context.optionalNonPayerKeys();
         final var currentPayerKey = context.payerKey();
 
-        for (final var key : currentRequiredPayerKeys) {
+        for (final var key : currentRequiredNonPayerKeys) {
             if (!previousResults.containsKey(key)) {
                 return true;
             }
         }
-        for (final var key : currentOptionalPayerKeys) {
+        for (final var key : currentOptionalNonPayerKeys) {
             if (!previousResults.containsKey(key)) {
                 return true;
             }
