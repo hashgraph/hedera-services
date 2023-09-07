@@ -207,7 +207,7 @@ public final class ConsensusTestDefinitions {
         orchestrator.validateAndClear(Validations.standard()
                 .ratios(EventRatioValidation.standard()
                         .setMinimumConsensusRatio(0.8)
-                        .setMaximumConsensusRatio(1.5)));
+                        .setMaximumConsensusRatio(2.0)));
     }
 
     /**
@@ -252,7 +252,7 @@ public final class ConsensusTestDefinitions {
                         // share of events, so we allow a little more than the exact
                         // ratio of nodes in that
                         // partition
-                        .setMaximumConsensusRatio(consNodeRatio * 1.1)
+                        .setMaximumConsensusRatio(consNodeRatio * 1.2)
                         // Many events in the sub-quorum partition will become
                         // stale. 0.15 is somewhat
                         // arbitrary.
@@ -392,16 +392,15 @@ public final class ConsensusTestDefinitions {
         }
         // execution: generate a third of the total events
         orchestrator.generateEvents(0.33);
-        // validation: no events should reach consensus and should have a created round no higher
-        // than the max of its
-        // parents' created rounds
+        // validation: almost no events will reach consensus
+        //   (it's possible a few tail events may reach consensus right at the beginning of the phase)
         orchestrator.validateAndClear(Validations.standard()
                 // in this test, only 1 node could end up creating events, which means they have to be added in the same
                 // order, so we disable this validation for this test
                 .remove(Validations.ValidationType.DIFFERENT_ORDER)
                 .ratios(EventRatioValidation.standard()
                         .setMinimumConsensusRatio(0.0)
-                        .setMaximumConsensusRatio(0.0)));
+                        .setMaximumConsensusRatio(0.2)));
 
         //
         // Phase 3

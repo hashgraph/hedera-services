@@ -17,6 +17,7 @@
 package com.swirlds.platform.test.consensus.framework;
 
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.event.EventConstants;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.test.consensus.framework.validation.ConsensusOutputValidation;
@@ -154,10 +155,9 @@ public class ConsensusTestOrchestrator {
      */
     public void setNewEventWeight(final int nodeIndex, final double eventWeight) {
         for (final ConsensusTestNode node : nodes) {
-            // TODO dont use index
             node.getEventEmitter()
                     .getGraphGenerator()
-                    .getSource(new NodeId(nodeIndex))
+                    .getSource(getAddressBook().getNodeId(nodeIndex))
                     .setNewEventWeight(eventWeight);
         }
     }
@@ -175,5 +175,9 @@ public class ConsensusTestOrchestrator {
 
     public List<ConsensusTestNode> getNodes() {
         return nodes;
+    }
+
+    public AddressBook getAddressBook(){
+        return nodes.get(0).getEventEmitter().getGraphGenerator().getAddressBook();
     }
 }

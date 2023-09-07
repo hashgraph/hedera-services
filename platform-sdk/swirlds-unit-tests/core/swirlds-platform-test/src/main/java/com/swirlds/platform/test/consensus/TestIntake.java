@@ -43,6 +43,7 @@ import com.swirlds.platform.state.signed.LoadableFromSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.test.consensus.framework.ConsensusOutput;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.util.Arrays;
 import java.util.Deque;
@@ -82,8 +83,14 @@ public class TestIntake implements LoadableFromSignedState {
         final EventObserverDispatcher dispatcher =
                 new EventObserverDispatcher(new ShadowGraphEventObserver(shadowGraph), output);
 
-        final PlatformContext platformContext =
-                TestPlatformContextBuilder.create().build();
+        final PlatformContext platformContext = TestPlatformContextBuilder
+                .create()
+                .withConfiguration(
+                        new TestConfigBuilder()
+                                .withValue("event.asyncPrehandle", false)
+                                .getOrCreateConfig()
+                )
+                .build();
 
         intake = new EventIntake(
                 platformContext,
