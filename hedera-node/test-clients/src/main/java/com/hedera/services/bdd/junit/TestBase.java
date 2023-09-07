@@ -111,6 +111,18 @@ public abstract class TestBase {
         });
     }
 
+    protected final DynamicTest setupForRecordStreamValidation() {
+        return dynamicTest("setupFOrRecordStreamValidation", () -> {
+            final var closingTimeSpecs = TestBase.extractContextualizedSpecsFrom(
+                    List.of(ClosingTime::new), TestBase::contextualizedSpecsFromConcurrent);
+            concurrentExecutionOf(closingTimeSpecs);
+        });
+    }
+
+    protected final DynamicTest doRecordStreamValidation(final String loc, final RecordStreamValidator validator) {
+        return dynamicTest(validator.getClass().getSimpleName(), () -> assertValidatorsPass(loc, List.of(validator)));
+    }
+
     @SuppressWarnings("java:S1181")
     public static void assertValidatorsPass(final String loc, final List<RecordStreamValidator> validators)
             throws IOException {

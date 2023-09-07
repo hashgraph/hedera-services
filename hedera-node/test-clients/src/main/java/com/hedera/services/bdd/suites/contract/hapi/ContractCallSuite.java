@@ -198,7 +198,7 @@ public class ContractCallSuite extends HapiSuite {
 
     @Override
     public boolean canRunConcurrent() {
-        return true;
+        return false;
     }
 
     @Override
