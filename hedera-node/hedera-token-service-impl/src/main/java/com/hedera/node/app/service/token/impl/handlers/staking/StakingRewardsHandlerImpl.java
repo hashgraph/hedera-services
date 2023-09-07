@@ -19,6 +19,7 @@ package com.hedera.node.app.service.token.impl.handlers.staking;
 import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakingUtils.NOT_REWARDED_SINCE_LAST_STAKING_META_CHANGE;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakeIdChangeType.FROM_ACCOUNT_TO_ACCOUNT;
+import static com.hedera.node.app.service.token.impl.handlers.staking.StakeInfoHelper.SENTINEL_NODE_ID;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper.getPossibleRewardReceivers;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtilities.hasStakeMetaChanges;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtilities.roundedToHbar;
@@ -244,8 +245,8 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
             final Instant consensusNow) {
         if (scenario.withdrawsFromNode()) {
             final var currentStakedNodeId = originalAccount.stakedNodeId();
-            // -1 is a special value to remove the account's staked node ID.
-            if (currentStakedNodeId != -1) {
+            // SENTINEL_NODE_ID is a special value to remove the account's staked node ID.
+            if (currentStakedNodeId != SENTINEL_NODE_ID) {
                 stakeInfoHelper.withdrawStake(currentStakedNodeId, originalAccount, stakingInfoStore);
                 if (containStakeMetaChanges) {
                     // Pending rewards are calculated midnight each day for every account.
@@ -267,7 +268,7 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
             final var modifiedStakedNodeId = modifiedAccount.stakedNodeId();
             // We need the latest updates to balance and stakedToMe for the account in modifications also
             // to be reflected in stake awarded. So use the modifiedAccount instead of originalAccount
-            if (modifiedStakedNodeId != -1)
+            if (modifiedStakedNodeId != SENTINEL_NODE_ID)
                 stakeInfoHelper.awardStake(modifiedStakedNodeId, modifiedAccount, stakingInfoStore);
         }
     }
@@ -372,7 +373,7 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
             @NonNull final AccountID stakee,
             final long roundedFinalBalance,
             @NonNull final WritableAccountStore writableStore) {
-        // stakee is null when 0.0.0 sent as staked_account_id in update crypto transaction
+        // stakee is null when SENTINEL_ACCOUNT_ID sent as staked_account_id in update crypto transaction
         if (stakee != null) {
             final var account = writableStore.get(stakee);
             final var initialStakedToMe = account.stakedToMe();

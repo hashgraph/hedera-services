@@ -23,6 +23,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
+import static com.hedera.node.app.service.token.impl.handlers.staking.StakeInfoHelper.SENTINEL_ACCOUNT_ID;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -182,7 +183,7 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
             builder.declineReward(op.declineReward().booleanValue());
         }
         if (op.hasStakedAccountId()) {
-            if (AccountID.newBuilder().accountNum(0).build().equals(op.stakedAccountId())) {
+            if (SENTINEL_ACCOUNT_ID.equals(op.stakedAccountId())) {
                 builder.stakedAccountId((AccountID) null);
             } else {
                 builder.stakedAccountId(op.stakedAccountId());
