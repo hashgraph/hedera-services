@@ -23,6 +23,8 @@ plugins {
 
 description = "Hedera Services Test Clients for End to End Tests (EET)"
 
+mainModuleInfo { runtimeOnly("org.junit.platform.launcher") }
+
 itestModuleInfo {
     requires("com.hedera.node.test.clients")
     requires("com.hedera.node.hapi")
@@ -57,6 +59,8 @@ tasks.withType<JavaExec> {
 tasks.register<Test>("hapiTest") {
     testClassesDirs = sourceSets.main.get().output.classesDirs
     classpath = sourceSets.main.get().runtimeClasspath
+
+    useJUnitPlatform()
 
     // Do not yet run things on the '--module-path'
     modularity.inferModulePath.set(false)
