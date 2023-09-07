@@ -193,12 +193,9 @@ UpdateReconnectAbortDisPreUpdate, Crypto-Update-ND-DisPreUpdate-RecPrePrepareAbo
 
 VMerkle, VMerkle-Assorted-1k-6m, platform, https://www.notion.so/swirldslabs/VMerkle-VMerkle-Assorted-1k-6m-5025e8172b7341b0a6fb326bd79b7a3b
 VMerkle, VMerkle-Hotspot-1k-15m, platform, https://www.notion.so/swirldslabs/VMerkle-VMerkle-Hotspot-1k-15m-3194a6171aaa49d8a14ee512a6f2bc1a
-VMerkle, VMerkleDb-Assorted-1k-6m, platform, https://www.notion.so/swirldslabs/VMerkle-VMerkleDb-Assorted-1k-6m-7f858eefca6e4327be7c3a4cb1b037d7
-VMerkle, VMerkleDb-Hotspot-1k-15m, platform, https://www.notion.so/swirldslabs/VMerkle-VMerkleDb-Hotspot-1k-15m-9fb5c88dcc904db6befc6508e3fd27c9
 VMerkle, VMerkle-Basic-SingleNode-2.5k-3m.json, platform, https://www.notion.so/swirldslabs/VMerkle-VMerkle-Basic-SingleNode-2-5k-3m-c6eb1b436b114278af40a45243baf108
 
 VMerkleLong, VMerkle-Basic-2.5k-110m, platform, https://www.notion.so/swirldslabs/VMerkleLong-VMerkle-Basic-2-5k-110m-338c8000375342b988ff475bffa152a0
-VMerkleLong, VMerkleDb-Basic-2.5k-110m, platform, https://www.notion.so/swirldslabs/VMerkleLong-VMerkleDb-Basic-2-5k-110m-cf22a903967c45a2ac0c6d7b18f80782
 
 ZeroStake, Crypto-NIReconnect-Stake-1k-10m, services, https://www.notion.so/swirldslabs/ZeroStake-Crypto-NIReconnect-Stake-1k-10m-46df7a5ccf544f38b415ab4c44b263a6
 ZeroStake, Crypto-Restart-Stake-1k-10m, services, https://www.notion.so/swirldslabs/ZeroStake-Crypto-Restart-Stake-1k-10m-2c90faab716547a3aa425bbf6cdff856
