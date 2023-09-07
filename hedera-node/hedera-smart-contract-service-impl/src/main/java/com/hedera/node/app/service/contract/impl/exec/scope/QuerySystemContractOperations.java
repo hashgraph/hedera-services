@@ -18,7 +18,6 @@ package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.base.TokenRelationship;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
@@ -72,18 +71,6 @@ public class QuerySystemContractOperations implements SystemContractOperations {
     public @Nullable Account getAccountAndExternalizeResult(
             final long number, final long callingContractNumber, @NonNull final ResultTranslator<Account> translator) {
         throw new UnsupportedOperationException("Cannot get account and externalize result");
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public @Nullable TokenRelationship getRelationshipAndExternalizeResult(
-            final long accountNumber,
-            final long tokenNumber,
-            final long callingContractNumber,
-            @NonNull final ResultTranslator<TokenRelationship> translator) {
-        throw new UnsupportedOperationException("Cannot get token relationships and externalize result");
     }
 
     /**

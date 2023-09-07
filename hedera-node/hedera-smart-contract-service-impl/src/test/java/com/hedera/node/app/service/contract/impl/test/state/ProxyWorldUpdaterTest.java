@@ -45,8 +45,10 @@ import static org.mockito.Mockito.verify;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations;
+import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameState;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
 import com.hedera.node.app.service.contract.impl.state.PendingCreation;
@@ -102,6 +104,9 @@ class ProxyWorldUpdaterTest {
     private HederaOperations hederaOperations;
 
     @Mock
+    private HederaNativeOperations nativeOperations;
+
+    @Mock
     private SystemContractOperations systemContractOperations;
 
     @Mock
@@ -117,7 +122,9 @@ class ProxyWorldUpdaterTest {
 
     @BeforeEach
     void setUp() {
-        subject = new ProxyWorldUpdater(hederaOperations, systemContractOperations, () -> evmFrameState, null);
+        final var enhancement =
+                new HederaWorldUpdater.Enhancement(hederaOperations, nativeOperations, systemContractOperations);
+        subject = new ProxyWorldUpdater(enhancement, () -> evmFrameState, null);
     }
 
     @Test
@@ -363,7 +370,9 @@ class ProxyWorldUpdaterTest {
 
     @Test
     void hasGivenParentIfNonNull() {
-        subject = new ProxyWorldUpdater(hederaOperations, systemContractOperations, evmFrameStateFactory, parent);
+        final var enhancement =
+                new HederaWorldUpdater.Enhancement(hederaOperations, nativeOperations, systemContractOperations);
+        subject = new ProxyWorldUpdater(enhancement, evmFrameStateFactory, parent);
         assertTrue(subject.parentUpdater().isPresent());
         assertSame(parent, subject.parentUpdater().get());
     }

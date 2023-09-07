@@ -40,7 +40,6 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-import org.hyperledger.besu.evm.precompile.AbstractPrecompiledContract;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
 /**
@@ -49,7 +48,7 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
  * "seed" is provided returns a pseudorandom 32-bit integer X belonging to [0, range).
  */
 @Singleton
-public class PrngSystemContract extends AbstractPrecompiledContract {
+public class PrngSystemContract extends AbstractFullContract implements HederaSystemContract {
     private static final Logger log = LogManager.getLogger(PrngSystemContract.class);
     private static final String PRECOMPILE_NAME = "PRNG";
     // random256BitGenerator(uint256)
@@ -63,12 +62,7 @@ public class PrngSystemContract extends AbstractPrecompiledContract {
     }
 
     @Override
-    public long gasRequirement(final Bytes bytes) {
-        return gasRequirement;
-    }
-
-    @Override
-    public @NonNull PrecompileContractResult computePrecompile(final Bytes input, @NonNull final MessageFrame frame) {
+    public FullResult computeFully(@NonNull final Bytes input, @NonNull final MessageFrame frame) {
         requireNonNull(input);
         requireNonNull(frame);
 
@@ -88,16 +82,20 @@ public class PrngSystemContract extends AbstractPrecompiledContract {
             // create a child record
             createSuccessfulRecord(frame, randomNum, contractID);
 
-            return result;
+            return new FullResult(result, gasRequirement);
         } catch (InvalidTransactionException e) {
             // This error is caused by the user sending in the wrong selector
             createFailedRecord(frame, FAIL_INVALID.toString(), contractID);
-            return PrecompiledContract.PrecompileContractResult.halt(Bytes.EMPTY, Optional.of(INVALID_OPERATION));
+            return new FullResult(
+                    PrecompiledContract.PrecompileContractResult.halt(Bytes.EMPTY, Optional.of(INVALID_OPERATION)),
+                    gasRequirement);
         } catch (NullPointerException e) {
             // Log a warning as this error will be caused by insufficient entropy
             log.warn("Internal precompile failure", e);
             createFailedRecord(frame, FAIL_INVALID.toString(), contractID);
-            return PrecompiledContract.PrecompileContractResult.halt(Bytes.EMPTY, Optional.of(INVALID_OPERATION));
+            return new FullResult(
+                    PrecompiledContract.PrecompileContractResult.halt(Bytes.EMPTY, Optional.of(INVALID_OPERATION)),
+                    gasRequirement);
         }
     }
 
