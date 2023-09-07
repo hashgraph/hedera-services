@@ -30,6 +30,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SignaturePair;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.signature.ExpandedSignaturePair;
 import com.hedera.node.app.signature.SignatureExpander;
@@ -174,13 +175,29 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             // deleted, we skip the signature verification.
             return preHandleFailure(creator, null, PAYER_ACCOUNT_DELETED, txInfo, null, null, null);
         }
+        // 3. Expand and verify signatures
+        return expandAndVerifySignatures(txInfo, payer, payerAccount, storeFactory);
+    }
 
+    /**
+     * Expands and verifies the payer signature and other require signatures for the transaction.
+     * @param txInfo the transaction info
+     * @param payer the payer account ID
+     * @param payerAccount the payer account
+     * @param storeFactory the store factory
+     * @return the pre-handle result
+     */
+    private PreHandleResult expandAndVerifySignatures(
+            final TransactionInfo txInfo,
+            final AccountID payer,
+            final Account payerAccount,
+            final ReadableStoreFactory storeFactory) {
         // Bootstrap the expanded signature pairs by grabbing all prefixes that are "full" keys already
         final var originals = txInfo.signatureMap().sigPairOrElse(emptyList());
         final var expanded = new HashSet<ExpandedSignaturePair>();
         signatureExpander.expand(originals, expanded);
 
-        // 3. Expand the Payer signature
+        // 1. Expand the Payer signature
         final Key payerKey;
         if (!isHollow(payerAccount)) {
             // If the account IS a hollow account, then we will discover all such possible signatures when expanding
@@ -192,7 +209,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             payerKey = null;
         }
 
-        // 4a. Create the PreHandleContext. This will get reused across several calls to the transaction handlers
+        // 2a. Create the PreHandleContext. This will get reused across several calls to the transaction handlers
         final PreHandleContext context;
         final VersionedConfiguration configuration = configProvider.getConfiguration();
         try {
@@ -209,7 +226,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
                     "Payer account disappeared between preHandle and preHandleContext creation!", preCheck);
         }
 
-        // 4b. Call Pre-Transaction Handlers
+        // 2b. Call Pre-Transaction Handlers
         try {
             // FUTURE: First, perform semantic checks on the transaction (TBD)
             // Then gather the signatures from the transaction handler
@@ -223,15 +240,15 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             return preHandleFailure(payer, payerKey, preCheck.responseCode(), txInfo, Set.of(), Set.of(), results);
         }
 
-        // 5. Expand additional SignaturePairs based on gathered keys (we can safely ignore hollow accounts because we
+        // 3. Expand additional SignaturePairs based on gathered keys (we can safely ignore hollow accounts because we
         // already grabbed them when expanding the "full prefix" keys above)
         signatureExpander.expand(context.requiredNonPayerKeys(), originals, expanded);
         signatureExpander.expand(context.optionalNonPayerKeys(), originals, expanded);
 
-        // 6. Submit the expanded SignaturePairs to the cryptography engine for verification
+        // 4. Submit the expanded SignaturePairs to the cryptography engine for verification
         final var results = signatureVerifier.verify(txInfo.signedBytes(), expanded);
 
-        // 7. Create and return TransactionMetadata
+        // 5. Create and return TransactionMetadata
         return new PreHandleResult(
                 payer,
                 payerKey,

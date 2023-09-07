@@ -500,6 +500,7 @@ public class HandleWorkflow {
      * any keys need to be added. If so, we trigger the signature verification for the new keys and collect all
      * results.
      */
+    // TODO: Need to re-use expandAndVerifySignatures from PreHandleWorkflowImpl instead of duplicating this code
     @NonNull
     private PreHandleResult addMissingSignatures(
             @NonNull final ReadableStoreFactory storeFactory,
@@ -519,7 +520,6 @@ public class HandleWorkflow {
         final var previousResults = previousResult.verificationResults();
         final var currentRequiredPayerKeys = context.requiredNonPayerKeys();
         final var currentOptionalPayerKeys = context.optionalNonPayerKeys();
-        final var currentPayerKey = context.payerKey();
         final var anyKeyChanged = haveKeyChanges(previousResults, context);
         // If none of the keys changed then non need to re-expand all signatures.
         if (!anyKeyChanged) {
