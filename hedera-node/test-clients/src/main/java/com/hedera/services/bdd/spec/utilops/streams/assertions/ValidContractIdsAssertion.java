@@ -46,7 +46,7 @@ public class ValidContractIdsAssertion implements RecordStreamAssertion {
         final var stateChanges = sidecar.getStateChanges().getContractStateChangesList();
         for (final var change : stateChanges) {
             if (change.hasContractId()) {
-                assertValid(change.getContractId(), "stateChange#contractId", sidecar);
+                assertValid(change.getContractId(), "stateChange#contractId", sidecar, this::isValidId);
             }
         }
     }
@@ -57,20 +57,20 @@ public class ValidContractIdsAssertion implements RecordStreamAssertion {
             if (action.hasCallingAccount()) {
                 assertValid(action.getCallingAccount(), "action#callingAccount", sidecar);
             } else if (action.hasCallingContract()) {
-                assertValid(action.getCallingContract(), "action#callingContract", sidecar);
+                assertValid(action.getCallingContract(), "action#callingContract", sidecar, this::isValidId);
             }
 
             if (action.hasRecipientAccount()) {
                 assertValid(action.getRecipientAccount(), "action#recipientAccount", sidecar);
             } else if (action.hasRecipientContract()) {
-                assertValid(action.getRecipientContract(), "action#recipientContract", sidecar);
+                assertValid(action.getRecipientContract(), "action#recipientContract", sidecar, this::isValidId);
             }
         }
     }
 
     private void validateBytecodeIds(@NonNull final TransactionSidecarRecord sidecar) {
         final var bytecode = sidecar.getBytecode();
-        assertValid(bytecode.getContractId(), "bytecode#contractId", sidecar);
+        assertValid(bytecode.getContractId(), "bytecode#contractId", sidecar, this::isValidOrFailedBytecodeCreationId);
     }
 
     @Override
@@ -78,16 +78,21 @@ public class ValidContractIdsAssertion implements RecordStreamAssertion {
         return this.getClass().getSimpleName();
     }
 
+    interface IdValidator {
+        boolean isValid(long shard, long realm, long num);
+    }
+
     private void assertValid(
             @NonNull final ContractID id,
             @NonNull final String label,
-            @NonNull final TransactionSidecarRecord sidecar) {
-        assertValid(id.getShardNum(), id.getRealmNum(), id.getContractNum(), "Contract", label, sidecar);
+            @NonNull final TransactionSidecarRecord sidecar,
+            @NonNull final IdValidator validator) {
+        assertValid(id.getShardNum(), id.getRealmNum(), id.getContractNum(), "Contract", label, sidecar, validator);
     }
 
     private void assertValid(
             @NonNull final AccountID id, @NonNull final String label, @NonNull final TransactionSidecarRecord sidecar) {
-        assertValid(id.getShardNum(), id.getRealmNum(), id.getAccountNum(), "Account", label, sidecar);
+        assertValid(id.getShardNum(), id.getRealmNum(), id.getAccountNum(), "Account", label, sidecar, this::isValidId);
     }
 
     private void assertValid(
@@ -96,8 +101,9 @@ public class ValidContractIdsAssertion implements RecordStreamAssertion {
             final long entityNum,
             @NonNull final String type,
             @NonNull final String label,
-            @NonNull final TransactionSidecarRecord sidecar) {
-        if (!isValid(shardNum, realmNum, entityNum)) {
+            @NonNull final TransactionSidecarRecord sidecar,
+            @NonNull final IdValidator validator) {
+        if (!validator.isValid(shardNum, realmNum, entityNum)) {
             throw new AssertionError(type + " id (from "
                     + label + " field) "
                     + String.format("%d.%d.%d", shardNum, realmNum, entityNum)
@@ -105,7 +111,11 @@ public class ValidContractIdsAssertion implements RecordStreamAssertion {
         }
     }
 
-    private boolean isValid(long shard, long realm, long num) {
+    private boolean isValidId(long shard, long realm, long num) {
         return shard == 0L && realm == 0L && num >= 1;
+    }
+
+    private boolean isValidOrFailedBytecodeCreationId(long shard, long realm, long num) {
+        return shard == 0L && realm == 0L && num >= 0;
     }
 }

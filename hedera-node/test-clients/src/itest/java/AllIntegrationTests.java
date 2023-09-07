@@ -18,6 +18,7 @@ import com.hedera.services.bdd.junit.BalanceReconciliationValidator;
 import com.hedera.services.bdd.junit.ExpiryRecordsValidator;
 import com.hedera.services.bdd.junit.TokenReconciliationValidator;
 import com.hedera.services.bdd.junit.TransactionBodyValidator;
+import com.hedera.services.bdd.junit.validators.BlockNoValidator;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -85,35 +86,13 @@ class AllIntegrationTests extends DockerIntegrationTestBase {
     @Tag("integration")
     @Order(4)
     @TestFactory
-    List<DynamicTest> prepRecordStreamValidation() {
-        return List.of(setupForRecordStreamValidation());
-    }
-
-    @Tag("integration")
-    @Order(5)
-    @TestFactory
-    List<DynamicTest> balanceReconciliationValidation() {
-        return List.of(doRecordStreamValidation(TEST_CONTAINER_NODE0_STREAMS, new BalanceReconciliationValidator()));
-    }
-
-    @Tag("integration")
-    @Order(6)
-    @TestFactory
-    List<DynamicTest> expiryRecordsValidation() {
-        return List.of(doRecordStreamValidation(TEST_CONTAINER_NODE0_STREAMS, new ExpiryRecordsValidator()));
-    }
-
-    @Tag("integration")
-    @Order(7)
-    @TestFactory
-    List<DynamicTest> tokenReconciliationValidation() {
-        return List.of(doRecordStreamValidation(TEST_CONTAINER_NODE0_STREAMS, new TokenReconciliationValidator()));
-    }
-
-    @Tag("integration")
-    @Order(8)
-    @TestFactory
-    List<DynamicTest> transactionBodyValidation() {
-        return List.of(doRecordStreamValidation(TEST_CONTAINER_NODE0_STREAMS, new TransactionBodyValidator()));
+    List<DynamicTest> recordStreamValidation() {
+        return List.of(recordStreamValidation(
+                TEST_CONTAINER_NODE0_STREAMS,
+                new BalanceReconciliationValidator(),
+                new BlockNoValidator(),
+                new ExpiryRecordsValidator(),
+                new TokenReconciliationValidator(),
+                new TransactionBodyValidator()));
     }
 }
