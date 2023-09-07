@@ -386,7 +386,8 @@ public class SwirldsPlatform implements Platform, Startable {
         final AppCommunicationComponent appCommunicationComponent =
                 wiring.wireAppCommunicationComponent(notificationEngine);
 
-        preconsensusEventFileManager = buildPreconsensusEventFileManager(softwareUpgrade, emergencyRecoveryManager);
+        preconsensusEventFileManager =
+                buildPreconsensusEventFileManager(initialState.getRound(), softwareUpgrade, emergencyRecoveryManager);
         preconsensusEventWriter = components.add(buildPreconsensusEventWriter(preconsensusEventFileManager));
 
         stateManagementComponent = wiring.wireStateManagementComponent(
@@ -919,7 +920,7 @@ public class SwirldsPlatform implements Platform, Startable {
             consensusRoundHandler.loadDataFromSignedState(signedState, true);
 
             try {
-                preconsensusEventWriter.registerDiscontinuity();
+                preconsensusEventWriter.registerDiscontinuity(signedState.getRound());
                 preconsensusEventWriter.setMinimumGenerationNonAncient(signedState
                         .getState()
                         .getPlatformState()
@@ -1044,7 +1045,8 @@ public class SwirldsPlatform implements Platform, Startable {
 
             clearPCESOnSoftwareUpgradeIfConfigured(softwareUpgrade);
 
-            return new PreconsensusEventFileManager(platformContext, Time.getCurrent(), recycleBin, selfId);
+            return new PreconsensusEventFileManager(
+                    platformContext, Time.getCurrent(), recycleBin, selfId, startingRound);
         } catch (final IOException e) {
             throw new UncheckedIOException("unable load preconsensus files", e);
         }

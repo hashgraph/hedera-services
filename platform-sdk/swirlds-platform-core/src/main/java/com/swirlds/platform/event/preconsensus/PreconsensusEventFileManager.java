@@ -97,6 +97,11 @@ public class PreconsensusEventFileManager {
     private final int firstFileIndex;
 
     /**
+     * The current origin round.
+     */
+    private long currentOrigin;
+
+    /**
      * The minimum amount of time that must pass before a file becomes eligible for deletion.
      */
     private final Duration minimumRetentionPeriod;
@@ -105,7 +110,6 @@ public class PreconsensusEventFileManager {
      * The size of all tracked files, in bytes.
      */
     private long totalFileByteCount = 0;
-
 
     /**
      * Instantiate an event file collection. Loads all event files in the specified directory.
@@ -124,9 +128,13 @@ public class PreconsensusEventFileManager {
             final long startingRound)
             throws IOException {
 
-        Objects.requireNonNull(platformContext, "platformContext");
-        Objects.requireNonNull(time, "time");
-        Objects.requireNonNull(selfId, "selfId");
+        Objects.requireNonNull(platformContext);
+        Objects.requireNonNull(time);
+        Objects.requireNonNull(selfId);
+
+        if (startingRound < 0) {
+            throw new IllegalArgumentException("starting round must be non-negative");
+        }
 
         final PreconsensusEventStreamConfig preconsensusEventStreamConfig =
                 platformContext.getConfiguration().getConfigData(PreconsensusEventStreamConfig.class);
@@ -140,9 +148,9 @@ public class PreconsensusEventFileManager {
         readFilesFromDisk(preconsensusEventStreamConfig.permitGaps());
 
         firstFileIndex = getFirstFileIndex(startingRound);
-        final long initialOrigin = getInitialOrigin(startingRound);
+        currentOrigin = getInitialOrigin(startingRound);
 
-        resolveDiscontinuities(initialOrigin);
+        resolveDiscontinuities();
         initializeMetrics();
     }
 
@@ -172,8 +180,6 @@ public class PreconsensusEventFileManager {
 
         return databaseDirectory;
     }
-
-    // TODO should these helper methods be static?
 
     /**
      * Scan the file system for event files and add them to the collection of tracked files.
@@ -209,27 +215,23 @@ public class PreconsensusEventFileManager {
     }
 
     /**
-     * Get the current origin of the stream at startup time.
+     * Get the origin round that should be used at startup time.
      *
      * @param startingRound the round number of the initial state of the system
-     * @return the current origin of the stream at startup time
+     * @return the origin round that should be used at startup time
      */
     private long getInitialOrigin(final long startingRound) {
-        if (firstFileIndex >= files.size()) {
-            // None of the files are compatible with the starting round, so the starting round becomes the origin.
-            return startingRound;
+        if (firstFileIndex < files.size()) {
+            return files.get(firstFileIndex).getOrigin();
         }
-        // We are continuing the stream without a discontinuity, carry forward the previous origin.
-        return files.get(firstFileIndex).getOrigin();
+        return startingRound;
     }
 
     /**
      * If there is a discontinuity in the stream after the location where we will begin streaming, delete all files that
      * come after the discontinuity.
-     *
-     * @param initialOrigin the origin of the stream at startup time
      */
-    private void resolveDiscontinuities(final long initialOrigin) throws IOException {
+    private void resolveDiscontinuities() throws IOException {
         if (files.size() <= firstFileIndex) {
             // None of the stream files are compatible with the starting round
             return;
@@ -241,15 +243,17 @@ public class PreconsensusEventFileManager {
         int firstIndexToDelete = firstFileIndex;
         for (; firstIndexToDelete < files.size(); firstIndexToDelete++) {
             final PreconsensusEventFile file = files.get(firstIndexToDelete);
-            if (file.getOrigin() != initialOrigin) {
+            if (file.getOrigin() != currentOrigin) {
                 break;
             }
         }
 
-        final PreconsensusEventFile lastUndeletedFile = firstIndexToDelete > 0 ?
-                files.get(firstIndexToDelete - 1) : null;
+        final PreconsensusEventFile lastUndeletedFile =
+                firstIndexToDelete > 0 ? files.get(firstIndexToDelete - 1) : null;
 
-        logger.warn(STARTUP.getMarker(), """
+        logger.warn(
+                STARTUP.getMarker(),
+                """
                         Discontinuity detected in the preconsensus event stream. Purging {} file(s).
                             Last undeleted file: {}
                             First deleted file:  {}
@@ -317,6 +321,7 @@ public class PreconsensusEventFileManager {
         final ValueReference<Long> previousSequenceNumber = new ValueReference<>(-1L);
         final ValueReference<Long> previousMinimumGeneration = new ValueReference<>(-1L);
         final ValueReference<Long> previousMaximumGeneration = new ValueReference<>(-1L);
+        final ValueReference<Long> previousOrigin = new ValueReference<>(-1L);
         final ValueReference<Instant> previousTimestamp = new ValueReference<>();
 
         return descriptor -> {
@@ -326,6 +331,7 @@ public class PreconsensusEventFileManager {
                         previousSequenceNumber.getValue(),
                         previousMinimumGeneration.getValue(),
                         previousMaximumGeneration.getValue(),
+                        previousOrigin.getValue(),
                         previousTimestamp.getValue(),
                         descriptor);
             }
@@ -348,6 +354,7 @@ public class PreconsensusEventFileManager {
      * @param previousSequenceNumber    the sequence number of the previous file
      * @param previousMinimumGeneration the minimum generation of the previous file
      * @param previousMaximumGeneration the maximum generation of the previous file
+     * @param previousOrigin            the origin round of the previous file
      * @param previousTimestamp         the timestamp of the previous file
      * @param descriptor                the descriptor of the next file
      * @throws IllegalStateException if any of the required invariants are violated by the next file
@@ -357,6 +364,7 @@ public class PreconsensusEventFileManager {
             final long previousSequenceNumber,
             final long previousMinimumGeneration,
             final long previousMaximumGeneration,
+            final long previousOrigin,
             @NonNull final Instant previousTimestamp,
             @NonNull final PreconsensusEventFile descriptor) {
 
@@ -367,25 +375,32 @@ public class PreconsensusEventFileManager {
                     + descriptor.getSequenceNumber());
         }
 
-        // Sanity check on the minimum generation
+        // Minimum generation may never decrease
         if (descriptor.getMinimumGeneration() < previousMinimumGeneration) {
             throw new IllegalStateException("Minimum generation must never decrease, file " + descriptor.getPath()
                     + " has a minimum generation that is less than the previous minimum generation of "
                     + previousMinimumGeneration);
         }
 
-        // Sanity check on the maximum generation
+        // Maximum generation may never decrease
         if (descriptor.getMaximumGeneration() < previousMaximumGeneration) {
             throw new IllegalStateException("Maximum generation must never decrease, file " + descriptor.getPath()
                     + " has a maximum generation that is less than the previous maximum generation of "
                     + previousMaximumGeneration);
         }
 
-        // Sanity check on timestamp
+        // Timestamp must never decrease
         if (descriptor.getTimestamp().isBefore(previousTimestamp)) {
             throw new IllegalStateException("Timestamp must never decrease, file " + descriptor.getPath()
                     + " has a timestamp that is less than the previous timestamp of "
                     + previousTimestamp);
+        }
+
+        // Origin round must never decrease
+        if (descriptor.getOrigin() < previousOrigin) {
+            throw new IllegalStateException("Origin round must never decrease, file " + descriptor.getPath()
+                    + " has an origin round that is less than the previous origin round of "
+                    + previousOrigin);
         }
     }
 
@@ -459,61 +474,6 @@ public class PreconsensusEventFileManager {
     }
 
     /**
-     * Resolve a discontinuity at a specified index by deleting all files written after the discontinuity.
-     *
-     * @param indexOfDiscontinuity the file index of the discontinuity
-     */
-    private void resolveDiscontinuity(final int indexOfDiscontinuity) {
-
-        if (files.size() == 0) {
-            throw new IllegalStateException("The preconsensus event stream has no files, "
-                    + "there should not be any detected discontinuities.");
-        }
-
-        if (indexOfDiscontinuity == 0) {
-            logger.error(
-                    EXCEPTION.getMarker(),
-                    "Discontinuity detected at beginning of preconsensus event stream, "
-                            + "unable to replay any events in the stream. "
-                            + "All events in the stream will be deleted. "
-                            + "first deleted file: {}, last file in stream: {}",
-                    files.get(indexOfDiscontinuity),
-                    files.getLast());
-        } else {
-            final PreconsensusEventFile lastUndeletedFile = files.get(indexOfDiscontinuity - 1);
-
-            logger.error(
-                    EXCEPTION.getMarker(),
-                    "Discontinuity detected in preconsensus event stream, "
-                            + "unable to replay all events in the stream. "
-                            + "Events written to the stream after the discontinuity will be deleted. "
-                            + "Last undeleted file: {}, first deleted file: {}, last file in stream: {}",
-                    lastUndeletedFile,
-                    files.get(indexOfDiscontinuity),
-                    files.getLast());
-        }
-
-        try {
-            // Delete files in reverse order, so that if we crash prior to finishing at least
-            // the stream does not have gaps in sequence numbers.
-            for (int index = files.size() - 1; index >= indexOfDiscontinuity; index--) {
-                files.removeLast().deleteFile(databaseDirectory, recycleBin);
-            }
-        } catch (final IOException e) {
-            throw new UncheckedIOException("unable to delete file after discontinuity", e);
-        }
-
-        if (files.size() > 0) {
-            metrics.getPreconsensusEventFileOldestGeneration()
-                    .set(files.getFirst().getMinimumGeneration());
-        } else {
-            metrics.getPreconsensusEventFileOldestGeneration().set(NO_MINIMUM_GENERATION);
-            metrics.getPreconsensusEventFileYoungestGeneration().set(NO_MINIMUM_GENERATION);
-            metrics.getPreconsensusEventFileOldestSeconds().set(0);
-        }
-    }
-
-    /**
      * <p>
      * Get an iterator that walks over all events starting with a specified generation.
      * </p>
@@ -550,7 +510,22 @@ public class PreconsensusEventFileManager {
      * @param newOriginRound the new origin for stream files written after this method is called
      */
     public void registerDiscontinuity(final long newOriginRound) {
-        // TODO
+        if (newOriginRound <= currentOrigin) {
+            throw new IllegalArgumentException("New origin round must be greater than the current origin round. "
+                    + "Current origin round: " + currentOrigin + ", new origin round: " + newOriginRound);
+        }
+
+        final PreconsensusEventFile lastFile = files.size() > 0 ? files.getLast() : null;
+
+        logger.info(
+                STARTUP.getMarker(),
+                "Due to recent operations on this node, the local preconsensus event stream"
+                        + " will have a discontinuity. The last file with the old origin round is {}. "
+                        + "All future files will have an origin round of {}.",
+                lastFile,
+                newOriginRound);
+
+        currentOrigin = newOriginRound;
     }
 
     /**
@@ -588,7 +563,7 @@ public class PreconsensusEventFileManager {
                 getNextSequenceNumber(),
                 minimumGenerationForFile,
                 maximumGenerationForFile,
-                -1, // TODO!!!
+                currentOrigin,
                 databaseDirectory);
 
         if (files.size() > 0) {
@@ -600,6 +575,7 @@ public class PreconsensusEventFileManager {
                     previousFile.getSequenceNumber(),
                     previousFile.getMinimumGeneration(),
                     previousFile.getMaximumGeneration(),
+                    currentOrigin,
                     previousFile.getTimestamp(),
                     descriptor);
         }

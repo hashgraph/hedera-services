@@ -86,9 +86,7 @@ public class AsyncPreconsensusEventWriter implements PreconsensusEventWriter {
     /**
      * This class is used as a flag to indicate that there is a discontinuity in the stream.
      */
-    private static class Discontinuity {}
-
-    private static final Discontinuity DISCONTINUITY = new Discontinuity();
+    private record Discontinuity(long originRound) {}
 
     /**
      * Used to push the Discontinuity flag onto the handle queue.
@@ -204,8 +202,8 @@ public class AsyncPreconsensusEventWriter implements PreconsensusEventWriter {
      * {@inheritDoc}
      */
     @Override
-    public void registerDiscontinuity() throws InterruptedException {
-        discontinuityInserter.put(DISCONTINUITY);
+    public void registerDiscontinuity(final long newOriginRound) throws InterruptedException {
+        discontinuityInserter.put(new Discontinuity(newOriginRound));
     }
 
     /**
@@ -306,7 +304,7 @@ public class AsyncPreconsensusEventWriter implements PreconsensusEventWriter {
      */
     private void discontinuityHandler(@NonNull final Discontinuity discontinuity) {
         try {
-            writer.registerDiscontinuity();
+            writer.registerDiscontinuity(discontinuity.originRound);
         } catch (final InterruptedException e) {
             // Unless we do something silly like wrapping an asynchronous writer inside another asynchronous writer,
             // this should never throw an InterruptedException.

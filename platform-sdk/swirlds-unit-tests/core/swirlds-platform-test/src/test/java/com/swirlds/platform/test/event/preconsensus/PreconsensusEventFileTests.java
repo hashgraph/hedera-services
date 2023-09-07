@@ -23,6 +23,7 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static com.swirlds.platform.event.preconsensus.PreconsensusEventFile.EVENT_FILE_SEPARATOR;
 import static com.swirlds.platform.event.preconsensus.PreconsensusEventFile.MAXIMUM_GENERATION_PREFIX;
 import static com.swirlds.platform.event.preconsensus.PreconsensusEventFile.MINIMUM_GENERATION_PREFIX;
+import static com.swirlds.platform.event.preconsensus.PreconsensusEventFile.ORIGIN_PREFIX;
 import static com.swirlds.platform.event.preconsensus.PreconsensusEventFile.SEQUENCE_NUMBER_PREFIX;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -83,27 +84,30 @@ class PreconsensusEventFileTests {
     void invalidParametersTest() {
         assertThrows(
                 IllegalArgumentException.class,
-                () -> PreconsensusEventFile.of(-1, 1, 2, Instant.now(), Path.of("foo"), false));
+                () -> PreconsensusEventFile.of(Instant.now(), -1, 1, 2, 0, Path.of("foo")));
 
         assertThrows(
                 IllegalArgumentException.class,
-                () -> PreconsensusEventFile.of(1, -1, 2, Instant.now(), Path.of("foo"), false));
+                () -> PreconsensusEventFile.of(Instant.now(), 1, -1, 2, 0, Path.of("foo")));
 
         assertThrows(
                 IllegalArgumentException.class,
-                () -> PreconsensusEventFile.of(1, -2, -1, Instant.now(), Path.of("foo"), false));
+                () -> PreconsensusEventFile.of(Instant.now(), 1, -2, -1, 0, Path.of("foo")));
 
         assertThrows(
                 IllegalArgumentException.class,
-                () -> PreconsensusEventFile.of(1, 1, -1, Instant.now(), Path.of("foo"), false));
+                () -> PreconsensusEventFile.of(Instant.now(), 1, 1, -1, 0, Path.of("foo")));
 
         assertThrows(
                 IllegalArgumentException.class,
-                () -> PreconsensusEventFile.of(1, 2, 1, Instant.now(), Path.of("foo"), false));
+                () -> PreconsensusEventFile.of(Instant.now(), 1, 2, 1, 0, Path.of("foo")));
 
-        assertThrows(NullPointerException.class, () -> PreconsensusEventFile.of(1, 1, 2, null, Path.of("foo"), false));
+        assertThrows(NullPointerException.class, () -> PreconsensusEventFile.of(null, 1, 1, 2, 0, Path.of("foo")));
 
-        assertThrows(NullPointerException.class, () -> PreconsensusEventFile.of(1, 1, 2, Instant.now(), null, false));
+        assertThrows(
+                NullPointerException.class, () -> PreconsensusEventFile.of(Instant.now(), 1, 1, 2, -1, Path.of("foo")));
+
+        assertThrows(NullPointerException.class, () -> PreconsensusEventFile.of(Instant.now(), 1, 1, 2, 0, null));
     }
 
     @Test
@@ -116,17 +120,17 @@ class PreconsensusEventFileTests {
             final long sequenceNumber = random.nextLong(1000);
             final long minimumGeneration = random.nextLong(1000);
             final long maximumGeneration = random.nextLong(minimumGeneration, minimumGeneration + 1000);
+            final long origin = random.nextLong(1000);
             final Instant timestamp = RandomUtils.randomInstant(random);
-            final boolean discontinuity = random.nextBoolean();
 
             final String expectedName =
                     timestamp.toString().replace(":", "+") + EVENT_FILE_SEPARATOR + SEQUENCE_NUMBER_PREFIX
                             + sequenceNumber + EVENT_FILE_SEPARATOR + MINIMUM_GENERATION_PREFIX
                             + minimumGeneration + EVENT_FILE_SEPARATOR + MAXIMUM_GENERATION_PREFIX
-                            + maximumGeneration + ".pces" + (discontinuity ? "D" : "");
+                            + maximumGeneration + EVENT_FILE_SEPARATOR + origin + ORIGIN_PREFIX + ".pces";
 
             final PreconsensusEventFile file = PreconsensusEventFile.of(
-                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, Path.of("foo/bar"), discontinuity);
+                    timestamp, sequenceNumber, minimumGeneration, maximumGeneration, origin, Path.of("foo/bar"));
 
             assertEquals(expectedName, file.getFileName());
             assertEquals(expectedName, file.toString());
@@ -144,6 +148,7 @@ class PreconsensusEventFileTests {
             final long sequenceNumber = random.nextLong(1000);
             final long minimumGeneration = random.nextLong(1000);
             final long maximumGeneration = random.nextLong(minimumGeneration, minimumGeneration + 1000);
+            final long origin = random.nextLong(1000);
             final Instant timestamp = RandomUtils.randomInstant(random);
 
             final ZonedDateTime zonedDateTime = timestamp.atZone(ZoneId.systemDefault());
@@ -157,12 +162,12 @@ class PreconsensusEventFileTests {
             assertEquals(
                     expectedPath,
                     PreconsensusEventFile.of(
+                                    timestamp,
                                     sequenceNumber,
                                     minimumGeneration,
                                     maximumGeneration,
-                                    timestamp,
-                                    Path.of("foo/bar"),
-                                    random.nextBoolean())
+                                    origin,
+                                    Path.of("foo/bar"))
                             .getPath()
                             .getParent());
         }
@@ -178,13 +183,13 @@ class PreconsensusEventFileTests {
             final long sequenceNumber = random.nextLong(1000);
             final long minimumGeneration = random.nextLong(1000);
             final long maximumGeneration = random.nextLong(minimumGeneration, minimumGeneration + 1000);
+            final long origin = random.nextLong(1000);
             final Instant timestamp = RandomUtils.randomInstant(random);
-            final boolean discontinuity = random.nextBoolean();
 
             final Path directory = Path.of("foo/bar/baz");
 
             final PreconsensusEventFile expected = PreconsensusEventFile.of(
-                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, directory, discontinuity);
+                    timestamp, sequenceNumber, minimumGeneration, maximumGeneration, origin, directory);
 
             final PreconsensusEventFile parsed = PreconsensusEventFile.of(expected.getPath());
 
@@ -192,8 +197,8 @@ class PreconsensusEventFileTests {
             assertEquals(sequenceNumber, parsed.getSequenceNumber());
             assertEquals(minimumGeneration, parsed.getMinimumGeneration());
             assertEquals(maximumGeneration, parsed.getMaximumGeneration());
+            assertEquals(origin, parsed.getOrigin());
             assertEquals(timestamp, parsed.getTimestamp());
-            assertEquals(discontinuity, parsed.marksDiscontinuity());
         }
     }
 
@@ -248,8 +253,7 @@ class PreconsensusEventFileTests {
         for (int index = 0; index < times.size(); index++) {
             final Instant timestamp = times.get(index);
             // We don't care about generations for this test
-            final PreconsensusEventFile file =
-                    PreconsensusEventFile.of(index, 0, 0, timestamp, testDirectory, random.nextBoolean());
+            final PreconsensusEventFile file = PreconsensusEventFile.of(timestamp, index, 0, 0, 0, testDirectory);
 
             writeRandomBytes(random, file.getPath(), 100);
             files.add(file);
@@ -323,8 +327,7 @@ class PreconsensusEventFileTests {
         for (int index = 0; index < times.size(); index++) {
             final Instant timestamp = times.get(index);
             // We don't care about generations for this test
-            final PreconsensusEventFile file =
-                    PreconsensusEventFile.of(index, 0, 0, timestamp, streamDirectory, random.nextBoolean());
+            final PreconsensusEventFile file = PreconsensusEventFile.of(timestamp, index, 0, 0, 0, streamDirectory);
 
             writeRandomBytes(random, file.getPath(), 100);
             files.add(file);
@@ -381,19 +384,19 @@ class PreconsensusEventFileTests {
             final long maximumGenerationB = random.nextLong(minimumGenerationB, minimumGenerationB + 100);
 
             final PreconsensusEventFile a = PreconsensusEventFile.of(
+                    randomInstant(random),
                     sequenceA,
                     minimumGenerationA,
                     maximumGenerationA,
-                    randomInstant(random),
-                    directory,
-                    random.nextBoolean());
+                    random.nextLong(1000),
+                    directory);
             final PreconsensusEventFile b = PreconsensusEventFile.of(
+                    randomInstant(random),
                     sequenceB,
                     minimumGenerationB,
                     maximumGenerationB,
-                    randomInstant(random),
-                    directory,
-                    random.nextBoolean());
+                    random.nextLong(1000),
+                    directory);
 
             assertEquals(Long.compare(sequenceA, sequenceB), a.compareTo(b));
         }
@@ -413,7 +416,7 @@ class PreconsensusEventFileTests {
             final Instant timestamp = RandomUtils.randomInstant(random);
 
             final PreconsensusEventFile file = PreconsensusEventFile.of(
-                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, directory, false);
+                    timestamp, sequenceNumber, minimumGeneration, maximumGeneration, 0, directory);
 
             // An event with a sequence number that is too small
             assertFalse(file.canContain(minimumGeneration - random.nextLong(1, 100)));
@@ -433,39 +436,6 @@ class PreconsensusEventFileTests {
     }
 
     @Test
-    @DisplayName("Discontinuity canContain() Test")
-    void discontinuityCanContainTest() {
-        final Random random = getRandomPrintSeed();
-
-        final Path directory = Path.of("foo/bar/baz");
-
-        for (int i = 0; i < 1000; i++) {
-            final long sequenceNumber = random.nextLong(1000);
-            final long minimumGeneration = random.nextLong(1000);
-            final long maximumGeneration = random.nextLong(minimumGeneration + 1, minimumGeneration + 1000);
-            final Instant timestamp = RandomUtils.randomInstant(random);
-
-            final PreconsensusEventFile file = PreconsensusEventFile.of(
-                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, directory, true);
-
-            // An event with a sequence number that is too small
-            assertFalse(file.canContain(minimumGeneration - random.nextLong(1, 100)));
-
-            // An event with a sequence number matching the minimum exactly
-            assertFalse(file.canContain(minimumGeneration));
-
-            // An event with a sequence somewhere between the minimum and maximum
-            assertFalse(file.canContain(maximumGeneration));
-
-            // An event with a sequence somewhere exactly matching the maximum
-            assertFalse(file.canContain(maximumGeneration));
-
-            // An event with a sequence number that is too big
-            assertFalse(file.canContain(maximumGeneration + random.nextLong(1, 100)));
-        }
-    }
-
-    @Test
     @DisplayName("Span Compression Test")
     void spanCompressionTest() {
         final Random random = getRandomPrintSeed();
@@ -475,11 +445,11 @@ class PreconsensusEventFileTests {
         final long sequenceNumber = random.nextLong(1000);
         final long minimumGeneration = random.nextLong(1000);
         final long maximumGeneration = random.nextLong(minimumGeneration + 5, minimumGeneration + 1000);
-        final boolean discontinuity = random.nextBoolean();
+        final long origin = random.nextLong(1000);
         final Instant timestamp = randomInstant(random);
 
         final PreconsensusEventFile file = PreconsensusEventFile.of(
-                sequenceNumber, minimumGeneration, maximumGeneration, timestamp, directory, discontinuity);
+                timestamp, sequenceNumber, minimumGeneration, maximumGeneration, origin, directory);
 
         assertThrows(IllegalArgumentException.class, () -> file.buildFileWithCompressedSpan(minimumGeneration - 1));
         assertThrows(IllegalArgumentException.class, () -> file.buildFileWithCompressedSpan(maximumGeneration + 1));
@@ -491,7 +461,7 @@ class PreconsensusEventFileTests {
         assertEquals(sequenceNumber, compressedFile.getSequenceNumber());
         assertEquals(minimumGeneration, compressedFile.getMinimumGeneration());
         assertEquals(newMaximumGeneration, compressedFile.getMaximumGeneration());
+        assertEquals(origin, compressedFile.getOrigin());
         assertEquals(timestamp, compressedFile.getTimestamp());
-        assertEquals(discontinuity, compressedFile.marksDiscontinuity());
     }
 }

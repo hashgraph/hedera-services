@@ -117,7 +117,7 @@ class SyncPreconsensusEventWriterTests {
         final PlatformContext platformContext = buildContext();
 
         final PreconsensusEventFileManager fileManager = new PreconsensusEventFileManager(
-                platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0));
+                platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0), 0);
 
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
         final PreconsensusEventWriter writer = new SyncPreconsensusEventWriter(platformContext, fileManager);
@@ -150,7 +150,7 @@ class SyncPreconsensusEventWriterTests {
         assertTrue(writer.waitUntilDurable(events.get(events.size() - 1), Duration.ofSeconds(1)));
         assertTrue(writer.isEventDurable(events.get(events.size() - 1)));
 
-        verifyStream(events, platformContext, 0, false);
+        verifyStream(events, platformContext, 0);
 
         writer.stop();
     }
@@ -173,7 +173,7 @@ class SyncPreconsensusEventWriterTests {
         final PlatformContext platformContext = buildContext();
 
         final PreconsensusEventFileManager fileManager = new PreconsensusEventFileManager(
-                platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0));
+                platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0), 0);
 
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
         final PreconsensusEventWriter writer = new SyncPreconsensusEventWriter(platformContext, fileManager);
@@ -205,7 +205,7 @@ class SyncPreconsensusEventWriterTests {
         // Since we are not using threads, the stream should be flushed when we reach this point
         assertTrue(writer.isEventDurable(events.get(events.size() - 1)));
 
-        verifyStream(events, platformContext, 0, false);
+        verifyStream(events, platformContext, 0);
     }
 
     @Test
@@ -229,7 +229,7 @@ class SyncPreconsensusEventWriterTests {
         final PlatformContext platformContext = buildContext();
 
         final PreconsensusEventFileManager fileManager = new PreconsensusEventFileManager(
-                platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0));
+                platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0), 0);
 
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
         final PreconsensusEventWriter writer = new SyncPreconsensusEventWriter(platformContext, fileManager);
@@ -276,7 +276,7 @@ class SyncPreconsensusEventWriterTests {
         assertTrue(writer.waitUntilDurable(events.get(events.size() - 1), Duration.ofSeconds(1)));
         assertTrue(writer.isEventDurable(events.get(events.size() - 1)));
 
-        verifyStream(events, platformContext, 0, false);
+        verifyStream(events, platformContext, 0);
 
         writer.stop();
     }
@@ -302,7 +302,7 @@ class SyncPreconsensusEventWriterTests {
         final PlatformContext platformContext = buildContext();
 
         final PreconsensusEventFileManager fileManager = new PreconsensusEventFileManager(
-                platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0));
+                platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0), 0);
 
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
         final PreconsensusEventWriter writer = new SyncPreconsensusEventWriter(platformContext, fileManager);
@@ -317,11 +317,11 @@ class SyncPreconsensusEventWriterTests {
 
         writer.stop();
 
-        verifyStream(events, platformContext, 0, false);
+        verifyStream(events, platformContext, 0);
 
         // Without advancing the first non-ancient generation,
         // we should never be able to increase the minimum generation from 0.
-        for (final Iterator<PreconsensusEventFile> it = fileManager.getFileIterator(0, false); it.hasNext(); ) {
+        for (final Iterator<PreconsensusEventFile> it = fileManager.getFileIterator(0); it.hasNext(); ) {
             final PreconsensusEventFile file = it.next();
             assertEquals(0, file.getMinimumGeneration());
         }
@@ -345,7 +345,7 @@ class SyncPreconsensusEventWriterTests {
         final PlatformContext platformContext = buildContext();
 
         final PreconsensusEventFileManager fileManager = new PreconsensusEventFileManager(
-                platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0));
+                platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0), 0);
 
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
         final PreconsensusEventWriter writer = new SyncPreconsensusEventWriter(platformContext, fileManager);
@@ -373,7 +373,7 @@ class SyncPreconsensusEventWriterTests {
 
         // We shouldn't find any events in the stream.
         assertFalse(() -> fileManager
-                .getFileIterator(PreconsensusEventFileManager.NO_MINIMUM_GENERATION, false)
+                .getFileIterator(PreconsensusEventFileManager.NO_MINIMUM_GENERATION)
                 .hasNext());
 
         writer.stop();
@@ -403,7 +403,7 @@ class SyncPreconsensusEventWriterTests {
         final PlatformContext platformContext = buildContext();
 
         final PreconsensusEventFileManager fileManager = new PreconsensusEventFileManager(
-                platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0));
+                platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0), 0);
 
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
         final PreconsensusEventWriter writer = new SyncPreconsensusEventWriter(platformContext, fileManager);
@@ -431,7 +431,7 @@ class SyncPreconsensusEventWriterTests {
             writer.writeEvent(event);
         }
 
-        writer.registerDiscontinuity();
+        writer.registerDiscontinuity(100); // TODO this test needs to be revisited
 
         final Iterator<EventImpl> iterator2 = eventsAfterDiscontinuity.iterator();
         while (iterator2.hasNext()) {
@@ -458,7 +458,7 @@ class SyncPreconsensusEventWriterTests {
                 eventsAfterDiscontinuity.get(eventsAfterDiscontinuity.size() - 1), Duration.ofSeconds(1)));
         assertTrue(writer.isEventDurable(eventsAfterDiscontinuity.get(eventsAfterDiscontinuity.size() - 1)));
 
-        verifyStream(eventsBeforeDiscontinuity, platformContext, 0, true);
+        verifyStream(eventsBeforeDiscontinuity, platformContext, 0); // TODO this used to have an extra flag
 
         writer.stop();
     }

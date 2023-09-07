@@ -126,54 +126,54 @@ class PreconsensusEventFileManagerTests {
     @DisplayName("Minimum Decreases Test")
     void minimumDecreasesTest() throws IOException {
 
-        createDummyFile(PreconsensusEventFile.of(0, 5, 10, Instant.now(), fileDirectory, false));
+        createDummyFile(PreconsensusEventFile.of(Instant.now(), 0, 5, 10, 0, fileDirectory));
 
-        createDummyFile(PreconsensusEventFile.of(1, 4, 11, Instant.now(), fileDirectory, false));
+        createDummyFile(PreconsensusEventFile.of(Instant.now(), 1, 4, 11, 0, fileDirectory));
 
-        createDummyFile(PreconsensusEventFile.of(2, 10, 20, Instant.now(), fileDirectory, false));
+        createDummyFile(PreconsensusEventFile.of(Instant.now(), 2, 10, 20, 0, fileDirectory));
 
         final PlatformContext platformContext = buildContext();
 
         assertThrows(
                 IllegalStateException.class,
                 () -> new PreconsensusEventFileManager(
-                        platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0)));
+                        platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0), 0));
     }
 
     @Test
     @DisplayName("Maximum Decreases Test")
     void maximumDecreasesTest() throws IOException {
 
-        createDummyFile(PreconsensusEventFile.of(0, 5, 10, Instant.now(), fileDirectory, false));
+        createDummyFile(PreconsensusEventFile.of(Instant.now(), 0, 5, 10, 0, fileDirectory));
 
-        createDummyFile(PreconsensusEventFile.of(1, 6, 9, Instant.now(), fileDirectory, false));
+        createDummyFile(PreconsensusEventFile.of(Instant.now(), 1, 6, 9, 0, fileDirectory));
 
-        createDummyFile(PreconsensusEventFile.of(2, 10, 20, Instant.now(), fileDirectory, false));
+        createDummyFile(PreconsensusEventFile.of(Instant.now(), 2, 10, 20, 0, fileDirectory));
 
         final PlatformContext platformContext = buildContext();
 
         assertThrows(
                 IllegalStateException.class,
                 () -> new PreconsensusEventFileManager(
-                        platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0)));
+                        platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0), 0));
     }
 
     @Test
     @DisplayName("Timestamp Decreases Test")
     void timestampDecreasesTest() throws IOException {
 
-        createDummyFile(PreconsensusEventFile.of(0, 5, 10, Instant.ofEpochMilli(1000), fileDirectory, false));
+        createDummyFile(PreconsensusEventFile.of(Instant.ofEpochMilli(1000), 0, 5, 10, 0, fileDirectory));
 
-        createDummyFile(PreconsensusEventFile.of(1, 6, 11, Instant.ofEpochMilli(500), fileDirectory, false));
+        createDummyFile(PreconsensusEventFile.of(Instant.ofEpochMilli(500), 1, 6, 11, 0, fileDirectory));
 
-        createDummyFile(PreconsensusEventFile.of(2, 7, 12, Instant.ofEpochMilli(2000), fileDirectory, false));
+        createDummyFile(PreconsensusEventFile.of(Instant.ofEpochMilli(2000), 2, 7, 12, 0, fileDirectory));
 
         final PlatformContext platformContext = buildContext();
 
         assertThrows(
                 IllegalStateException.class,
                 () -> new PreconsensusEventFileManager(
-                        platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0)));
+                        platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0), 0));
     }
 
     @Test
@@ -201,7 +201,7 @@ class PreconsensusEventFileManagerTests {
                 sequenceNumber++) {
 
             final PreconsensusEventFile file = PreconsensusEventFile.of(
-                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, fileDirectory, false);
+                    timestamp, sequenceNumber, minimumGeneration, maximumGeneration, 0, fileDirectory);
 
             minimumGeneration = random.nextLong(minimumGeneration, maximumGeneration + 1);
             maximumGeneration =
@@ -215,20 +215,20 @@ class PreconsensusEventFileManagerTests {
         final PlatformContext platformContext = buildContext();
 
         final PreconsensusEventFileManager manager = new PreconsensusEventFileManager(
-                platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0));
+                platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0), 0);
 
         assertIteratorEquality(
-                files.iterator(), manager.getFileIterator(PreconsensusEventFileManager.NO_MINIMUM_GENERATION, false));
+                files.iterator(), manager.getFileIterator(PreconsensusEventFileManager.NO_MINIMUM_GENERATION));
 
         assertIteratorEquality(
-                files.iterator(), manager.getFileIterator(files.get(0).getMaximumGeneration(), false));
+                files.iterator(), manager.getFileIterator(files.get(0).getMaximumGeneration()));
 
         // attempt to start a non-existent generation
-        assertIteratorEquality(files.iterator(), manager.getFileIterator(nonExistentGeneration, false));
+        assertIteratorEquality(files.iterator(), manager.getFileIterator(nonExistentGeneration));
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @ValueSource(booleans = {true})
     @DisplayName("Read Files In Order Gap Test")
     void readFilesInOrderGapTest(final boolean permitGaps) throws IOException {
         final Random random = getRandomPrintSeed();
@@ -255,7 +255,7 @@ class PreconsensusEventFileManagerTests {
                 sequenceNumber++) {
 
             final PreconsensusEventFile file = PreconsensusEventFile.of(
-                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, fileDirectory, false);
+                    timestamp, sequenceNumber, minimumGeneration, maximumGeneration, 0, fileDirectory);
 
             minimumGeneration = random.nextLong(minimumGeneration, maximumGeneration + 1);
             maximumGeneration =
@@ -276,17 +276,16 @@ class PreconsensusEventFileManagerTests {
         if (permitGaps) {
             // Gaps are allowed. We should see all files except for the one that was skipped.
             final PreconsensusEventFileManager manager = new PreconsensusEventFileManager(
-                    platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0));
+                    platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0), 0);
 
             assertIteratorEquality(
-                    files.iterator(),
-                    manager.getFileIterator(PreconsensusEventFileManager.NO_MINIMUM_GENERATION, false));
+                    files.iterator(), manager.getFileIterator(PreconsensusEventFileManager.NO_MINIMUM_GENERATION));
         } else {
             // Gaps are not allowed.
             assertThrows(
                     IllegalStateException.class,
                     () -> new PreconsensusEventFileManager(
-                            platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0)));
+                            platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0), 0));
         }
     }
 
@@ -314,7 +313,7 @@ class PreconsensusEventFileManagerTests {
                 sequenceNumber++) {
 
             final PreconsensusEventFile file = PreconsensusEventFile.of(
-                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, fileDirectory, false);
+                    timestamp, sequenceNumber, minimumGeneration, maximumGeneration, 0, fileDirectory);
 
             minimumGeneration = random.nextLong(minimumGeneration, maximumGeneration + 1);
             maximumGeneration =
@@ -328,7 +327,7 @@ class PreconsensusEventFileManagerTests {
         final PlatformContext platformContext = buildContext();
 
         final PreconsensusEventFileManager manager = new PreconsensusEventFileManager(
-                platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0));
+                platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0), 0);
 
         // For this test, we want to iterate over files so that we are guaranteed to observe every event
         // with a generation greater than or equal to the target generation. Choose a generation that falls
@@ -337,7 +336,7 @@ class PreconsensusEventFileManagerTests {
                 (files.get(0).getMaximumGeneration() + files.get(fileCount - 1).getMaximumGeneration()) / 2;
 
         final List<PreconsensusEventFile> iteratedFiles = new ArrayList<>();
-        manager.getFileIterator(targetGeneration, false).forEachRemaining(iteratedFiles::add);
+        manager.getFileIterator(targetGeneration).forEachRemaining(iteratedFiles::add);
 
         // Find the index in the file list that was returned first by the iterator
         int indexOfFirstFile = 0;
@@ -391,7 +390,7 @@ class PreconsensusEventFileManagerTests {
                 sequenceNumber++) {
 
             final PreconsensusEventFile file = PreconsensusEventFile.of(
-                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, fileDirectory, false);
+                    timestamp, sequenceNumber, minimumGeneration, maximumGeneration, 0, fileDirectory);
 
             // Advance the generation bounds only 10% of the time
             if (random.nextLong() < 0.1) {
@@ -407,7 +406,7 @@ class PreconsensusEventFileManagerTests {
         final PlatformContext platformContext = buildContext();
 
         final PreconsensusEventFileManager manager = new PreconsensusEventFileManager(
-                platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0));
+                platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0), 0);
 
         // For this test, we want to iterate over files so that we are guaranteed to observe every event
         // with a generation greater than or equal to the target generation. Choose a generation that falls
@@ -416,7 +415,7 @@ class PreconsensusEventFileManagerTests {
                 (files.get(0).getMaximumGeneration() + files.get(fileCount - 1).getMaximumGeneration()) / 2;
 
         final List<PreconsensusEventFile> iteratedFiles = new ArrayList<>();
-        manager.getFileIterator(targetGeneration, false).forEachRemaining(iteratedFiles::add);
+        manager.getFileIterator(targetGeneration).forEachRemaining(iteratedFiles::add);
 
         // Find the index in the file list that was returned first by the iterator
         int indexOfFirstFile = 0;
@@ -465,7 +464,7 @@ class PreconsensusEventFileManagerTests {
                 sequenceNumber++) {
 
             final PreconsensusEventFile file = PreconsensusEventFile.of(
-                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, fileDirectory, false);
+                    timestamp, sequenceNumber, minimumGeneration, maximumGeneration, 0, fileDirectory);
 
             minimumGeneration = random.nextLong(minimumGeneration, maximumGeneration + 1);
             maximumGeneration =
@@ -479,12 +478,12 @@ class PreconsensusEventFileManagerTests {
         final PlatformContext platformContext = buildContext();
 
         final PreconsensusEventFileManager manager = new PreconsensusEventFileManager(
-                platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0));
+                platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0), 0);
 
         // Request a generation higher than all files in the data store
         final long targetGeneration = files.get(fileCount - 1).getMaximumGeneration() + 1;
 
-        final Iterator<PreconsensusEventFile> iterator = manager.getFileIterator(targetGeneration, false);
+        final Iterator<PreconsensusEventFile> iterator = manager.getFileIterator(targetGeneration);
         assertFalse(iterator.hasNext());
     }
 
@@ -494,9 +493,9 @@ class PreconsensusEventFileManagerTests {
         final PlatformContext platformContext = buildContext();
 
         final PreconsensusEventFileManager manager = new PreconsensusEventFileManager(
-                platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0));
+                platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0), 0);
 
-        final Iterator<PreconsensusEventFile> iterator = manager.getFileIterator(1234, false);
+        final Iterator<PreconsensusEventFile> iterator = manager.getFileIterator(1234);
         assertFalse(iterator.hasNext());
     }
 
@@ -517,7 +516,7 @@ class PreconsensusEventFileManagerTests {
         Instant timestamp = Instant.now();
 
         final PreconsensusEventFileManager generatingManager = new PreconsensusEventFileManager(
-                platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0));
+                platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0), 0);
         for (int i = 0; i < fileCount; i++) {
 
             final PreconsensusEventFile file =
@@ -536,10 +535,10 @@ class PreconsensusEventFileManagerTests {
         }
 
         final PreconsensusEventFileManager manager = new PreconsensusEventFileManager(
-                platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0));
+                platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0), 0);
 
         assertIteratorEquality(
-                files.iterator(), manager.getFileIterator(PreconsensusEventFileManager.NO_MINIMUM_GENERATION, false));
+                files.iterator(), manager.getFileIterator(PreconsensusEventFileManager.NO_MINIMUM_GENERATION));
     }
 
     @Test
@@ -566,7 +565,7 @@ class PreconsensusEventFileManagerTests {
                 sequenceNumber++) {
 
             final PreconsensusEventFile file = PreconsensusEventFile.of(
-                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, fileDirectory, false);
+                    timestamp, sequenceNumber, minimumGeneration, maximumGeneration, 0, fileDirectory);
 
             minimumGeneration = random.nextLong(minimumGeneration, maximumGeneration + 1);
             maximumGeneration =
@@ -591,10 +590,10 @@ class PreconsensusEventFileManagerTests {
         final FakeTime time = new FakeTime(lastFile.getTimestamp().plus(Duration.ofHours(1)), Duration.ZERO);
 
         final PreconsensusEventFileManager manager =
-                new PreconsensusEventFileManager(platformContext, time, TestRecycleBin.getInstance(), new NodeId(0));
+                new PreconsensusEventFileManager(platformContext, time, TestRecycleBin.getInstance(), new NodeId(0), 0);
 
         assertIteratorEquality(
-                files.iterator(), manager.getFileIterator(PreconsensusEventFileManager.NO_MINIMUM_GENERATION, false));
+                files.iterator(), manager.getFileIterator(PreconsensusEventFileManager.NO_MINIMUM_GENERATION));
 
         // Increase the pruned generation a little at a time,
         // until the middle file is almost GC eligible but not quite.
@@ -608,8 +607,8 @@ class PreconsensusEventFileManagerTests {
             // removing the in-memory descriptor without also removing the file on disk
             final List<PreconsensusEventFile> parsedFiles = new ArrayList<>();
             new PreconsensusEventFileManager(
-                            platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0))
-                    .getFileIterator(PreconsensusEventFileManager.NO_MINIMUM_GENERATION, false)
+                            platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0), 0)
+                    .getFileIterator(PreconsensusEventFileManager.NO_MINIMUM_GENERATION)
                     .forEachRemaining(parsedFiles::add);
 
             final PreconsensusEventFile firstUnPrunedFile = parsedFiles.get(0);
@@ -649,8 +648,8 @@ class PreconsensusEventFileManagerTests {
         // removing the in-memory descriptor without also removing the file on disk
         final List<PreconsensusEventFile> parsedFiles = new ArrayList<>();
         new PreconsensusEventFileManager(
-                        platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0))
-                .getFileIterator(PreconsensusEventFileManager.NO_MINIMUM_GENERATION, false)
+                        platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0), 0)
+                .getFileIterator(PreconsensusEventFileManager.NO_MINIMUM_GENERATION)
                 .forEachRemaining(parsedFiles::add);
 
         final PreconsensusEventFile firstUnPrunedFile = parsedFiles.get(0);
@@ -690,7 +689,7 @@ class PreconsensusEventFileManagerTests {
                 sequenceNumber++) {
 
             final PreconsensusEventFile file = PreconsensusEventFile.of(
-                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, fileDirectory, false);
+                    timestamp, sequenceNumber, minimumGeneration, maximumGeneration, 0, fileDirectory);
 
             minimumGeneration = random.nextLong(minimumGeneration, maximumGeneration + 1);
             maximumGeneration =
@@ -715,10 +714,10 @@ class PreconsensusEventFileManagerTests {
         final FakeTime time = new FakeTime(firstFile.getTimestamp().plus(Duration.ofMinutes(59)), Duration.ZERO);
 
         final PreconsensusEventFileManager manager =
-                new PreconsensusEventFileManager(platformContext, time, TestRecycleBin.getInstance(), new NodeId(0));
+                new PreconsensusEventFileManager(platformContext, time, TestRecycleBin.getInstance(), new NodeId(0), 0);
 
         assertIteratorEquality(
-                files.iterator(), manager.getFileIterator(PreconsensusEventFileManager.NO_MINIMUM_GENERATION, false));
+                files.iterator(), manager.getFileIterator(PreconsensusEventFileManager.NO_MINIMUM_GENERATION));
 
         // Increase the timestamp a little at a time. We should gradually delete files up until
         // all files before the middle file have been deleted.
@@ -731,8 +730,8 @@ class PreconsensusEventFileManagerTests {
             // removing the in-memory descriptor without also removing the file on disk
             final List<PreconsensusEventFile> parsedFiles = new ArrayList<>();
             new PreconsensusEventFileManager(
-                            platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0))
-                    .getFileIterator(PreconsensusEventFileManager.NO_MINIMUM_GENERATION, false)
+                            platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0), 0)
+                    .getFileIterator(PreconsensusEventFileManager.NO_MINIMUM_GENERATION)
                     .forEachRemaining(parsedFiles::add);
 
             final PreconsensusEventFile firstUnPrunedFile = parsedFiles.get(0);
@@ -777,8 +776,8 @@ class PreconsensusEventFileManagerTests {
         // removing the in-memory descriptor without also removing the file on disk
         final List<PreconsensusEventFile> parsedFiles = new ArrayList<>();
         new PreconsensusEventFileManager(
-                        platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0))
-                .getFileIterator(PreconsensusEventFileManager.NO_MINIMUM_GENERATION, false)
+                        platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0), 0)
+                .getFileIterator(PreconsensusEventFileManager.NO_MINIMUM_GENERATION)
                 .forEachRemaining(parsedFiles::add);
 
         final PreconsensusEventFile firstUnPrunedFile = parsedFiles.get(0);
@@ -856,10 +855,11 @@ class PreconsensusEventFileManagerTests {
                 sequenceNumber < firstSequenceNumber + fileCount;
                 sequenceNumber++) {
 
-            final boolean discontinuity = sequenceNumber == discontinuitySequenceNumber;
+            //            final boolean discontinuity = sequenceNumber == discontinuitySequenceNumber;
+            // TODO
 
             final PreconsensusEventFile file = PreconsensusEventFile.of(
-                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, fileDirectory, discontinuity);
+                    timestamp, sequenceNumber, minimumGeneration, maximumGeneration, 0, fileDirectory);
 
             minimumGeneration = random.nextLong(minimumGeneration, maximumGeneration + 1);
             maximumGeneration =
@@ -882,34 +882,34 @@ class PreconsensusEventFileManagerTests {
                 new NodeId(0));
 
         final PreconsensusEventFileManager manager =
-                new PreconsensusEventFileManager(platformContext, Time.getCurrent(), recycleBin, new NodeId(0));
+                new PreconsensusEventFileManager(platformContext, Time.getCurrent(), recycleBin, new NodeId(0), 0);
 
         // Don't try to fix discontinuities, we should see all files
         assertIteratorEquality(
-                files.iterator(), manager.getFileIterator(PreconsensusEventFileManager.NO_MINIMUM_GENERATION, false));
+                files.iterator(), manager.getFileIterator(PreconsensusEventFileManager.NO_MINIMUM_GENERATION));
 
         assertIteratorEquality(
-                files.iterator(), manager.getFileIterator(files.get(0).getMinimumGeneration(), false));
+                files.iterator(), manager.getFileIterator(files.get(0).getMinimumGeneration()));
 
         // Now, request that the discontinuity be fixed
         if (startAtSpecificGeneration) {
             assertIteratorEquality(
                     filesBeforeDiscontinuity.iterator(),
-                    manager.getFileIterator(files.get(0).getMinimumGeneration(), true));
+                    manager.getFileIterator(files.get(0).getMinimumGeneration()));
         } else {
             assertIteratorEquality(
                     filesBeforeDiscontinuity.iterator(),
-                    manager.getFileIterator(PreconsensusEventFileManager.NO_MINIMUM_GENERATION, true));
+                    manager.getFileIterator(PreconsensusEventFileManager.NO_MINIMUM_GENERATION));
         }
 
         // Future requests for files should not return files after the discontinuity
         assertIteratorEquality(
                 filesBeforeDiscontinuity.iterator(),
-                manager.getFileIterator(PreconsensusEventFileManager.NO_MINIMUM_GENERATION, false));
+                manager.getFileIterator(PreconsensusEventFileManager.NO_MINIMUM_GENERATION));
 
         assertIteratorEquality(
                 filesBeforeDiscontinuity.iterator(),
-                manager.getFileIterator(files.get(0).getMinimumGeneration(), false));
+                manager.getFileIterator(files.get(0).getMinimumGeneration()));
 
         validateRecycledFiles(filesBeforeDiscontinuity, files, platformContext);
     }
@@ -942,10 +942,11 @@ class PreconsensusEventFileManagerTests {
                 sequenceNumber < firstSequenceNumber + fileCount;
                 sequenceNumber++) {
 
-            final boolean discontinuity = sequenceNumber == firstSequenceNumber;
+            //            final boolean discontinuity = sequenceNumber == firstSequenceNumber;
+            // TODO
 
             final PreconsensusEventFile file = PreconsensusEventFile.of(
-                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, fileDirectory, discontinuity);
+                    timestamp, sequenceNumber, minimumGeneration, maximumGeneration, 0, fileDirectory);
 
             minimumGeneration = random.nextLong(minimumGeneration, maximumGeneration + 1);
             maximumGeneration =
@@ -966,34 +967,34 @@ class PreconsensusEventFileManagerTests {
                 new NodeId(0));
 
         final PreconsensusEventFileManager manager =
-                new PreconsensusEventFileManager(platformContext, Time.getCurrent(), recycleBin, new NodeId(0));
+                new PreconsensusEventFileManager(platformContext, Time.getCurrent(), recycleBin, new NodeId(0), 0);
 
         // Don't try to fix discontinuities, we should see all files
         assertIteratorEquality(
-                files.iterator(), manager.getFileIterator(PreconsensusEventFileManager.NO_MINIMUM_GENERATION, false));
+                files.iterator(), manager.getFileIterator(PreconsensusEventFileManager.NO_MINIMUM_GENERATION));
 
         assertIteratorEquality(
-                files.iterator(), manager.getFileIterator(files.get(0).getMinimumGeneration(), false));
+                files.iterator(), manager.getFileIterator(files.get(0).getMinimumGeneration()));
 
         // Now, request that the discontinuity be fixed
         if (startAtSpecificGeneration) {
             assertIteratorEquality(
                     Collections.emptyIterator(),
-                    manager.getFileIterator(files.get(0).getMinimumGeneration(), true));
+                    manager.getFileIterator(files.get(0).getMinimumGeneration()));
         } else {
             assertIteratorEquality(
                     Collections.emptyIterator(),
-                    manager.getFileIterator(PreconsensusEventFileManager.NO_MINIMUM_GENERATION, true));
+                    manager.getFileIterator(PreconsensusEventFileManager.NO_MINIMUM_GENERATION));
         }
 
         // Future requests for files should not return any files.
         assertIteratorEquality(
                 Collections.emptyIterator(),
-                manager.getFileIterator(PreconsensusEventFileManager.NO_MINIMUM_GENERATION, false));
+                manager.getFileIterator(PreconsensusEventFileManager.NO_MINIMUM_GENERATION));
 
         assertIteratorEquality(
                 Collections.emptyIterator(),
-                manager.getFileIterator(files.get(0).getMinimumGeneration(), false));
+                manager.getFileIterator(files.get(0).getMinimumGeneration()));
 
         validateRecycledFiles(List.of(), files, platformContext);
     }
@@ -1034,10 +1035,11 @@ class PreconsensusEventFileManagerTests {
                 sequenceNumber < firstSequenceNumber + fileCount;
                 sequenceNumber++) {
 
-            final boolean discontinuity = sequenceNumber == discontinuitySequenceNumber;
+            // TODO
+            //            final boolean discontinuity = sequenceNumber == discontinuitySequenceNumber;
 
             final PreconsensusEventFile file = PreconsensusEventFile.of(
-                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, fileDirectory, discontinuity);
+                    timestamp, sequenceNumber, minimumGeneration, maximumGeneration, 0, fileDirectory);
 
             minimumGeneration = random.nextLong(minimumGeneration + 1, maximumGeneration + 1);
             maximumGeneration = random.nextLong(maximumGeneration + 1, maximumGeneration + maxDelta);
@@ -1066,16 +1068,16 @@ class PreconsensusEventFileManagerTests {
                 new NodeId(0));
 
         final PreconsensusEventFileManager manager =
-                new PreconsensusEventFileManager(platformContext, Time.getCurrent(), recycleBin, new NodeId(0));
+                new PreconsensusEventFileManager(platformContext, Time.getCurrent(), recycleBin, new NodeId(0), 0);
 
         // Don't try to fix discontinuities, we should see all files starting with the one we request
-        assertIteratorEquality(files.iterator(), manager.getFileIterator(startGeneration, false));
+        assertIteratorEquality(files.iterator(), manager.getFileIterator(startGeneration));
 
         // Now, request that the discontinuity be fixed
-        assertIteratorEquality(filesBeforeDiscontinuity.iterator(), manager.getFileIterator(startGeneration, true));
+        assertIteratorEquality(filesBeforeDiscontinuity.iterator(), manager.getFileIterator(startGeneration));
 
         // Future requests for files should not return files after the discontinuity
-        assertIteratorEquality(filesBeforeDiscontinuity.iterator(), manager.getFileIterator(startGeneration, false));
+        assertIteratorEquality(filesBeforeDiscontinuity.iterator(), manager.getFileIterator(startGeneration));
 
         validateRecycledFiles(filesBeforeDiscontinuity, files, platformContext);
     }
@@ -1114,10 +1116,11 @@ class PreconsensusEventFileManagerTests {
                 sequenceNumber < firstSequenceNumber + fileCount;
                 sequenceNumber++) {
 
-            final boolean discontinuity = sequenceNumber == discontinuitySequenceNumber;
+            // TODO
+            //            final boolean discontinuity = sequenceNumber == discontinuitySequenceNumber;
 
             final PreconsensusEventFile file = PreconsensusEventFile.of(
-                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, fileDirectory, discontinuity);
+                    timestamp, sequenceNumber, minimumGeneration, maximumGeneration, 0, fileDirectory);
 
             minimumGeneration = random.nextLong(minimumGeneration + 1, maximumGeneration + 1);
             maximumGeneration = random.nextLong(maximumGeneration + 1, maximumGeneration + maxDelta);
@@ -1146,16 +1149,16 @@ class PreconsensusEventFileManagerTests {
                 new NodeId(0));
 
         final PreconsensusEventFileManager manager =
-                new PreconsensusEventFileManager(platformContext, Time.getCurrent(), recycleBin, new NodeId(0));
+                new PreconsensusEventFileManager(platformContext, Time.getCurrent(), recycleBin, new NodeId(0), 0);
 
         // Don't try to fix discontinuities, we should see all files starting with the one we request
-        assertIteratorEquality(postDiscontinuityFiles.iterator(), manager.getFileIterator(startGeneration, false));
+        assertIteratorEquality(postDiscontinuityFiles.iterator(), manager.getFileIterator(startGeneration));
 
         // Now, request that the discontinuity be fixed
-        assertIteratorEquality(Collections.emptyIterator(), manager.getFileIterator(startGeneration, true));
+        assertIteratorEquality(Collections.emptyIterator(), manager.getFileIterator(startGeneration));
 
         // Future requests for files should not return files after the discontinuity
-        assertIteratorEquality(Collections.emptyIterator(), manager.getFileIterator(startGeneration, false));
+        assertIteratorEquality(Collections.emptyIterator(), manager.getFileIterator(startGeneration));
 
         validateRecycledFiles(preDiscontinuityFiles, files, platformContext);
     }
@@ -1192,10 +1195,11 @@ class PreconsensusEventFileManagerTests {
                 sequenceNumber < firstSequenceNumber + fileCount;
                 sequenceNumber++) {
 
-            final boolean discontinuity = sequenceNumber == discontinuitySequenceNumber;
+            // TODO
+            //            final boolean discontinuity = sequenceNumber == discontinuitySequenceNumber;
 
             final PreconsensusEventFile file = PreconsensusEventFile.of(
-                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, fileDirectory, discontinuity);
+                    timestamp, sequenceNumber, minimumGeneration, maximumGeneration, 0, fileDirectory);
 
             minimumGeneration = random.nextLong(minimumGeneration + 1, maximumGeneration + 1);
             maximumGeneration = random.nextLong(maximumGeneration + 1, maximumGeneration + maxDelta);
@@ -1214,16 +1218,16 @@ class PreconsensusEventFileManagerTests {
         final PlatformContext platformContext = buildContext();
 
         final PreconsensusEventFileManager manager = new PreconsensusEventFileManager(
-                platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0));
+                platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0), 0);
 
         // Iterate without fixing discontinuities.
-        assertIteratorEquality(files.iterator(), manager.getFileIterator(startGeneration, false));
+        assertIteratorEquality(files.iterator(), manager.getFileIterator(startGeneration));
 
         // Requesting that discontinuities be fixed shouldn't change anything.
-        assertIteratorEquality(files.iterator(), manager.getFileIterator(startGeneration, true));
+        assertIteratorEquality(files.iterator(), manager.getFileIterator(startGeneration));
 
         // Iterating again without fixing discontinuities should still work.
-        assertIteratorEquality(files.iterator(), manager.getFileIterator(startGeneration, false));
+        assertIteratorEquality(files.iterator(), manager.getFileIterator(startGeneration));
     }
 
     @Test
@@ -1251,7 +1255,7 @@ class PreconsensusEventFileManagerTests {
                 sequenceNumber++) {
 
             final PreconsensusEventFile file = PreconsensusEventFile.of(
-                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, fileDirectory, false);
+                    timestamp, sequenceNumber, minimumGeneration, maximumGeneration, 0, fileDirectory);
 
             minimumGeneration = random.nextLong(minimumGeneration, maximumGeneration + 1);
             maximumGeneration =
@@ -1265,16 +1269,16 @@ class PreconsensusEventFileManagerTests {
         final PlatformContext platformContext = buildContext();
 
         final PreconsensusEventFileManager manager = new PreconsensusEventFileManager(
-                platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0));
+                platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0), 0);
 
         assertIteratorEquality(
-                files.iterator(), manager.getFileIterator(PreconsensusEventFileManager.NO_MINIMUM_GENERATION, false));
+                files.iterator(), manager.getFileIterator(PreconsensusEventFileManager.NO_MINIMUM_GENERATION));
 
         assertIteratorEquality(
-                files.iterator(), manager.getFileIterator(files.get(0).getMaximumGeneration(), false));
+                files.iterator(), manager.getFileIterator(files.get(0).getMaximumGeneration()));
 
         // attempt to start a non-existent generation
-        assertIteratorEquality(files.iterator(), manager.getFileIterator(nonExistentGeneration, false));
+        assertIteratorEquality(files.iterator(), manager.getFileIterator(nonExistentGeneration));
 
         PreconsensusEventFileManager.clear(platformContext, TestRecycleBin.getInstance(), new NodeId(0));
 
@@ -1282,10 +1286,10 @@ class PreconsensusEventFileManagerTests {
         // Any new manager created will not find any files.
 
         final PreconsensusEventFileManager manager2 = new PreconsensusEventFileManager(
-                platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0));
+                platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0), 0);
 
         assertIteratorEquality(
                 Collections.emptyIterator(),
-                manager2.getFileIterator(PreconsensusEventFileManager.NO_MINIMUM_GENERATION, false));
+                manager2.getFileIterator(PreconsensusEventFileManager.NO_MINIMUM_GENERATION));
     }
 }

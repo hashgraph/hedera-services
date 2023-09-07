@@ -191,12 +191,10 @@ public final class PreconsensusEventFile implements Comparable<PreconsensusEvent
             @NonNull final Path rootDirectory) {
 
         final Path parentDirectory = buildParentDirectory(rootDirectory, timestamp);
-        final String fileName =
-                buildFileName(timestamp, sequenceNumber, minimumGeneration, maximumGeneration, origin);
+        final String fileName = buildFileName(timestamp, sequenceNumber, minimumGeneration, maximumGeneration, origin);
         final Path path = parentDirectory.resolve(fileName);
 
-        return new PreconsensusEventFile(
-                timestamp, sequenceNumber, minimumGeneration, maximumGeneration, origin, path);
+        return new PreconsensusEventFile(timestamp, sequenceNumber, minimumGeneration, maximumGeneration, origin, path);
     }
 
     /**
@@ -216,8 +214,8 @@ public final class PreconsensusEventFile implements Comparable<PreconsensusEvent
 
         final String fileName = filePath.getFileName().toString();
 
-        final String[] elements =
-                fileName.substring(0, fileName.length() - EVENT_FILE_EXTENSION.length()).split(EVENT_FILE_SEPARATOR);
+        final String[] elements = fileName.substring(0, fileName.length() - EVENT_FILE_EXTENSION.length())
+                .split(EVENT_FILE_SEPARATOR);
 
         if (elements.length != 5) {
             throw new IOException("Unable to parse fields from " + filePath);
@@ -419,11 +417,19 @@ public final class PreconsensusEventFile implements Comparable<PreconsensusEvent
             final long origin) {
 
         return new StringBuilder(STRING_BUILDER_INITIAL_CAPACITY)
-                .append(sanitizeTimestamp(timestamp)).append(EVENT_FILE_SEPARATOR)
-                .append(SEQUENCE_NUMBER_PREFIX).append(sequenceNumber).append(EVENT_FILE_SEPARATOR)
-                .append(MINIMUM_GENERATION_PREFIX).append(minimumGeneration).append(EVENT_FILE_SEPARATOR)
-                .append(MAXIMUM_GENERATION_PREFIX).append(maximumGeneration).append(EVENT_FILE_SEPARATOR)
-                .append(ORIGIN_PREFIX).append(origin)
+                .append(sanitizeTimestamp(timestamp))
+                .append(EVENT_FILE_SEPARATOR)
+                .append(SEQUENCE_NUMBER_PREFIX)
+                .append(sequenceNumber)
+                .append(EVENT_FILE_SEPARATOR)
+                .append(MINIMUM_GENERATION_PREFIX)
+                .append(minimumGeneration)
+                .append(EVENT_FILE_SEPARATOR)
+                .append(MAXIMUM_GENERATION_PREFIX)
+                .append(maximumGeneration)
+                .append(EVENT_FILE_SEPARATOR)
+                .append(ORIGIN_PREFIX)
+                .append(origin)
                 .append(EVENT_FILE_EXTENSION)
                 .toString();
     }
