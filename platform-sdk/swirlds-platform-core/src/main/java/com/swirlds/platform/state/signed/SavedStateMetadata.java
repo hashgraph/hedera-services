@@ -348,8 +348,8 @@ public record SavedStateMetadata(
      * @return the parsed long, or null if the field is not present or the value is not a valid long
      */
     private static long parsePrimitiveLong(
-            @NonNull final Map<SavedStateMetadataField, String> data,
-            @NonNull final SavedStateMetadataField field) throws IOException {
+            @NonNull final Map<SavedStateMetadataField, String> data, @NonNull final SavedStateMetadataField field)
+            throws IOException {
 
         Objects.requireNonNull(field);
 
@@ -396,8 +396,8 @@ public record SavedStateMetadata(
     @SuppressWarnings("SameParameterValue")
     @NonNull
     private static String parseNonNullString(
-            @NonNull final Map<SavedStateMetadataField, String> data,
-            @NonNull final SavedStateMetadataField field) throws IOException {
+            @NonNull final Map<SavedStateMetadataField, String> data, @NonNull final SavedStateMetadataField field)
+            throws IOException {
 
         Objects.requireNonNull(field);
 
@@ -445,8 +445,8 @@ public record SavedStateMetadata(
      */
     @NonNull
     private static Instant parseNonNullInstant(
-            @NonNull final Map<SavedStateMetadataField, String> data,
-            @NonNull final SavedStateMetadataField field) throws IOException {
+            @NonNull final Map<SavedStateMetadataField, String> data, @NonNull final SavedStateMetadataField field)
+            throws IOException {
 
         Objects.requireNonNull(field);
 
