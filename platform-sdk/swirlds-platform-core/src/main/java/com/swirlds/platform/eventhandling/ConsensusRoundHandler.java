@@ -306,7 +306,8 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
      */
     @Override
     public void consensusRound(final ConsensusRound consensusRound) {
-        if (consensusRound == null) {
+        if (consensusRound == null || consensusRound.getConsensusEvents().isEmpty()) {
+            // we ignore rounds with no events for now
             return;
         }
 
@@ -332,7 +333,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
      *
      * @param consensusRound the consensus round to add
      */
-    public void addConsensusRound(final ConsensusRound consensusRound) {
+    private void addConsensusRound(final ConsensusRound consensusRound) {
         try {
             // adds this consensus event to eventStreamHelper,
             // which will put it into a queue for calculating runningHash, and a queue for event streaming when enabled
