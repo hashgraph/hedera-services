@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_R
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.node.app.service.contract.impl.exec.processors.ProcessorModule.INITIAL_CONTRACT_NONCE;
 import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_FUNGIBLE_RELATION;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_ACCOUNT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CANONICAL_ALIAS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
@@ -44,6 +45,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
@@ -65,6 +67,9 @@ class HandleHederaNativeOperationsTest {
 
     @Mock
     private CryptoCreateRecordBuilder cryptoCreateRecordBuilder;
+
+    @Mock
+    private ReadableTokenRelationStore relationStore;
 
     @Mock
     private ReadableAccountStore accountStore;
@@ -173,5 +178,14 @@ class HandleHederaNativeOperationsTest {
         subject.setNonce(123L, 456L);
 
         verify(tokenServiceApi).setNonce(AccountID.newBuilder().accountNum(123L).build(), 456L);
+    }
+
+    @Test
+    void getRelationshipUsesStore() {
+        given(context.readableStore(ReadableTokenRelationStore.class)).willReturn(relationStore);
+        given(relationStore.get(A_NEW_ACCOUNT_ID, FUNGIBLE_TOKEN_ID)).willReturn(A_FUNGIBLE_RELATION);
+        assertSame(
+                A_FUNGIBLE_RELATION,
+                subject.getTokenRelation(A_NEW_ACCOUNT_ID.accountNumOrThrow(), FUNGIBLE_TOKEN_ID.tokenNum()));
     }
 }
