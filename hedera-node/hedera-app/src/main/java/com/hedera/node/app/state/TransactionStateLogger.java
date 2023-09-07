@@ -1,9 +1,6 @@
 package com.hedera.node.app.state;
 
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.base.*;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
@@ -30,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -40,14 +38,44 @@ import java.util.stream.StreamSupport;
 public final class TransactionStateLogger {
     private static final Logger logger = LogManager.getLogger(TransactionStateLogger.class);
 
+    /**
+     * Log the start of a round if it contains any non-system transactions.
+     *
+     * @param round The round to log
+     */
     public static void logStartRound(final Round round) {
-        logger.info("Starting round {} of {} events at {}", round.getRoundNum(), round.getEventCount(),
-                round.getConsensusTimestamp());
+        if (logger.isInfoEnabled()) {
+            AtomicBoolean isAllSystem = new AtomicBoolean(true);
+            round.forEachEventTransaction((event, tx) -> {
+                if (!tx.isSystem()) {
+                    isAllSystem.set(false);
+                }
+            });
+            if (!isAllSystem.get()) {
+                logger.info("Starting round {} of {} events at {}", round.getRoundNum(), round.getEventCount(),
+                        round.getConsensusTimestamp());
+            }
+        }
     }
 
+    /**
+     * Log the start of a event if it contains any non-system transactions.
+     *
+     * @param event The event to log
+     */
     public static void logStartEvent(final ConsensusEvent event, final NodeInfo creator) {
-        logger.info("Starting event {} at {} from node {}", event.getConsensusOrder(), event.getConsensusTimestamp(),
-                creator.nodeId());
+        if (logger.isInfoEnabled()) {
+            AtomicBoolean isAllSystem = new AtomicBoolean(true);
+            event.forEachTransaction(tx -> {
+                if (!tx.isSystem()) {
+                    isAllSystem.set(false);
+                }
+            });
+            if (!isAllSystem.get()) {
+                logger.info("Starting event {} at {} from node {}", event.getConsensusOrder(), event.getConsensusTimestamp(),
+                        creator.nodeId());
+            }
+        }
     }
 
     public static void logStartUserTransaction(@NonNull final ConsensusTransaction transaction,
@@ -93,59 +121,64 @@ public final class TransactionStateLogger {
     // =========== Singleton Methods ==================================================================
 
     public static <T> void logSingletonRead(@NonNull final String label, @Nullable final ValueLeaf<T> value) {
-        logger.debug("READ singleton with label {} value {}", label,
+        logger.debug("READ singleton {} value {}", label,
                 value == null ? "null" : value.getValue());
     }
     public static void logSingletonWrite(@NonNull final String label, @Nullable final Object value) {
-        logger.info("WRITTEN singleton with label {} value {}", label,
+        logger.info("WRITTEN singleton {} value {}", label,
                 value == null ? "null" : value.toString());
     }
 
     // =========== Queue Methods ======================================================================
 
     public static void logQueueAdd(@NonNull final String label, @Nullable final Object value) {
-        logger.info("ADD to queue with label {} value {}", label,
+        logger.info("ADD to queue {} value {}", label,
                 value == null ? "null" : value.toString());
     }
 
     public static void logQueueRemove(@NonNull final String label, @Nullable final Object value) {
-        logger.info("REMOVE from queue with label {} value {}", label,
+        logger.info("REMOVE from queue {} value {}", label,
                 value == null ? "null" : value.toString());
     }
 
     public static void logQueuePeek(@NonNull final String label, @Nullable final Object value) {
-        logger.debug("PEEK on queue with label {} value {}", label,
+        logger.debug("PEEK on queue {} value {}", label,
                 value == null ? "null" : value.toString());
     }
 
     public static <K> void logQueueIterate(@NonNull final String label, @NonNull final FCQueue<ValueLeaf<K>> queue) {
+
         if (logger.isDebugEnabled()) {
-            logger.debug("ITERATE queue with label {} values:\n{}", label,
-                    queue.stream()
-                        .map(leaf -> leaf == null ? "null" : leaf.toString())
-                        .collect(Collectors.joining(",\n"))
-            );
+            if (queue.size() == 0) {
+                logger.debug("ITERATE queue {} size 0 values:EMPTY", label);
+                return;
+            } else {
+                logger.debug("ITERATE queue {} size {} values:\n{}", label, queue.size(),
+                        queue.stream()
+                                .map(leaf -> leaf == null ? "null" : leaf.toString())
+                                .collect(Collectors.joining(",\n"))
+                );
+            }
         }
     }
 
     // =========== Map Methods =========================================================================
 
-
     public static <K, V> void logMapPut(@NonNull final String label, @NonNull final K key,
                                         @Nullable final V value) {
-        logger.info("PUT into map {} key {} value {}", label, key,
+        logger.info("PUT into map {} key {} value {}", label, formatKey(key),
                 value == null ? "null" : value.toString());
     }
 
     public static <K, V> void logMapRemove(@NonNull final String label, @NonNull final K key,
                                     @Nullable final InMemoryValue<K, V> value) {
-        logger.info("REMOVE from map {} key {} removed value {}", label, key,
+        logger.info("REMOVE from map {} key {} removed value {}", label, formatKey(key),
                 value == null ? "null" : value.toString());
     }
 
     public static <K, V> void logMapRemove(@NonNull final String label, @NonNull final K key,
                                     @Nullable final OnDiskValue<V> value) {
-        logger.info("REMOVE from map {} key {} removed value {}", label, key,
+        logger.info("REMOVE from map {} key {} removed value {}", label, formatKey(key),
                 value == null ? "null" : value.toString());
     }
 
@@ -155,23 +188,30 @@ public final class TransactionStateLogger {
 
     public static <K, V> void logMapGet(@NonNull final String label, @NonNull final K key,
                                         @Nullable final V value) {
-        logger.debug("GET on map {} key {} value {}", label,key,
+        logger.debug("GET on map {} key {} value {}", label, formatKey(key),
                 value == null ? "null" : value.toString());
     }
 
     public static <K, V> void logMapGetForModify(@NonNull final String label, @NonNull final K key,
                                         @Nullable final V value) {
-        logger.debug("GET_FOR_MODIFY on map {} key {} value {}", label,key,
+        logger.debug("GET_FOR_MODIFY on map {} key {} value {}", label, formatKey(key),
                 value == null ? "null" : value.toString());
     }
 
     public static <K> void logMapIterate(@NonNull final String label, @NonNull final Set<InMemoryKey<K>> keySet) {
         if (logger.isDebugEnabled()) {
-            logger.debug("ITERATE map {} keys:\n{}", label,
-                    keySet.stream()
-                            .map(key -> key == null ? "null" : key.key().toString())
-                            .collect(Collectors.joining(",\n"))
-            );
+            final long size = keySet.size();
+            if (size == 0) {
+                logger.debug("ITERATE map {} size 0 keys:EMPTY", label);
+                return;
+            } else {
+                logger.debug("ITERATE map {} size {} keys:\n{}", label, size,
+                        keySet.stream()
+                                .map(InMemoryKey::key)
+                                .map(TransactionStateLogger::formatKey)
+                                .collect(Collectors.joining(",\n"))
+                );
+            }
         }
     }
 
@@ -179,20 +219,42 @@ public final class TransactionStateLogger {
         if (logger.isDebugEnabled()) {
             final var spliterator = Spliterators.spliterator(virtualMap.treeIterator(), virtualMap.size(),
                     Spliterator.SIZED & Spliterator.ORDERED);
-            logger.debug("ITERATE map {} keys:\n{}", label,
-                    StreamSupport.stream(spliterator, false)
-                            .map(merkleNode -> {
-                                if (merkleNode instanceof VirtualLeafNode<?, ?> leaf) {
-                                    final var k = leaf.getKey();
-                                    if (k instanceof OnDiskKey<?> onDiskKey) {
-                                        return onDiskKey.getKey().toString();
+            final long size = virtualMap.size();
+            if (size == 0) {
+                logger.debug("ITERATE map {} size 0 keys:EMPTY", label);
+                return;
+            } else {
+                logger.debug("ITERATE map {} size {} keys:\n{}", label, size,
+                        StreamSupport.stream(spliterator, false)
+                                .map(merkleNode -> {
+                                    if (merkleNode instanceof VirtualLeafNode<?, ?> leaf) {
+                                        final var k = leaf.getKey();
+                                        if (k instanceof OnDiskKey<?> onDiskKey) {
+                                            return onDiskKey.getKey().toString();
+                                        }
                                     }
-                                }
-                                return "Unknown_Type";
-                            })
-                            .collect(Collectors.joining(",\n"))
-            );
+                                    return "Unknown_Type";
+                                })
+                                .collect(Collectors.joining(",\n"))
+                );
+            }
         }
     }
 
+    public static <K> String formatKey(@Nullable final K key) {
+        if (key == null) {
+            return "null";
+        } else if (key instanceof AccountID accountID) {
+            return accountID.shardNum() + "." + accountID.realmNum() + '.' + accountID.accountNum();
+        } else if (key instanceof FileID fileID) {
+            return fileID.shardNum() + "." + fileID.realmNum() + '.' + fileID.fileNum();
+        } else if (key instanceof TokenID tokenID) {
+            return tokenID.shardNum() + "." + tokenID.realmNum() + '.' + tokenID.tokenNum();
+        } else if (key instanceof TopicID topicID) {
+            return topicID.shardNum() + "." + topicID.realmNum() + '.' + topicID.topicNum();
+        } else if (key instanceof ScheduleID scheduleID) {
+            return scheduleID.shardNum() + "." + scheduleID.realmNum() + '.' + scheduleID.scheduleNum();
+        }
+        return key.toString();
+    }
 }
