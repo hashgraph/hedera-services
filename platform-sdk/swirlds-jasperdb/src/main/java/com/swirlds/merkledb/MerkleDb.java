@@ -516,7 +516,11 @@ public final class MerkleDb {
         final String tableName = dataSource.getTableName();
         final boolean isPrimary = primaryTables.contains(dataSource.getTableId());
         if (!isPrimary) {
-            throw new IllegalArgumentException("Cannot snapshot a secondary table, " + tableName);
+            logger.info(
+                    MERKLE_DB.getMarker(),
+                    "A snapshot is taken for a secondary table, it may happen"
+                            + " during reconnect or ISS reporting. Table name={}",
+                    tableName);
         }
         final MerkleDb targetDb = getInstance(destination);
         if (targetDb.tableExists(tableName)) {
