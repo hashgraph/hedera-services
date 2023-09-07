@@ -333,7 +333,7 @@ public class HandleWorkflow {
                     recordBuilder.status(SUCCESS);
 
                     // Notify responsible facility if system-file was uploaded
-                    systemFileUpdateFacility.handleTxBody(stack, txBody);
+                    systemFileUpdateFacility.handleTxBody(stack, txBody, recordBuilder);
 
                 } catch (final HandleException e) {
                     rollback(e.getStatus(), stack, recordListBuilder);
@@ -352,11 +352,6 @@ public class HandleWorkflow {
 
         // Commit all state changes
         stack.commitFullStack();
-
-        // Notify responsible facility if system-file was uploaded
-        if (txBody != null) {
-            systemFileUpdateFacility.handleTxBody(state, txBody, recordBuilder);
-        }
 
         // store all records at once
         final var recordListResult = recordListBuilder.build();

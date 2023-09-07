@@ -20,19 +20,16 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.hapi.utils.sysfiles.validation.ExpectedCustomThrottles;
-import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.ThrottleManager;
 import com.hedera.node.app.util.FileUtilities;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.LedgerConfig;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -186,14 +183,5 @@ public class SystemFileUpdateFacility {
                 seenSoFar.addAll(functions);
             }
         }
-    }
-
-    @NonNull
-    @VisibleForTesting
-    static Bytes getFileContent(@NonNull final HederaState state, @NonNull final FileID fileID) {
-        final var states = state.createReadableStates(FileService.NAME);
-        final var filesMap = states.<FileID, File>get(BLOBS_KEY);
-        final var file = filesMap.get(fileID);
-        return file != null ? file.contents() : Bytes.EMPTY;
     }
 }
