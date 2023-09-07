@@ -158,7 +158,7 @@ public class ScheduleSignHandler extends AbstractScheduleHandler implements Tran
                 throw new HandleException(validationResult);
             }
         } else {
-            throw new HandleException(ResponseCodeEnum.INVALID_SCHEDULE_ID);
+            throw new HandleException(ResponseCodeEnum.INVALID_TRANSACTION);
         }
     }
 
