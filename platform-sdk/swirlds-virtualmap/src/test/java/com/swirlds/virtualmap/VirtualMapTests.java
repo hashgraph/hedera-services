@@ -914,6 +914,8 @@ class VirtualMapTests extends VirtualTestBase {
         if (!(metric instanceof Counter counterMetric)) {
             throw new AssertionError("flushCount metric is not a counter");
         }
+        // There is a potential race condition here, as we release `VirtualRootNode.flushLatch`
+        // before we update the statiscs (see https://github.com/hashgraph/hedera-services/issues/8439)
         assertEventuallyEquals(
                 flushCount,
                 () -> counterMetric.get(),
