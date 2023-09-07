@@ -24,6 +24,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.ApiPermissionConfig;
@@ -66,11 +67,18 @@ public class AuthorizerImpl implements Authorizer {
     }
 
     @Override
+    public boolean isTreasury(@NonNull final AccountID accountID) {
+        if (!accountID.hasAccountNum()) return false;
+        long num = accountID.accountNumOrThrow();
+        return num == accountsConfig.treasury();
+    }
+
+    @Override
     public SystemPrivilege hasPrivilegedAuthorization(
-            @NonNull final AccountID accountID,
+            @NonNull final AccountID payerId,
             @NonNull final HederaFunctionality functionality,
             @NonNull final TransactionBody txBody) {
-        return privilegedTransactionChecker.hasPrivileges(accountID, functionality, txBody);
+        return privilegedTransactionChecker.hasPrivileges(payerId, functionality, txBody);
     }
 
     private ResponseCodeEnum permissibilityOf(
