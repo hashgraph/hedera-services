@@ -91,4 +91,5 @@ module com.hedera.node.app {
     exports com.hedera.node.app.version to
             com.swirlds.common,
             com.swirlds.platform;
+    exports com.hedera.node.app.validation;
 }

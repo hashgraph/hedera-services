@@ -14,15 +14,27 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.solvency;
+package com.swirlds.common.scratchpad;
 
-import dagger.Binds;
-import dagger.Module;
-import javax.inject.Singleton;
+/**
+ * A scratchpad type for testing.
+ */
+public enum TestScratchpadType implements ScratchpadType {
+    FOO(0),
+    BAR(1),
+    BAZ(2);
 
-@Module
-public interface SolvencyInjectionModule {
-    @Binds
-    @Singleton
-    SolvencyPreCheck bindSolvencyPreCheck(SolvencyPreCheckImpl solvencyPreCheck);
+    private final int fieldId;
+
+    TestScratchpadType(final int fieldId) {
+        this.fieldId = fieldId;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int getFieldId() {
+        return fieldId;
+    }
 }

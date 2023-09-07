@@ -298,20 +298,12 @@ jobs:
           echo "key-file=${GCP_KEY_FILE}" >> "${GITHUB_OUTPUT}"
           rclone config create gcs "google cloud storage" project_number "${{ secrets.gcp-project-number }}" service_account_file "${GCP_KEY_FILE}"
 
-      - name: Platform Gradle Assemble
-        id: platform-gradle-build
+      - name: Gradle Assemble
+        id: gradle-build
         uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
         with:
           gradle-version: ${{ inputs.gradle-version }}
-          arguments: -p platform-sdk assemble --scan
-
-      - name: Hedera Node Gradle Assemble
-        id: hedera-gradle-build
-        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
-        if: ${{ inputs.hedera-tests-enabled }}
-        with:
-          gradle-version: ${{ inputs.gradle-version }}
-          arguments: -p platform-sdk assemble --scan
+          arguments: assemble --scan
 
       - name: Regression Gradle Assemble
         id: regression-gradle-build
@@ -319,7 +311,7 @@ jobs:
         with:
           build-root-directory: platform-sdk/regression
           gradle-version: ${{ inputs.gradle-version }}
-          arguments: assemble --scan --parallel
+          arguments: assemble --scan
 
       - name: Compute Actual Branch Name
         id: branch

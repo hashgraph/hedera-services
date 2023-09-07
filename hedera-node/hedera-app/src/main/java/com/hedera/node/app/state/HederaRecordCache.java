@@ -57,4 +57,29 @@ public interface HederaRecordCache extends RecordCache {
             @NonNull AccountID payerAccountId,
             @NonNull TransactionRecord transactionRecord,
             @NonNull Instant consensusTimestamp);
+
+    /**
+     * Checks if the given transaction ID has been seen by this node. If it has not, the result is
+     * {@link DuplicateCheckResult#NO_DUPLICATE}. If it has, then the result is {@link DuplicateCheckResult#SAME_NODE} if the
+     * transaction was submitted by the given node before, or {@link DuplicateCheckResult#OTHER_NODE} if the transaction was
+     * submitted by different node(s).
+     *
+     * @param transactionID The {@link TransactionID} to check
+     * @param nodeId The node ID of the node that submitted the current transaction
+     * @return The result of the check
+     */
+    @NonNull
+    DuplicateCheckResult hasDuplicate(@NonNull TransactionID transactionID, long nodeId);
+
+    /** The possible results of a duplicate check */
+    enum DuplicateCheckResult {
+        /** No duplicate found **/
+        NO_DUPLICATE,
+
+        /** A duplicate from the same node was found **/
+        SAME_NODE,
+
+        /** A duplicate from a different node was found **/
+        OTHER_NODE
+    }
 }

@@ -16,10 +16,8 @@
 
 package com.hedera.node.app.workflows.handle;
 
-import static com.hedera.node.app.service.file.impl.FileServiceImpl.BLOBS_KEY;
 import static java.util.Objects.requireNonNull;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.file.File;
@@ -30,6 +28,7 @@ import com.hedera.node.app.hapi.utils.sysfiles.validation.ExpectedCustomThrottle
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.ThrottleManager;
+import com.hedera.node.app.util.FileUtilities;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.LedgerConfig;
@@ -121,13 +120,13 @@ public class SystemFileUpdateFacility {
             } else if (fileNum == config.feeSchedules()) {
                 logger.error("Update of fee schedules not implemented");
             } else if (fileNum == config.exchangeRates()) {
-                exchangeRateManager.update(getFileContent(state, fileID));
+                exchangeRateManager.update(FileUtilities.getFileContent(state, fileID));
             } else if (fileNum == config.networkProperties()) {
-                configProvider.update(getFileContent(state, fileID));
+                configProvider.update(FileUtilities.getFileContent(state, fileID));
             } else if (fileNum == config.hapiPermissions()) {
                 logger.error("Update of HAPI permissions not implemented");
             } else if (fileNum == config.throttleDefinitions()) {
-                throttleManager.update(getFileContent(state, fileID));
+                throttleManager.update(FileUtilities.getFileContent(state, fileID));
                 throttleValidations(recordBuilder);
             } else if (fileNum == config.upgradeFileNumber()) {
                 logger.error("Update of file number not implemented");

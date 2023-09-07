@@ -74,6 +74,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
@@ -326,6 +327,7 @@ public class ContractCreateSuite extends HapiSuite {
                                 .hasKnownStatus(SUCCESS));
     }
 
+    @HapiTest
     private HapiSpec rejectsInsufficientGas() {
         return defaultHapiSpec("RejectsInsufficientGas")
                 .given(uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
