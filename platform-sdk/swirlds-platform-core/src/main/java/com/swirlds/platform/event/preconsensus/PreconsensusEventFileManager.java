@@ -248,6 +248,11 @@ public class PreconsensusEventFileManager {
             }
         }
 
+        if (firstIndexToDelete == files.size()) {
+            // No discontinuities were detected
+            return;
+        }
+
         final PreconsensusEventFile lastUndeletedFile =
                 firstIndexToDelete > 0 ? files.get(firstIndexToDelete - 1) : null;
 
