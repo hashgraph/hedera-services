@@ -292,7 +292,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
                 .setBordersEnabled(false)
                 .addRow("Round:", data.getRound())
                 .addRow("Timestamp:", data.getConsensusTimestamp())
-                .addRow("Event count:", data.getNumEventsCons())
+                .addRow("Event count:", data.getSnapshot().nextConsensusNumber())
                 .addRow("Running event hash:", hashEventsCons)
                 .addRow("Running event mnemonic:", hashEventsCons == null ? "null" : hashEventsCons.toMnemonic())
                 .addRow("Rounds non-ancient:", data.getRoundsNonAncient())
