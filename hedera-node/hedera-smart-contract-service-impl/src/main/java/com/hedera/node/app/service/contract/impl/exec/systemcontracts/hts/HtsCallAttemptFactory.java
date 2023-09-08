@@ -29,9 +29,9 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
  * Factory to create a new {@link HtsCallAttempt} for a given input and message frame.
  */
 @Singleton
-public class AttemptFactory {
+public class HtsCallAttemptFactory {
     @Inject
-    public AttemptFactory() {
+    public HtsCallAttemptFactory() {
         // Dagger2
     }
 
@@ -47,5 +47,21 @@ public class AttemptFactory {
         requireNonNull(frame);
         final var updater = proxyUpdaterFor(frame);
         return new HtsCallAttempt(input, updater.enhancement());
+    }
+
+    /**
+     * Creates a new {@link HtsCall} for the given input and message frame.
+     *
+     * @param input the input
+     * @param frame the message frame
+     * @return the new attempt
+     * @throws RuntimeException if the call cannot be created
+     */
+    public @NonNull HtsCall createCallFrom(@NonNull final Bytes input, @NonNull final MessageFrame frame) {
+        requireNonNull(input);
+        requireNonNull(frame);
+        final var updater = proxyUpdaterFor(frame);
+        final var attempt = new HtsCallAttempt(input, updater.enhancement());
+        return requireNonNull(attempt.asCallFrom(frame.getSenderAddress()));
     }
 }
