@@ -18,12 +18,10 @@ plugins { id("com.hedera.hashgraph.conventions") }
 
 description = "Hedera Services API Fees"
 
-dependencies {
-    javaModuleDependencies {
-        annotationProcessor(gav("dagger.compiler"))
+mainModuleInfo { annotationProcessor("dagger.compiler") }
 
-        testImplementation(gav("org.junit.jupiter.api"))
-        testImplementation(gav("org.mockito"))
-        testImplementation(gav("org.mockito.junit.jupiter"))
-    }
+testModuleInfo {
+    requires("org.junit.jupiter.api")
+    requires("org.mockito")
+    requires("org.mockito.junit.jupiter")
 }

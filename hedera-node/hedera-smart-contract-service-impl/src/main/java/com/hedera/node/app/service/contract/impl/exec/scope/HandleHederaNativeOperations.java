@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.processors.ProcessorModule.INITIAL_CONTRACT_NONCE;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthHollowAccountCreation;
 import static java.util.Objects.requireNonNull;
@@ -26,9 +27,11 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
@@ -73,6 +76,17 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
      * {@inheritDoc}
      */
     @Override
+    public @Nullable TokenRelation getTokenRelation(final long accountNumber, final long tokenNumber) {
+        final var relationStore = context.readableStore(ReadableTokenRelationStore.class);
+        return relationStore.get(
+                AccountID.newBuilder().accountNum(accountNumber).build(),
+                TokenID.newBuilder().tokenNum(tokenNumber).build());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public long resolveAlias(@NonNull final Bytes evmAddress) {
         final var accountStore = context.readableStore(ReadableAccountStore.class);
         final var account = accountStore.getAccountIDByAlias(evmAddress);
@@ -97,9 +111,11 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
         final var synthTxn = TransactionBody.newBuilder()
                 .cryptoCreateAccount(synthHollowAccountCreation(evmAddress))
                 .build();
-        final var childRecordBuilder = context.dispatchChildTransaction(synthTxn, CryptoCreateRecordBuilder.class);
+        // TODO - implement proper signature VerificationAssistant
+        final var childRecordBuilder =
+                context.dispatchChildTransaction(synthTxn, CryptoCreateRecordBuilder.class, key -> false);
         // TODO - switch OK to SUCCESS once some status-setting responsibilities are clarified
-        if (childRecordBuilder.status() != OK) {
+        if (childRecordBuilder.status() != OK && childRecordBuilder.status() != SUCCESS) {
             throw new AssertionError("Not implemented");
         }
         return OK;

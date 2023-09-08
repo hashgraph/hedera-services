@@ -54,6 +54,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
@@ -240,6 +241,7 @@ public class TokenCreateSpecs extends HapiSuite {
     /**
      * Validates the default values for a {@code TokenCreate}'s token type (fungible) and supply type (infinite).
      */
+    @HapiTest
     private HapiSpec createsFungibleInfiniteByDefault() {
         return defaultHapiSpec("CreatesFungibleInfiniteByDefault")
                 .given()
@@ -249,6 +251,7 @@ public class TokenCreateSpecs extends HapiSuite {
                         .hasSupplyType(TokenSupplyType.INFINITE));
     }
 
+    @HapiTest
     private HapiSpec worksAsExpectedWithDefaultTokenId() {
         return defaultHapiSpec("WorksAsExpectedWithDefaultTokenId")
                 .given()
@@ -295,6 +298,7 @@ public class TokenCreateSpecs extends HapiSuite {
                 .then(getTokenInfo(PRIMARY).logged());
     }
 
+    @HapiTest
     public HapiSpec creationYieldsExpectedToken() {
         return defaultHapiSpec("CreationYieldsExpectedToken")
                 .given(cryptoCreate(TOKEN_TREASURY).balance(0L), newKeyNamed("freeze"))
@@ -307,6 +311,7 @@ public class TokenCreateSpecs extends HapiSuite {
                 .then(getTokenInfo(PRIMARY).logged().hasRegisteredId(PRIMARY));
     }
 
+    @HapiTest
     public HapiSpec creationSetsExpectedName() {
         String saltedName = salted(PRIMARY);
         return defaultHapiSpec("CreationSetsExpectedName")
@@ -510,6 +515,7 @@ public class TokenCreateSpecs extends HapiSuite {
                                         .freeze(TokenFreezeStatus.FreezeNotApplicable)));
     }
 
+    @HapiTest
     public HapiSpec creationSetsCorrectExpiry() {
         return defaultHapiSpec("CreationSetsCorrectExpiry")
                 .given(
@@ -540,6 +546,7 @@ public class TokenCreateSpecs extends HapiSuite {
                 .then(tokenCreate(PRIMARY).expiry(1000).hasPrecheck(INVALID_EXPIRATION_TIME));
     }
 
+    @HapiTest
     public HapiSpec creationValidatesFreezeDefaultWithNoFreezeKey() {
         return defaultHapiSpec("CreationValidatesFreezeDefaultWithNoFreezeKey")
                 .given()
@@ -554,6 +561,7 @@ public class TokenCreateSpecs extends HapiSuite {
                 .then(tokenCreate(PRIMARY).entityMemo("N\u0000!!!").hasPrecheck(INVALID_ZERO_BYTE_IN_STRING));
     }
 
+    @HapiTest
     public HapiSpec creationValidatesNonFungiblePrechecks() {
         return defaultHapiSpec("CreationValidatesNonFungiblePrechecks")
                 .given()
@@ -576,6 +584,7 @@ public class TokenCreateSpecs extends HapiSuite {
                                 .hasPrecheck(INVALID_TOKEN_DECIMALS));
     }
 
+    @HapiTest
     public HapiSpec creationValidatesMaxSupply() {
         return defaultHapiSpec("CreationValidatesMaxSupply")
                 .given()
@@ -872,6 +881,7 @@ public class TokenCreateSpecs extends HapiSuite {
         return IntStream.range(0, n).mapToObj(ignore -> "€").collect(Collectors.joining());
     }
 
+    @HapiTest
     public HapiSpec creationRequiresAppropriateSigs() {
         return defaultHapiSpec("CreationRequiresAppropriateSigs")
                 .given(
@@ -895,6 +905,7 @@ public class TokenCreateSpecs extends HapiSuite {
                                 .hasKnownStatus(INVALID_SIGNATURE));
     }
 
+    @HapiTest
     public HapiSpec creationRequiresAppropriateSigsHappyPath() {
         return defaultHapiSpec("CreationRequiresAppropriateSigsHappyPath")
                 .given(cryptoCreate(PAYER), cryptoCreate(TOKEN_TREASURY).balance(0L), newKeyNamed(ADMIN_KEY))
@@ -916,6 +927,7 @@ public class TokenCreateSpecs extends HapiSuite {
                         .hasKnownStatus(INVALID_TREASURY_ACCOUNT_FOR_TOKEN));
     }
 
+    @HapiTest
     public HapiSpec initialSupplyMustBeSane() {
         return defaultHapiSpec("InitialSupplyMustBeSane")
                 .given()
@@ -929,6 +941,7 @@ public class TokenCreateSpecs extends HapiSuite {
                                 .hasPrecheck(INVALID_TOKEN_INITIAL_SUPPLY));
     }
 
+    @HapiTest
     public HapiSpec treasuryHasCorrectBalance() {
         String token = salted("myToken");
 

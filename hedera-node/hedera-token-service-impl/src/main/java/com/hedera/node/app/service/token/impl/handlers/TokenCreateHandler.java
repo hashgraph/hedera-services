@@ -20,12 +20,12 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOU
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
+import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Token;
@@ -141,6 +141,12 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
             final var treasuryRel = tokenRelationStore.get(op.treasuryOrThrow(), newTokenId);
             // This keeps modified token with minted balance into modifications in token store
             mintFungible(newToken, treasuryRel, op.initialSupply(), true, accountStore, tokenStore, tokenRelationStore);
+
+            final var treasuryAccount = accountStore.get(treasuryRel.accountId());
+            final var copyTreasuryAccount = treasuryAccount.copyBuilder();
+            // We also need to update the Titles count on the copy
+            copyTreasuryAccount.numberTreasuryTitles(treasuryAccount.numberTreasuryTitles() + 1);
+            accountStore.put(copyTreasuryAccount.build());
         }
         // Update record with newly created token id
         final var recordBuilder = context.recordBuilder(TokenCreateRecordBuilder.class);
@@ -225,13 +231,19 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
      * @param op token creation transaction body
      * @return given expiry metadata
      */
-    private ExpiryMeta getExpiryMeta(final long consensusTime, @NonNull final TokenCreateTransactionBody op) {
-        final var impliedExpiry =
-                consensusTime + op.autoRenewPeriodOrElse(Duration.DEFAULT).seconds();
+    private ExpiryMeta getExpiryMeta(
+            final long consensusTime,
+            @NonNull final TokenCreateTransactionBody op,
+            @NonNull final HandleContext context) {
+        final var maxEntityLifetime =
+                context.configuration().getConfigData(EntitiesConfig.class).maxLifetime();
+        final var impliedExpiry = op.hasAutoRenewPeriod()
+                ? consensusTime + op.autoRenewPeriod().seconds()
+                : consensusTime + maxEntityLifetime;
 
         return new ExpiryMeta(
                 impliedExpiry,
-                op.autoRenewPeriodOrElse(Duration.DEFAULT).seconds(),
+                op.hasAutoRenewPeriod() ? op.autoRenewPeriod().seconds() : NA,
                 // Shard and realm will be ignored if num is NA
                 op.autoRenewAccount());
     }
@@ -259,7 +271,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         tokenCreateValidator.validate(context, accountStore, op, config);
 
         // validate expiration and auto-renew account if present
-        final var givenExpiryMeta = getExpiryMeta(context.consensusNow().getEpochSecond(), op);
+        final var givenExpiryMeta = getExpiryMeta(context.consensusNow().getEpochSecond(), op, context);
         final var resolvedExpiryMeta = context.expiryValidator().resolveCreationAttempt(false, givenExpiryMeta);
 
         // validate auto-renew account exists

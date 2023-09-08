@@ -41,7 +41,6 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
-import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.notification.NotificationEngine;
@@ -598,6 +597,14 @@ public class SwirldsPlatform implements Platform, Startable {
 
         final boolean startedFromGenesis = initialState.isGenesisState();
 
+        final Hash epochHash;
+        if (emergencyRecoveryManager.isEmergencyRecoveryFilePresent()) {
+            epochHash = emergencyRecoveryManager.getEmergencyRecoveryFile().hash();
+        } else {
+            epochHash =
+                    initialState.getState().getPlatformState().getPlatformData().getEpochHash();
+        }
+
         gossip = GossipFactory.buildGossip(
                 platformContext,
                 threadManager,
@@ -607,6 +614,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 currentAddressBook,
                 selfId,
                 appVersion,
+                epochHash,
                 shadowGraph,
                 emergencyRecoveryManager,
                 consensusRef,
@@ -646,10 +654,9 @@ public class SwirldsPlatform implements Platform, Startable {
             eventLinker.loadFromSignedState(initialState);
 
             // We don't want to invoke these callbacks until after we are starting up.
+            final long round = initialState.getRound();
+            final Hash hash = initialState.getState().getHash();
             components.add((Startable) () -> {
-                final long round = initialState.getRound();
-                final Hash hash = initialState.getState().getHash();
-
                 // If we loaded from disk then call the appropriate dispatch.
                 // It is important that this is sent after the ConsensusHashManager
                 // is initialized.
@@ -766,11 +773,10 @@ public class SwirldsPlatform implements Platform, Startable {
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
         logger.info(
                 STARTUP.getMarker(),
-                "The platform is using the following initial state:\n{}\n{}",
-                signedState.getState().getPlatformState().getInfoString(),
-                new MerkleTreeVisualizer(signedState.getState())
-                        .setDepth(stateConfig.debugHashDepth())
-                        .render());
+                """
+                        The platform is using the following initial state:
+                        {}""",
+                signedState.getState().getInfoString(stateConfig.debugHashDepth()));
     }
 
     /**
@@ -1009,19 +1015,17 @@ public class SwirldsPlatform implements Platform, Startable {
     private PreconsensusEventFileManager buildPreconsensusEventFileManager(
             final boolean softwareUpgrade, @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
         try {
-            final PreconsensusEventFileManager manager =
-                    new PreconsensusEventFileManager(platformContext, Time.getCurrent(), recycleBin, selfId);
-
             if (emergencyRecoveryManager.isEmergencyRecoveryFilePresent()) {
                 logger.info(
                         STARTUP.getMarker(),
                         "This node was started in emergency recovery mode, "
                                 + "clearing the preconsensus event stream.");
-                manager.clear();
+                PreconsensusEventFileManager.clear(platformContext, recycleBin, selfId);
             }
 
-            clearPCESOnSoftwareUpgradeIfConfigured(softwareUpgrade, manager);
-            return manager;
+            clearPCESOnSoftwareUpgradeIfConfigured(softwareUpgrade);
+
+            return new PreconsensusEventFileManager(platformContext, Time.getCurrent(), recycleBin, selfId);
         } catch (final IOException e) {
             throw new UncheckedIOException("unable load preconsensus files", e);
         }
@@ -1112,7 +1116,9 @@ public class SwirldsPlatform implements Platform, Startable {
         }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean createTransaction(@NonNull final byte[] transaction) {
         return transactionSubmitter.submitTransaction(new SwirldTransaction(transaction));
@@ -1134,7 +1140,9 @@ public class SwirldsPlatform implements Platform, Startable {
         return notificationEngine;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Signature sign(final byte[] data) {
         return crypto.sign(data);
@@ -1183,26 +1191,20 @@ public class SwirldsPlatform implements Platform, Startable {
     }
 
     /**
-     * Clears the preconsensus event stream if a software upgrade has occurred and the configuration specifies that
-     * the stream should be cleared on software upgrade.
+     * Clears the preconsensus event stream if a software upgrade has occurred and the configuration specifies that the
+     * stream should be cleared on software upgrade.
      *
-     * @param softwareUpgrade       true if a software upgrade has occurred
-     * @param fileManager           the preconsensus event file manager
+     * @param softwareUpgrade true if a software upgrade has occurred
      * @throws UncheckedIOException if the required changes on software upgrade cannot be performed
      */
-    public void clearPCESOnSoftwareUpgradeIfConfigured(
-            final boolean softwareUpgrade, @NonNull final PreconsensusEventFileManager fileManager) {
+    public void clearPCESOnSoftwareUpgradeIfConfigured(final boolean softwareUpgrade) {
         final boolean clearOnSoftwareUpgrade = platformContext
                 .getConfiguration()
                 .getConfigData(PreconsensusEventStreamConfig.class)
                 .clearOnSoftwareUpgrade();
         if (softwareUpgrade && clearOnSoftwareUpgrade) {
-            try {
-                logger.info(STARTUP.getMarker(), "Clearing the preconsensus event stream on software upgrade.");
-                fileManager.clear();
-            } catch (final IOException e) {
-                throw new UncheckedIOException("Failed to clear the preconsensus event stream on software upgrade.", e);
-            }
+            logger.info(STARTUP.getMarker(), "Clearing the preconsensus event stream on software upgrade.");
+            PreconsensusEventFileManager.clear(platformContext, recycleBin, selfId);
         }
     }
 }

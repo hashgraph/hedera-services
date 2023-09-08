@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.test.exec;
 import static com.hedera.node.app.service.contract.impl.exec.TransactionModule.provideActionSidecarContentTracer;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ETH_DATA_WITH_CALL_DATA;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
@@ -28,8 +29,10 @@ import com.hedera.hapi.node.contract.EthereumTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.EvmActionTracer;
 import com.hedera.node.app.service.contract.impl.exec.TransactionModule;
+import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations;
+import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.hevm.HydratedEthTxData;
 import com.hedera.node.app.service.contract.impl.infra.EthereumCallDataHydration;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
@@ -61,6 +64,9 @@ class TransactionModuleTest {
     private HederaOperations hederaOperations;
 
     @Mock
+    private HederaNativeOperations nativeOperations;
+
+    @Mock
     private SystemContractOperations systemContractOperations;
 
     @Mock
@@ -82,10 +88,11 @@ class TransactionModuleTest {
 
     @Test
     void feesOnlyUpdaterIsProxyUpdater() {
+        final var enhancement =
+                new HederaWorldUpdater.Enhancement(hederaOperations, nativeOperations, systemContractOperations);
         assertInstanceOf(
                 ProxyWorldUpdater.class,
-                TransactionModule.provideFeesOnlyUpdater(hederaOperations, systemContractOperations, factory)
-                        .get());
+                TransactionModule.provideFeesOnlyUpdater(enhancement, factory).get());
     }
 
     @Test
@@ -99,6 +106,12 @@ class TransactionModuleTest {
         final var expectedHydration = HydratedEthTxData.successFrom(ETH_DATA_WITH_CALL_DATA);
         given(hydration.tryToHydrate(ethTxn, fileStore)).willReturn(expectedHydration);
         assertSame(expectedHydration, TransactionModule.maybeProvideHydratedEthTxData(context, hydration, fileStore));
+    }
+
+    @Test
+    void providesEnhancement() {
+        assertNotNull(
+                TransactionModule.provideEnhancement(hederaOperations, nativeOperations, systemContractOperations));
     }
 
     @Test
