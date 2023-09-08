@@ -101,7 +101,7 @@ public class StressTestingToolMain implements SwirldMain {
     private long rampUpStartTimeMilliSeconds = 0;
 
     /** App configuration */
-    private final AtomicReference<StressTestingToolConfig> configHolder = new AtomicReference<>();
+    private StressTestingToolConfig config;
 
     /**
      * This is just for debugging: it allows the app to run in Eclipse. If the config.txt exists and lists a particular
@@ -114,6 +114,7 @@ public class StressTestingToolMain implements SwirldMain {
     }
 
     public StressTestingToolMain() {
+        System.out.println("Main");
         transactionGenerator = new StoppableThreadConfiguration<>(getStaticThreadManager())
                 .setComponent("demo")
                 .setThreadName("transaction-generator")
@@ -130,7 +131,7 @@ public class StressTestingToolMain implements SwirldMain {
     @Override
     public void init(@NonNull final Platform platform, @NonNull final NodeId id) {
         this.platform = platform;
-        final StressTestingToolConfig config =
+        config =
                 platform.getContext().getConfiguration().getConfigData(StressTestingToolConfig.class);
         expectedTPS = config.transPerSecToCreate()
                 / (double) platform.getAddressBook().getSize();
@@ -159,6 +160,7 @@ public class StressTestingToolMain implements SwirldMain {
 
         Runtime.getRuntime().addShutdownHook(shutdownHook);
 
+        System.out.println("starting transaction generator");
         transactionGenerator.start();
 
         while (true) {
@@ -173,11 +175,12 @@ public class StressTestingToolMain implements SwirldMain {
     }
 
     private synchronized void generateTransactions() {
-        if (configHolder.get() == null) {
+        if (config == null) {
             // if the app has not been initialized yet, do nothing
             return;
         }
 
+        System.out.println("transaction generator started");
         byte[] transaction;
         final long now = System.nanoTime();
         int numCreated = 0;
@@ -188,6 +191,7 @@ public class StressTestingToolMain implements SwirldMain {
         if (lastTPSMeasureTime == 0) {
             lastTPSMeasureTime = now;
             rampUpStartTimeMilliSeconds = now / MILLISECONDS_TO_NANOSECONDS;
+            System.out.println("configured TPS: " + expectedTPS);
             logger.info(
                     STARTUP.getMarker(),
                     "First time calling generateTransactions() Expected TPS per code is {}",
