@@ -21,6 +21,7 @@ import static com.hedera.hapi.node.freeze.FreezeType.FREEZE_ONLY;
 import static com.hedera.hapi.node.freeze.FreezeType.FREEZE_UPGRADE;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.freeze.FreezeType;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.networkadmin.FreezeService;
@@ -63,9 +64,10 @@ public class DualStateUpdateFacility {
             if (freezeType == FREEZE_UPGRADE || freezeType == FREEZE_ONLY) {
                 // copy freeze state to dual state
                 final ReadableStates states = state.createReadableStates(FreezeService.NAME);
-                final ReadableSingletonState<Instant> freezeTime =
+                final ReadableSingletonState<Timestamp> freezeTime =
                         states.getSingleton(FreezeServiceImpl.FREEZE_TIME_KEY);
-                final Instant freezeTimeInstant = freezeTime.get();
+                final Instant freezeTimeInstant = Instant.ofEpochSecond(
+                        freezeTime.get().seconds(), freezeTime.get().nanos());
                 dualState.setFreezeTime(freezeTimeInstant);
             } else if (freezeType == FREEZE_ABORT) {
                 // copy freeze state (which is null) to dual state
