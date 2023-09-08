@@ -512,11 +512,12 @@ class SignedStateFileManagerTests {
                         () -> {
                             rethrowIO(() -> validateSavingOfState(signedState));
 
-                            final SavedStateInfo[] currentStatesOnDisk =
+                            final List<SavedStateInfo> currentStatesOnDisk =
                                     SignedStateFileReader.getSavedStateFiles(MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME);
 
-                            final SavedStateMetadata oldestMetadata =
-                                    currentStatesOnDisk[currentStatesOnDisk.length - 1].getMetadata();
+                            final SavedStateMetadata oldestMetadata = currentStatesOnDisk
+                                    .get(currentStatesOnDisk.size() - 1)
+                                    .metadata();
 
                             assertEquals(
                                     oldestMetadata.minimumGenerationNonAncient(),
@@ -526,13 +527,13 @@ class SignedStateFileManagerTests {
                                     manager.getMinimumGenerationNonAncientForOldestState());
 
                             assertTrue(
-                                    currentStatesOnDisk.length <= statesOnDisk,
+                                    currentStatesOnDisk.size() <= statesOnDisk,
                                     "unexpected number of states on disk, current number = "
-                                            + currentStatesOnDisk.length);
+                                            + currentStatesOnDisk.size());
 
-                            for (int index = 0; index < currentStatesOnDisk.length; index++) {
+                            for (int index = 0; index < currentStatesOnDisk.size(); index++) {
 
-                                final SavedStateInfo savedStateInfo = currentStatesOnDisk[index];
+                                final SavedStateInfo savedStateInfo = currentStatesOnDisk.get(index);
 
                                 final SignedState stateFromDisk = assertDoesNotThrow(
                                         () -> SignedStateFileReader.readStateFile(
