@@ -28,7 +28,7 @@ import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
 import com.hedera.node.app.service.networkadmin.FreezeService;
-import com.hedera.node.app.service.networkadmin.impl.WritableUpgradeStore;
+import com.hedera.node.app.service.networkadmin.impl.WritableFreezeStore;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
@@ -71,7 +71,7 @@ public class WritableStoreFactory {
                 new StoreEntry(TokenService.NAME, WritableNetworkStakingRewardsStore::new));
         newMap.put(WritableStakingInfoStore.class, new StoreEntry(TokenService.NAME, WritableStakingInfoStore::new));
         // FreezeService
-        newMap.put(WritableUpgradeStore.class, new StoreEntry(FreezeService.NAME, WritableUpgradeStore::new));
+        newMap.put(WritableFreezeStore.class, new StoreEntry(FreezeService.NAME, WritableFreezeStore::new));
         // FileService
         newMap.put(WritableFileStore.class, new StoreEntry(FileService.NAME, WritableFileStore::new));
         newMap.put(WritableUpgradeFileStore.class, new StoreEntry(FileService.NAME, WritableUpgradeFileStore::new));
@@ -118,9 +118,10 @@ public class WritableStoreFactory {
         final var entry = STORE_FACTORY.get(storeInterface);
         if (entry != null && serviceName.equals(entry.name())) {
             final var store = entry.factory().apply(states);
-            if (!storeInterface.isInstance(store))
+            if (!storeInterface.isInstance(store)) {
                 throw new IllegalArgumentException("No instance " + storeInterface
                         + " is available"); // This needs to be ensured while stores are registered
+            }
             return storeInterface.cast(store);
         }
         throw new IllegalArgumentException("No store of the given class is available");

@@ -22,6 +22,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
+import com.hedera.hapi.node.scheduled.SchedulableTransactionBody.DataOneOfType;
 import com.hedera.hapi.node.scheduled.ScheduleCreateTransactionBody;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.token.Account;
@@ -65,6 +66,19 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
         }
     }
 
+    private void checkSchedulableWhitelist(
+            @NonNull final ScheduleCreateTransactionBody scheduleCreate, @NonNull final SchedulingConfig config)
+            throws PreCheckException {
+        final Set<HederaFunctionality> whitelist = config.whitelist().funtionalitySet();
+        // spotless is forced wrapping of fluent expressions at 73 characters.
+        final DataOneOfType transactionType =
+                scheduleCreate.scheduledTransactionBody().data().kind();
+        final HederaFunctionality functionType = HandlerUtility.functionalityForType(transactionType);
+        if (!whitelist.contains(functionType)) {
+            throw new PreCheckException(ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
+        }
+    }
+
     private void checkLongTermSchedulable(final ScheduleCreateTransactionBody scheduleCreate) throws PreCheckException {
         // @todo('long term schedule') HIP needed?, before enabling long term schedule, add a response code for
         //       INVALID_LONG_TERM_SCHEDULE and fix this exception.
@@ -83,10 +97,15 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
      */
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
+        Objects.requireNonNull(context, NULL_CONTEXT_MESSAGE);
         final TransactionBody currentTransaction = context.body();
         final LedgerConfig config = context.configuration().getConfigData(LedgerConfig.class);
-        final long maxExpiryConfig = config.scheduleTxExpiryTimeSecs();
+        final SchedulingConfig schedulingConfig = context.configuration().getConfigData(SchedulingConfig.class);
+        final long maxExpireConfig = schedulingConfig.longTermEnabled()
+                ? schedulingConfig.maxExpirationFutureSeconds()
+                : config.scheduleTxExpiryTimeSecs();
         final ScheduleCreateTransactionBody scheduleBody = getValidScheduleCreateBody(currentTransaction);
+        checkSchedulableWhitelist(scheduleBody, schedulingConfig);
         // validate the schedulable transaction
         getSchedulableTransaction(currentTransaction);
         // If we have an explicit payer account for the scheduled child transaction,
@@ -100,7 +119,7 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
         final TransactionID transactionId = currentTransaction.transactionID();
         if (transactionId != null) {
             final Schedule provisionalSchedule =
-                    ScheduleUtility.createProvisionalSchedule(currentTransaction, Instant.now(), maxExpiryConfig);
+                    HandlerUtility.createProvisionalSchedule(currentTransaction, Instant.now(), maxExpireConfig);
             final Set<Key> allRequiredKeys = allKeysForTransaction(provisionalSchedule, context);
             context.optionalKeys(allRequiredKeys);
         } else {
@@ -116,6 +135,7 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
      */
     @Override
     public void handle(@NonNull final HandleContext context) throws HandleException {
+        Objects.requireNonNull(context, NULL_CONTEXT_MESSAGE);
         final Instant currentConsensusTime = context.consensusNow();
         final WritableScheduleStoreImpl scheduleStore = context.writableStore(WritableScheduleStoreImpl.class);
         final SchedulingConfig schedulingConfig = context.configuration().getConfigData(SchedulingConfig.class);
@@ -125,7 +145,7 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
         //       transactions.  SchedulesByEquality is the virtual map for that task
         final TransactionBody currentTransaction = context.body();
         if (currentTransaction.hasScheduleCreate()) {
-            final Schedule provisionalSchedule = ScheduleUtility.createProvisionalSchedule(
+            final Schedule provisionalSchedule = HandlerUtility.createProvisionalSchedule(
                     currentTransaction, currentConsensusTime, schedulingConfig.maxExpirationFutureSeconds());
             context.attributeValidator().validateMemo(provisionalSchedule.memo());
             final ResponseCodeEnum validationResult =
@@ -139,7 +159,7 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
                 final ScheduleKeysResult requiredKeysResult = allKeysForTransaction(provisionalSchedule, context);
                 final Set<Key> allRequiredKeys = requiredKeysResult.remainingRequiredKeys();
                 final Set<Key> updatedSignatories = requiredKeysResult.updatedSignatories();
-                Schedule finalSchedule = ScheduleUtility.completeProvisionalSchedule(
+                Schedule finalSchedule = HandlerUtility.completeProvisionalSchedule(
                         provisionalSchedule, context.newEntityNum(), updatedSignatories);
                 if (tryToExecuteSchedule(
                         context,
@@ -148,7 +168,7 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
                         updatedSignatories,
                         validationResult,
                         isLongTermEnabled)) {
-                    finalSchedule = ScheduleUtility.markExecuted(finalSchedule, currentConsensusTime);
+                    finalSchedule = HandlerUtility.markExecuted(finalSchedule, currentConsensusTime);
                 }
                 scheduleStore.put(finalSchedule);
             } else {

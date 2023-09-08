@@ -35,7 +35,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 
 import com.google.common.collect.Sets;
 import com.hedera.node.app.service.mono.contracts.execution.traceability.CallOperationType;
@@ -635,49 +634,6 @@ class HederaTracerTest {
         subject.tracePrecompileResult(messageFrame, ContractActionType.SYSTEM);
         // then
         assertTrue(subject.getActions().isEmpty());
-    }
-
-    @Test
-    void traceAccountCreationResultWhenTraceabilityNotEnabled() {
-        subject = new HederaTracer(EmitActionSidecars.DISABLED, ValidateActionSidecars.DISABLED);
-        final var haltReason = Optional.of(INVALID_SOLIDITY_ADDRESS);
-
-        subject.traceAccountCreationResult(messageFrame, haltReason);
-
-        verify(messageFrame).setExceptionalHaltReason(haltReason);
-        assertEquals(0, subject.getActions().size());
-    }
-
-    @Test
-    void traceAccountCreationResultWhenTraceabilityEnabled() {
-        // given
-        given(messageFrame.getType()).willReturn(Type.MESSAGE_CALL);
-        given(messageFrame.getOriginatorAddress()).willReturn(originator);
-        given(messageFrame.getContractAddress()).willReturn(contract);
-        given(messageFrame.getRemainingGas()).willReturn(initialGas);
-        given(messageFrame.getInputData()).willReturn(input);
-        given(messageFrame.getValue()).willReturn(value);
-        given(messageFrame.getState()).willReturn(State.CODE_EXECUTING);
-        given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
-        given(worldUpdater.aliases()).willReturn(contractAliases);
-        given(contractAliases.resolveForEvm(originator)).willReturn(originator);
-        given(contractAliases.resolveForEvm(contract)).willReturn(contract);
-        subject.init(messageFrame);
-        given(messageFrame.getState()).willReturn(State.COMPLETED_SUCCESS);
-        final long remainingGasAfterExecution = 343L;
-        given(messageFrame.getRemainingGas()).willReturn(remainingGasAfterExecution);
-        given(messageFrame.getOutputData()).willReturn(output);
-
-        // when
-        subject.traceAccountCreationResult(messageFrame, null);
-
-        // then
-        assertEquals(1, subject.getActions().size());
-        final var action = subject.getActions().get(0);
-        validateAllActionFieldsAreSet(action);
-        assertEquals(contract, action.getRecipientAccount().toEvmAddress());
-        assertNull(action.getInvalidSolidityAddress());
-        assertNull(action.getRecipientContract());
     }
 
     @Test

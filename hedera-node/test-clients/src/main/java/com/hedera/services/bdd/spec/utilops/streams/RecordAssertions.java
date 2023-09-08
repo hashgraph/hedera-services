@@ -77,7 +77,6 @@ public class RecordAssertions extends UtilOp {
                 .hasAnyStatusAtAll()
                 .noLogging();
         allRunFor(spec, triggerOp);
-        Thread.sleep(DEFAULT_RECORD_CLOSE_DELAY.toMillis());
     }
 
     @Nullable

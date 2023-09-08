@@ -44,7 +44,6 @@ import static com.hedera.services.bdd.suites.perf.PerfUtilOps.scheduleOpsEnablem
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -73,7 +72,6 @@ import org.apache.logging.log4j.Logger;
  *
  * <p>CONTRACTS - multipurpose
  */
-@HapiTestSuite
 public class JrsRestartTestTemplate extends HapiSuite {
     private static final Logger log = LogManager.getLogger(JrsRestartTestTemplate.class);
 
