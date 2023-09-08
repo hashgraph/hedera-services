@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.authorization;
+package com.hedera.node.app.spi.authorization;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -42,6 +42,15 @@ public interface Authorizer {
      * @return Whether the ID definitively refers to a super-user
      */
     boolean isSuperUser(@NonNull AccountID id);
+
+    /**
+     * Checks whether the given account refers to a treasury account. If the {@link AccountID} does not contain an account
+     * number (for example, because it uses an alias), then this method will return false.
+     *
+     * @param id The ID of the account to check
+     * @return Whether the ID definitively refers to a super-user
+     */
+    boolean isTreasury(@NonNull AccountID id);
 
     /**
      * Checks whether an account is exempt from paying fees.
