@@ -72,7 +72,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-@HapiTestSuite
 public class ContractAutoExpirySpecs extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(ContractAutoExpirySpecs.class);

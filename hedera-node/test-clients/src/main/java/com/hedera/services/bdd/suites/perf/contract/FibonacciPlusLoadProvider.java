@@ -42,7 +42,6 @@ import static java.lang.Math.ceil;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import com.google.common.util.concurrent.AtomicDouble;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
@@ -70,7 +69,6 @@ import java.util.function.IntFunction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-@HapiTestSuite
 public class FibonacciPlusLoadProvider extends HapiSuite {
 
     private static final Logger LOG = LogManager.getLogger(FibonacciPlusLoadProvider.class);

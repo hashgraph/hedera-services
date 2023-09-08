@@ -37,7 +37,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.IDENTICAL_SCHE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.time.Duration;
@@ -52,7 +51,6 @@ import org.apache.logging.log4j.Logger;
  * disconnected from the network. Once the node is reconnected the state of the schedules are
  * verified on reconnected node
  */
-@HapiTestSuite
 public class SchedulesExpiryDuringReconnect extends HapiSuite {
     private static final String SCHEDULE_EXPIRY_TIME_SECS = "10";
 
