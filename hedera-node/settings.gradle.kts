@@ -89,7 +89,9 @@ gitRepositories {
     // check branch in repo for updates every second
     refreshIntervalMillis.set(1000)
     include("hedera-protobufs") {
-        uri.set("https://github.com/LimeChain/hedera-protobufs.git") // TODO: Temporary override for Limechain fork, revert when
+        uri.set(
+            "https://github.com/LimeChain/hedera-protobufs.git"
+        ) // TODO: Temporary override for Limechain fork, revert when
         // https://github.com/hashgraph/hedera-protobufs/pull/304 is merged
         // HAPI repo version
         tag.set(hapiProtoBranchOrTag)

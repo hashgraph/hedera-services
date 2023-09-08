@@ -60,4 +60,8 @@ public class MonoMultiplierSources {
     public void resetGasCongestionLevelStarts(final Instant[] startTimes) {
         delegate.resetGasCongestionLevelStarts(startTimes);
     }
+
+    public void resetExpectations() {
+        delegate.resetExpectations();
+    }
 }

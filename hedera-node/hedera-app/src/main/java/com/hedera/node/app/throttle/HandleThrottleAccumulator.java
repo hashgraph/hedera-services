@@ -90,9 +90,7 @@ public class HandleThrottleAccumulator {
             @NonNull final ConfigProvider configProvider, @NonNull ThrottleManager throttleManager) {
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
         this.throttleManager = requireNonNull(throttleManager, "throttleManager must not be null");
-        this.rebuildFor(this.throttleManager
-                .throttleDefinitions()); // TODO: this will initialize it, but we still need to rebuild during runtime
-        // as throttle defs change
+        this.rebuildFor(this.throttleManager.throttleDefinitions());
     }
 
     public boolean shouldThrottle(@NonNull TransactionInfo txnInfo, Instant t, HederaState state) {
