@@ -290,6 +290,7 @@ public record SavedStateMetadata(
      * @param field the missing field
      */
     private static void throwMissingRequiredField(@NonNull final SavedStateMetadataField field) throws IOException {
+        Objects.requireNonNull(field);
         throw new IOException("Signed state metadata file is missing required field: " + field);
     }
 
@@ -303,6 +304,10 @@ public record SavedStateMetadata(
     private static void throwInvalidRequiredField(
             @NonNull final SavedStateMetadataField field, @NonNull final String value, @NonNull final Exception e)
             throws IOException {
+
+        Objects.requireNonNull(field);
+        Objects.requireNonNull(value);
+        Objects.requireNonNull(e);
 
         throw new IOException(
                 "Signed state metadata file has an invalid value for required field %s: %s ".formatted(field, value),
@@ -343,7 +348,10 @@ public record SavedStateMetadata(
      * @return the parsed long, or null if the field is not present or the value is not a valid long
      */
     private static long parsePrimitiveLong(
-            final Map<SavedStateMetadataField, String> data, final SavedStateMetadataField field) throws IOException {
+            @NonNull final Map<SavedStateMetadataField, String> data, @NonNull final SavedStateMetadataField field)
+            throws IOException {
+
+        Objects.requireNonNull(field);
 
         if (!data.containsKey(field)) {
             throwMissingRequiredField(field);
@@ -388,11 +396,14 @@ public record SavedStateMetadata(
     @SuppressWarnings("SameParameterValue")
     @NonNull
     private static String parseNonNullString(
-            final Map<SavedStateMetadataField, String> data, final SavedStateMetadataField field) throws IOException {
+            @NonNull final Map<SavedStateMetadataField, String> data, @NonNull final SavedStateMetadataField field)
+            throws IOException {
+
+        Objects.requireNonNull(field);
 
         if (!data.containsKey(field)) {
             throwMissingRequiredField(field);
-            return null;
+            return "we will never reach this point";
         }
 
         return data.get(field);
@@ -434,11 +445,14 @@ public record SavedStateMetadata(
      */
     @NonNull
     private static Instant parseNonNullInstant(
-            final Map<SavedStateMetadataField, String> data, final SavedStateMetadataField field) throws IOException {
+            @NonNull final Map<SavedStateMetadataField, String> data, @NonNull final SavedStateMetadataField field)
+            throws IOException {
+
+        Objects.requireNonNull(field);
 
         if (!data.containsKey(field)) {
             throwMissingRequiredField(field);
-            return null;
+            return Instant.MIN;
         }
 
         final String value = data.get(field);
@@ -446,7 +460,7 @@ public record SavedStateMetadata(
             return Instant.parse(value);
         } catch (final DateTimeParseException e) {
             throwInvalidRequiredField(field, value, e);
-            return null;
+            return Instant.MIN;
         }
     }
 
@@ -562,8 +576,9 @@ public record SavedStateMetadata(
      */
     private static void putRequireNonNull(
             @NonNull final Map<SavedStateMetadataField, String> map,
-            @Nullable final SavedStateMetadataField field,
-            final Object value) {
+            @NonNull final SavedStateMetadataField field,
+            @NonNull final Object value) {
+        Objects.requireNonNull(field);
         Objects.requireNonNull(value);
         map.put(field, toStringWithoutNewlines(value));
     }
@@ -579,8 +594,10 @@ public record SavedStateMetadata(
     @SuppressWarnings("SameParameterValue")
     private static void putPossiblyNullObject(
             @NonNull final Map<SavedStateMetadataField, String> map,
-            @Nullable final SavedStateMetadataField field,
-            final Object value) {
+            @NonNull final SavedStateMetadataField field,
+            @Nullable final Object value) {
+
+        Objects.requireNonNull(field);
 
         map.put(field, toStringWithoutNewlines(value));
     }

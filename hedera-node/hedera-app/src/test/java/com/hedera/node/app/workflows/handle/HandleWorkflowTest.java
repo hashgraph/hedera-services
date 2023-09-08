@@ -37,8 +37,6 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.node.app.AppTestBase;
-import com.hedera.node.app.authorization.Authorizer;
-import com.hedera.node.app.authorization.Authorizer.SystemPrivilege;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.fixtures.signature.ExpandedSignaturePairFactory;
@@ -51,6 +49,8 @@ import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.SignatureExpander;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.signature.SignatureVerifier;
+import com.hedera.node.app.spi.authorization.Authorizer;
+import com.hedera.node.app.spi.authorization.Authorizer.SystemPrivilege;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -122,6 +122,7 @@ class HandleWorkflowTest extends AppTestBase {
                 status,
                 code,
                 new TransactionScenarioBuilder().txInfo(),
+                Set.of(),
                 Set.of(),
                 Map.of(key, FakeSignatureVerificationFuture.goodFuture(key)),
                 null,
@@ -676,6 +677,7 @@ class HandleWorkflowTest extends AppTestBase {
                     ResponseCodeEnum.OK,
                     new TransactionScenarioBuilder().txInfo(),
                     Set.of(),
+                    Set.of(),
                     Map.of(key, FakeSignatureVerificationFuture.goodFuture(key)),
                     null,
                     CONFIG_VERSION - 1L);
@@ -785,6 +787,7 @@ class HandleWorkflowTest extends AppTestBase {
                     ResponseCodeEnum.OK,
                     new TransactionScenarioBuilder().txInfo(),
                     Set.of(bobsKey),
+                    Set.of(),
                     verificationResults,
                     null,
                     CONFIG_VERSION);
@@ -838,6 +841,7 @@ class HandleWorkflowTest extends AppTestBase {
                     ResponseCodeEnum.OK,
                     new TransactionScenarioBuilder().txInfo(),
                     Set.of(bobsKey),
+                    Set.of(),
                     verificationResults,
                     null,
                     CONFIG_VERSION);
@@ -960,6 +964,7 @@ class HandleWorkflowTest extends AppTestBase {
                     ResponseCodeEnum.OK,
                     new TransactionScenarioBuilder().txInfo(),
                     Set.of(),
+                    Set.of(),
                     verificationResults,
                     null,
                     CONFIG_VERSION);
@@ -1012,6 +1017,7 @@ class HandleWorkflowTest extends AppTestBase {
                     Status.SO_FAR_SO_GOOD,
                     ResponseCodeEnum.OK,
                     new TransactionScenarioBuilder().txInfo(),
+                    Set.of(),
                     Set.of(),
                     verificationResults,
                     null,
@@ -1160,6 +1166,7 @@ class HandleWorkflowTest extends AppTestBase {
                     ResponseCodeEnum.OK,
                     new TransactionScenarioBuilder().txInfo(),
                     Set.of(erinsKey),
+                    Set.of(),
                     preHandleVerificationResults,
                     null,
                     CONFIG_VERSION);
