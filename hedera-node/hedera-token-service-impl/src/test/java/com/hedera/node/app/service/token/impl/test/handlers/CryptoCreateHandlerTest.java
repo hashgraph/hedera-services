@@ -152,6 +152,10 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         given(handleContext.feeCalculator(SubType.DEFAULT)).willReturn(feeCalculator);
         lenient().when(handleContext.feeAccumulator()).thenReturn(feeAccumulator);
         lenient().when(feeCalculator.legacyCalculate(any())).thenReturn(new Fees(1, 1, 1));
+        lenient().when(feeCalculator.addBytesPerTransaction(anyLong())).thenReturn(feeCalculator);
+        lenient().when(feeCalculator.addStorageBytesSeconds(anyLong())).thenReturn(feeCalculator);
+        lenient().when(feeCalculator.addRamByteSeconds(anyLong())).thenReturn(feeCalculator);
+        lenient().when(feeCalculator.addNetworkRamByteSeconds(anyLong())).thenReturn(feeCalculator);
 
         cryptoCreateValidator = new CryptoCreateValidator();
         stakingValidator = new StakingValidator();

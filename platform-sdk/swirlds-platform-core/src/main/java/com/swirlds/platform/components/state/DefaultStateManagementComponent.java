@@ -212,7 +212,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         dispatchBuilder =
                 new DispatchBuilder(platformContext.getConfiguration().getConfigData(DispatchConfiguration.class));
 
-        hashLogger = new HashLogger(threadManager, selfId, stateConfig);
+        hashLogger = new HashLogger(threadManager, stateConfig);
 
         final StateHashedTrigger stateHashedTrigger =
                 dispatchBuilder.getDispatcher(this, StateHashedTrigger.class)::dispatch;

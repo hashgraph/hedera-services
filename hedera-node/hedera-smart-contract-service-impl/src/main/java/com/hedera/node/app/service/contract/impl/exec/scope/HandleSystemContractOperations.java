@@ -21,7 +21,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.base.TokenRelationship;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
@@ -78,18 +77,6 @@ public class HandleSystemContractOperations implements SystemContractOperations 
     @Override
     public @Nullable Account getAccountAndExternalizeResult(
             final long number, final long callingContractNumber, @NonNull final ResultTranslator<Account> translator) {
-        throw new AssertionError("Not implemented");
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public @Nullable TokenRelationship getRelationshipAndExternalizeResult(
-            final long accountNumber,
-            final long tokenNumber,
-            final long callingContractNumber,
-            @NonNull final ResultTranslator<TokenRelationship> translator) {
         throw new AssertionError("Not implemented");
     }
 
