@@ -100,14 +100,6 @@ class QuerySystemContractOperationsTest {
     }
 
     @Test
-    void contractsConfigTest() {
-        given(context.configuration()).willReturn(configuration);
-        given(configuration.getConfigData(ContractsConfig.class)).willReturn(contractsConfig);
-        var config = subject.contractsConfig();
-        assertThat(config).isEqualTo(contractsConfig);
-    }
-
-    @Test
     void exchangeRateTest() {
         final ExchangeRate exchangeRate = new ExchangeRate(1, 2, TimestampSeconds.DEFAULT);
         given(context.exchangeRateInfo()).willReturn(exchangeRateInfo);

@@ -27,7 +27,6 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.QueryScope;
 import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.ResultStatus;
 import com.hedera.node.app.spi.workflows.QueryContext;
-import com.hedera.node.config.data.ContractsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -103,14 +102,5 @@ public class QuerySystemContractOperations implements SystemContractOperations {
     @NonNull
     public ExchangeRate currentExchangeRate() {
         return context.exchangeRateInfo().activeRate(Instant.now());
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
-    public ContractsConfig contractsConfig() {
-        return context.configuration().getConfigData(ContractsConfig.class);
     }
 }

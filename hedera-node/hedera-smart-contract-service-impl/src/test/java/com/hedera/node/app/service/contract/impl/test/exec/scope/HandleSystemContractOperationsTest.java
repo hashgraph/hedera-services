@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.contract.impl.test.exec.scope;
 
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.MOCK_VERIFICATION_STRATEGY;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -132,13 +131,5 @@ class HandleSystemContractOperationsTest {
         subject.currentExchangeRate();
         verify(context).exchangeRateInfo();
         verify(exchangeRateInfo).activeRate(any());
-    }
-
-    @Test
-    void contractsConfigTest() {
-        given(context.configuration()).willReturn(configuration);
-        given(configuration.getConfigData(ContractsConfig.class)).willReturn(contractsConfig);
-        var config = subject.contractsConfig();
-        assertThat(config).isEqualTo(contractsConfig);
     }
 }

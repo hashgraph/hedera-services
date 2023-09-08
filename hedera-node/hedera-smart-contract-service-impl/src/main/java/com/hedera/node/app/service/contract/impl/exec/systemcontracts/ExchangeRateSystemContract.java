@@ -16,11 +16,12 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts;
 
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.contractsConfigOf;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.BigIntegerType;
 import com.esaulpaugh.headlong.abi.TypeFactory;
-import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.Optional;
@@ -50,21 +51,15 @@ public class ExchangeRateSystemContract extends AbstractFullContract implements 
     }
 
     @Override
-    public long gasRequirement(Bytes input) {
-        return gasRequirement;
-    }
-
-    @Override
     @NonNull
     public FullResult computeFully(@NonNull Bytes input, @NonNull MessageFrame messageFrame) {
         requireNonNull(input);
         requireNonNull(messageFrame);
         try {
-            final var proxyWorldUpdater = (ProxyWorldUpdater) messageFrame.getWorldUpdater();
-            gasRequirement = proxyWorldUpdater.contractsConfig().precompileExchangeRateGasCost();
+            gasRequirement = contractsConfigOf(messageFrame).precompileExchangeRateGasCost();
             final var selector = input.getInt(0);
             final var amount = biValueFrom(input);
-            final var activeRate = proxyWorldUpdater.currentExchangeRate();
+            final var activeRate = proxyUpdaterFor(messageFrame).currentExchangeRate();
             final var result =
                     switch (selector) {
                         case TO_TINYBARS_SELECTOR -> padded(

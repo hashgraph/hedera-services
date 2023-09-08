@@ -485,10 +485,4 @@ class ProxyWorldUpdaterTest {
         subject.currentExchangeRate();
         verify(systemContractOperations).currentExchangeRate();
     }
-
-    @Test
-    void contractsConfig() {
-        subject.contractsConfig();
-        verify(systemContractOperations).contractsConfig();
-    }
 }

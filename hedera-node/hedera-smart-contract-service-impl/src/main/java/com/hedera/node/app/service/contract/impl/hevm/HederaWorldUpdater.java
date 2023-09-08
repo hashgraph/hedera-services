@@ -31,7 +31,6 @@ import com.hedera.node.app.service.contract.impl.state.PendingCreation;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.ResultStatus;
-import com.hedera.node.config.data.ContractsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
@@ -280,12 +279,4 @@ public interface HederaWorldUpdater extends WorldUpdater {
      */
     @NonNull
     ExchangeRate currentExchangeRate();
-
-    /**
-     * Returns the {@link ContractsConfig} for the current transaction
-     * Delegates to {@link SystemContractOperations#contractsConfig()}
-     * @return the current contracts config
-     */
-    @NonNull
-    ContractsConfig contractsConfig();
 }

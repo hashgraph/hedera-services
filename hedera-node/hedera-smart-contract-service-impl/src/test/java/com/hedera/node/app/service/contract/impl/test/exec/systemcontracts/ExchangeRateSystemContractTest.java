@@ -18,18 +18,17 @@ package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts;
 
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.ExchangeRateSystemContract.TO_TINYBARS_SELECTOR;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.ExchangeRateSystemContract.TO_TINYCENTS_SELECTOR;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EXCHANGE_RATE_SYSTEM_CONTRACT_ADDRESS;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.REQUIRED_GAS;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.contractsConfigOf;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
 import com.google.common.primitives.Longs;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.ExchangeRateSystemContract;
+import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.config.data.ContractsConfig;
-import com.swirlds.config.api.Configuration;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.Optional;
@@ -39,10 +38,13 @@ import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract.PrecompileContractResult;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -51,36 +53,29 @@ class ExchangeRateSystemContractTest {
     private GasCalculator gasCalculator;
 
     @Mock
-    private Configuration configuration;
-
-    @Mock
-    private ContractsConfig contractsConfig;
-
-    @Mock
     private MessageFrame frame;
 
     @Mock
     private ProxyWorldUpdater updater;
 
+    @Mock
+    private ContractsConfig contractsConfig;
+
     private PrecompileContractResult invalidResult =
             PrecompileContractResult.halt(Bytes.EMPTY, Optional.of(ExceptionalHaltReason.INVALID_OPERATION));
     private ExchangeRateSystemContract subject;
 
+    private MockedStatic<FrameUtils> frameUtils;
+
     @BeforeEach
     void setUp() {
         subject = new ExchangeRateSystemContract(gasCalculator);
+        frameUtils = Mockito.mockStatic(FrameUtils.class);
     }
 
-    @Test
-    void hasExpectedGasRequirement() {
-        given(frame.getWorldUpdater()).willReturn(updater);
-        given(updater.contractsConfig()).willReturn(contractsConfig);
-        given(contractsConfig.precompileExchangeRateGasCost()).willReturn(REQUIRED_GAS);
-
-        subject.computeFully(Bytes.EMPTY, frame);
-        var actual = subject.gasRequirement(EXCHANGE_RATE_SYSTEM_CONTRACT_ADDRESS);
-
-        assertEquals(REQUIRED_GAS, actual);
+    @AfterEach
+    void closeMocks() {
+        frameUtils.close();
     }
 
     @Test
@@ -175,9 +170,10 @@ class ExchangeRateSystemContractTest {
     }
 
     private void givenRate(final ExchangeRate rate) {
-        given(frame.getWorldUpdater()).willReturn(updater);
-        given(updater.contractsConfig()).willReturn(contractsConfig);
+        frameUtils.when(() -> proxyUpdaterFor(frame)).thenReturn(updater);
         given(updater.currentExchangeRate()).willReturn(rate);
+        frameUtils.when(() -> contractsConfigOf(frame)).thenReturn(contractsConfig);
+        given(contractsConfig.precompileExchangeRateGasCost()).willReturn(0L);
     }
 
     private static final int someHbarEquiv = 120;

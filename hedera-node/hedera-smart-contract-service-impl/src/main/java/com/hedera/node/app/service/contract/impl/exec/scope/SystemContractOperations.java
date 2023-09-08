@@ -25,7 +25,6 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.ResultStatus;
-import com.hedera.node.config.data.ContractsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -103,11 +102,4 @@ public interface SystemContractOperations {
      */
     @NonNull
     public ExchangeRate currentExchangeRate();
-
-    /**
-     * Returns the {@link com.hedera.node.config.data.ContractsConfig} for the current context
-     * @return contracts config
-     */
-    @NonNull
-    public ContractsConfig contractsConfig();
 }
