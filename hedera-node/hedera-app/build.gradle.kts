@@ -97,9 +97,12 @@ xtestModuleInfo {
     requires("headlong")
     requires("io.netty.transport.epoll")
     requires("javax.inject")
+    requires("org.hyperledger.besu.datatypes")
+    requires("org.hyperledger.besu.evm")
     requires("org.junit.jupiter.api")
     requires("org.mockito")
     requires("org.mockito.junit.jupiter")
+    requires("tuweni.bytes")
 }
 
 jmhModuleInfo {

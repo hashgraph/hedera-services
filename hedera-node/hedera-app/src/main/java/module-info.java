@@ -32,7 +32,6 @@ module com.hedera.node.app {
     requires com.google.common;
     requires com.google.protobuf;
     requires com.swirlds.base;
-    requires com.swirlds.fchashmap;
     requires com.swirlds.fcqueue;
     requires com.swirlds.platform.core;
     requires grpc.netty;

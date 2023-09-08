@@ -25,6 +25,7 @@ testModuleInfo {
     requires("com.hedera.node.app.spi.test.fixtures")
     requires("com.hedera.node.config.test.fixtures")
     requires("com.hedera.node.app")
+    requires("com.swirlds.base")
     requires("com.swirlds.test.framework")
     requires("org.assertj.core")
     requires("org.junit.jupiter.api")

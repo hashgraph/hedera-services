@@ -8,6 +8,7 @@ module com.hedera.node.app.service.token.impl {
     requires transitive com.swirlds.config.api;
     requires transitive dagger;
     requires transitive javax.inject;
+    requires com.hedera.node.app.hapi.fees;
     requires com.hedera.node.app.hapi.utils;
     requires com.hedera.node.app.service.evm;
     requires com.google.common;

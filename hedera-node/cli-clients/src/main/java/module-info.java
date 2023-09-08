@@ -9,11 +9,14 @@ module com.hedera.node.services.cli {
     requires transitive info.picocli;
     requires io.github.classgraph;
     requires com.hedera.node.app.hapi.utils;
+    requires com.hedera.node.app.service.evm;
     requires com.hedera.node.hapi;
     requires com.google.common;
     requires com.google.protobuf;
     requires com.swirlds.base;
     requires com.swirlds.config.api;
+    requires com.swirlds.fchashmap;
+    requires com.swirlds.merkle;
     requires com.swirlds.virtualmap;
     requires org.apache.commons.lang3;
     requires org.apache.logging.log4j.core;

@@ -12,9 +12,7 @@ module com.hedera.node.app.service.schedule.impl {
     requires com.hedera.node.config;
     requires com.hedera.pbj.runtime;
     requires com.swirlds.config.api;
-    requires com.swirlds.common;
     //
-    requires org.apache.logging.log4j;
     requires com.google.common;
     requires static com.github.spotbugs.annotations;
 
