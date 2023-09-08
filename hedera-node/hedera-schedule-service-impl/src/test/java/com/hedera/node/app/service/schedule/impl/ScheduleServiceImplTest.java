@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,15 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.schedule.impl.test;
+package com.hedera.node.app.service.schedule.impl;
 
 import com.hedera.node.app.service.schedule.ScheduleService;
-import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
-import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
-import org.junit.jupiter.api.Assertions;
+import org.assertj.core.api.BDDAssertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -39,33 +38,27 @@ class ScheduleServiceImplTest {
     @Test
     void testsSpi() {
         final ScheduleService service = new ScheduleServiceImpl();
-        Assertions.assertNotNull(service, "We must always receive an instance");
-        Assertions.assertEquals(
-                ScheduleServiceImpl.class,
-                service.getClass(),
-                "We must always receive an instance of type " + ScheduleServiceImpl.class.getName());
-        Assertions.assertEquals("ScheduleService", service.getServiceName());
+        BDDAssertions.assertThat(service).isNotNull();
+        BDDAssertions.assertThat(service.getClass()).isEqualTo(ScheduleServiceImpl.class);
+        BDDAssertions.assertThat(service.getServiceName()).isEqualTo("ScheduleService");
     }
 
     @Test
     @SuppressWarnings("rawtypes")
     void registersExpectedSchema() {
-        ArgumentCaptor<Schema> schemaCaptor = ArgumentCaptor.forClass(Schema.class);
-
         final ScheduleServiceImpl subject = new ScheduleServiceImpl();
-
+        ArgumentCaptor<Schema> schemaCaptor = ArgumentCaptor.forClass(Schema.class);
         subject.registerSchemas(registry);
         Mockito.verify(registry).register(schemaCaptor.capture());
 
         final Schema schema = schemaCaptor.getValue();
-
         final Set<StateDefinition> statesToCreate = schema.statesToCreate();
-        Assertions.assertEquals(4, statesToCreate.size());
-        final Iterator<String> statesIterator =
-                statesToCreate.stream().map(StateDefinition::stateKey).sorted().iterator();
-        Assertions.assertEquals(ScheduleServiceImpl.SCHEDULES_BY_EQUALITY_KEY, statesIterator.next());
-        Assertions.assertEquals(ScheduleServiceImpl.SCHEDULES_BY_EXPIRY_SEC_KEY, statesIterator.next());
-        Assertions.assertEquals(ScheduleServiceImpl.SCHEDULES_BY_ID_KEY, statesIterator.next());
-        Assertions.assertEquals(ScheduleServiceImpl.SCHEDULING_STATE_KEY, statesIterator.next());
+        BDDAssertions.assertThat(statesToCreate).isNotNull();
+        final List<String> statesList =
+                statesToCreate.stream().map(StateDefinition::stateKey).sorted().toList();
+        BDDAssertions.assertThat(statesToCreate.size()).isEqualTo(3);
+        BDDAssertions.assertThat(statesList.get(0)).isEqualTo(ScheduleServiceImpl.SCHEDULES_BY_EQUALITY_KEY);
+        BDDAssertions.assertThat(statesList.get(1)).isEqualTo(ScheduleServiceImpl.SCHEDULES_BY_EXPIRY_SEC_KEY);
+        BDDAssertions.assertThat(statesList.get(2)).isEqualTo(ScheduleServiceImpl.SCHEDULES_BY_ID_KEY);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,20 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.schedule.impl.test.handlers;
+package com.hedera.node.app.service.schedule.impl.handlers;
+
+import static org.assertj.core.api.BDDAssertions.assertThat;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.schedule.impl.handlers.ScheduleCreateHandler;
-import com.hedera.node.app.service.schedule.impl.test.ScheduledTxnFactory;
+import com.hedera.node.app.service.schedule.impl.ScheduledTransactionFactory;
+import com.hedera.node.app.spi.fixtures.Assertions;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import java.util.Set;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.BDDMockito;
@@ -47,24 +48,30 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
                 mockStoreFactory, scheduleCreateTransaction(payer), testConfig, mockDispatcher);
         subject.preHandle(realPreContext);
 
-        Assertions.assertEquals(1, realPreContext.requiredNonPayerKeys().size());
-        Assertions.assertEquals(1, realPreContext.optionalNonPayerKeys().size());
-        Assertions.assertEquals(schedulerKey, realPreContext.payerKey());
-        Assertions.assertEquals(Set.of(adminKey), realPreContext.requiredNonPayerKeys());
-        Assertions.assertEquals(Set.of(payerKey), realPreContext.optionalNonPayerKeys());
+        assertThat(realPreContext).isNotNull();
+        assertThat(realPreContext.payerKey()).isNotNull().isEqualTo(schedulerKey);
+        assertThat(realPreContext.requiredNonPayerKeys()).isNotNull().hasSize(1);
+        assertThat(realPreContext.optionalNonPayerKeys()).isNotNull().hasSize(1);
+
+        assertThat(realPreContext.requiredNonPayerKeys()).isEqualTo(Set.of(adminKey));
+        assertThat(realPreContext.optionalNonPayerKeys()).isEqualTo(Set.of(payerKey));
+
+        assertThat(mockContext).isNotNull();
     }
 
     @Test
     void preHandleVanillaNoAdmin() throws PreCheckException {
-        final TransactionBody transactionToTest = ScheduledTxnFactory.scheduleCreateTxnWith(
+        final TransactionBody transactionToTest = ScheduledTransactionFactory.scheduleCreateTransactionWith(
                 null, "", payer, scheduler, Timestamp.newBuilder().seconds(1L).build());
         realPreContext = new PreHandleContextImpl(mockStoreFactory, transactionToTest, testConfig, mockDispatcher);
         subject.preHandle(realPreContext);
 
-        Assertions.assertEquals(0, realPreContext.requiredNonPayerKeys().size());
-        Assertions.assertEquals(1, realPreContext.optionalNonPayerKeys().size());
-        Assertions.assertEquals(schedulerKey, realPreContext.payerKey());
-        Assertions.assertEquals(Set.of(payerKey), realPreContext.optionalNonPayerKeys());
+        assertThat(realPreContext).isNotNull();
+        assertThat(realPreContext.payerKey()).isNotNull().isEqualTo(schedulerKey);
+        assertThat(realPreContext.requiredNonPayerKeys()).isNotNull().isEmpty();
+        assertThat(realPreContext.optionalNonPayerKeys()).isNotNull().hasSize(1);
+
+        assertThat(realPreContext.optionalNonPayerKeys()).isEqualTo(Set.of(payerKey));
     }
 
     @Test
@@ -73,9 +80,12 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
                 new PreHandleContextImpl(mockStoreFactory, scheduleCreateTransaction(null), testConfig, mockDispatcher);
         subject.preHandle(realPreContext);
 
-        Assertions.assertEquals(1, realPreContext.requiredNonPayerKeys().size());
-        Assertions.assertEquals(schedulerKey, realPreContext.payerKey());
-        Assertions.assertEquals(Set.of(adminKey), realPreContext.requiredNonPayerKeys());
+        assertThat(realPreContext).isNotNull();
+        assertThat(realPreContext.payerKey()).isNotNull().isEqualTo(schedulerKey);
+        assertThat(realPreContext.requiredNonPayerKeys()).isNotNull().hasSize(1);
+        assertThat(realPreContext.optionalNonPayerKeys()).isNotNull().isEmpty();
+
+        assertThat(realPreContext.requiredNonPayerKeys()).isEqualTo(Set.of(adminKey));
     }
 
     @Test
@@ -84,13 +94,14 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
 
         realPreContext = new PreHandleContextImpl(
                 mockStoreFactory, scheduleCreateTransaction(payer), testConfig, mockDispatcher);
-        com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck(
+        Assertions.assertThrowsPreCheck(
                 () -> subject.preHandle(realPreContext), ResponseCodeEnum.INVALID_SCHEDULE_PAYER_ID);
     }
 
     private TransactionBody scheduleCreateTransaction(final AccountID payer) {
         final Timestamp timestampValue =
                 Timestamp.newBuilder().seconds(1_234_567L).build();
-        return ScheduledTxnFactory.scheduleCreateTxnWith(adminKey, "test", payer, scheduler, timestampValue);
+        return ScheduledTransactionFactory.scheduleCreateTransactionWith(
+                adminKey, "test", payer, scheduler, timestampValue);
     }
 }

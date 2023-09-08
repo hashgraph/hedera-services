@@ -14,21 +14,21 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.schedule.impl.test.handlers;
+package com.hedera.node.app.service.schedule.impl.handlers;
+
+import static org.assertj.core.api.BDDAssertions.assertThat;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.scheduled.ScheduleDeleteTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.schedule.impl.handlers.ScheduleDeleteHandler;
 import com.hedera.node.app.spi.fixtures.Assertions;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import java.security.InvalidKeyException;
 import java.util.Set;
-import org.assertj.core.api.BDDAssertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.BDDMockito;
@@ -53,8 +53,8 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
                 new PreHandleContextImpl(mockStoreFactory, scheduleDeleteTransaction(), testConfig, mockDispatcher);
 
         subject.preHandle(realPreContext);
-        BDDAssertions.assertThat(scheduleDeleter).isEqualTo(realPreContext.payer());
-        BDDAssertions.assertThat(Set.of()).isNotEqualTo(realPreContext.requiredNonPayerKeys());
+        assertThat(scheduleDeleter).isEqualTo(realPreContext.payer());
+        assertThat(Set.of()).isNotEqualTo(realPreContext.requiredNonPayerKeys());
     }
 
     @Test
