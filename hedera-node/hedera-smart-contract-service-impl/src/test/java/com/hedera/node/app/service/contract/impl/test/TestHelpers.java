@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test;
 
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniBytes;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
@@ -53,6 +54,8 @@ import com.hedera.node.app.service.contract.impl.exec.failure.ResourceExhaustedE
 import com.hedera.node.app.service.contract.impl.exec.gas.GasCharges;
 import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
@@ -69,6 +72,7 @@ import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Collections;
@@ -383,6 +387,17 @@ public class TestHelpers {
         assertEquals(expected.getGasCost(), actual.getGasCost());
     }
 
+    public static void assertSamePrecompileResult(
+            final HederaSystemContract.FullResult expected, final HederaSystemContract.FullResult actual) {
+        assertEquals(expected.gasRequirement(), actual.gasRequirement());
+        final var expectedResult = expected.result();
+        final var actualResult = actual.result();
+        assertEquals(expectedResult.getState(), actualResult.getState());
+        assertEquals(expectedResult.getOutput(), actualResult.getOutput());
+        assertEquals(expectedResult.getHaltReason(), actualResult.getHaltReason());
+        assertEquals(expectedResult.isRefundGas(), actualResult.isRefundGas());
+    }
+
     public static boolean isSameResult(
             final Operation.OperationResult expected, final Operation.OperationResult actual) {
         return Objects.equals(expected.getHaltReason(), actual.getHaltReason())
@@ -487,6 +502,13 @@ public class TestHelpers {
         return asHeadlongAddress(address.toArrayUnsafe());
     }
 
+    public static com.esaulpaugh.headlong.abi.Address asHeadlongAddress(final long entityNum) {
+        final var addressBytes = org.apache.tuweni.bytes.Bytes.wrap(asLongZeroAddress(entityNum));
+        final var addressAsInteger = addressBytes.toUnsignedBigInteger();
+        return com.esaulpaugh.headlong.abi.Address.wrap(
+                com.esaulpaugh.headlong.abi.Address.toChecksumAddress(addressAsInteger));
+    }
+
     public static com.esaulpaugh.headlong.abi.Address asHeadlongAddress(final byte[] address) {
         final var addressBytes = org.apache.tuweni.bytes.Bytes.wrap(address);
         final var addressAsInteger = addressBytes.toUnsignedBigInteger();
@@ -496,5 +518,17 @@ public class TestHelpers {
 
     public static org.apache.tuweni.bytes.Bytes revertOutputFor(final ResponseCodeEnum status) {
         return org.apache.tuweni.bytes.Bytes.wrap(status.protoName().getBytes(StandardCharsets.UTF_8));
+    }
+
+    public static org.apache.tuweni.bytes.Bytes bytesForRedirect(
+            final ByteBuffer encodedErcCall, final TokenID tokenId) {
+        return bytesForRedirect(encodedErcCall.array(), asLongZeroAddress(tokenId.tokenNum()));
+    }
+
+    public static org.apache.tuweni.bytes.Bytes bytesForRedirect(final byte[] subSelector, final Address tokenAddress) {
+        return org.apache.tuweni.bytes.Bytes.concatenate(
+                org.apache.tuweni.bytes.Bytes.wrap(HtsCallAttempt.REDIRECT_FOR_TOKEN.selector()),
+                tokenAddress,
+                org.apache.tuweni.bytes.Bytes.of(subSelector));
     }
 }

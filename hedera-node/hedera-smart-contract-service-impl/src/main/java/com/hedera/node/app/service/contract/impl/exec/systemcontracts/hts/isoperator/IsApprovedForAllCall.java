@@ -45,14 +45,14 @@ import java.util.Optional;
 /**
  * Implements the token redirect {@code isApprovedForAll()} call of the HTS system contract.
  */
-public class IsOperatorCall extends AbstractTokenViewCall {
+public class IsApprovedForAllCall extends AbstractTokenViewCall {
     public static final Function IS_APPROVED_FOR_ALL =
             new Function("isApprovedForAll(address,address)", ReturnTypes.BOOL);
 
     private final Address owner;
     private final Address operator;
 
-    public IsOperatorCall(
+    public IsApprovedForAllCall(
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             @Nullable final Token token,
             @NonNull final Address owner,
@@ -91,10 +91,10 @@ public class IsOperatorCall extends AbstractTokenViewCall {
     }
 
     /**
-     * Indicates if the given {@code selector} is a selector for {@link IsOperatorCall}.
+     * Indicates if the given {@code selector} is a selector for {@link IsApprovedForAllCall}.
      *
      * @param selector the selector to check
-     * @return {@code true} if the given {@code selector} is a selector for {@link IsOperatorCall}
+     * @return {@code true} if the given {@code selector} is a selector for {@link IsApprovedForAllCall}
      */
     public static boolean matches(@NonNull final byte[] selector) {
         requireNonNull(selector);
@@ -102,14 +102,14 @@ public class IsOperatorCall extends AbstractTokenViewCall {
     }
 
     /**
-     * Constructs a {@link IsOperatorCall} from the given {@code attempt}.
+     * Constructs a {@link IsApprovedForAllCall} from the given {@code attempt}.
      *
      * @param attempt the attempt to construct from
-     * @return the constructed {@link IsOperatorCall}
+     * @return the constructed {@link IsApprovedForAllCall}
      */
-    public static IsOperatorCall from(@NonNull final HtsCallAttempt attempt) {
+    public static IsApprovedForAllCall from(@NonNull final HtsCallAttempt attempt) {
         final var args = IS_APPROVED_FOR_ALL.decodeCall(attempt.input().toArrayUnsafe());
-        return new IsOperatorCall(attempt.enhancement(), attempt.redirectToken(), args.get(0), args.get(1));
+        return new IsApprovedForAllCall(attempt.enhancement(), attempt.redirectToken(), args.get(0), args.get(1));
     }
 
     private boolean operatorMatches(

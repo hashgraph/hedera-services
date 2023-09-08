@@ -26,7 +26,7 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.balanceof.BalanceOfCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.decimals.DecimalsCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.isoperator.IsOperatorCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.isoperator.IsApprovedForAllCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.mint.MintCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.name.NameCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ownerof.OwnerOfCall;
@@ -49,38 +49,6 @@ import org.hyperledger.besu.datatypes.Address;
 public class HtsCallAttempt {
     public static final Function REDIRECT_FOR_TOKEN = new Function("redirectForToken(address,bytes)");
     private static final byte[] REDIRECT_FOR_TOKEN_SELECTOR = REDIRECT_FOR_TOKEN.selector();
-
-    // TODO - support all of the following:
-    //   [x] TRANSFER,
-    //   [x] MINT,
-    //   [x] BALANCE_OF,
-    //   [x] TOTAL_SUPPLY,
-    //   [x] DECIMALS,
-    //   [ ] ASSOCIATE_ONE,
-    //   [ ] ASSOCIATE_MANY,
-    //   [ ] DISSOCIATE_ONE,
-    //   [ ] DISSOCIATE_MANY,
-    //   [ ] PAUSE_TOKEN,
-    //   [ ] UNPAUSE_TOKEN,
-    //   [ ] FREEZE_ACCOUNT,
-    //   [ ] UNFREEZE_ACCOUNT,
-    //   [ ] GRANT_KYC,
-    //   [ ] REVOKE_KYC,
-    //   [ ] WIPE_AMOUNT,
-    //   [ ] WIPE_SERIAL_NUMBERS,
-    //   [ ] GRANT_ALLOWANCE,
-    //   [ ] GRANT_APPROVAL,
-    //   [ ] APPROVE_OPERATOR,
-    //   [ ] CREATE_TOKEN,
-    //   [ ] DELETE_TOKEN,
-    //   [ ] UPDATE_TOKEN,
-    //   [x] GET_BALANCE,
-    //   [ ] GET_ALLOWANCE,
-    //   [ ] GET_IS_APPROVED,
-    //   [x] GET_IS_OPERATOR,
-    //   [ ] GET_IS_KYC,
-    //   [ ] GET_NFT_INFO,
-    //   [ ] GET_TOKEN_INFO,
 
     private final byte[] selector;
     private final Bytes input;
@@ -133,6 +101,42 @@ public class HtsCallAttempt {
     /**
      * Tries to translate this call attempt into a {@link HtsCall} from the given sender address.
      *
+     * Call attempts could refer to a,
+     * <ul>
+     *   <li>[x] TRANSFER</li>
+     *   <li>[x] MINT</li>
+     *   <li>[ ] ASSOCIATE_ONE</li>
+     *   <li>[ ] ASSOCIATE_MANY</li>
+     *   <li>[ ] DISSOCIATE_ONE</li>
+     *   <li>[ ] DISSOCIATE_MANY</li>
+     *   <li>[ ] PAUSE_TOKEN</li>
+     *   <li>[ ] UNPAUSE_TOKEN</li>
+     *   <li>[ ] FREEZE_ACCOUNT</li>
+     *   <li>[ ] UNFREEZE_ACCOUNT</li>
+     *   <li>[ ] GRANT_KYC</li>
+     *   <li>[ ] REVOKE_KYC</li>
+     *   <li>[ ] WIPE_AMOUNT</li>
+     *   <li>[ ] WIPE_SERIAL_NUMBERS</li>
+     *   <li>[ ] GRANT_ALLOWANCE</li>
+     *   <li>[ ] GRANT_APPROVAL</li>
+     *   <li>[ ] APPROVE_OPERATOR</li>
+     *   <li>[ ] CREATE_TOKEN</li>
+     *   <li>[ ] DELETE_TOKEN</li>
+     *   <li>[ ] UPDATE_TOKEN</li>
+     *   <li>[x] BALANCE_OF</li>
+     *   <li>[x] TOTAL_SUPPLY</li>
+     *   <li>[x] DECIMALS</li>
+     *   <li>[x] NAME</li>
+     *   <li>[x] OWNER_OF</li>
+     *   <li>[x] TOKEN_URI</li>
+     *   <li>[ ] ALLOWANCE</li>
+     *   <li>[ ] APPROVED</li>
+     *   <li>[x] IS_APPROVED_FOR_ALL</li>
+     *   <li>[ ] GET_IS_KYC</li>
+     *   <li>[ ] GET_NFT_INFO</li>
+     *   <li>[ ] GET_TOKEN_INFO</li>
+     * </ul>
+     *
      * @param senderAddress the address of the sender of the call
      * @return the call, or null if it couldn't be translated
      */
@@ -144,8 +148,8 @@ public class HtsCallAttempt {
             return MintCall.from(this, senderAddress);
         } else if (BalanceOfCall.matches(selector)) {
             return BalanceOfCall.from(this);
-        } else if (IsOperatorCall.matches(selector)) {
-            return IsOperatorCall.from(this);
+        } else if (IsApprovedForAllCall.matches(selector)) {
+            return IsApprovedForAllCall.from(this);
         } else if (TotalSupplyCall.matches(selector)) {
             return TotalSupplyCall.from(this);
         } else if (NameCall.matches(selector)) {

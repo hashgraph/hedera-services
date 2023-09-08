@@ -31,19 +31,19 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
 import com.esaulpaugh.headlong.abi.Address;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.isoperator.IsOperatorCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.isoperator.IsApprovedForAllCall;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
 
-class IsOperatorCallTest extends HtsCallTestBase {
+class IsApprovedForAllCallTest extends HtsCallTestBase {
     private final Address THE_OWNER = asHeadlongAddress(asEvmAddress(A_NEW_ACCOUNT_ID.accountNumOrThrow()));
     private final Address THE_OPERATOR = asHeadlongAddress(asEvmAddress(B_NEW_ACCOUNT_ID.accountNumOrThrow()));
-    private IsOperatorCall subject;
+    private IsApprovedForAllCall subject;
 
     @Test
     void revertsWithFungibleToken() {
-        subject = new IsOperatorCall(mockEnhancement(), FUNGIBLE_TOKEN, THE_OWNER, THE_OPERATOR);
+        subject = new IsApprovedForAllCall(mockEnhancement(), FUNGIBLE_TOKEN, THE_OWNER, THE_OPERATOR);
 
         final var result = subject.execute().fullResult().result();
 
@@ -53,7 +53,7 @@ class IsOperatorCallTest extends HtsCallTestBase {
 
     @Test
     void revertsWithMissingOwner() {
-        subject = new IsOperatorCall(mockEnhancement(), NON_FUNGIBLE_TOKEN, THE_OWNER, THE_OPERATOR);
+        subject = new IsApprovedForAllCall(mockEnhancement(), NON_FUNGIBLE_TOKEN, THE_OWNER, THE_OPERATOR);
 
         final var result = subject.execute().fullResult().result();
 
@@ -63,14 +63,14 @@ class IsOperatorCallTest extends HtsCallTestBase {
 
     @Test
     void checksForPresentOwnerAndFindsApprovedOperator() {
-        subject = new IsOperatorCall(mockEnhancement(), NON_FUNGIBLE_TOKEN, THE_OWNER, THE_OPERATOR);
+        subject = new IsApprovedForAllCall(mockEnhancement(), NON_FUNGIBLE_TOKEN, THE_OWNER, THE_OPERATOR);
         given(nativeOperations.getAccount(A_NEW_ACCOUNT_ID.accountNumOrThrow())).willReturn(SOMEBODY);
         given(nativeOperations.getAccount(B_NEW_ACCOUNT_ID.accountNumOrThrow())).willReturn(OPERATOR);
 
         final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
-        final boolean verdict = IsOperatorCall.IS_APPROVED_FOR_ALL
+        final boolean verdict = IsApprovedForAllCall.IS_APPROVED_FOR_ALL
                 .getOutputs()
                 .decode(result.getOutput().toArray())
                 .get(0);
@@ -79,13 +79,13 @@ class IsOperatorCallTest extends HtsCallTestBase {
 
     @Test
     void checksForPresentOwnerAndDetectsNoOperator() {
-        subject = new IsOperatorCall(mockEnhancement(), NON_FUNGIBLE_TOKEN, THE_OWNER, THE_OWNER);
+        subject = new IsApprovedForAllCall(mockEnhancement(), NON_FUNGIBLE_TOKEN, THE_OWNER, THE_OWNER);
         given(nativeOperations.getAccount(A_NEW_ACCOUNT_ID.accountNumOrThrow())).willReturn(SOMEBODY);
 
         final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
-        final boolean verdict = IsOperatorCall.IS_APPROVED_FOR_ALL
+        final boolean verdict = IsApprovedForAllCall.IS_APPROVED_FOR_ALL
                 .getOutputs()
                 .decode(result.getOutput().toArray())
                 .get(0);
@@ -94,13 +94,13 @@ class IsOperatorCallTest extends HtsCallTestBase {
 
     @Test
     void returnsFalseForPresentOwnerAndMissingOperator() {
-        subject = new IsOperatorCall(mockEnhancement(), NON_FUNGIBLE_TOKEN, THE_OWNER, THE_OPERATOR);
+        subject = new IsApprovedForAllCall(mockEnhancement(), NON_FUNGIBLE_TOKEN, THE_OWNER, THE_OPERATOR);
         given(nativeOperations.getAccount(A_NEW_ACCOUNT_ID.accountNumOrThrow())).willReturn(SOMEBODY);
 
         final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
-        final boolean verdict = IsOperatorCall.IS_APPROVED_FOR_ALL
+        final boolean verdict = IsApprovedForAllCall.IS_APPROVED_FOR_ALL
                 .getOutputs()
                 .decode(result.getOutput().toArray())
                 .get(0);
