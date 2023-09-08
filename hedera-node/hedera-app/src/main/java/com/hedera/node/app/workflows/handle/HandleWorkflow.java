@@ -33,8 +33,6 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.authorization.Authorizer;
-import com.hedera.node.app.authorization.Authorizer.SystemPrivilege;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeAccumulatorImpl;
 import com.hedera.node.app.fees.FeeManager;
@@ -47,6 +45,8 @@ import com.hedera.node.app.signature.ExpandedSignaturePair;
 import com.hedera.node.app.signature.SignatureExpander;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.signature.SignatureVerifier;
+import com.hedera.node.app.spi.authorization.Authorizer;
+import com.hedera.node.app.spi.authorization.Authorizer.SystemPrivilege;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.info.NetworkInfo;
@@ -82,6 +82,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
@@ -437,8 +438,16 @@ public class HandleWorkflow {
             return new ValidationResult(NODE_DUE_DILIGENCE_FAILURE, INVALID_SIGNATURE);
         }
 
+        // verify all the keys
         for (final var key : preHandleResult.requiredKeys()) {
             final var verification = verifier.verificationFor(key);
+            if (verification.failed()) {
+                return new ValidationResult(PRE_HANDLE_FAILURE, INVALID_SIGNATURE);
+            }
+        }
+        // If there are any hollow accounts whose signatures need to be verified, verify them
+        for (final var hollowAccount : preHandleResult.hollowAccounts()) {
+            final var verification = verifier.verificationFor(hollowAccount.alias());
             if (verification.failed()) {
                 return new ValidationResult(PRE_HANDLE_FAILURE, INVALID_SIGNATURE);
             }
@@ -511,6 +520,7 @@ public class HandleWorkflow {
      * any keys need to be added. If so, we trigger the signature verification for the new keys and collect all
      * results.
      */
+    // TODO: Need to re-use expandAndVerifySignatures from PreHandleWorkflowImpl instead of duplicating this code
     @NonNull
     private PreHandleResult addMissingSignatures(
             @NonNull final ReadableStoreFactory storeFactory,
@@ -526,6 +536,16 @@ public class HandleWorkflow {
         final var context = new PreHandleContextImpl(storeFactory, txBody, configuration, dispatcher);
         dispatcher.dispatchPreHandle(context);
 
+        // re-expand keys only if any of the keys have changed
+        final var previousResults = previousResult.verificationResults();
+        final var currentRequiredPayerKeys = context.requiredNonPayerKeys();
+        final var currentOptionalPayerKeys = context.optionalNonPayerKeys();
+        final var anyKeyChanged = haveKeyChanges(previousResults, context);
+        // If none of the keys changed then non need to re-expand all signatures.
+        if (!anyKeyChanged) {
+            return previousResult;
+        }
+
         // prepare signature verification
         final var verifications = new HashMap<Key, SignatureVerificationFuture>();
         final var payerKey = previousResult.payerKey();
@@ -533,8 +553,9 @@ public class HandleWorkflow {
 
         // expand all keys
         final var expanded = new HashSet<ExpandedSignaturePair>();
-        signatureExpander.expand(context.requiredNonPayerKeys(), sigPairs, expanded);
-        signatureExpander.expand(context.optionalNonPayerKeys(), sigPairs, expanded);
+        signatureExpander.expand(sigPairs, expanded);
+        signatureExpander.expand(currentRequiredPayerKeys, sigPairs, expanded);
+        signatureExpander.expand(currentOptionalPayerKeys, sigPairs, expanded);
 
         // remove all keys that were already verified
         for (final var it = expanded.iterator(); it.hasNext(); ) {
@@ -558,8 +579,35 @@ public class HandleWorkflow {
                 previousResult.responseCode(),
                 previousResult.txInfo(),
                 context.requiredNonPayerKeys(),
+                context.requiredHollowAccounts(),
                 verifications,
                 previousResult.innerResult(),
                 previousResult.configVersion());
+    }
+
+    /**
+     * Checks if any of the keys changed from previous result to current result.
+     * Only if keys changed we need to re-expand and re-verify the signatures.
+     * @param previousResults previous result from signature verification
+     * @param context current context
+     * @return true if any of the keys changed
+     */
+    private boolean haveKeyChanges(
+            final Map<Key, SignatureVerificationFuture> previousResults, final PreHandleContextImpl context) {
+        final var currentRequiredNonPayerKeys = context.requiredNonPayerKeys();
+        final var currentOptionalNonPayerKeys = context.optionalNonPayerKeys();
+        final var currentPayerKey = context.payerKey();
+
+        for (final var key : currentRequiredNonPayerKeys) {
+            if (!previousResults.containsKey(key)) {
+                return true;
+            }
+        }
+        for (final var key : currentOptionalNonPayerKeys) {
+            if (!previousResults.containsKey(key)) {
+                return true;
+            }
+        }
+        return !previousResults.containsKey(currentPayerKey);
     }
 }

@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.prehandle;
 
+import static com.hedera.node.app.spi.HapiUtils.EMPTY_KEY_LIST;
 import static com.hedera.node.app.spi.HapiUtils.isHollow;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
@@ -35,6 +36,7 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -357,6 +359,18 @@ public class PreHandleContextImpl implements PreHandleContext {
         }
 
         requiredHollowAccounts.add(hollowAccount);
+        return this;
+    }
+
+    @Override
+    @NonNull
+    public PreHandleContext requireSignatureForHollowAccountCreation(@NonNull final Bytes hollowAccountAlias) {
+        requireNonNull(hollowAccountAlias);
+        requiredHollowAccounts.add(Account.newBuilder()
+                .accountId(AccountID.DEFAULT)
+                .key(EMPTY_KEY_LIST)
+                .alias(hollowAccountAlias)
+                .build());
         return this;
     }
 

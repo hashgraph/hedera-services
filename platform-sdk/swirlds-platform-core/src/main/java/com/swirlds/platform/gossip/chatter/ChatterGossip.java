@@ -291,7 +291,7 @@ public class ChatterGossip extends AbstractGossip {
                                             reconnectConfig.asyncStreamTimeout(),
                                             reconnectMetrics,
                                             reconnectController,
-                                            new DefaultSignedStateValidator(),
+                                            new DefaultSignedStateValidator(platformContext),
                                             fallenBehindManager,
                                             platformContext.getConfiguration()),
                                     new ChatterSyncProtocol(

@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.crypto;
 
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
@@ -212,7 +213,7 @@ public class CryptoCreateSuite extends HapiSuite {
         final var tenAutoAssocSlots = "tenAutoAssocSlots";
         final var token = "token";
 
-        return defaultHapiSpec("usdFeeAsExpected")
+        return onlyDefaultHapiSpec("usdFeeAsExpected")
                 .given(
                         cryptoCreate(CIVILIAN).balance(ONE_HUNDRED_HBARS),
                         getAccountBalance(CIVILIAN).hasTinyBars(ONE_HUNDRED_HBARS))
@@ -288,6 +289,7 @@ public class CryptoCreateSuite extends HapiSuite {
                         .hasPrecheck(KEY_REQUIRED));
     }
 
+    @HapiTest
     private HapiSpec createAnAccountEmptyKeyList() {
         KeyShape shape = listOf(0);
         long initialBalance = 10_000L;
@@ -676,16 +678,22 @@ public class CryptoCreateSuite extends HapiSuite {
                     final var op = cryptoCreate(ACCOUNT)
                             .key(SECP_256K1_SOURCE_KEY)
                             .alias(evmAddressBytes)
+                            .signedBy(GENESIS, SECP_256K1_SOURCE_KEY)
+                            .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY))
                             .balance(100 * ONE_HBAR);
                     final var op2 = cryptoCreate(ACCOUNT)
                             .key(SECP_256K1_SOURCE_KEY)
                             .alias(evmAddressBytes)
                             .balance(100 * ONE_HBAR)
+                            .signedBy(GENESIS, SECP_256K1_SOURCE_KEY)
+                            .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY))
                             .hasPrecheck(ALIAS_ALREADY_ASSIGNED);
                     final var op3 = cryptoCreate(ACCOUNT)
                             .key(edKey)
                             .alias(evmAddressBytes)
                             .balance(100 * ONE_HBAR)
+                            .signedBy(GENESIS, SECP_256K1_SOURCE_KEY)
+                            .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY))
                             .hasPrecheck(ALIAS_ALREADY_ASSIGNED);
                     allRunFor(spec, op, op2, op3);
                     var hapiGetAccountInfo = getAccountInfo(ACCOUNT)
