@@ -55,6 +55,7 @@ import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.throttle.ThrottleManager;
 import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.app.workflows.handle.DualStateUpdateFacility;
 import com.hedera.node.app.workflows.handle.SystemFileUpdateFacility;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.Utils;
@@ -622,7 +623,7 @@ public final class Hedera implements SwirldMain {
         onMigrate(state, null);
 
         // Now that we have the state created, we are ready to create the dependency graph with Dagger
-        initializeDagger(state, GENESIS);
+        initializeDagger(state, dualState, GENESIS);
 
         // And now that the entire dependency graph has been initialized, and we have config, and all migration has
         // been completed, we are prepared to initialize in-memory data structures. These specifically are loaded
@@ -669,7 +670,7 @@ public final class Hedera implements SwirldMain {
         onMigrate(state, deserializedVersion);
 
         // Now that we have the state created, we are ready to create the dependency graph with Dagger
-        initializeDagger(state, RESTART);
+        initializeDagger(state, dualState, RESTART);
 
         // And now that the entire dependency graph has been initialized, and we have config, and all migration has
         // been completed, we are prepared to initialize in-memory data structures. These specifically are loaded
@@ -696,7 +697,10 @@ public final class Hedera implements SwirldMain {
     *
     =================================================================================================================*/
 
-    private void initializeDagger(@NonNull final MerkleHederaState state, @NonNull final InitTrigger trigger) {
+    private void initializeDagger(
+            @NonNull final MerkleHederaState state,
+            @NonNull final SwirldDualState dualState,
+            @NonNull final InitTrigger trigger) {
         logger.debug("Initializing dagger");
         final var selfId = platform.getSelfId();
         if (daggerApp == null) {
@@ -711,6 +715,7 @@ public final class Hedera implements SwirldMain {
                     .exchangeRateManager(exchangeRateManager)
                     .systemFileUpdateFacility(
                             new SystemFileUpdateFacility(configProvider, throttleManager, exchangeRateManager))
+                    .dualStateUpdateFacility(new DualStateUpdateFacility(dualState))
                     .self(SelfNodeInfoImpl.of(nodeAddress, version))
                     .initialHash(initialHash)
                     .platform(platform)
