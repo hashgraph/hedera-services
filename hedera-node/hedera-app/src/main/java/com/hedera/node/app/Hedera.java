@@ -661,7 +661,7 @@ public final class Hedera implements SwirldMain {
         this.throttleManager = new ThrottleManager();
 
         logger.info("Initializing ExchangeRateManager");
-        exchangeRateManager = new ExchangeRateManager();
+        exchangeRateManager = new ExchangeRateManager(configProvider);
 
         // Create all the nodes in the merkle tree for all the services
         // TODO: Actually, we should reinitialize the config on each step along the migration path, so we should pass
