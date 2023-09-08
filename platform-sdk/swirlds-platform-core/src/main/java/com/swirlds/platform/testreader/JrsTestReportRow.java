@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,26 +14,25 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.state.signed;
+package com.swirlds.platform.testreader;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.nio.file.Path;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.List;
 
 /**
- * A description of a signed state file and its associated round number.
+ * A row in a JRS Test Report.
  *
- * @param stateFile the path of the SignedState.swh file.
- * @param metadata  the metadata of the signed state
+ * @param tests    the results of the tests in the row, ordered from most to least recent
+ * @param metadata test metadata that is not parsed from results
  */
-public record SavedStateInfo(@NonNull Path stateFile, @NonNull SavedStateMetadata metadata) {
+public record JrsTestReportRow(@NonNull List<JrsTestResult> tests, @Nullable JrsTestMetadata metadata) {
 
     /**
-     * Get the parent directory.
-     *
-     * @return the parent directory
+     * Get the most recent test in this row.
      */
     @NonNull
-    public Path getDirectory() {
-        return stateFile.toAbsolutePath().getParent();
+    public JrsTestResult getMostRecentTest() {
+        return tests.get(0);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,26 +14,23 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.state.signed;
+package com.swirlds.platform.util;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.nio.file.Path;
 
 /**
- * A description of a signed state file and its associated round number.
+ * The result of a shell command.
  *
- * @param stateFile the path of the SignedState.swh file.
- * @param metadata  the metadata of the signed state
+ * @param exitCode the exit code of the command
+ * @param out      text written to stdout
+ * @param error    text written to stderr
  */
-public record SavedStateInfo(@NonNull Path stateFile, @NonNull SavedStateMetadata metadata) {
+public record CommandResult(int exitCode, @NonNull String out, @NonNull String error) {
 
     /**
-     * Get the parent directory.
-     *
-     * @return the parent directory
+     * Returns true if the command exited with a zero exit code.
      */
-    @NonNull
-    public Path getDirectory() {
-        return stateFile.toAbsolutePath().getParent();
+    public boolean isSuccessful() {
+        return exitCode == 0;
     }
 }

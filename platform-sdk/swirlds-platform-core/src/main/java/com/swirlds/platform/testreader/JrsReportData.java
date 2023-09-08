@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,26 +14,22 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.state.signed;
+package com.swirlds.platform.testreader;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.nio.file.Path;
+import java.time.Instant;
+import java.util.List;
 
 /**
- * A description of a signed state file and its associated round number.
+ * Contains the data for a JRS test report.
  *
- * @param stateFile the path of the SignedState.swh file.
- * @param metadata  the metadata of the signed state
+ * @param directory   the root of the GCP directory that was read to gather this data
+ * @param reportTime  the time when the data was gathered
+ * @param reportSpan  the number of days covered by the report
+ * @param testResults individual test results
  */
-public record SavedStateInfo(@NonNull Path stateFile, @NonNull SavedStateMetadata metadata) {
-
-    /**
-     * Get the parent directory.
-     *
-     * @return the parent directory
-     */
-    @NonNull
-    public Path getDirectory() {
-        return stateFile.toAbsolutePath().getParent();
-    }
-}
+public record JrsReportData(
+        @NonNull String directory,
+        @NonNull Instant reportTime,
+        int reportSpan,
+        @NonNull List<JrsTestResult> testResults) {}
