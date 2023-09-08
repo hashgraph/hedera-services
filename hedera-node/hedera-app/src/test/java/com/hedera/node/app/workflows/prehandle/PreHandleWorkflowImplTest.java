@@ -17,6 +17,8 @@
 package com.hedera.node.app.workflows.prehandle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
@@ -31,6 +33,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -376,8 +379,33 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             final HandleContextVerifier verifier = new BaseHandleContextVerifier(config, result1.verificationResults());
             final var result = verifier.verificationFor(key);
             assertThat(result.passed()).isFalse();
-            // And we do see this transaction registered with the deduplication cache
+            // And we do NOT see this transaction registered with the deduplication cache
             verify(deduplicationCache).add(txInfo.txBody().transactionIDOrThrow());
+        }
+
+        /**
+         * If a node's event contains transactions that DO NOT have that node's account as the node account ID of the
+         * transaction, then the node is trying to send transactions that don't belong to it.
+         */
+        @Test
+        @DisplayName("Fail pre-handle because the transaction is not created by the creator")
+        void preHandleCreatorAccountNotTxNodeAccount() throws PreCheckException {
+            // Given a transactionID that refers to an account OTHER THAN the creator node account.
+            // The creator in this scenario is NODE_1.
+            final var txInfo = scenario().withNodeAccount(NODE_2.nodeAccountID()).txInfo();
+
+            final Transaction platformTx = new SwirldTransaction(asByteArray(txInfo.transaction()));
+            when(transactionChecker.parseAndCheck(any(Bytes.class))).thenReturn(txInfo);
+
+            // When we pre-handle the transaction
+            workflow.preHandle(storeFactory, NODE_1.nodeAccountID(), Stream.of(platformTx));
+
+            // Then the transaction fails and the node is the payer
+            final PreHandleResult result1 = platformTx.getMetadata();
+            assertThat(result1.responseCode()).isEqualTo(INVALID_NODE_ACCOUNT);
+            assertThat(result1.payer()).isEqualTo(NODE_1.nodeAccountID());
+            // But we do see this transaction registered with the deduplication cache
+            verifyNoInteractions(deduplicationCache);
         }
     }
 

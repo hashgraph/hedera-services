@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.prehandle;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
@@ -151,6 +152,11 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         final TransactionInfo txInfo;
         try {
             txInfo = transactionChecker.parseAndCheck(txBytes);
+
+            // The transaction account ID MUST have matched the creator!
+            if (!creator.equals(txInfo.txBody().nodeAccountID())) {
+                throw new PreCheckException(INVALID_NODE_ACCOUNT);
+            }
         } catch (PreCheckException preCheck) {
             // The node SHOULD have verified the transaction before it was submitted to the network.
             // Since it didn't, it has failed in its due diligence and will be charged accordingly.
