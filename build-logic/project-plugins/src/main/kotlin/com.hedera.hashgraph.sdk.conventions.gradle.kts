@@ -28,37 +28,3 @@ javaModuleDependencies { versionsFromConsistentResolution(":swirlds-platform-cor
 configurations.getByName("mainRuntimeClasspath") {
     extendsFrom(configurations.getByName("internal"))
 }
-
-// !!! Remove the following once 'test' tasks are allowed to run in parallel ===
-val allPlatformSdkProjects =
-    rootProject.subprojects
-        .filter { it.projectDir.absolutePath.contains("/platform-sdk/") }
-        .map { it.name }
-        .filter {
-            it !in
-                listOf(
-                    "swirlds",
-                    "swirlds-benchmarks",
-                    "swirlds-platform"
-                ) // these are application/benchmark projects
-        }
-        .sorted()
-val allHederaNodeCheckTasks =
-    rootProject.subprojects
-        .filter { it.projectDir.absolutePath.contains("/hedera-node/") }
-        .map { "${it.path}:check" }
-val myIndex = allPlatformSdkProjects.indexOf(name)
-
-if (myIndex > 0) {
-    val predecessorProject = allPlatformSdkProjects[myIndex - 1]
-    tasks.test {
-        mustRunAfter(":$predecessorProject:test")
-        mustRunAfter(":$predecessorProject:hammerTest")
-        mustRunAfter(allHederaNodeCheckTasks)
-    }
-    tasks.named("hammerTest") {
-        mustRunAfter(tasks.test)
-        mustRunAfter(":$predecessorProject:hammerTest")
-        mustRunAfter(allHederaNodeCheckTasks)
-    }
-}
