@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
-plugins { id("com.hedera.hashgraph.application") }
+pluginManagement { includeBuild("../../../../build-logic") }
 
-application.mainClass.set("com.swirlds.demo.stress.StressTestingToolMain")
+includeBuild("../../../../hedera-dependency-versions")
+
+includeBuild("../../../../platform-sdk")
