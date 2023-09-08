@@ -98,7 +98,7 @@ public class RecordBlockNumberTool {
     // In reality, it is called, Sonar just can't detect it.
     // Ignoring also that we use generic exception instead of custom
     @SuppressWarnings({"java:S3655", "java:S112"})
-    private static void readRecordFile(final String recordFile) {
+    private static Pair<byte[], byte[]> readRecordFile(final String recordFile) {
         try {
             // parse record file
             final Pair<Integer, Optional<RecordStreamFile>> recordResult = readUncompressedRecordStreamFile(recordFile);
@@ -110,9 +110,25 @@ public class RecordBlockNumberTool {
             final long blockNumber = recordResult.getValue().get().getBlockNumber();
 
             trackBlockNumber(blockNumber);
+
+            final byte[] startRunningHash = recordResult
+                    .getValue()
+                    .get()
+                    .getStartObjectRunningHash()
+                    .getHash()
+                    .toByteArray();
+            final byte[] endRunningHash = recordResult
+                    .getValue()
+                    .get()
+                    .getEndObjectRunningHash()
+                    .getHash()
+                    .toByteArray();
+
+            return Pair.of((startRunningHash), (endRunningHash));
         } catch (final IOException e) {
             Thread.currentThread().interrupt();
             LOGGER.error(MARKER, "Got IOException when reading record file {}", recordFile, e);
+            return Pair.of(null, null);
         }
     }
 
@@ -166,8 +182,25 @@ public class RecordBlockNumberTool {
 
         final List<File> totalList = new ArrayList<>();
         totalList.addAll(Arrays.asList(Optional.ofNullable(streamFiles).orElse(new File[0])));
+        byte[] startRunningHash = null;
+        byte[] endRunningHash = null;
         for (final File item : totalList) {
-            readRecordFile(item.getAbsolutePath());
+            final Pair<byte[], byte[]> hashes = readRecordFile(item.getAbsolutePath());
+            // check if pair left and right are null
+            if (hashes.getLeft() == null || hashes.getRight() == null) {
+                LOGGER.error(MARKER, "startRunningHash or endRunningHash of file {} is null", item.getAbsolutePath());
+                return;
+            }
+            startRunningHash = hashes.getLeft();
+            if (endRunningHash != null) {
+                if (!Arrays.equals(startRunningHash, endRunningHash)) {
+                    LOGGER.error(
+                            MARKER,
+                            "startRunningHash of file {} is not equal to endRunningHash of previous file",
+                            item.getAbsolutePath());
+                }
+            }
+            endRunningHash = hashes.getRight();
         }
     }
 }
