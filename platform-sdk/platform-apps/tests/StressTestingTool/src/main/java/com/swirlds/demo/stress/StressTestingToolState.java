@@ -45,10 +45,8 @@ import java.time.Duration;
 import java.util.function.Supplier;
 
 /**
- * This demo collects statistics on the running of the network and consensus systems. It writes them to the screen, and
- * also saves them to disk in a comma separated value (.csv) file. Optionally, it can also put a sequence number into
- * each transaction, and check if any are lost, or delayed too long. Each transaction is 100 random bytes. So
- * StatsSigningDemoState.handleTransaction doesn't actually do anything, other than the optional sequence number check.
+ * This testing tool simulates configurable processing times for both preHandling and handling for stress testing
+ * purposes.
  */
 public class StressTestingToolState extends PartialMerkleLeaf implements SwirldState, MerkleLeaf {
     private static final long CLASS_ID = 0x79900efa3127b6eL;
