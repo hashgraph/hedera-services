@@ -610,10 +610,6 @@ class ServicesStateTest extends ResponsibleVMapUser {
         subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
         subject.setChild(StateChildIndices.ACCOUNTS, accounts);
 
-        final var when = Instant.ofEpochSecond(1_234_567L, 890);
-        given(dualState.getFreezeTime()).willReturn(when);
-        given(dualState.getLastFrozenTime()).willReturn(when);
-
         given(app.hashLogger()).willReturn(hashLogger);
         given(app.initializationFlow()).willReturn(initFlow);
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
@@ -627,7 +623,6 @@ class ServicesStateTest extends ResponsibleVMapUser {
         subject.init(platform, dualState, RESTART, currentVersion);
 
         verify(networkContext, never()).discardPreparedUpgradeMeta();
-        verify(dualState, never()).setFreezeTime(null);
     }
 
     @Test
@@ -646,10 +641,6 @@ class ServicesStateTest extends ResponsibleVMapUser {
         subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
         subject.setChild(StateChildIndices.ACCOUNTS, accounts);
 
-        final var when = Instant.ofEpochSecond(1_234_567L, 890);
-        given(dualState.getFreezeTime()).willReturn(when);
-        given(dualState.getLastFrozenTime()).willReturn(when);
-
         given(app.hashLogger()).willReturn(hashLogger);
         given(app.initializationFlow()).willReturn(initFlow);
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
@@ -664,7 +655,6 @@ class ServicesStateTest extends ResponsibleVMapUser {
         subject.init(platform, dualState, RESTART, configVersion);
 
         verify(networkContext, never()).discardPreparedUpgradeMeta();
-        verify(dualState, never()).setFreezeTime(null);
     }
 
     @Test
@@ -675,8 +665,6 @@ class ServicesStateTest extends ResponsibleVMapUser {
         subject.setChild(StateChildIndices.ACCOUNTS, accounts);
 
         final var when = Instant.ofEpochSecond(1_234_567L, 890);
-        given(dualState.getFreezeTime()).willReturn(when);
-        given(dualState.getLastFrozenTime()).willReturn(when);
         given(app.workingState()).willReturn(workingState);
 
         given(app.hashLogger()).willReturn(hashLogger);
@@ -692,7 +680,6 @@ class ServicesStateTest extends ResponsibleVMapUser {
         subject.init(platform, dualState, RESTART, justPriorVersion);
 
         verify(networkContext).discardPreparedUpgradeMeta();
-        verify(dualState).setFreezeTime(null);
         unmockMigrators();
     }
 
@@ -706,10 +693,6 @@ class ServicesStateTest extends ResponsibleVMapUser {
         subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
         subject.setChild(StateChildIndices.ACCOUNTS, accounts);
         subject.setDeserializedStateVersion(StateVersions.RELEASE_0310_VERSION);
-
-        final var when = Instant.ofEpochSecond(1_234_567L, 890);
-        given(dualState.getFreezeTime()).willReturn(when);
-        given(dualState.getLastFrozenTime()).willReturn(when);
 
         given(app.hashLogger()).willReturn(hashLogger);
         given(app.initializationFlow()).willReturn(initFlow);
@@ -725,7 +708,6 @@ class ServicesStateTest extends ResponsibleVMapUser {
 
         verify(networkContext).discardPreparedUpgradeMeta();
         verify(networkContext).markMigrationRecordsNotYetStreamed();
-        verify(dualState).setFreezeTime(null);
 
         unmockMigrators();
     }
@@ -777,10 +759,6 @@ class ServicesStateTest extends ResponsibleVMapUser {
         subject.setChild(StateChildIndices.CONTRACT_STORAGE, vmap);
         subject.setChild(StateChildIndices.PAYER_RECORDS_OR_CONSOLIDATED_FCQ, mmap);
 
-        final var when = Instant.ofEpochSecond(1_234_567L, 890);
-        given(dualState.getFreezeTime()).willReturn(when);
-        given(dualState.getLastFrozenTime()).willReturn(when);
-
         given(app.hashLogger()).willReturn(hashLogger);
         given(app.initializationFlow()).willReturn(initFlow);
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
@@ -821,8 +799,6 @@ class ServicesStateTest extends ResponsibleVMapUser {
         subject.setChild(StateChildIndices.CONTRACT_STORAGE, vmap);
 
         final var when = Instant.ofEpochSecond(1_234_567L, 890);
-        given(dualState.getFreezeTime()).willReturn(when);
-        given(dualState.getLastFrozenTime()).willReturn(when);
 
         given(app.hashLogger()).willReturn(hashLogger);
         given(app.initializationFlow()).willReturn(initFlow);
@@ -872,10 +848,6 @@ class ServicesStateTest extends ResponsibleVMapUser {
         subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
         subject.setChild(StateChildIndices.STORAGE, vmap);
         subject.setChild(StateChildIndices.CONTRACT_STORAGE, vmap);
-
-        final var when = Instant.ofEpochSecond(1_234_567L, 890);
-        given(dualState.getFreezeTime()).willReturn(when);
-        given(dualState.getLastFrozenTime()).willReturn(when);
 
         given(app.hashLogger()).willReturn(hashLogger);
         given(app.initializationFlow()).willReturn(initFlow);

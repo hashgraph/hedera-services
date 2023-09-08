@@ -434,7 +434,6 @@ public class ServicesState extends PartialNaryMerkleInternal
                 // that without a dynamic address book, this MUST be a no-op during reconnect.
                 app.stakeStartupHelper().doRestartHousekeeping(addressBook(), stakingInfo());
                 if (isUpgrade) {
-                    dualState.setFreezeTime(null);
                     networkCtx().discardPreparedUpgradeMeta();
                     if (deployedVersion.hasMigrationRecordsFrom(deserializedVersion)) {
                         networkCtx().markMigrationRecordsNotYetStreamed();
