@@ -16,9 +16,12 @@
 
 package com.hedera.node.app.workflows.handle;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE;
+import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.SAME_NODE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.NODE_DUE_DILIGENCE_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE_HANDLE_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
@@ -42,6 +45,8 @@ import com.hedera.node.app.signature.ExpandedSignaturePair;
 import com.hedera.node.app.signature.SignatureExpander;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.signature.SignatureVerifier;
+import com.hedera.node.app.spi.authorization.Authorizer;
+import com.hedera.node.app.spi.authorization.Authorizer.SystemPrivilege;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.info.NetworkInfo;
@@ -77,6 +82,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
@@ -105,6 +111,7 @@ public class HandleWorkflow {
     private final ParentRecordFinalizer transactionFinalizer;
     private final SystemFileUpdateFacility systemFileUpdateFacility;
     private final SolvencyPreCheck solvencyPreCheck;
+    private final Authorizer authorizer;
 
     @Inject
     public HandleWorkflow(
@@ -123,7 +130,8 @@ public class HandleWorkflow {
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final ParentRecordFinalizer transactionFinalizer,
             @NonNull final SystemFileUpdateFacility systemFileUpdateFacility,
-            @NonNull final SolvencyPreCheck solvencyPreCheck) {
+            @NonNull final SolvencyPreCheck solvencyPreCheck,
+            @NonNull final Authorizer authorizer) {
         this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow, "preHandleWorkflow must not be null");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
@@ -141,6 +149,7 @@ public class HandleWorkflow {
         this.systemFileUpdateFacility =
                 requireNonNull(systemFileUpdateFacility, "systemFileUpdateFacility must not be null");
         this.solvencyPreCheck = requireNonNull(solvencyPreCheck, "solvencyPreCheck must not be null");
+        this.authorizer = requireNonNull(authorizer, "authorizer must not be null");
     }
 
     /**
@@ -304,9 +313,15 @@ public class HandleWorkflow {
             fees = dispatcher.dispatchComputeFees(context);
 
             // Run all pre-checks
-            final var validationResult = validate(consensusNow, verifier, preHandleResult, readableStoreFactory, fees);
+            final var validationResult = validate(
+                    consensusNow,
+                    verifier,
+                    preHandleResult,
+                    readableStoreFactory,
+                    fees,
+                    platformEvent.getCreatorId().id());
             if (validationResult.status() != SO_FAR_SO_GOOD) {
-                if (preHandleResult.status() == NODE_DUE_DILIGENCE_FAILURE) {
+                if (validationResult.status() == NODE_DUE_DILIGENCE_FAILURE) {
                     payer = creator.accountId();
                 }
                 final var penaltyFee = new Fees(fees.nodeFee(), fees.networkFee(), 0L);
@@ -366,12 +381,36 @@ public class HandleWorkflow {
             @NonNull final HandleContextVerifier verifier,
             @NonNull final PreHandleResult preHandleResult,
             @NonNull final ReadableStoreFactory storeFactory,
-            @NonNull final Fees fees) {
-        final var txBody = preHandleResult.txInfo().txBody();
+            @NonNull final Fees fees,
+            final long nodeID) {
+        final var payerID = preHandleResult.payer();
+        final var txInfo = preHandleResult.txInfo();
+        final var functionality = txInfo.functionality();
+        final var txBody = txInfo.txBody();
 
         // Check if pre-handle was successful
         if (preHandleResult.status() != SO_FAR_SO_GOOD) {
             return new ValidationResult(preHandleResult.status(), preHandleResult.responseCode());
+        }
+
+        // Check for duplicate transactions. It is perfectly normal for there to be duplicates -- it is valid for
+        // a user to intentionally submit duplicates to multiple nodes as a hedge against dishonest nodes, or for
+        // other reasons. If we find a duplicate, we *will not* execute the transaction, we will simply charge
+        // the payer (whether the payer from the transaction or the node in the event of a due diligence failure)
+        // and create an appropriate record to save in state and send to the record stream.
+        final var duplicateCheckResult = recordCache.hasDuplicate(txBody.transactionID(), nodeID);
+        if (duplicateCheckResult != NO_DUPLICATE) {
+            return new ValidationResult(
+                    duplicateCheckResult == SAME_NODE ? NODE_DUE_DILIGENCE_FAILURE : PRE_HANDLE_FAILURE,
+                    DUPLICATE_TRANSACTION);
+        }
+
+        // Check the status and solvency of the payer
+        try {
+            final var payer = solvencyPreCheck.getPayerAccount(storeFactory, payerID);
+            solvencyPreCheck.checkSolvency(txInfo, payer, fees.totalWithoutServiceFee());
+        } catch (final PreCheckException e) {
+            return new ValidationResult(NODE_DUE_DILIGENCE_FAILURE, e.responseCode());
         }
 
         // Check the time box of the transaction
@@ -381,12 +420,18 @@ public class HandleWorkflow {
             return new ValidationResult(PRE_HANDLE_FAILURE, e.responseCode());
         }
 
-        // Check the status and solvency of the payer
-        try {
-            final var payer = solvencyPreCheck.getPayerAccount(storeFactory, preHandleResult.payer());
-            solvencyPreCheck.checkSolvency(preHandleResult.txInfo(), payer, fees.totalWithoutServiceFee());
-        } catch (final PreCheckException e) {
-            return new ValidationResult(NODE_DUE_DILIGENCE_FAILURE, e.responseCode());
+        // Check if the payer has the required permissions
+        if (!authorizer.isAuthorized(payerID, functionality)) {
+            return new ValidationResult(PRE_HANDLE_FAILURE, ResponseCodeEnum.UNAUTHORIZED);
+        }
+
+        // Check if the transaction is privileged and if the payer has the required privileges
+        final var privileges = authorizer.hasPrivilegedAuthorization(payerID, functionality, txBody);
+        if (privileges == SystemPrivilege.UNAUTHORIZED) {
+            return new ValidationResult(PRE_HANDLE_FAILURE, ResponseCodeEnum.AUTHORIZATION_FAILED);
+        }
+        if (privileges == SystemPrivilege.IMPERMISSIBLE) {
+            return new ValidationResult(PRE_HANDLE_FAILURE, ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE);
         }
 
         // Check all signature verifications. This will also wait, if validation is still ongoing.
@@ -395,8 +440,16 @@ public class HandleWorkflow {
             return new ValidationResult(NODE_DUE_DILIGENCE_FAILURE, INVALID_SIGNATURE);
         }
 
+        // verify all the keys
         for (final var key : preHandleResult.requiredKeys()) {
             final var verification = verifier.verificationFor(key);
+            if (verification.failed()) {
+                return new ValidationResult(PRE_HANDLE_FAILURE, INVALID_SIGNATURE);
+            }
+        }
+        // If there are any hollow accounts whose signatures need to be verified, verify them
+        for (final var hollowAccount : preHandleResult.hollowAccounts()) {
+            final var verification = verifier.verificationFor(hollowAccount.alias());
             if (verification.failed()) {
                 return new ValidationResult(PRE_HANDLE_FAILURE, INVALID_SIGNATURE);
             }
@@ -469,6 +522,7 @@ public class HandleWorkflow {
      * any keys need to be added. If so, we trigger the signature verification for the new keys and collect all
      * results.
      */
+    // TODO: Need to re-use expandAndVerifySignatures from PreHandleWorkflowImpl instead of duplicating this code
     @NonNull
     private PreHandleResult addMissingSignatures(
             @NonNull final ReadableStoreFactory storeFactory,
@@ -484,6 +538,16 @@ public class HandleWorkflow {
         final var context = new PreHandleContextImpl(storeFactory, txBody, configuration, dispatcher);
         dispatcher.dispatchPreHandle(context);
 
+        // re-expand keys only if any of the keys have changed
+        final var previousResults = previousResult.verificationResults();
+        final var currentRequiredPayerKeys = context.requiredNonPayerKeys();
+        final var currentOptionalPayerKeys = context.optionalNonPayerKeys();
+        final var anyKeyChanged = haveKeyChanges(previousResults, context);
+        // If none of the keys changed then non need to re-expand all signatures.
+        if (!anyKeyChanged) {
+            return previousResult;
+        }
+
         // prepare signature verification
         final var verifications = new HashMap<Key, SignatureVerificationFuture>();
         final var payerKey = previousResult.payerKey();
@@ -491,8 +555,9 @@ public class HandleWorkflow {
 
         // expand all keys
         final var expanded = new HashSet<ExpandedSignaturePair>();
-        signatureExpander.expand(context.requiredNonPayerKeys(), sigPairs, expanded);
-        signatureExpander.expand(context.optionalNonPayerKeys(), sigPairs, expanded);
+        signatureExpander.expand(sigPairs, expanded);
+        signatureExpander.expand(currentRequiredPayerKeys, sigPairs, expanded);
+        signatureExpander.expand(currentOptionalPayerKeys, sigPairs, expanded);
 
         // remove all keys that were already verified
         for (final var it = expanded.iterator(); it.hasNext(); ) {
@@ -516,8 +581,35 @@ public class HandleWorkflow {
                 previousResult.responseCode(),
                 previousResult.txInfo(),
                 context.requiredNonPayerKeys(),
+                context.requiredHollowAccounts(),
                 verifications,
                 previousResult.innerResult(),
                 previousResult.configVersion());
+    }
+
+    /**
+     * Checks if any of the keys changed from previous result to current result.
+     * Only if keys changed we need to re-expand and re-verify the signatures.
+     * @param previousResults previous result from signature verification
+     * @param context current context
+     * @return true if any of the keys changed
+     */
+    private boolean haveKeyChanges(
+            final Map<Key, SignatureVerificationFuture> previousResults, final PreHandleContextImpl context) {
+        final var currentRequiredNonPayerKeys = context.requiredNonPayerKeys();
+        final var currentOptionalNonPayerKeys = context.optionalNonPayerKeys();
+        final var currentPayerKey = context.payerKey();
+
+        for (final var key : currentRequiredNonPayerKeys) {
+            if (!previousResults.containsKey(key)) {
+                return true;
+            }
+        }
+        for (final var key : currentOptionalNonPayerKeys) {
+            if (!previousResults.containsKey(key)) {
+                return true;
+            }
+        }
+        return !previousResults.containsKey(currentPayerKey);
     }
 }

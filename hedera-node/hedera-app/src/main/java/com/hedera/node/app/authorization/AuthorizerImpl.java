@@ -24,6 +24,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.ApiPermissionConfig;
@@ -37,13 +38,17 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class AuthorizerImpl implements Authorizer {
+
     private final ConfigProvider configProvider;
     private final AccountsConfig accountsConfig;
+    private final PrivilegesVerifier privilegedTransactionChecker;
 
     @Inject
-    public AuthorizerImpl(@NonNull final ConfigProvider configProvider) {
+    public AuthorizerImpl(
+            @NonNull final ConfigProvider configProvider, @NonNull PrivilegesVerifier privilegedTransactionChecker) {
         this.configProvider = requireNonNull(configProvider);
         this.accountsConfig = configProvider.getConfiguration().getConfigData(AccountsConfig.class);
+        this.privilegedTransactionChecker = requireNonNull(privilegedTransactionChecker);
     }
 
     /** {@inheritDoc} */
@@ -62,10 +67,18 @@ public class AuthorizerImpl implements Authorizer {
     }
 
     @Override
+    public boolean isTreasury(@NonNull final AccountID accountID) {
+        if (!accountID.hasAccountNum()) return false;
+        long num = accountID.accountNumOrThrow();
+        return num == accountsConfig.treasury();
+    }
+
+    @Override
     public SystemPrivilege hasPrivilegedAuthorization(
-            @NonNull AccountID id, @NonNull HederaFunctionality functionality, @NonNull TransactionBody txBody) {
-        // TODO: Implement this
-        return SystemPrivilege.UNNECESSARY;
+            @NonNull final AccountID payerId,
+            @NonNull final HederaFunctionality functionality,
+            @NonNull final TransactionBody txBody) {
+        return privilegedTransactionChecker.hasPrivileges(payerId, functionality, txBody);
     }
 
     private ResponseCodeEnum permissibilityOf(
