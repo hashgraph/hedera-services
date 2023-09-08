@@ -16,18 +16,19 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts;
 
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.haltResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertSamePrecompileResult;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AttemptFactory;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttemptFactory;
 import java.nio.ByteBuffer;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,10 +46,7 @@ class HtsSystemContractTest {
     private MessageFrame frame;
 
     @Mock
-    private HtsCallAttempt callAttempt;
-
-    @Mock
-    private AttemptFactory attemptFactory;
+    private HtsCallAttemptFactory attemptFactory;
 
     @Mock
     private GasCalculator gasCalculator;
@@ -71,9 +69,12 @@ class HtsSystemContractTest {
     }
 
     @Test
-    void invalidCallAttemptNotImplemented() {
-        givenCallAttempt();
-        assertThrows(AssertionError.class, () -> subject.computeFully(Bytes.EMPTY, frame));
+    void invalidCallAttemptHaltsAndConsumesRemainingGas() {
+        given(attemptFactory.createCallFrom(Bytes.EMPTY, frame)).willThrow(RuntimeException.class);
+
+        final var expected = haltResult(ExceptionalHaltReason.INVALID_OPERATION, frame.getRemainingGas());
+        final var result = subject.computeFully(Bytes.EMPTY, frame);
+        assertSamePrecompileResult(expected, result);
     }
 
     @Test
@@ -86,12 +87,6 @@ class HtsSystemContractTest {
     }
 
     private void givenValidCallAttempt() {
-        givenCallAttempt();
-        given(callAttempt.asCallFrom(EIP_1014_ADDRESS)).willReturn(call);
-    }
-
-    private void givenCallAttempt() {
-        given(frame.getSenderAddress()).willReturn(EIP_1014_ADDRESS);
-        given(attemptFactory.createFrom(Bytes.EMPTY, frame)).willReturn(callAttempt);
+        given(attemptFactory.createCallFrom(Bytes.EMPTY, frame)).willReturn(call);
     }
 }
