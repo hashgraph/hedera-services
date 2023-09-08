@@ -135,14 +135,23 @@ public class ScheduleEqualityVirtualValue extends PartialMerkleLeaf
 
     @Override
     public void serialize(ByteBuffer out) throws IOException {
+        serializeReturningBytesWritten(out);
+    }
+
+    int serializeReturningBytesWritten(ByteBuffer out) {
+        int bytesWritten = 0;
         out.putInt(ids.size());
+        bytesWritten += Integer.BYTES;
         for (var e : ids.entrySet()) {
             var keyBytes = e.getKey().getBytes(StandardCharsets.UTF_8);
             out.putInt(keyBytes.length);
             out.put(keyBytes);
             out.putLong(e.getValue());
+            bytesWritten += Integer.BYTES + keyBytes.length + Long.BYTES;
         }
         out.putLong(number);
+        bytesWritten += Long.BYTES;
+        return bytesWritten;
     }
 
     @Override

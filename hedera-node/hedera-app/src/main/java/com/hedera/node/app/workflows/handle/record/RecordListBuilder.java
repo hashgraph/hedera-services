@@ -23,6 +23,7 @@ import com.hedera.node.config.data.ConsensusConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -40,10 +41,11 @@ import java.util.stream.Stream;
 public class RecordListBuilder {
 
     private static final String CONFIGURATION_MUST_NOT_BE_NULL = "configuration must not be null";
-    private final List<SingleTransactionRecordBuilderImpl> recordBuilders = new ArrayList<>();
+    private final SingleTransactionRecordBuilderImpl userTxnRecordBuilder;
 
-    private List<SingleTransactionRecordBuilderImpl> precedingRecordBuilders;
-    private Set<SingleTransactionRecordBuilderImpl> removableChildRecordBuilders;
+    private List<SingleTransactionRecordBuilderImpl> precedingTxnRecordBuilders;
+    private List<SingleTransactionRecordBuilderImpl> childRecordBuilders;
+    private Set<SingleTransactionRecordBuilderImpl> removableChildTxnRecordBuilders;
 
     /**
      * Creates a new instance with a single record builder for the user transaction.
@@ -52,8 +54,36 @@ public class RecordListBuilder {
      * @throws NullPointerException if {@code recordBuilder} is {@code null}
      */
     public RecordListBuilder(@NonNull final SingleTransactionRecordBuilderImpl recordBuilder) {
-        requireNonNull(recordBuilder, "recordBuilder must not be null");
-        recordBuilders.add(recordBuilder);
+        this.userTxnRecordBuilder = requireNonNull(recordBuilder, "recordBuilder must not be null");
+    }
+
+    /**
+     * Returns the main record builder
+     *
+     * @return the main record builder
+     */
+    public SingleTransactionRecordBuilderImpl userTransactionRecordBuilder() {
+        return userTxnRecordBuilder;
+    }
+
+    /**
+     * Returns an unmodifiable {@link List} of all preceding record builders.
+     *
+     * @return all preceding record builders
+     */
+    public List<SingleTransactionRecordBuilderImpl> precedingRecordBuilders() {
+        return precedingTxnRecordBuilders != null
+                ? Collections.unmodifiableList(precedingTxnRecordBuilders)
+                : List.of();
+    }
+
+    /**
+     * Returns an unmodifiable {@link List} of all child record builders.
+     *
+     * @return all child record builders
+     */
+    public List<SingleTransactionRecordBuilderImpl> childRecordBuilders() {
+        return childRecordBuilders != null ? Collections.unmodifiableList(childRecordBuilders) : List.of();
     }
 
     /**
@@ -66,22 +96,22 @@ public class RecordListBuilder {
      */
     public SingleTransactionRecordBuilderImpl addPreceding(@NonNull final Configuration configuration) {
         requireNonNull(configuration, CONFIGURATION_MUST_NOT_BE_NULL);
-        if (precedingRecordBuilders == null) {
-            precedingRecordBuilders = new ArrayList<>();
+        if (precedingTxnRecordBuilders == null) {
+            precedingTxnRecordBuilders = new ArrayList<>();
         }
-        final int precedingCount = precedingRecordBuilders.size();
+        final int precedingCount = precedingTxnRecordBuilders.size();
         final var consensusConfig = configuration.getConfigData(ConsensusConfig.class);
         final long maxRecords = consensusConfig.handleMaxPrecedingRecords();
         if (precedingCount >= maxRecords) {
             throw new IndexOutOfBoundsException("No more preceding slots available");
         }
 
-        final var consensusNow = precedingCount == 0
-                ? recordBuilders.get(0).consensusNow().minusNanos(maxRecords)
-                : precedingRecordBuilders.get(precedingCount - 1).consensusNow().plusNanos(1L);
-        final var recordBuilder = new SingleTransactionRecordBuilderImpl(consensusNow);
+        final var parentConsensusTimestamp = userTxnRecordBuilder.consensusNow();
+        final var consensusNow = parentConsensusTimestamp.minusNanos(maxRecords - precedingCount);
+        final var recordBuilder =
+                new SingleTransactionRecordBuilderImpl(consensusNow).exchangeRate(userTxnRecordBuilder.exchangeRate());
 
-        precedingRecordBuilders.add(recordBuilder);
+        precedingTxnRecordBuilders.add(recordBuilder);
         return recordBuilder;
     }
 
@@ -119,26 +149,31 @@ public class RecordListBuilder {
 
         final var recordBuilder = doAddChild(configuration);
 
-        if (removableChildRecordBuilders == null) {
-            removableChildRecordBuilders = new HashSet<>();
+        if (removableChildTxnRecordBuilders == null) {
+            removableChildTxnRecordBuilders = new HashSet<>();
         }
-        removableChildRecordBuilders.add(recordBuilder);
+        removableChildTxnRecordBuilders.add(recordBuilder);
         return recordBuilder;
     }
 
     private SingleTransactionRecordBuilderImpl doAddChild(@NonNull final Configuration configuration) {
-        final int childCount = recordBuilders.size();
+        if (childRecordBuilders == null) {
+            childRecordBuilders = new ArrayList<>();
+        }
+
+        final var childCount = childRecordBuilders.size();
         final var consensusConfig = configuration.getConfigData(ConsensusConfig.class);
-        if (childCount > consensusConfig.handleMaxFollowingRecords()) {
+        if (childCount >= consensusConfig.handleMaxFollowingRecords()) {
             throw new IndexOutOfBoundsException("No more child slots available");
         }
 
-        final var previousRecord = recordBuilders.get(childCount - 1);
+        final var parentConsensusTimestamp = userTxnRecordBuilder.consensusNow();
+        final var previousRecord = childCount == 0 ? userTxnRecordBuilder : childRecordBuilders.get(childCount - 1);
         final var consensusNow = previousRecord.consensusNow().plusNanos(1L);
-        final var parentConsensusTimestamp =
-                childCount == 1 ? previousRecord.consensusNow() : previousRecord.parentConsensusTimestamp();
-        final var recordBuilder = new SingleTransactionRecordBuilderImpl(consensusNow, parentConsensusTimestamp);
-        recordBuilders.add(recordBuilder);
+        final var recordBuilder = new SingleTransactionRecordBuilderImpl(consensusNow)
+                .parentConsensus(parentConsensusTimestamp)
+                .exchangeRate(userTxnRecordBuilder.exchangeRate());
+        childRecordBuilders.add(recordBuilder);
         return recordBuilder;
     }
 
@@ -150,16 +185,25 @@ public class RecordListBuilder {
      */
     public void revertChildRecordBuilders(@NonNull final SingleTransactionRecordBuilderImpl recordBuilder) {
         requireNonNull(recordBuilder, "recordBuilder must not be null");
-        final int index = recordBuilders.indexOf(recordBuilder);
-        if (index < 0) {
-            throw new IllegalArgumentException("recordBuilder not found");
+        if (childRecordBuilders == null) {
+            childRecordBuilders = new ArrayList<>();
         }
-        final var children = recordBuilders.subList(index + 1, recordBuilders.size());
+        final int index;
+        if (recordBuilder == userTxnRecordBuilder) {
+            index = 0;
+        } else {
+            index = childRecordBuilders.indexOf(recordBuilder) + 1;
+            if (index == 0) {
+                throw new IllegalArgumentException("recordBuilder not found");
+            }
+        }
+        final var children = childRecordBuilders.subList(index, childRecordBuilders.size());
         for (final var it = children.iterator(); it.hasNext(); ) {
             final SingleTransactionRecordBuilderImpl childRecordBuilder = it.next();
-            if (removableChildRecordBuilders != null && removableChildRecordBuilders.contains(childRecordBuilder)) {
+            if (removableChildTxnRecordBuilders != null
+                    && removableChildTxnRecordBuilders.contains(childRecordBuilder)) {
                 it.remove();
-                removableChildRecordBuilders.remove(childRecordBuilder);
+                removableChildTxnRecordBuilders.remove(childRecordBuilder);
             } else {
                 if (childRecordBuilder.status() == ResponseCodeEnum.OK) {
                     childRecordBuilder.status(ResponseCodeEnum.REVERTED_SUCCESS);
@@ -174,15 +218,37 @@ public class RecordListBuilder {
      * @return the stream of all records
      */
     public Result build() {
-        final var mainRecord = recordBuilders.get(0).build();
-        final var childRecordStream = recordBuilders.stream().skip(1).map(SingleTransactionRecordBuilderImpl::build);
-        final var mainRecordStream = Stream.concat(Stream.of(mainRecord), childRecordStream);
-        final var recordStream = precedingRecordBuilders == null
-                ? mainRecordStream
-                : Stream.concat(
-                        precedingRecordBuilders.stream().map(SingleTransactionRecordBuilderImpl::build),
-                        mainRecordStream);
-        return new Result(mainRecord, recordStream);
+        final var userTxnRecord = userTxnRecordBuilder.build();
+
+        Stream<SingleTransactionRecord> recordStream = Stream.of(userTxnRecord);
+
+        if (precedingTxnRecordBuilders != null) {
+            prepareBuilders(precedingTxnRecordBuilders);
+            recordStream = Stream.concat(
+                    precedingTxnRecordBuilders.stream().map(SingleTransactionRecordBuilderImpl::build), recordStream);
+        }
+
+        if (childRecordBuilders != null) {
+            prepareBuilders(childRecordBuilders);
+            recordStream = Stream.concat(
+                    recordStream, childRecordBuilders.stream().map(SingleTransactionRecordBuilderImpl::build));
+        }
+
+        return new Result(userTxnRecord, recordStream);
+    }
+
+    private void prepareBuilders(@NonNull List<SingleTransactionRecordBuilderImpl> recordBuilders) {
+        int nextNonce = 0;
+        for (final var recordBuilder : recordBuilders) {
+            if (recordBuilder.transactionID() == null) {
+                final var transactionID = userTxnRecordBuilder
+                        .transactionID()
+                        .copyBuilder()
+                        .nonce(nextNonce++)
+                        .build();
+                recordBuilder.transactionID(transactionID);
+            }
+        }
     }
 
     /*
@@ -190,11 +256,17 @@ public class RecordListBuilder {
      * Added this method temporarily to check the content of this object.
      */
     Stream<SingleTransactionRecordBuilderImpl> builders() {
-        return precedingRecordBuilders == null
-                ? recordBuilders.stream()
-                : Stream.concat(precedingRecordBuilders.stream(), recordBuilders.stream());
+        Stream<SingleTransactionRecordBuilderImpl> recordBuilders = Stream.of(userTxnRecordBuilder);
+        if (precedingTxnRecordBuilders != null) {
+            recordBuilders = Stream.concat(precedingTxnRecordBuilders.stream(), recordBuilders);
+        }
+        if (childRecordBuilders != null) {
+            recordBuilders = Stream.concat(recordBuilders, childRecordBuilders.stream());
+        }
+        return recordBuilders;
     }
 
     public record Result(
-            @NonNull SingleTransactionRecord mainRecord, @NonNull Stream<SingleTransactionRecord> recordStream) {}
+            @NonNull SingleTransactionRecord userTransactionRecord,
+            @NonNull Stream<SingleTransactionRecord> recordStream) {}
 }

@@ -18,11 +18,6 @@ name: "Node: Build Application"
 on:
   workflow_dispatch:
     inputs:
-      enable-javadoc:
-        description: "Javadoc Enabled"
-        type: boolean
-        required: false
-        default: true
       enable-unit-tests:
         description: "Unit Testing Enabled"
         type: boolean
@@ -86,7 +81,6 @@ jobs:
       java-version: ${{ github.event.inputs.java-version || '17.0.3' }}
       java-distribution: ${{ github.event.inputs.java-distribution || 'temurin' }}
       gradle-version: ${{ github.event.inputs.gradle-version || 'wrapper' }}
-      enable-javadoc: ${{ github.event_name == 'push' || github.event.inputs.enable-javadoc == 'true' }}
       enable-unit-tests: ${{ github.event_name == 'push' || github.event.inputs.enable-unit-tests == 'true' }}
       enable-sonar-analysis: ${{ github.event_name == 'push' || github.event.inputs.enable-sonar-analysis == 'true' }}
       enable-integration-tests: ${{ github.event_name == 'push' || github.event.inputs.enable-integration-tests == 'true' }}

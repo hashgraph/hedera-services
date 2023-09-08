@@ -113,13 +113,4 @@ public class PlatformState extends PartialBinaryMerkleInternal implements Merkle
     public void setPlatformData(final PlatformData round) {
         setChild(ChildIndices.PLATFORM_DATA, round);
     }
-
-    /**
-     * Generates a one-line summary of important fields from the <code>PlatformState</code>, meant to be logged at
-     * the
-     * same time as a call to <code>MerkleHashChecker.generateHashDebugString()</code>.
-     */
-    public String getInfoString() {
-        return getPlatformData().getInfoString(getAddressBook().getHash());
-    }
 }

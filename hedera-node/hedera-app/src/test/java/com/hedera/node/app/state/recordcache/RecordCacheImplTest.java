@@ -21,6 +21,9 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNKNOWN;
+import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE;
+import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.OTHER_NODE;
+import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.SAME_NODE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.lenient;
@@ -35,6 +38,7 @@ import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.fixtures.state.FakeSchemaRegistry;
 import com.hedera.node.app.spi.fixtures.state.ListWritableQueueState;
+import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.state.WritableQueueState;
 import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.state.WorkingStateAccessor;
@@ -81,13 +85,14 @@ final class RecordCacheImplTest {
     void setUp(
             @Mock final VersionedConfiguration versionedConfig,
             @Mock final HederaConfig hederaConfig,
-            @Mock final LedgerConfig ledgerConfig) {
+            @Mock final LedgerConfig ledgerConfig,
+            @Mock final NetworkInfo networkInfo) {
         dedupeCache = new DeduplicationCacheImpl(props);
         final var registry = new FakeSchemaRegistry();
         final var state = new FakeHederaState();
         final var svc = new RecordCacheService();
         svc.registerSchemas(registry);
-        registry.migrate(svc.getServiceName(), state);
+        registry.migrate(svc.getServiceName(), state, networkInfo);
         lenient().when(wsa.getHederaState()).thenReturn(state);
         lenient().when(props.getConfiguration()).thenReturn(versionedConfig);
         lenient().when(versionedConfig.getConfigData(HederaConfig.class)).thenReturn(hederaConfig);
@@ -579,6 +584,119 @@ final class RecordCacheImplTest {
             final var allValues = new HashSet<>(Arrays.asList(ResponseCodeEnum.values()));
             allValues.remove(UNKNOWN);
             return allValues.stream().map(Arguments::of);
+        }
+    }
+
+    @Nested
+    @DisplayName("Duplicate checks")
+    final class DuplicateCheckTests {
+
+        @Test
+        @DisplayName("Null args to hasDuplicate throw NPE")
+        @SuppressWarnings("DataFlowIssue")
+        void duplicateCheckWithIllegalParameters() {
+            final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
+            assertThatThrownBy(() -> cache.hasDuplicate(null, 1L)).isInstanceOf(NullPointerException.class);
+        }
+
+        @Test
+        @DisplayName("Check duplicate for unknown txn returns NO_DUPLICATE")
+        void duplicateCheckForUnknownTxn() {
+            final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
+            final var missingTxId = transactionID();
+
+            assertThat(cache.hasDuplicate(missingTxId, 1L)).isEqualTo(NO_DUPLICATE);
+        }
+
+        @Test
+        @DisplayName("Check duplicate for tx with receipt in UNKNOWN state returns NO_DUPLICATE")
+        void duplicateCheckForUnknownState() {
+            final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
+            final var txId = transactionID();
+            dedupeCache.add(txId);
+
+            assertThat(cache.hasDuplicate(txId, 1L)).isEqualTo(NO_DUPLICATE);
+        }
+
+        @Test
+        @DisplayName("Check duplicate for txn with a proper record from other node")
+        void duplicateCheckForTxnFromOtherNode() {
+            // Given a transaction known to the de-duplication cache but not the record cache
+            final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
+            final var txId = transactionID();
+            final var receipt = TransactionReceipt.newBuilder().status(OK).build();
+            final var record = TransactionRecord.newBuilder()
+                    .transactionID(txId)
+                    .receipt(receipt)
+                    .build();
+
+            // When the record is added to the cache
+            cache.add(1L, PAYER_ACCOUNT_ID, record, Instant.now());
+
+            // Then we can check for a duplicate by transaction ID
+            assertThat(cache.hasDuplicate(txId, 2L)).isEqualTo(OTHER_NODE);
+        }
+
+        @Test
+        @DisplayName("Check duplicate for txn with a proper record from same node")
+        void duplicateCheckForTxnFromSameNode() {
+            // Given a transaction known to the de-duplication cache but not the record cache
+            final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
+            final var txId = transactionID();
+            final var receipt = TransactionReceipt.newBuilder().status(OK).build();
+            final var record = TransactionRecord.newBuilder()
+                    .transactionID(txId)
+                    .receipt(receipt)
+                    .build();
+
+            // When the record is added to the cache
+            cache.add(1L, PAYER_ACCOUNT_ID, record, Instant.now());
+
+            // Then we can check for a duplicate by transaction ID
+            assertThat(cache.hasDuplicate(txId, 1L)).isEqualTo(SAME_NODE);
+        }
+
+        @Test
+        @DisplayName("Check duplicate for txn with a proper record from several other nodes")
+        void duplicateCheckForTxnFromMultipleOtherNodes() {
+            // Given a transaction known to the de-duplication cache but not the record cache
+            final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
+            final var txId = transactionID();
+            final var receipt = TransactionReceipt.newBuilder().status(OK).build();
+            final var record = TransactionRecord.newBuilder()
+                    .transactionID(txId)
+                    .receipt(receipt)
+                    .build();
+
+            // When the record is added to the cache
+            cache.add(1L, PAYER_ACCOUNT_ID, record, Instant.now());
+            cache.add(2L, PAYER_ACCOUNT_ID, record, Instant.now());
+            cache.add(3L, PAYER_ACCOUNT_ID, record, Instant.now());
+
+            // Then we can check for a duplicate by transaction ID
+            assertThat(cache.hasDuplicate(txId, 11L)).isEqualTo(OTHER_NODE);
+        }
+
+        @ParameterizedTest
+        @ValueSource(longs = {1L, 2L, 3L})
+        @DisplayName("Check duplicate for txn with a proper record from several nodes including the current")
+        void duplicateCheckForTxnFromMultipleNodesIncludingCurrent(final long currentNodeId) {
+            // Given a transaction known to the de-duplication cache but not the record cache
+            final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
+            final var txId = transactionID();
+            final var receipt = TransactionReceipt.newBuilder().status(OK).build();
+            final var record = TransactionRecord.newBuilder()
+                    .transactionID(txId)
+                    .receipt(receipt)
+                    .build();
+
+            // When the record is added to the cache
+            cache.add(1L, PAYER_ACCOUNT_ID, record, Instant.now());
+            cache.add(2L, PAYER_ACCOUNT_ID, record, Instant.now());
+            cache.add(3L, PAYER_ACCOUNT_ID, record, Instant.now());
+
+            // Then we can check for a duplicate by transaction ID
+            assertThat(cache.hasDuplicate(txId, currentNodeId)).isEqualTo(SAME_NODE);
         }
     }
 }

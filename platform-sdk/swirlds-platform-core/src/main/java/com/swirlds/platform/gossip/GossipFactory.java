@@ -20,6 +20,7 @@ import static com.swirlds.logging.LogMarker.STARTUP;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
@@ -39,10 +40,8 @@ import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.gossip.chatter.ChatterGossip;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
-import com.swirlds.platform.gossip.sync.LegacySyncGossip;
 import com.swirlds.platform.gossip.sync.SingleNodeSyncGossip;
 import com.swirlds.platform.gossip.sync.SyncGossip;
-import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.observers.EventObserverDispatcher;
@@ -50,6 +49,7 @@ import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -76,6 +76,7 @@ public final class GossipFactory {
      * @param addressBook                   the current address book
      * @param selfId                        this node's ID
      * @param appVersion                    the version of the app
+     * @param epochHash                     the epoch hash of the initial state
      * @param shadowGraph                   contains non-ancient events
      * @param emergencyRecoveryManager      handles emergency recovery
      * @param consensusRef                  a pointer to consensus
@@ -106,6 +107,7 @@ public final class GossipFactory {
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
             @NonNull final SoftwareVersion appVersion,
+            @Nullable final Hash epochHash,
             @NonNull final ShadowGraph shadowGraph,
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
             @NonNull final AtomicReference<Consensus> consensusRef,
@@ -152,7 +154,6 @@ public final class GossipFactory {
         Objects.requireNonNull(clearAllPipelinesForReconnect);
 
         final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
-        final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
 
         if (chatterConfig.useChatter()) {
             logger.info(STARTUP.getMarker(), "Using ChatterGossip");
@@ -165,6 +166,7 @@ public final class GossipFactory {
                     addressBook,
                     selfId,
                     appVersion,
+                    epochHash,
                     shadowGraph,
                     emergencyRecoveryManager,
                     consensusRef,
@@ -183,7 +185,7 @@ public final class GossipFactory {
                     statusActionSubmitter,
                     loadReconnectState,
                     clearAllPipelinesForReconnect);
-        } else if (syncConfig.syncAsProtocolEnabled()) {
+        } else {
             if (addressBook.getSize() == 1) {
                 logger.info(STARTUP.getMarker(), "Using SingleNodeSyncGossip");
                 return new SingleNodeSyncGossip(
@@ -219,6 +221,7 @@ public final class GossipFactory {
                         addressBook,
                         selfId,
                         appVersion,
+                        epochHash,
                         shadowGraph,
                         emergencyRecoveryManager,
                         consensusRef,
@@ -232,35 +235,11 @@ public final class GossipFactory {
                         eventMapper,
                         eventIntakeMetrics,
                         syncMetrics,
+                        eventLinker,
                         statusActionSubmitter,
                         loadReconnectState,
                         clearAllPipelinesForReconnect);
             }
-        } else {
-            logger.info(STARTUP.getMarker(), "Using LegacySyncGossip");
-            return new LegacySyncGossip(
-                    platformContext,
-                    threadManager,
-                    time,
-                    crypto,
-                    addressBook,
-                    selfId,
-                    appVersion,
-                    shadowGraph,
-                    consensusRef,
-                    intakeQueue,
-                    freezeManager,
-                    startUpEventFrozenManager,
-                    swirldStateManager,
-                    stateManagementComponent,
-                    eventIntakeLambda,
-                    eventObserverDispatcher,
-                    eventMapper,
-                    eventIntakeMetrics,
-                    syncMetrics,
-                    statusActionSubmitter,
-                    loadReconnectState,
-                    clearAllPipelinesForReconnect);
         }
     }
 }

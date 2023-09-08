@@ -23,6 +23,7 @@ import static com.swirlds.common.formatting.TextEffect.applyEffects;
 import static com.swirlds.common.formatting.TextEffect.getPrintableTextLength;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -94,6 +95,7 @@ public class TextTable {
      * 		whether borders should be enabled
      * @return this object
      */
+    @NonNull
     public TextTable setBordersEnabled(final boolean bordersEnabled) {
         this.bordersEnabled = bordersEnabled;
         return this;
@@ -106,6 +108,7 @@ public class TextTable {
      * 		the number of extra spaces to add to each column
      * @return this object
      */
+    @NonNull
     public TextTable setExtraPadding(final int extraPadding) {
         this.extraPadding = extraPadding;
         return this;
@@ -118,7 +121,8 @@ public class TextTable {
      * 		the title of the table
      * @return this object
      */
-    public TextTable setTitle(final String title) {
+    @NonNull
+    public TextTable setTitle(@NonNull final String title) {
         this.title = title;
         return this;
     }
@@ -131,12 +135,13 @@ public class TextTable {
      * @return this object
      */
     @SuppressWarnings("DuplicatedCode")
-    public TextTable addRow(final Object... row) {
+    @NonNull
+    public TextTable addRow(@Nullable final Object... row) {
         if (row != null) {
             final List<String> rowString = new ArrayList<>();
 
             for (final Object o : row) {
-                rowString.add(o.toString());
+                rowString.add(o == null ? "null" : o.toString());
             }
 
             rows.add(rowString);
@@ -152,7 +157,8 @@ public class TextTable {
      * 		the elements to add to the current row
      * @return this object
      */
-    public TextTable addToRow(final Object... elements) {
+    @NonNull
+    public TextTable addToRow(@NonNull final Object... elements) {
         final List<String> row;
         if (rows.isEmpty()) {
             row = new ArrayList<>();
@@ -162,7 +168,7 @@ public class TextTable {
         }
 
         for (final Object o : elements) {
-            row.add(o.toString());
+            row.add(o == null ? "null" : o.toString());
         }
 
         return this;
@@ -189,7 +195,8 @@ public class TextTable {
      * 		zero or more effects to add for the row
      * @return this object
      */
-    public TextTable addRowEffects(final int row, final TextEffect... effects) {
+    @NonNull
+    public TextTable addRowEffects(final int row, @Nullable final TextEffect... effects) {
         if (effects == null) {
             return this;
         }
@@ -222,7 +229,8 @@ public class TextTable {
      * 		zero or more effects to add for the column
      * @return this object
      */
-    public TextTable addColumnEffects(final int column, final TextEffect... effects) {
+    @NonNull
+    public TextTable addColumnEffects(final int column, @Nullable final TextEffect... effects) {
         if (effects == null) {
             return this;
         }
@@ -256,7 +264,8 @@ public class TextTable {
      * 		zero or more effects to add for the cell
      * @return this object
      */
-    public TextTable addCellEffects(final int row, final int column, final TextEffect... effects) {
+    @NonNull
+    public TextTable addCellEffects(final int row, final int column, @Nullable final TextEffect... effects) {
         if (effects == null) {
             return this;
         }
@@ -276,7 +285,8 @@ public class TextTable {
      * 		zero or more effects to add to the title
      * @return this object
      */
-    public TextTable addTitleEffects(final TextEffect... effects) {
+    @NonNull
+    public TextTable addTitleEffects(@Nullable final TextEffect... effects) {
         if (effects == null) {
             return this;
         }
@@ -303,7 +313,8 @@ public class TextTable {
      * 		zero or more effects to add to all cells
      * @return this object
      */
-    public TextTable addGlobalCellEffects(final TextEffect... effects) {
+    @NonNull
+    public TextTable addGlobalCellEffects(@Nullable final TextEffect... effects) {
         if (effects == null) {
             return this;
         }
@@ -318,7 +329,8 @@ public class TextTable {
      * 		zero or more effects to add to borders
      * @return this object
      */
-    public TextTable addBorderEffects(final TextEffect... effects) {
+    @NonNull
+    public TextTable addBorderEffects(@Nullable final TextEffect... effects) {
         if (effects == null) {
             return this;
         }
@@ -347,6 +359,7 @@ public class TextTable {
      * 		the alignment of the row
      * @return this object
      */
+    @NonNull
     public TextTable setRowHorizontalAlignment(final int row, @NonNull final HorizontalAlignment alignment) {
         Objects.requireNonNull(alignment, "alignment must not be null");
         rowHorizontalAlignments.put(row, alignment);
@@ -374,6 +387,7 @@ public class TextTable {
      * 		the alignment of the column
      * @return this object
      */
+    @NonNull
     public TextTable setColumnHorizontalAlignment(final int column, @NonNull final HorizontalAlignment alignment) {
         Objects.requireNonNull(alignment, "alignment must not be null");
         columnHorizontalAlignments.put(column, alignment);
@@ -403,6 +417,7 @@ public class TextTable {
      * 		the alignment of the cell
      * @return this object
      */
+    @NonNull
     public TextTable setCellHorizontalAlignment(
             final int row, final int column, @NonNull final HorizontalAlignment alignment) {
         Objects.requireNonNull(alignment, "alignment must not be null");
@@ -417,6 +432,7 @@ public class TextTable {
      * 		the alignment of the title
      * @return this object
      */
+    @NonNull
     public TextTable setTitleHorizontalAlignment(@NonNull final HorizontalAlignment alignment) {
         Objects.requireNonNull(alignment, "alignment must not be null");
         titleHorizontalAlignment = alignment;
@@ -442,6 +458,7 @@ public class TextTable {
      * 		the alignment for the entire table
      * @return this object
      */
+    @NonNull
     public TextTable setGlobalHorizontalAlignment(@NonNull final HorizontalAlignment alignment) {
         Objects.requireNonNull(alignment, "alignment must not be null");
         globalHorizontalAlignment = alignment;
@@ -451,7 +468,8 @@ public class TextTable {
     /**
      * Format cell data.
      */
-    private String formatCellData(final int row, final int column, final String cellData) {
+    @NonNull
+    private String formatCellData(final int row, final int column, @NonNull final String cellData) {
         final List<TextEffect> effects = new ArrayList<>(globalCellEffects);
         if (rowEffects.containsKey(row)) {
             effects.addAll(rowEffects.get(row));
@@ -475,7 +493,12 @@ public class TextTable {
      * Format a cell with left/right alignment.
      */
     private void alignCellData(
-            final StringBuilder sb, final int row, final int column, final String cellData, final int desiredWidth) {
+            @NonNull final StringBuilder sb,
+            final int row,
+            final int column,
+            @NonNull final String cellData,
+            final int desiredWidth,
+            final boolean isLastColumn) {
 
         final HorizontalAlignment alignment;
 
@@ -491,13 +514,15 @@ public class TextTable {
             alignment = globalHorizontalAlignment;
         }
 
-        alignment.pad(sb, cellData, desiredWidth);
+        final boolean trailingPadding = bordersEnabled || !isLastColumn;
+
+        alignment.pad(sb, cellData, ' ', desiredWidth, trailingPadding);
     }
 
     /**
      * Format a border character(s) and write it to a string builder.
      */
-    private void writeBorder(final StringBuilder sb, final String border) {
+    private void writeBorder(@NonNull final StringBuilder sb, @NonNull final String border) {
         if (borderEffects.isEmpty()) {
             sb.append(border);
         } else {
@@ -508,7 +533,7 @@ public class TextTable {
     /**
      * Format a border character and write it to a string builder.
      */
-    private void writeBorder(final StringBuilder sb, final char border) {
+    private void writeBorder(@NonNull final StringBuilder sb, final char border) {
         writeBorder(sb, String.valueOf(border));
     }
 
@@ -519,7 +544,8 @@ public class TextTable {
      * @param row
      * 		the row that needs to be fitted into the table
      */
-    private static void expandColumnWidthsForRow(final List<Integer> columnWidths, final List<String> row) {
+    private static void expandColumnWidthsForRow(
+            @NonNull final List<Integer> columnWidths, @NonNull final List<String> row) {
         for (int column = 0; column < row.size(); column++) {
 
             final int columnWidth = getPrintableTextLength(row.get(column));
@@ -550,7 +576,8 @@ public class TextTable {
     /**
      * Generate the top of the table.
      */
-    private void generateTopLine(final StringBuilder sb, final List<Integer> columnWidths, final int columnWidthSum) {
+    private void generateTopLine(
+            @NonNull final StringBuilder sb, @NonNull final List<Integer> columnWidths, final int columnWidthSum) {
 
         if (!bordersEnabled) {
             return;
@@ -563,7 +590,7 @@ public class TextTable {
         } else {
 
             for (int columnIndex = 0; columnIndex < columnWidths.size(); columnIndex++) {
-                writeBorder(sb, repeatedChar(THICK_HORIZONTAL_BAR, columnWidths.get(columnIndex) + 2));
+                writeBorder(sb, repeatedChar(THICK_HORIZONTAL_BAR, columnWidths.get(columnIndex) + 2 + extraPadding));
                 if (columnIndex + 1 < columnWidths.size()) {
                     writeBorder(sb, TOP_JUNCTION);
                 }
@@ -577,7 +604,7 @@ public class TextTable {
     /**
      * Generate the line containing the title.
      */
-    private void generateTitleLine(final StringBuilder sb, final int columnWidthSum, final int columnCount) {
+    private void generateTitleLine(@NonNull final StringBuilder sb, final int columnWidthSum, final int columnCount) {
         if (title == null) {
             return;
         }
@@ -596,7 +623,7 @@ public class TextTable {
             titleWidth = columnWidthSum + columnCount * 3 - 1;
         }
 
-        titleHorizontalAlignment.pad(sb, formattedTitle, titleWidth);
+        titleHorizontalAlignment.pad(sb, formattedTitle, ' ', titleWidth, bordersEnabled);
 
         if (bordersEnabled) {
             sb.append(PADDING);
@@ -608,14 +635,14 @@ public class TextTable {
     /**
      * Generate the line between the title and the headers.
      */
-    private void generateLineBelowTitle(final StringBuilder sb, final List<Integer> columnWidths) {
+    private void generateLineBelowTitle(@NonNull final StringBuilder sb, @NonNull final List<Integer> columnWidths) {
         if (title == null || !bordersEnabled) {
             return;
         }
 
         writeBorder(sb, LEFT_HEADER_JUNCTION);
         for (int columnIndex = 0; columnIndex < columnWidths.size(); columnIndex++) {
-            writeBorder(sb, repeatedChar(THICK_HORIZONTAL_BAR, columnWidths.get(columnIndex) + 2));
+            writeBorder(sb, repeatedChar(THICK_HORIZONTAL_BAR, columnWidths.get(columnIndex) + 2 + extraPadding));
             if (columnIndex + 1 < columnWidths.size()) {
                 writeBorder(sb, TOP_JUNCTION);
             }
@@ -627,7 +654,8 @@ public class TextTable {
     /**
      * Generate a row containing column data.
      */
-    private void generateDataRow(final StringBuilder sb, final int row, final List<Integer> columnWidths) {
+    private void generateDataRow(
+            @NonNull final StringBuilder sb, final int row, @NonNull final List<Integer> columnWidths) {
 
         final List<String> rowData = rows.get(row);
 
@@ -643,11 +671,11 @@ public class TextTable {
 
             final String cellData = column < rowData.size() ? rowData.get(column) : "";
             final String formattedCellData = formatCellData(row, column, cellData);
-            alignCellData(sb, row, column, formattedCellData, columnWidths.get(column));
+            final boolean isLastColumn = column == columnWidths.size() - 1;
+            alignCellData(sb, row, column, formattedCellData, columnWidths.get(column), isLastColumn);
 
-            sb.append(PADDING);
-            if (extraPadding > 0) {
-                sb.append(repeatedChar(PADDING, extraPadding));
+            if (bordersEnabled || !isLastColumn) {
+                sb.append(repeatedChar(PADDING, extraPadding + 1));
             }
             if (bordersEnabled && column + 1 < columnWidths.size()) {
                 writeBorder(sb, VERTICAL_BAR);
@@ -663,7 +691,7 @@ public class TextTable {
     /**
      * Generate the line below a row containing data.
      */
-    private void generateLineBelowDataRow(final StringBuilder sb, final List<Integer> columnWidths) {
+    private void generateLineBelowDataRow(@NonNull final StringBuilder sb, @NonNull final List<Integer> columnWidths) {
         if (!bordersEnabled) {
             return;
         }
@@ -671,7 +699,7 @@ public class TextTable {
         writeBorder(sb, LEFT_JUNCTION);
 
         for (int columnIndex = 0; columnIndex < columnWidths.size(); columnIndex++) {
-            writeBorder(sb, repeatedChar(HORIZONTAL_BAR, columnWidths.get(columnIndex) + 2));
+            writeBorder(sb, repeatedChar(HORIZONTAL_BAR, columnWidths.get(columnIndex) + 2 + extraPadding));
             if (columnIndex + 1 < columnWidths.size()) {
                 writeBorder(sb, CROSS_JUNCTION);
             }
@@ -683,7 +711,7 @@ public class TextTable {
     /**
      * Generate the rows in the table.
      */
-    private void generateRows(final StringBuilder sb, final List<Integer> columnWidths) {
+    private void generateRows(@NonNull final StringBuilder sb, @NonNull final List<Integer> columnWidths) {
         for (int row = 0; row < rows.size(); row++) {
             generateDataRow(sb, row, columnWidths);
 
@@ -697,7 +725,7 @@ public class TextTable {
     /**
      * Generate the last line in the table.
      */
-    private void generateBottomLine(final StringBuilder sb, final List<Integer> columnWidths) {
+    private void generateBottomLine(@NonNull final StringBuilder sb, @NonNull final List<Integer> columnWidths) {
         if (!bordersEnabled) {
             return;
         }
@@ -705,7 +733,7 @@ public class TextTable {
         writeBorder(sb, BOTTOM_LEFT_CORNER);
 
         for (int columnIndex = 0; columnIndex < columnWidths.size(); columnIndex++) {
-            writeBorder(sb, repeatedChar(THICK_HORIZONTAL_BAR, columnWidths.get(columnIndex) + 2));
+            writeBorder(sb, repeatedChar(THICK_HORIZONTAL_BAR, columnWidths.get(columnIndex) + 2 + extraPadding));
             if (columnIndex + 1 < columnWidths.size()) {
                 writeBorder(sb, BOTTOM_JUNCTION);
             }
@@ -717,7 +745,7 @@ public class TextTable {
     /**
      * If the title is really long then expand the last column to fill the space.
      */
-    private void expandLastColumnIfNeeded(final List<Integer> columnWidths) {
+    private void expandLastColumnIfNeeded(@NonNull final List<Integer> columnWidths) {
         if (title == null) {
             return;
         }
@@ -744,13 +772,13 @@ public class TextTable {
      * @param sb
      * 		the string builder to add to
      */
-    public void render(final StringBuilder sb) {
+    public void render(@NonNull final StringBuilder sb) {
         final List<Integer> columnWidths = computeColumnWidths();
         expandLastColumnIfNeeded(columnWidths);
 
         int columnWidthSum = 0;
         for (final int columnWidth : columnWidths) {
-            columnWidthSum += columnWidth;
+            columnWidthSum += columnWidth + extraPadding;
         }
 
         generateTopLine(sb, columnWidths, columnWidthSum);
@@ -765,6 +793,7 @@ public class TextTable {
      *
      * @return the rendered table
      */
+    @NonNull
     public String render() {
         final StringBuilder sb = new StringBuilder();
         render(sb);
@@ -774,6 +803,7 @@ public class TextTable {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     public String toString() {
         return render();

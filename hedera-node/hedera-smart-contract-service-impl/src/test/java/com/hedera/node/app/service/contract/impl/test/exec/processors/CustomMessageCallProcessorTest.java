@@ -20,7 +20,6 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.REMAINI
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.isSameResult;
 import static org.hyperledger.besu.datatypes.Address.ALTBN128_ADD;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -34,6 +33,8 @@ import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.PrngSystemContract;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import com.swirlds.config.api.Configuration;
@@ -50,6 +51,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
+import org.hyperledger.besu.evm.precompile.PrecompiledContract.PrecompileContractResult;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -59,6 +61,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class CustomMessageCallProcessorTest {
+    private static final long ZERO_GAS_REQUIREMENT = 0L;
     private static final long GAS_REQUIREMENT = 2L;
     private static final Bytes INPUT_DATA = Bytes.fromHexString("0x1234");
     private static final Bytes OUTPUT_DATA = Bytes.fromHexString("0x5678");
@@ -80,7 +83,7 @@ class CustomMessageCallProcessorTest {
     private AddressChecks addressChecks;
 
     @Mock
-    private PrecompiledContract htsPrecompile;
+    private PrngSystemContract prngPrecompile;
 
     @Mock
     private PrecompiledContract nativePrecompile;
@@ -97,6 +100,9 @@ class CustomMessageCallProcessorTest {
     @Mock
     private ProxyWorldUpdater proxyWorldUpdater;
 
+    @Mock
+    private PrecompileContractResult result;
+
     private CustomMessageCallProcessor subject;
 
     @BeforeEach
@@ -106,7 +112,7 @@ class CustomMessageCallProcessorTest {
                 featureFlags,
                 registry,
                 addressChecks,
-                Map.of(TestHelpers.HTS_SYSTEM_CONTRACT_ADDRESS, htsPrecompile));
+                Map.of(TestHelpers.PRNG_SYSTEM_CONTRACT_ADDRESS, prngPrecompile));
     }
 
     @Test
@@ -116,9 +122,30 @@ class CustomMessageCallProcessorTest {
     }
 
     @Test
-    void hederaPrecompilesNotYetSupported() {
-        givenCallWithCode(TestHelpers.HTS_SYSTEM_CONTRACT_ADDRESS);
-        assertThrows(UnsupportedOperationException.class, () -> subject.start(frame, operationTracer));
+    void callPrngSystemContractHappyPath() {
+        givenPrngCall(ZERO_GAS_REQUIREMENT);
+        given(result.getState()).willReturn(MessageFrame.State.CODE_SUCCESS);
+
+        subject.start(frame, operationTracer);
+
+        verify(prngPrecompile).computeFully(TestHelpers.PRNG_SYSTEM_CONTRACT_ADDRESS, frame);
+        verify(operationTracer).tracePrecompileCall(frame, ZERO_GAS_REQUIREMENT, OUTPUT_DATA);
+        verify(result).isRefundGas();
+        verify(frame).decrementRemainingGas(ZERO_GAS_REQUIREMENT);
+        verify(frame).setOutputData(OUTPUT_DATA);
+        verify(frame).setState(MessageFrame.State.CODE_SUCCESS);
+        verify(frame).setExceptionalHaltReason(Optional.empty());
+    }
+
+    @Test
+    void callPrngSystemContractInsufficientGas() {
+        givenPrngCall(GAS_REQUIREMENT);
+
+        subject.start(frame, operationTracer);
+
+        verify(prngPrecompile).computeFully(TestHelpers.PRNG_SYSTEM_CONTRACT_ADDRESS, frame);
+        verify(operationTracer).tracePrecompileCall(frame, GAS_REQUIREMENT, OUTPUT_DATA);
+        verifyHalt(INSUFFICIENT_GAS, false);
     }
 
     @Test
@@ -273,6 +300,14 @@ class CustomMessageCallProcessorTest {
         given(frame.getContractAddress()).willReturn(ALTBN128_ADD);
         given(frame.getInputData()).willReturn(INPUT_DATA);
         given(frame.getValue()).willReturn(Wei.ZERO);
+    }
+
+    private void givenPrngCall(long gasRequirement) {
+        givenCallWithCode(TestHelpers.PRNG_SYSTEM_CONTRACT_ADDRESS);
+        given(frame.getInputData()).willReturn(TestHelpers.PRNG_SYSTEM_CONTRACT_ADDRESS);
+        given(prngPrecompile.computeFully(any(), any()))
+                .willReturn(new HederaSystemContract.FullResult(result, gasRequirement));
+        given(result.getOutput()).willReturn(OUTPUT_DATA);
     }
 
     private void verifyHalt(@NonNull final ExceptionalHaltReason reason) {

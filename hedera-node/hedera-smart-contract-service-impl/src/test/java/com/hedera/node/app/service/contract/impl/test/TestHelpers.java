@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.nu
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniBytes;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static java.util.Objects.requireNonNull;
+import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INVALID_OPERATION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -38,6 +39,7 @@ import com.hedera.hapi.node.contract.EthereumTransactionBody;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.streams.CallOperationType;
 import com.hedera.hapi.streams.ContractAction;
@@ -63,10 +65,12 @@ import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -75,6 +79,8 @@ import org.hyperledger.besu.evm.code.CodeFactory;
 import org.hyperledger.besu.evm.log.Log;
 import org.hyperledger.besu.evm.log.LogTopic;
 import org.hyperledger.besu.evm.operation.Operation;
+import org.hyperledger.besu.evm.precompile.PrecompiledContract;
+import org.hyperledger.besu.evm.precompile.PrecompiledContract.PrecompileContractResult;
 
 public class TestHelpers {
 
@@ -153,6 +159,7 @@ public class TestHelpers {
     public static final Address SYSTEM_ADDRESS =
             Address.fromHexString(BigInteger.valueOf(750).toString(16));
     public static final Address HTS_SYSTEM_CONTRACT_ADDRESS = Address.fromHexString("0x167");
+    public static final Address PRNG_SYSTEM_CONTRACT_ADDRESS = Address.fromHexString("0x169");
     public static final Address NON_SYSTEM_LONG_ZERO_ADDRESS = Address.fromHexString("0x1234576890");
     public static final FileID INITCODE_FILE_ID =
             FileID.newBuilder().fileNum(6789L).build();
@@ -160,8 +167,16 @@ public class TestHelpers {
             FileID.newBuilder().fileNum(7890L).build();
     public static final TokenID FUNGIBLE_TOKEN_ID =
             TokenID.newBuilder().tokenNum(9876L).build();
-    public static final Token FUNGIBLE_TOKEN =
-            Token.newBuilder().tokenType(TokenType.FUNGIBLE_COMMON).build();
+    public static final TokenID NON_FUNGIBLE_TOKEN_ID =
+            TokenID.newBuilder().tokenNum(9898L).build();
+    public static final Token FUNGIBLE_TOKEN = Token.newBuilder()
+            .tokenId(FUNGIBLE_TOKEN_ID)
+            .tokenType(TokenType.FUNGIBLE_COMMON)
+            .build();
+    public static final Token NON_FUNGIBLE_TOKEN = Token.newBuilder()
+            .tokenId(NON_FUNGIBLE_TOKEN_ID)
+            .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+            .build();
     public static final AccountID NON_SYSTEM_ACCOUNT_ID = AccountID.newBuilder()
             .accountNum(numberOfLongZero(NON_SYSTEM_LONG_ZERO_ADDRESS))
             .build();
@@ -176,6 +191,11 @@ public class TestHelpers {
             .contractNum(numberOfLongZero(NON_SYSTEM_LONG_ZERO_ADDRESS))
             .build();
     public static final Address EIP_1014_ADDRESS = Address.fromHexString("0x89abcdef89abcdef89abcdef89abcdef89abcdef");
+    public static final TokenRelation A_FUNGIBLE_RELATION = TokenRelation.newBuilder()
+            .tokenId(FUNGIBLE_TOKEN_ID)
+            .accountId(A_NEW_ACCOUNT_ID)
+            .balance(123L)
+            .build();
     public static final Bytes CANONICAL_ALIAS = tuweniToPbjBytes(EIP_1014_ADDRESS);
     public static final ContractID CALLED_CONTRACT_EVM_ADDRESS =
             ContractID.newBuilder().evmAddress(CANONICAL_ALIAS).build();
@@ -195,6 +215,18 @@ public class TestHelpers {
 
     public static final GasCharges CHARGING_RESULT = new GasCharges(INTRINSIC_GAS, MAX_GAS_ALLOWANCE / 2);
     public static final GasCharges NO_ALLOWANCE_CHARGING_RESULT = new GasCharges(INTRINSIC_GAS, 0);
+
+    public static final String PSEUDORANDOM_SEED_GENERATOR_SELECTOR = "0xd83bf9a1";
+    public static final org.apache.tuweni.bytes.Bytes PSEUDO_RANDOM_SYSTEM_CONTRACT_ADDRESS =
+            org.apache.tuweni.bytes.Bytes.fromHexString(PSEUDORANDOM_SEED_GENERATOR_SELECTOR);
+    public static final org.apache.tuweni.bytes.Bytes EXPECTED_RANDOM_NUMBER =
+            org.apache.tuweni.bytes.Bytes.fromHexString(
+                    "0x1234567890123456789012345678901234567890123456789012345678901234");
+    public static final PrecompileContractResult PRECOMPILE_CONTRACT_SUCCESS_RESULT =
+            PrecompiledContract.PrecompileContractResult.success(EXPECTED_RANDOM_NUMBER);
+    public static final PrecompileContractResult PRECOMPILE_CONTRACT_FAILED_RESULT =
+            PrecompiledContract.PrecompileContractResult.halt(
+                    org.apache.tuweni.bytes.Bytes.EMPTY, Optional.of(INVALID_OPERATION));
 
     public static final HederaEvmTransaction HEVM_CREATION = new HederaEvmTransaction(
             SENDER_ID,
@@ -388,5 +420,20 @@ public class TestHelpers {
             @NonNull final Runnable something, @NonNull final ResponseCodeEnum status) {
         final var ex = assertThrows(ResourceExhaustedException.class, something::run);
         assertEquals(status, ex.getStatus());
+    }
+
+    public static com.esaulpaugh.headlong.abi.Address asHeadlongAddress(final Address address) {
+        return asHeadlongAddress(address.toArrayUnsafe());
+    }
+
+    public static com.esaulpaugh.headlong.abi.Address asHeadlongAddress(final byte[] address) {
+        final var addressBytes = org.apache.tuweni.bytes.Bytes.wrap(address);
+        final var addressAsInteger = addressBytes.toUnsignedBigInteger();
+        return com.esaulpaugh.headlong.abi.Address.wrap(
+                com.esaulpaugh.headlong.abi.Address.toChecksumAddress(addressAsInteger));
+    }
+
+    public static org.apache.tuweni.bytes.Bytes revertOutputFor(final ResponseCodeEnum status) {
+        return org.apache.tuweni.bytes.Bytes.wrap(status.protoName().getBytes(StandardCharsets.UTF_8));
     }
 }

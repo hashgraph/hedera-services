@@ -38,7 +38,18 @@ public class FakeFeeCalculator implements FeeCalculator {
 
     @NonNull
     @Override
+    public FeeCalculator addStorageBytesSeconds(long seconds) {
+        return this;
+    }
+
+    @NonNull
+    @Override
     public FeeCalculator addNetworkRamByteSeconds(long amount) {
+        return this;
+    }
+
+    @NonNull
+    public FeeCalculator addRamByteSeconds(long amount) {
         return this;
     }
 

@@ -36,7 +36,7 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.NoSuchElementException;
-import org.apache.commons.lang3.builder.EqualsBuilder;
+import java.util.Objects;
 
 /**
  * A collection of miscellaneous platform data.
@@ -59,7 +59,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
     /**
      * The round of this state. This state represents the handling of all transactions that have reached consensus in
      * all previous rounds. All transactions from this round will eventually be applied to this state. The first state
-     * (genesis state) has a round of 0 because the first round is round defined as round 1, and the genesis state is
+     * (genesis state) has a round of 0 because the first round is defined as round 1, and the genesis state is
      * before any transactions are handled.
      */
     private long round = GENESIS_ROUND;
@@ -316,7 +316,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
     }
 
     /**
-     * Get the running hash of all events that have been applied to this state since the begining of time.
+     * Get the running hash of all events that have been applied to this state since the beginning of time.
      *
      * @return a running hash of events
      */
@@ -325,7 +325,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
     }
 
     /**
-     * Set the running hash of all events that have been applied to this state since the begining of time.
+     * Set the running hash of all events that have been applied to this state since the beginning of time.
      *
      * @param hashEventsCons a running hash of events
      * @return this object
@@ -519,57 +519,25 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
     }
 
     /**
-     * Informational method used in reconnect diagnostics. This method constructs a {@link String} containing the
-     * critical attributes of this data object. The original use is during reconnect to produce useful information sent
-     * to diagnostic event output.
-     *
-     * @param addressBookHash A {@link Hash} of the current Address Book; helpful to validate that the addresses used to
-     *                        validate signatures match the expected set of valid addresses.
-     * @return a {@link String} containing the core data from this object, in human-readable form.
-     * @see PlatformState#getInfoString()
-     */
-    public String getInfoString(final Hash addressBookHash) {
-        return new StringBuilder()
-                .append("Round = ")
-                .append(getRound())
-                .append(", number of consensus events = ")
-                .append(getNumEventsCons())
-                .append(", consensus timestamp = ")
-                .append(getConsensusTimestamp())
-                .append(", last timestamp = ")
-                .append(getLastTransactionTimestamp())
-                .append(", consensus Events running hash = ")
-                .append(getHashEventsCons())
-                .append(", address book hash = ")
-                .append(addressBookHash != null ? addressBookHash : "not provided")
-                .toString();
-    }
-
-    /**
      * {@inheritDoc}
      */
     @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
+    public boolean equals(final Object other) {
+        if (this == other) {
             return true;
         }
-
-        if (o == null || getClass() != o.getClass()) {
+        if (other == null || getClass() != other.getClass()) {
             return false;
         }
-
-        final PlatformData that = (PlatformData) o;
-
-        return new EqualsBuilder()
-                .append(round, that.round)
-                .append(numEventsCons, that.numEventsCons)
-                .append(hashEventsCons, that.hashEventsCons)
-                .append(events, that.events)
-                .append(consensusTimestamp, that.consensusTimestamp)
-                .append(minGenInfo, that.minGenInfo)
-                .append(epochHash, that.epochHash)
-                .append(roundsNonAncient, that.roundsNonAncient)
-                .isEquals();
+        final PlatformData that = (PlatformData) other;
+        return round == that.round
+                && numEventsCons == that.numEventsCons
+                && Objects.equals(hashEventsCons, that.hashEventsCons)
+                && Arrays.equals(events, that.events)
+                && Objects.equals(consensusTimestamp, that.consensusTimestamp)
+                && Objects.equals(minGenInfo, that.minGenInfo)
+                && Objects.equals(epochHash, that.epochHash)
+                && Objects.equals(roundsNonAncient, that.roundsNonAncient);
     }
 
     /**

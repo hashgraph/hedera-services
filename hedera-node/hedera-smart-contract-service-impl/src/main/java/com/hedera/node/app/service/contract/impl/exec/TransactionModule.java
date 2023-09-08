@@ -22,8 +22,10 @@ import com.hedera.node.app.service.contract.impl.annotations.InitialState;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
+import com.hedera.node.app.service.contract.impl.exec.scope.HandleSystemContractOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
+import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations;
 import com.hedera.node.app.service.contract.impl.exec.utils.ActionStack;
 import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
 import com.hedera.node.app.service.contract.impl.hevm.HandleContextHevmBlocks;
@@ -85,8 +87,8 @@ public interface TransactionModule {
     @Provides
     @TransactionScope
     static Supplier<HederaWorldUpdater> provideFeesOnlyUpdater(
-            @NonNull final HederaOperations extWorldScope, @NonNull final EvmFrameStateFactory factory) {
-        return () -> new ProxyWorldUpdater(requireNonNull(extWorldScope), requireNonNull(factory), null);
+            @NonNull final HederaWorldUpdater.Enhancement enhancement, @NonNull final EvmFrameStateFactory factory) {
+        return () -> new ProxyWorldUpdater(enhancement, requireNonNull(factory), null);
     }
 
     @Provides
@@ -107,6 +109,18 @@ public interface TransactionModule {
         return context.networkInfo();
     }
 
+    @Provides
+    @TransactionScope
+    static HederaWorldUpdater.Enhancement provideEnhancement(
+            @NonNull final HederaOperations operations,
+            @NonNull final HederaNativeOperations nativeOperations,
+            @NonNull final SystemContractOperations systemContractOperations) {
+        requireNonNull(operations);
+        requireNonNull(nativeOperations);
+        requireNonNull(systemContractOperations);
+        return new HederaWorldUpdater.Enhancement(operations, nativeOperations, systemContractOperations);
+    }
+
     @Binds
     @TransactionScope
     EvmFrameStateFactory bindEvmFrameStateFactory(ScopedEvmFrameStateFactory factory);
@@ -118,6 +132,10 @@ public interface TransactionModule {
     @Binds
     @TransactionScope
     HederaNativeOperations bindExtFrameScope(HandleHederaNativeOperations handleExtFrameScope);
+
+    @Binds
+    @TransactionScope
+    SystemContractOperations bindExtSystemContractScope(HandleSystemContractOperations handleSystemContractOperations);
 
     @Binds
     @TransactionScope

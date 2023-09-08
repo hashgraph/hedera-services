@@ -33,7 +33,7 @@ public record StakingConfig(
                 int feesStakingRewardPercentage,
         // @ConfigProperty(defaultValue = "") Map<Long, Long> nodeMaxToMinStakeRatios,
         @ConfigProperty(defaultValue = "true") @NetworkProperty boolean isEnabled,
-        @ConfigProperty(defaultValue = "17808") @NetworkProperty long maxDailyStakeRewardThPerH,
+        @ConfigProperty(defaultValue = "" + Long.MAX_VALUE) @NetworkProperty long maxDailyStakeRewardThPerH,
         @ConfigProperty(defaultValue = "false") @NetworkProperty boolean requireMinStakeToReward,
         @ConfigProperty(defaultValue = "0") @NetworkProperty long rewardRate,
         @ConfigProperty(defaultValue = "25000000000000000") @NetworkProperty long startThreshold,

@@ -14,11 +14,6 @@
  * limitations under the License.
  */
 
-plugins {
-    id("com.hedera.hashgraph.spotless-conventions")
-    id("com.hedera.hashgraph.spotless-kotlin-conventions")
-}
-
-repositories { mavenCentral() }
+plugins { id("com.hedera.hashgraph.root") }
 
 description = "Hedera Services Node"

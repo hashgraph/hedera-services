@@ -152,16 +152,30 @@ public class ScheduleSecondVirtualValue extends PartialMerkleLeaf
 
     @Override
     public void serialize(ByteBuffer out) throws IOException {
+        serializeReturningBytesWritten(out);
+    }
+
+    public int serializeReturningBytesWritten(ByteBuffer out) {
+        int bytesWritten = 0;
+
         out.putInt(ids.size());
+        bytesWritten += Integer.BYTES;
+
         for (var e : ids.entrySet()) {
             out.putInt(e.getValue().size());
+            bytesWritten += Integer.BYTES;
             for (int x = 0; x < e.getValue().size(); ++x) {
                 out.putLong(e.getValue().get(x));
+                bytesWritten += Long.BYTES;
             }
             out.putLong(e.getKey().getSeconds());
             out.putInt(e.getKey().getNanos());
+            bytesWritten += Long.BYTES + Integer.BYTES;
         }
         out.putLong(number);
+        bytesWritten += Long.BYTES;
+
+        return bytesWritten;
     }
 
     @Override

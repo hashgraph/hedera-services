@@ -29,6 +29,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.Key;
@@ -43,7 +44,6 @@ import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.handlers.FileSystemDeleteHandler;
 import com.hedera.node.app.service.file.impl.test.FileTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -107,6 +107,8 @@ class FileSystemDeleteTest extends FileTestBase {
         testConfig = HederaTestConfigBuilder.createConfig();
         lenient().when(preHandleContext.configuration()).thenReturn(testConfig);
         lenient().when(handleContext.configuration()).thenReturn(testConfig);
+        when(mockStoreFactory.getStore(ReadableFileStore.class)).thenReturn(mockStore);
+        when(mockStoreFactory.getStore(ReadableAccountStore.class)).thenReturn(accountStore);
     }
 
     @Test
@@ -115,8 +117,7 @@ class FileSystemDeleteTest extends FileTestBase {
         // given:
         mockPayerLookup();
         given(mockStore.getFileMetadata(notNull())).willReturn(null);
-        final var context = new FakePreHandleContext(accountStore, newFileDeleteTxn());
-        context.registerStore(ReadableFileStore.class, mockStore);
+        final var context = new PreHandleContextImpl(mockStoreFactory, newFileDeleteTxn(), testConfig, mockDispatcher);
 
         // when:
         assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_FILE_ID);
