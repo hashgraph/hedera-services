@@ -386,7 +386,7 @@ jobs:
          else
             DOCKER_TAG_BASE="localhost:5000"
          fi
-          
+
          echo "docker-tag-base=${DOCKER_TAG_BASE}" >>"${GITHUB_OUTPUT}"
 
       - name: Setup QEmu Support
@@ -453,13 +453,13 @@ jobs:
           NETWORK_NODE_BASE_LINK="Not Applicable"
           NETWORK_NODE_HAVEGED_LINK="Not Applicable"
           NETWORK_NODE_MAIN_LINK="Not Applicable"
-          
+
           if [[ "${{ inputs.dry-run-enabled }}" != true ]]; then
             NETWORK_NODE_BASE_LINK="[GCP Console](https://${{ steps.set-registry.outputs.docker-tag-base }}/network-node-base:${{ needs.validate.outputs.version }})"
             NETWORK_NODE_HAVEGED_LINK="[GCP Console](https://${{ steps.set-registry.outputs.docker-tag-base }}/network-node-haveged:${{ needs.validate.outputs.version }})"
             NETWORK_NODE_MAIN_LINK="[GCP Console](https://${{ steps.set-registry.outputs.docker-tag-base }}/main-network-node:${{ needs.validate.outputs.version }})"
           fi
-          
+
           printf "### Published Docker Images\n" >> "${GITHUB_STEP_SUMMARY}"
           printf "| Image Name | Version | URL | Supported Architectures |\n" >> "${GITHUB_STEP_SUMMARY}"
           printf "| ---------- | ------- | --- | ----------------------- |\n" >> "${GITHUB_STEP_SUMMARY}"
