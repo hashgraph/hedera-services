@@ -38,14 +38,15 @@ public interface Context {
      * @return an {@link AutoCloseable} that can be used to remove the key-value pair from the context
      * @throws NullPointerException if the key or value is null
      */
-    AutoCloseable add(@NonNull String key, @NonNull String value);
+    @NonNull
+    AutoCloseable add(@NonNull final String key, @NonNull final String value);
 
     /**
      * remove a key-value pair from the context if available.
      *
      * @param key the key to remove
      */
-    void remove(@NonNull String key);
+    void remove(@NonNull final String key);
 
     /**
      * Adds a key-value pair to the context.
@@ -54,7 +55,8 @@ public interface Context {
      * @param value the value
      * @return an {@link AutoCloseable} that can be used to remove the key-value pair from the context
      */
-    default AutoCloseable add(@NonNull String key, int value) {
+    @NonNull
+    default AutoCloseable add(@NonNull final String key, final int value) {
         return add(key, Integer.toString(value));
     }
 
@@ -65,7 +67,8 @@ public interface Context {
      * @param value the value
      * @return an {@link AutoCloseable} that can be used to remove the key-value pair from the context
      */
-    default AutoCloseable add(@NonNull String key, long value) {
+    @NonNull
+    default AutoCloseable add(@NonNull final String key, final long value) {
         return add(key, Long.toString(value));
     }
 
@@ -76,7 +79,8 @@ public interface Context {
      * @param value the value
      * @return an {@link AutoCloseable} that can be used to remove the key-value pair from the context
      */
-    default AutoCloseable add(@NonNull String key, float value) {
+    @NonNull
+    default AutoCloseable add(@NonNull final String key, final float value) {
         return add(key, Float.toString(value));
     }
 
@@ -87,7 +91,8 @@ public interface Context {
      * @param value the value
      * @return an {@link AutoCloseable} that can be used to remove the key-value pair from the context
      */
-    default AutoCloseable add(@NonNull String key, double value) {
+    @NonNull
+    default AutoCloseable add(@NonNull final String key, final double value) {
         return add(key, Double.toString(value));
     }
 
@@ -98,7 +103,8 @@ public interface Context {
      * @param value the value
      * @return an {@link AutoCloseable} that can be used to remove the key-value pair from the context
      */
-    default AutoCloseable add(@NonNull String key, boolean value) {
+    @NonNull
+    default AutoCloseable add(@NonNull final String key, final boolean value) {
         return add(key, Boolean.toString(value));
     }
 
