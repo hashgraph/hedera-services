@@ -10,7 +10,7 @@ swirld, 123
 
 
 # ** BEGIN REMOVE FROM SDK RELEASES **
-# app,		StatsSigningTestingTool.jar
+# app,		StressTestingTool.jar
 # app,		StatsRandomTestingTool.jar,  0, 3000, 0, 100, -1, 250000, 5000, 1, 10	0, 1024
 # app,		StatsSeqTestingTool.jar,	   1, 3000, 1000, 100, 16, -1
 # app,		FCMStatsTestingTool.jar,	 signed, syncDelay, transPerEventMax, transPerSecToCreate
