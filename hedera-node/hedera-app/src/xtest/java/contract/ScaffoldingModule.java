@@ -26,6 +26,9 @@ import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.authorization.AuthorizerImpl;
+import com.hedera.node.app.authorization.PrivilegesVerifier;
+import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
@@ -120,7 +123,9 @@ public interface ScaffoldingModule {
     @Provides
     @Singleton
     static CryptoSignatureWaivers provideCryptoSignatureWaivers() {
-        return new CryptoSignatureWaiversImpl(new FakeHederaNumbers());
+        final var configProvider = new ConfigProviderImpl();
+        final var authorizer = new AuthorizerImpl(configProvider, new PrivilegesVerifier(configProvider));
+        return new CryptoSignatureWaiversImpl(authorizer);
     }
 
     @Binds
