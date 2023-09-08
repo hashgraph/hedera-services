@@ -19,7 +19,7 @@ package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_FUNGIBLE_TOKEN;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.UNEASONABLY_DIVISIBLE_TOKEN;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.UNREASONABLY_DIVISIBLE_TOKEN;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.revertOutputFor;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -60,7 +60,7 @@ class DecimalsCallTest extends HtsCallTestBase {
 
     @Test
     void returnsMaxDecimalsForUnreasonableToken() {
-        subject = new DecimalsCall(mockEnhancement(), UNEASONABLY_DIVISIBLE_TOKEN);
+        subject = new DecimalsCall(mockEnhancement(), UNREASONABLY_DIVISIBLE_TOKEN);
 
         final var result = subject.execute().fullResult().result();
 

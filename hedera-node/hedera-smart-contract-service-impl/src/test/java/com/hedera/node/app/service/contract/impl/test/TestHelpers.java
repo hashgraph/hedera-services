@@ -186,7 +186,7 @@ public class TestHelpers {
             .tokenType(TokenType.FUNGIBLE_COMMON)
             .build();
 
-    public static final Token UNEASONABLY_DIVISIBLE_TOKEN = Token.newBuilder()
+    public static final Token UNREASONABLY_DIVISIBLE_TOKEN = Token.newBuilder()
             .tokenId(FUNGIBLE_TOKEN_ID)
             .name("Odd")
             .symbol("ODD")

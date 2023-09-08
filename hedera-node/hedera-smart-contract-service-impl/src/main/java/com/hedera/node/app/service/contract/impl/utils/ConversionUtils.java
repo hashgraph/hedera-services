@@ -475,6 +475,12 @@ public class ConversionUtils {
         return data;
     }
 
+    /**
+     * Given a long entity number, returns its 20-byte EVM address.
+     *
+     * @param num the entity number
+     * @return its 20-byte EVM address
+     */
     public static byte[] asEvmAddress(final long num) {
         final byte[] evmAddress = new byte[20];
         copyToLeftPaddedByteArray(num, evmAddress);
@@ -501,6 +507,7 @@ public class ConversionUtils {
         return unhex(address.toString().substring(2));
     }
 
+    // too many arguments
     @SuppressWarnings("java:S107")
     private static long longFrom(
             final byte b1,
