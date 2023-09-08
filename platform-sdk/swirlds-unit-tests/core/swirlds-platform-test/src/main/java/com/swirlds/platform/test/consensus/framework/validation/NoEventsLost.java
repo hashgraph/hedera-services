@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Assertions;
 
+@SuppressWarnings("unused") // issue tracked #6998
 public class NoEventsLost {
     private static final ConsensusConfig CONFIG =
             new TestConfigBuilder().getOrCreateConfig().getConfigData(ConsensusConfig.class);
