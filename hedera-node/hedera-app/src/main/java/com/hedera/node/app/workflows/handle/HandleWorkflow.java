@@ -110,6 +110,7 @@ public class HandleWorkflow {
     private final ExchangeRateManager exchangeRateManager;
     private final ParentRecordFinalizer transactionFinalizer;
     private final SystemFileUpdateFacility systemFileUpdateFacility;
+    private final DualStateUpdateFacility dualStateUpdateFacility;
     private final SolvencyPreCheck solvencyPreCheck;
     private final Authorizer authorizer;
 
@@ -130,6 +131,7 @@ public class HandleWorkflow {
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final ParentRecordFinalizer transactionFinalizer,
             @NonNull final SystemFileUpdateFacility systemFileUpdateFacility,
+            @NonNull final DualStateUpdateFacility dualStateUpdateFacility,
             @NonNull final SolvencyPreCheck solvencyPreCheck,
             @NonNull final Authorizer authorizer) {
         this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
@@ -148,6 +150,8 @@ public class HandleWorkflow {
         this.transactionFinalizer = requireNonNull(transactionFinalizer, "transactionFinalizer must not be null");
         this.systemFileUpdateFacility =
                 requireNonNull(systemFileUpdateFacility, "systemFileUpdateFacility must not be null");
+        this.dualStateUpdateFacility =
+                requireNonNull(dualStateUpdateFacility, "dualStateUpdateFacility must not be null");
         this.solvencyPreCheck = requireNonNull(solvencyPreCheck, "solvencyPreCheck must not be null");
         this.authorizer = requireNonNull(authorizer, "authorizer must not be null");
     }
@@ -337,6 +341,9 @@ public class HandleWorkflow {
 
                     // Notify responsible facility if system-file was uploaded
                     systemFileUpdateFacility.handleTxBody(stack, txBody);
+
+                    // Notify if dual state was updated
+                    dualStateUpdateFacility.handleTxBody(stack, txBody);
 
                 } catch (final HandleException e) {
                     rollback(e.getStatus(), stack, recordListBuilder);
