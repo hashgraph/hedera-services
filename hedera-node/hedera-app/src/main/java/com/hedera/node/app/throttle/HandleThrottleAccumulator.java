@@ -42,6 +42,7 @@ import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleBucket;
 import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleGroup;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.hapi.utils.throttles.GasLimitDeterministicThrottle;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.throttling.ThrottleReqsManager;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.state.HederaState;
@@ -54,6 +55,7 @@ import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.LazyCreationConfig;
 import com.hedera.node.config.data.TokensConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hederahashgraph.api.proto.java.Query;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
@@ -101,6 +103,44 @@ public class HandleThrottleAccumulator {
             return true;
         }
 
+        return false;
+    }
+
+    public boolean shouldThrottleQuery(HederaFunctionality queryFunction, Instant now, Query query) {
+        final var configuration = configProvider.getConfiguration();
+        final var shouldThrottleByGas =
+            configuration.getConfigData(ContractsConfig.class).throttleThrottleByGas();
+
+        // Note that by payer exempt from throttling we mean just that those transactions will not be throttled,
+        // such payer accounts neither impact the throttles nor are they impacted by them
+        // In the current mono-service implementation we have the same behavior, additionally it is
+        // possible that transaction can also be exempt from affecting congestion levels separate from throttle
+        // exemption
+        // but this is only possible for the case of triggered transactions which is not yet implemented (see
+        // MonoMultiplierSources.java)
+        final var payer = PbjConverter.toPbj(query.getAccountDetails().getAccountId());
+        final var isPayerThrottleExempt = throttleExempt(payer, configuration);
+        if (isPayerThrottleExempt) {
+            return false;
+        }
+
+        resetLastAllowedUse();
+        if (isGasThrottled(queryFunction)
+            && shouldThrottleByGas
+            && (gasThrottle == null
+            || !gasThrottle.allow(now, query.getContractCallLocal().getGas()))) {
+            reclaimLastAllowedUse();
+            return true;
+        }
+        ThrottleReqsManager manager;
+        if ((manager = functionReqs.get(queryFunction)) == null) {
+            reclaimLastAllowedUse();
+            return true;
+        }
+        if (!manager.allReqsMetAt(now)) {
+            reclaimLastAllowedUse();
+            return true;
+        }
         return false;
     }
 
