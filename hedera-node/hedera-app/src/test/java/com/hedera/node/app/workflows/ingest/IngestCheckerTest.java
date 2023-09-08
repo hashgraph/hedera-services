@@ -23,6 +23,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
@@ -41,6 +42,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -154,6 +156,7 @@ class IngestCheckerTest extends AppTestBase {
         when(dispatcher.dispatchComputeFees(any())).thenReturn(DEFAULT_FEES);
 
         subject = new IngestChecker(
+                nodeSelfAccountId,
                 currentPlatformStatus,
                 transactionChecker,
                 throttleAccumulator,
@@ -190,6 +193,32 @@ class IngestCheckerTest extends AppTestBase {
                         .has(responseCode(PLATFORM_NOT_ACTIVE));
             }
         }
+    }
+
+    @Test
+    @DisplayName("A wrong nodeId in transaction fails")
+    void testWrongNodeIdFails() {
+        // Given a transaction with an unknown node ID
+        final var otherNodeSelfAccountId = AccountID.newBuilder()
+                .accountNum(nodeSelfAccountId.accountNumOrElse(0L) + 1L)
+                .build();
+
+        subject = new IngestChecker(
+                otherNodeSelfAccountId,
+                currentPlatformStatus,
+                transactionChecker,
+                throttleAccumulator,
+                solvencyPreCheck,
+                signatureExpander,
+                signatureVerifier,
+                deduplicationCache,
+                dispatcher,
+                feeManager);
+
+        // Then the checker should throw a PreCheckException
+        assertThatThrownBy(() -> subject.runAllChecks(state, tx))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(INVALID_NODE_ACCOUNT));
     }
 
     @Test
