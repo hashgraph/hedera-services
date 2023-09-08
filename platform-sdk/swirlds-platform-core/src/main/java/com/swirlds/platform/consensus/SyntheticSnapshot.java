@@ -28,8 +28,7 @@ import java.util.stream.LongStream;
  */
 public final class SyntheticSnapshot {
     /** Utility class, should not be instantiated */
-    private SyntheticSnapshot() {
-    }
+    private SyntheticSnapshot() {}
 
     /**
      * Generate a {@link ConsensusSnapshot} based on the supplied data. This snapshot is not the result of consensus

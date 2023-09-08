@@ -19,7 +19,6 @@ package com.swirlds.platform.state;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,7 +42,8 @@ public record MinGenInfo(long round, long minimumGeneration) {
      * @throws IOException
      * 		thrown if an IO error occurs
      */
-    public static void serializeList(@NonNull final List<MinGenInfo> minGenInfo, @NonNull final SerializableDataOutputStream out)
+    public static void serializeList(
+            @NonNull final List<MinGenInfo> minGenInfo, @NonNull final SerializableDataOutputStream out)
             throws IOException {
         out.writeInt(minGenInfo.size());
         for (final MinGenInfo info : minGenInfo) {

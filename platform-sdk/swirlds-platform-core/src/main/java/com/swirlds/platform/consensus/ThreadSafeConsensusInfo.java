@@ -70,7 +70,8 @@ public class ThreadSafeConsensusInfo implements GraphGenerations, RoundNumberPro
      * @param config consensus configuration
      * @param storage round storage
      */
-    public ThreadSafeConsensusInfo(@NonNull final ConsensusConfig config, @NonNull final SequentialRingBuffer<MinGenInfo> storage) {
+    public ThreadSafeConsensusInfo(
+            @NonNull final ConsensusConfig config, @NonNull final SequentialRingBuffer<MinGenInfo> storage) {
         this.config = config;
         this.storage = storage;
     }

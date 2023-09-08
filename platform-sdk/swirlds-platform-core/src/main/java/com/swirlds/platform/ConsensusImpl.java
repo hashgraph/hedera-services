@@ -41,6 +41,8 @@ import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusMetrics;
 import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.state.signed.SignedState;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -49,9 +51,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -295,7 +294,8 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
      * @return A list of consensus rounds, or null if no consensus was reached
      */
     @Override
-    public @Nullable List<ConsensusRound> addEvent(@NonNull final EventImpl event, @NonNull final AddressBook addressBook) {
+    public @Nullable List<ConsensusRound> addEvent(
+            @NonNull final EventImpl event, @NonNull final AddressBook addressBook) {
         recentEvents.add(event);
         final List<ConsensusRound> toReturn = new ArrayList<>();
         // set its round to undefined so that it gets calculated

@@ -18,7 +18,6 @@ package com.swirlds.platform.consensus;
 
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.Deque;
