@@ -311,6 +311,7 @@ public class HandleWorkflow {
                     blockRecordManager,
                     recordCache,
                     feeManager,
+                    exchangeRateManager,
                     consensusNow);
 
             // Calculate the fee

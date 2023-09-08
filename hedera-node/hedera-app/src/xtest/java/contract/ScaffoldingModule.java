@@ -223,6 +223,7 @@ public interface ScaffoldingModule {
             @NonNull final BlockRecordManager blockRecordManager,
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final HederaState state,
+            @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final FeeManager feeManager) {
         final var consensusTime = Instant.now();
         final var parentRecordBuilder = new SingleTransactionRecordBuilderImpl(consensusTime);
@@ -253,6 +254,7 @@ public interface ScaffoldingModule {
                     blockRecordManager,
                     recordCache,
                     feeManager,
+                    exchangeRateManager,
                     consensusTime);
         };
     }
