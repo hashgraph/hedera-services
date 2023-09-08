@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.schedule.impl.test;
+package com.hedera.node.app.service.schedule.impl;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
@@ -23,14 +23,13 @@ import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.schedule.ReadableScheduleStore;
-import com.hedera.node.app.service.schedule.impl.ReadableScheduleStoreImpl;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.state.ReadableKVStateBase;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import org.junit.jupiter.api.Assertions;
+import org.assertj.core.api.BDDAssertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -110,22 +109,23 @@ class ReadableScheduleStoreTest {
     @Test
     @SuppressWarnings("DataFlowIssue")
     void constructorThrowsIfStatesIsNull() {
-        Assertions.assertThrows(NullPointerException.class, () -> new ReadableScheduleStoreImpl(null));
+        BDDAssertions.assertThatThrownBy(() -> new ReadableScheduleStoreImpl(null))
+                .isInstanceOf(NullPointerException.class);
     }
 
     @Test
     void returnsEmptyIfMissingSchedule() {
         BDDMockito.given(schedulesById.get(testScheduleID)).willReturn(null);
-        Assertions.assertNull(scheduleStore.get(testScheduleID));
+        BDDAssertions.assertThat(scheduleStore.get(testScheduleID)).isNull();
     }
 
     @Test
     void getsScheduleMetaFromFetchedSchedule() {
-        final Schedule meta = scheduleStore.get(testScheduleID);
-        Assertions.assertNotNull(meta);
-        Assertions.assertEquals(adminKey, meta.adminKey());
-        Assertions.assertEquals(scheduled, meta.scheduledTransaction());
-        Assertions.assertEquals(payer, meta.payerAccountId());
+        final Schedule readSchedule = scheduleStore.get(testScheduleID);
+        BDDAssertions.assertThat(readSchedule).isNotNull();
+        BDDAssertions.assertThat(readSchedule.payerAccountId()).isEqualTo(payer);
+        BDDAssertions.assertThat(readSchedule.adminKey()).isEqualTo(adminKey);
+        BDDAssertions.assertThat(readSchedule.scheduledTransaction()).isEqualTo(scheduled);
     }
 
     @Test
@@ -133,10 +133,10 @@ class ReadableScheduleStoreTest {
         BDDMockito.given(scheduleInState.hasPayerAccountId()).willReturn(false);
         BDDMockito.given(scheduleInState.payerAccountId()).willReturn(null);
 
-        final Schedule meta = scheduleStore.get(testScheduleID);
-        Assertions.assertNotNull(meta);
-        Assertions.assertEquals(adminKey, meta.adminKey());
-        Assertions.assertEquals(scheduled, meta.scheduledTransaction());
-        Assertions.assertNull(meta.payerAccountId());
+        final Schedule readSchedule = scheduleStore.get(testScheduleID);
+        BDDAssertions.assertThat(readSchedule).isNotNull();
+        BDDAssertions.assertThat(readSchedule.payerAccountId()).isNull();
+        BDDAssertions.assertThat(readSchedule.adminKey()).isEqualTo(adminKey);
+        BDDAssertions.assertThat(readSchedule.scheduledTransaction()).isEqualTo(scheduled);
     }
 }
