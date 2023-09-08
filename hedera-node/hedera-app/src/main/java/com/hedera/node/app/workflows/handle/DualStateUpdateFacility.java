@@ -66,6 +66,7 @@ public class DualStateUpdateFacility {
                 final ReadableStates states = state.createReadableStates(FreezeService.NAME);
                 final ReadableSingletonState<Timestamp> freezeTime =
                         states.getSingleton(FreezeServiceImpl.FREEZE_TIME_KEY);
+                requireNonNull(freezeTime.get());
                 final Instant freezeTimeInstant = Instant.ofEpochSecond(
                         freezeTime.get().seconds(), freezeTime.get().nanos());
                 dualState.setFreezeTime(freezeTimeInstant);
@@ -73,9 +74,8 @@ public class DualStateUpdateFacility {
                 // copy freeze state (which is null) to dual state
                 // we just set dual state to null
                 dualState.setFreezeTime(null);
-            } else {
-                // for other freeze types, do nothing
             }
+            // else for other freeze types, do nothing
         }
     }
 }
