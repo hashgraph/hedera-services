@@ -213,7 +213,10 @@ extraJavaModuleInfo {
     automaticModule("com.goterl:lazysodium-java", "lazysodium.java")
     automaticModule("com.goterl:resource-loader", "resource.loader")
     automaticModule("org.hyperledger.besu:secp256k1", "org.hyperledger.besu.secp256k1")
-    automaticModule("org.hyperledger.besu.internal:algorithms", "org.hyperledger.besu.internal.crypto")
+    automaticModule(
+        "org.hyperledger.besu.internal:algorithms",
+        "org.hyperledger.besu.internal.crypto"
+    )
     automaticModule("tech.pegasys:jc-kzg-4844", "tech.pegasys.jckzg4844")
 
     automaticModule("org.hyperledger.besu.internal:util", "org.hyperledger.besu.util")

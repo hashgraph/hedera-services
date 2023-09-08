@@ -300,8 +300,8 @@ class HederaEvmTxProcessorTest {
                 .miningBeneficiary(Address.ZERO)
                 .blockHashLookup(h -> null);
         // when:
-        final MessageFrame buildMessageFrame = evmTxProcessor.buildInitialFrame(
-                commonInitialFrame, receiver, Bytes.EMPTY, 0L);
+        final MessageFrame buildMessageFrame =
+                evmTxProcessor.buildInitialFrame(commonInitialFrame, receiver, Bytes.EMPTY, 0L);
 
         // expect:
         assertEquals(senderAddress, buildMessageFrame.getSenderAddress());
