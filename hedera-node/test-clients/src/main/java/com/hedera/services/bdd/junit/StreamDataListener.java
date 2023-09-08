@@ -14,18 +14,13 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.authorization;
+package com.hedera.services.bdd.junit;
 
-import com.hedera.node.app.spi.authorization.Authorizer;
-import dagger.Binds;
-import dagger.Module;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import javax.inject.Singleton;
+import com.hedera.services.stream.proto.RecordStreamItem;
+import com.hedera.services.stream.proto.TransactionSidecarRecord;
 
-/** A Dagger module for providing dependencies based on {@link Authorizer}. */
-@Module
-public interface AuthorizerInjectionModule {
-    @Binds
-    @Singleton
-    Authorizer provideAuthorizer(@NonNull final AuthorizerImpl impl);
+public interface StreamDataListener {
+    default void onNewItem(RecordStreamItem item) {}
+
+    default void onNewSidecar(TransactionSidecarRecord sidecar) {}
 }

@@ -20,8 +20,10 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
+import static com.hedera.node.app.service.token.impl.handlers.staking.StakeInfoHelper.SENTINEL_ACCOUNT_ID;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -102,13 +104,14 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
         // the target account must sign the transaction
         // 3. If the payer for the transaction is 0.0.2 or system admin, then no signatures are needed for the update
         final var targetAccountKeyMustSign = !waivers.isTargetAccountSignatureWaived(txn, payer);
+
         // 4. Including above 3 conditions, if the target account is 0.0.2, new key must sign the transaction
         final var newAccountKeyMustSign = !waivers.isNewKeySignatureWaived(txn, payer);
         if (targetAccountKeyMustSign) {
             context.requireKeyOrThrow(updateAccountId, INVALID_ACCOUNT_ID);
         }
         if (newAccountKeyMustSign && op.hasKey()) {
-            context.requireKey(op.keyOrThrow());
+            context.requireKeyOrThrow(op.key(), INVALID_ADMIN_KEY);
         }
     }
 
@@ -128,6 +131,7 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
         final var accountStore = context.writableStore(WritableAccountStore.class);
         final var targetAccount = accountStore.get(target);
         validateTrue(targetAccount != null, INVALID_ACCOUNT_ID);
+        context.attributeValidator().validateMemo(op.memo());
 
         // Customize the account based on fields set in transaction body
         final var builder = updateBuilder(op, targetAccount);
@@ -179,7 +183,7 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
             builder.declineReward(op.declineReward().booleanValue());
         }
         if (op.hasStakedAccountId()) {
-            if (AccountID.newBuilder().accountNum(0).build().equals(op.stakedAccountId())) {
+            if (SENTINEL_ACCOUNT_ID.equals(op.stakedAccountId())) {
                 builder.stakedAccountId((AccountID) null);
             } else {
                 builder.stakedAccountId(op.stakedAccountId());
