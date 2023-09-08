@@ -41,7 +41,6 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
-import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.notification.NotificationEngine;
@@ -656,10 +655,9 @@ public class SwirldsPlatform implements Platform, Startable {
             eventLinker.loadFromSignedState(initialState);
 
             // We don't want to invoke these callbacks until after we are starting up.
+            final long round = initialState.getRound();
+            final Hash hash = initialState.getState().getHash();
             components.add((Startable) () -> {
-                final long round = initialState.getRound();
-                final Hash hash = initialState.getState().getHash();
-
                 // If we loaded from disk then call the appropriate dispatch.
                 // It is important that this is sent after the ConsensusHashManager
                 // is initialized.
@@ -773,24 +771,13 @@ public class SwirldsPlatform implements Platform, Startable {
         // If our hash changes as a result of the new address book then our old signatures may become invalid.
         signedState.pruneInvalidSignatures();
 
-        // the merkle tree visualizer prints hashes as mnemonics, which are good for most cases
-        // just in case, we print the unabbreviated root hash here as well
-        final String fullRootHashLine = "Root hash: " + signedState.getState().getHash();
-
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
         logger.info(
                 STARTUP.getMarker(),
                 """
                         The platform is using the following initial state:
-                        {}
-                        {}
-
                         {}""",
-                signedState.getState().getPlatformState().getInfoString(),
-                fullRootHashLine,
-                new MerkleTreeVisualizer(signedState.getState())
-                        .setDepth(stateConfig.debugHashDepth())
-                        .render());
+                signedState.getState().getInfoString(stateConfig.debugHashDepth()));
     }
 
     /**
