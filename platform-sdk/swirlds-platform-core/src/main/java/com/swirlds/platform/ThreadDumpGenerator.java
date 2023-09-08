@@ -16,7 +16,7 @@
 
 package com.swirlds.platform;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;

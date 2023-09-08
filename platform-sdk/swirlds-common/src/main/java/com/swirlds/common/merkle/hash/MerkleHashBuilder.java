@@ -19,7 +19,7 @@ package com.swirlds.common.merkle.hash;
 import static com.swirlds.common.crypto.engine.CryptoEngine.THREAD_COMPONENT_NAME;
 import static com.swirlds.common.merkle.iterators.MerkleIterationOrder.POST_ORDERED_DEPTH_FIRST_RANDOM;
 import static com.swirlds.common.merkle.utility.MerkleConstants.MERKLE_DIGEST_TYPE;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Hash;

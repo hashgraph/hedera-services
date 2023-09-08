@@ -16,7 +16,7 @@
 
 package com.swirlds.demo.iss;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;

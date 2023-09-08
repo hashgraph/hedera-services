@@ -19,7 +19,7 @@ package com.swirlds.platform.cli;
 import com.swirlds.cli.commands.StateCommand;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
-import com.swirlds.logging.LogMarker;
+import com.swirlds.logging.legacy.LogMarker;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import picocli.CommandLine;

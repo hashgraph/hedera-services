@@ -16,13 +16,13 @@
 
 package com.swirlds.platform.event.linking;
 
-import static com.swirlds.logging.LogMarker.INVALID_EVENT_ERROR;
+import static com.swirlds.logging.legacy.LogMarker.INVALID_EVENT_ERROR;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
-import com.swirlds.logging.LogMarker;
+import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;

@@ -21,7 +21,7 @@ import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.logging.LogMarker;
+import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.config.DefaultConfiguration;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import edu.umd.cs.findbugs.annotations.NonNull;

@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.network;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;

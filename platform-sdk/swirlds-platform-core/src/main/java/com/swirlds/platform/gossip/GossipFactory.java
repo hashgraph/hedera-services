@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.gossip;
 
-import static com.swirlds.logging.LogMarker.STARTUP;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;

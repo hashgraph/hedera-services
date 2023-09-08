@@ -17,7 +17,7 @@
 package com.swirlds.merkledb;
 
 import static com.swirlds.common.io.utility.FileUtils.hardLinkTree;
-import static com.swirlds.logging.LogMarker.MERKLE_DB;
+import static com.swirlds.logging.legacy.LogMarker.MERKLE_DB;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;

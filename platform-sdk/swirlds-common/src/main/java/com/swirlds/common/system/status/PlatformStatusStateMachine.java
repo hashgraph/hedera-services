@@ -17,8 +17,8 @@
 package com.swirlds.common.system.status;
 
 import static com.swirlds.common.units.TimeUnit.UNIT_MILLISECONDS;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.PLATFORM_STATUS;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.PLATFORM_STATUS;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.formatting.UnitFormatter;
@@ -38,7 +38,7 @@ import com.swirlds.common.system.status.actions.StateWrittenToDiskAction;
 import com.swirlds.common.system.status.actions.TimeElapsedAction;
 import com.swirlds.common.system.status.logic.PlatformStatusLogic;
 import com.swirlds.common.system.status.logic.StartingUpStatusLogic;
-import com.swirlds.logging.payloads.PlatformStatusPayload;
+import com.swirlds.logging.legacy.payload.PlatformStatusPayload;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;

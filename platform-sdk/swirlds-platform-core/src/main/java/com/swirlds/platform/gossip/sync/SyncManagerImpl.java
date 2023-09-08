@@ -17,8 +17,8 @@
 package com.swirlds.platform.gossip.sync;
 
 import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
-import static com.swirlds.logging.LogMarker.FREEZE;
-import static com.swirlds.logging.LogMarker.SYNC;
+import static com.swirlds.logging.legacy.LogMarker.FREEZE;
+import static com.swirlds.logging.legacy.LogMarker.SYNC;
 
 import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.metrics.FunctionGauge;

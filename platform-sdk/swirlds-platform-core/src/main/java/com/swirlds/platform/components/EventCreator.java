@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.components;
 
-import static com.swirlds.logging.LogMarker.CREATE_EVENT;
+import static com.swirlds.logging.legacy.LogMarker.CREATE_EVENT;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;

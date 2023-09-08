@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.state;
 
-import static com.swirlds.logging.LogMarker.FREEZE;
+import static com.swirlds.logging.legacy.LogMarker.FREEZE;
 
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -25,8 +25,8 @@ import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.UptimeData;
-import com.swirlds.logging.payloads.SetFreezeTimePayload;
-import com.swirlds.logging.payloads.SetLastFrozenTimePayload;
+import com.swirlds.logging.legacy.payload.SetFreezeTimePayload;
+import com.swirlds.logging.legacy.payload.SetLastFrozenTimePayload;
 import com.swirlds.platform.uptime.MutableUptimeData;
 import com.swirlds.platform.uptime.UptimeDataImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;

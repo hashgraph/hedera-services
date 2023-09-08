@@ -16,7 +16,7 @@
 
 package com.swirlds.platform;
 
-import static com.swirlds.logging.LogMarker.FREEZE;
+import static com.swirlds.logging.legacy.LogMarker.FREEZE;
 
 import com.swirlds.common.system.EventCreationRule;
 import com.swirlds.common.system.EventCreationRuleResponse;

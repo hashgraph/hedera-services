@@ -17,7 +17,7 @@
 package com.swirlds.platform.gui.internal;
 
 import static com.swirlds.gui.GuiUtils.wrap;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getStateHierarchy;
 
 import com.swirlds.gui.GuiConstants;

@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.state.address;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.STARTUP;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.NodeId;

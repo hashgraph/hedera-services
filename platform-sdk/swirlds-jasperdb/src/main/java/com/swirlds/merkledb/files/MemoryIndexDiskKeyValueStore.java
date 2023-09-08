@@ -16,8 +16,8 @@
 
 package com.swirlds.merkledb.files;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.MERKLE_DB;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.MERKLE_DB;
 import static com.swirlds.merkledb.files.DataFileCommon.dataLocationToString;
 import static com.swirlds.merkledb.files.DataFileCommon.fileIndexFromDataLocation;
 import static com.swirlds.merkledb.files.DataFileCommon.formatSizeBytes;

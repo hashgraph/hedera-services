@@ -17,8 +17,8 @@
 package com.swirlds.platform;
 
 import static com.swirlds.common.merkle.utility.MerkleUtils.rehashTree;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.STARTUP;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
 import static com.swirlds.platform.state.signed.SignedStateFileReader.readStateFile;
 

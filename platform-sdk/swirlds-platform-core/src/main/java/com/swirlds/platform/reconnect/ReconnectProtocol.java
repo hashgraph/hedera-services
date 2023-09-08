@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.reconnect;
 
-import static com.swirlds.logging.LogMarker.RECONNECT;
+import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.threading.manager.ThreadManager;

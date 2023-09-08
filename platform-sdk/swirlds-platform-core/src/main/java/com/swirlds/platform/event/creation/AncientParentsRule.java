@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.event.creation;
 
-import static com.swirlds.logging.LogMarker.CREATE_EVENT;
+import static com.swirlds.logging.legacy.LogMarker.CREATE_EVENT;
 
 import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.common.system.events.BaseEvent;

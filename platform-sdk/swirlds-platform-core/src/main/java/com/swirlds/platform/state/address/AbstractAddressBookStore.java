@@ -18,8 +18,8 @@ package com.swirlds.platform.state.address;
 
 import static com.swirlds.common.system.address.AddressBookValidator.isGenesisAddressBookValid;
 import static com.swirlds.common.system.address.AddressBookValidator.isNextAddressBookValid;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.STARTUP;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.utility.CommonUtils;

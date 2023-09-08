@@ -17,8 +17,8 @@
 package com.swirlds.platform.components.state;
 
 import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.STATE_TO_DISK;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
 import static com.swirlds.platform.state.signed.StateToDiskReason.FATAL_ERROR;
 
 import com.swirlds.base.time.Time;

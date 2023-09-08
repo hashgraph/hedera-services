@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.event.validation;
 
-import static com.swirlds.logging.LogMarker.EVENT_SIG;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.INVALID_EVENT_ERROR;
+import static com.swirlds.logging.legacy.LogMarker.EVENT_SIG;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.INVALID_EVENT_ERROR;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;

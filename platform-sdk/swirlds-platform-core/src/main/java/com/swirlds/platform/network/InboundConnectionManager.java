@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.network;
 
-import static com.swirlds.logging.LogMarker.SOCKET_EXCEPTIONS;
+import static com.swirlds.logging.legacy.LogMarker.SOCKET_EXCEPTIONS;
 
 import com.swirlds.common.threading.locks.AutoClosableResourceLock;
 import com.swirlds.common.threading.locks.Locks;

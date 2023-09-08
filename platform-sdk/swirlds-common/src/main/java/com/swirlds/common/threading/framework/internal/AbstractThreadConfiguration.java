@@ -17,7 +17,7 @@
 package com.swirlds.common.threading.framework.internal;
 
 import static com.swirlds.common.threading.framework.config.ThreadConfiguration.captureThreadConfiguration;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static java.util.Objects.requireNonNull;
 
 import com.swirlds.base.state.Mutable;

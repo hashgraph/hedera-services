@@ -17,9 +17,9 @@
 package com.swirlds.platform.crypto;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static com.swirlds.logging.LogMarker.CERTIFICATES;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.STARTUP;
+import static com.swirlds.logging.legacy.LogMarker.CERTIFICATES;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.PathsConfig;

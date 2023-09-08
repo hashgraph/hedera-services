@@ -17,8 +17,8 @@
 package com.swirlds.demo.stats.signing;
 
 import static com.swirlds.common.utility.CommonUtils.hex;
-import static com.swirlds.logging.LogMarker.ADV_CRYPTO_SYSTEM;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.ADV_CRYPTO_SYSTEM;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.transaction.Transaction;

@@ -16,7 +16,7 @@
 
 package com.swirlds.common.threading.utility;
 
-import static com.swirlds.logging.LogMarker.THREADS;
+import static com.swirlds.logging.legacy.LogMarker.THREADS;
 
 import com.swirlds.common.threading.framework.StoppableThread;
 import org.apache.logging.log4j.LogManager;

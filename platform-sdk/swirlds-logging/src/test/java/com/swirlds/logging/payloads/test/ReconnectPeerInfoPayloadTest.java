@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.logging.payloads.ReconnectPeerInfoPayload;
+import com.swirlds.logging.legacy.payload.ReconnectPeerInfoPayload;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

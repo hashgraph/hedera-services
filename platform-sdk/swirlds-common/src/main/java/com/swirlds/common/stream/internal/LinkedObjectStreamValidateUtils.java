@@ -17,8 +17,8 @@
 package com.swirlds.common.stream.internal;
 
 import static com.swirlds.common.stream.internal.StreamValidationResult.PARSE_STREAM_FILE_FAIL;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.OBJECT_STREAM;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.OBJECT_STREAM;
 
 import com.swirlds.base.utility.Pair;
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -28,7 +28,7 @@ import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.stream.LinkedObjectStreamUtilities;
 import com.swirlds.common.stream.StreamType;
-import com.swirlds.logging.payloads.StreamParseErrorPayload;
+import com.swirlds.logging.legacy.payload.StreamParseErrorPayload;
 import java.io.File;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;

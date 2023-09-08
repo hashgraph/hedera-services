@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.network.connectivity;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;

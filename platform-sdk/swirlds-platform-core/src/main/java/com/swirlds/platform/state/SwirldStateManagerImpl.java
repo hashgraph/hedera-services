@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.state;
 
-import static com.swirlds.logging.LogMarker.RECONNECT;
+import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 import static com.swirlds.platform.state.SwirldStateManagerUtils.fastCopy;
 
 import com.swirlds.base.time.Time;

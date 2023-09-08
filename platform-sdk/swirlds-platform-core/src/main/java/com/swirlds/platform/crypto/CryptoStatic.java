@@ -17,7 +17,7 @@
 package com.swirlds.platform.crypto;
 
 import static com.swirlds.common.utility.CommonUtils.nameToAlias;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.crypto.CryptoConstants.PUBLIC_KEYS_FILE;
 
 import com.swirlds.common.crypto.CryptographyException;
@@ -25,7 +25,7 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.logging.LogMarker;
+import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.state.address.AddressBookNetworkUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.FileInputStream;

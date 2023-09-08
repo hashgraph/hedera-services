@@ -19,8 +19,8 @@ package com.swirlds.logging.payloads.test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.swirlds.logging.payloads.AbstractLogPayload;
-import com.swirlds.logging.payloads.PayloadParsingException;
+import com.swirlds.logging.legacy.payload.AbstractLogPayload;
+import com.swirlds.logging.legacy.payload.PayloadParsingException;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
 import org.junit.jupiter.api.Tag;

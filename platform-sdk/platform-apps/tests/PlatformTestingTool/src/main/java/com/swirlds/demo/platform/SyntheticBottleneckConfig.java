@@ -16,10 +16,10 @@
 
 package com.swirlds.demo.platform;
 
-import static com.swirlds.logging.LogMarker.DEMO_INFO;
+import static com.swirlds.logging.legacy.LogMarker.DEMO_INFO;
 
-import com.swirlds.logging.payloads.SyntheticBottleneckFinishPayload;
-import com.swirlds.logging.payloads.SyntheticBottleneckStartPayload;
+import com.swirlds.logging.legacy.payload.SyntheticBottleneckFinishPayload;
+import com.swirlds.logging.legacy.payload.SyntheticBottleneckStartPayload;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;

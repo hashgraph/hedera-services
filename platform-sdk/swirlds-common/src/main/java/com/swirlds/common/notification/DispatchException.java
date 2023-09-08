@@ -17,7 +17,7 @@
 package com.swirlds.common.notification;
 
 import com.swirlds.common.exceptions.PlatformException;
-import com.swirlds.logging.LogMarker;
+import com.swirlds.logging.legacy.LogMarker;
 
 public class DispatchException extends PlatformException {
 

@@ -17,8 +17,8 @@
 package com.swirlds.platform;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.STARTUP;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.crypto.CryptoSetup.initNodeSecurity;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.addPlatforms;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getPlatforms;
@@ -65,7 +65,7 @@ import com.swirlds.gui.model.GuiModel;
 import com.swirlds.gui.model.InfoApp;
 import com.swirlds.gui.model.InfoMember;
 import com.swirlds.gui.model.InfoSwirld;
-import com.swirlds.logging.payloads.NodeStartPayload;
+import com.swirlds.logging.legacy.payload.NodeStartPayload;
 import com.swirlds.platform.config.internal.PlatformConfigUtils;
 import com.swirlds.platform.crypto.CryptoConstants;
 import com.swirlds.platform.gui.internal.StateHierarchy;

@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.components;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.STALE_EVENTS;
-import static com.swirlds.logging.LogMarker.SYNC;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.STALE_EVENTS;
+import static com.swirlds.logging.legacy.LogMarker.SYNC;
 
 import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.system.NodeId;

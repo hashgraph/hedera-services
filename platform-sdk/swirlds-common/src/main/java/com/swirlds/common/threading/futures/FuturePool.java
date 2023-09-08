@@ -17,7 +17,7 @@
 package com.swirlds.common.threading.futures;
 
 import com.swirlds.common.exceptions.PlatformException;
-import com.swirlds.logging.LogMarker;
+import com.swirlds.logging.legacy.LogMarker;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;

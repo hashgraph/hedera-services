@@ -18,7 +18,7 @@ package com.swirlds.platform.state.signed;
 
 import static com.swirlds.common.formatting.StringFormattingUtils.formattedList;
 import static com.swirlds.common.utility.CommonUtils.unhex;
-import static com.swirlds.logging.LogMarker.STARTUP;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.state.signed.SavedStateMetadataField.CONSENSUS_TIMESTAMP;
 import static com.swirlds.platform.state.signed.SavedStateMetadataField.MINIMUM_GENERATION_NON_ANCIENT;
 import static com.swirlds.platform.state.signed.SavedStateMetadataField.NODE_ID;

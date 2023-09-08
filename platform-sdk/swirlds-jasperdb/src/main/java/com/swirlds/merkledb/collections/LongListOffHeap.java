@@ -16,7 +16,7 @@
 
 package com.swirlds.merkledb.collections;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static java.lang.Math.toIntExact;
 import static java.util.Objects.requireNonNullElse;
 
