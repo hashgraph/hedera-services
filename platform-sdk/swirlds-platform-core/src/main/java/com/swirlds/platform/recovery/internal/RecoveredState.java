@@ -20,4 +20,10 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+/**
+ * Used during post-consensus event stream recovery. Stores the state after transactions have been applied to it and
+ * the proposed judge for that state.
+ * @param state a state that has had transactions applied to it
+ * @param judge the proposed judge for the state
+ */
 public record RecoveredState(@NonNull ReservedSignedState state, @NonNull GossipEvent judge) {}

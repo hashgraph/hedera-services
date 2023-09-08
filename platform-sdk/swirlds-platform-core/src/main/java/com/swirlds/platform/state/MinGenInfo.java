@@ -18,6 +18,8 @@ package com.swirlds.platform.state;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,7 +33,17 @@ import java.util.List;
  * 		the minimum event generation for a given round
  */
 public record MinGenInfo(long round, long minimumGeneration) {
-    public static void serializeList(final List<MinGenInfo> minGenInfo, final SerializableDataOutputStream out)
+    /**
+     * Serialize a list of {@link MinGenInfo} objects
+     *
+     * @param minGenInfo
+     * 		the list of {@link MinGenInfo} objects to serialize
+     * @param out
+     * 		the stream to write to
+     * @throws IOException
+     * 		thrown if an IO error occurs
+     */
+    public static void serializeList(@NonNull final List<MinGenInfo> minGenInfo, @NonNull final SerializableDataOutputStream out)
             throws IOException {
         out.writeInt(minGenInfo.size());
         for (final MinGenInfo info : minGenInfo) {
@@ -40,7 +52,16 @@ public record MinGenInfo(long round, long minimumGeneration) {
         }
     }
 
-    public static List<MinGenInfo> deserializeList(final SerializableDataInputStream in) throws IOException {
+    /**
+     * Deserialize a list of {@link MinGenInfo} objects
+     *
+     * @param in
+     * 		the stream to read from
+     * @return the list of {@link MinGenInfo} objects
+     * @throws IOException
+     * 		thrown if an IO error occurs
+     */
+    public static List<MinGenInfo> deserializeList(@NonNull final SerializableDataInputStream in) throws IOException {
         final int minGenInfoSize = in.readInt();
         final List<MinGenInfo> minGenInfo = new ArrayList<>(minGenInfoSize);
         for (int i = 0; i < minGenInfoSize; i++) {

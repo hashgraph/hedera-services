@@ -24,6 +24,8 @@ import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.util.iterator.TypedIterator;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Iterator;
@@ -89,21 +91,21 @@ public class ConsensusRound implements Round {
      *
      * @return the list of events in this round
      */
-    public List<EventImpl> getConsensusEvents() {
+    public @NonNull List<EventImpl> getConsensusEvents() {
         return consensusEvents;
     }
 
     /**
      * @return the consensus generations when this round reached consensus
      */
-    public GraphGenerations getGenerations() {
+    public @NonNull GraphGenerations getGenerations() {
         return generations;
     }
 
     /**
      * @return a snapshot of consensus at this consensus round
      */
-    public ConsensusSnapshot getSnapshot() {
+    public @NonNull ConsensusSnapshot getSnapshot() {
         return snapshot;
     }
 
@@ -116,7 +118,7 @@ public class ConsensusRound implements Round {
 
     /** {@inheritDoc} */
     @Override
-    public Iterator<ConsensusEvent> iterator() {
+    public @NonNull Iterator<ConsensusEvent> iterator() {
         return new TypedIterator<>(consensusEvents.iterator());
     }
 
@@ -138,12 +140,9 @@ public class ConsensusRound implements Round {
         return consensusEvents.size();
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
+    /** {@inheritDoc} */
     @Override
-    public Instant getConsensusTimestamp() {
+    public @NonNull Instant getConsensusTimestamp() {
         return snapshot.consensusTimestamp();
     }
 
@@ -152,7 +151,7 @@ public class ConsensusRound implements Round {
      * @deprecated a round might not have any events, the code should not expect this to be non-null
      */
     @Deprecated(forRemoval = true)
-    public EventImpl getLastEvent() {
+    public @Nullable EventImpl getLastEvent() {
         return lastEvent;
     }
 

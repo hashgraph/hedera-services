@@ -51,7 +51,6 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
     public static final long GENESIS_ROUND = 0;
 
     private static final class ClassVersion {
-        public static final int ORIGINAL = 1;
         public static final int EPOCH_HASH = 2;
         public static final int ROUNDS_NON_ANCIENT = 3;
         /**
@@ -59,6 +58,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
          * - Mingen is no longer stored directly, its part of the snapshot
          * - restart/reconnect now uses a snapshot
          * - lastTransactionTimestamp is no longer stored directly, its part of the snapshot
+         * - numEventsCons is no longer stored directly, its part of the snapshot
          * */
         public static final int CONSENSUS_SNAPSHOT = 4;
     }
