@@ -17,6 +17,7 @@
 package com.hedera.node.app.spi.fixtures.workflows;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
+import static com.hedera.node.app.spi.HapiUtils.EMPTY_KEY_LIST;
 import static com.hedera.node.app.spi.HapiUtils.isHollow;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
@@ -34,6 +35,7 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -361,6 +363,18 @@ public class FakePreHandleContext implements PreHandleContext {
         }
 
         requiredHollowAccounts.add(hollowAccount);
+        return this;
+    }
+
+    @NonNull
+    @Override
+    public PreHandleContext requireSignatureForHollowAccountCreation(@NonNull final Bytes hollowAccountAlias) {
+        requireNonNull(hollowAccountAlias);
+        requiredHollowAccounts.add(Account.newBuilder()
+                .accountId(AccountID.DEFAULT)
+                .key(EMPTY_KEY_LIST)
+                .alias(hollowAccountAlias)
+                .build());
         return this;
     }
 

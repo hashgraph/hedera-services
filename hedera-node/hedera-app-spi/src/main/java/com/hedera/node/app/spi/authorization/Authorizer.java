@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.authorization;
+package com.hedera.node.app.spi.authorization;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -41,4 +42,38 @@ public interface Authorizer {
      * @return Whether the ID definitively refers to a super-user
      */
     boolean isSuperUser(@NonNull AccountID id);
+
+    /**
+     * Checks whether the given account refers to a treasury account. If the {@link AccountID} does not contain an account
+     * number (for example, because it uses an alias), then this method will return false.
+     *
+     * @param id The ID of the account to check
+     * @return Whether the ID definitively refers to a super-user
+     */
+    boolean isTreasury(@NonNull AccountID id);
+
+    /**
+     * Checks whether an account is exempt from paying fees.
+     *
+     * @param id the {@link AccountID} to check
+     * @param functionality the {@link HederaFunctionality} of the transaction
+     * @param txBody the {@link TransactionBody} of the transaction
+     * @return {@code true} if the account is exempt from paying fees, otherwise {@code false}
+     */
+    SystemPrivilege hasPrivilegedAuthorization(
+            @NonNull AccountID id, @NonNull HederaFunctionality functionality, @NonNull TransactionBody txBody);
+
+    enum SystemPrivilege {
+        /** The operation does not require any system privileges. */
+        UNNECESSARY,
+
+        /** The operation requires system privileges that its payer does not have. */
+        UNAUTHORIZED,
+
+        /** The operation cannot be performed, no matter the privileges of its payer. */
+        IMPERMISSIBLE,
+
+        /** The operation requires system privileges, and its payer has those privileges. */
+        AUTHORIZED;
+    }
 }

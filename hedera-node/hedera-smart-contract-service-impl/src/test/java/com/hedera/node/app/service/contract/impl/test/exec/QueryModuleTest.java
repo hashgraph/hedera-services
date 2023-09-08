@@ -21,10 +21,12 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 import com.hedera.node.app.service.contract.impl.exec.EvmActionTracer;
 import com.hedera.node.app.service.contract.impl.exec.QueryModule;
+import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
+import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -44,6 +46,9 @@ class QueryModuleTest {
     private HederaOperations hederaOperations;
 
     @Mock
+    private HederaNativeOperations hederaNativeOperations;
+
+    @Mock
     SystemContractOperations systemContractOperations;
 
     @Mock
@@ -60,9 +65,9 @@ class QueryModuleTest {
 
     @Test
     void providesExpectedProxyWorldUpdater() {
-        assertInstanceOf(
-                ProxyWorldUpdater.class,
-                QueryModule.provideProxyWorldUpdater(hederaOperations, systemContractOperations, factory));
+        final var enhancement =
+                new HederaWorldUpdater.Enhancement(hederaOperations, hederaNativeOperations, systemContractOperations);
+        assertInstanceOf(ProxyWorldUpdater.class, QueryModule.provideProxyWorldUpdater(enhancement, factory));
     }
 
     @Test
@@ -72,10 +77,11 @@ class QueryModuleTest {
 
     @Test
     void feesOnlyUpdaterIsProxyUpdater() {
+        final var enhancement =
+                new HederaWorldUpdater.Enhancement(hederaOperations, hederaNativeOperations, systemContractOperations);
         assertInstanceOf(
                 ProxyWorldUpdater.class,
-                QueryModule.provideFeesOnlyUpdater(hederaOperations, systemContractOperations, factory)
-                        .get());
+                QueryModule.provideFeesOnlyUpdater(enhancement, factory).get());
     }
 
     @Test

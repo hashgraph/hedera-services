@@ -34,6 +34,7 @@ import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.spi.fixtures.TransactionFactory;
 import com.hedera.node.app.throttle.ThrottleManager;
+import com.hedera.node.app.util.FileUtilities;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.converter.LongPairConverter;
@@ -162,7 +163,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
         subject.handleTxBody(state, txBody.build());
 
         // then
-        verify(throttleManager, times(1)).update(SystemFileUpdateFacility.getFileContent(state, fileID));
+        verify(throttleManager, times(1)).update(FileUtilities.getFileContent(state, fileID));
     }
 
     @Test
@@ -181,6 +182,6 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
         subject.handleTxBody(state, txBody.build());
 
         // then
-        verify(exchangeRateManager, times(1)).update(SystemFileUpdateFacility.getFileContent(state, fileID));
+        verify(exchangeRateManager, times(1)).update(FileUtilities.getFileContent(state, fileID));
     }
 }

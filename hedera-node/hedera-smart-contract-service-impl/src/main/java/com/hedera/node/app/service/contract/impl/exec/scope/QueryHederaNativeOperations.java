@@ -21,8 +21,10 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.contract.impl.annotations.QueryScope;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -43,6 +45,9 @@ public class QueryHederaNativeOperations implements HederaNativeOperations {
         this.context = Objects.requireNonNull(context);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public @Nullable Account getAccount(final long number) {
         final var accountStore = context.createStore(ReadableAccountStore.class);
@@ -50,10 +55,25 @@ public class QueryHederaNativeOperations implements HederaNativeOperations {
                 AccountID.newBuilder().accountNum(number).build());
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public @Nullable Token getToken(final long number) {
         final var tokenStore = context.createStore(ReadableTokenStore.class);
         return tokenStore.get(TokenID.newBuilder().tokenNum(number).build());
+    }
+
+    /**
+     *
+     * {@inheritDoc}
+     */
+    @Override
+    public @Nullable TokenRelation getTokenRelation(final long accountNumber, final long tokenNumber) {
+        final var relationStore = context.createStore(ReadableTokenRelationStore.class);
+        return relationStore.get(
+                AccountID.newBuilder().accountNum(accountNumber).build(),
+                TokenID.newBuilder().tokenNum(tokenNumber).build());
     }
 
     @Override
