@@ -17,12 +17,11 @@
 package com.hedera.services.bdd.junit;
 
 import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.isRecordFile;
+import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.isSidecarFile;
 
-import com.hedera.services.stream.proto.RecordStreamItem;
 import java.io.File;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.function.Consumer;
 import org.apache.commons.io.monitor.FileAlterationListenerAdaptor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -33,7 +32,7 @@ import org.apache.logging.log4j.Logger;
  */
 public class BroadcastingRecordStreamListener extends FileAlterationListenerAdaptor {
     private static final Logger log = LogManager.getLogger(BroadcastingRecordStreamListener.class);
-    private final List<Consumer<RecordStreamItem>> listeners = new CopyOnWriteArrayList<>();
+    private final List<StreamDataListener> listeners = new CopyOnWriteArrayList<>();
 
     /**
      * Subscribes a listener to receive record stream items.
@@ -41,22 +40,52 @@ public class BroadcastingRecordStreamListener extends FileAlterationListenerAdap
      * @param listener the listener to subscribe
      * @return a runnable that can be used to unsubscribe the listener
      */
-    public Runnable subscribe(final Consumer<RecordStreamItem> listener) {
+    public Runnable subscribe(final StreamDataListener listener) {
         listeners.add(listener);
         return () -> listeners.remove(listener);
     }
 
+    enum FileType {
+        RECORD_STREAM_FILE,
+        SIDE_CAR_FILE,
+        OTHER
+    }
+
     @Override
     public void onFileCreate(final File file) {
-        if (!isRecordFile(file.getName())) {
-            return;
+        final var fileType = typeOf(file);
+        switch (fileType) {
+            case RECORD_STREAM_FILE -> exposeItems(file);
+            case SIDE_CAR_FILE -> exposeSidecars(file);
+            case OTHER -> {
+                // Nothing to expose
+            }
         }
+    }
+
+    private void exposeSidecars(final File file) {
+        log.info("Providing validators with access to sidecar stream file {}", file.getAbsolutePath());
+        final var contents = RecordStreamAccess.ensurePresentSidecarFile(file.getAbsolutePath());
+        contents.getSidecarRecordsList().forEach(sidecar -> listeners.forEach(l -> l.onNewSidecar(sidecar)));
+    }
+
+    private void exposeItems(final File file) {
         log.info("Providing validators with access to record stream file {}", file.getAbsolutePath());
         final var contents = RecordStreamAccess.ensurePresentRecordFile(file.getAbsolutePath());
-        contents.getRecordStreamItemsList().forEach(item -> listeners.forEach(l -> l.accept(item)));
+        contents.getRecordStreamItemsList().forEach(item -> listeners.forEach(l -> l.onNewItem(item)));
     }
 
     public int numListeners() {
         return listeners.size();
+    }
+
+    private FileType typeOf(final File file) {
+        if (isRecordFile(file.getName())) {
+            return FileType.RECORD_STREAM_FILE;
+        } else if (isSidecarFile(file.getName())) {
+            return FileType.SIDE_CAR_FILE;
+        } else {
+            return FileType.OTHER;
+        }
     }
 }

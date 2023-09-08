@@ -475,6 +475,9 @@ public class HapiSpec implements Runnable {
                 status = FAILED;
                 failure = maybeRecordStreamError.get();
             }
+        } else if (assertions != null) {
+            assertions.forEach(EventualRecordStreamAssertion::unsubscribe);
+            RECORD_STREAM_ACCESS.stopMonitorIfNoSubscribers();
         }
 
         tearDown();

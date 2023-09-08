@@ -46,7 +46,6 @@ import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.code.CodeV0;
-import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.frame.MessageFrame.State;
 import org.hyperledger.besu.evm.frame.MessageFrame.Type;
@@ -280,17 +279,6 @@ public class HederaTracer implements HederaOperationTracer {
             lastAction.setRecipientContract(EntityId.fromAddress(frame.getContractAddress()));
             finalizeActionFor(lastAction, frame, frame.getState());
         });
-    }
-
-    @Override
-    public void traceAccountCreationResult(final MessageFrame frame, final Optional<ExceptionalHaltReason> haltReason) {
-        frame.setExceptionalHaltReason(haltReason);
-        if (areActionSidecarsEnabled()) {
-            // we take the last action from the list since there is a chance
-            // it has already been popped from the stack
-            final var lastAction = allActions.get(allActions.size() - 1);
-            finalizeActionFor(lastAction, frame, frame.getState());
-        }
     }
 
     public List<SolidityAction> getActions() {
