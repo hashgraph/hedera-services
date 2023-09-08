@@ -17,8 +17,8 @@
 package com.swirlds.common.io.utility;
 
 import static com.swirlds.common.io.utility.TemporaryFileBuilder.buildTemporaryDirectory;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.STATE_TO_DISK;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
 import static java.nio.file.Files.exists;
 
 import com.swirlds.common.io.streams.MerkleDataOutputStream;

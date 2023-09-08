@@ -16,7 +16,7 @@
 
 package com.swirlds.gui.components;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.metrics.LegacyMetric;

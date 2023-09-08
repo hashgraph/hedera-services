@@ -17,8 +17,8 @@
 package com.swirlds.common.startup;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.STARTUP;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import edu.umd.cs.findbugs.annotations.NonNull;

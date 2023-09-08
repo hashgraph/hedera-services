@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.gossip.shadowgraph;
 
-import static com.swirlds.logging.LogMarker.SYNC_INFO;
+import static com.swirlds.logging.legacy.LogMarker.SYNC_INFO;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.event.GossipEvent;

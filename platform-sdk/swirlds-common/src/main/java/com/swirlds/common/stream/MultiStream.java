@@ -16,7 +16,7 @@
 
 package com.swirlds.common.stream;
 
-import static com.swirlds.logging.LogMarker.OBJECT_STREAM;
+import static com.swirlds.logging.legacy.LogMarker.OBJECT_STREAM;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHashable;

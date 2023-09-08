@@ -16,7 +16,7 @@
 
 package com.swirlds.common.system.address;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.system.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;

@@ -17,8 +17,8 @@
 package com.swirlds.platform;
 
 import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
-import static com.swirlds.logging.LogMarker.ADD_EVENT;
-import static com.swirlds.logging.LogMarker.STARTUP;
+import static com.swirlds.logging.legacy.LogMarker.ADD_EVENT;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.internal.EventImpl.MIN_TRANS_TIMESTAMP_INCR_NANOS;
 
 import com.swirlds.common.config.ConsensusConfig;

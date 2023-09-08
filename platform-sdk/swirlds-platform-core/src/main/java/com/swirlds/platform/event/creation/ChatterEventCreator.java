@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.event.creation;
 
-import static com.swirlds.logging.LogMarker.CREATE_EVENT;
+import static com.swirlds.logging.legacy.LogMarker.CREATE_EVENT;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;

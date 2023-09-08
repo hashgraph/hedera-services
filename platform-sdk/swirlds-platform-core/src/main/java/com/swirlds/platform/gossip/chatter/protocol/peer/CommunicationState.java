@@ -23,7 +23,7 @@ import static com.swirlds.platform.gossip.chatter.protocol.peer.CommunicationSta
 import static com.swirlds.platform.gossip.chatter.protocol.peer.CommunicationState.SyncState.OUT_OF_SYNC;
 import static com.swirlds.platform.gossip.chatter.protocol.peer.CommunicationState.SyncState.SUSPENDED;
 
-import com.swirlds.logging.LogMarker;
+import com.swirlds.logging.legacy.LogMarker;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

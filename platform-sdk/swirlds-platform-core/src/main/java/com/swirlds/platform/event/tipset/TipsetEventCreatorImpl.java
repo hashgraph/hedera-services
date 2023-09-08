@@ -17,7 +17,7 @@
 package com.swirlds.platform.event.tipset;
 
 import static com.swirlds.common.system.NodeId.UNDEFINED_NODE_ID;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.event.EventConstants.CREATOR_ID_UNDEFINED;
 import static com.swirlds.platform.event.EventConstants.GENERATION_UNDEFINED;
 import static com.swirlds.platform.event.tipset.TipsetAdvancementWeight.ZERO_ADVANCEMENT_WEIGHT;

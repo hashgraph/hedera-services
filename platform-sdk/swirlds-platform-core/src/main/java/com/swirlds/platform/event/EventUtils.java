@@ -19,7 +19,7 @@ package com.swirlds.platform.event;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.BaseEvent;
 import com.swirlds.common.system.events.PlatformEvent;
-import com.swirlds.logging.LogMarker;
+import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;

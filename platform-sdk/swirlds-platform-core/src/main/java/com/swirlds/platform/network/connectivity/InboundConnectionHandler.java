@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.network.connectivity;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.SOCKET_EXCEPTIONS;
-import static com.swirlds.logging.LogMarker.SYNC;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.SOCKET_EXCEPTIONS;
+import static com.swirlds.logging.legacy.LogMarker.SYNC;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.config.SocketConfig;

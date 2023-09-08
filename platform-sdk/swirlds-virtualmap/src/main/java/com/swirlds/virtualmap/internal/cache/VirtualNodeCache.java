@@ -17,7 +17,7 @@
 package com.swirlds.virtualmap.internal.cache;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.FastCopyable;

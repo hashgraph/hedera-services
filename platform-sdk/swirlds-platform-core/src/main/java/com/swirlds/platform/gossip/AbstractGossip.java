@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.gossip;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
 import com.swirlds.base.state.LifecyclePhase;

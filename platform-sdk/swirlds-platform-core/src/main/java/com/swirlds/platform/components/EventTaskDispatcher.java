@@ -17,7 +17,7 @@
 package com.swirlds.platform.components;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.logging.LogMarker;
+import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.event.CreateEventTask;
 import com.swirlds.platform.event.EventIntakeTask;
 import com.swirlds.platform.event.GossipEvent;

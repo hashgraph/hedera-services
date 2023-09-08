@@ -18,7 +18,7 @@ package com.swirlds.platform.cli;
 
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.common.io.utility.FileUtils;
-import com.swirlds.logging.LogMarker;
+import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.util.FileSigningUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;

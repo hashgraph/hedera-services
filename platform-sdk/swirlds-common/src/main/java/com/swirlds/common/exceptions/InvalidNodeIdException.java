@@ -18,7 +18,7 @@ package com.swirlds.common.exceptions;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.logging.LogMarker;
+import com.swirlds.logging.legacy.LogMarker;
 
 /**
  * Thrown when the given {@link NodeId} was not found in the {@link AddressBook} or a {@code null} node id was passed by

@@ -20,7 +20,7 @@ import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.sequence.map.StandardSequenceMap;
-import com.swirlds.logging.LogMarker;
+import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.EventDescriptor;
 import com.swirlds.platform.event.GossipEvent;

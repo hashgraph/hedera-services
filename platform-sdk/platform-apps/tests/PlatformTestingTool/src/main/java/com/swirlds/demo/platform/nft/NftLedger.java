@@ -16,7 +16,7 @@
 
 package com.swirlds.demo.platform.nft;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.impl.PartialBinaryMerkleInternal;

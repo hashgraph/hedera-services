@@ -17,7 +17,7 @@
 package com.swirlds.platform.gui;
 
 import static com.swirlds.gui.GuiUtils.winRect;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.Console;
 import com.swirlds.common.system.NodeId;

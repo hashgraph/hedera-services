@@ -17,7 +17,7 @@
 package com.swirlds.platform.state.signed;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
-import static com.swirlds.logging.LogMarker.STATE_TO_DISK;
+import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
 
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;

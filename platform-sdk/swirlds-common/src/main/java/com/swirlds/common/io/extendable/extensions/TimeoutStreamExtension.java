@@ -17,7 +17,7 @@
 package com.swirlds.common.io.extendable.extensions;
 
 import static com.swirlds.common.utility.CompareTo.isGreaterThan;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.io.extendable.InputStreamExtension;
 import com.swirlds.common.io.extendable.OutputStreamExtension;

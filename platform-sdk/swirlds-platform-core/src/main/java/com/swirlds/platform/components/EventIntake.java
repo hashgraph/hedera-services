@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.components;
 
-import static com.swirlds.logging.LogMarker.INTAKE_EVENT;
-import static com.swirlds.logging.LogMarker.STALE_EVENTS;
-import static com.swirlds.logging.LogMarker.SYNC;
+import static com.swirlds.logging.legacy.LogMarker.INTAKE_EVENT;
+import static com.swirlds.logging.legacy.LogMarker.STALE_EVENTS;
+import static com.swirlds.logging.legacy.LogMarker.SYNC;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.config.EventConfig;
@@ -26,7 +26,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.logging.LogMarker;
+import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.EventLinker;

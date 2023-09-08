@@ -18,7 +18,7 @@ package com.swirlds.platform;
 
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.logging.LogMarker;
+import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.consensus.RoundCalculationUtils;
 import com.swirlds.platform.consensus.RoundNumberProvider;

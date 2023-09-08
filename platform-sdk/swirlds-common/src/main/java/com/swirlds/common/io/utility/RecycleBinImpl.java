@@ -17,8 +17,8 @@
 package com.swirlds.common.io.utility;
 
 import static com.swirlds.common.io.utility.FileUtils.deleteDirectory;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.STARTUP;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;

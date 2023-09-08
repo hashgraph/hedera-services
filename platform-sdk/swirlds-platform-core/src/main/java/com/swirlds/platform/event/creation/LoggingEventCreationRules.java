@@ -21,7 +21,7 @@ import static com.swirlds.common.system.EventCreationRuleResponse.DONT_CREATE;
 import com.swirlds.common.system.EventCreationRule;
 import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.common.system.events.BaseEvent;
-import com.swirlds.logging.LogMarker;
+import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.components.EventCreationRules;
 import java.time.Duration;
 import java.time.Instant;

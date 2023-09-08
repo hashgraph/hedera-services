@@ -16,8 +16,8 @@
 
 package com.swirlds.common.metrics.platform;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.STARTUP;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static java.lang.Double.isInfinite;
 import static java.lang.Double.isNaN;
 import static java.nio.file.StandardOpenOption.APPEND;

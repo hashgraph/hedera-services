@@ -16,7 +16,7 @@
 
 package com.swirlds.common.threading.interrupt;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.swirlds.base.function.CheckedConsumer;

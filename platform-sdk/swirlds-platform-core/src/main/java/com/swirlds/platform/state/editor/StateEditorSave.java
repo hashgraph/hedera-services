@@ -24,7 +24,7 @@ import static com.swirlds.platform.state.signed.SignedStateFileWriter.writeSigne
 import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.logging.LogMarker;
+import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.config.DefaultConfiguration;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import java.io.IOException;

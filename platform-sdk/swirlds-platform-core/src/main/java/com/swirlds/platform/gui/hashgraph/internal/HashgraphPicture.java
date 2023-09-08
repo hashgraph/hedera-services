@@ -17,7 +17,7 @@
 package com.swirlds.platform.gui.hashgraph.internal;
 
 import static com.swirlds.gui.hashgraph.HashgraphGuiConstants.HASHGRAPH_PICTURE_FONT;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.PlatformEvent;

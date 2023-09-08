@@ -17,7 +17,7 @@
 package com.swirlds.common.threading.futures;
 
 import static com.swirlds.common.utility.StackTrace.getStackTrace;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;

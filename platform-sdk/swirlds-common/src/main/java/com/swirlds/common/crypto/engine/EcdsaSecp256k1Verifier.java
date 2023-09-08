@@ -18,10 +18,10 @@ package com.swirlds.common.crypto.engine;
 
 import static com.swirlds.common.crypto.SignatureType.ECDSA_SECP256K1;
 import static com.swirlds.common.utility.CommonUtils.hex;
-import static com.swirlds.logging.LogMarker.TESTING_EXCEPTIONS;
+import static com.swirlds.logging.legacy.LogMarker.TESTING_EXCEPTIONS;
 
 import com.swirlds.common.crypto.CryptographyException;
-import com.swirlds.logging.LogMarker;
+import com.swirlds.logging.legacy.LogMarker;
 import java.math.BigInteger;
 import java.security.AlgorithmParameters;
 import java.security.InvalidKeyException;
