@@ -116,6 +116,7 @@ import com.hedera.services.bdd.spec.utilops.streams.assertions.EventualAssertion
 import com.hedera.services.bdd.spec.utilops.streams.assertions.EventualRecordStreamAssertion;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.RecordStreamAssertion;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.TransactionBodyAssertion;
+import com.hedera.services.bdd.spec.utilops.streams.assertions.ValidContractIdsAssertion;
 import com.hedera.services.bdd.spec.utilops.throughput.FinishThroughputObs;
 import com.hedera.services.bdd.spec.utilops.throughput.StartThroughputObs;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -473,6 +474,11 @@ public class UtilVerbs {
         return new EventualRecordStreamAssertion(assertion);
     }
 
+    public static EventualAssertion streamMustIncludeNoFailuresFrom(
+            final Function<HapiSpec, RecordStreamAssertion> assertion) {
+        return EventualRecordStreamAssertion.eventuallyAssertingNoFailures(assertion);
+    }
+
     public static Function<HapiSpec, RecordStreamAssertion> recordedCryptoCreate(final String name) {
         return recordedCryptoCreate(name, assertion -> {});
     }
@@ -484,6 +490,10 @@ public class UtilVerbs {
             config.accept(assertion);
             return assertion;
         };
+    }
+
+    public static Function<HapiSpec, RecordStreamAssertion> sidecarIdValidator() {
+        return spec -> new ValidContractIdsAssertion();
     }
 
     public static Function<HapiSpec, RecordStreamAssertion> recordedChildBodyWithId(
