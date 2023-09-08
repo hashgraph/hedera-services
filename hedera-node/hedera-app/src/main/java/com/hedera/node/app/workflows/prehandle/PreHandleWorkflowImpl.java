@@ -154,6 +154,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         } catch (PreCheckException preCheck) {
             // The node SHOULD have verified the transaction before it was submitted to the network.
             // Since it didn't, it has failed in its due diligence and will be charged accordingly.
+            logger.debug("Transaction failed pre-check", preCheck);
             return nodeDueDiligenceFailure(creator, preCheck.responseCode(), null);
         }
 

@@ -309,11 +309,6 @@ public class TransactionChecker {
      * @throws NullPointerException if any of the parameters is {@code null}
      */
     public void checkTransactionBody(@NonNull final TransactionBody txBody) throws PreCheckException {
-        // The transaction MUST have been sent to *this* node
-        if (!nodeAccount.equals(txBody.nodeAccountID())) {
-            throw new PreCheckException(INVALID_NODE_ACCOUNT);
-        }
-
         final var config = props.getConfiguration().getConfigData(HederaConfig.class);
         checkTransactionID(txBody.transactionID());
         checkMemo(txBody.memo(), config.transactionMaxMemoUtf8Bytes());

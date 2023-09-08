@@ -728,22 +728,6 @@ final class TransactionCheckerTest extends AppTestBase {
             }
 
             @Test
-            @DisplayName("A wrong nodeId in transaction fails")
-            void testWrongNodeIdFails() {
-                // Given a transaction with an unknown node ID
-                final var unknownNodeId = AccountID.newBuilder()
-                        .accountNum(nodeSelfAccountId.accountNumOrElse(0L) + 1L)
-                        .build();
-                final var body = bodyBuilder(txIdBuilder()).nodeAccountID(unknownNodeId);
-                final var tx = txBuilder(signedTxBuilder(body, sigMapBuilder())).build();
-
-                // Then the checker should throw a PreCheckException
-                assertThatThrownBy(() -> checker.check(tx))
-                        .isInstanceOf(PreCheckException.class)
-                        .has(responseCode(INVALID_NODE_ACCOUNT));
-            }
-
-            @Test
             @DisplayName("A scheduled transaction should fail")
             void testScheduledTransactionFails() {
                 final var body = bodyBuilder(txIdBuilder().scheduled(true));
