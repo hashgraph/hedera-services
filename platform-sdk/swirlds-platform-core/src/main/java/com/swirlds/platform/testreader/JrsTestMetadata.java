@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,26 +14,14 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.state.signed;
+package com.swirlds.platform.testreader;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.nio.file.Path;
 
 /**
- * A description of a signed state file and its associated round number.
+ * Various test metadata that is not parsed from results.
  *
- * @param stateFile the path of the SignedState.swh file.
- * @param metadata  the metadata of the signed state
+ * @param owner    the team that owns this test, or "" if unknown
+ * @param notesUrl the URL to the notes for this test, or "" if unknown
  */
-public record SavedStateInfo(@NonNull Path stateFile, @NonNull SavedStateMetadata metadata) {
-
-    /**
-     * Get the parent directory.
-     *
-     * @return the parent directory
-     */
-    @NonNull
-    public Path getDirectory() {
-        return stateFile.toAbsolutePath().getParent();
-    }
-}
+public record JrsTestMetadata(@NonNull String owner, @NonNull String notesUrl) {}
