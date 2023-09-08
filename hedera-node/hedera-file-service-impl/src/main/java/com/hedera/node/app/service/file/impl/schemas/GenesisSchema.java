@@ -353,11 +353,8 @@ public class GenesisSchema extends Schema {
 
         // Get the set of network properties from configuration, and generate the file content to store in state.
         List<Setting> settings = new ArrayList<>();
-        Utils.networkProperties(configuration)
-                .forEach((propertyName, propertyValue) -> settings.add(Setting.newBuilder()
-                        .name(propertyName)
-                        .value(propertyValue.toString())
-                        .build()));
+        // FUTURE: We would like to preload all network properties. If we actually do that, then we would do that here.
+        //         using some kind of reflection on the configuration system.
 
         final var servicesConfigList =
                 ServicesConfigurationList.newBuilder().nameValue(settings).build();
