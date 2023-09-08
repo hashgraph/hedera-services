@@ -17,7 +17,6 @@
 package com.hedera.node.app.workflows.prehandle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
@@ -392,7 +391,8 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
         void preHandleCreatorAccountNotTxNodeAccount() throws PreCheckException {
             // Given a transactionID that refers to an account OTHER THAN the creator node account.
             // The creator in this scenario is NODE_1.
-            final var txInfo = scenario().withNodeAccount(NODE_2.nodeAccountID()).txInfo();
+            final var txInfo =
+                    scenario().withNodeAccount(NODE_2.nodeAccountID()).txInfo();
 
             final Transaction platformTx = new SwirldTransaction(asByteArray(txInfo.transaction()));
             when(transactionChecker.parseAndCheck(any(Bytes.class))).thenReturn(txInfo);
