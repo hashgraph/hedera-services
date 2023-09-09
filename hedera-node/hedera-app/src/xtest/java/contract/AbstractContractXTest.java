@@ -225,9 +225,13 @@ public abstract class AbstractContractXTest {
             @NonNull final ResponseCodeEnum status) {
         runHtsCallAndExpect(false, sender, input, resultOnlyAssertion(result -> {
             assertEquals(MessageFrame.State.REVERT, result.getState());
-            final var impliedReason =
-                    org.apache.tuweni.bytes.Bytes.wrap(status.protoName().getBytes(StandardCharsets.UTF_8));
-            assertEquals(impliedReason, result.getOutput());
+            final var actualReason =
+                    ResponseCodeEnum.fromString(new String(result.getOutput().toArrayUnsafe()));
+            assertEquals(status, actualReason);
+            //            final var impliedReason =
+            //
+            // org.apache.tuweni.bytes.Bytes.wrap(status.protoName().getBytes(StandardCharsets.UTF_8));
+            //            assertEquals(impliedReason, result.getOutput());
         }));
     }
 

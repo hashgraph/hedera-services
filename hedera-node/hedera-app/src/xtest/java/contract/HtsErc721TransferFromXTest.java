@@ -16,8 +16,8 @@
 
 package contract;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc721TransferFromCall.TRANSFER_FROM;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmAddress;
 import static contract.HtsErc721TransferXTestConstants.APPROVED_ADDRESS;
@@ -81,7 +81,7 @@ public class HtsErc721TransferFromXTest extends AbstractContractXTest {
 
     @Override
     protected void doScenarioOperations() {
-        // Referencing the owner via their long-zero address doesn't work (must use priority address)
+        // Referencing the owner via their long-zero address doesn't work (their account won't be found)
         runHtsCallAndExpectRevert(
                 OWNER_BESU_ADDRESS,
                 bytesForRedirect(
@@ -90,7 +90,7 @@ public class HtsErc721TransferFromXTest extends AbstractContractXTest {
                                 RECEIVER_HEADLONG_ADDRESS,
                                 BigInteger.valueOf(SN_1234.serialNumber())),
                         ERC721_TOKEN_ID),
-                SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
+                TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
         // Unauthorized spender cannot transfer owner's SN1234 NFT
         runHtsCallAndExpectRevert(
                 UNAUTHORIZED_SPENDER_BESU_ADDRESS,
@@ -140,6 +140,7 @@ public class HtsErc721TransferFromXTest extends AbstractContractXTest {
                 ERC721_TOKEN_ID,
                 Token.newBuilder()
                         .tokenId(ERC721_TOKEN_ID)
+                        .treasuryAccountId(UNAUTHORIZED_SPENDER_ID)
                         .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                         .build());
         return tokens;
