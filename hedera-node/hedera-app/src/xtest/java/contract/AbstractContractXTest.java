@@ -16,7 +16,12 @@
 
 package contract;
 
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
+import static contract.XTestConstants.PLACEHOLDER_CALL_BODY;
+import static contract.XTestConstants.SENDER_BESU_ADDRESS;
+import static contract.XTestConstants.SET_OF_TRADITIONAL_RATES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.BDDMockito.given;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.hapi.node.base.AccountID;
@@ -26,7 +31,6 @@ import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ResponseHeader;
-import com.hedera.hapi.node.base.TimestampSeconds;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractCallTransactionBody;
@@ -43,7 +47,6 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
-import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
@@ -53,7 +56,14 @@ import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
+import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaNativeOperations;
+import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
+import com.hedera.node.app.service.contract.impl.exec.scope.HandleSystemContractOperations;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
+import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.ContractSchema;
+import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
@@ -62,6 +72,7 @@ import com.hedera.node.app.spi.workflows.QueryHandler;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
+import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.metrics.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -69,13 +80,15 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
-import java.time.Instant;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -92,6 +105,12 @@ public abstract class AbstractContractXTest {
 
     @Mock
     private Metrics metrics;
+
+    @Mock
+    private MessageFrame frame;
+
+    @Mock
+    private ProxyWorldUpdater proxyUpdater;
 
     private ScaffoldingComponent scaffoldingComponent;
 
@@ -114,7 +133,10 @@ public abstract class AbstractContractXTest {
         assertExpectedStorage(finalStorage(), finalAccounts());
     }
 
-    protected abstract long initialEntityNum();
+    protected long initialEntityNum() {
+        // An x-test that doesn't override this can't create entities
+        return Long.MAX_VALUE;
+    }
 
     protected Map<TokenID, Token> initialTokens() {
         return new HashMap<>();
@@ -128,7 +150,10 @@ public abstract class AbstractContractXTest {
         return new HashMap<>();
     }
 
-    protected abstract Map<FileID, File> initialFiles();
+    protected Map<FileID, File> initialFiles() {
+        // An x-test that doesn't use external initcode in HAPI ops won't need any files
+        return new HashMap<>();
+    }
 
     protected abstract Map<ProtoBytes, AccountID> initialAliases();
 
@@ -146,6 +171,8 @@ public abstract class AbstractContractXTest {
 
     protected void assertExpectedAliases(@NonNull ReadableKVState<ProtoBytes, AccountID> aliases) {}
 
+    protected void assertExpectedTokenRelations(@NonNull ReadableKVState<EntityIDPair, TokenRelation> tokenRels) {}
+
     protected void assertExpectedAccounts(@NonNull ReadableKVState<AccountID, Account> accounts) {}
 
     protected void assertExpectedBytecodes(@NonNull ReadableKVState<EntityNumber, Bytecode> bytecodes) {}
@@ -156,6 +183,47 @@ public abstract class AbstractContractXTest {
             handler.handle(context);
             ((SavepointStackImpl) context.savepointStack()).commitFullStack();
         }
+    }
+
+    protected void runHtsCallAndExpectOnSuccess(
+            @NonNull final org.hyperledger.besu.datatypes.Address sender,
+            @NonNull final org.apache.tuweni.bytes.Bytes input,
+            @NonNull final Consumer<org.apache.tuweni.bytes.Bytes> outputAssertions) {
+        runHtsCallAndExpect(sender, input, resultOnlyAssertion(result -> {
+            assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
+            outputAssertions.accept(result.getOutput());
+        }));
+    }
+
+    protected void runHtsCallAndExpectRevert(
+            @NonNull final org.hyperledger.besu.datatypes.Address sender,
+            @NonNull final org.apache.tuweni.bytes.Bytes input,
+            @NonNull final ResponseCodeEnum status) {
+        runHtsCallAndExpect(sender, input, resultOnlyAssertion(result -> {
+            assertEquals(MessageFrame.State.REVERT, result.getState());
+            final var impliedReason =
+                    org.apache.tuweni.bytes.Bytes.wrap(status.protoName().getBytes(StandardCharsets.UTF_8));
+            assertEquals(impliedReason, result.getOutput());
+        }));
+    }
+
+    private void runHtsCallAndExpect(
+            @NonNull final org.hyperledger.besu.datatypes.Address sender,
+            @NonNull final org.apache.tuweni.bytes.Bytes input,
+            @NonNull final Consumer<HtsCall.PricedResult> resultAssertions) {
+        final var context = scaffoldingComponent.txnContextFactory().apply(PLACEHOLDER_CALL_BODY);
+        final var enhancement = new HederaWorldUpdater.Enhancement(
+                new HandleHederaOperations(scaffoldingComponent.config().getConfigData(LedgerConfig.class), context),
+                new HandleHederaNativeOperations(context),
+                new HandleSystemContractOperations(context));
+        given(proxyUpdater.enhancement()).willReturn(enhancement);
+        given(frame.getWorldUpdater()).willReturn(proxyUpdater);
+        given(frame.getSenderAddress()).willReturn(SENDER_BESU_ADDRESS);
+
+        final var call = scaffoldingComponent.htsCallAttemptFactory().createCallFrom(input, frame);
+
+        final var pricedResult = call.execute();
+        resultAssertions.accept(pricedResult);
     }
 
     protected void answerSingleQuery(
@@ -238,15 +306,8 @@ public abstract class AbstractContractXTest {
 
         fakeHederaState.addService("RecordCache", Map.of("TransactionRecordQueue", new ArrayDeque<>()));
 
-        final var expirationTime = TimestampSeconds.newBuilder()
-                .seconds(Instant.now().plusSeconds(100).getEpochSecond())
-                .build();
-        final var someRate = ExchangeRate.newBuilder().hbarEquiv(1).centEquiv(1).expirationTime(expirationTime);
-        final var midnightRates = ExchangeRateSet.newBuilder()
-                .currentRate(someRate)
-                .nextRate(someRate)
-                .build();
-        fakeHederaState.addService(FeeService.NAME, Map.of("MIDNIGHT_RATES", new AtomicReference<>(midnightRates)));
+        fakeHederaState.addService(
+                FeeService.NAME, Map.of("MIDNIGHT_RATES", new AtomicReference<>(SET_OF_TRADITIONAL_RATES)));
 
         fakeHederaState.addService(
                 BlockRecordService.NAME,
@@ -262,7 +323,8 @@ public abstract class AbstractContractXTest {
                         TokenServiceImpl.ALIASES_KEY, initialAliases(),
                         TokenServiceImpl.TOKENS_KEY, initialTokens(),
                         TokenServiceImpl.NFTS_KEY, initialNfts()));
-        fakeHederaState.addService(FileServiceImpl.NAME, Map.of(FileServiceImpl.BLOBS_KEY, initialFiles()));
+        fakeHederaState.addService(
+                FileServiceImpl.NAME, Map.of(FileServiceImpl.BLOBS_KEY, initialFilesWithExchangeRate()));
         fakeHederaState.addService(
                 ContractServiceImpl.NAME,
                 Map.of(
@@ -272,8 +334,19 @@ public abstract class AbstractContractXTest {
         scaffoldingComponent.workingStateAccessor().setHederaState(fakeHederaState);
     }
 
+    private Map<FileID, File> initialFilesWithExchangeRate() {
+        final var scenarioFiles = initialFiles();
+        scenarioFiles.put(
+                FileID.newBuilder().fileNum(112).build(),
+                File.newBuilder()
+                        .contents(ExchangeRateSet.PROTOBUF.toBytes(SET_OF_TRADITIONAL_RATES))
+                        .build());
+        return scenarioFiles;
+    }
+
     private void setupExchangeManager() {
-        final var state = scaffoldingComponent.workingStateAccessor().getHederaState();
+        final var state = Objects.requireNonNull(
+                scaffoldingComponent.workingStateAccessor().getHederaState());
         final var midnightRates = state.createReadableStates(FeeService.NAME)
                 .<ExchangeRateSet>getSingleton("MIDNIGHT_RATES")
                 .get();
@@ -309,10 +382,39 @@ public abstract class AbstractContractXTest {
                 .get(TokenServiceImpl.ACCOUNTS_KEY);
     }
 
+    private ReadableKVState<EntityIDPair, TokenRelation> finalTokenRelations() {
+        return scaffoldingComponent
+                .hederaState()
+                .createReadableStates(TokenServiceImpl.NAME)
+                .get(TokenServiceImpl.TOKEN_RELS_KEY);
+    }
+
+    private Consumer<HtsCall.PricedResult> resultOnlyAssertion(
+            @NonNull final Consumer<PrecompiledContract.PrecompileContractResult> resultAssertion) {
+        return pricedResult -> {
+            final var fullResult = pricedResult.fullResult();
+            final var result = fullResult.result();
+            resultAssertion.accept(result);
+        };
+    }
+
     public static com.esaulpaugh.headlong.abi.Address asHeadlongAddress(final byte[] address) {
         final var addressBytes = org.apache.tuweni.bytes.Bytes.wrap(address);
         final var addressAsInteger = addressBytes.toUnsignedBigInteger();
         return com.esaulpaugh.headlong.abi.Address.wrap(
                 com.esaulpaugh.headlong.abi.Address.toChecksumAddress(addressAsInteger));
+    }
+
+    public static org.apache.tuweni.bytes.Bytes bytesForRedirect(
+            final ByteBuffer encodedErcCall, final TokenID tokenId) {
+        return bytesForRedirect(encodedErcCall.array(), asLongZeroAddress(tokenId.tokenNum()));
+    }
+
+    public static org.apache.tuweni.bytes.Bytes bytesForRedirect(
+            final byte[] subSelector, final org.hyperledger.besu.datatypes.Address tokenAddress) {
+        return org.apache.tuweni.bytes.Bytes.concatenate(
+                org.apache.tuweni.bytes.Bytes.wrap(HtsCallAttempt.REDIRECT_FOR_TOKEN.selector()),
+                tokenAddress,
+                org.apache.tuweni.bytes.Bytes.of(subSelector));
     }
 }

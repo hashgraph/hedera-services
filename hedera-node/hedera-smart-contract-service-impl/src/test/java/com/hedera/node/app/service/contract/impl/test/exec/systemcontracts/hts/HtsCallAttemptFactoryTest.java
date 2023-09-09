@@ -16,12 +16,10 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts;
 
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt.REDIRECT_FOR_TOKEN;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.balanceof.BalanceOfCall.BALANCE_OF;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN_ID;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_ACCOUNT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_LONG_ZERO_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.asHeadlongAddress;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.bytesForRedirect;
@@ -31,7 +29,6 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttemptFactory;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.balanceof.BalanceOfCall;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
-import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -47,22 +44,6 @@ class HtsCallAttemptFactoryTest extends HtsCallTestBase {
     private ProxyWorldUpdater updater;
 
     private final HtsCallAttemptFactory subject = new HtsCallAttemptFactory();
-
-    @Test
-    void instantiatesAttemptWithInContextEnhancement() {
-        given(frame.getWorldUpdater()).willReturn(updater);
-        given(updater.enhancement()).willReturn(mockEnhancement());
-        given(nativeOperations.getToken(NON_SYSTEM_ACCOUNT_ID.accountNumOrThrow()))
-                .willReturn(FUNGIBLE_TOKEN);
-
-        final var attempt = subject.createFrom(
-                Bytes.wrap(REDIRECT_FOR_TOKEN
-                        .encodeCallWithArgs(asHeadlongAddress(NON_SYSTEM_LONG_ZERO_ADDRESS), BALANCE_OF.selector())
-                        .array()),
-                frame);
-
-        assertSame(FUNGIBLE_TOKEN, attempt.redirectToken());
-    }
 
     @Test
     void instantiatesCallWithInContextEnhancement() {

@@ -103,38 +103,55 @@ public class HtsCallAttempt {
      *
      * Call attempts could refer to a,
      * <ul>
-     *   <li>[x] TRANSFER</li>
-     *   <li>[x] MINT</li>
-     *   <li>[ ] ASSOCIATE_ONE</li>
-     *   <li>[ ] ASSOCIATE_MANY</li>
-     *   <li>[ ] DISSOCIATE_ONE</li>
-     *   <li>[ ] DISSOCIATE_MANY</li>
-     *   <li>[ ] PAUSE_TOKEN</li>
-     *   <li>[ ] UNPAUSE_TOKEN</li>
-     *   <li>[ ] FREEZE_ACCOUNT</li>
-     *   <li>[ ] UNFREEZE_ACCOUNT</li>
-     *   <li>[ ] GRANT_KYC</li>
-     *   <li>[ ] REVOKE_KYC</li>
-     *   <li>[ ] WIPE_AMOUNT</li>
-     *   <li>[ ] WIPE_SERIAL_NUMBERS</li>
-     *   <li>[ ] GRANT_ALLOWANCE</li>
-     *   <li>[ ] GRANT_APPROVAL</li>
-     *   <li>[ ] APPROVE_OPERATOR</li>
-     *   <li>[ ] CREATE_TOKEN</li>
-     *   <li>[ ] DELETE_TOKEN</li>
+     *   <li>[x] TRANSFER (ERCTransferPrecompile, TransferPrecompile)</li>
+     *   <li>[x] MINT_UNITS (MintPrecompile)</li>
+     *   <li>[ ] MINT_NFTS (MintPrecompile)</li>
+     *   <li>[ ] BURN_UNITS (BurnPrecompile)</li>
+     *   <li>[ ] BURN_SERIAL_NOS (BurnPrecompile)</li>
+     *   <li>[ ] ASSOCIATE_ONE (AssociatePrecompile) </li>
+     *   <li>[ ] ASSOCIATE_MANY (MultiAssociatePrecompile)</li>
+     *   <li>[ ] DISSOCIATE_ONE (DissociatePrecompile) </li>
+     *   <li>[ ] DISSOCIATE_MANY (MultiDissociatePrecompile)</li>
+     *   <li>[ ] PAUSE_TOKEN (PausePrecompile)</li>
+     *   <li>[ ] UNPAUSE_TOKEN (UnpausePrecompile)</li>
+     *   <li>[ ] FREEZE_ACCOUNT (FreezeTokenPrecompile) </li>
+     *   <li>[ ] UNFREEZE_ACCOUNT (UnfreezeTokenPrecompile)</li>
+     *   <li>[ ] GRANT_KYC (GrantKycPrecompile)</li>
+     *   <li>[ ] REVOKE_KYC (RevokeKycPrecompile)</li>
+     *   <li>[ ] WIPE_AMOUNT (WipeFungiblePrecompile)</li>
+     *   <li>[ ] WIPE_SERIAL_NUMBERS (WipeNonFungiblePrecompile)</li>
+     *   <li>[ ] GRANT_ALLOWANCE (ApprovePrecompile)</li>
+     *   <li>[ ] GRANT_APPROVAL (ApprovePrecompile)</li>
+     *   <li>[ ] APPROVE_OPERATOR (SetApprovalForAllPrecompile)</li>
+     *   <li>[ ] CREATE_TOKEN (TokenCreatePrecompile)</li>
+     *   <li>[ ] DELETE_TOKEN (DeleteTokenPrecompile)</li>
      *   <li>[ ] UPDATE_TOKEN</li>
-     *   <li>[x] BALANCE_OF</li>
-     *   <li>[x] TOTAL_SUPPLY</li>
-     *   <li>[x] DECIMALS</li>
-     *   <li>[x] NAME</li>
-     *   <li>[x] OWNER_OF</li>
-     *   <li>[x] TOKEN_URI</li>
-     *   <li>[ ] ALLOWANCE</li>
-     *   <li>[ ] APPROVED</li>
-     *   <li>[x] IS_APPROVED_FOR_ALL</li>
-     *   <li>[ ] GET_IS_KYC</li>
-     *   <li>[ ] GET_NFT_INFO</li>
-     *   <li>[ ] GET_TOKEN_INFO</li>
+     *   <li>[x] BALANCE_OF (BalanceOfPrecompile)</li>
+     *   <li>[x] TOTAL_SUPPLY (TotalSupplyPrecompile)</li>
+     *   <li>[x] DECIMALS (DecimalsPrecompile)</li>
+     *   <li>[x] NAME (NamePrecompile)</li>
+     *   <li>[x] SYMBOL (SymbolPrecompile)</li>
+     *   <li>[x] OWNER_OF (OwnerOfPrecompile)</li>
+     *   <li>[x] TOKEN_URI (TokenURIPrecompile</li>
+     *   <li>[ ] ALLOWANCE (AllowancePrecompile)</li>
+     *   <li>[ ] APPROVED (GetApprovedPrecompile)</li>
+     *   <li>[ ] IS_FROZEN (IsFrozenPrecompile)</li>
+     *   <li>[x] IS_APPROVED_FOR_ALL (IsApprovedForAllPrecompile)</li>
+     *   <li>[ ] IS_KYC (IsKycPrecompile)</li>
+     *   <li>[ ] IS_TOKEN (IsTokenPrecompile)</li>
+     *   <li>[ ] NFT_INFO</li>
+     *   <li>[ ] TOKEN_INFO (TokenInfoPrecompile)</li>
+     *   <li>[ ] TOKEN_CUSTOM_FEES (TokenGetCustomFeesPrecompile)</li>
+     *   <li>[ ] FUNGIBLE_TOKEN_INFO (FungibleTokenInfoPrecompile) </li>
+     *   <li>[ ] NON_FUNGIBLE_TOKEN_INFO (NonFungibleTokenInfoPrecompile) </li>
+     *   <li>[ ] TOKEN_EXPIRY_INFO (GetTokenExpiryInfoPrecompile) </li>
+     *   <li>[ ] TOKEN_TYPE (GetTokenTypePrecompile) </li>
+     *   <li>[ ] TOKEN_KEY (GetTokenKeyPrecompile) </li>
+     *   <li>[ ] DEFAULT_FREEZE_STATUS (GetTokenDefaultFreezeStatus) </li>
+     *   <li>[ ] DEFAULT_KYC_STATUS (GetTokenDefaultKycStatus) </li>
+     *   <li>[ ] UPDATE_TOKEN_KEYS (TokenUpdateKeysPrecompile)</li>
+     *   <li>[ ] UPDATE_TOKEN_EXPIRY (UpdateTokenExpiryInfoPrecompile)</li>
+     *   <li>[ ] UPDATE_TOKEN (TokenUpdatePrecompile)</li>
      * </ul>
      *
      * @param senderAddress the address of the sender of the call

@@ -36,20 +36,6 @@ public class HtsCallAttemptFactory {
     }
 
     /**
-     * Creates a new {@link HtsCallAttempt} for the given input and message frame.
-     *
-     * @param input the input
-     * @param frame the message frame
-     * @return the new attempt
-     */
-    public @NonNull HtsCallAttempt createFrom(@NonNull final Bytes input, @NonNull final MessageFrame frame) {
-        requireNonNull(input);
-        requireNonNull(frame);
-        final var updater = proxyUpdaterFor(frame);
-        return new HtsCallAttempt(input, updater.enhancement());
-    }
-
-    /**
      * Creates a new {@link HtsCall} for the given input and message frame.
      *
      * @param input the input

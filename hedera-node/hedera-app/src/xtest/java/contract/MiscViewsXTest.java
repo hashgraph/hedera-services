@@ -33,8 +33,6 @@ import static contract.MiscViewsXTestConstants.ERC721_OPERATOR_ADDRESS;
 import static contract.MiscViewsXTestConstants.ERC721_SN1_OWNER;
 import static contract.MiscViewsXTestConstants.ERC721_SN2_METADATA;
 import static contract.MiscViewsXTestConstants.ERC721_SYMBOL;
-import static contract.MiscViewsXTestConstants.ERC721_TOKEN_ADDRESS;
-import static contract.MiscViewsXTestConstants.ERC721_TOKEN_ID;
 import static contract.MiscViewsXTestConstants.ERC721_USER_BALANCE;
 import static contract.MiscViewsXTestConstants.ERC_USER_ADDRESS;
 import static contract.MiscViewsXTestConstants.ERC_USER_ID;
@@ -61,6 +59,8 @@ import static contract.MiscViewsXTestConstants.SPECIAL_QUERIES_X_TEST_ID;
 import static contract.MiscViewsXTestConstants.TINYBARS;
 import static contract.MiscViewsXTestConstants.UNCOVERED_SECRET;
 import static contract.MiscViewsXTestConstants.VIEWS_INITCODE_FILE_ID;
+import static contract.XTestConstants.ERC721_TOKEN_ADDRESS;
+import static contract.XTestConstants.ERC721_TOKEN_ID;
 
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.TupleType;
@@ -102,9 +102,6 @@ public class MiscViewsXTest extends AbstractContractXTest {
                 ERC_USER_ID,
                 assertingCallLocalResultIs(UNCOVERED_SECRET));
         doPrngQuery();
-        doExchangeRateQuery();
-        // TODO - uncomment once 0x167 precompile is implemented for ERC-20 redirects
-        //        doErc20Queries();
         doExchangeRateQuery();
         doErc20Queries();
         doErc721Queries();

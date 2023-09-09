@@ -64,8 +64,10 @@ public record TransactionInfo(
         this(
                 transaction,
                 txBody,
-                txBody.transactionIDOrThrow(),
-                txBody.transactionIDOrThrow().accountIDOrThrow(),
+                //                txBody.transactionIDOrThrow(),
+                //                txBody.transactionIDOrThrow().accountIDOrThrow(),
+                TransactionID.DEFAULT,
+                AccountID.DEFAULT,
                 signatureMap,
                 signedBytes,
                 functionality);

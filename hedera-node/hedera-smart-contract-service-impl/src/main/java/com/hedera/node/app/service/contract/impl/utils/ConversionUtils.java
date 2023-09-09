@@ -134,7 +134,7 @@ public class ConversionUtils {
      */
     public static com.esaulpaugh.headlong.abi.Address headlongAddressOf(@NonNull final Account account) {
         requireNonNull(account);
-        return toHeadlongAddress(explicitAddressOf(account));
+        return asHeadlongAddress(explicitAddressOf(account));
     }
 
     /**
@@ -143,7 +143,7 @@ public class ConversionUtils {
      * @param explicit the explicit address
      * @return the headlong address
      */
-    public static com.esaulpaugh.headlong.abi.Address toHeadlongAddress(@NonNull final byte[] explicit) {
+    public static com.esaulpaugh.headlong.abi.Address asHeadlongAddress(@NonNull final byte[] explicit) {
         requireNonNull(explicit);
         final var integralAddress = Bytes.wrap(explicit).toUnsignedBigInteger();
         return com.esaulpaugh.headlong.abi.Address.wrap(

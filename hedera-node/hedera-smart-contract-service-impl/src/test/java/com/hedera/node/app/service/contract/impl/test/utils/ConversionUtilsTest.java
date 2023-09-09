@@ -29,12 +29,12 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SOME_ST
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.TOPIC;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asExactLongValueOrZero;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asHeadlongAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumberedContractId;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.maybeMissingNumberOfEvmReference;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjLogFrom;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjLogsFrom;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.toHeadlongAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -109,7 +109,7 @@ class ConversionUtilsTest {
 
     @Test
     void returnsMissingIfSmallLongZeroAddressIsMissing() {
-        final var address = toHeadlongAddress(Address.fromHexString("0x1234").toArray());
+        final var address = asHeadlongAddress(Address.fromHexString("0x1234").toArray());
         final var actual = maybeMissingNumberOfEvmReference(address, nativeOperations);
         assertEquals(MISSING_ENTITY_NUMBER, actual);
     }
@@ -118,14 +118,14 @@ class ConversionUtilsTest {
     void returnsNumberIfSmallLongZeroAddressIsPresent() {
         final long number = A_NEW_ACCOUNT_ID.accountNumOrThrow();
         given(nativeOperations.getAccount(number)).willReturn(SOMEBODY);
-        final var address = toHeadlongAddress(asEvmAddress(number));
+        final var address = asHeadlongAddress(asEvmAddress(number));
         final var actual = maybeMissingNumberOfEvmReference(address, nativeOperations);
         assertEquals(number, actual);
     }
 
     @Test
     void returnsMissingIfSmallLongZeroAddressRefersToAliasedAccount() {
-        final var address = toHeadlongAddress(Address.fromHexString("0x1234").toArray());
+        final var address = asHeadlongAddress(Address.fromHexString("0x1234").toArray());
         given(nativeOperations.getAccount(0x1234)).willReturn(ALIASED_SOMEBODY);
         final var actual = maybeMissingNumberOfEvmReference(address, nativeOperations);
         assertEquals(MISSING_ENTITY_NUMBER, actual);
@@ -150,7 +150,7 @@ class ConversionUtilsTest {
     @Test
     void returnsMissingOnAbsentAliasReference() {
         final var address =
-                toHeadlongAddress(Address.fromHexString("0x010000000000000000").toArray());
+                asHeadlongAddress(Address.fromHexString("0x010000000000000000").toArray());
         given(nativeOperations.resolveAlias(any())).willReturn(MISSING_ENTITY_NUMBER);
         final var actual = ConversionUtils.maybeMissingNumberOfEvmReference(address, nativeOperations);
         assertEquals(-1L, actual);

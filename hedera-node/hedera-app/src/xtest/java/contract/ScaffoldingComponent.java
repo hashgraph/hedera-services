@@ -22,6 +22,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttemptFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -31,6 +32,7 @@ import com.hedera.node.app.workflows.handle.HandleContextImpl;
 import com.hedera.node.app.workflows.handle.HandlersInjectionModule;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.swirlds.common.metrics.Metrics;
+import com.swirlds.config.api.Configuration;
 import dagger.BindsInstance;
 import dagger.Component;
 import java.util.function.BiFunction;
@@ -74,6 +76,8 @@ public interface ScaffoldingComponent {
 
     HederaState hederaState();
 
+    Configuration config();
+
     WorkingStateAccessor workingStateAccessor();
 
     Function<TransactionBody, HandleContext> txnContextFactory();
@@ -83,4 +87,6 @@ public interface ScaffoldingComponent {
     FeeManager feeManager();
 
     ExchangeRateManager exchangeRateManager();
+
+    HtsCallAttemptFactory htsCallAttemptFactory();
 }

@@ -46,9 +46,6 @@ public class MiscViewsXTestConstants {
     static final TokenID ERC20_TOKEN_ID = TokenID.newBuilder().tokenNum(1027L).build();
     static final Address ERC20_TOKEN_ADDRESS =
             asHeadlongAddress(asLongZeroAddress(ERC20_TOKEN_ID.tokenNum()).toArray());
-    static final TokenID ERC721_TOKEN_ID = TokenID.newBuilder().tokenNum(1028L).build();
-    static final Address ERC721_TOKEN_ADDRESS =
-            asHeadlongAddress(asLongZeroAddress(ERC721_TOKEN_ID.tokenNum()).toArray());
     static final ContractID SPECIAL_QUERIES_X_TEST_ID =
             ContractID.newBuilder().contractNum(1030L).build();
 
