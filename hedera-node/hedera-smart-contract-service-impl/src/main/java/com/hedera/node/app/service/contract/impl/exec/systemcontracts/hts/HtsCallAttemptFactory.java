@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -30,9 +31,15 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
  */
 @Singleton
 public class HtsCallAttemptFactory {
+    private final HtsCallAddressChecks addressChecks;
+    private final VerificationStrategies verificationStrategies;
+
     @Inject
-    public HtsCallAttemptFactory() {
-        // Dagger2
+    public HtsCallAttemptFactory(
+            @NonNull final HtsCallAddressChecks addressChecks,
+            @NonNull final VerificationStrategies verificationStrategies) {
+        this.addressChecks = requireNonNull(addressChecks);
+        this.verificationStrategies = requireNonNull(verificationStrategies);
     }
 
     /**
@@ -47,7 +54,7 @@ public class HtsCallAttemptFactory {
         requireNonNull(input);
         requireNonNull(frame);
         final var updater = proxyUpdaterFor(frame);
-        final var attempt = new HtsCallAttempt(input, updater.enhancement());
-        return requireNonNull(attempt.asCallFrom(frame.getSenderAddress()));
+        final var attempt = new HtsCallAttempt(input, updater.enhancement(), verificationStrategies);
+        return requireNonNull(attempt.asCallFrom(frame.getSenderAddress(), addressChecks.hasParentDelegateCall(frame)));
     }
 }

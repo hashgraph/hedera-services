@@ -126,8 +126,9 @@ public class AutoAccountCreator {
         final Predicate<Key> verifier =
                 key -> handleContext.verificationFor(key).passed();
 
+        System.out.println("Dispatching with " + handleContext.payer());
         final var childRecord = handleContext.dispatchRemovableChildTransaction(
-                syntheticCreation.memo(memo).build(), CryptoCreateRecordBuilder.class, verifier);
+                syntheticCreation.memo(memo).build(), CryptoCreateRecordBuilder.class, verifier, handleContext.payer());
 
         if (!isAliasEVMAddress) {
             final var key = asKeyFromAlias(alias);

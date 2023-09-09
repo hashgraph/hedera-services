@@ -18,7 +18,6 @@ package contract;
 
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 import static contract.XTestConstants.PLACEHOLDER_CALL_BODY;
-import static contract.XTestConstants.SENDER_BESU_ADDRESS;
 import static contract.XTestConstants.SET_OF_TRADITIONAL_RATES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
@@ -59,8 +58,11 @@ import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleSystemContractOperations;
+import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAddressChecks;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttemptFactory;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.ContractSchema;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
@@ -100,6 +102,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
  */
 @ExtendWith(MockitoExtension.class)
 public abstract class AbstractContractXTest {
+    private static final VerificationStrategies DEFAULT_VERIFICATION_STRATEGIES = new VerificationStrategies();
     static final long GAS_TO_OFFER = 2_000_000L;
     static final Duration STANDARD_AUTO_RENEW_PERIOD = new Duration(7776000L);
 
@@ -112,11 +115,17 @@ public abstract class AbstractContractXTest {
     @Mock
     private ProxyWorldUpdater proxyUpdater;
 
+    @Mock
+    private HtsCallAddressChecks addressChecks;
+
+    private HtsCallAttemptFactory callAttemptFactory;
+
     private ScaffoldingComponent scaffoldingComponent;
 
     @BeforeEach
     void setUp() {
         scaffoldingComponent = DaggerScaffoldingComponent.factory().create(metrics);
+        callAttemptFactory = new HtsCallAttemptFactory(addressChecks, DEFAULT_VERIFICATION_STRATEGIES);
     }
 
     @Test
@@ -189,7 +198,22 @@ public abstract class AbstractContractXTest {
             @NonNull final org.hyperledger.besu.datatypes.Address sender,
             @NonNull final org.apache.tuweni.bytes.Bytes input,
             @NonNull final Consumer<org.apache.tuweni.bytes.Bytes> outputAssertions) {
-        runHtsCallAndExpect(sender, input, resultOnlyAssertion(result -> {
+        runHtsCallAndExpectOnSuccess(false, sender, input, outputAssertions);
+    }
+
+    protected void runDelegatedHtsCallAndExpectOnSuccess(
+            @NonNull final org.hyperledger.besu.datatypes.Address sender,
+            @NonNull final org.apache.tuweni.bytes.Bytes input,
+            @NonNull final Consumer<org.apache.tuweni.bytes.Bytes> outputAssertions) {
+        runHtsCallAndExpectOnSuccess(true, sender, input, outputAssertions);
+    }
+
+    private void runHtsCallAndExpectOnSuccess(
+            final boolean requiresDelegatePermission,
+            @NonNull final org.hyperledger.besu.datatypes.Address sender,
+            @NonNull final org.apache.tuweni.bytes.Bytes input,
+            @NonNull final Consumer<org.apache.tuweni.bytes.Bytes> outputAssertions) {
+        runHtsCallAndExpect(requiresDelegatePermission, sender, input, resultOnlyAssertion(result -> {
             assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
             outputAssertions.accept(result.getOutput());
         }));
@@ -199,7 +223,20 @@ public abstract class AbstractContractXTest {
             @NonNull final org.hyperledger.besu.datatypes.Address sender,
             @NonNull final org.apache.tuweni.bytes.Bytes input,
             @NonNull final ResponseCodeEnum status) {
-        runHtsCallAndExpect(sender, input, resultOnlyAssertion(result -> {
+        runHtsCallAndExpect(false, sender, input, resultOnlyAssertion(result -> {
+            assertEquals(MessageFrame.State.REVERT, result.getState());
+            final var impliedReason =
+                    org.apache.tuweni.bytes.Bytes.wrap(status.protoName().getBytes(StandardCharsets.UTF_8));
+            assertEquals(impliedReason, result.getOutput());
+        }));
+    }
+
+    private void runHtsCallAndExpectRevert(
+            final boolean requiresDelegatePermission,
+            @NonNull final org.hyperledger.besu.datatypes.Address sender,
+            @NonNull final org.apache.tuweni.bytes.Bytes input,
+            @NonNull final ResponseCodeEnum status) {
+        runHtsCallAndExpect(requiresDelegatePermission, sender, input, resultOnlyAssertion(result -> {
             assertEquals(MessageFrame.State.REVERT, result.getState());
             final var impliedReason =
                     org.apache.tuweni.bytes.Bytes.wrap(status.protoName().getBytes(StandardCharsets.UTF_8));
@@ -208,6 +245,7 @@ public abstract class AbstractContractXTest {
     }
 
     private void runHtsCallAndExpect(
+            final boolean requiresDelegatePermission,
             @NonNull final org.hyperledger.besu.datatypes.Address sender,
             @NonNull final org.apache.tuweni.bytes.Bytes input,
             @NonNull final Consumer<HtsCall.PricedResult> resultAssertions) {
@@ -218,9 +256,10 @@ public abstract class AbstractContractXTest {
                 new HandleSystemContractOperations(context));
         given(proxyUpdater.enhancement()).willReturn(enhancement);
         given(frame.getWorldUpdater()).willReturn(proxyUpdater);
-        given(frame.getSenderAddress()).willReturn(SENDER_BESU_ADDRESS);
+        given(frame.getSenderAddress()).willReturn(sender);
+        given(addressChecks.hasParentDelegateCall(frame)).willReturn(requiresDelegatePermission);
 
-        final var call = scaffoldingComponent.htsCallAttemptFactory().createCallFrom(input, frame);
+        final var call = callAttemptFactory.createCallFrom(input, frame);
 
         final var pricedResult = call.execute();
         resultAssertions.accept(pricedResult);

@@ -42,7 +42,7 @@ public class ActiveContractVerificationStrategy implements VerificationStrategy 
      * {@inheritDoc}
      */
     @Override
-    public Decision maybeVerifySignature(@NonNull final Key key, @NonNull final KeyRole keyRole) {
+    public Decision decideFor(@NonNull final Key key) {
         final var keyKind = key.key().kind();
         if (keyKind == Key.KeyOneOfType.CONTRACT_ID) {
             if (requiresDelegatePermission) {

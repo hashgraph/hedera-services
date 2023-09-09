@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
@@ -83,7 +84,10 @@ public class QuerySystemContractOperations implements SystemContractOperations {
      */
     @Override
     public @NonNull ResponseCodeEnum dispatch(
-            @NonNull final TransactionBody syntheticTransaction, @NonNull final VerificationStrategy strategy) {
+            @NonNull final TransactionBody syntheticTransaction,
+            @NonNull final VerificationStrategy strategy,
+            @NonNull AccountID syntheticPayerId,
+            @NonNull Class recordBuilderClass) {
         throw new UnsupportedOperationException("Cannot dispatch synthetic transaction");
     }
 

@@ -22,7 +22,6 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttemptFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -87,6 +86,4 @@ public interface ScaffoldingComponent {
     FeeManager feeManager();
 
     ExchangeRateManager exchangeRateManager();
-
-    HtsCallAttemptFactory htsCallAttemptFactory();
 }

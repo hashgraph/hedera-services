@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
+import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
@@ -33,5 +34,9 @@ public abstract class AbstractHtsCall implements HtsCall {
 
     protected HederaNativeOperations nativeOperations() {
         return enhancement.nativeOperations();
+    }
+
+    protected SystemContractOperations systemContractOperations() {
+        return enhancement.systemOperations();
     }
 }

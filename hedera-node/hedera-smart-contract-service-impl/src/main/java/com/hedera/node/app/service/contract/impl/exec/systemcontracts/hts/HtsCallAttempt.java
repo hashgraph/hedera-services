@@ -23,6 +23,7 @@ import static java.util.Objects.requireNonNull;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.balanceof.BalanceOfCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.decimals.DecimalsCall;
@@ -33,6 +34,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ownero
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.symbol.SymbolCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokenuri.TokenUriCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.totalsupply.TotalSupplyCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc721TransferFromCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.TransferCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -58,13 +60,16 @@ public class HtsCallAttempt {
     private final Token redirectToken;
 
     private final HederaWorldUpdater.Enhancement enhancement;
+    private final VerificationStrategies verificationStrategies;
 
-    public HtsCallAttempt(@NonNull final Bytes input, @NonNull final HederaWorldUpdater.Enhancement enhancement) {
+    public HtsCallAttempt(
+            @NonNull final Bytes input,
+            @NonNull final HederaWorldUpdater.Enhancement enhancement,
+            @NonNull final VerificationStrategies verificationStrategies) {
         requireNonNull(input);
-        requireNonNull(enhancement);
-
-        this.enhancement = enhancement;
         this.isRedirect = isRedirect(input.toArrayUnsafe());
+        this.enhancement = requireNonNull(enhancement);
+        this.verificationStrategies = requireNonNull(verificationStrategies);
         if (this.isRedirect) {
             Tuple abiCall = null;
             try {
@@ -100,7 +105,7 @@ public class HtsCallAttempt {
 
     /**
      * Tries to translate this call attempt into a {@link HtsCall} from the given sender address.
-     *
+     * <p>
      * Call attempts could refer to a,
      * <ul>
      *   <li>[x] TRANSFER (ERCTransferPrecompile, TransferPrecompile)</li>
@@ -154,12 +159,15 @@ public class HtsCallAttempt {
      *   <li>[ ] UPDATE_TOKEN (TokenUpdatePrecompile)</li>
      * </ul>
      *
-     * @param senderAddress the address of the sender of the call
+     * @param senderAddress                      the address of the sender of the call
+     * @param needingDelegatableKeys whether the sender needs delegatable contract keys to be authorized
      * @return the call, or null if it couldn't be translated
      */
-    public @Nullable HtsCall asCallFrom(@NonNull final Address senderAddress) {
+    public @Nullable HtsCall asCallFrom(@NonNull final Address senderAddress, final boolean needingDelegatableKeys) {
         requireNonNull(senderAddress);
-        if (TransferCall.matches(selector)) {
+        if (Erc721TransferFromCall.matches(this)) {
+            return Erc721TransferFromCall.from(this, senderAddress, needingDelegatableKeys, verificationStrategies);
+        } else if (TransferCall.matches(selector)) {
             return TransferCall.from(this, senderAddress);
         } else if (MintCall.matches(selector)) {
             return MintCall.from(this, senderAddress);

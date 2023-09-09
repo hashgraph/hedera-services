@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NftID;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
@@ -79,12 +79,18 @@ public interface SystemContractOperations {
      * <p>If the result is {@code SUCCESS}, but this scope or any of its parents revert, the record
      * of this dispatch should have its stateful side effects cleared and its result set to {@code REVERTED_SUCCESS}.
      *
-     * @param syntheticTransaction the synthetic transaction to dispatch
+     * @param syntheticBody the synthetic transaction to dispatch
      * @param strategy             the non-cryptographic signature verification to use
+     * @param syntheticPayerId     the payer of the synthetic transaction
+     * @param recordBuilderClass  the class of the record builder to use
      * @return the result of the dispatch
      */
     @NonNull
-    ResponseCodeEnum dispatch(@NonNull TransactionBody syntheticTransaction, @NonNull VerificationStrategy strategy);
+    <T> T dispatch(
+            @NonNull TransactionBody syntheticBody,
+            @NonNull VerificationStrategy strategy,
+            @NonNull AccountID syntheticPayerId,
+            @NonNull Class<T> recordBuilderClass);
 
     /**
      * Attempts to create a child record of the current record, with the given {@code result}

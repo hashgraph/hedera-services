@@ -39,6 +39,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  */
 public interface HederaNativeOperations {
     long MISSING_ENTITY_NUMBER = -1L;
+    long NON_CANONICAL_REFERENCE_NUMBER = -2L;
 
     /**
      * Returns the {@link ReadableTokenStore} for this {@link HederaNativeOperations}.

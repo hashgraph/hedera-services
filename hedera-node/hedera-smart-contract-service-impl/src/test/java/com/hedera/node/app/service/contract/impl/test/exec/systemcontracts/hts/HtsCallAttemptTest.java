@@ -32,6 +32,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verifyNoInteractions;
 
+import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
+import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.balanceof.BalanceOfCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.decimals.DecimalsCall;
@@ -44,6 +46,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ownero
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.symbol.SymbolCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokenuri.TokenUriCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.totalsupply.TotalSupplyCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc721TransferFromCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.TransferCall;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import com.swirlds.common.utility.CommonUtils;
@@ -53,12 +56,19 @@ import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.mockito.Mock;
 
 class HtsCallAttemptTest extends HtsCallTestBase {
+    @Mock
+    private VerificationStrategies verificationStrategies;
+
+    @Mock
+    private VerificationStrategy strategy;
+
     @Test
     void nonLongZeroAddressesArentTokens() {
         final var input = TestHelpers.bytesForRedirect(TransferCall.ERC_20_TRANSFER.selector(), EIP_1014_ADDRESS);
-        final var subject = new HtsCallAttempt(input, mockEnhancement());
+        final var subject = new HtsCallAttempt(input, mockEnhancement(), verificationStrategies);
         assertNull(subject.redirectToken());
         verifyNoInteractions(nativeOperations);
     }
@@ -68,32 +78,32 @@ class HtsCallAttemptTest extends HtsCallTestBase {
         given(nativeOperations.getToken(numberOfLongZero(NON_SYSTEM_LONG_ZERO_ADDRESS)))
                 .willReturn(FUNGIBLE_TOKEN);
         final var input = TestHelpers.bytesForRedirect(new byte[4], NON_SYSTEM_LONG_ZERO_ADDRESS);
-        final var subject = new HtsCallAttempt(input, mockEnhancement());
-        assertNull(subject.asCallFrom(EIP_1014_ADDRESS));
+        final var subject = new HtsCallAttempt(input, mockEnhancement(), verificationStrategies);
+        assertNull(subject.asCallFrom(EIP_1014_ADDRESS, false));
     }
 
     @Test
     void constructsDecimals() {
         final var input = TestHelpers.bytesForRedirect(
                 DecimalsCall.DECIMALS.encodeCallWithArgs().array(), NON_SYSTEM_LONG_ZERO_ADDRESS);
-        final var subject = new HtsCallAttempt(input, mockEnhancement());
-        assertInstanceOf(DecimalsCall.class, subject.asCallFrom(EIP_1014_ADDRESS));
+        final var subject = new HtsCallAttempt(input, mockEnhancement(), verificationStrategies);
+        assertInstanceOf(DecimalsCall.class, subject.asCallFrom(EIP_1014_ADDRESS, false));
     }
 
     @Test
     void constructsTokenUri() {
         final var input = TestHelpers.bytesForRedirect(
                 TokenUriCall.TOKEN_URI.encodeCallWithArgs(BigInteger.ONE).array(), NON_SYSTEM_LONG_ZERO_ADDRESS);
-        final var subject = new HtsCallAttempt(input, mockEnhancement());
-        assertInstanceOf(TokenUriCall.class, subject.asCallFrom(EIP_1014_ADDRESS));
+        final var subject = new HtsCallAttempt(input, mockEnhancement(), verificationStrategies);
+        assertInstanceOf(TokenUriCall.class, subject.asCallFrom(EIP_1014_ADDRESS, false));
     }
 
     @Test
     void constructsOwnerOf() {
         final var input = TestHelpers.bytesForRedirect(
                 OwnerOfCall.OWNER_OF.encodeCallWithArgs(BigInteger.ONE).array(), NON_SYSTEM_LONG_ZERO_ADDRESS);
-        final var subject = new HtsCallAttempt(input, mockEnhancement());
-        assertInstanceOf(OwnerOfCall.class, subject.asCallFrom(EIP_1014_ADDRESS));
+        final var subject = new HtsCallAttempt(input, mockEnhancement(), verificationStrategies);
+        assertInstanceOf(OwnerOfCall.class, subject.asCallFrom(EIP_1014_ADDRESS, false));
     }
 
     @Test
@@ -103,8 +113,8 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                         .encodeCallWithArgs(asHeadlongAddress(EIP_1014_ADDRESS))
                         .array(),
                 NON_SYSTEM_LONG_ZERO_ADDRESS);
-        final var subject = new HtsCallAttempt(input, mockEnhancement());
-        assertInstanceOf(BalanceOfCall.class, subject.asCallFrom(EIP_1014_ADDRESS));
+        final var subject = new HtsCallAttempt(input, mockEnhancement(), verificationStrategies);
+        assertInstanceOf(BalanceOfCall.class, subject.asCallFrom(EIP_1014_ADDRESS, false));
     }
 
     @Test
@@ -115,32 +125,50 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                         .encodeCallWithArgs(address, address)
                         .array(),
                 NON_SYSTEM_LONG_ZERO_ADDRESS);
-        final var subject = new HtsCallAttempt(input, mockEnhancement());
-        assertInstanceOf(IsApprovedForAllCall.class, subject.asCallFrom(EIP_1014_ADDRESS));
+        final var subject = new HtsCallAttempt(input, mockEnhancement(), verificationStrategies);
+        assertInstanceOf(IsApprovedForAllCall.class, subject.asCallFrom(EIP_1014_ADDRESS, false));
     }
 
     @Test
     void constructsTotalSupply() {
         final var input = TestHelpers.bytesForRedirect(
                 TotalSupplyCall.TOTAL_SUPPLY.encodeCallWithArgs().array(), NON_SYSTEM_LONG_ZERO_ADDRESS);
-        final var subject = new HtsCallAttempt(input, mockEnhancement());
-        assertInstanceOf(TotalSupplyCall.class, subject.asCallFrom(EIP_1014_ADDRESS));
+        final var subject = new HtsCallAttempt(input, mockEnhancement(), verificationStrategies);
+        assertInstanceOf(TotalSupplyCall.class, subject.asCallFrom(EIP_1014_ADDRESS, false));
     }
 
     @Test
     void constructsName() {
         final var input =
                 TestHelpers.bytesForRedirect(NameCall.NAME.encodeCallWithArgs().array(), NON_SYSTEM_LONG_ZERO_ADDRESS);
-        final var subject = new HtsCallAttempt(input, mockEnhancement());
-        assertInstanceOf(NameCall.class, subject.asCallFrom(EIP_1014_ADDRESS));
+        final var subject = new HtsCallAttempt(input, mockEnhancement(), verificationStrategies);
+        assertInstanceOf(NameCall.class, subject.asCallFrom(EIP_1014_ADDRESS, false));
     }
 
     @Test
     void constructsSymbol() {
         final var input = TestHelpers.bytesForRedirect(
                 SymbolCall.SYMBOL.encodeCallWithArgs().array(), NON_SYSTEM_LONG_ZERO_ADDRESS);
-        final var subject = new HtsCallAttempt(input, mockEnhancement());
-        assertInstanceOf(SymbolCall.class, subject.asCallFrom(EIP_1014_ADDRESS));
+        final var subject = new HtsCallAttempt(input, mockEnhancement(), verificationStrategies);
+        assertInstanceOf(SymbolCall.class, subject.asCallFrom(EIP_1014_ADDRESS, false));
+    }
+
+    @Test
+    void constructsErc721TransferFromRedirectToNonfungible() {
+        given(nativeOperations.getToken(numberOfLongZero(NON_SYSTEM_LONG_ZERO_ADDRESS)))
+                .willReturn(NON_FUNGIBLE_TOKEN);
+        final var input = TestHelpers.bytesForRedirect(
+                Erc721TransferFromCall.TRANSFER_FROM
+                        .encodeCallWithArgs(
+                                asHeadlongAddress(EIP_1014_ADDRESS),
+                                asHeadlongAddress(NON_SYSTEM_LONG_ZERO_ADDRESS),
+                                BigInteger.ONE)
+                        .array(),
+                NON_SYSTEM_LONG_ZERO_ADDRESS);
+        given(verificationStrategies.onlyActivatingContractKeys(EIP_1014_ADDRESS, nativeOperations, true))
+                .willReturn(strategy);
+        final var subject = new HtsCallAttempt(input, mockEnhancement(), verificationStrategies);
+        assertInstanceOf(Erc721TransferFromCall.class, subject.asCallFrom(EIP_1014_ADDRESS, true));
     }
 
     @ParameterizedTest
@@ -166,9 +194,9 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                     .willReturn(FUNGIBLE_TOKEN);
         }
 
-        final var subject = new HtsCallAttempt(input, mockEnhancement());
+        final var subject = new HtsCallAttempt(input, mockEnhancement(), verificationStrategies);
 
-        assertInstanceOf(TransferCall.class, subject.asCallFrom(EIP_1014_ADDRESS));
+        assertInstanceOf(TransferCall.class, subject.asCallFrom(EIP_1014_ADDRESS, false));
         assertArrayEquals(selector, subject.selector());
         assertEquals(isRedirect, subject.isTokenRedirect());
         if (isRedirect) {
@@ -227,14 +255,14 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                             .array());
         }
 
-        final var subject = new HtsCallAttempt(input, mockEnhancement());
+        final var subject = new HtsCallAttempt(input, mockEnhancement(), verificationStrategies);
 
         if (linkedTokenType == LinkedTokenType.MISSING) {
-            assertNull(subject.asCallFrom(EIP_1014_ADDRESS));
+            assertNull(subject.asCallFrom(EIP_1014_ADDRESS, false));
         } else if (linkedTokenType == LinkedTokenType.FUNGIBLE) {
-            assertInstanceOf(FungibleMintCall.class, subject.asCallFrom(EIP_1014_ADDRESS));
+            assertInstanceOf(FungibleMintCall.class, subject.asCallFrom(EIP_1014_ADDRESS, false));
         } else {
-            assertInstanceOf(NonFungibleMintCall.class, subject.asCallFrom(EIP_1014_ADDRESS));
+            assertInstanceOf(NonFungibleMintCall.class, subject.asCallFrom(EIP_1014_ADDRESS, false));
         }
         assertArrayEquals(selector, subject.selector());
         assertFalse(subject.isTokenRedirect());

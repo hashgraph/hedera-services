@@ -211,7 +211,8 @@ class AbstractScheduleHandlerTest extends ScheduleHandlerTestBase {
         BDDMockito.given(mockContext.dispatchChildTransaction(
                         Mockito.any(TransactionBody.class),
                         Mockito.any(),
-                        Mockito.any(ScheduleVerificationAssistant.class)))
+                        Mockito.any(ScheduleVerificationAssistant.class),
+                        Mockito.any(AccountID.class)))
                 .willReturn(mockRecordBuilder);
         for (final Schedule testItem : listOfScheduledOptions) {
             Set<Key> testRemaining = Set.of();

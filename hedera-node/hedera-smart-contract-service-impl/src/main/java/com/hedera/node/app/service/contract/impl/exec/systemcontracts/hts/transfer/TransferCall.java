@@ -47,7 +47,6 @@ public class TransferCall implements HtsCall {
     public static final Function ERC_20_TRANSFER = new Function("transfer(address,uint256)", ReturnTypes.BOOL);
     public static final Function ERC_20_TRANSFER_FROM =
             new Function("transferFrom(address,address,uint256)", ReturnTypes.BOOL);
-    public static final Function ERC_721_TRANSFER_FROM = new Function("transferFrom(address,address,uint256)");
 
     /**
      * Indicates if the given {@code selector} is a selector for {@link TransferCall}.
@@ -66,8 +65,7 @@ public class TransferCall implements HtsCall {
                 || Arrays.equals(selector, HRC_TRANSFER_FROM.selector())
                 || Arrays.equals(selector, HRC_TRANSFER_NFT_FROM.selector())
                 || Arrays.equals(selector, ERC_20_TRANSFER.selector())
-                || Arrays.equals(selector, ERC_20_TRANSFER_FROM.selector())
-                || Arrays.equals(selector, ERC_721_TRANSFER_FROM.selector());
+                || Arrays.equals(selector, ERC_20_TRANSFER_FROM.selector());
     }
 
     /**

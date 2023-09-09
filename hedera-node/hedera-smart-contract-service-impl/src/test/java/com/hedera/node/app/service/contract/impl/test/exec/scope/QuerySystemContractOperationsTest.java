@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.TimestampSeconds;
 import com.hedera.hapi.node.base.TokenRelationship;
@@ -93,7 +94,8 @@ class QuerySystemContractOperationsTest {
                 () -> subject.getAccountAndExternalizeResult(1L, 2L, accountResultTranslator));
         assertThrows(
                 UnsupportedOperationException.class,
-                () -> subject.dispatch(TransactionBody.DEFAULT, MOCK_VERIFICATION_STRATEGY));
+                () -> subject.dispatch(
+                        TransactionBody.DEFAULT, MOCK_VERIFICATION_STRATEGY, AccountID.DEFAULT, Object.class));
         assertThrows(
                 UnsupportedOperationException.class,
                 () -> subject.externalizeResult(ContractFunctionResult.DEFAULT, ResultStatus.IS_SUCCESS));

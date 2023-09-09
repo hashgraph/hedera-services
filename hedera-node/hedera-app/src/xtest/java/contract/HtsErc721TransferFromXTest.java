@@ -18,7 +18,7 @@ package contract;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.TransferCall.ERC_721_TRANSFER_FROM;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc721TransferFromCall.TRANSFER_FROM;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmAddress;
 import static contract.HtsErc721TransferXTestConstants.APPROVED_ADDRESS;
 import static contract.HtsErc721TransferXTestConstants.APPROVED_BESU_ADDRESS;
@@ -85,7 +85,7 @@ public class HtsErc721TransferFromXTest extends AbstractContractXTest {
         runHtsCallAndExpectRevert(
                 OWNER_BESU_ADDRESS,
                 bytesForRedirect(
-                        ERC_721_TRANSFER_FROM.encodeCallWithArgs(
+                        TRANSFER_FROM.encodeCallWithArgs(
                                 asHeadlongAddress(asEvmAddress(OWNER_ID.accountNumOrThrow())),
                                 RECEIVER_HEADLONG_ADDRESS,
                                 BigInteger.valueOf(SN_1234.serialNumber())),
@@ -95,7 +95,7 @@ public class HtsErc721TransferFromXTest extends AbstractContractXTest {
         runHtsCallAndExpectRevert(
                 UNAUTHORIZED_SPENDER_BESU_ADDRESS,
                 bytesForRedirect(
-                        ERC_721_TRANSFER_FROM.encodeCallWithArgs(
+                        TRANSFER_FROM.encodeCallWithArgs(
                                 OWNER_HEADLONG_ADDRESS,
                                 RECEIVER_HEADLONG_ADDRESS,
                                 BigInteger.valueOf(SN_1234.serialNumber())),
@@ -105,7 +105,7 @@ public class HtsErc721TransferFromXTest extends AbstractContractXTest {
         runHtsCallAndExpectRevert(
                 APPROVED_BESU_ADDRESS,
                 bytesForRedirect(
-                        ERC_721_TRANSFER_FROM.encodeCallWithArgs(
+                        TRANSFER_FROM.encodeCallWithArgs(
                                 OWNER_HEADLONG_ADDRESS,
                                 RECEIVER_HEADLONG_ADDRESS,
                                 BigInteger.valueOf(SN_2345.serialNumber())),
@@ -115,7 +115,7 @@ public class HtsErc721TransferFromXTest extends AbstractContractXTest {
         runHtsCallAndExpectOnSuccess(
                 APPROVED_BESU_ADDRESS,
                 bytesForRedirect(
-                        ERC_721_TRANSFER_FROM.encodeCallWithArgs(
+                        TRANSFER_FROM.encodeCallWithArgs(
                                 OWNER_HEADLONG_ADDRESS,
                                 RECEIVER_HEADLONG_ADDRESS,
                                 BigInteger.valueOf(SN_1234.serialNumber())),
@@ -125,7 +125,7 @@ public class HtsErc721TransferFromXTest extends AbstractContractXTest {
         runHtsCallAndExpectOnSuccess(
                 OPERATOR_BESU_ADDRESS,
                 bytesForRedirect(
-                        ERC_721_TRANSFER_FROM.encodeCallWithArgs(
+                        TRANSFER_FROM.encodeCallWithArgs(
                                 OWNER_HEADLONG_ADDRESS,
                                 RECEIVER_HEADLONG_ADDRESS,
                                 BigInteger.valueOf(SN_2345.serialNumber())),
@@ -138,7 +138,10 @@ public class HtsErc721TransferFromXTest extends AbstractContractXTest {
         final var tokens = new HashMap<TokenID, Token>();
         tokens.put(
                 ERC721_TOKEN_ID,
-                Token.newBuilder().tokenType(TokenType.NON_FUNGIBLE_UNIQUE).build());
+                Token.newBuilder()
+                        .tokenId(ERC721_TOKEN_ID)
+                        .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                        .build());
         return tokens;
     }
 

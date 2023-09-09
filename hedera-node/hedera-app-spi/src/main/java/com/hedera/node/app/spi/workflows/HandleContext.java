@@ -317,27 +317,34 @@ public interface HandleContext {
      * <p>The provided {@link Predicate} callback will be called to verify simple keys when the child transaction calls
      * any of the {@code verificationFor} methods.
      *
-     * @param txBody the {@link TransactionBody} of the transaction to dispatch
+     * @param txBody             the {@link TransactionBody} of the transaction to dispatch
      * @param recordBuilderClass the record builder class of the transaction
-     * @param verifier a {@link Predicate} that will be used to validate primitive keys
+     * @param verifier           a {@link Predicate} that will be used to validate primitive keys
+     * @param syntheticPayer    the payer of the transaction
      * @return the record builder of the transaction
-     * @throws NullPointerException if {@code txBody} is {@code null}
+     * @throws NullPointerException     if {@code txBody} is {@code null}
      * @throws IllegalArgumentException if the transaction is not a {@link TransactionCategory#USER}-transaction or if
-     * the record builder type is unknown to the app
-     * @throws IllegalStateException if the current transaction has already introduced state changes
+     *                                  the record builder type is unknown to the app
+     * @throws IllegalStateException    if the current transaction has already introduced state changes
      */
     @NonNull
     <T> T dispatchPrecedingTransaction(
-            @NonNull TransactionBody txBody, @NonNull Class<T> recordBuilderClass, @NonNull Predicate<Key> verifier);
+            @NonNull TransactionBody txBody,
+            @NonNull Class<T> recordBuilderClass,
+            @NonNull Predicate<Key> verifier,
+            AccountID syntheticPayer);
 
     /**
-     * @deprecated Use {@link #dispatchPrecedingTransaction(TransactionBody, Class, Predicate)} instead.
+     * @deprecated Use {@link #dispatchPrecedingTransaction(TransactionBody, Class, Predicate, AccountID)} instead.
      */
     @Deprecated(forRemoval = true)
     @NonNull
-    default <T> T dispatchPrecedingTransaction(@NonNull TransactionBody txBody, @NonNull Class<T> recordBuilderClass) {
+    default <T> T dispatchPrecedingTransaction(
+            @NonNull TransactionBody txBody,
+            @NonNull Class<T> recordBuilderClass,
+            @NonNull final AccountID syntheticPayer) {
         return dispatchPrecedingTransaction(
-                txBody, recordBuilderClass, key -> verificationFor(key).passed());
+                txBody, recordBuilderClass, key -> verificationFor(key).passed(), syntheticPayer);
     }
 
     /**
@@ -358,35 +365,41 @@ public interface HandleContext {
      *
      * <p>A {@link TransactionCategory#PRECEDING}-transaction must not dispatch a child transaction.
      *
-     * @param txBody the {@link TransactionBody} of the child transaction to dispatch
+     * @param txBody             the {@link TransactionBody} of the child transaction to dispatch
      * @param recordBuilderClass the record builder class of the child transaction
-     * @param callback a {@link Predicate} callback function that will observe each primitive key
+     * @param callback           a {@link Predicate} callback function that will observe each primitive key
+     * @param payerId
      * @return the record builder of the child transaction
-     * @throws NullPointerException if any of the arguments is {@code null}
+     * @throws NullPointerException     if any of the arguments is {@code null}
      * @throws IllegalArgumentException if the current transaction is a
-     * {@link TransactionCategory#PRECEDING}-transaction or if the record builder type is unknown to the app
+     *                                  {@link TransactionCategory#PRECEDING}-transaction or if the record builder type is unknown to the app
      */
     @NonNull
     <T> T dispatchChildTransaction(
-            @NonNull TransactionBody txBody, @NonNull Class<T> recordBuilderClass, @NonNull Predicate<Key> callback);
+            @NonNull TransactionBody txBody,
+            @NonNull Class<T> recordBuilderClass,
+            @NonNull Predicate<Key> callback,
+            AccountID payerId);
 
     /**
-     * @deprecated Use {@link #dispatchChildTransaction(TransactionBody, Class, Predicate)} instead.
+     * @deprecated Use {@link #dispatchChildTransaction(TransactionBody, Class, Predicate, AccountID)} instead.
      */
     @Deprecated(forRemoval = true)
     @NonNull
     default <T> T dispatchChildTransaction(
             @NonNull TransactionBody txBody,
             @NonNull Class<T> recordBuilderClass,
-            @NonNull VerificationAssistant callback) {
-        return dispatchChildTransaction(txBody, recordBuilderClass, key -> callback.test(key, verificationFor(key)));
+            @NonNull VerificationAssistant callback,
+            @NonNull final AccountID syntheticPayer) {
+        return dispatchChildTransaction(
+                txBody, recordBuilderClass, key -> callback.test(key, verificationFor(key)), syntheticPayer);
     }
 
     /**
      * Dispatches a removable child transaction.
      *
      * <p>A removable child transaction depends on the current transaction. It behaves in almost all aspects like a
-     * regular child transaction (see {@link #dispatchChildTransaction(TransactionBody, Class, Predicate)}.
+     * regular child transaction (see {@link #dispatchChildTransaction(TransactionBody, Class, Predicate, AccountID)}.
      * But unlike regular child transactions, the records of removable child transactions are removed and not reverted.
      *
      * <p>The provided {@link Predicate} callback will be called to verify simple keys when the child transaction calls
@@ -394,29 +407,34 @@ public interface HandleContext {
      *
      * <p>A {@link TransactionCategory#PRECEDING}-transaction must not dispatch a child transaction.
      *
-     * @param txBody the {@link TransactionBody} of the child transaction to dispatch
+     * @param txBody             the {@link TransactionBody} of the child transaction to dispatch
      * @param recordBuilderClass the record builder class of the child transaction
-     * @param callback a {@link Predicate} callback function that will observe each primitive key
+     * @param callback           a {@link Predicate} callback function that will observe each primitive key
+     * @param payer
      * @return the record builder of the child transaction
-     * @throws NullPointerException if any of the arguments is {@code null}
+     * @throws NullPointerException     if any of the arguments is {@code null}
      * @throws IllegalArgumentException if the current transaction is a
-     * {@link TransactionCategory#PRECEDING}-transaction or if the record builder type is unknown to the app
+     *                                  {@link TransactionCategory#PRECEDING}-transaction or if the record builder type is unknown to the app
      */
     @NonNull
     <T> T dispatchRemovableChildTransaction(
-            @NonNull TransactionBody txBody, @NonNull Class<T> recordBuilderClass, @NonNull Predicate<Key> callback);
+            @NonNull TransactionBody txBody,
+            @NonNull Class<T> recordBuilderClass,
+            @NonNull Predicate<Key> callback,
+            AccountID payer);
 
     /**
-     * @deprecated Use {@link #dispatchRemovableChildTransaction(TransactionBody, Class, Predicate)} instead.
+     * @deprecated Use {@link #dispatchRemovableChildTransaction(TransactionBody, Class, Predicate, AccountID)} instead.
      */
     @Deprecated(forRemoval = true)
     @NonNull
     default <T> T dispatchRemovableChildTransaction(
             @NonNull TransactionBody txBody,
             @NonNull Class<T> recordBuilderClass,
-            @NonNull VerificationAssistant callback) {
+            @NonNull VerificationAssistant callback,
+            @NonNull final AccountID syntheticPayer) {
         return dispatchRemovableChildTransaction(
-                txBody, recordBuilderClass, key -> callback.test(key, verificationFor(key)));
+                txBody, recordBuilderClass, key -> callback.test(key, verificationFor(key)), syntheticPayer);
     }
 
     /**

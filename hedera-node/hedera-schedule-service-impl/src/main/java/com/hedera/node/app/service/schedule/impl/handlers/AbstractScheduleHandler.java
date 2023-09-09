@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.schedule.impl.handlers;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -232,8 +234,11 @@ abstract class AbstractScheduleHandler {
             //     so that the child transaction has those as "valid" keys.
             final var assistant = new ScheduleVerificationAssistant(validSignatories, new HashSet<>());
             final TransactionBody childTransaction = HandlerUtility.childAsOrdinary(scheduleToExecute);
-            final ScheduleRecordBuilder recordBuilder =
-                    context.dispatchChildTransaction(childTransaction, ScheduleRecordBuilder.class, assistant);
+            final ScheduleRecordBuilder recordBuilder = context.dispatchChildTransaction(
+                    childTransaction,
+                    ScheduleRecordBuilder.class,
+                    assistant,
+                    requireNonNull(scheduleToExecute).payerAccountId());
             // set the schedule ref for the child transaction
             recordBuilder.scheduleRef(scheduleToExecute.scheduleId());
             // If the child failed, we fail with the same result.

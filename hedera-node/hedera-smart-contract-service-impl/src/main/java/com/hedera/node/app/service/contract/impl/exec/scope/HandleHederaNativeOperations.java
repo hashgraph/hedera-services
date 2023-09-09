@@ -100,8 +100,8 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
                 .cryptoCreateAccount(synthHollowAccountCreation(evmAddress))
                 .build();
         // TODO - implement proper signature VerificationAssistant
-        final var childRecordBuilder =
-                context.dispatchChildTransaction(synthTxn, CryptoCreateRecordBuilder.class, key -> true);
+        final var childRecordBuilder = context.dispatchChildTransaction(
+                synthTxn, CryptoCreateRecordBuilder.class, key -> true, context.payer());
         // TODO - switch OK to SUCCESS once some status-setting responsibilities are clarified
         if (childRecordBuilder.status() != OK && childRecordBuilder.status() != SUCCESS) {
             throw new AssertionError("Not implemented");
