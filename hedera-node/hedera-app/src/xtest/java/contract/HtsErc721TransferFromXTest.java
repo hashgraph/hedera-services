@@ -36,11 +36,10 @@ import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_ID;
 import static contract.XTestConstants.ERC721_TOKEN_ID;
 import static contract.XTestConstants.RECEIVER_HEADLONG_ADDRESS;
 import static contract.XTestConstants.RECEIVER_ID;
-import static contract.XTestConstants.SENDER_ADDRESS;
-import static contract.XTestConstants.SENDER_ID;
 import static contract.XTestConstants.SN_1234;
 import static contract.XTestConstants.SN_1234_METADATA;
 import static contract.XTestConstants.SN_2345;
+import static contract.XTestConstants.SN_2345_METADATA;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -79,7 +78,6 @@ import org.jetbrains.annotations.NotNull;
  * argument to the call; and second, the owner must be referenced by its priority address, not its long-zero address.
  */
 public class HtsErc721TransferFromXTest extends AbstractContractXTest {
-
     @Override
     protected void doScenarioOperations() {
         // Referencing the owner via their long-zero address doesn't work (their account won't be found)
@@ -161,9 +159,9 @@ public class HtsErc721TransferFromXTest extends AbstractContractXTest {
         nfts.put(
                 SN_2345,
                 Nft.newBuilder()
-                        .nftId(SN_1234)
+                        .nftId(SN_2345)
                         .ownerId(OWNER_ID)
-                        .metadata(SN_1234_METADATA)
+                        .metadata(SN_2345_METADATA)
                         .build());
         return nfts;
     }
@@ -171,11 +169,11 @@ public class HtsErc721TransferFromXTest extends AbstractContractXTest {
     @Override
     protected Map<EntityIDPair, TokenRelation> initialTokenRelationships() {
         final var tokenRelationships = new HashMap<EntityIDPair, TokenRelation>();
-        addErc721Relation(tokenRelationships, OWNER_ID, 2L);
-        addErc721Relation(tokenRelationships, UNAUTHORIZED_SPENDER_ID, 3L);
-        addErc721Relation(tokenRelationships, APPROVED_ID, 1L);
-        addErc721Relation(tokenRelationships, OPERATOR_ID, 1L);
-        addErc721Relation(tokenRelationships, RECEIVER_ID, 0L);
+        XTestConstants.addErc721Relation(tokenRelationships, OWNER_ID, 2L);
+        XTestConstants.addErc721Relation(tokenRelationships, UNAUTHORIZED_SPENDER_ID, 3L);
+        XTestConstants.addErc721Relation(tokenRelationships, APPROVED_ID, 1L);
+        XTestConstants.addErc721Relation(tokenRelationships, OPERATOR_ID, 1L);
+        XTestConstants.addErc721Relation(tokenRelationships, RECEIVER_ID, 0L);
         return tokenRelationships;
     }
 
@@ -201,25 +199,9 @@ public class HtsErc721TransferFromXTest extends AbstractContractXTest {
         assertEquals(RECEIVER_ID, sn2345.ownerId());
     }
 
-    private void addErc721Relation(
-            final Map<EntityIDPair, TokenRelation> tokenRelationships, final AccountID accountID, final long balance) {
-        tokenRelationships.put(
-                EntityIDPair.newBuilder()
-                        .tokenId(ERC721_TOKEN_ID)
-                        .accountId(accountID)
-                        .build(),
-                TokenRelation.newBuilder()
-                        .tokenId(ERC721_TOKEN_ID)
-                        .accountId(accountID)
-                        .balance(balance)
-                        .kycGranted(true)
-                        .build());
-    }
-
     @Override
     protected Map<ProtoBytes, AccountID> initialAliases() {
         final var aliases = new HashMap<ProtoBytes, AccountID>();
-        aliases.put(ProtoBytes.newBuilder().value(SENDER_ADDRESS).build(), SENDER_ID);
         aliases.put(ProtoBytes.newBuilder().value(OWNER_ADDRESS).build(), OWNER_ID);
         aliases.put(ProtoBytes.newBuilder().value(UNAUTHORIZED_SPENDER_ADDRESS).build(), UNAUTHORIZED_SPENDER_ID);
         aliases.put(ProtoBytes.newBuilder().value(APPROVED_ADDRESS).build(), APPROVED_ID);
@@ -230,9 +212,6 @@ public class HtsErc721TransferFromXTest extends AbstractContractXTest {
     @Override
     protected Map<AccountID, Account> initialAccounts() {
         final var accounts = new HashMap<AccountID, Account>();
-        accounts.put(
-                SENDER_ID,
-                Account.newBuilder().accountId(SENDER_ID).alias(SENDER_ADDRESS).build());
         accounts.put(
                 OWNER_ID,
                 Account.newBuilder()

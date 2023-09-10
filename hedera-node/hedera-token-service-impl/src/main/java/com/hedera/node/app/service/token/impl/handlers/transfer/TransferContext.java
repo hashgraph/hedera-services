@@ -42,10 +42,11 @@ public interface TransferContext {
     /**
      * Creates an account from the given alias. This is called when the account associated with alias
      * is not found in the account store
-     * @param alias the alias of the account
-     * @param isFromTokenTransfer true if the account is created from token transfer, false otherwise
+     *
+     * @param alias                  the alias of the account
+     * @param reqMaxAutoAssociations
      */
-    void createFromAlias(Bytes alias, boolean isFromTokenTransfer);
+    void createFromAlias(Bytes alias, int reqMaxAutoAssociations);
 
     /**
      * Returns the number of auto-creation of accounts in current transfer

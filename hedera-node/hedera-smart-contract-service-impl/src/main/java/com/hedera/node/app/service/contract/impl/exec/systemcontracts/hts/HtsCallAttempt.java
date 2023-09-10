@@ -190,7 +190,7 @@ public class HtsCallAttempt {
             return Erc721TransferFromCall.from(this, senderAddress, needingDelegatableKeys);
         } else if (Erc20TransfersCall.matches(this)) {
             return Erc20TransfersCall.from(this, senderAddress, needingDelegatableKeys);
-        } else if (ClassicTransfersCall.matches(selector)) {
+        } else if (ClassicTransfersCall.matches(this)) {
             return ClassicTransfersCall.from(this, senderAddress, needingDelegatableKeys);
         } else if (MintCall.matches(selector)) {
             return MintCall.from(this, senderAddress);

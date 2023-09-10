@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.transfer;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
@@ -37,15 +38,18 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ApprovalSwitchHelper;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc20TransfersCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.SystemAccountCreditScreen;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.util.function.Predicate;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -63,22 +67,24 @@ class ClassicTransfersCallTest extends HtsCallTestBase {
     private ApprovalSwitchHelper approvalSwitchHelper;
 
     @Mock
+    private AddressIdConverter addressIdConverter;
+
+    @Mock
     private HtsCallAttempt attempt;
 
     @Mock
     private CryptoTransferRecordBuilder recordBuilder;
 
-    private ClassicTransfersCall subject;
+    @Mock
+    private SystemAccountCreditScreen systemAccountCreditScreen;
 
-    @Test
-    void doesNotRetryWithInitialSuccess() {
-        givenRetryingSubject();
-    }
+    private ClassicTransfersCall subject;
 
     @Test
     void throwsOnUnrecognizedSelector() {
         given(attempt.selector()).willReturn(Erc20TransfersCall.ERC_20_TRANSFER.selector());
         given(attempt.enhancement()).willReturn(mockEnhancement());
+        given(attempt.addressIdConverter()).willReturn(addressIdConverter);
         final var e = assertThrows(
                 IllegalArgumentException.class, () -> ClassicTransfersCall.from(attempt, EIP_1014_ADDRESS, true));
         assertTrue(e.getMessage().endsWith("is not a classic transfer"));
@@ -112,7 +118,7 @@ class ClassicTransfersCallTest extends HtsCallTestBase {
                         eq(A_NEW_ACCOUNT_ID),
                         eq(CryptoTransferRecordBuilder.class)))
                 .willReturn(recordBuilder);
-        given(recordBuilder.status()).willReturn(INVALID_SIGNATURE).willReturn(SUCCESS);
+        given(recordBuilder.status()).willReturn(SUCCESS);
         given(systemContractOperations.activeSignatureTestWith(verificationStrategy))
                 .willReturn(signatureTest);
         given(approvalSwitchHelper.switchToApprovalsAsNeededIn(
@@ -166,6 +172,18 @@ class ClassicTransfersCallTest extends HtsCallTestBase {
     }
 
     @Test
+    void systemAccountCreditReverts() {
+        givenRetryingSubject();
+        given(systemAccountCreditScreen.creditsToSystemAccount(CryptoTransferTransactionBody.DEFAULT))
+                .willReturn(true);
+
+        final var result = subject.execute().fullResult().result();
+
+        assertEquals(MessageFrame.State.REVERT, result.getState());
+        assertEquals(Bytes.wrap(INVALID_RECEIVING_NODE_ACCOUNT.protoName().getBytes()), result.getOutput());
+    }
+
+    @Test
     void supportedV2transferCompletesWithNominalResponseCode() {
         givenV2SubjectWithV2Enabled();
         given(systemContractOperations.dispatch(
@@ -184,17 +202,20 @@ class ClassicTransfersCallTest extends HtsCallTestBase {
                 result.getOutput());
     }
 
+    private static final TransactionBody PRETEND_TRANSFER = TransactionBody.newBuilder()
+            .cryptoTransfer(CryptoTransferTransactionBody.DEFAULT)
+            .build();
+
     private void givenRetryingSubject() {
         subject = new ClassicTransfersCall(
                 mockEnhancement(),
                 ClassicTransfersCall.CRYPTO_TRANSFER.selector(),
                 A_NEW_ACCOUNT_ID,
-                TransactionBody.newBuilder()
-                        .cryptoTransfer(CryptoTransferTransactionBody.DEFAULT)
-                        .build(),
+                PRETEND_TRANSFER,
                 DEFAULT_CONFIG,
                 approvalSwitchHelper,
-                verificationStrategy);
+                verificationStrategy,
+                systemAccountCreditScreen);
     }
 
     private void givenV2SubjectWithV2Enabled() {
@@ -205,10 +226,11 @@ class ClassicTransfersCallTest extends HtsCallTestBase {
                 mockEnhancement(),
                 ClassicTransfersCall.CRYPTO_TRANSFER_V2.selector(),
                 A_NEW_ACCOUNT_ID,
-                TransactionBody.DEFAULT,
+                PRETEND_TRANSFER,
                 config,
                 null,
-                verificationStrategy);
+                verificationStrategy,
+                systemAccountCreditScreen);
     }
 
     private void givenV2SubjectWithV2Disabled() {
@@ -216,9 +238,10 @@ class ClassicTransfersCallTest extends HtsCallTestBase {
                 mockEnhancement(),
                 ClassicTransfersCall.CRYPTO_TRANSFER_V2.selector(),
                 A_NEW_ACCOUNT_ID,
-                TransactionBody.DEFAULT,
+                PRETEND_TRANSFER,
                 DEFAULT_CONFIG,
                 null,
-                verificationStrategy);
+                verificationStrategy,
+                systemAccountCreditScreen);
     }
 }

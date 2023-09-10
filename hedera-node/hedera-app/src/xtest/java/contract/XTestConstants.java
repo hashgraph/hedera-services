@@ -22,16 +22,21 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.as
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToBesuAddress;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.TimestampSeconds;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractCallTransactionBody;
+import com.hedera.hapi.node.state.common.EntityIDPair;
+import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.time.Instant;
+import java.util.Map;
 import org.hyperledger.besu.datatypes.Address;
 
 /**
@@ -64,6 +69,11 @@ class XTestConstants {
 
     static final AccountID SENDER_ID =
             AccountID.newBuilder().accountNum(12345789L).build();
+    static final Key SENDER_CONTRACT_ID_KEY = Key.newBuilder()
+            .contractID(ContractID.newBuilder()
+                    .contractNum(SENDER_ID.accountNumOrThrow())
+                    .build())
+            .build();
     static final Bytes SENDER_ADDRESS =
             com.hedera.pbj.runtime.io.buffer.Bytes.fromHex("f91e624b8b8ea7244e8159ba7c0deeea2b6be990");
     static final Address SENDER_BESU_ADDRESS = pbjToBesuAddress(SENDER_ADDRESS);
@@ -76,9 +86,44 @@ class XTestConstants {
             NftID.newBuilder().tokenId(ERC721_TOKEN_ID).serialNumber(1234L).build();
     static final NftID SN_2345 =
             NftID.newBuilder().tokenId(ERC721_TOKEN_ID).serialNumber(2345L).build();
+    static final NftID SN_3456 =
+            NftID.newBuilder().tokenId(ERC721_TOKEN_ID).serialNumber(3456L).build();
     static final Bytes SN_1234_METADATA = Bytes.wrap("https://example.com/721/" + 1234);
     static final Bytes SN_2345_METADATA = Bytes.wrap("https://example.com/721/" + 2345);
+    static final Bytes SN_3456_METADATA = Bytes.wrap("https://example.com/721/" + 3456);
     static final com.esaulpaugh.headlong.abi.Address ERC721_TOKEN_ADDRESS = AbstractContractXTest.asHeadlongAddress(
             asLongZeroAddress(ERC721_TOKEN_ID.tokenNum()).toArray());
     static final TokenID ERC20_TOKEN_ID = TokenID.newBuilder().tokenNum(1027L).build();
+    static final com.esaulpaugh.headlong.abi.Address ERC20_TOKEN_ADDRESS = AbstractContractXTest.asHeadlongAddress(
+            asLongZeroAddress(ERC20_TOKEN_ID.tokenNum()).toArray());
+
+    public static void addErc721Relation(
+            final Map<EntityIDPair, TokenRelation> tokenRelationships, final AccountID accountID, final long balance) {
+        tokenRelationships.put(
+                EntityIDPair.newBuilder()
+                        .tokenId(ERC721_TOKEN_ID)
+                        .accountId(accountID)
+                        .build(),
+                TokenRelation.newBuilder()
+                        .tokenId(ERC721_TOKEN_ID)
+                        .accountId(accountID)
+                        .balance(balance)
+                        .kycGranted(true)
+                        .build());
+    }
+
+    public static void addErc20Relation(
+            final Map<EntityIDPair, TokenRelation> tokenRelationships, final AccountID accountID, final long balance) {
+        tokenRelationships.put(
+                EntityIDPair.newBuilder()
+                        .tokenId(ERC20_TOKEN_ID)
+                        .accountId(accountID)
+                        .build(),
+                TokenRelation.newBuilder()
+                        .tokenId(ERC20_TOKEN_ID)
+                        .accountId(accountID)
+                        .balance(balance)
+                        .kycGranted(true)
+                        .build());
+    }
 }

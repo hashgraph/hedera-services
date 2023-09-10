@@ -134,7 +134,7 @@ class ApprovalSwitchHelperTest {
                 .build();
     }
 
-    private AccountAmount adjust(@NonNull final AccountID account, final long amount) {
+    static AccountAmount adjust(@NonNull final AccountID account, final long amount) {
         return AccountAmount.newBuilder().accountID(account).amount(amount).build();
     }
 
@@ -146,7 +146,7 @@ class ApprovalSwitchHelperTest {
                 .build();
     }
 
-    private NftTransfer nftTransfer(@NonNull final AccountID from, @NonNull final AccountID to, final long serialNo) {
+    static NftTransfer nftTransfer(@NonNull final AccountID from, @NonNull final AccountID to, final long serialNo) {
         return NftTransfer.newBuilder()
                 .serialNumber(serialNo)
                 .senderAccountID(from)
