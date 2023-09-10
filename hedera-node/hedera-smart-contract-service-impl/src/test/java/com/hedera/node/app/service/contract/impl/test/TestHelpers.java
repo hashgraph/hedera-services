@@ -247,6 +247,7 @@ public class TestHelpers {
 
     public static final Account SOMEBODY = Account.newBuilder()
             .accountId(A_NEW_ACCOUNT_ID)
+            .key(AN_ED25519_KEY)
             .approveForAllNftAllowances(
                     AccountApprovalForAllAllowance.newBuilder()
                             .tokenId(NON_FUNGIBLE_TOKEN_ID)
@@ -374,6 +375,15 @@ public class TestHelpers {
             .callType(ContractActionType.CREATE)
             .recipientContract(CALLED_CONTRACT_ID)
             .gas(REMAINING_GAS)
+            .build();
+    public static final Key A_CONTRACT_KEY = Key.newBuilder()
+            .contractID(ContractID.newBuilder().contractNum(1234L))
+            .build();
+    public static final Key A_SECP256K1_KEY = Key.newBuilder()
+            .ecdsaSecp256k1(Bytes.fromHex("030101010101010101010101010101010101010101010101010101010101010101"))
+            .build();
+    public static final Key B_SECP256K1_KEY = Key.newBuilder()
+            .ecdsaSecp256k1(Bytes.fromHex("039191919191919191919191919191919191919191919191919191919191919191"))
             .build();
     private static final ContractCreateTransactionBody MOCK_CREATE_BODY = ContractCreateTransactionBody.newBuilder()
             .memo("Something to think about")

@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.transfer;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
@@ -124,6 +125,33 @@ class ClassicTransfersCallTest extends HtsCallTestBase {
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(asBytesResult(INT64_ENCODER.encodeElements((long) SUCCESS.protoOrdinal())), result.getOutput());
+    }
+
+    @Test
+    void retryingTransferInvalidSignatureCompletesWithStandardizedResponseCode() {
+        givenRetryingSubject();
+        given(systemContractOperations.dispatch(
+                        any(TransactionBody.class),
+                        eq(verificationStrategy),
+                        eq(A_NEW_ACCOUNT_ID),
+                        eq(CryptoTransferRecordBuilder.class)))
+                .willReturn(recordBuilder);
+        given(recordBuilder.status()).willReturn(INVALID_SIGNATURE);
+        given(systemContractOperations.activeSignatureTestWith(verificationStrategy))
+                .willReturn(signatureTest);
+        given(approvalSwitchHelper.switchToApprovalsAsNeededIn(
+                        CryptoTransferTransactionBody.DEFAULT, signatureTest, nativeOperations))
+                .willReturn(CryptoTransferTransactionBody.DEFAULT);
+
+        givenRetryingSubject();
+
+        final var result = subject.execute().fullResult().result();
+
+        assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
+        assertEquals(
+                asBytesResult(INT64_ENCODER.encodeElements(
+                        (long) INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE.protoOrdinal())),
+                result.getOutput());
     }
 
     @Test

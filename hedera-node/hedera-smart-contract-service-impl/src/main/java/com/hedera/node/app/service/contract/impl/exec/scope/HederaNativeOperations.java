@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
@@ -83,6 +84,18 @@ public interface HederaNativeOperations {
     default Account getAccount(final long number) {
         return readableAccountStore()
                 .getAccountById(AccountID.newBuilder().accountNum(number).build());
+    }
+
+    /**
+     * Returns the {@link Key} of the account with the given number.
+     *
+     * @param number the account number
+     * @return the account, or {@code null} if no such account exists
+     */
+    @Nullable
+    default Key getAccountKey(final long number) {
+        final var maybeAccount = getAccount(number);
+        return maybeAccount == null ? null : maybeAccount.keyOrThrow();
     }
 
     /**

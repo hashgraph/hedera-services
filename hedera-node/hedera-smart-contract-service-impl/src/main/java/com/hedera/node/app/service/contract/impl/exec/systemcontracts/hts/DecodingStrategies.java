@@ -18,7 +18,6 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.explicitFromHeadlong;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
-import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
@@ -279,8 +278,6 @@ public class DecodingStrategies {
 
     private AccountAmount adjust(
             @NonNull final AccountID account, final long amount, @NonNull final IsApproval isApproval) {
-        requireNonNull(account);
-        requireNonNull(isApproval);
         return AccountAmount.newBuilder()
                 .accountID(account)
                 .amount(amount)

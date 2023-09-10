@@ -27,7 +27,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.ContractID;
-import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -35,6 +34,7 @@ import com.hedera.node.app.service.contract.impl.exec.scope.HandleSystemContract
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy.Decision;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
+import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils;
 import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.ResultStatus;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
@@ -52,16 +52,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class HandleSystemContractOperationsTest {
-    private static final Key A_CONTRACT_KEY = Key.newBuilder()
-            .contractID(ContractID.newBuilder().contractNum(1234L))
-            .build();
-    public static final Key A_SECP256K1_KEY = Key.newBuilder()
-            .ecdsaSecp256k1(Bytes.fromHex("030101010101010101010101010101010101010101010101010101010101010101"))
-            .build();
-
-    public static final Key B_SECP256K1_KEY = Key.newBuilder()
-            .ecdsaSecp256k1(Bytes.fromHex("039191919191919191919191919191919191919191919191919191919191919191"))
-            .build();
 
     @Mock
     private HandleContext context;
@@ -99,13 +89,14 @@ class HandleSystemContractOperationsTest {
     @SuppressWarnings("unchecked")
     void dispatchesRespectingGivenStrategy() {
         final var captor = ArgumentCaptor.forClass(Predicate.class);
-        given(strategy.decideFor(A_CONTRACT_KEY)).willReturn(Decision.VALID);
+        given(strategy.decideFor(TestHelpers.A_CONTRACT_KEY)).willReturn(Decision.VALID);
         given(strategy.decideFor(AN_ED25519_KEY)).willReturn(Decision.DELEGATE_TO_CRYPTOGRAPHIC_VERIFICATION);
-        given(strategy.decideFor(B_SECP256K1_KEY)).willReturn(Decision.DELEGATE_TO_CRYPTOGRAPHIC_VERIFICATION);
-        given(strategy.decideFor(A_SECP256K1_KEY)).willReturn(Decision.INVALID);
+        given(strategy.decideFor(TestHelpers.B_SECP256K1_KEY))
+                .willReturn(Decision.DELEGATE_TO_CRYPTOGRAPHIC_VERIFICATION);
+        given(strategy.decideFor(TestHelpers.A_SECP256K1_KEY)).willReturn(Decision.INVALID);
         given(passed.passed()).willReturn(true);
         given(context.verificationFor(AN_ED25519_KEY)).willReturn(passed);
-        given(context.verificationFor(B_SECP256K1_KEY)).willReturn(failed);
+        given(context.verificationFor(TestHelpers.B_SECP256K1_KEY)).willReturn(failed);
 
         subject.dispatch(TransactionBody.DEFAULT, strategy, A_NEW_ACCOUNT_ID, CryptoTransferRecordBuilder.class);
 
@@ -116,10 +107,10 @@ class HandleSystemContractOperationsTest {
                         captor.capture(),
                         eq(A_NEW_ACCOUNT_ID));
         final var test = captor.getValue();
-        assertTrue(test.test(A_CONTRACT_KEY));
+        assertTrue(test.test(TestHelpers.A_CONTRACT_KEY));
         assertTrue(test.test(AN_ED25519_KEY));
-        assertFalse(test.test(A_SECP256K1_KEY));
-        assertFalse(test.test(B_SECP256K1_KEY));
+        assertFalse(test.test(TestHelpers.A_SECP256K1_KEY));
+        assertFalse(test.test(TestHelpers.B_SECP256K1_KEY));
     }
 
     @Test

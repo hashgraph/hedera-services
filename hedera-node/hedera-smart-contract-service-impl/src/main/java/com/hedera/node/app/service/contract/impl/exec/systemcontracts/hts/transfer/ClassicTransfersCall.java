@@ -131,7 +131,7 @@ public class ClassicTransfersCall extends AbstractHtsCall {
             recordBuilder = systemContractOperations()
                     .dispatch(retryTransfer, verificationStrategy, spenderId, CryptoTransferRecordBuilder.class);
         }
-        return completionWith(recordBuilder.status());
+        return completionWith(standardized(recordBuilder.status()));
     }
 
     private PricedResult completionWith(@NonNull final ResponseCodeEnum status) {

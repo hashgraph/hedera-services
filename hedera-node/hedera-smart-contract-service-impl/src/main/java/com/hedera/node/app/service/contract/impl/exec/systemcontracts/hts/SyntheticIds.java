@@ -69,7 +69,7 @@ public class SyntheticIds {
         };
     }
 
-    private @NonNull AccountID syntheticIdFor(
+    private static @NonNull AccountID syntheticIdFor(
             @NonNull final Address address, @NonNull final HederaNativeOperations nativeOperations) {
         return internalSyntheticId(false, address, nativeOperations);
     }
