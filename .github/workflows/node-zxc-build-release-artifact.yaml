@@ -494,7 +494,6 @@ jobs:
     runs-on: [ self-hosted, Linux, large, ephemeral ]
     needs:
       - validate
-      - build-artifact
     steps:
       - name: Checkout Code
         uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4.0.0
@@ -541,7 +540,7 @@ jobs:
           gradle-version: ${{ inputs.gradle-version }}
           arguments: githubVersionSummary --scan
 
-      - name: Gradle Maven Central Release (New Gradle)
+      - name: Gradle Maven Central Release
         uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
         if: ${{ inputs.dry-run-enabled != true && inputs.version-policy == 'specified' && !cancelled() && !failure() }}
         env:
@@ -551,7 +550,7 @@ jobs:
           gradle-version: ${{ inputs.gradle-version }}
           arguments: -p hedera-node/hedera-evm releaseMavenCentral --scan
 
-      - name: Gradle Maven Central Snapshot (New Gradle)
+      - name: Gradle Maven Central Snapshot
         uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
         if: ${{ inputs.dry-run-enabled != true && inputs.version-policy != 'specified' && !cancelled() && !failure() }}
         env:

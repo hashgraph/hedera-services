@@ -96,6 +96,8 @@ jobs:
       access-token: ${{ secrets.GITHUB_TOKEN }}
       bucket-name: ${{ secrets.RELEASE_ARTIFACT_BUCKET_NAME }}
       jenkins-integration-url: ${{ secrets.RELEASE_JENKINS_INTEGRATION_URL }}
+      svcs-ossrh-username: ${{ secrets.SVCS_OSSRH_USERNAME }}
+      svcs-ossrh-password: ${{ secrets.SVCS_OSSRH_PASSWORD }}
 
   release-branch:
     name: Release [Branch]
@@ -108,6 +110,8 @@ jobs:
       access-token: ${{ secrets.GITHUB_TOKEN }}
       bucket-name: ${{ secrets.RELEASE_ARTIFACT_BUCKET_NAME }}
       jenkins-integration-url: ${{ secrets.RELEASE_JENKINS_INTEGRATION_URL }}
+      svcs-ossrh-username: ${{ secrets.SVCS_OSSRH_USERNAME }}
+      svcs-ossrh-password: ${{ secrets.SVCS_OSSRH_PASSWORD }}
 
 #  prepare-mc-release:
 #    name: Release / MC / Prepare
