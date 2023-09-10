@@ -35,13 +35,12 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Synthe
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.balanceof.BalanceOfCall;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
-
-import java.util.ArrayDeque;
-import java.util.Deque;
 
 class HtsCallFactoryTest extends HtsCallTestBase {
     @Mock
@@ -52,11 +51,13 @@ class HtsCallFactoryTest extends HtsCallTestBase {
 
     @Mock
     private DecodingStrategies decodingStrategies;
+
     @Mock
     private SyntheticIds syntheticIds;
 
     @Mock
     private MessageFrame frame;
+
     @Mock
     private MessageFrame initialFrame;
 
@@ -74,7 +75,8 @@ class HtsCallFactoryTest extends HtsCallTestBase {
 
     @Test
     void instantiatesCallWithInContextEnhancementAndDelegateCallInfo() {
-        given(initialFrame.getContextVariable(FrameUtils.CONFIG_CONTEXT_VARIABLE)).willReturn(DEFAULT_CONFIG);
+        given(initialFrame.getContextVariable(FrameUtils.CONFIG_CONTEXT_VARIABLE))
+                .willReturn(DEFAULT_CONFIG);
         stack.push(initialFrame);
         stack.addFirst(frame);
         given(frame.getMessageFrameStack()).willReturn(stack);

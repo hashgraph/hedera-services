@@ -37,8 +37,7 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
     private final HtsCallFactory callFactory;
 
     @Inject
-    public HtsSystemContract(
-            @NonNull final GasCalculator gasCalculator, @NonNull final HtsCallFactory callFactory) {
+    public HtsSystemContract(@NonNull final GasCalculator gasCalculator, @NonNull final HtsCallFactory callFactory) {
         super(HTS_PRECOMPILE_NAME, gasCalculator);
         this.callFactory = requireNonNull(callFactory);
     }

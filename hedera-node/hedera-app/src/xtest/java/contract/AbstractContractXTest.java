@@ -66,7 +66,6 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallFactory;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.SyntheticIds;
-import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.ContractSchema;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
@@ -118,6 +117,7 @@ public abstract class AbstractContractXTest {
 
     @Mock
     private MessageFrame frame;
+
     @Mock
     private MessageFrame initialFrame;
 
@@ -134,12 +134,8 @@ public abstract class AbstractContractXTest {
     @BeforeEach
     void setUp() {
         scaffoldingComponent = DaggerScaffoldingComponent.factory().create(metrics);
-        callAttemptFactory =
-                new HtsCallFactory(
-                        LIVE_SYNTHETIC_IDS,
-                        addressChecks,
-                        LIVE_DECODING_STRATEGIES,
-                        LIVE_VERIFICATION_STRATEGIES);
+        callAttemptFactory = new HtsCallFactory(
+                LIVE_SYNTHETIC_IDS, addressChecks, LIVE_DECODING_STRATEGIES, LIVE_VERIFICATION_STRATEGIES);
     }
 
     @Test

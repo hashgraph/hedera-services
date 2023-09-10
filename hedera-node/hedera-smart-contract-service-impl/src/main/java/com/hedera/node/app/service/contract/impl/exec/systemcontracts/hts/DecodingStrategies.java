@@ -16,9 +16,19 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.explicitFromHeadlong;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
+
+import com.esaulpaugh.headlong.abi.Address;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.NftTransfer;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TokenTransferList;
+import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersCall;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.math.BigInteger;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -32,13 +42,19 @@ public class DecodingStrategies {
         // Dagger2
     }
 
+    enum IsApproval {
+        TRUE,
+        FALSE
+    }
+
     /**
      * Decodes a call to {@link ClassicTransfersCall#CRYPTO_TRANSFER} into a synthetic {@link TransactionBody}.
      *
      * @param encoded the encoded call
      * @return the synthetic transaction body
      */
-    public TransactionBody decodeCryptoTransfer(@NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
+    public TransactionBody decodeCryptoTransfer(
+            @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
         throw new AssertionError("Not implemented");
     }
 
@@ -48,7 +64,8 @@ public class DecodingStrategies {
      * @param encoded the encoded call
      * @return the synthetic transaction body
      */
-    public TransactionBody decodeCryptoTransferV2(@NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
+    public TransactionBody decodeCryptoTransferV2(
+            @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
         throw new AssertionError("Not implemented");
     }
 
@@ -58,7 +75,8 @@ public class DecodingStrategies {
      * @param encoded the encoded call
      * @return the synthetic transaction body
      */
-    public TransactionBody decodeTransferTokens(@NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
+    public TransactionBody decodeTransferTokens(
+            @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
         throw new AssertionError("Not implemented");
     }
 
@@ -68,7 +86,8 @@ public class DecodingStrategies {
      * @param encoded the encoded call
      * @return the synthetic transaction body
      */
-    public TransactionBody decodeTransferToken(@NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
+    public TransactionBody decodeTransferToken(
+            @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
         throw new AssertionError("Not implemented");
     }
 
@@ -78,7 +97,8 @@ public class DecodingStrategies {
      * @param encoded the encoded call
      * @return the synthetic transaction body
      */
-    public TransactionBody decodeTransferNfts(@NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
+    public TransactionBody decodeTransferNfts(
+            @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
         throw new AssertionError("Not implemented");
     }
 
@@ -88,7 +108,8 @@ public class DecodingStrategies {
      * @param encoded the encoded call
      * @return the synthetic transaction body
      */
-    public TransactionBody decodeTransferNft(@NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
+    public TransactionBody decodeTransferNft(
+            @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
         throw new AssertionError("Not implemented");
     }
 
@@ -98,7 +119,8 @@ public class DecodingStrategies {
      * @param encoded the encoded call
      * @return the synthetic transaction body
      */
-    public TransactionBody decodeHrcTransferFrom(@NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
+    public TransactionBody decodeHrcTransferFrom(
+            @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
         throw new AssertionError("Not implemented");
     }
 
@@ -108,7 +130,60 @@ public class DecodingStrategies {
      * @param encoded the encoded call
      * @return the synthetic transaction body
      */
-    public TransactionBody decodeHrcTransferNftFrom(@NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
-        throw new AssertionError("Not implemented");
+    public TransactionBody decodeHrcTransferNftFrom(
+            @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
+        final var call = ClassicTransfersCall.HRC_TRANSFER_NFT_FROM.decodeCall(encoded);
+        return bodyOf(tokenTransfers(ownershipChanges(
+                asTokenId(call.get(0)),
+                addressIdConverter.convert(call.get(1)),
+                addressIdConverter.convertCredit(call.get(2)),
+                exactLongValueOrThrow(call.get(3)),
+                IsApproval.TRUE)));
+    }
+
+    private CryptoTransferTransactionBody.Builder tokenTransfers(
+            @NonNull final TokenTransferList... tokenTransferList) {
+        return CryptoTransferTransactionBody.newBuilder().tokenTransfers(tokenTransferList);
+    }
+
+    private TokenTransferList ownershipChanges(
+            @NonNull final TokenID tokenId,
+            @NonNull final AccountID from,
+            @NonNull final AccountID to,
+            final long serialNo,
+            final IsApproval isApproval) {
+        return TokenTransferList.newBuilder()
+                .token(tokenId)
+                .nftTransfers(ownershipChange(from, to, serialNo, isApproval))
+                .build();
+    }
+
+    private NftTransfer ownershipChange(
+            @NonNull final AccountID from,
+            @NonNull final AccountID to,
+            final long serialNo,
+            final IsApproval isApproval) {
+        return NftTransfer.newBuilder()
+                .serialNumber(serialNo)
+                .senderAccountID(from)
+                .receiverAccountID(to)
+                .isApproval(isApproval == IsApproval.TRUE)
+                .build();
+    }
+
+    private TransactionBody bodyOf(@NonNull final CryptoTransferTransactionBody.Builder cryptoTransfer) {
+        return TransactionBody.newBuilder().cryptoTransfer(cryptoTransfer).build();
+    }
+
+    private long exactLongValueOrThrow(@NonNull final BigInteger value) {
+        return value.longValueExact();
+    }
+
+    private TokenID asTokenId(@NonNull final Address address) {
+        // Mono-service ignores the shard and realm, c.f. DecodingFacade#convertAddressBytesToTokenID(),
+        // so we continue to do that here; might want to revisit this later
+        return TokenID.newBuilder()
+                .tokenNum(numberOfLongZero(explicitFromHeadlong(address)))
+                .build();
     }
 }

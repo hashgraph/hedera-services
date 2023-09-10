@@ -68,6 +68,7 @@ public class ClassicTransfersCall extends AbstractHtsCall {
             new Function("transferFromNFT(address,address,address,uint256)", ReturnTypes.INT);
 
     private final TransactionBody nominalBody;
+
     @Nullable
     private final ApprovalSwitchHelper approvalSwitchHelper;
 

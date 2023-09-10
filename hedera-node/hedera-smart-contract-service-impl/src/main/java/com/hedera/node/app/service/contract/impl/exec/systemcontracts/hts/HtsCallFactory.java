@@ -61,14 +61,13 @@ public class HtsCallFactory {
         requireNonNull(input);
         requireNonNull(frame);
         final var enhancement = proxyUpdaterFor(frame).enhancement();
-        final var attempt =
-                new HtsCallAttempt(
-                        input,
-                        enhancement,
-                        configOf(frame),
-                        decodingStrategies,
-                        syntheticIds.converterFor(enhancement.nativeOperations()),
-                        verificationStrategies);
+        final var attempt = new HtsCallAttempt(
+                input,
+                enhancement,
+                configOf(frame),
+                decodingStrategies,
+                syntheticIds.converterFor(enhancement.nativeOperations()),
+                verificationStrategies);
         return requireNonNull(attempt.asCallFrom(frame.getSenderAddress(), addressChecks.hasParentDelegateCall(frame)));
     }
 }

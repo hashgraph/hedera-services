@@ -16,8 +16,11 @@
 
 package com.hedera.node.app.service.contract.impl.test;
 
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmAddress;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asHeadlongAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToBesuAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniBytes;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static java.util.Objects.requireNonNull;
@@ -175,8 +178,14 @@ public class TestHelpers {
             FileID.newBuilder().fileNum(7890L).build();
     public static final TokenID FUNGIBLE_TOKEN_ID =
             TokenID.newBuilder().tokenNum(9876L).build();
+    public static final com.esaulpaugh.headlong.abi.Address FUNGIBLE_TOKEN_HEADLONG_ADDRESS =
+            asHeadlongAddress(asEvmAddress(FUNGIBLE_TOKEN_ID.tokenNum()));
     public static final TokenID NON_FUNGIBLE_TOKEN_ID =
             TokenID.newBuilder().tokenNum(9898L).build();
+
+    public static final com.esaulpaugh.headlong.abi.Address NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS =
+            asHeadlongAddress(asEvmAddress(NON_FUNGIBLE_TOKEN_ID.tokenNum()));
+
     public static final Token FUNGIBLE_TOKEN = Token.newBuilder()
             .tokenId(FUNGIBLE_TOKEN_ID)
             .name("Fungible Token")
@@ -383,6 +392,31 @@ public class TestHelpers {
 
     public static final VerificationStrategy MOCK_VERIFICATION_STRATEGY =
             new ActiveContractVerificationStrategy(1, Bytes.EMPTY, true);
+    public static final AccountID OWNER_ID =
+            AccountID.newBuilder().accountNum(121212L).build();
+    public static final Bytes OWNER_ADDRESS = Bytes.fromHex("a213624b8b83a724438159ba7c0d333a2b6b3990");
+    public static final com.esaulpaugh.headlong.abi.Address OWNER_HEADLONG_ADDRESS =
+            asHeadlongAddress(OWNER_ADDRESS.toByteArray());
+    public static final Address OWNER_BESU_ADDRESS = pbjToBesuAddress(OWNER_ADDRESS);
+    public static final AccountID UNAUTHORIZED_SPENDER_ID =
+            AccountID.newBuilder().accountNum(999999L).build();
+    public static final Bytes UNAUTHORIZED_SPENDER_ADDRESS = Bytes.fromHex("b284224b8b83a724438cc3cc7c0d333a2b6b3222");
+    public static final com.esaulpaugh.headlong.abi.Address UNAUTHORIZED_SPENDER_HEADLONG_ADDRESS =
+            asHeadlongAddress(UNAUTHORIZED_SPENDER_ADDRESS.toByteArray());
+    public static final Address UNAUTHORIZED_SPENDER_BESU_ADDRESS = pbjToBesuAddress(UNAUTHORIZED_SPENDER_ADDRESS);
+    public static final AccountID APPROVED_ID =
+            AccountID.newBuilder().accountNum(8888888L).build();
+    public static final Bytes APPROVED_ADDRESS = Bytes.fromHex("aa1e6a49898ea7a44e81599a7c0deeeaa969e990");
+    public static final com.esaulpaugh.headlong.abi.Address APPROVED_HEADLONG_ADDRESS =
+            asHeadlongAddress(APPROVED_ADDRESS.toByteArray());
+    public static final Address APPROVED_BESU_ADDRESS = pbjToBesuAddress(APPROVED_ADDRESS);
+
+    public static final AccountID RECEIVER_ID =
+            AccountID.newBuilder().accountNum(7773777L).build();
+    public static final Bytes RECEIVER_ADDRESS = Bytes.fromHex("3b1ef340808e37344e8150037c0deee33060e123");
+    public static final com.esaulpaugh.headlong.abi.Address RECEIVER_HEADLONG_ADDRESS =
+            asHeadlongAddress(RECEIVER_ADDRESS.toByteArray());
+    public static final Address RECEIVER_BESU_ADDRESS = pbjToBesuAddress(RECEIVER_ADDRESS);
 
     public static void assertSameResult(
             final Operation.OperationResult expected, final Operation.OperationResult actual) {
