@@ -61,3 +61,5 @@ jobs:
       bucket-name: ${{ secrets.RELEASE_ARTIFACT_BUCKET_NAME }}
       svcs-ossrh-username: ${{ secrets.SVCS_OSSRH_USERNAME }}
       svcs-ossrh-password: ${{ secrets.SVCS_OSSRH_PASSWORD }}
+      svcs-gpg-key-contents: ${{ secrets.SVCS_GPG_KEY_CONTENTS }}
+      svcs-gpg-key-passphrase: ${{ secrets.SVCS_GPG_KEY_PASSPHRASE }}
