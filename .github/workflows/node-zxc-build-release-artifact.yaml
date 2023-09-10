@@ -47,7 +47,7 @@ on:
         description: "Java JDK Version:"
         type: string
         required: false
-        default: "17.0.3"
+        default: "17.0.8"
       gradle-version:
         description: "Gradle Version:"
         type: string
@@ -59,6 +59,10 @@ on:
         required: true
       bucket-name:
         required: true
+      svcs-ossrh-username:
+        required: false
+      svcs-ossrh-password:
+        required: false
       jenkins-integration-url:
         required: false
 
@@ -135,7 +139,6 @@ jobs:
       - name: Setup Gradle
         uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
         with:
-          build-root-directory: hedera-node
           gradle-version: ${{ inputs.gradle-version }}
           gradle-home-cache-includes: |
             caches
@@ -146,12 +149,14 @@ jobs:
         uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
         if: ${{ inputs.version-policy == 'specified' && !cancelled() && !failure() }}
         with:
+          gradle-version: ${{ inputs.gradle-version }}
           arguments: versionAsSpecified -PnewVersion=${{ inputs.new-version }} --scan
 
       - name: Gradle Update Version (Branch Commit)
         uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
         if: ${{ inputs.version-policy != 'specified' && !cancelled() && !failure() }}
         with:
+          gradle-version: ${{ inputs.gradle-version }}
           arguments: versionAsPrefixedCommit -PcommitPrefix=${{ steps.parameters.outputs.commit-prefix }} --scan
 
       - name: Compute Final Effective Version
@@ -235,7 +240,6 @@ jobs:
       - name: Setup Gradle
         uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
         with:
-          build-root-directory: hedera-node
           gradle-version: ${{ inputs.gradle-version }}
           gradle-home-cache-includes: |
             caches
@@ -259,11 +263,13 @@ jobs:
         id: gradle-build
         uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
         with:
+          gradle-version: ${{ inputs.gradle-version }}
           arguments: assemble --scan
 
       - name: Gradle Version Summary
         uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
         with:
+          gradle-version: ${{ inputs.gradle-version }}
           arguments: githubVersionSummary --scan
 
       - name: Stage Artifact Build Folder
@@ -482,3 +488,75 @@ jobs:
             "linux/amd64, linux/arm64" >> "${GITHUB_STEP_SUMMARY}"
 
           printf "\n\n" >> "${GITHUB_STEP_SUMMARY}"
+
+  evm-mc-publish:
+    name: Publish EVM to Maven Central
+    runs-on: [ self-hosted, Linux, large, ephemeral ]
+    needs:
+      - validate
+      - build-artifact
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4.0.0
+
+      - name: Setup Java
+        uses: actions/setup-java@cd89f46ac9d01407894225f350157564c9c7cee2 # v3.12.0
+        with:
+          distribution: ${{ inputs.java-distribution }}
+          java-version: ${{ inputs.java-version }}
+
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
+        with:
+          gradle-version: ${{ inputs.gradle-version }}
+          gradle-home-cache-includes: |
+            caches
+            notifications
+            jdks
+
+      - name: Restore Build Version
+        uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
+        with:
+          fail-on-cache-miss: true
+          path: version.txt
+          key: node-build-version-${{ needs.validate.outputs.version }}-${{ github.sha }}
+
+      - name: Gradle Update Version (Snapshot)
+        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
+        if: ${{ inputs.version-policy != 'specified' && !cancelled() && !failure() }}
+        with:
+          gradle-version: ${{ inputs.gradle-version }}
+          arguments: versionAsSnapshot --scan
+
+      - name: Gradle Assemble
+        id: gradle-build
+        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
+        with:
+          gradle-version: ${{ inputs.gradle-version }}
+          arguments: assemble --scan
+
+      - name: Gradle Version Summary
+        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
+        with:
+          gradle-version: ${{ inputs.gradle-version }}
+          arguments: githubVersionSummary --scan
+
+      - name: Gradle Maven Central Release (New Gradle)
+        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
+        if: ${{ inputs.dry-run-enabled != true && inputs.version-policy == 'specified' && !cancelled() && !failure() }}
+        env:
+          OSSRH_USERNAME: ${{ secrets.svcs-ossrh-username }}
+          OSSRH_PASSWORD: ${{ secrets.svcs-ossrh-password }}
+        with:
+          gradle-version: ${{ inputs.gradle-version }}
+          arguments: -p hedera-node/hedera-evm releaseMavenCentral --scan
+
+      - name: Gradle Maven Central Snapshot (New Gradle)
+        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
+        if: ${{ inputs.dry-run-enabled != true && inputs.version-policy != 'specified' && !cancelled() && !failure() }}
+        env:
+          OSSRH_USERNAME: ${{ secrets.svcs-ossrh-username }}
+          OSSRH_PASSWORD: ${{ secrets.svcs-ossrh-password }}
+        with:
+          gradle-version: ${{ inputs.gradle-version }}
+          arguments: -p hedera-node/hedera-evm releaseMavenCentralSnapshot --scan
