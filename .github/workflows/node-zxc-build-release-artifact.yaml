@@ -74,6 +74,9 @@ defaults:
   run:
     shell: bash
 
+env:
+  LC_ALL: C.UTF-8
+
 permissions:
   id-token: write
   contents: read
