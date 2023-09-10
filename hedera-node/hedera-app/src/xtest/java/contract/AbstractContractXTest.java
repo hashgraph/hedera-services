@@ -136,10 +136,12 @@ public abstract class AbstractContractXTest {
 
         doScenarioOperations();
 
+        assertExpectedNfts(finalNfts());
         assertExpectedAliases(finalAliases());
         assertExpectedAccounts(finalAccounts());
         assertExpectedBytecodes(finalBytecodes());
         assertExpectedStorage(finalStorage(), finalAccounts());
+        assertExpectedTokenRelations(finalTokenRelations());
     }
 
     protected long initialEntityNum() {
@@ -177,6 +179,8 @@ public abstract class AbstractContractXTest {
     protected void assertExpectedStorage(
             @NonNull ReadableKVState<SlotKey, SlotValue> storage,
             @NonNull ReadableKVState<AccountID, Account> accounts) {}
+
+    protected void assertExpectedNfts(@NonNull ReadableKVState<NftID, Nft> nfts) {}
 
     protected void assertExpectedAliases(@NonNull ReadableKVState<ProtoBytes, AccountID> aliases) {}
 
@@ -228,10 +232,6 @@ public abstract class AbstractContractXTest {
             final var actualReason =
                     ResponseCodeEnum.fromString(new String(result.getOutput().toArrayUnsafe()));
             assertEquals(status, actualReason);
-            //            final var impliedReason =
-            //
-            // org.apache.tuweni.bytes.Bytes.wrap(status.protoName().getBytes(StandardCharsets.UTF_8));
-            //            assertEquals(impliedReason, result.getOutput());
         }));
     }
 
@@ -267,6 +267,8 @@ public abstract class AbstractContractXTest {
 
         final var pricedResult = call.execute();
         resultAssertions.accept(pricedResult);
+        // Note that committing a reverted calls should have no effect on state
+        ((SavepointStackImpl) context.savepointStack()).commitFullStack();
     }
 
     protected void answerSingleQuery(
@@ -397,6 +399,13 @@ public abstract class AbstractContractXTest {
         scaffoldingComponent.exchangeRateManager().init(state, ExchangeRateSet.PROTOBUF.toBytes(midnightRates));
     }
 
+    private ReadableKVState<NftID, Nft> finalNfts() {
+        return scaffoldingComponent
+                .hederaState()
+                .createReadableStates(TokenServiceImpl.NAME)
+                .get(TokenServiceImpl.NFTS_KEY);
+    }
+
     private ReadableKVState<ProtoBytes, AccountID> finalAliases() {
         return scaffoldingComponent
                 .hederaState()
@@ -459,5 +468,9 @@ public abstract class AbstractContractXTest {
                 org.apache.tuweni.bytes.Bytes.wrap(HtsCallAttempt.REDIRECT_FOR_TOKEN.selector()),
                 tokenAddress,
                 org.apache.tuweni.bytes.Bytes.of(subSelector));
+    }
+
+    public static org.apache.tuweni.bytes.Bytes asBytesResult(final ByteBuffer encoded) {
+        return org.apache.tuweni.bytes.Bytes.wrap(encoded.array());
     }
 }

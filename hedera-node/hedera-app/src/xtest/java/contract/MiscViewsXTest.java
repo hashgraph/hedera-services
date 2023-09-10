@@ -25,7 +25,6 @@ import static contract.MiscViewsXTestConstants.ERC20_NAME;
 import static contract.MiscViewsXTestConstants.ERC20_SUPPLY;
 import static contract.MiscViewsXTestConstants.ERC20_SYMBOL;
 import static contract.MiscViewsXTestConstants.ERC20_TOKEN_ADDRESS;
-import static contract.MiscViewsXTestConstants.ERC20_TOKEN_ID;
 import static contract.MiscViewsXTestConstants.ERC20_USER_BALANCE;
 import static contract.MiscViewsXTestConstants.ERC721_IS_OPERATOR;
 import static contract.MiscViewsXTestConstants.ERC721_NAME;
@@ -59,6 +58,7 @@ import static contract.MiscViewsXTestConstants.SPECIAL_QUERIES_X_TEST_ID;
 import static contract.MiscViewsXTestConstants.TINYBARS;
 import static contract.MiscViewsXTestConstants.UNCOVERED_SECRET;
 import static contract.MiscViewsXTestConstants.VIEWS_INITCODE_FILE_ID;
+import static contract.XTestConstants.ERC20_TOKEN_ID;
 import static contract.XTestConstants.ERC721_TOKEN_ADDRESS;
 import static contract.XTestConstants.ERC721_TOKEN_ID;
 

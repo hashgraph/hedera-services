@@ -46,6 +46,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ownero
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.symbol.SymbolCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokenuri.TokenUriCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.totalsupply.TotalSupplyCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc20TransfersCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc721TransferFromCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.TransferCall;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
@@ -67,7 +68,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
 
     @Test
     void nonLongZeroAddressesArentTokens() {
-        final var input = TestHelpers.bytesForRedirect(TransferCall.ERC_20_TRANSFER.selector(), EIP_1014_ADDRESS);
+        final var input = TestHelpers.bytesForRedirect(Erc20TransfersCall.ERC_20_TRANSFER.selector(), EIP_1014_ADDRESS);
         final var subject = new HtsCallAttempt(input, mockEnhancement(), verificationStrategies);
         assertNull(subject.redirectToken());
         verifyNoInteractions(nativeOperations);
@@ -158,7 +159,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
         given(nativeOperations.getToken(numberOfLongZero(NON_SYSTEM_LONG_ZERO_ADDRESS)))
                 .willReturn(NON_FUNGIBLE_TOKEN);
         final var input = TestHelpers.bytesForRedirect(
-                Erc721TransferFromCall.TRANSFER_FROM
+                Erc721TransferFromCall.ERC_721_TRANSFER_FROM
                         .encodeCallWithArgs(
                                 asHeadlongAddress(EIP_1014_ADDRESS),
                                 asHeadlongAddress(NON_SYSTEM_LONG_ZERO_ADDRESS),
@@ -171,6 +172,39 @@ class HtsCallAttemptTest extends HtsCallTestBase {
         assertInstanceOf(Erc721TransferFromCall.class, subject.asCallFrom(EIP_1014_ADDRESS, true));
     }
 
+    @Test
+    void constructsErc20TransferFromRedirectToFungible() {
+        given(nativeOperations.getToken(numberOfLongZero(NON_SYSTEM_LONG_ZERO_ADDRESS)))
+                .willReturn(FUNGIBLE_TOKEN);
+        final var input = TestHelpers.bytesForRedirect(
+                Erc20TransfersCall.ERC_20_TRANSFER_FROM
+                        .encodeCallWithArgs(
+                                asHeadlongAddress(EIP_1014_ADDRESS),
+                                asHeadlongAddress(NON_SYSTEM_LONG_ZERO_ADDRESS),
+                                BigInteger.TWO)
+                        .array(),
+                NON_SYSTEM_LONG_ZERO_ADDRESS);
+        given(verificationStrategies.onlyActivatingContractKeys(EIP_1014_ADDRESS, nativeOperations, true))
+                .willReturn(strategy);
+        final var subject = new HtsCallAttempt(input, mockEnhancement(), verificationStrategies);
+        assertInstanceOf(Erc20TransfersCall.class, subject.asCallFrom(EIP_1014_ADDRESS, true));
+    }
+
+    @Test
+    void constructsErc20TransferRedirectToFungible() {
+        given(nativeOperations.getToken(numberOfLongZero(NON_SYSTEM_LONG_ZERO_ADDRESS)))
+                .willReturn(FUNGIBLE_TOKEN);
+        final var input = TestHelpers.bytesForRedirect(
+                Erc20TransfersCall.ERC_20_TRANSFER
+                        .encodeCallWithArgs(asHeadlongAddress(NON_SYSTEM_LONG_ZERO_ADDRESS), BigInteger.TWO)
+                        .array(),
+                NON_SYSTEM_LONG_ZERO_ADDRESS);
+        given(verificationStrategies.onlyActivatingContractKeys(EIP_1014_ADDRESS, nativeOperations, true))
+                .willReturn(strategy);
+        final var subject = new HtsCallAttempt(input, mockEnhancement(), verificationStrategies);
+        assertInstanceOf(Erc20TransfersCall.class, subject.asCallFrom(EIP_1014_ADDRESS, true));
+    }
+
     @ParameterizedTest
     @CsvSource({
         "false,false,0x189a554c",
@@ -181,10 +215,6 @@ class HtsCallAttemptTest extends HtsCallTestBase {
         "false,false,0x2c4ba191",
         "false,false,0x15dacbea",
         "false,false,0x9b23d3d9",
-        "false,true,0xa9059cbb",
-        "false,true,0x23b872dd",
-        "true,true,0xa9059cbb",
-        "true,true,0x23b872dd",
     })
     void constructsTransfers(boolean useExplicitCall, boolean isRedirect, String hexedSelector) {
         final var selector = CommonUtils.unhex(hexedSelector.substring(2));

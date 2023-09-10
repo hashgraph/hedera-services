@@ -34,6 +34,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ownero
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.symbol.SymbolCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokenuri.TokenUriCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.totalsupply.TotalSupplyCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc20TransfersCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc721TransferFromCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.TransferCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
@@ -109,7 +110,7 @@ public class HtsCallAttempt {
      * Call attempts could refer to a,
      * <ul>
      *   <li>[x] TRANSFER (ERCTransferPrecompile, TransferPrecompile)</li>
-     *   <li>[x] MINT_UNITS (MintPrecompile)</li>
+     *   <li>[ ] MINT_UNITS (MintPrecompile)</li>
      *   <li>[ ] MINT_NFTS (MintPrecompile)</li>
      *   <li>[ ] BURN_UNITS (BurnPrecompile)</li>
      *   <li>[ ] BURN_SERIAL_NOS (BurnPrecompile)</li>
@@ -159,14 +160,16 @@ public class HtsCallAttempt {
      *   <li>[ ] UPDATE_TOKEN (TokenUpdatePrecompile)</li>
      * </ul>
      *
-     * @param senderAddress                      the address of the sender of the call
+     * @param senderAddress          the address of the sender of the call
      * @param needingDelegatableKeys whether the sender needs delegatable contract keys to be authorized
      * @return the call, or null if it couldn't be translated
      */
     public @Nullable HtsCall asCallFrom(@NonNull final Address senderAddress, final boolean needingDelegatableKeys) {
         requireNonNull(senderAddress);
         if (Erc721TransferFromCall.matches(this)) {
-            return Erc721TransferFromCall.from(this, senderAddress, needingDelegatableKeys, verificationStrategies);
+            return Erc721TransferFromCall.from(this, senderAddress, needingDelegatableKeys);
+        } else if (Erc20TransfersCall.matches(this)) {
+            return Erc20TransfersCall.from(this, senderAddress, needingDelegatableKeys);
         } else if (TransferCall.matches(selector)) {
             return TransferCall.from(this, senderAddress);
         } else if (MintCall.matches(selector)) {
@@ -190,6 +193,15 @@ public class HtsCallAttempt {
         } else {
             return null;
         }
+    }
+
+    /**
+     * Returns the verification strategies for this call.
+     *
+     * @return the verification strategies for this call
+     */
+    public VerificationStrategies verificationStrategies() {
+        return verificationStrategies;
     }
 
     /**

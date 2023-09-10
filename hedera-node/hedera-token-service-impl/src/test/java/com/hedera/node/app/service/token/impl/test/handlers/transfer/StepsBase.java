@@ -223,7 +223,6 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
                     return cryptoCreateRecordBuilder.accountID(asAccount(hbarReceiver));
                 })
                 .will((invocation) -> {
-                    System.out.println("SECOND");
                     final var copy = account.copyBuilder()
                             .alias(edKeyAlias.value())
                             .accountId(AccountID.newBuilder().accountNum(tokenReceiver))

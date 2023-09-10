@@ -80,4 +80,5 @@ class XTestConstants {
     static final Bytes SN_2345_METADATA = Bytes.wrap("https://example.com/721/" + 2345);
     static final com.esaulpaugh.headlong.abi.Address ERC721_TOKEN_ADDRESS = AbstractContractXTest.asHeadlongAddress(
             asLongZeroAddress(ERC721_TOKEN_ID.tokenNum()).toArray());
+    static final TokenID ERC20_TOKEN_ID = TokenID.newBuilder().tokenNum(1027L).build();
 }

@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer;
 
-import static com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE;
+import static com.hedera.hapi.node.base.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
@@ -26,8 +26,8 @@ import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Function;
+import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
@@ -36,20 +36,27 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
 import java.util.Arrays;
 
 /**
- * Implements the ERC-721 {@code transferFrom()} call of the HTS contract.
+ * Implements the ERC-20 {@code transfer()} and {@code transferFrom()} calls of the HTS contract.
  */
-public class Erc721TransferFromCall extends AbstractHtsCall {
-    public static final Function ERC_721_TRANSFER_FROM = new Function("transferFrom(address,address,uint256)");
+public class Erc20TransfersCall extends AbstractHtsCall {
+    public static final Function ERC_20_TRANSFER = new Function("transfer(address,uint256)", ReturnTypes.BOOL);
+    public static final Function ERC_20_TRANSFER_FROM =
+            new Function("transferFrom(address,address,uint256)", ReturnTypes.BOOL);
 
-    private final long serialNo;
+    private final long amount;
+
+    @Nullable
     private final Address from;
+
     private final Address to;
     private final TokenID tokenId;
     private final VerificationStrategy verificationStrategy;
@@ -58,24 +65,23 @@ public class Erc721TransferFromCall extends AbstractHtsCall {
 
     // too many parameters
     @SuppressWarnings("java:S107")
-    public Erc721TransferFromCall(
-            final long serialNo,
-            @NonNull final Address from,
+    public Erc20TransfersCall(
+            @NonNull final HederaWorldUpdater.Enhancement enhancement,
+            final long amount,
+            @Nullable final Address from,
             @NonNull final Address to,
             @NonNull final TokenID tokenId,
             @NonNull final VerificationStrategy verificationStrategy,
             @NonNull final org.hyperledger.besu.datatypes.Address spender,
-            @NonNull final SynthIdHelper synthIdHelper,
-            @NonNull final HederaWorldUpdater.Enhancement enhancement) {
+            @NonNull final SynthIdHelper synthIdHelper) {
         super(enhancement);
-        this.from = requireNonNull(from);
+        this.amount = amount;
+        this.from = from;
         this.to = requireNonNull(to);
-        this.tokenId = tokenId;
+        this.tokenId = requireNonNull(tokenId);
+        this.verificationStrategy = requireNonNull(verificationStrategy);
         this.spender = requireNonNull(spender);
         this.synthIdHelper = requireNonNull(synthIdHelper);
-        this.verificationStrategy = requireNonNull(verificationStrategy);
-
-        this.serialNo = serialNo;
     }
 
     /**
@@ -83,37 +89,44 @@ public class Erc721TransferFromCall extends AbstractHtsCall {
      */
     @Override
     public @NonNull PricedResult execute() {
-        // C.f. https://eips.ethereum.org/EIPS/eip-721
+        // C.f. https://eips.ethereum.org/EIPS/eip-20
         // TODO - gas calculation
         final var spenderId =
                 synthIdHelper.syntheticIdFor(asHeadlongAddress(spender.toArrayUnsafe()), nativeOperations());
         final var recordBuilder = systemContractOperations()
                 .dispatch(
-                        syntheticTransfer(spenderId),
+                        syntheticTransferOrTransferFrom(spenderId),
                         verificationStrategy,
                         spenderId,
                         CryptoTransferRecordBuilder.class);
         if (recordBuilder.status() != ResponseCodeEnum.SUCCESS) {
             return gasOnly(revertResult(recordBuilder.status(), 0L));
         } else {
-            return gasOnly(successResult(ERC_721_TRANSFER_FROM.getOutputs().encodeElements(), 0L));
+            final var encodedOutput = (from == null)
+                    ? ERC_20_TRANSFER.getOutputs().encodeElements(true)
+                    : ERC_20_TRANSFER_FROM.getOutputs().encodeElements(true);
+            return gasOnly(successResult(encodedOutput, 0L));
         }
     }
 
-    private TransactionBody syntheticTransfer(@NonNull final AccountID spenderId) {
+    private TransactionBody syntheticTransferOrTransferFrom(@NonNull final AccountID spenderId) {
         final var nativeOperations = enhancement.nativeOperations();
-        final var ownerId = synthIdHelper.syntheticIdFor(from, nativeOperations);
         final var receiverId = synthIdHelper.syntheticIdForCredit(to, nativeOperations);
+        final var ownerId = (from == null) ? spenderId : synthIdHelper.syntheticIdFor(from, nativeOperations);
         return TransactionBody.newBuilder()
                 .cryptoTransfer(CryptoTransferTransactionBody.newBuilder()
                         .tokenTransfers(TokenTransferList.newBuilder()
                                 .token(tokenId)
-                                .nftTransfers(NftTransfer.newBuilder()
-                                        .serialNumber(serialNo)
-                                        .senderAccountID(ownerId)
-                                        .receiverAccountID(receiverId)
-                                        .isApproval(!spenderId.equals(ownerId))
-                                        .build())
+                                .transfers(
+                                        AccountAmount.newBuilder()
+                                                .accountID(receiverId)
+                                                .amount(amount)
+                                                .build(),
+                                        AccountAmount.newBuilder()
+                                                .accountID(ownerId)
+                                                .amount(-amount)
+                                                .isApproval(!spenderId.equals(ownerId))
+                                                .build())
                                 .build()))
                 .build();
     }
@@ -127,34 +140,60 @@ public class Erc721TransferFromCall extends AbstractHtsCall {
     public static boolean matches(@NonNull final HtsCallAttempt attempt) {
         requireNonNull(attempt);
         return attempt.isTokenRedirect()
-                && Arrays.equals(attempt.selector(), ERC_721_TRANSFER_FROM.selector())
+                && selectorsInclude(attempt.selector())
                 && attempt.redirectToken() != null
-                && requireNonNull(attempt.redirectToken()).tokenType() == NON_FUNGIBLE_UNIQUE;
+                && requireNonNull(attempt.redirectToken()).tokenType() == FUNGIBLE_COMMON;
     }
 
     /**
-     * Creates a {@link Erc721TransferFromCall} from the given {@code attempt} and {@code senderAddress}.
+     * Creates a {@link Erc20TransfersCall} from the given {@code attempt} and {@code senderAddress}.
      *
-     * @param attempt the attempt to create a {@link TransferCall} from
+     * @param attempt the attempt to create a {@link Erc20TransfersCall} from
      * @param sender  the address of the caller
-     * @param senderNeedsDelegatableContractKeys {@code true} if the {@code sender} needs delegatable contract keys
-     * @return a {@link Erc721TransferFromCall} if the given {@code attempt} is a valid {@link TransferCall}, otherwise {@code null}
+     * @return the appropriate {@link Erc20TransfersCall}
      */
-    public static Erc721TransferFromCall from(
+    public static Erc20TransfersCall from(
             @NonNull final HtsCallAttempt attempt,
             @NonNull final org.hyperledger.besu.datatypes.Address sender,
             final boolean senderNeedsDelegatableContractKeys) {
-        final var call = ERC_721_TRANSFER_FROM.decodeCall(attempt.input().toArrayUnsafe());
-        return new Erc721TransferFromCall(
-                ((BigInteger) call.get(2)).longValueExact(),
-                call.get(0),
-                call.get(1),
+        if (isErc20Transfer(attempt.selector())) {
+            final var call = ERC_20_TRANSFER.decodeCall(attempt.input().toArrayUnsafe());
+            return callFrom(sender, senderNeedsDelegatableContractKeys, null, call.get(0), call.get(1), attempt);
+        } else {
+            final var call = ERC_20_TRANSFER_FROM.decodeCall(attempt.input().toArrayUnsafe());
+            return callFrom(sender, senderNeedsDelegatableContractKeys, call.get(0), call.get(1), call.get(2), attempt);
+        }
+    }
+
+    private static Erc20TransfersCall callFrom(
+            @NonNull final org.hyperledger.besu.datatypes.Address sender,
+            final boolean senderNeedsDelegatableContractKeys,
+            @Nullable final Address from,
+            @NonNull final Address to,
+            @NonNull final BigInteger amount,
+            @NonNull final HtsCallAttempt attempt) {
+        return new Erc20TransfersCall(
+                attempt.enhancement(),
+                amount.longValueExact(),
+                from,
+                to,
                 requireNonNull(attempt.redirectToken()).tokenIdOrThrow(),
                 attempt.verificationStrategies()
                         .onlyActivatingContractKeys(
                                 sender, attempt.enhancement().nativeOperations(), senderNeedsDelegatableContractKeys),
                 sender,
-                SYNTH_ID_HELPER,
-                attempt.enhancement());
+                SYNTH_ID_HELPER);
+    }
+
+    private static boolean selectorsInclude(@NonNull final byte[] selector) {
+        return isErc20Transfer(selector) || isErc20TransferFrom(selector);
+    }
+
+    private static boolean isErc20Transfer(@NonNull final byte[] selector) {
+        return Arrays.equals(selector, ERC_20_TRANSFER.selector());
+    }
+
+    private static boolean isErc20TransferFrom(@NonNull final byte[] selector) {
+        return Arrays.equals(selector, ERC_20_TRANSFER_FROM.selector());
     }
 }

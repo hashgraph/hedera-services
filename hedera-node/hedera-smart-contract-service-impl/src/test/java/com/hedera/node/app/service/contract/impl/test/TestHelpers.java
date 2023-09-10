@@ -534,4 +534,8 @@ public class TestHelpers {
                 tokenAddress,
                 org.apache.tuweni.bytes.Bytes.of(subSelector));
     }
+
+    public static org.apache.tuweni.bytes.Bytes asBytesResult(final ByteBuffer encoded) {
+        return org.apache.tuweni.bytes.Bytes.wrap(encoded.array());
+    }
 }

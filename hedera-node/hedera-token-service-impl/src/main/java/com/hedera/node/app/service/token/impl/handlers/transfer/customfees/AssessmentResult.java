@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -110,13 +111,11 @@ public class AssessmentResult {
             if (fungibleTokenTransfers.isEmpty()) {
                 continue;
             }
-            final var tokenTransferMap = new HashMap<AccountID, Long>();
+            final Map<AccountID, Long> tokenTransferMap = new LinkedHashMap<>();
             for (final var aa : fungibleTokenTransfers) {
                 tokenTransferMap.put(aa.accountID(), aa.amount());
             }
-            if (!tokenTransferMap.isEmpty()) {
-                fungibleTransfersMap.put(tokenId, tokenTransferMap);
-            }
+            fungibleTransfersMap.put(tokenId, tokenTransferMap);
         }
         return fungibleTransfersMap;
     }

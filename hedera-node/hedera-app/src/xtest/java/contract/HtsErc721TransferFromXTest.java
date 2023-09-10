@@ -18,7 +18,7 @@ package contract;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc721TransferFromCall.TRANSFER_FROM;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc721TransferFromCall.ERC_721_TRANSFER_FROM;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmAddress;
 import static contract.HtsErc721TransferXTestConstants.APPROVED_ADDRESS;
 import static contract.HtsErc721TransferXTestConstants.APPROVED_BESU_ADDRESS;
@@ -55,6 +55,7 @@ import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.spi.state.ReadableKVState;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.List;
@@ -85,7 +86,7 @@ public class HtsErc721TransferFromXTest extends AbstractContractXTest {
         runHtsCallAndExpectRevert(
                 OWNER_BESU_ADDRESS,
                 bytesForRedirect(
-                        TRANSFER_FROM.encodeCallWithArgs(
+                        ERC_721_TRANSFER_FROM.encodeCallWithArgs(
                                 asHeadlongAddress(asEvmAddress(OWNER_ID.accountNumOrThrow())),
                                 RECEIVER_HEADLONG_ADDRESS,
                                 BigInteger.valueOf(SN_1234.serialNumber())),
@@ -95,7 +96,7 @@ public class HtsErc721TransferFromXTest extends AbstractContractXTest {
         runHtsCallAndExpectRevert(
                 UNAUTHORIZED_SPENDER_BESU_ADDRESS,
                 bytesForRedirect(
-                        TRANSFER_FROM.encodeCallWithArgs(
+                        ERC_721_TRANSFER_FROM.encodeCallWithArgs(
                                 OWNER_HEADLONG_ADDRESS,
                                 RECEIVER_HEADLONG_ADDRESS,
                                 BigInteger.valueOf(SN_1234.serialNumber())),
@@ -105,7 +106,7 @@ public class HtsErc721TransferFromXTest extends AbstractContractXTest {
         runHtsCallAndExpectRevert(
                 APPROVED_BESU_ADDRESS,
                 bytesForRedirect(
-                        TRANSFER_FROM.encodeCallWithArgs(
+                        ERC_721_TRANSFER_FROM.encodeCallWithArgs(
                                 OWNER_HEADLONG_ADDRESS,
                                 RECEIVER_HEADLONG_ADDRESS,
                                 BigInteger.valueOf(SN_2345.serialNumber())),
@@ -115,7 +116,7 @@ public class HtsErc721TransferFromXTest extends AbstractContractXTest {
         runHtsCallAndExpectOnSuccess(
                 APPROVED_BESU_ADDRESS,
                 bytesForRedirect(
-                        TRANSFER_FROM.encodeCallWithArgs(
+                        ERC_721_TRANSFER_FROM.encodeCallWithArgs(
                                 OWNER_HEADLONG_ADDRESS,
                                 RECEIVER_HEADLONG_ADDRESS,
                                 BigInteger.valueOf(SN_1234.serialNumber())),
@@ -125,7 +126,7 @@ public class HtsErc721TransferFromXTest extends AbstractContractXTest {
         runHtsCallAndExpectOnSuccess(
                 OPERATOR_BESU_ADDRESS,
                 bytesForRedirect(
-                        TRANSFER_FROM.encodeCallWithArgs(
+                        ERC_721_TRANSFER_FROM.encodeCallWithArgs(
                                 OWNER_HEADLONG_ADDRESS,
                                 RECEIVER_HEADLONG_ADDRESS,
                                 BigInteger.valueOf(SN_2345.serialNumber())),
@@ -189,7 +190,15 @@ public class HtsErc721TransferFromXTest extends AbstractContractXTest {
                 .tokenId(ERC721_TOKEN_ID)
                 .accountId(RECEIVER_ID)
                 .build()));
-        assertEquals(2L, ownerRelation.balance());
+        assertEquals(2L, receiverRelation.balance());
+    }
+
+    @Override
+    protected void assertExpectedNfts(@NonNull final ReadableKVState<NftID, Nft> nfts) {
+        final var sn1234 = Objects.requireNonNull(nfts.get(SN_1234));
+        assertEquals(RECEIVER_ID, sn1234.ownerId());
+        final var sn2345 = Objects.requireNonNull(nfts.get(SN_1234));
+        assertEquals(RECEIVER_ID, sn2345.ownerId());
     }
 
     private void addErc721Relation(
