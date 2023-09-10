@@ -32,13 +32,16 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 @Singleton
 public class HtsCallAttemptFactory {
     private final HtsCallAddressChecks addressChecks;
+    private final DecodingStrategies decodingStrategies;
     private final VerificationStrategies verificationStrategies;
 
     @Inject
     public HtsCallAttemptFactory(
             @NonNull final HtsCallAddressChecks addressChecks,
+            @NonNull final DecodingStrategies decodingStrategies,
             @NonNull final VerificationStrategies verificationStrategies) {
         this.addressChecks = requireNonNull(addressChecks);
+        this.decodingStrategies = decodingStrategies;
         this.verificationStrategies = requireNonNull(verificationStrategies);
     }
 
@@ -54,7 +57,8 @@ public class HtsCallAttemptFactory {
         requireNonNull(input);
         requireNonNull(frame);
         final var updater = proxyUpdaterFor(frame);
-        final var attempt = new HtsCallAttempt(input, updater.enhancement(), verificationStrategies);
+        final var attempt =
+                new HtsCallAttempt(input, updater.enhancement(), decodingStrategies, verificationStrategies);
         return requireNonNull(attempt.asCallFrom(frame.getSenderAddress(), addressChecks.hasParentDelegateCall(frame)));
     }
 }

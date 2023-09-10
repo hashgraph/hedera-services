@@ -59,6 +59,7 @@ import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaNativeOp
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleSystemContractOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DecodingStrategies;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAddressChecks;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
@@ -102,6 +103,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
  */
 @ExtendWith(MockitoExtension.class)
 public abstract class AbstractContractXTest {
+    private static final DecodingStrategies DEFAULT_DECODING_STRATEGIES = new DecodingStrategies();
     private static final VerificationStrategies DEFAULT_VERIFICATION_STRATEGIES = new VerificationStrategies();
     static final long GAS_TO_OFFER = 2_000_000L;
     static final Duration STANDARD_AUTO_RENEW_PERIOD = new Duration(7776000L);
@@ -125,7 +127,8 @@ public abstract class AbstractContractXTest {
     @BeforeEach
     void setUp() {
         scaffoldingComponent = DaggerScaffoldingComponent.factory().create(metrics);
-        callAttemptFactory = new HtsCallAttemptFactory(addressChecks, DEFAULT_VERIFICATION_STRATEGIES);
+        callAttemptFactory =
+                new HtsCallAttemptFactory(addressChecks, DEFAULT_DECODING_STRATEGIES, DEFAULT_VERIFICATION_STRATEGIES);
     }
 
     @Test

@@ -135,10 +135,10 @@ public class Erc721TransferFromCall extends AbstractHtsCall {
     /**
      * Creates a {@link Erc721TransferFromCall} from the given {@code attempt} and {@code senderAddress}.
      *
-     * @param attempt the attempt to create a {@link TransferCall} from
+     * @param attempt the attempt to create a {@link ClassicTransfersCall} from
      * @param sender  the address of the caller
      * @param senderNeedsDelegatableContractKeys {@code true} if the {@code sender} needs delegatable contract keys
-     * @return a {@link Erc721TransferFromCall} if the given {@code attempt} is a valid {@link TransferCall}, otherwise {@code null}
+     * @return a {@link Erc721TransferFromCall} if the given {@code attempt} is a valid {@link ClassicTransfersCall}, otherwise {@code null}
      */
     public static Erc721TransferFromCall from(
             @NonNull final HtsCallAttempt attempt,
@@ -151,8 +151,10 @@ public class Erc721TransferFromCall extends AbstractHtsCall {
                 call.get(1),
                 requireNonNull(attempt.redirectToken()).tokenIdOrThrow(),
                 attempt.verificationStrategies()
-                        .onlyActivatingContractKeys(
-                                sender, attempt.enhancement().nativeOperations(), senderNeedsDelegatableContractKeys),
+                        .activatingContractKeysFor(
+                                sender,
+                                senderNeedsDelegatableContractKeys,
+                                attempt.enhancement().nativeOperations()),
                 sender,
                 SYNTH_ID_HELPER,
                 attempt.enhancement());

@@ -23,6 +23,7 @@ import static java.util.Objects.requireNonNull;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.balanceof.BalanceOfCall;
@@ -34,9 +35,9 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ownero
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.symbol.SymbolCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokenuri.TokenUriCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.totalsupply.TotalSupplyCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc20TransfersCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc721TransferFromCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.TransferCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -61,15 +62,18 @@ public class HtsCallAttempt {
     private final Token redirectToken;
 
     private final HederaWorldUpdater.Enhancement enhancement;
+    private final DecodingStrategies decodingStrategies;
     private final VerificationStrategies verificationStrategies;
 
     public HtsCallAttempt(
             @NonNull final Bytes input,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
+            @NonNull final DecodingStrategies decodingStrategies,
             @NonNull final VerificationStrategies verificationStrategies) {
         requireNonNull(input);
         this.isRedirect = isRedirect(input.toArrayUnsafe());
         this.enhancement = requireNonNull(enhancement);
+        this.decodingStrategies = requireNonNull(decodingStrategies);
         this.verificationStrategies = requireNonNull(verificationStrategies);
         if (this.isRedirect) {
             Tuple abiCall = null;
@@ -102,6 +106,15 @@ public class HtsCallAttempt {
      */
     public @NonNull HederaWorldUpdater.Enhancement enhancement() {
         return enhancement;
+    }
+
+    /**
+     * Returns the native operations this call was attempted within.
+     *
+     * @return the native operations this call was attempted within
+     */
+    public @NonNull HederaNativeOperations nativeOperations() {
+        return enhancement.nativeOperations();
     }
 
     /**
@@ -170,8 +183,8 @@ public class HtsCallAttempt {
             return Erc721TransferFromCall.from(this, senderAddress, needingDelegatableKeys);
         } else if (Erc20TransfersCall.matches(this)) {
             return Erc20TransfersCall.from(this, senderAddress, needingDelegatableKeys);
-        } else if (TransferCall.matches(selector)) {
-            return TransferCall.from(this, senderAddress);
+        } else if (ClassicTransfersCall.matches(selector)) {
+            return ClassicTransfersCall.from(this, senderAddress, needingDelegatableKeys);
         } else if (MintCall.matches(selector)) {
             return MintCall.from(this, senderAddress);
         } else if (BalanceOfCall.matches(selector)) {
@@ -193,6 +206,15 @@ public class HtsCallAttempt {
         } else {
             return null;
         }
+    }
+
+    /**
+     * Returns the decoding strategies for this call.
+     *
+     * @return the decoding strategies for this call
+     */
+    public DecodingStrategies decodingStrategies() {
+        return decodingStrategies;
     }
 
     /**

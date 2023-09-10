@@ -32,10 +32,10 @@ public class VerificationStrategies {
         // Dagger2
     }
 
-    public VerificationStrategy onlyActivatingContractKeys(
+    public VerificationStrategy activatingContractKeysFor(
             @NonNull final Address sender,
-            @NonNull final HederaNativeOperations nativeOperations,
-            final boolean requiresDelegatePermission) {
+            final boolean requiresDelegatePermission,
+            @NonNull final HederaNativeOperations nativeOperations) {
         final var contractNum = maybeMissingNumberOf(sender, nativeOperations);
         if (contractNum == MISSING_ENTITY_NUMBER) {
             throw new IllegalArgumentException("Cannot verify against missing contract " + sender);

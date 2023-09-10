@@ -41,6 +41,10 @@ public class SynthIdHelper {
             AccountID.newBuilder().alias(Bytes.wrap(new byte[20])).build();
     public static final SynthIdHelper SYNTH_ID_HELPER = new SynthIdHelper();
 
+    private SynthIdHelper() {
+        // Singleton
+    }
+
     /**
      * Given an address to be referenced in a synthetic {@link com.hedera.hapi.node.transaction.TransactionBody},
      * returns the {@link AccountID} that should be used in the synthetic transaction.

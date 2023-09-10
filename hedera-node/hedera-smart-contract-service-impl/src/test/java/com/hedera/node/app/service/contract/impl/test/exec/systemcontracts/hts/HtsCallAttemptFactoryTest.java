@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DecodingStrategies;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAddressChecks;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttemptFactory;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.balanceof.BalanceOfCall;
@@ -44,6 +45,9 @@ class HtsCallAttemptFactoryTest extends HtsCallTestBase {
     private VerificationStrategies verificationStrategies;
 
     @Mock
+    private DecodingStrategies decodingStrategies;
+
+    @Mock
     private MessageFrame frame;
 
     @Mock
@@ -53,7 +57,7 @@ class HtsCallAttemptFactoryTest extends HtsCallTestBase {
 
     @BeforeEach
     void setUp() {
-        subject = new HtsCallAttemptFactory(addressChecks, verificationStrategies);
+        subject = new HtsCallAttemptFactory(addressChecks, decodingStrategies, verificationStrategies);
     }
 
     @Test

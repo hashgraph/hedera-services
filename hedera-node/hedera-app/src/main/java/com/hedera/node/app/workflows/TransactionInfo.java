@@ -36,14 +36,14 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * <p>All this parsing and checking is done by {@link TransactionChecker}. It saves all that work in an instance
  * of this class, so we don't have to parse it all again later.</p>
  *
- * @param transaction The transaction itself
- * @param txBody the deserialized {@link TransactionBody} (either from the {@link Transaction#body()} or
- *               from the {@link Transaction#signedTransactionBytes()}).
+ * @param transaction   The transaction itself
+ * @param txBody        the deserialized {@link TransactionBody} (either from the {@link Transaction#body()} or
+ *                      from the {@link Transaction#signedTransactionBytes()}).
  * @param transactionID the validated {@link TransactionID} extracted from {@link #txBody}
- * @param payerID the validated {@link AccountID} of the payer extracted from {@link #transactionID}
- * @param signatureMap the {@link SignatureMap} (either from {@link Transaction#sigMap()} or
- *                     from {@link SignedTransaction#sigMap()}). Not all transactions require a signature map....
- * @param signedBytes the bytes to use for signature verification
+ * @param payerID       the validated {@link AccountID} of the payer extracted from {@link #transactionID}
+ * @param signatureMap  the {@link SignatureMap} (either from {@link Transaction#sigMap()} or
+ *                      from {@link SignedTransaction#sigMap()}). Not all transactions require a signature map....
+ * @param signedBytes   the bytes to use for signature verification
  * @param functionality the {@link HederaFunctionality} representing the transaction.
  */
 public record TransactionInfo(
@@ -64,10 +64,11 @@ public record TransactionInfo(
         this(
                 transaction,
                 txBody,
-                //                txBody.transactionIDOrThrow(),
-                //                txBody.transactionIDOrThrow().accountIDOrThrow(),
-                TransactionID.DEFAULT,
-                AccountID.DEFAULT,
+                txBody.transactionIDOrThrow(),
+                txBody.transactionIDOrThrow().accountIDOrThrow(),
+                // Can temporarily replace above two lines with these two to run x-tests
+                //                                TransactionID.DEFAULT,
+                //                                AccountID.DEFAULT,
                 signatureMap,
                 signedBytes,
                 functionality);
