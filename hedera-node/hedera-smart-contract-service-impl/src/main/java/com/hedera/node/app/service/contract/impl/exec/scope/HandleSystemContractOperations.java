@@ -21,6 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.state.token.Account;
@@ -34,6 +35,7 @@ import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.Resul
 import com.hedera.node.app.spi.workflows.HandleContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.function.Predicate;
 import javax.inject.Inject;
 
 /**
@@ -85,6 +87,19 @@ public class HandleSystemContractOperations implements SystemContractOperations 
      * {@inheritDoc}
      */
     @Override
+    public @NonNull Predicate<Key> activeSignatureTestWith(@NonNull final VerificationStrategy strategy) {
+        return (key) -> switch (strategy.decideFor(key)) {
+            case VALID -> true;
+            case INVALID -> false;
+            case DELEGATE_TO_CRYPTOGRAPHIC_VERIFICATION -> context.verificationFor(key)
+                    .passed();
+        };
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public @NonNull <T> T dispatch(
             @NonNull final TransactionBody syntheticBody,
             @NonNull final VerificationStrategy strategy,
@@ -96,15 +111,7 @@ public class HandleSystemContractOperations implements SystemContractOperations 
         requireNonNull(recordBuilderClass);
 
         return context.dispatchChildTransaction(
-                syntheticBody,
-                recordBuilderClass,
-                (key) -> switch (strategy.decideFor(key)) {
-                    case VALID -> true;
-                    case INVALID -> false;
-                    case DELEGATE_TO_CRYPTOGRAPHIC_VERIFICATION -> context.verificationFor(key)
-                            .passed();
-                },
-                syntheticPayerId);
+                syntheticBody, recordBuilderClass, activeSignatureTestWith(strategy), syntheticPayerId);
     }
 
     /**

@@ -24,6 +24,8 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCal
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -31,6 +33,7 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
 @Singleton
 public class HtsSystemContract extends AbstractFullContract implements HederaSystemContract {
+    private static final Logger log = LogManager.getLogger(HtsSystemContract.class);
     private static final String HTS_PRECOMPILE_NAME = "HTS";
     public static final String HTS_PRECOMPILE_ADDRESS = "0x167";
 
@@ -50,11 +53,23 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
         final HtsCall call;
         try {
             call = callFactory.createCallFrom(input, frame);
-        } catch (RuntimeException ignore) {
-            // Halt and consume all remaining gas if call could not be created
+        } catch (RuntimeException e) {
+            log.debug("Failed to create HTS call from input {}", input, e);
             return haltResult(ExceptionalHaltReason.INVALID_OPERATION, frame.getRemainingGas());
         }
-        final var pricedResult = call.execute();
+
+        return resultOfExecuting(call, input, frame);
+    }
+
+    private static FullResult resultOfExecuting(
+            @NonNull final HtsCall call, @NonNull final Bytes input, @NonNull final MessageFrame frame) {
+        final HtsCall.PricedResult pricedResult;
+        try {
+            pricedResult = call.execute();
+        } catch (Exception internal) {
+            log.error("Unhandled failure for input {} to HTS system contract", input, internal);
+            return haltResult(ExceptionalHaltReason.PRECOMPILE_ERROR, frame.getRemainingGas());
+        }
         if (pricedResult.nonGasCost() > 0) {
             throw new AssertionError("Not implemented");
         }

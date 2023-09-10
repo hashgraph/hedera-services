@@ -99,6 +99,8 @@ class QuerySystemContractOperationsTest {
         assertThrows(
                 UnsupportedOperationException.class,
                 () -> subject.externalizeResult(ContractFunctionResult.DEFAULT, ResultStatus.IS_SUCCESS));
+        assertThrows(
+                UnsupportedOperationException.class, () -> subject.activeSignatureTestWith(MOCK_VERIFICATION_STRATEGY));
     }
 
     @Test

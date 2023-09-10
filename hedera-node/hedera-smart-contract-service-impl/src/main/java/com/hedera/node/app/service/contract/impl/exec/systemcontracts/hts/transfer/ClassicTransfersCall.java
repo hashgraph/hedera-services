@@ -16,10 +16,17 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ApprovalSwitchHelper.APPROVAL_SWITCH_HELPER;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asHeadlongAddress;
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Function;
+import com.esaulpaugh.headlong.abi.TupleType;
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -28,7 +35,10 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Abstra
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
+import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
@@ -50,24 +60,29 @@ import java.util.Arrays;
  */
 public class ClassicTransfersCall extends AbstractHtsCall {
     public static final Function CRYPTO_TRANSFER =
-            new Function("cryptoTransfer((address,(address,int64)[],(address,address,int64)[])[])", ReturnTypes.INT);
+            new Function("cryptoTransfer((address,(address,int64)[],(address,address,int64)[])[])", ReturnTypes.INT_64);
     public static final Function CRYPTO_TRANSFER_V2 = new Function(
             "cryptoTransfer(((address,int64,bool)[]),(address,(address,int64,bool)[],(address,address,int64,bool)[])[])",
-            ReturnTypes.INT);
+            ReturnTypes.INT_64);
     public static final Function TRANSFER_TOKENS =
-            new Function("transferTokens(address,address[],int64[])", ReturnTypes.INT);
+            new Function("transferTokens(address,address[],int64[])", ReturnTypes.INT_64);
     public static final Function TRANSFER_TOKEN =
-            new Function("transferToken(address,address,address,int64)", ReturnTypes.INT);
+            new Function("transferToken(address,address,address,int64)", ReturnTypes.INT_64);
     public static final Function TRANSFER_NFTS =
-            new Function("transferNFTs(address,address[],address[],int64[])", ReturnTypes.INT);
+            new Function("transferNFTs(address,address[],address[],int64[])", ReturnTypes.INT_64);
     public static final Function TRANSFER_NFT =
-            new Function("transferNFT(address,address,address,int64)", ReturnTypes.INT);
+            new Function("transferNFT(address,address,address,int64)", ReturnTypes.INT_64);
     public static final Function HRC_TRANSFER_FROM =
-            new Function("transferFrom(address,address,address,uint256)", ReturnTypes.INT);
+            new Function("transferFrom(address,address,address,uint256)", ReturnTypes.INT_64);
     public static final Function HRC_TRANSFER_NFT_FROM =
-            new Function("transferFromNFT(address,address,address,uint256)", ReturnTypes.INT);
+            new Function("transferFromNFT(address,address,address,uint256)", ReturnTypes.INT_64);
 
-    private final TransactionBody nominalBody;
+    private static final TupleType OUTPUT_ENCODER = TupleType.parse(ReturnTypes.INT_64);
+
+    private final byte[] selector;
+    private final AccountID spenderId;
+    private final TransactionBody syntheticTransfer;
+    private final Configuration configuration;
 
     @Nullable
     private final ApprovalSwitchHelper approvalSwitchHelper;
@@ -76,11 +91,17 @@ public class ClassicTransfersCall extends AbstractHtsCall {
 
     public ClassicTransfersCall(
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
-            @NonNull final TransactionBody nominalBody,
+            @NonNull final byte[] selector,
+            @NonNull final AccountID spenderId,
+            @NonNull final TransactionBody syntheticTransfer,
+            @NonNull final Configuration configuration,
             @Nullable ApprovalSwitchHelper approvalSwitchHelper,
             @NonNull final VerificationStrategy verificationStrategy) {
         super(enhancement);
-        this.nominalBody = requireNonNull(nominalBody);
+        this.selector = requireNonNull(selector);
+        this.spenderId = requireNonNull(spenderId);
+        this.syntheticTransfer = requireNonNull(syntheticTransfer);
+        this.configuration = requireNonNull(configuration);
         this.approvalSwitchHelper = approvalSwitchHelper;
         this.verificationStrategy = requireNonNull(verificationStrategy);
     }
@@ -90,7 +111,36 @@ public class ClassicTransfersCall extends AbstractHtsCall {
      */
     @Override
     public @NonNull PricedResult execute() {
-        throw new AssertionError("Not implemented");
+        // https://github.com/hashgraph/hedera-smart-contracts/blob/main/contracts/hts-precompile/IHederaTokenService.sol
+        // TODO - gas calculation
+        if (executionIsNotSupported()) {
+            // TODO - externalize the synthetic transfer we chose not to execute
+            return completionWith(NOT_SUPPORTED);
+        }
+        var recordBuilder = systemContractOperations()
+                .dispatch(syntheticTransfer, verificationStrategy, spenderId, CryptoTransferRecordBuilder.class);
+        if (recordBuilder.status() == INVALID_SIGNATURE && approvalSwitchHelper != null) {
+            final var retryTransfer = syntheticTransfer
+                    .copyBuilder()
+                    .cryptoTransfer(approvalSwitchHelper.switchToApprovalsAsNeededIn(
+                            syntheticTransfer.cryptoTransferOrThrow(),
+                            systemContractOperations().activeSignatureTestWith(verificationStrategy),
+                            nativeOperations()))
+                    .build();
+            // TODO - revoke the first synthetic transfer that got INVALID_SIGNATURE
+            recordBuilder = systemContractOperations()
+                    .dispatch(retryTransfer, verificationStrategy, spenderId, CryptoTransferRecordBuilder.class);
+        }
+        return completionWith(recordBuilder.status());
+    }
+
+    private PricedResult completionWith(@NonNull final ResponseCodeEnum status) {
+        return gasOnly(successResult(OUTPUT_ENCODER.encodeElements((long) status.protoOrdinal()), 0L));
+    }
+
+    private boolean executionIsNotSupported() {
+        return Arrays.equals(selector, CRYPTO_TRANSFER_V2.selector())
+                && !configuration.getConfigData(ContractsConfig.class).precompileAtomicCryptoTransferEnabled();
     }
 
     /**
@@ -125,10 +175,14 @@ public class ClassicTransfersCall extends AbstractHtsCall {
             final boolean onlyDelegatable) {
         requireNonNull(attempt);
         requireNonNull(sender);
+        final var selector = attempt.selector();
         return new ClassicTransfersCall(
                 attempt.enhancement(),
+                selector,
+                attempt.addressIdConverter().convert(asHeadlongAddress(sender.toArrayUnsafe())),
                 nominalBodyFor(attempt),
-                isLegacyCall(attempt.selector()) ? APPROVAL_SWITCH_HELPER : null,
+                attempt.configuration(),
+                isLegacyCall(selector) ? APPROVAL_SWITCH_HELPER : null,
                 attempt.verificationStrategies()
                         .activatingContractKeysFor(sender, onlyDelegatable, attempt.nativeOperations()));
     }

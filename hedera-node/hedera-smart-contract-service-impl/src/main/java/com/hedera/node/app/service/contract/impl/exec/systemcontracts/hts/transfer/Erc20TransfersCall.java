@@ -89,7 +89,7 @@ public class Erc20TransfersCall extends AbstractHtsCall {
      */
     @Override
     public @NonNull PricedResult execute() {
-        // C.f. https://eips.ethereum.org/EIPS/eip-20
+        // https://eips.ethereum.org/EIPS/eip-20
         // TODO - gas calculation
         final var spenderId = addressIdConverter.convert(asHeadlongAddress(spender.toArrayUnsafe()));
         final var recordBuilder = systemContractOperations()

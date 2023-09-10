@@ -82,7 +82,7 @@ public class Erc721TransferFromCall extends AbstractHtsCall {
      */
     @Override
     public @NonNull PricedResult execute() {
-        // C.f. https://eips.ethereum.org/EIPS/eip-721
+        // https://eips.ethereum.org/EIPS/eip-721
         // TODO - gas calculation
         final var spenderId = addressIdConverter.convert(asHeadlongAddress(spender.toArrayUnsafe()));
         final var recordBuilder = systemContractOperations()

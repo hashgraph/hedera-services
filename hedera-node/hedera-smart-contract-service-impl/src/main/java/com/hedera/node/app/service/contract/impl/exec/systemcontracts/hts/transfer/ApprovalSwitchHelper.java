@@ -16,10 +16,15 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer;
 
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.function.Predicate;
 
 /**
- * Helper class for switching non-sender debits to approvals in a synthetic {@link com.hedera.hapi.node.token.CryptoTransferTransactionBody}.
+ * Helper class for switching unauthorized debits to approvals in a synthetic
+ * {@link com.hedera.hapi.node.token.CryptoTransferTransactionBody}.
  */
 public class ApprovalSwitchHelper {
     public static final ApprovalSwitchHelper APPROVAL_SWITCH_HELPER = new ApprovalSwitchHelper();
@@ -30,14 +35,18 @@ public class ApprovalSwitchHelper {
 
     /**
      * Given a synthetic {@link com.hedera.hapi.node.token.CryptoTransferTransactionBody}, returns a new
-     * {@link com.hedera.hapi.node.token.CryptoTransferTransactionBody} that is identical except that all non-sender
-     * debits have been switched to approvals.
+     * {@link com.hedera.hapi.node.token.CryptoTransferTransactionBody} that is identical except any debits
+     * whose linked signing keys do not have active signatures are switched to approvals.
      *
-     * @param nominalBody the synthetic {@link com.hedera.hapi.node.token.CryptoTransferTransactionBody} to switch
+     * @param nominalBody the synthetic {@link CryptoTransferTransactionBody} to switch
+     * @param signatureTest the {@link Predicate} that determines whether a given key has an active signature
+     * @param nativeOperations the {@link HederaNativeOperations} that provides account key access
      * @return the new {@link com.hedera.hapi.node.token.CryptoTransferTransactionBody}
      */
-    public CryptoTransferTransactionBody switchToApprovalsForNonSenderDebitsIn(
-            final CryptoTransferTransactionBody nominalBody) {
+    public CryptoTransferTransactionBody switchToApprovalsAsNeededIn(
+            @NonNull final CryptoTransferTransactionBody nominalBody,
+            @NonNull final Predicate<Key> signatureTest,
+            @NonNull final HederaNativeOperations nativeOperations) {
         throw new AssertionError("Not implemented");
     }
 }

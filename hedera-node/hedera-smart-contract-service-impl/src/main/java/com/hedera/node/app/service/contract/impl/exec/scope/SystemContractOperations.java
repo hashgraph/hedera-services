@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.state.token.Account;
@@ -27,6 +28,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.ResultStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.function.Predicate;
 
 public interface SystemContractOperations {
     /**
@@ -91,6 +93,16 @@ public interface SystemContractOperations {
             @NonNull VerificationStrategy strategy,
             @NonNull AccountID syntheticPayerId,
             @NonNull Class<T> recordBuilderClass);
+
+    /**
+     * Returns a {@link Predicate} that tests whether the given {@link Key} is active based on the
+     * given verification strategy.
+     *
+     * @param strategy the verification strategy to use
+     * @return a {@link Predicate} that tests whether the given {@link Key} is active
+     */
+    @NonNull
+    Predicate<Key> activeSignatureTestWith(@NonNull VerificationStrategy strategy);
 
     /**
      * Attempts to create a child record of the current record, with the given {@code result}

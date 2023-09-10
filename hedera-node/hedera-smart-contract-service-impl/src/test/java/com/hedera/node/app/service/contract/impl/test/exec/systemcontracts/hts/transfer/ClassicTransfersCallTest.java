@@ -16,34 +16,56 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.transfer;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_ACCOUNT_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.asBytesResult;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 
+import com.esaulpaugh.headlong.abi.TupleType;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ApprovalSwitchHelper;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc20TransfersCall;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
+import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import java.util.function.Predicate;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
 class ClassicTransfersCallTest extends HtsCallTestBase {
-    @Mock
-    private VerificationStrategies verificationStrategies;
+    private static final TupleType INT64_ENCODER = TupleType.parse(ReturnTypes.INT_64);
 
     @Mock
     private VerificationStrategy verificationStrategy;
+
+    @Mock
+    private Predicate<Key> signatureTest;
 
     @Mock
     private ApprovalSwitchHelper approvalSwitchHelper;
 
     @Mock
     private HtsCallAttempt attempt;
+
+    @Mock
+    private CryptoTransferRecordBuilder recordBuilder;
 
     private ClassicTransfersCall subject;
 
@@ -61,12 +83,114 @@ class ClassicTransfersCallTest extends HtsCallTestBase {
         assertTrue(e.getMessage().endsWith("is not a classic transfer"));
     }
 
-    private void givenRetryingSubject() {
-        subject = new ClassicTransfersCall(
-                mockEnhancement(), TransactionBody.DEFAULT, approvalSwitchHelper, verificationStrategy);
+    @Test
+    void transferHappyPathCompletesWithSuccessResponseCode() {
+        givenRetryingSubject();
+        given(systemContractOperations.dispatch(
+                        any(TransactionBody.class),
+                        eq(verificationStrategy),
+                        eq(A_NEW_ACCOUNT_ID),
+                        eq(CryptoTransferRecordBuilder.class)))
+                .willReturn(recordBuilder);
+        given(recordBuilder.status()).willReturn(SUCCESS);
+
+        givenRetryingSubject();
+
+        final var result = subject.execute().fullResult().result();
+
+        assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
+        assertEquals(asBytesResult(INT64_ENCODER.encodeElements((long) SUCCESS.protoOrdinal())), result.getOutput());
     }
 
-    private void givenNonRetryingSubject() {
-        subject = new ClassicTransfersCall(mockEnhancement(), TransactionBody.DEFAULT, null, verificationStrategy);
+    @Test
+    void retryingTransferHappyPathCompletesWithSuccessResponseCode() {
+        givenRetryingSubject();
+        given(systemContractOperations.dispatch(
+                        any(TransactionBody.class),
+                        eq(verificationStrategy),
+                        eq(A_NEW_ACCOUNT_ID),
+                        eq(CryptoTransferRecordBuilder.class)))
+                .willReturn(recordBuilder);
+        given(recordBuilder.status()).willReturn(INVALID_SIGNATURE).willReturn(SUCCESS);
+        given(systemContractOperations.activeSignatureTestWith(verificationStrategy))
+                .willReturn(signatureTest);
+        given(approvalSwitchHelper.switchToApprovalsAsNeededIn(
+                        CryptoTransferTransactionBody.DEFAULT, signatureTest, nativeOperations))
+                .willReturn(CryptoTransferTransactionBody.DEFAULT);
+
+        givenRetryingSubject();
+
+        final var result = subject.execute().fullResult().result();
+
+        assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
+        assertEquals(asBytesResult(INT64_ENCODER.encodeElements((long) SUCCESS.protoOrdinal())), result.getOutput());
+    }
+
+    @Test
+    void unsupportedV2transferCompletesWithNotSupportedResponseCode() {
+        givenV2SubjectWithV2Disabled();
+
+        final var result = subject.execute().fullResult().result();
+
+        assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
+        assertEquals(
+                asBytesResult(INT64_ENCODER.encodeElements((long) NOT_SUPPORTED.protoOrdinal())), result.getOutput());
+    }
+
+    @Test
+    void supportedV2transferCompletesWithNominalResponseCode() {
+        givenV2SubjectWithV2Enabled();
+        given(systemContractOperations.dispatch(
+                        any(TransactionBody.class),
+                        eq(verificationStrategy),
+                        eq(A_NEW_ACCOUNT_ID),
+                        eq(CryptoTransferRecordBuilder.class)))
+                .willReturn(recordBuilder);
+        given(recordBuilder.status()).willReturn(SPENDER_DOES_NOT_HAVE_ALLOWANCE);
+
+        final var result = subject.execute().fullResult().result();
+
+        assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
+        assertEquals(
+                asBytesResult(INT64_ENCODER.encodeElements((long) SPENDER_DOES_NOT_HAVE_ALLOWANCE.protoOrdinal())),
+                result.getOutput());
+    }
+
+    private void givenRetryingSubject() {
+        subject = new ClassicTransfersCall(
+                mockEnhancement(),
+                ClassicTransfersCall.CRYPTO_TRANSFER.selector(),
+                A_NEW_ACCOUNT_ID,
+                TransactionBody.newBuilder()
+                        .cryptoTransfer(CryptoTransferTransactionBody.DEFAULT)
+                        .build(),
+                DEFAULT_CONFIG,
+                approvalSwitchHelper,
+                verificationStrategy);
+    }
+
+    private void givenV2SubjectWithV2Enabled() {
+        final var config = HederaTestConfigBuilder.create()
+                .withValue("contracts.precompile.atomicCryptoTransfer.enabled", "true")
+                .getOrCreateConfig();
+        subject = new ClassicTransfersCall(
+                mockEnhancement(),
+                ClassicTransfersCall.CRYPTO_TRANSFER_V2.selector(),
+                A_NEW_ACCOUNT_ID,
+                TransactionBody.DEFAULT,
+                config,
+                null,
+                verificationStrategy);
+    }
+
+    private void givenV2SubjectWithV2Disabled() {
+        subject = new ClassicTransfersCall(
+                mockEnhancement(),
+                ClassicTransfersCall.CRYPTO_TRANSFER_V2.selector(),
+                A_NEW_ACCOUNT_ID,
+                TransactionBody.DEFAULT,
+                DEFAULT_CONFIG,
+                null,
+                verificationStrategy);
     }
 }

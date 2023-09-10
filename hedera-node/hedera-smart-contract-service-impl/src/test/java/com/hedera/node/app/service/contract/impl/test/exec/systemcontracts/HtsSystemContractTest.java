@@ -78,6 +78,16 @@ class HtsSystemContractTest {
     }
 
     @Test
+    void internalErrorAttemptHaltsAndConsumesRemainingGas() {
+        givenValidCallAttempt();
+        given(call.execute()).willThrow(RuntimeException.class);
+
+        final var expected = haltResult(ExceptionalHaltReason.PRECOMPILE_ERROR, frame.getRemainingGas());
+        final var result = subject.computeFully(Bytes.EMPTY, frame);
+        assertSamePrecompileResult(expected, result);
+    }
+
+    @Test
     void callWithNonGasCostNotImplemented() {
         givenValidCallAttempt();
         final var pricedResult = new HtsCall.PricedResult(successResult(ByteBuffer.allocate(1), 123L), 456L);
