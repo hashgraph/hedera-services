@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.transfer;
 
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.SynthIdHelper.SYNTH_ID_HELPER;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ALIASED_SOMEBODY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_ACCOUNT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
@@ -27,6 +26,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.SyntheticIds;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -36,23 +36,27 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class SynthIdHelperTest {
+class SyntheticIdsTest {
     @Mock
     private HederaNativeOperations nativeOperations;
+
+    private final SyntheticIds implicitSubject = new SyntheticIds();
 
     @Test
     void returnsNumericIdIfAddressIsCanonicalReference() {
         given(nativeOperations.resolveAlias(ConversionUtils.tuweniToPbjBytes(EIP_1014_ADDRESS)))
                 .willReturn(TestHelpers.A_NEW_ACCOUNT_ID.accountNumOrThrow());
         given(nativeOperations.getAccount(A_NEW_ACCOUNT_ID.accountNumOrThrow())).willReturn(ALIASED_SOMEBODY);
-        final var synthId = SYNTH_ID_HELPER.syntheticIdFor(asHeadlongAddress(EIP_1014_ADDRESS), nativeOperations);
+        final var subject = implicitSubject.converterFor(nativeOperations);
+        final var synthId = subject.convert(asHeadlongAddress(EIP_1014_ADDRESS));
         assertEquals(TestHelpers.A_NEW_ACCOUNT_ID, synthId);
     }
 
     @Test
     void returnsNumericIdIfMissingLongZeroDebit() {
         final var missingLongZeroAddress = asHeadlongAddress(A_NEW_ACCOUNT_ID.accountNumOrThrow());
-        final var synthId = SYNTH_ID_HELPER.syntheticIdFor(missingLongZeroAddress, nativeOperations);
+        final var subject = implicitSubject.converterFor(nativeOperations);
+        final var synthId = subject.convert(missingLongZeroAddress);
         assertEquals(TestHelpers.A_NEW_ACCOUNT_ID, synthId);
     }
 
@@ -62,7 +66,8 @@ class SynthIdHelperTest {
                 .alias(Bytes.wrap(asEvmAddress(A_NEW_ACCOUNT_ID.accountNumOrThrow())))
                 .build();
         final var missingLongZeroAddress = asHeadlongAddress(A_NEW_ACCOUNT_ID.accountNumOrThrow());
-        final var synthId = SYNTH_ID_HELPER.syntheticIdForCredit(missingLongZeroAddress, nativeOperations);
+        final var subject = implicitSubject.converterFor(nativeOperations);
+        final var synthId = subject.convertCredit(missingLongZeroAddress);
         assertEquals(expectedId, synthId);
     }
 
@@ -72,7 +77,8 @@ class SynthIdHelperTest {
                 .alias(Bytes.wrap(asEvmAddress(A_NEW_ACCOUNT_ID.accountNumOrThrow())))
                 .build();
         final var missingLongZeroAddress = asHeadlongAddress(A_NEW_ACCOUNT_ID.accountNumOrThrow());
-        final var synthId = SYNTH_ID_HELPER.syntheticIdForCredit(missingLongZeroAddress, nativeOperations);
+        final var subject = implicitSubject.converterFor(nativeOperations);
+        final var synthId = subject.convertCredit(missingLongZeroAddress);
         assertEquals(expectedId, synthId);
     }
 
@@ -82,7 +88,8 @@ class SynthIdHelperTest {
                 AccountID.newBuilder().alias(Bytes.wrap(asEvmAddress(0L))).build();
         given(nativeOperations.getAccount(A_NEW_ACCOUNT_ID.accountNumOrThrow())).willReturn(ALIASED_SOMEBODY);
         final var nonCanonicalLongZeroAddress = asHeadlongAddress(A_NEW_ACCOUNT_ID.accountNumOrThrow());
-        final var synthId = SYNTH_ID_HELPER.syntheticIdForCredit(nonCanonicalLongZeroAddress, nativeOperations);
+        final var subject = implicitSubject.converterFor(nativeOperations);
+        final var synthId = subject.convert(nonCanonicalLongZeroAddress);
         assertEquals(expectedId, synthId);
     }
 }

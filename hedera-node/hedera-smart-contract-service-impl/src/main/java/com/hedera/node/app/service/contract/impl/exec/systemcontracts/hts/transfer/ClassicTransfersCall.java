@@ -68,7 +68,6 @@ public class ClassicTransfersCall extends AbstractHtsCall {
             new Function("transferFromNFT(address,address,address,uint256)", ReturnTypes.INT);
 
     private final TransactionBody nominalBody;
-
     @Nullable
     private final ApprovalSwitchHelper approvalSwitchHelper;
 
@@ -144,28 +143,28 @@ public class ClassicTransfersCall extends AbstractHtsCall {
     private static TransactionBody nominalBodyFor(@NonNull final HtsCallAttempt attempt) {
         if (Arrays.equals(attempt.selector(), CRYPTO_TRANSFER.selector())) {
             return attempt.decodingStrategies()
-                    .decodeCryptoTransfer(attempt.input().toArrayUnsafe());
+                    .decodeCryptoTransfer(attempt.input().toArrayUnsafe(), attempt.addressIdConverter());
         } else if (Arrays.equals(attempt.selector(), CRYPTO_TRANSFER_V2.selector())) {
             return attempt.decodingStrategies()
-                    .decodeCryptoTransferV2(attempt.input().toArrayUnsafe());
+                    .decodeCryptoTransferV2(attempt.input().toArrayUnsafe(), attempt.addressIdConverter());
         } else if (Arrays.equals(attempt.selector(), TRANSFER_TOKENS.selector())) {
             return attempt.decodingStrategies()
-                    .decodeTransferTokens(attempt.input().toArrayUnsafe());
+                    .decodeTransferTokens(attempt.input().toArrayUnsafe(), attempt.addressIdConverter());
         } else if (Arrays.equals(attempt.selector(), TRANSFER_TOKEN.selector())) {
             return attempt.decodingStrategies()
-                    .decodeTransferToken(attempt.input().toArrayUnsafe());
+                    .decodeTransferToken(attempt.input().toArrayUnsafe(), attempt.addressIdConverter());
         } else if (Arrays.equals(attempt.selector(), TRANSFER_NFTS.selector())) {
             return attempt.decodingStrategies()
-                    .decodeTransferNfts(attempt.input().toArrayUnsafe());
+                    .decodeTransferNfts(attempt.input().toArrayUnsafe(), attempt.addressIdConverter());
         } else if (Arrays.equals(attempt.selector(), TRANSFER_NFT.selector())) {
             return attempt.decodingStrategies()
-                    .decodeTransferNft(attempt.input().toArrayUnsafe());
+                    .decodeTransferNft(attempt.input().toArrayUnsafe(), attempt.addressIdConverter());
         } else if (Arrays.equals(attempt.selector(), HRC_TRANSFER_FROM.selector())) {
             return attempt.decodingStrategies()
-                    .decodeHrcTransferFrom(attempt.input().toArrayUnsafe());
+                    .decodeHrcTransferFrom(attempt.input().toArrayUnsafe(), attempt.addressIdConverter());
         } else if (Arrays.equals(attempt.selector(), HRC_TRANSFER_NFT_FROM.selector())) {
             return attempt.decodingStrategies()
-                    .decodeHrcTransferNftFrom(attempt.input().toArrayUnsafe());
+                    .decodeHrcTransferNftFrom(attempt.input().toArrayUnsafe(), attempt.addressIdConverter());
         } else {
             throw new IllegalArgumentException(
                     "Selector " + CommonUtils.hex(attempt.selector()) + "is not a classic transfer");

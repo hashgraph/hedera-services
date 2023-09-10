@@ -16,6 +16,7 @@
 
 package contract;
 
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CONFIG_CONTEXT_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 import static contract.XTestConstants.PLACEHOLDER_CALL_BODY;
 import static contract.XTestConstants.SET_OF_TRADITIONAL_RATES;
@@ -63,7 +64,9 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Decodi
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAddressChecks;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttemptFactory;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallFactory;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.SyntheticIds;
+import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.ContractSchema;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
@@ -85,6 +88,7 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -103,8 +107,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
  */
 @ExtendWith(MockitoExtension.class)
 public abstract class AbstractContractXTest {
-    private static final DecodingStrategies DEFAULT_DECODING_STRATEGIES = new DecodingStrategies();
-    private static final VerificationStrategies DEFAULT_VERIFICATION_STRATEGIES = new VerificationStrategies();
+    private static final SyntheticIds LIVE_SYNTHETIC_IDS = new SyntheticIds();
+    private static final DecodingStrategies LIVE_DECODING_STRATEGIES = new DecodingStrategies();
+    private static final VerificationStrategies LIVE_VERIFICATION_STRATEGIES = new VerificationStrategies();
     static final long GAS_TO_OFFER = 2_000_000L;
     static final Duration STANDARD_AUTO_RENEW_PERIOD = new Duration(7776000L);
 
@@ -113,6 +118,8 @@ public abstract class AbstractContractXTest {
 
     @Mock
     private MessageFrame frame;
+    @Mock
+    private MessageFrame initialFrame;
 
     @Mock
     private ProxyWorldUpdater proxyUpdater;
@@ -120,7 +127,7 @@ public abstract class AbstractContractXTest {
     @Mock
     private HtsCallAddressChecks addressChecks;
 
-    private HtsCallAttemptFactory callAttemptFactory;
+    private HtsCallFactory callAttemptFactory;
 
     private ScaffoldingComponent scaffoldingComponent;
 
@@ -128,7 +135,11 @@ public abstract class AbstractContractXTest {
     void setUp() {
         scaffoldingComponent = DaggerScaffoldingComponent.factory().create(metrics);
         callAttemptFactory =
-                new HtsCallAttemptFactory(addressChecks, DEFAULT_DECODING_STRATEGIES, DEFAULT_VERIFICATION_STRATEGIES);
+                new HtsCallFactory(
+                        LIVE_SYNTHETIC_IDS,
+                        addressChecks,
+                        LIVE_DECODING_STRATEGIES,
+                        LIVE_VERIFICATION_STRATEGIES);
     }
 
     @Test
@@ -264,6 +275,11 @@ public abstract class AbstractContractXTest {
         given(proxyUpdater.enhancement()).willReturn(enhancement);
         given(frame.getWorldUpdater()).willReturn(proxyUpdater);
         given(frame.getSenderAddress()).willReturn(sender);
+        final Deque<MessageFrame> stack = new ArrayDeque<>();
+        given(initialFrame.getContextVariable(CONFIG_CONTEXT_VARIABLE)).willReturn(scaffoldingComponent.config());
+        stack.push(initialFrame);
+        stack.addFirst(frame);
+        given(frame.getMessageFrameStack()).willReturn(stack);
         given(addressChecks.hasParentDelegateCall(frame)).willReturn(requiresDelegatePermission);
 
         final var call = callAttemptFactory.createCallFrom(input, frame);

@@ -23,7 +23,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * Encapsulates some strategies of decoding ABI calls, extracted here to ease some unit tests.
+ * Encapsulates some strategies of decoding ABI calls, extracted here to ease unit testing.
  */
 @Singleton
 public class DecodingStrategies {
@@ -38,7 +38,7 @@ public class DecodingStrategies {
      * @param encoded the encoded call
      * @return the synthetic transaction body
      */
-    public TransactionBody decodeCryptoTransfer(@NonNull final byte[] encoded) {
+    public TransactionBody decodeCryptoTransfer(@NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
         throw new AssertionError("Not implemented");
     }
 
@@ -48,7 +48,7 @@ public class DecodingStrategies {
      * @param encoded the encoded call
      * @return the synthetic transaction body
      */
-    public TransactionBody decodeCryptoTransferV2(@NonNull final byte[] encoded) {
+    public TransactionBody decodeCryptoTransferV2(@NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
         throw new AssertionError("Not implemented");
     }
 
@@ -58,7 +58,7 @@ public class DecodingStrategies {
      * @param encoded the encoded call
      * @return the synthetic transaction body
      */
-    public TransactionBody decodeTransferTokens(@NonNull final byte[] encoded) {
+    public TransactionBody decodeTransferTokens(@NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
         throw new AssertionError("Not implemented");
     }
 
@@ -68,7 +68,7 @@ public class DecodingStrategies {
      * @param encoded the encoded call
      * @return the synthetic transaction body
      */
-    public TransactionBody decodeTransferToken(@NonNull final byte[] encoded) {
+    public TransactionBody decodeTransferToken(@NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
         throw new AssertionError("Not implemented");
     }
 
@@ -78,7 +78,7 @@ public class DecodingStrategies {
      * @param encoded the encoded call
      * @return the synthetic transaction body
      */
-    public TransactionBody decodeTransferNfts(@NonNull final byte[] encoded) {
+    public TransactionBody decodeTransferNfts(@NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
         throw new AssertionError("Not implemented");
     }
 
@@ -88,7 +88,7 @@ public class DecodingStrategies {
      * @param encoded the encoded call
      * @return the synthetic transaction body
      */
-    public TransactionBody decodeTransferNft(@NonNull final byte[] encoded) {
+    public TransactionBody decodeTransferNft(@NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
         throw new AssertionError("Not implemented");
     }
 
@@ -98,7 +98,7 @@ public class DecodingStrategies {
      * @param encoded the encoded call
      * @return the synthetic transaction body
      */
-    public TransactionBody decodeHrcTransferFrom(@NonNull final byte[] encoded) {
+    public TransactionBody decodeHrcTransferFrom(@NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
         throw new AssertionError("Not implemented");
     }
 
@@ -108,7 +108,7 @@ public class DecodingStrategies {
      * @param encoded the encoded call
      * @return the synthetic transaction body
      */
-    public TransactionBody decodeHrcTransferNftFrom(@NonNull final byte[] encoded) {
+    public TransactionBody decodeHrcTransferNftFrom(@NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
         throw new AssertionError("Not implemented");
     }
 }

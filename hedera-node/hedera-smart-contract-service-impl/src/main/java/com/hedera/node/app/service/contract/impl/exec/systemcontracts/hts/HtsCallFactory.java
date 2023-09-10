@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.configOf;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
 import static java.util.Objects.requireNonNull;
 
@@ -30,16 +31,19 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
  * Factory to create a new {@link HtsCallAttempt} for a given input and message frame.
  */
 @Singleton
-public class HtsCallAttemptFactory {
+public class HtsCallFactory {
+    private final SyntheticIds syntheticIds;
     private final HtsCallAddressChecks addressChecks;
     private final DecodingStrategies decodingStrategies;
     private final VerificationStrategies verificationStrategies;
 
     @Inject
-    public HtsCallAttemptFactory(
+    public HtsCallFactory(
+            @NonNull final SyntheticIds syntheticIds,
             @NonNull final HtsCallAddressChecks addressChecks,
             @NonNull final DecodingStrategies decodingStrategies,
             @NonNull final VerificationStrategies verificationStrategies) {
+        this.syntheticIds = syntheticIds;
         this.addressChecks = requireNonNull(addressChecks);
         this.decodingStrategies = decodingStrategies;
         this.verificationStrategies = requireNonNull(verificationStrategies);
@@ -56,9 +60,15 @@ public class HtsCallAttemptFactory {
     public @NonNull HtsCall createCallFrom(@NonNull final Bytes input, @NonNull final MessageFrame frame) {
         requireNonNull(input);
         requireNonNull(frame);
-        final var updater = proxyUpdaterFor(frame);
+        final var enhancement = proxyUpdaterFor(frame).enhancement();
         final var attempt =
-                new HtsCallAttempt(input, updater.enhancement(), decodingStrategies, verificationStrategies);
+                new HtsCallAttempt(
+                        input,
+                        enhancement,
+                        configOf(frame),
+                        decodingStrategies,
+                        syntheticIds.converterFor(enhancement.nativeOperations()),
+                        verificationStrategies);
         return requireNonNull(attempt.asCallFrom(frame.getSenderAddress(), addressChecks.hasParentDelegateCall(frame)));
     }
 }

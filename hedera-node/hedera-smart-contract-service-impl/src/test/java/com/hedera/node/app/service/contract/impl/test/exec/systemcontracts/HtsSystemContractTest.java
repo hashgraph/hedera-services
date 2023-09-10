@@ -25,8 +25,9 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttemptFactory;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallFactory;
 import java.nio.ByteBuffer;
+
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -46,7 +47,7 @@ class HtsSystemContractTest {
     private MessageFrame frame;
 
     @Mock
-    private HtsCallAttemptFactory attemptFactory;
+    private HtsCallFactory attemptFactory;
 
     @Mock
     private GasCalculator gasCalculator;

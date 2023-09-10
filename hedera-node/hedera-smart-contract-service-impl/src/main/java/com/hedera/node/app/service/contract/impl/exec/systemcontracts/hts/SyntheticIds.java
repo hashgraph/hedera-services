@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer;
+package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
 import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
 import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.NON_CANONICAL_REFERENCE_NUMBER;
@@ -30,51 +30,57 @@ import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperatio
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 /**
  * Helper class for determining the synthetic id to use in a synthetic
  * {@link com.hedera.hapi.node.token.CryptoTransferTransactionBody}.
  */
-public class SynthIdHelper {
+@Singleton
+public class SyntheticIds {
     private static final AccountID DEBIT_NON_CANONICAL_REFERENCE_ID =
             AccountID.newBuilder().accountNum(0L).build();
     private static final AccountID CREDIT_NON_CANONICAL_REFERENCE_ID =
             AccountID.newBuilder().alias(Bytes.wrap(new byte[20])).build();
-    public static final SynthIdHelper SYNTH_ID_HELPER = new SynthIdHelper();
 
-    private SynthIdHelper() {
-        // Singleton
+    @Inject
+    public SyntheticIds() {
+        // Dagger2
     }
 
     /**
-     * Given an address to be referenced in a synthetic {@link com.hedera.hapi.node.transaction.TransactionBody},
-     * returns the {@link AccountID} that should be used in the synthetic transaction.
+     * Given a native operations, returns the {@link AddressIdConverter} to use for converting
+     * addresses to ids in this context.
      *
-     * @param address the address to be used in the synthetic transaction
-     * @param nativeOperations the native operations to use in synthesizing the id
-     * @return the {@link AccountID} that should be used in the synthetic transaction
+     * @param nativeOperations the native operations
+     * @return the converter
      */
-    public @NonNull AccountID syntheticIdFor(
+    public AddressIdConverter converterFor(@NonNull final HederaNativeOperations nativeOperations) {
+        return new AddressIdConverter() {
+            @Override
+            public @NonNull AccountID convert(@NonNull final Address address) {
+                return syntheticIdFor(address, nativeOperations);
+            }
+
+            @Override
+            public @NonNull AccountID convertCredit(@NonNull Address address) {
+                return syntheticIdForCredit(address, nativeOperations);
+            }
+        };
+    }
+
+    private @NonNull AccountID syntheticIdFor(
             @NonNull final Address address, @NonNull final HederaNativeOperations nativeOperations) {
         return internalSyntheticId(false, address, nativeOperations);
     }
 
-    /**
-     * Given an address to be credited in a synthetic {@link com.hedera.hapi.node.token.CryptoTransferTransactionBody},
-     * returns the {@link AccountID} that should be used in the synthetic transaction.
-     *
-     * <p>Follows the logic used in mono-service, despite it being slightly odd in the case of non-canonical
-     * references (i.e., when an account with a EVM address is referenced by its long-zero address).
-     *
-     * @param address the address to be used in the synthetic transaction
-     * @param nativeOperations the native operations to use in synthesizing the id
-     * @return the {@link AccountID} that should be used in the synthetic transaction
-     */
-    public @NonNull AccountID syntheticIdForCredit(
+    private static @NonNull AccountID syntheticIdForCredit(
             @NonNull final Address address, @NonNull final HederaNativeOperations nativeOperations) {
         return internalSyntheticId(true, address, nativeOperations);
     }
 
-    private @NonNull AccountID internalSyntheticId(
+    private static @NonNull AccountID internalSyntheticId(
             final boolean isCredit,
             @NonNull final Address address,
             @NonNull final HederaNativeOperations nativeOperations) {
@@ -100,11 +106,11 @@ public class SynthIdHelper {
         }
     }
 
-    private AccountID numericIdWith(final long number) {
+    private static AccountID numericIdWith(final long number) {
         return AccountID.newBuilder().accountNum(number).build();
     }
 
-    private AccountID aliasIdWith(final byte[] alias) {
+    private static AccountID aliasIdWith(final byte[] alias) {
         return AccountID.newBuilder().alias(Bytes.wrap(alias)).build();
     }
 }

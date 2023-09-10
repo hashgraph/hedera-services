@@ -33,8 +33,8 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc721TransferFromCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.SynthIdHelper;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
@@ -51,7 +51,7 @@ class Erc721TransferFromCallTest extends HtsCallTestBase {
             ConversionUtils.asHeadlongAddress(asEvmAddress(B_NEW_ACCOUNT_ID.accountNumOrThrow()));
 
     @Mock
-    private SynthIdHelper synthIdHelper;
+    private AddressIdConverter addressIdConverter;
 
     @Mock
     private VerificationStrategy verificationStrategy;
@@ -101,10 +101,9 @@ class Erc721TransferFromCallTest extends HtsCallTestBase {
 
     private void givenSynthIdHelperWithCaller(
             @NonNull final org.hyperledger.besu.datatypes.Address caller, @NonNull final AccountID callerId) {
-        given(synthIdHelper.syntheticIdFor(asHeadlongAddress(caller), nativeOperations))
-                .willReturn(callerId);
-        given(synthIdHelper.syntheticIdFor(FROM_ADDRESS, nativeOperations)).willReturn(A_NEW_ACCOUNT_ID);
-        given(synthIdHelper.syntheticIdForCredit(TO_ADDRESS, nativeOperations)).willReturn(B_NEW_ACCOUNT_ID);
+        given(addressIdConverter.convertCredit(asHeadlongAddress(caller))).willReturn(callerId);
+        given(addressIdConverter.convert(FROM_ADDRESS)).willReturn(A_NEW_ACCOUNT_ID);
+        given(addressIdConverter.convertCredit(TO_ADDRESS)).willReturn(B_NEW_ACCOUNT_ID);
     }
 
     private Erc721TransferFromCall subjectFor(final long serialNo) {
@@ -115,7 +114,7 @@ class Erc721TransferFromCallTest extends HtsCallTestBase {
                 NON_FUNGIBLE_TOKEN_ID,
                 verificationStrategy,
                 FRAME_SENDER_ADDRESS,
-                synthIdHelper,
-                mockEnhancement());
+                mockEnhancement(),
+                addressIdConverter);
     }
 }

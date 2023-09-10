@@ -98,14 +98,11 @@ public class HandleSystemContractOperations implements SystemContractOperations 
         return context.dispatchChildTransaction(
                 syntheticBody,
                 recordBuilderClass,
-                (key) -> {
-                    System.out.println("Verifying: " + key);
-                    return switch (strategy.decideFor(key)) {
-                        case VALID -> true;
-                        case INVALID -> false;
-                        case DELEGATE_TO_CRYPTOGRAPHIC_VERIFICATION -> context.verificationFor(key)
-                                .passed();
-                    };
+                (key) -> switch (strategy.decideFor(key)) {
+                    case VALID -> true;
+                    case INVALID -> false;
+                    case DELEGATE_TO_CRYPTOGRAPHIC_VERIFICATION -> context.verificationFor(key)
+                            .passed();
                 },
                 syntheticPayerId);
     }

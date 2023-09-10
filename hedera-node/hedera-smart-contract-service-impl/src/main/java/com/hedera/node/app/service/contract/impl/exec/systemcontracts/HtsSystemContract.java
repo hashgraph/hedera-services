@@ -20,7 +20,7 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.Hed
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttemptFactory;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallFactory;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -34,13 +34,13 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
     private static final String HTS_PRECOMPILE_NAME = "HTS";
     public static final String HTS_PRECOMPILE_ADDRESS = "0x167";
 
-    private final HtsCallAttemptFactory attemptFactory;
+    private final HtsCallFactory callFactory;
 
     @Inject
     public HtsSystemContract(
-            @NonNull final GasCalculator gasCalculator, @NonNull final HtsCallAttemptFactory attemptFactory) {
+            @NonNull final GasCalculator gasCalculator, @NonNull final HtsCallFactory callFactory) {
         super(HTS_PRECOMPILE_NAME, gasCalculator);
-        this.attemptFactory = requireNonNull(attemptFactory);
+        this.callFactory = requireNonNull(callFactory);
     }
 
     @Override
@@ -50,9 +50,9 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
 
         final HtsCall call;
         try {
-            call = attemptFactory.createCallFrom(input, frame);
+            call = callFactory.createCallFrom(input, frame);
         } catch (RuntimeException ignore) {
-            // Halt and consume all remaining gas if call could not be decoded
+            // Halt and consume all remaining gas if call could not be created
             return haltResult(ExceptionalHaltReason.INVALID_OPERATION, frame.getRemainingGas());
         }
         final var pricedResult = call.execute();

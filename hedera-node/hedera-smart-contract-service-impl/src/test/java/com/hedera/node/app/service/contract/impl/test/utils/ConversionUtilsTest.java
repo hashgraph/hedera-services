@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.test.utils;
 
 import static com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations.ZERO_ENTROPY;
 import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
+import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.NON_CANONICAL_REFERENCE_NUMBER;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ALIASED_SOMEBODY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_ACCOUNT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.BESU_LOG;
@@ -124,11 +125,11 @@ class ConversionUtilsTest {
     }
 
     @Test
-    void returnsMissingIfSmallLongZeroAddressRefersToAliasedAccount() {
+    void returnsNonCanonicalRefIfSmallLongZeroAddressRefersToAliasedAccount() {
         final var address = asHeadlongAddress(Address.fromHexString("0x1234").toArray());
         given(nativeOperations.getAccount(0x1234)).willReturn(ALIASED_SOMEBODY);
         final var actual = accountNumberForEvmReference(address, nativeOperations);
-        assertEquals(MISSING_ENTITY_NUMBER, actual);
+        assertEquals(NON_CANONICAL_REFERENCE_NUMBER, actual);
     }
 
     @Test

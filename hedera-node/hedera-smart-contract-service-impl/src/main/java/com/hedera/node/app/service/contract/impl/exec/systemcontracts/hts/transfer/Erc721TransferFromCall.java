@@ -20,7 +20,6 @@ import static com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.SynthIdHelper.SYNTH_ID_HELPER;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asHeadlongAddress;
 import static java.util.Objects.requireNonNull;
 
@@ -35,6 +34,7 @@ import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
@@ -54,7 +54,7 @@ public class Erc721TransferFromCall extends AbstractHtsCall {
     private final TokenID tokenId;
     private final VerificationStrategy verificationStrategy;
     private final org.hyperledger.besu.datatypes.Address spender;
-    private final SynthIdHelper synthIdHelper;
+    private final AddressIdConverter addressIdConverter;
 
     // too many parameters
     @SuppressWarnings("java:S107")
@@ -65,16 +65,15 @@ public class Erc721TransferFromCall extends AbstractHtsCall {
             @NonNull final TokenID tokenId,
             @NonNull final VerificationStrategy verificationStrategy,
             @NonNull final org.hyperledger.besu.datatypes.Address spender,
-            @NonNull final SynthIdHelper synthIdHelper,
-            @NonNull final HederaWorldUpdater.Enhancement enhancement) {
+            @NonNull final HederaWorldUpdater.Enhancement enhancement,
+            @NonNull final AddressIdConverter addressIdConverter) {
         super(enhancement);
         this.from = requireNonNull(from);
         this.to = requireNonNull(to);
         this.tokenId = tokenId;
         this.spender = requireNonNull(spender);
-        this.synthIdHelper = requireNonNull(synthIdHelper);
         this.verificationStrategy = requireNonNull(verificationStrategy);
-
+        this.addressIdConverter = requireNonNull(addressIdConverter);
         this.serialNo = serialNo;
     }
 
@@ -85,8 +84,7 @@ public class Erc721TransferFromCall extends AbstractHtsCall {
     public @NonNull PricedResult execute() {
         // C.f. https://eips.ethereum.org/EIPS/eip-721
         // TODO - gas calculation
-        final var spenderId =
-                synthIdHelper.syntheticIdFor(asHeadlongAddress(spender.toArrayUnsafe()), nativeOperations());
+        final var spenderId = addressIdConverter.convert(asHeadlongAddress(spender.toArrayUnsafe()));
         final var recordBuilder = systemContractOperations()
                 .dispatch(
                         syntheticTransfer(spenderId),
@@ -101,9 +99,8 @@ public class Erc721TransferFromCall extends AbstractHtsCall {
     }
 
     private TransactionBody syntheticTransfer(@NonNull final AccountID spenderId) {
-        final var nativeOperations = enhancement.nativeOperations();
-        final var ownerId = synthIdHelper.syntheticIdFor(from, nativeOperations);
-        final var receiverId = synthIdHelper.syntheticIdForCredit(to, nativeOperations);
+        final var ownerId = addressIdConverter.convert(from);
+        final var receiverId = addressIdConverter.convertCredit(to);
         return TransactionBody.newBuilder()
                 .cryptoTransfer(CryptoTransferTransactionBody.newBuilder()
                         .tokenTransfers(TokenTransferList.newBuilder()
@@ -156,7 +153,7 @@ public class Erc721TransferFromCall extends AbstractHtsCall {
                                 senderNeedsDelegatableContractKeys,
                                 attempt.enhancement().nativeOperations()),
                 sender,
-                SYNTH_ID_HELPER,
-                attempt.enhancement());
+                attempt.enhancement(),
+                attempt.addressIdConverter());
     }
 }

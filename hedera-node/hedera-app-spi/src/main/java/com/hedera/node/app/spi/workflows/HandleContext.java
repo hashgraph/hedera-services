@@ -368,7 +368,7 @@ public interface HandleContext {
      * @param txBody             the {@link TransactionBody} of the child transaction to dispatch
      * @param recordBuilderClass the record builder class of the child transaction
      * @param callback           a {@link Predicate} callback function that will observe each primitive key
-     * @param payerId
+     * @param syntheticPayer   the payer of the child transaction
      * @return the record builder of the child transaction
      * @throws NullPointerException     if any of the arguments is {@code null}
      * @throws IllegalArgumentException if the current transaction is a
@@ -379,7 +379,7 @@ public interface HandleContext {
             @NonNull TransactionBody txBody,
             @NonNull Class<T> recordBuilderClass,
             @NonNull Predicate<Key> callback,
-            AccountID payerId);
+            @NonNull AccountID syntheticPayer);
 
     /**
      * @deprecated Use {@link #dispatchChildTransaction(TransactionBody, Class, Predicate, AccountID)} instead.

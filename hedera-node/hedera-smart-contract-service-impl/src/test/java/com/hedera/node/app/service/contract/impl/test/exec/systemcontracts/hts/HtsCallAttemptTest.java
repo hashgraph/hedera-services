@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts;
 
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.balanceof.BalanceOfCall.BALANCE_OF;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_FUNGIBLE_TOKEN;
@@ -36,6 +37,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DecodingStrategies;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.balanceof.BalanceOfCall;
@@ -65,9 +67,10 @@ import org.mockito.Mock;
 class HtsCallAttemptTest extends HtsCallTestBase {
     @Mock
     private VerificationStrategies verificationStrategies;
-
     @Mock
     private DecodingStrategies decodingStrategies;
+    @Mock
+    private AddressIdConverter addressIdConverter;
 
     @Mock
     private VerificationStrategy strategy;
@@ -75,7 +78,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
     @Test
     void nonLongZeroAddressesArentTokens() {
         final var input = TestHelpers.bytesForRedirect(Erc20TransfersCall.ERC_20_TRANSFER.selector(), EIP_1014_ADDRESS);
-        final var subject = new HtsCallAttempt(input, mockEnhancement(), decodingStrategies, verificationStrategies);
+        final var subject = new HtsCallAttempt(input, mockEnhancement(), DEFAULT_CONFIG, decodingStrategies, addressIdConverter, verificationStrategies);
         assertNull(subject.redirectToken());
         verifyNoInteractions(nativeOperations);
     }
@@ -85,7 +88,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
         given(nativeOperations.getToken(numberOfLongZero(NON_SYSTEM_LONG_ZERO_ADDRESS)))
                 .willReturn(FUNGIBLE_TOKEN);
         final var input = TestHelpers.bytesForRedirect(new byte[4], NON_SYSTEM_LONG_ZERO_ADDRESS);
-        final var subject = new HtsCallAttempt(input, mockEnhancement(), decodingStrategies, verificationStrategies);
+        final var subject = new HtsCallAttempt(input, mockEnhancement(), DEFAULT_CONFIG, decodingStrategies, addressIdConverter, verificationStrategies);
         assertNull(subject.asCallFrom(EIP_1014_ADDRESS, false));
     }
 
@@ -93,7 +96,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
     void constructsDecimals() {
         final var input = TestHelpers.bytesForRedirect(
                 DecimalsCall.DECIMALS.encodeCallWithArgs().array(), NON_SYSTEM_LONG_ZERO_ADDRESS);
-        final var subject = new HtsCallAttempt(input, mockEnhancement(), decodingStrategies, verificationStrategies);
+        final var subject = new HtsCallAttempt(input, mockEnhancement(), DEFAULT_CONFIG, decodingStrategies, addressIdConverter, verificationStrategies);
         assertInstanceOf(DecimalsCall.class, subject.asCallFrom(EIP_1014_ADDRESS, false));
     }
 
@@ -101,7 +104,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
     void constructsTokenUri() {
         final var input = TestHelpers.bytesForRedirect(
                 TokenUriCall.TOKEN_URI.encodeCallWithArgs(BigInteger.ONE).array(), NON_SYSTEM_LONG_ZERO_ADDRESS);
-        final var subject = new HtsCallAttempt(input, mockEnhancement(), decodingStrategies, verificationStrategies);
+        final var subject = new HtsCallAttempt(input, mockEnhancement(), DEFAULT_CONFIG, decodingStrategies, addressIdConverter, verificationStrategies);
         assertInstanceOf(TokenUriCall.class, subject.asCallFrom(EIP_1014_ADDRESS, false));
     }
 
@@ -109,7 +112,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
     void constructsOwnerOf() {
         final var input = TestHelpers.bytesForRedirect(
                 OwnerOfCall.OWNER_OF.encodeCallWithArgs(BigInteger.ONE).array(), NON_SYSTEM_LONG_ZERO_ADDRESS);
-        final var subject = new HtsCallAttempt(input, mockEnhancement(), decodingStrategies, verificationStrategies);
+        final var subject = new HtsCallAttempt(input, mockEnhancement(), DEFAULT_CONFIG, decodingStrategies, addressIdConverter, verificationStrategies);
         assertInstanceOf(OwnerOfCall.class, subject.asCallFrom(EIP_1014_ADDRESS, false));
     }
 
@@ -120,7 +123,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                         .encodeCallWithArgs(asHeadlongAddress(EIP_1014_ADDRESS))
                         .array(),
                 NON_SYSTEM_LONG_ZERO_ADDRESS);
-        final var subject = new HtsCallAttempt(input, mockEnhancement(), decodingStrategies, verificationStrategies);
+        final var subject = new HtsCallAttempt(input, mockEnhancement(), DEFAULT_CONFIG, decodingStrategies, addressIdConverter, verificationStrategies);
         assertInstanceOf(BalanceOfCall.class, subject.asCallFrom(EIP_1014_ADDRESS, false));
     }
 
@@ -132,7 +135,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                         .encodeCallWithArgs(address, address)
                         .array(),
                 NON_SYSTEM_LONG_ZERO_ADDRESS);
-        final var subject = new HtsCallAttempt(input, mockEnhancement(), decodingStrategies, verificationStrategies);
+        final var subject = new HtsCallAttempt(input, mockEnhancement(), DEFAULT_CONFIG, decodingStrategies, addressIdConverter, verificationStrategies);
         assertInstanceOf(IsApprovedForAllCall.class, subject.asCallFrom(EIP_1014_ADDRESS, false));
     }
 
@@ -140,7 +143,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
     void constructsTotalSupply() {
         final var input = TestHelpers.bytesForRedirect(
                 TotalSupplyCall.TOTAL_SUPPLY.encodeCallWithArgs().array(), NON_SYSTEM_LONG_ZERO_ADDRESS);
-        final var subject = new HtsCallAttempt(input, mockEnhancement(), decodingStrategies, verificationStrategies);
+        final var subject = new HtsCallAttempt(input, mockEnhancement(), DEFAULT_CONFIG, decodingStrategies, addressIdConverter, verificationStrategies);
         assertInstanceOf(TotalSupplyCall.class, subject.asCallFrom(EIP_1014_ADDRESS, false));
     }
 
@@ -148,7 +151,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
     void constructsName() {
         final var input =
                 TestHelpers.bytesForRedirect(NameCall.NAME.encodeCallWithArgs().array(), NON_SYSTEM_LONG_ZERO_ADDRESS);
-        final var subject = new HtsCallAttempt(input, mockEnhancement(), decodingStrategies, verificationStrategies);
+        final var subject = new HtsCallAttempt(input, mockEnhancement(), DEFAULT_CONFIG, decodingStrategies, addressIdConverter, verificationStrategies);
         assertInstanceOf(NameCall.class, subject.asCallFrom(EIP_1014_ADDRESS, false));
     }
 
@@ -156,7 +159,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
     void constructsSymbol() {
         final var input = TestHelpers.bytesForRedirect(
                 SymbolCall.SYMBOL.encodeCallWithArgs().array(), NON_SYSTEM_LONG_ZERO_ADDRESS);
-        final var subject = new HtsCallAttempt(input, mockEnhancement(), decodingStrategies, verificationStrategies);
+        final var subject = new HtsCallAttempt(input, mockEnhancement(), DEFAULT_CONFIG, decodingStrategies, addressIdConverter, verificationStrategies);
         assertInstanceOf(SymbolCall.class, subject.asCallFrom(EIP_1014_ADDRESS, false));
     }
 
@@ -174,7 +177,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 NON_SYSTEM_LONG_ZERO_ADDRESS);
         given(verificationStrategies.activatingContractKeysFor(EIP_1014_ADDRESS, true, nativeOperations))
                 .willReturn(strategy);
-        final var subject = new HtsCallAttempt(input, mockEnhancement(), decodingStrategies, verificationStrategies);
+        final var subject = new HtsCallAttempt(input, mockEnhancement(), DEFAULT_CONFIG, decodingStrategies, addressIdConverter, verificationStrategies);
         assertInstanceOf(Erc721TransferFromCall.class, subject.asCallFrom(EIP_1014_ADDRESS, true));
     }
 
@@ -192,7 +195,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 NON_SYSTEM_LONG_ZERO_ADDRESS);
         given(verificationStrategies.activatingContractKeysFor(EIP_1014_ADDRESS, true, nativeOperations))
                 .willReturn(strategy);
-        final var subject = new HtsCallAttempt(input, mockEnhancement(), decodingStrategies, verificationStrategies);
+        final var subject = new HtsCallAttempt(input, mockEnhancement(), DEFAULT_CONFIG, decodingStrategies, addressIdConverter, verificationStrategies);
         assertInstanceOf(Erc20TransfersCall.class, subject.asCallFrom(EIP_1014_ADDRESS, true));
     }
 
@@ -207,7 +210,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 NON_SYSTEM_LONG_ZERO_ADDRESS);
         given(verificationStrategies.activatingContractKeysFor(EIP_1014_ADDRESS, true, nativeOperations))
                 .willReturn(strategy);
-        final var subject = new HtsCallAttempt(input, mockEnhancement(), decodingStrategies, verificationStrategies);
+        final var subject = new HtsCallAttempt(input, mockEnhancement(), DEFAULT_CONFIG, decodingStrategies, addressIdConverter, verificationStrategies);
         assertInstanceOf(Erc20TransfersCall.class, subject.asCallFrom(EIP_1014_ADDRESS, true));
     }
 
@@ -230,21 +233,21 @@ class HtsCallAttemptTest extends HtsCallTestBase {
         given(verificationStrategies.activatingContractKeysFor(EIP_1014_ADDRESS, true, nativeOperations))
                 .willReturn(strategy);
         if (ClassicTransfersCall.CRYPTO_TRANSFER.selectorHex().equals(selectorHex)) {
-            given(decodingStrategies.decodeCryptoTransfer(any())).willReturn(TransactionBody.DEFAULT);
+            given(decodingStrategies.decodeCryptoTransfer(any(), any())).willReturn(TransactionBody.DEFAULT);
         } else if (ClassicTransfersCall.CRYPTO_TRANSFER_V2.selectorHex().equals(selectorHex)) {
-            given(decodingStrategies.decodeCryptoTransferV2(any())).willReturn(TransactionBody.DEFAULT);
+            given(decodingStrategies.decodeCryptoTransferV2(any(), any())).willReturn(TransactionBody.DEFAULT);
         } else if (ClassicTransfersCall.TRANSFER_TOKENS.selectorHex().equals(selectorHex)) {
-            given(decodingStrategies.decodeTransferTokens(any())).willReturn(TransactionBody.DEFAULT);
+            given(decodingStrategies.decodeTransferTokens(any(), any())).willReturn(TransactionBody.DEFAULT);
         } else if (ClassicTransfersCall.TRANSFER_TOKEN.selectorHex().equals(selectorHex)) {
-            given(decodingStrategies.decodeTransferToken(any())).willReturn(TransactionBody.DEFAULT);
+            given(decodingStrategies.decodeTransferToken(any(), any())).willReturn(TransactionBody.DEFAULT);
         } else if (ClassicTransfersCall.TRANSFER_NFTS.selectorHex().equals(selectorHex)) {
-            given(decodingStrategies.decodeTransferNfts(any())).willReturn(TransactionBody.DEFAULT);
+            given(decodingStrategies.decodeTransferNfts(any(), any())).willReturn(TransactionBody.DEFAULT);
         } else if (ClassicTransfersCall.TRANSFER_NFT.selectorHex().equals(selectorHex)) {
-            given(decodingStrategies.decodeTransferNft(any())).willReturn(TransactionBody.DEFAULT);
+            given(decodingStrategies.decodeTransferNft(any(), any())).willReturn(TransactionBody.DEFAULT);
         } else if (ClassicTransfersCall.HRC_TRANSFER_FROM.selectorHex().equals(selectorHex)) {
-            given(decodingStrategies.decodeHrcTransferFrom(any())).willReturn(TransactionBody.DEFAULT);
+            given(decodingStrategies.decodeHrcTransferFrom(any(), any())).willReturn(TransactionBody.DEFAULT);
         } else if (ClassicTransfersCall.HRC_TRANSFER_NFT_FROM.selectorHex().equals(selectorHex)) {
-            given(decodingStrategies.decodeHrcTransferNftFrom(any())).willReturn(TransactionBody.DEFAULT);
+            given(decodingStrategies.decodeHrcTransferNftFrom(any(), any())).willReturn(TransactionBody.DEFAULT);
         }
         final var input = encodeInput(useExplicitCall, isRedirect, selector);
         if (isRedirect) {
@@ -252,7 +255,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                     .willReturn(FUNGIBLE_TOKEN);
         }
 
-        final var subject = new HtsCallAttempt(input, mockEnhancement(), decodingStrategies, verificationStrategies);
+        final var subject = new HtsCallAttempt(input, mockEnhancement(), DEFAULT_CONFIG, decodingStrategies, addressIdConverter, verificationStrategies);
 
         assertInstanceOf(ClassicTransfersCall.class, subject.asCallFrom(EIP_1014_ADDRESS, true));
         assertArrayEquals(selector, subject.selector());
@@ -313,7 +316,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                             .array());
         }
 
-        final var subject = new HtsCallAttempt(input, mockEnhancement(), decodingStrategies, verificationStrategies);
+        final var subject = new HtsCallAttempt(input, mockEnhancement(), DEFAULT_CONFIG, decodingStrategies, addressIdConverter, verificationStrategies);
 
         if (linkedTokenType == LinkedTokenType.MISSING) {
             assertNull(subject.asCallFrom(EIP_1014_ADDRESS, false));

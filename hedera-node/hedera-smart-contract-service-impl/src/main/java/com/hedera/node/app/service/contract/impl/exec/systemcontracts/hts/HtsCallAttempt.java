@@ -39,6 +39,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transf
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc20TransfersCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc721TransferFromCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
@@ -62,14 +63,20 @@ public class HtsCallAttempt {
     private final Token redirectToken;
 
     private final HederaWorldUpdater.Enhancement enhancement;
+    private final Configuration configuration;
     private final DecodingStrategies decodingStrategies;
+    private final AddressIdConverter addressIdConverter;
     private final VerificationStrategies verificationStrategies;
 
     public HtsCallAttempt(
             @NonNull final Bytes input,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
+            @NonNull final Configuration configuration,
             @NonNull final DecodingStrategies decodingStrategies,
+            @NonNull final AddressIdConverter addressIdConverter,
             @NonNull final VerificationStrategies verificationStrategies) {
+        this.configuration = configuration;
+        this.addressIdConverter = addressIdConverter;
         requireNonNull(input);
         this.isRedirect = isRedirect(input.toArrayUnsafe());
         this.enhancement = requireNonNull(enhancement);
@@ -206,6 +213,24 @@ public class HtsCallAttempt {
         } else {
             return null;
         }
+    }
+
+    /**
+     * Returns the address ID converter for this call.
+     *
+     * @return the address ID converter for this call
+     */
+    public AddressIdConverter addressIdConverter() {
+        return addressIdConverter;
+    }
+
+    /**
+     * Returns the configuration for this call.
+     *
+     * @return the configuration for this call
+     */
+    public Configuration configuration() {
+        return configuration;
     }
 
     /**
