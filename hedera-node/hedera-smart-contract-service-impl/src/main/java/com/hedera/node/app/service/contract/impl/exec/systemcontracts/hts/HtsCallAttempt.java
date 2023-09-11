@@ -22,10 +22,12 @@ import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.associations.AssociationsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.balanceof.BalanceOfCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.decimals.DecimalsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.isoperator.IsApprovedForAllCall;
@@ -192,6 +194,8 @@ public class HtsCallAttempt {
             return Erc20TransfersCall.from(this, senderAddress, needingDelegatableKeys);
         } else if (ClassicTransfersCall.matches(this)) {
             return ClassicTransfersCall.from(this, senderAddress, needingDelegatableKeys);
+        } else if (AssociationsCall.matches(this)) {
+            return AssociationsCall.from(this, senderAddress, needingDelegatableKeys);
         } else if (MintCall.matches(selector)) {
             return MintCall.from(this, senderAddress);
         } else if (BalanceOfCall.matches(selector)) {
@@ -292,6 +296,19 @@ public class HtsCallAttempt {
             throw new IllegalStateException("Not a token redirect");
         }
         return redirectToken;
+    }
+
+    /**
+     * Returns the id of the token that is the target of this redirect, if it existed.
+     *
+     * @return the id of the token that is the target of this redirect, or null if it didn't exist
+     * @throws IllegalStateException if this is not a token redirect
+     */
+    public @Nullable TokenID redirectTokenId() {
+        if (!isRedirect) {
+            throw new IllegalStateException("Not a token redirect");
+        }
+        return redirectToken == null ? null : redirectToken.tokenId();
     }
 
     /**

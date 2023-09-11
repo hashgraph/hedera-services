@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.explicitFromHeadlong;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
+import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
@@ -28,7 +29,10 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
+import com.hedera.hapi.node.token.TokenAssociateTransactionBody;
+import com.hedera.hapi.node.token.TokenDissociateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.associations.AssociationsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersCall;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
@@ -63,6 +67,54 @@ public class DecodingStrategies {
                 @NonNull Address token,
                 @NonNull Tuple[] ownershipChanges,
                 @NonNull AddressIdConverter addressIdConverter);
+    }
+
+    /**
+     * Decodes a call to {@link AssociationsCall#ASSOCIATE_ONE} into a synthetic {@link TransactionBody}.
+     *
+     * @param encoded the encoded call
+     * @return the synthetic transaction body
+     */
+    public TransactionBody decodeAssociateOne(
+            @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
+        final var call = AssociationsCall.ASSOCIATE_ONE.decodeCall(encoded);
+        return bodyOf(association(addressIdConverter, call.get(0), call.get(1)));
+    }
+
+    /**
+     * Decodes a call to {@link AssociationsCall#ASSOCIATE_MANY} into a synthetic {@link TransactionBody}.
+     *
+     * @param encoded the encoded call
+     * @return the synthetic transaction body
+     */
+    public TransactionBody decodeAssociateMany(
+            @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
+        final var call = AssociationsCall.ASSOCIATE_MANY.decodeCall(encoded);
+        return bodyOf(associations(addressIdConverter, call.get(0), call.get(1)));
+    }
+
+    /**
+     * Decodes a call to {@link AssociationsCall#DISSOCIATE_ONE} into a synthetic {@link TransactionBody}.
+     *
+     * @param encoded the encoded call
+     * @return the synthetic transaction body
+     */
+    public TransactionBody decodeDissociateOne(
+            @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
+        final var call = AssociationsCall.DISSOCIATE_ONE.decodeCall(encoded);
+        return bodyOf(dissociation(addressIdConverter, call.get(0), call.get(1)));
+    }
+
+    /**
+     * Decodes a call to {@link AssociationsCall#DISSOCIATE_MANY} into a synthetic {@link TransactionBody}.
+     *
+     * @param encoded the encoded call
+     * @return the synthetic transaction body
+     */
+    public TransactionBody decodeDissociateMany(
+            @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
+        final var call = AssociationsCall.DISSOCIATE_MANY.decodeCall(encoded);
+        return bodyOf(dissociations(addressIdConverter, call.get(0), call.get(1)));
     }
 
     /**
@@ -169,14 +221,14 @@ public class DecodingStrategies {
     }
 
     /**
-     * Decodes a call to {@link ClassicTransfersCall#HRC_TRANSFER_FROM} into a synthetic {@link TransactionBody}.
+     * Decodes a call to {@link ClassicTransfersCall#TRANSFER_FROM} into a synthetic {@link TransactionBody}.
      *
      * @param encoded the encoded call
      * @return the synthetic transaction body
      */
     public TransactionBody decodeHrcTransferFrom(
             @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
-        final var call = ClassicTransfersCall.HRC_TRANSFER_FROM.decodeCall(encoded);
+        final var call = ClassicTransfersCall.TRANSFER_FROM.decodeCall(encoded);
         return bodyOf(tokenTransfers(sendingUnitsFromTo(
                 asTokenId(call.get(0)),
                 addressIdConverter.convert(call.get(1)),
@@ -186,14 +238,14 @@ public class DecodingStrategies {
     }
 
     /**
-     * Decodes a call to {@link ClassicTransfersCall#HRC_TRANSFER_NFT_FROM} into a synthetic {@link TransactionBody}.
+     * Decodes a call to {@link ClassicTransfersCall#TRANSFER_NFT_FROM} into a synthetic {@link TransactionBody}.
      *
      * @param encoded the encoded call
      * @return the synthetic transaction body
      */
     public TransactionBody decodeHrcTransferNftFrom(
             @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
-        final var call = ClassicTransfersCall.HRC_TRANSFER_NFT_FROM.decodeCall(encoded);
+        final var call = ClassicTransfersCall.TRANSFER_NFT_FROM.decodeCall(encoded);
         return bodyOf(tokenTransfers(changingOwner(
                 asTokenId(call.get(0)),
                 addressIdConverter.convert(call.get(1)),
@@ -302,6 +354,14 @@ public class DecodingStrategies {
         return TransactionBody.newBuilder().cryptoTransfer(cryptoTransfer).build();
     }
 
+    private TransactionBody bodyOf(@NonNull final TokenAssociateTransactionBody association) {
+        return TransactionBody.newBuilder().tokenAssociate(association).build();
+    }
+
+    private TransactionBody bodyOf(@NonNull final TokenDissociateTransactionBody dissociation) {
+        return TransactionBody.newBuilder().tokenDissociate(dissociation).build();
+    }
+
     private long exactLongValueOrThrow(@NonNull final BigInteger value) {
         return value.longValueExact();
     }
@@ -317,6 +377,63 @@ public class DecodingStrategies {
                     ? credit(addressIdConverter.convertCredit(party), amount)
                     : debit(addressIdConverter.convert(party), -amount, IsApproval.FALSE);
         });
+    }
+
+    private TokenAssociateTransactionBody association(
+            @NonNull final AddressIdConverter addressIdConverter,
+            @NonNull final Address accountAddress,
+            @NonNull final Address tokenAddress) {
+        return internalAssociations(addressIdConverter, accountAddress, tokenAddress);
+    }
+
+    private TokenAssociateTransactionBody associations(
+            @NonNull final AddressIdConverter addressIdConverter,
+            @NonNull final Address accountAddress,
+            @NonNull final Address[] tokenAddresses) {
+        return internalAssociations(addressIdConverter, accountAddress, tokenAddresses);
+    }
+
+    private TokenDissociateTransactionBody dissociation(
+            @NonNull final AddressIdConverter addressIdConverter,
+            @NonNull final Address accountAddress,
+            @NonNull final Address tokenAddress) {
+        return internalDissociations(addressIdConverter, accountAddress, tokenAddress);
+    }
+
+    private TokenDissociateTransactionBody dissociations(
+            @NonNull final AddressIdConverter addressIdConverter,
+            @NonNull final Address accountAddress,
+            @NonNull final Address[] tokenAddresses) {
+        return internalDissociations(addressIdConverter, accountAddress, tokenAddresses);
+    }
+
+    private TokenAssociateTransactionBody internalAssociations(
+            @NonNull final AddressIdConverter addressIdConverter,
+            @NonNull final Address accountAddress,
+            @NonNull final Address... tokenAddresses) {
+        return TokenAssociateTransactionBody.newBuilder()
+                .account(addressIdConverter.convert(accountAddress))
+                .tokens(asTokenIds(tokenAddresses))
+                .build();
+    }
+
+    private TokenDissociateTransactionBody internalDissociations(
+            @NonNull final AddressIdConverter addressIdConverter,
+            @NonNull final Address accountAddress,
+            @NonNull final Address... tokenAddresses) {
+        return TokenDissociateTransactionBody.newBuilder()
+                .account(addressIdConverter.convert(accountAddress))
+                .tokens(asTokenIds(tokenAddresses))
+                .build();
+    }
+
+    private TokenID[] asTokenIds(@NonNull final Address... tokenAddresses) {
+        requireNonNull(tokenAddresses);
+        final TokenID[] tokens = new TokenID[tokenAddresses.length];
+        for (int i = 0; i < tokens.length; i++) {
+            tokens[i] = asTokenId(tokenAddresses[i]);
+        }
+        return tokens;
     }
 
     private TransferList convertingMaybeApprovedAdjustments(

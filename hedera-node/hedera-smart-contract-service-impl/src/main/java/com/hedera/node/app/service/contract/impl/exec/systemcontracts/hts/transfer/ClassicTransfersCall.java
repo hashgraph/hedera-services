@@ -22,7 +22,6 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.Hed
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ApprovalSwitchHelper.APPROVAL_SWITCH_HELPER;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.SystemAccountCreditScreen.SYSTEM_ACCOUNT_CREDIT_SCREEN;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asHeadlongAddress;
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Function;
@@ -41,7 +40,6 @@ import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.util.Arrays;
 
 /**
@@ -73,9 +71,9 @@ public class ClassicTransfersCall extends AbstractHtsCall {
             new Function("transferNFTs(address,address[],address[],int64[])", ReturnTypes.INT_64);
     public static final Function TRANSFER_NFT =
             new Function("transferNFT(address,address,address,int64)", ReturnTypes.INT_64);
-    public static final Function HRC_TRANSFER_FROM =
+    public static final Function TRANSFER_FROM =
             new Function("transferFrom(address,address,address,uint256)", ReturnTypes.INT_64);
-    public static final Function HRC_TRANSFER_NFT_FROM =
+    public static final Function TRANSFER_NFT_FROM =
             new Function("transferFromNFT(address,address,address,uint256)", ReturnTypes.INT_64);
 
     private final byte[] selector;
@@ -124,7 +122,7 @@ public class ClassicTransfersCall extends AbstractHtsCall {
         }
         if (executionIsNotSupported()) {
             // TODO - externalize the unsupported synthetic transfer without dispatching it
-            return completionWith(NOT_SUPPORTED);
+            return completionWith(NOT_SUPPORTED, 0L);
         }
         final var transferToDispatch = shouldRetryWithApprovals()
                 ? syntheticTransfer
@@ -138,7 +136,7 @@ public class ClassicTransfersCall extends AbstractHtsCall {
                 : syntheticTransfer;
         final var recordBuilder = systemContractOperations()
                 .dispatch(transferToDispatch, verificationStrategy, spenderId, CryptoTransferRecordBuilder.class);
-        return completionWith(standardized(recordBuilder.status()));
+        return completionWith(standardized(recordBuilder.status()), 0L);
     }
 
     private boolean shouldRetryWithApprovals() {
@@ -165,8 +163,8 @@ public class ClassicTransfersCall extends AbstractHtsCall {
                         || Arrays.equals(attempt.selector(), TRANSFER_TOKEN.selector())
                         || Arrays.equals(attempt.selector(), TRANSFER_NFTS.selector())
                         || Arrays.equals(attempt.selector(), TRANSFER_NFT.selector())
-                        || Arrays.equals(attempt.selector(), HRC_TRANSFER_FROM.selector())
-                        || Arrays.equals(attempt.selector(), HRC_TRANSFER_NFT_FROM.selector()));
+                        || Arrays.equals(attempt.selector(), TRANSFER_FROM.selector())
+                        || Arrays.equals(attempt.selector(), TRANSFER_NFT_FROM.selector()));
     }
 
     /**
@@ -187,7 +185,7 @@ public class ClassicTransfersCall extends AbstractHtsCall {
         return new ClassicTransfersCall(
                 attempt.enhancement(),
                 selector,
-                attempt.addressIdConverter().convert(asHeadlongAddress(sender.toArrayUnsafe())),
+                attempt.addressIdConverter().convertSender(sender),
                 nominalBodyFor(attempt),
                 attempt.configuration(),
                 isLegacyCall(selector) ? APPROVAL_SWITCH_HELPER : null,
@@ -223,10 +221,10 @@ public class ClassicTransfersCall extends AbstractHtsCall {
         } else if (Arrays.equals(attempt.selector(), TRANSFER_NFT.selector())) {
             return attempt.decodingStrategies()
                     .decodeTransferNft(attempt.input().toArrayUnsafe(), attempt.addressIdConverter());
-        } else if (Arrays.equals(attempt.selector(), HRC_TRANSFER_FROM.selector())) {
+        } else if (Arrays.equals(attempt.selector(), TRANSFER_FROM.selector())) {
             return attempt.decodingStrategies()
                     .decodeHrcTransferFrom(attempt.input().toArrayUnsafe(), attempt.addressIdConverter());
-        } else if (Arrays.equals(attempt.selector(), HRC_TRANSFER_NFT_FROM.selector())) {
+        } else if (Arrays.equals(attempt.selector(), TRANSFER_NFT_FROM.selector())) {
             return attempt.decodingStrategies()
                     .decodeHrcTransferNftFrom(attempt.input().toArrayUnsafe(), attempt.addressIdConverter());
         } else {

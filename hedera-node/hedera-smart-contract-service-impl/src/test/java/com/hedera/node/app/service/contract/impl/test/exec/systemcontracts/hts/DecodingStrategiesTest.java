@@ -41,6 +41,7 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DecodingStrategies;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.associations.AssociationsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersCall;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
@@ -67,8 +68,54 @@ class DecodingStrategiesTest {
     private final DecodingStrategies subject = new DecodingStrategies();
 
     @Test
+    void associateOneWorks() {
+        final var encoded = AssociationsCall.ASSOCIATE_ONE
+                .encodeCallWithArgs(OWNER_HEADLONG_ADDRESS, NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS)
+                .array();
+        givenConvertible(OWNER_HEADLONG_ADDRESS, OWNER_ID);
+        final var body = subject.decodeAssociateOne(encoded, addressIdConverter);
+        assertAssociationPresent(body, OWNER_ID, NON_FUNGIBLE_TOKEN_ID);
+    }
+
+    @Test
+    void associateManyWorks() {
+        final var encoded = AssociationsCall.ASSOCIATE_MANY
+                .encodeCallWithArgs(
+                        OWNER_HEADLONG_ADDRESS,
+                        new Address[] {NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS, FUNGIBLE_TOKEN_HEADLONG_ADDRESS})
+                .array();
+        givenConvertible(OWNER_HEADLONG_ADDRESS, OWNER_ID);
+        final var body = subject.decodeAssociateMany(encoded, addressIdConverter);
+        assertAssociationPresent(body, OWNER_ID, FUNGIBLE_TOKEN_ID);
+        assertAssociationPresent(body, OWNER_ID, NON_FUNGIBLE_TOKEN_ID);
+    }
+
+    @Test
+    void dissociateOneWorks() {
+        final var encoded = AssociationsCall.DISSOCIATE_ONE
+                .encodeCallWithArgs(OWNER_HEADLONG_ADDRESS, NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS)
+                .array();
+        givenConvertible(OWNER_HEADLONG_ADDRESS, OWNER_ID);
+        final var body = subject.decodeDissociateOne(encoded, addressIdConverter);
+        assertDissociationPresent(body, OWNER_ID, NON_FUNGIBLE_TOKEN_ID);
+    }
+
+    @Test
+    void dissociateManyWorks() {
+        final var encoded = AssociationsCall.DISSOCIATE_MANY
+                .encodeCallWithArgs(
+                        OWNER_HEADLONG_ADDRESS,
+                        new Address[] {NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS, FUNGIBLE_TOKEN_HEADLONG_ADDRESS})
+                .array();
+        givenConvertible(OWNER_HEADLONG_ADDRESS, OWNER_ID);
+        final var body = subject.decodeDissociateMany(encoded, addressIdConverter);
+        assertDissociationPresent(body, OWNER_ID, FUNGIBLE_TOKEN_ID);
+        assertDissociationPresent(body, OWNER_ID, NON_FUNGIBLE_TOKEN_ID);
+    }
+
+    @Test
     void hrcTransferNftFromWorks() {
-        final var encoded = ClassicTransfersCall.HRC_TRANSFER_NFT_FROM
+        final var encoded = ClassicTransfersCall.TRANSFER_NFT_FROM
                 .encodeCallWithArgs(
                         NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS,
                         OWNER_HEADLONG_ADDRESS,
@@ -86,7 +133,7 @@ class DecodingStrategiesTest {
 
     @Test
     void hrcTransferFromWorks() {
-        final var encoded = ClassicTransfersCall.HRC_TRANSFER_FROM
+        final var encoded = ClassicTransfersCall.TRANSFER_FROM
                 .encodeCallWithArgs(
                         FUNGIBLE_TOKEN_HEADLONG_ADDRESS,
                         OWNER_HEADLONG_ADDRESS,
@@ -382,5 +429,19 @@ class DecodingStrategiesTest {
 
     private void givenConvertibleCredit(@NonNull final Address address, @NonNull final AccountID id) {
         given(addressIdConverter.convertCredit(address)).willReturn(id);
+    }
+
+    private void assertAssociationPresent(
+            @NonNull final TransactionBody body, @NonNull final AccountID target, @NonNull final TokenID tokenId) {
+        final var associate = body.tokenAssociateOrThrow();
+        assertEquals(target, associate.account());
+        org.assertj.core.api.Assertions.assertThat(associate.tokensOrThrow()).contains(tokenId);
+    }
+
+    private void assertDissociationPresent(
+            @NonNull final TransactionBody body, @NonNull final AccountID target, @NonNull final TokenID tokenId) {
+        final var dissociate = body.tokenDissociateOrThrow();
+        assertEquals(target, dissociate.account());
+        org.assertj.core.api.Assertions.assertThat(dissociate.tokensOrThrow()).contains(tokenId);
     }
 }

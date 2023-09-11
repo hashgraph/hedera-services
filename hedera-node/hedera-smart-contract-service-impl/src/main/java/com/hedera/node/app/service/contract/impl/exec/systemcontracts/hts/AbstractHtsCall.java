@@ -50,7 +50,7 @@ public abstract class AbstractHtsCall implements HtsCall {
         return requireNonNull(status) == INVALID_SIGNATURE ? INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE : status;
     }
 
-    protected PricedResult completionWith(@NonNull final ResponseCodeEnum status) {
-        return gasOnly(successResult(ReturnTypes.encodedStatus(status), 0L));
+    protected PricedResult completionWith(@NonNull final ResponseCodeEnum status, final long gasRequirement) {
+        return gasOnly(successResult(ReturnTypes.encodedStatus(status), gasRequirement));
     }
 }

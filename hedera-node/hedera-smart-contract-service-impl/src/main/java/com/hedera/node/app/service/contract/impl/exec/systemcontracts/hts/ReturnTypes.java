@@ -19,7 +19,6 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.nio.ByteBuffer;
 
 /**
