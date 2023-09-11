@@ -203,6 +203,8 @@ public class EnsureAliasesStep implements TransferStep {
                     break;
                 }
             }
+            // If impliedAutoAssociationHere is true, we don't need to check nftTransfers; but it will
+            // also be empty because that means this token has fungible balance adjustments
             for (final var nftTransfer : tokenTransferList.nftTransfersOrElse(emptyList())) {
                 if (nftTransfer.receiverAccountIDOrThrow().equals(aliasedReceiverId)) {
                     impliedAutoAssociationHere = true;

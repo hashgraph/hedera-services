@@ -453,7 +453,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     }
 
     private void dispatchSyntheticTxn(
-            @NonNull final AccountID syntheticPayer,
+            @NonNull final AccountID inferredPayer,
             @NonNull final TransactionBody txBody,
             @NonNull final TransactionCategory childCategory,
             @NonNull final SingleTransactionRecordBuilderImpl childRecordBuilder,
@@ -500,7 +500,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
 
         final var childContext = new HandleContextImpl(
                 new TransactionInfo(Transaction.DEFAULT, txBody, SignatureMap.DEFAULT, Bytes.EMPTY, function),
-                syntheticPayer,
+                inferredPayer,
                 payerKey,
                 networkInfo,
                 childCategory,
