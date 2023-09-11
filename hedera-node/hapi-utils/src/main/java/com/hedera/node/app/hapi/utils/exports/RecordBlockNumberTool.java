@@ -53,7 +53,7 @@ public class RecordBlockNumberTool {
     private static final String RECORD_STREAM_EXTENSION = "rcd";
     private static final String COMPRESSED_RECORD_STREAM_EXTENSION = "rcd.gz";
 
-    private static long prevBlockNumber = 0;
+    private static long prevBlockNumber = -1;
 
     public static void prepare() throws ConstructableRegistryException {
         final ConstructableRegistry registry = ConstructableRegistry.getInstance();
@@ -165,7 +165,6 @@ public class RecordBlockNumberTool {
                 ? getAbsolutePath().resolve(DEFAULT_LOG_CONFIG).toFile()
                 : new File(logConfigPath);
         if (logConfigFile.exists()) {
-            System.out.println("Using log4j2 configuration file " + logConfigFile);
             final LoggerContext context = (LoggerContext) LogManager.getContext(false);
             context.setConfigLocation(logConfigFile.toURI());
 
@@ -182,7 +181,6 @@ public class RecordBlockNumberTool {
                 LOGGER.error(MARKER, "Got IOException", e);
             }
         } else {
-            System.out.println("Could not find log4j2 configuration file " + logConfigFile);
             throw new RuntimeException("Could not find log4j2 configuration file " + logConfigFile);
         }
     }
@@ -195,7 +193,6 @@ public class RecordBlockNumberTool {
     // Suppressing the warning that we are declaring generic exception that is thrown
     @SuppressWarnings("java:S1130")
     public static void readAllFiles(final String sourceDir) throws IOException {
-        System.out.println("Reading all files in directory " + sourceDir);
         final File folder = new File(sourceDir);
         final File[] streamFiles = folder.listFiles(f -> f.getAbsolutePath().endsWith(COMPRESSED_RECORD_STREAM_EXTENSION) ||
                 f.getAbsolutePath().endsWith(RECORD_STREAM_EXTENSION));
@@ -206,14 +203,12 @@ public class RecordBlockNumberTool {
         byte[] startRunningHash = null;
         byte[] endRunningHash = null;
         for (final File item : totalList) {
-            System.out.println("Reading file " + item.getAbsolutePath());
             final Pair<byte[], byte[]> hashes = readRecordFile(item.getAbsolutePath());
             // check if pair left and right are null
             if (hashes.getLeft() == null || hashes.getRight() == null) {
                 LOGGER.error(MARKER, "startRunningHash or endRunningHash of file {} is null", item.getAbsolutePath());
                 return;
             }
-            System.out.println("startRunningHash = " + Arrays.toString(hashes.getLeft()));
             startRunningHash = hashes.getLeft();
             if (endRunningHash != null) {
                 if (!Arrays.equals(startRunningHash, endRunningHash)) {
