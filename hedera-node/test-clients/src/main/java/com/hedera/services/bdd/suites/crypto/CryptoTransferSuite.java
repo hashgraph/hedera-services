@@ -1804,7 +1804,6 @@ public class CryptoTransferSuite extends HapiSuite {
                 .then();
     }
 
-    @HapiTest
     private HapiSpec vanillaTransferSucceeds() {
         long initialBalance = HapiSpecSetup.getDefaultInstance().defaultBalance();
 
