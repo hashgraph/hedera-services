@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-
-
 plugins {
     id("java")
     id("com.hedera.hashgraph.maven-publish")
