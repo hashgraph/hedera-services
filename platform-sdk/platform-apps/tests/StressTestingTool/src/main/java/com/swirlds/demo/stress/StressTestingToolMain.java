@@ -45,7 +45,6 @@ import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.Browser;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -131,8 +130,7 @@ public class StressTestingToolMain implements SwirldMain {
     @Override
     public void init(@NonNull final Platform platform, @NonNull final NodeId id) {
         this.platform = platform;
-        config =
-                platform.getContext().getConfiguration().getConfigData(StressTestingToolConfig.class);
+        config = platform.getContext().getConfiguration().getConfigData(StressTestingToolConfig.class);
         expectedTPS = config.transPerSecToCreate()
                 / (double) platform.getAddressBook().getSize();
 

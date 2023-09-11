@@ -42,7 +42,6 @@ import com.swirlds.common.utility.ByteUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Duration;
-import java.util.function.Supplier;
 
 /**
  * This testing tool simulates configurable processing times for both preHandling and handling for stress testing
