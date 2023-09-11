@@ -73,6 +73,7 @@ public class ReconnectProtocol implements Protocol {
      * @param reconnectController     controls reconnecting as a learner
      * @param fallenBehindManager     maintains this node's behind status
      * @param configuration           platform configuration
+     * @param time                    the time object to use
      */
     public ReconnectProtocol(
             @NonNull final ThreadManager threadManager,

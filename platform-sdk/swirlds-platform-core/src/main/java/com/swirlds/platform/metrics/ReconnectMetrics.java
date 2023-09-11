@@ -87,6 +87,7 @@ public class ReconnectMetrics {
                                             String.format("reconnectRejections/sec_%02d", nodeId.id()))
                                     .withDescription(String.format(
                                             "number of reconnections rejected per second from node %02d", nodeId.id()))
+                                    .withUnit("rejectionsPerSec")
                                     .withFormat(FORMAT_10_0)));
         }
     }
