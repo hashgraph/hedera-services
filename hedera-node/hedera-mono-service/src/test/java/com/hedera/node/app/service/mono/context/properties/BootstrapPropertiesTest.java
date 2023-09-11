@@ -558,7 +558,7 @@ class BootstrapPropertiesTest {
             entry(STAKING_SUM_OF_CONSENSUS_WEIGHTS, 500),
             entry(CACHE_CRYPTO_TRANSFER_WARM_THREADS, 30),
             entry(CONFIG_VERSION, 10),
-            entry(RECORDS_USE_CONSOLIDATED_FCQ, true));
+            entry(RECORDS_USE_CONSOLIDATED_FCQ, false));
 
     @Test
     void containsProperty() {
