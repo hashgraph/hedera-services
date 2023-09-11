@@ -32,6 +32,7 @@ public final class NameUtils {
      * @param value the value to base the name on
      * @return a human-readable name
      */
+    @NonNull
     public static String getName(final long value) {
         return NAMES[((int) value) % NAMES.length] + (value >= NAMES.length ? ("-" + String.format("%x", value)) : "");
     }
