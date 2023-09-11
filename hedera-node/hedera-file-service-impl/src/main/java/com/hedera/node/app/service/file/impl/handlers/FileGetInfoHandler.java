@@ -19,6 +19,7 @@ package com.hedera.node.app.service.file.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.swirlds.common.utility.CommonUtils.hex;
 import static java.util.Objects.requireNonNull;
 
@@ -26,16 +27,21 @@ import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseHeader;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.file.FileGetInfoQuery;
 import com.hedera.hapi.node.file.FileGetInfoResponse;
 import com.hedera.hapi.node.file.FileInfo;
+import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
+import com.hedera.node.app.hapi.fees.usage.file.FileOpsUsage;
 import com.hedera.node.app.service.file.FileMetadata;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.ReadableUpgradeFileStore;
 import com.hedera.node.app.service.file.impl.base.FileQueryBase;
+import com.hedera.node.app.service.mono.fees.calculation.file.queries.GetFileInfoResourceUsage;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.data.FilesConfig;
@@ -53,10 +59,11 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class FileGetInfoHandler extends FileQueryBase {
+    private final FileOpsUsage fileOpsUsage;
 
     @Inject
-    public FileGetInfoHandler() {
-        // Exists for injection
+    public FileGetInfoHandler(final FileOpsUsage fileOpsUsage) {
+        this.fileOpsUsage = fileOpsUsage;
     }
 
     @Override
@@ -79,6 +86,18 @@ public class FileGetInfoHandler extends FileQueryBase {
         if (!op.hasFileID()) {
             throw new PreCheckException(INVALID_FILE_ID);
         }
+    }
+
+    public Fees computeFees(@NonNull QueryContext queryContext) {
+        final var query = queryContext.query();
+        final var fileStore = queryContext.createStore(ReadableFileStore.class);
+        final var op = query.fileGetInfoOrThrow();
+        final var fileId = op.fileIDOrThrow();
+        final File file = fileStore.getFileLeaf(fileId);
+
+        return queryContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> {
+            return new GetFileInfoResourceUsage(fileOpsUsage).usageGiven(fromPbj(query), file);
+        });
     }
 
     @Override

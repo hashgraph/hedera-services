@@ -176,7 +176,8 @@ public final class IngestChecker {
         }
 
         // 6. Check account balance
-        final FeeContext feeContext = new FeeContextImpl(consensusTime, txInfo, payerKey, feeManager, storeFactory);
+        final FeeContext feeContext =
+                new FeeContextImpl(consensusTime, txInfo, payerKey, feeManager, storeFactory, null);
         final var fees = dispatcher.dispatchComputeFees(feeContext);
         solvencyPreCheck.checkSolvency(txInfo, payer, fees.totalWithoutServiceFee());
 
