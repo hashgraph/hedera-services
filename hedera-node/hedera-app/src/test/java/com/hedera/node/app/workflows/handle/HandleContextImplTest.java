@@ -43,6 +43,7 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.consensus.ConsensusSubmitMessageTransactionBody;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -51,6 +52,7 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.UnknownHederaFunctionality;
+import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.fixtures.Scenarios;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
@@ -142,6 +144,9 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
     private FeeManager feeManager;
 
     @Mock
+    private ExchangeRateManager exchangeRateManager;
+
+    @Mock
     private Instant consensusNow;
 
     @BeforeEach
@@ -183,6 +188,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                 blockRecordInfo,
                 recordCache,
                 feeManager,
+                exchangeRateManager,
                 consensusNow);
     }
 
@@ -212,6 +218,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             blockRecordInfo,
             recordCache,
             feeManager,
+            exchangeRateManager,
             consensusNow
         };
 
@@ -274,6 +281,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     blockRecordInfo,
                     recordCache,
                     feeManager,
+                    exchangeRateManager,
                     consensusNow);
         }
 
@@ -754,6 +762,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     blockRecordInfo,
                     recordCache,
                     feeManager,
+                    exchangeRateManager,
                     consensusNow);
         }
 
@@ -963,6 +972,34 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                             .get(FRUIT_STATE_KEY)
                             .get(A_KEY))
                     .isEqualTo(APPLE);
+        }
+    }
+
+    @Nested
+    @DisplayName("Requesting exchange rate info")
+    final class ExchangeRateInfoTest {
+
+        @Mock
+        private ExchangeRateInfo exchangeRateInfo;
+
+        private HandleContext context;
+
+        @BeforeEach
+        void setup() {
+            when(stack.createWritableStates(TokenService.NAME))
+                    .thenReturn(MapWritableStates.builder()
+                            .state(MapWritableKVState.builder("ACCOUNTS").build())
+                            .state(MapWritableKVState.builder("ALIASES").build())
+                            .build());
+            when(exchangeRateManager.exchangeRateInfo(any())).thenReturn(exchangeRateInfo);
+
+            context = createContext(defaultTransactionBody());
+        }
+
+        @SuppressWarnings("ConstantConditions")
+        @Test
+        void testExchangeRateInfo() {
+            assertSame(exchangeRateInfo, context.exchangeRateInfo());
         }
     }
 }
