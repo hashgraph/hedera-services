@@ -421,7 +421,7 @@ public class EventMetadata implements Clearable {
      * @param witness the witness being voted on
      * @param vote true if it's a YES vote, false if it's a NO vote
      */
-    public void setVote(final CandidateWitness witness, final boolean vote) {
+    public void setVote(@NonNull final CandidateWitness witness, final boolean vote) {
         this.votes[witness.getElectionIndex()] = vote;
     }
 
