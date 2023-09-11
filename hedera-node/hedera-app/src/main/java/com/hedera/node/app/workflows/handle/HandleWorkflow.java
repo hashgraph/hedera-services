@@ -264,7 +264,7 @@ public class HandleWorkflow {
 
             if (transactionInfo == null) {
                 // FUTURE: Charge node generic penalty, set values in record builder, and remove log statement
-                logger.error("Non-parsable transaction from creator {}", creator);
+                logger.error("Bad transaction from creator {}", creator);
                 return;
             }
 
@@ -295,6 +295,7 @@ public class HandleWorkflow {
 
             // Setup context
             final var context = new HandleContextImpl(
+                    txBody,
                     transactionInfo,
                     payer,
                     preHandleResult.payerKey(),
@@ -316,6 +317,7 @@ public class HandleWorkflow {
 
             // Calculate the fee
             fees = dispatcher.dispatchComputeFees(context);
+            recordBuilder.transactionFee(fees.totalFee());
 
             // Run all pre-checks
             final var validationResult = validate(
@@ -331,7 +333,7 @@ public class HandleWorkflow {
                 }
                 final var penaltyFee = new Fees(fees.nodeFee(), fees.networkFee(), 0L);
                 feeAccumulator.charge(payer, penaltyFee);
-                recordBuilder.status(validationResult.responseCodeEnum());
+                recordBuilder.status(validationResult.responseCodeEnum()).transactionFee(penaltyFee.totalFee());
 
             } else {
                 feeAccumulator.charge(payer, fees);
