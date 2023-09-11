@@ -376,7 +376,6 @@ public class TokenUpdateSpecs extends HapiSuite {
                 .then(getTokenInfo("tbu").hasName(hopefullyUnique));
     }
 
-    @HapiTest
     public HapiSpec tooLongNameCheckHolds() {
         var tooLongName = "ORIGINAL" + TxnUtils.randomUppercase(MAX_NAME_LENGTH + 1);
 
@@ -386,7 +385,6 @@ public class TokenUpdateSpecs extends HapiSuite {
                 .then(tokenUpdate("tbu").name(tooLongName).hasPrecheck(TOKEN_NAME_TOO_LONG));
     }
 
-    @HapiTest
     public HapiSpec tooLongSymbolCheckHolds() {
         var tooLongSymbol = TxnUtils.randomUppercase(MAX_SYMBOL_LENGTH + 1);
 

@@ -66,9 +66,6 @@ public record TransactionInfo(
                 txBody,
                 txBody.transactionIDOrThrow(),
                 txBody.transactionIDOrThrow().accountIDOrThrow(),
-                // Can temporarily replace above two lines with these two to run x-tests
-                //                                TransactionID.DEFAULT,
-                //                                AccountID.DEFAULT,
                 signatureMap,
                 signedBytes,
                 functionality);

@@ -175,13 +175,12 @@ public class CustomFeeAssessmentStep {
                 tokenTransferLists.add(xfers);
             } else {
                 final var postAssessmentBalances = changedFungibleTokenTransfers.get(token);
-                final var includedNetNewChanges =
-                        postAssessmentBalances.size() > xfers.transfersOrThrow().size();
+                final var adjustsHere = xfers.transfersOrThrow();
+                final var includedNetNewChanges = postAssessmentBalances.size() > adjustsHere.size();
                 if (includedNetNewChanges || balancesChangedBetween(xfers.transfersOrThrow(), postAssessmentBalances)) {
-                    final List<AccountAmount> newTransfers =
-                            new ArrayList<>(xfers.transfersOrThrow().size());
+                    final List<AccountAmount> newTransfers = new ArrayList<>(adjustsHere.size());
                     // First re-use the original transaction body to preserve any approvals or decimals that were set
-                    for (final var aa : xfers.transfersOrThrow()) {
+                    for (final var aa : adjustsHere) {
                         final var newAmount = postAssessmentBalances.getOrDefault(aa.accountID(), aa.amount());
                         newTransfers.add(aa.copyBuilder().amount(newAmount).build());
                         postAssessmentBalances.remove(aa.accountID());

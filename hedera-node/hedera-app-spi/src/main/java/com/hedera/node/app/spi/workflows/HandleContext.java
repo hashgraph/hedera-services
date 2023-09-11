@@ -335,16 +335,33 @@ public interface HandleContext {
             AccountID syntheticPayer);
 
     /**
+     * Dispatches a preceding transaction that already has an ID.
+     *
+     * @param txBody            the {@link TransactionBody} of the transaction to dispatch
+     * @param recordBuilderClass the record builder class of the transaction
+     * @param verifier         a {@link Predicate} that will be used to validate primitive keys
+     * @return the record builder of the transaction
+     * @param <T> the record type
+     * @throws IllegalArgumentException if the transaction body did not have an id
+     */
+    default <T> T dispatchPrecedingTransaction(
+            @NonNull TransactionBody txBody, @NonNull Class<T> recordBuilderClass, @NonNull Predicate<Key> verifier) {
+        throwIfMissingPayerId(txBody);
+        return dispatchPrecedingTransaction(
+                txBody,
+                recordBuilderClass,
+                verifier,
+                txBody.transactionIDOrThrow().accountIDOrThrow());
+    }
+
+    /**
      * @deprecated Use {@link #dispatchPrecedingTransaction(TransactionBody, Class, Predicate, AccountID)} instead.
      */
     @Deprecated(forRemoval = true)
     @NonNull
-    default <T> T dispatchPrecedingTransaction(
-            @NonNull TransactionBody txBody,
-            @NonNull Class<T> recordBuilderClass,
-            @NonNull final AccountID syntheticPayer) {
+    default <T> T dispatchPrecedingTransaction(@NonNull TransactionBody txBody, @NonNull Class<T> recordBuilderClass) {
         return dispatchPrecedingTransaction(
-                txBody, recordBuilderClass, key -> verificationFor(key).passed(), syntheticPayer);
+                txBody, recordBuilderClass, key -> verificationFor(key).passed());
     }
 
     /**
@@ -382,6 +399,27 @@ public interface HandleContext {
             @NonNull AccountID syntheticPayer);
 
     /**
+     * Dispatches a child transaction that already has a transaction ID.
+     *
+     * @param txBody the {@link TransactionBody} of the child transaction to dispatch
+     * @param recordBuilderClass the record builder class of the child transaction
+     * @param callback a {@link Predicate} callback function that will observe each primitive key
+     * @return the record builder of the child transaction
+     * @param <T> the record type
+     * @throws IllegalArgumentException if the transaction body did not have an id
+     */
+    @NonNull
+    default <T> T dispatchChildTransaction(
+            @NonNull TransactionBody txBody, @NonNull Class<T> recordBuilderClass, @NonNull Predicate<Key> callback) {
+        throwIfMissingPayerId(txBody);
+        return dispatchChildTransaction(
+                txBody,
+                recordBuilderClass,
+                callback,
+                txBody.transactionIDOrThrow().accountIDOrThrow());
+    }
+
+    /**
      * @deprecated Use {@link #dispatchChildTransaction(TransactionBody, Class, Predicate, AccountID)} instead.
      */
     @Deprecated(forRemoval = true)
@@ -389,10 +427,13 @@ public interface HandleContext {
     default <T> T dispatchChildTransaction(
             @NonNull TransactionBody txBody,
             @NonNull Class<T> recordBuilderClass,
-            @NonNull VerificationAssistant callback,
-            @NonNull final AccountID syntheticPayer) {
+            @NonNull VerificationAssistant callback) {
+        throwIfMissingPayerId(txBody);
         return dispatchChildTransaction(
-                txBody, recordBuilderClass, key -> callback.test(key, verificationFor(key)), syntheticPayer);
+                txBody,
+                recordBuilderClass,
+                key -> callback.test(key, verificationFor(key)),
+                txBody.transactionIDOrThrow().accountIDOrThrow());
     }
 
     /**
@@ -424,6 +465,27 @@ public interface HandleContext {
             AccountID payer);
 
     /**
+     * Dispatches a removable child transaction that already has a transaction ID.
+     *
+     * @param txBody          the {@link TransactionBody} of the child transaction to dispatch
+     * @param recordBuilderClass the record builder class of the child transaction
+     * @param callback      a {@link Predicate} callback function that will observe each primitive key
+     * @return the record builder of the child transaction
+     * @param <T> the record type
+     * @throws IllegalArgumentException if the transaction body did not have an id
+     */
+    @NonNull
+    default <T> T dispatchRemovableChildTransaction(
+            @NonNull TransactionBody txBody, @NonNull Class<T> recordBuilderClass, @NonNull Predicate<Key> callback) {
+        throwIfMissingPayerId(txBody);
+        return dispatchRemovableChildTransaction(
+                txBody,
+                recordBuilderClass,
+                callback,
+                txBody.transactionIDOrThrow().accountIDOrThrow());
+    }
+
+    /**
      * @deprecated Use {@link #dispatchRemovableChildTransaction(TransactionBody, Class, Predicate, AccountID)} instead.
      */
     @Deprecated(forRemoval = true)
@@ -431,10 +493,9 @@ public interface HandleContext {
     default <T> T dispatchRemovableChildTransaction(
             @NonNull TransactionBody txBody,
             @NonNull Class<T> recordBuilderClass,
-            @NonNull VerificationAssistant callback,
-            @NonNull final AccountID syntheticPayer) {
+            @NonNull VerificationAssistant callback) {
         return dispatchRemovableChildTransaction(
-                txBody, recordBuilderClass, key -> callback.test(key, verificationFor(key)), syntheticPayer);
+                txBody, recordBuilderClass, key -> callback.test(key, verificationFor(key)));
     }
 
     /**
@@ -522,5 +583,11 @@ public interface HandleContext {
          * @return the depth of the savepoint stack
          */
         int depth();
+    }
+
+    static void throwIfMissingPayerId(@NonNull final TransactionBody body) {
+        if (!body.hasTransactionID() || !body.transactionIDOrThrow().hasAccountID()) {
+            throw new IllegalArgumentException("Transaction id must be set if dispatching without an explicit payer");
+        }
     }
 }
