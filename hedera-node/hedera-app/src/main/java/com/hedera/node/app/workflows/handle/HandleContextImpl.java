@@ -119,6 +119,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
      * Constructs a {@link HandleContextImpl}.
      *
      * @param txBody                The {@link TransactionBody} of the transaction
+     * @param txInfo                The {@link TransactionInfo} of the transaction
      * @param payer                 The {@link AccountID} of the payer
      * @param payerKey              The {@link Key} of the payer
      * @param networkInfo           The {@link NetworkInfo} of the network
@@ -155,7 +156,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             @NonNull final FeeManager feeManager,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final Instant userTransactionConsensusTime) {
-        this.txBody = requireNonNull(txBody, "txInfo must not be null");
+        this.txBody = requireNonNull(txBody, "txBody must not be null");
         this.payer = requireNonNull(payer, "payer must not be null");
         this.payerKey = payerKey;
         this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
