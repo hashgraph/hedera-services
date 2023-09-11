@@ -218,7 +218,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         }
     }
 
-    private void loadLegacyState(final PlatformData platformData) {
+    private void loadLegacyState(@NonNull final PlatformData platformData) {
         migrationMode = true;
 
         // create all the rounds that we have events for
@@ -356,6 +356,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         return null;
     }
 
+    @Nullable
     private ConsensusRound calculateAndVote(final EventImpl event) {
         // find the roundCreated, and store it using event.setRoundCreated()
         round(event);
@@ -424,7 +425,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
      *
      * @param event the event to check
      */
-    private void checkInitJudges(final EventImpl event) {
+    private void checkInitJudges(@NonNull final EventImpl event) {
         if (noInitJudgesMissing() || !initJudges.isInitJudge(event.getBaseHash())) {
             return;
         }
@@ -463,7 +464,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
      *
      * @param event the event to calculate metadata for
      */
-    private void calculateMetadata(final EventImpl event) {
+    private void calculateMetadata(@NonNull final EventImpl event) {
         if (notRelevantForConsensus(event) || rounds.isLastDecidedJudge(event)) {
             return;
         }
@@ -475,7 +476,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
 
     /** round(x) - round(y) */
     @SuppressWarnings("all")
-    private long diff(final EventImpl x, final EventImpl y) {
+    private long diff(@NonNull final EventImpl x, @NonNull final EventImpl y) {
         return round(x) - round(y);
     }
 
@@ -485,7 +486,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
      *
      * @param votingWitness the event that will vote
      */
-    private void voteInAllElections(final EventImpl votingWitness) {
+    private void voteInAllElections(@NonNull final EventImpl votingWitness) {
         final ElectionRound electionRound = rounds.getElectionRound();
         votingWitness.initVoting(electionRound.numElections());
         final long diff = round(votingWitness) - electionRound.getRound();
@@ -556,6 +557,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
      * @param stronglySeen the witnesses VR-1 that the voting witness can strongly see
      * @return the outcome of the vote
      */
+    @NonNull
     private CountingVote getCountingVote(final CandidateWitness candidateWitness, final List<EventImpl> stronglySeen) {
         // count votes from witnesses you strongly see
         long yesWeight = 0; // total weight of all members voting yes
@@ -600,7 +602,9 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
      * @param countingVote the counting vote
      */
     private void coinVote(
-            final EventImpl votingWitness, final CandidateWitness candidateWitness, final CountingVote countingVote) {
+            @NonNull final EventImpl votingWitness,
+            @NonNull final CandidateWitness candidateWitness,
+            @NonNull final CountingVote countingVote) {
         // a coin round. Vote randomly unless you strongly see a supermajority. Don't decide.
         consensusMetrics.coinRound();
         final boolean vote =
@@ -612,7 +616,9 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
 
     /** Logs the outcome of voting */
     private void logVote(
-            final EventImpl votingWitness, final CandidateWitness candidateWitness, final String votingType) {
+            @NonNull final EventImpl votingWitness,
+            @NonNull final CandidateWitness candidateWitness,
+            @NonNull final String votingType) {
         logger.info(
                 CONSENSUS_VOTING.getMarker(),
                 "Witness {} voted on {}. vote:{} type:{} diff:{}",
@@ -623,7 +629,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
                 () -> diff(votingWitness, candidateWitness.getWitness()));
     }
 
-    private boolean firstVote(final EventImpl voting, final EventImpl votedOn) {
+    private boolean firstVote(@NonNull final EventImpl voting, @NonNull final EventImpl votedOn) {
         // first round of an election. Vote TRUE for self-ancestors of those you firstSee. Don't
         // decide.
         EventImpl w = firstSee(voting, addressBook.getIndexOfNodeId(votedOn.getCreatorId()));
@@ -640,6 +646,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
      * @param event the event to find who it sees
      * @return a list of witnesses
      */
+    @NonNull
     private List<EventImpl> getStronglySeenInPreviousRound(final EventImpl event) {
         final int numMembers = addressBook.getSize();
         final ArrayList<EventImpl> stronglySeen = new ArrayList<>(numMembers);
@@ -664,7 +671,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
      * @param electionRound the round information of the decided round
      * @return the consensus round
      */
-    private ConsensusRound roundDecided(final ElectionRound electionRound) {
+    private @NonNull ConsensusRound roundDecided(final ElectionRound electionRound) {
         // if migration was enabled, we can turn it off now since we've decided fame for this round
         migrationMode = false;
         // the current round just had its fame decided.
@@ -723,8 +730,8 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
      *     the round received for these events reaching consensus now
      * @param whitening a XOR of all judge signatures in this round
      */
-    private List<EventImpl> findConsensusEvents(
-            final List<EventImpl> judges, final long decidedRound, final byte[] whitening) {
+    private @NonNull List<EventImpl> findConsensusEvents(
+            @NonNull final List<EventImpl> judges, final long decidedRound, @NonNull final byte[] whitening) {
         // the newly-consensus events where round received is "round"
         final List<EventImpl> consensus = search.commonAncestorsOf(judges, this::nonConsensusNonAncient);
         // event has reached consensus, so set consensus timestamp, and set isConsensus to true
@@ -753,7 +760,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
      *     first saw it
      * @param receivedRound the round in which event was received
      */
-    private void setIsConsensusTrue(final EventImpl event, final long receivedRound) {
+    private void setIsConsensusTrue(@NonNull final EventImpl event, final long receivedRound) {
         event.setRoundReceived(receivedRound);
         event.setConsensus(true);
 
@@ -779,7 +786,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
      * @param events the events to set (such that a for(EventImpl e:events) loop visits them in
      *     consensus order)
      */
-    private void setConsensusOrder(final Collection<EventImpl> events) {
+    private void setConsensusOrder(@NonNull final Collection<EventImpl> events) {
         EventImpl last = null;
         for (final EventImpl e : events) {
             last = e;
@@ -800,11 +807,11 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         }
     }
 
-    private boolean nonConsensusNonAncient(final EventImpl e) {
+    private boolean nonConsensusNonAncient(@NonNull final EventImpl e) {
         return !e.isConsensus() && !isAncient(e.getBaseEvent());
     }
 
-    private EventImpl timedStronglySeeP(final EventImpl x, final long m) {
+    private @Nullable EventImpl timedStronglySeeP(@Nullable final EventImpl x, final long m) {
         long t = System.nanoTime(); // Used to update statistic for dot product time
         final EventImpl result = stronglySeeP(x, m);
         t = System.nanoTime() - t; // nanoseconds spent doing the dot product
@@ -812,10 +819,14 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         return result;
     }
 
-    private static boolean notRelevantForConsensus(final EventImpl e) {
-        // if an event has a round of -infinity we don't care about what it sees. this is a
-        // performance
-        // optimization, to stop traversing the part of the graph that has no impact on consensus
+    /**
+     * Check if this event is relevant for consensus calculation. If an event has a round of -infinity we don't care
+     * about what it sees. This is a performance optimization, to stop traversing the part of the graph that has no
+     * impact on consensus.
+     * @param e the event to check
+     * @return true if this event is relevant for consensus
+     */
+    private static boolean notRelevantForConsensus(@NonNull final EventImpl e) {
         return e.getRoundCreated() == ConsensusConstants.ROUND_NEGATIVE_INFINITY;
     }
 
@@ -832,7 +843,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
      * @param x the event to check
      * @return true if this event is a witness
      */
-    private boolean witness(final EventImpl x) {
+    private boolean witness(@NonNull final EventImpl x) {
         return round(x) > ConsensusConstants.ROUND_NEGATIVE_INFINITY
                 && (!x.getHashedData().hasSelfParent() || round(x) != round(selfParent(x)));
     }
@@ -840,18 +851,23 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
     /**
      * @return the self-parent of event x, or ∅ if none or ancient
      */
-    private EventImpl selfParent(final EventImpl x) {
+    private @Nullable EventImpl selfParent(@NonNull final EventImpl x) {
         return ancient(x.getSelfParent()) ? null : x.getSelfParent();
     }
 
     /**
      * @return the other-parent of event x, or ∅ if none or ancient
      */
-    private EventImpl otherParent(final EventImpl x) {
+    private @Nullable EventImpl otherParent(@NonNull final EventImpl x) {
         return ancient(x.getOtherParent()) ? null : x.getOtherParent();
     }
 
-    private boolean ancient(final EventImpl x) {
+    /**
+     * Check if the event is ancient
+     * @param x the event to check
+     * @return true if the event is ancient
+     */
+    private boolean ancient(@Nullable final EventImpl x) {
         return x == null || x.getGeneration() < getMinGenerationNonAncient();
     }
 
@@ -862,7 +878,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
      * @param x the event being queried
      * @return the parent round of x
      */
-    private long parentRound(final EventImpl x) {
+    private long parentRound(@Nullable final EventImpl x) {
         if (x == null) {
             return ConsensusConstants.ROUND_NEGATIVE_INFINITY;
         }
@@ -878,7 +894,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
      * @param m the member ID of the creator
      * @return the last event created by m that is an ancestor of x, or null if none
      */
-    private EventImpl lastSee(final EventImpl x, final long m) {
+    private @Nullable EventImpl lastSee(@Nullable final EventImpl x, final long m) {
         final int numMembers;
         final EventImpl sp;
         final EventImpl op;
@@ -900,7 +916,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         sp = selfParent(x);
 
         for (int mm = 0; mm < numMembers; mm++) {
-            if (isIndex(x, mm)) {
+            if (creatorIndexEquals(x, mm)) {
                 x.setLastSee(mm, x);
             } else if (sp == null && op == null) {
                 x.setLastSee(mm, null);
@@ -928,14 +944,14 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
      * @param m2 the creator of z, the intermediate event through which x sees y
      * @return the event y that is created by m and seen by x through an event by m2
      */
-    private EventImpl seeThru(final EventImpl x, final int m, final int m2) {
+    private @Nullable EventImpl seeThru(@Nullable final EventImpl x, final int m, final int m2) {
         if (x == null) {
             return null;
         }
         if (notRelevantForConsensus(x)) {
             return null;
         }
-        if (m == m2 && isIndex(x, m2)) {
+        if (m == m2 && creatorIndexEquals(x, m2)) {
             return firstSelfWitnessS(selfParent(x));
         }
         return firstSee(lastSee(x, m2), m);
@@ -954,7 +970,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
      * @param m the member ID of the creator
      * @return witness created by m in the parent round of x that x strongly sees, or null if none
      */
-    private EventImpl stronglySeeP(final EventImpl x, final long m) {
+    private @Nullable EventImpl stronglySeeP(@Nullable final EventImpl x, final long m) {
         if (x == null) { // if there is no event, then it can't see anything
             return null;
         }
@@ -1018,7 +1034,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
      * @param x the event being queried
      * @return the round-created for event x, or 0 if x is null
      */
-    private long round(final EventImpl x) {
+    private long round(@Nullable final EventImpl x) {
         //
         // If an event is missing (null), it must be ancient. ancient events have a round of
         // -infinity
@@ -1113,7 +1129,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
      * @param x the event being queried
      * @return The ancestor of x in the same round that is a witness, or null if x is null
      */
-    private EventImpl firstSelfWitnessS(final EventImpl x) {
+    private @Nullable EventImpl firstSelfWitnessS(@Nullable final EventImpl x) {
         if (x == null) {
             return null;
         }
@@ -1140,7 +1156,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
      * @return the earliest witness that is an ancestor of x in the same round as x, or null if x is
      *     null
      */
-    private EventImpl firstWitnessS(final EventImpl x) {
+    private @Nullable EventImpl firstWitnessS(@Nullable final EventImpl x) {
         if (x == null) {
             return null;
         }
@@ -1170,7 +1186,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
      * @return event by m that x strongly sees in the round before the created round of x, or null
      *     if none
      */
-    private EventImpl stronglySeeS1(final EventImpl x, final long m) {
+    private @Nullable EventImpl stronglySeeS1(@Nullable final EventImpl x, final long m) {
         return timedStronglySeeP(firstWitnessS(x), m);
     }
 
@@ -1184,22 +1200,38 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
      *     self-ancestor of x, where r is the round of the last event by m that is seen by x, or
      *     null if none
      */
-    private EventImpl firstSee(final EventImpl x, final long m) {
+    private @Nullable EventImpl firstSee(@Nullable final EventImpl x, final long m) {
         return firstSelfWitnessS(lastSee(x, m));
     }
 
-    private long getWeight(final NodeId nodeId) {
+    /**
+     * Get the weigh of a node by its ID
+     * @param nodeId the ID of the node
+     * @return the weight of the node, or 0 if the node is not in the address book
+     */
+    private long getWeight(@NonNull final NodeId nodeId) {
         if (!addressBook.contains(nodeId)) {
             return 0;
         }
         return addressBook.getAddress(nodeId).getWeight();
     }
 
+    /**
+     * Get the weight of a node by its index
+     * @param nodeIndex the index of the node
+     * @return the weight of the node
+     */
     private long getWeight(final int nodeIndex) {
         return getWeight(addressBook.getNodeId(nodeIndex));
     }
 
-    private boolean isIndex(final EventImpl e, final int index) {
+    /**
+     * Check the index in the address book of the creator of the event
+     * @param e the event whose creator to check
+     * @param index the index
+     * @return true if this creator is in the address book and has the given index
+     */
+    private boolean creatorIndexEquals(@NonNull final EventImpl e, final int index) {
         if (!addressBook.contains(e.getCreatorId())) {
             return false;
         }
