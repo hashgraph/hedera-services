@@ -16,7 +16,8 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer;
 
-import static com.hedera.hapi.node.base.TokenType.FUNGIBLE_COMMON;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
@@ -58,7 +59,10 @@ public class Erc20TransfersCall extends AbstractHtsCall {
     private final Address from;
 
     private final Address to;
+
+    @Nullable
     private final TokenID tokenId;
+
     private final VerificationStrategy verificationStrategy;
     private final org.hyperledger.besu.datatypes.Address spender;
     private final AddressIdConverter addressIdConverter;
@@ -70,7 +74,7 @@ public class Erc20TransfersCall extends AbstractHtsCall {
             final long amount,
             @Nullable final Address from,
             @NonNull final Address to,
-            @NonNull final TokenID tokenId,
+            @Nullable final TokenID tokenId,
             @NonNull final VerificationStrategy verificationStrategy,
             @NonNull final org.hyperledger.besu.datatypes.Address spender,
             @NonNull final AddressIdConverter addressIdConverter) {
@@ -78,7 +82,7 @@ public class Erc20TransfersCall extends AbstractHtsCall {
         this.amount = amount;
         this.from = from;
         this.to = requireNonNull(to);
-        this.tokenId = requireNonNull(tokenId);
+        this.tokenId = tokenId;
         this.verificationStrategy = requireNonNull(verificationStrategy);
         this.spender = requireNonNull(spender);
         this.addressIdConverter = requireNonNull(addressIdConverter);
@@ -91,6 +95,9 @@ public class Erc20TransfersCall extends AbstractHtsCall {
     public @NonNull PricedResult execute() {
         // https://eips.ethereum.org/EIPS/eip-20
         // TODO - gas calculation
+        if (tokenId == null) {
+            return reversionWith(INVALID_TOKEN_ID, 0L);
+        }
         final var spenderId = addressIdConverter.convert(asHeadlongAddress(spender.toArrayUnsafe()));
         final var recordBuilder = systemContractOperations()
                 .dispatch(
@@ -137,10 +144,10 @@ public class Erc20TransfersCall extends AbstractHtsCall {
      */
     public static boolean matches(@NonNull final HtsCallAttempt attempt) {
         requireNonNull(attempt);
+        // We will match the transferFrom() selector shared by ERC-20 and ERC-721 if the token is missing
         return attempt.isTokenRedirect()
                 && selectorsInclude(attempt.selector())
-                && attempt.redirectToken() != null
-                && requireNonNull(attempt.redirectToken()).tokenType() == FUNGIBLE_COMMON;
+                && attempt.redirectTokenType() != NON_FUNGIBLE_UNIQUE;
     }
 
     /**

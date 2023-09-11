@@ -82,7 +82,7 @@ class AssociationsCallTest extends HtsCallTestBase {
         final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
-        assertEquals(asBytesResult(ReturnTypes.encodedStatus(SUCCESS)), result.getOutput());
+        assertEquals(asBytesResult(ReturnTypes.encodedRc(SUCCESS)), result.getOutput());
     }
 
     @Test

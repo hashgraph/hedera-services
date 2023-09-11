@@ -18,8 +18,6 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.trans
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.revertResult;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ApprovalSwitchHelper.APPROVAL_SWITCH_HELPER;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.SystemAccountCreditScreen.SYSTEM_ACCOUNT_CREDIT_SCREEN;
 import static java.util.Objects.requireNonNull;
@@ -118,7 +116,7 @@ public class ClassicTransfersCall extends AbstractHtsCall {
         // TODO - gas calculation
         if (systemAccountCreditScreen.creditsToSystemAccount(syntheticTransfer.cryptoTransferOrThrow())) {
             // TODO - externalize the invalid synthetic transfer without dispatching it
-            return gasOnly(revertResult(INVALID_RECEIVING_NODE_ACCOUNT, 0L));
+            return reversionWith(INVALID_RECEIVING_NODE_ACCOUNT, 0L);
         }
         if (executionIsNotSupported()) {
             // TODO - externalize the unsupported synthetic transfer without dispatching it
@@ -136,7 +134,7 @@ public class ClassicTransfersCall extends AbstractHtsCall {
                 : syntheticTransfer;
         final var recordBuilder = systemContractOperations()
                 .dispatch(transferToDispatch, verificationStrategy, spenderId, CryptoTransferRecordBuilder.class);
-        return completionWith(standardized(recordBuilder.status()), 0L);
+        return completionWith(recordBuilder.status(), 0L);
     }
 
     private boolean shouldRetryWithApprovals() {

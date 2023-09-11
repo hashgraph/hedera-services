@@ -20,9 +20,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static contract.HtsErc721TransferXTestConstants.APPROVED_ADDRESS;
 import static contract.HtsErc721TransferXTestConstants.APPROVED_HEADLONG_ADDRESS;
 import static contract.HtsErc721TransferXTestConstants.APPROVED_ID;
-import static contract.HtsErc721TransferXTestConstants.OWNER_ADDRESS;
-import static contract.HtsErc721TransferXTestConstants.OWNER_HEADLONG_ADDRESS;
-import static contract.HtsErc721TransferXTestConstants.OWNER_ID;
 import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_ID;
 import static contract.MiscClassicTransfersXTestConstants.INITIAL_OWNER_FUNGIBLE_BALANCE;
 import static contract.MiscClassicTransfersXTestConstants.INITIAL_RECEIVER_AUTO_ASSOCIATIONS;
@@ -32,6 +29,9 @@ import static contract.XTestConstants.ERC20_TOKEN_ADDRESS;
 import static contract.XTestConstants.ERC20_TOKEN_ID;
 import static contract.XTestConstants.ERC721_TOKEN_ADDRESS;
 import static contract.XTestConstants.ERC721_TOKEN_ID;
+import static contract.XTestConstants.OWNER_ADDRESS;
+import static contract.XTestConstants.OWNER_HEADLONG_ADDRESS;
+import static contract.XTestConstants.OWNER_ID;
 import static contract.XTestConstants.RECEIVER_HEADLONG_ADDRESS;
 import static contract.XTestConstants.RECEIVER_ID;
 import static contract.XTestConstants.SENDER_ADDRESS;
@@ -43,6 +43,7 @@ import static contract.XTestConstants.SN_1234_METADATA;
 import static contract.XTestConstants.SN_2345;
 import static contract.XTestConstants.SN_2345_METADATA;
 import static contract.XTestConstants.SN_3456;
+import static contract.XTestConstants.SN_3456_METADATA;
 import static contract.XTestConstants.addErc20Relation;
 import static contract.XTestConstants.addErc721Relation;
 import static java.util.Objects.requireNonNull;
@@ -88,8 +89,7 @@ public class MiscClassicTransfersXTest extends AbstractContractXTest {
                                 RECEIVER_HEADLONG_ADDRESS,
                                 SN_1234.serialNumber())
                         .array()),
-                output -> assertEquals(
-                        Bytes.wrap(ReturnTypes.encodedStatus(SUCCESS).array()), output));
+                output -> assertEquals(Bytes.wrap(ReturnTypes.encodedRc(SUCCESS).array()), output));
         // Fungible transfer to an available alias can auto-create an account, while also
         // transferring a second NFT to same receiver as in the first call
         runHtsCallAndExpectOnSuccess(
@@ -110,8 +110,7 @@ public class MiscClassicTransfersXTest extends AbstractContractXTest {
                             }
                         })
                         .array()),
-                output -> assertEquals(
-                        Bytes.wrap(ReturnTypes.encodedStatus(SUCCESS).array()), output));
+                output -> assertEquals(Bytes.wrap(ReturnTypes.encodedRc(SUCCESS).array()), output));
     }
 
     @Override
@@ -206,7 +205,7 @@ public class MiscClassicTransfersXTest extends AbstractContractXTest {
                 Nft.newBuilder()
                         .nftId(SN_3456)
                         .ownerId(OWNER_ID)
-                        .metadata(SN_2345_METADATA)
+                        .metadata(SN_3456_METADATA)
                         .build());
         return nfts;
     }

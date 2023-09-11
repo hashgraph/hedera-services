@@ -23,6 +23,7 @@ import static java.util.Objects.requireNonNull;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
@@ -309,6 +310,19 @@ public class HtsCallAttempt {
             throw new IllegalStateException("Not a token redirect");
         }
         return redirectToken == null ? null : redirectToken.tokenId();
+    }
+
+    /**
+     * Returns the type of the token that is the target of this redirect, if it existed.
+     *
+     * @return the type of the token that is the target of this redirect, or null if it didn't exist
+     * @throws IllegalStateException if this is not a token redirect
+     */
+    public @Nullable TokenType redirectTokenType() {
+        if (!isRedirect) {
+            throw new IllegalStateException("Not a token redirect");
+        }
+        return redirectToken == null ? null : redirectToken.tokenType();
     }
 
     /**

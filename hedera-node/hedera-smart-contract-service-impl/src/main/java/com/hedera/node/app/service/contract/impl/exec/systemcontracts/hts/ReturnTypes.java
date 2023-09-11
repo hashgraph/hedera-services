@@ -44,7 +44,7 @@ public class ReturnTypes {
      * @param status the status to encode
      * @return the encoded status
      */
-    public static ByteBuffer encodedStatus(@NonNull final ResponseCodeEnum status) {
+    public static ByteBuffer encodedRc(@NonNull final ResponseCodeEnum status) {
         return RC_ENCODER.encodeElements((long) status.protoOrdinal());
     }
 }

@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
@@ -84,6 +85,9 @@ public class Erc721TransferFromCall extends AbstractHtsCall {
     public @NonNull PricedResult execute() {
         // https://eips.ethereum.org/EIPS/eip-721
         // TODO - gas calculation
+        if (tokenId == null) {
+            return reversionWith(INVALID_TOKEN_ID, 0L);
+        }
         final var spenderId = addressIdConverter.convert(asHeadlongAddress(spender.toArrayUnsafe()));
         final var recordBuilder = systemContractOperations()
                 .dispatch(
@@ -123,10 +127,10 @@ public class Erc721TransferFromCall extends AbstractHtsCall {
      */
     public static boolean matches(@NonNull final HtsCallAttempt attempt) {
         requireNonNull(attempt);
+        // We only match calls to existing tokens (i.e., with known token type)
         return attempt.isTokenRedirect()
                 && Arrays.equals(attempt.selector(), ERC_721_TRANSFER_FROM.selector())
-                && attempt.redirectToken() != null
-                && requireNonNull(attempt.redirectToken()).tokenType() == NON_FUNGIBLE_UNIQUE;
+                && attempt.redirectTokenType() == NON_FUNGIBLE_UNIQUE;
     }
 
     /**

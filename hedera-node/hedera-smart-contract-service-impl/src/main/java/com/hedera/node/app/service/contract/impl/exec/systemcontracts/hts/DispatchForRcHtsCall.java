@@ -37,7 +37,7 @@ public class DispatchForRcHtsCall<T extends SingleTransactionRecordBuilder> exte
     private final VerificationStrategy verificationStrategy;
 
     /**
-     * Convenience constructor that slightly eases construction for the most common case.
+     * Convenience overload that slightly eases construction for the most common case.
      *
      * @param onlyDelegatable whether the call can activate only delegatable contract id keys
      * @param attempt the attempt to translate to a dispatching
@@ -90,6 +90,6 @@ public class DispatchForRcHtsCall<T extends SingleTransactionRecordBuilder> exte
         // TODO - gas calculation
         final var recordBuilder =
                 systemContractOperations().dispatch(syntheticBody, verificationStrategy, spenderId, recordBuilderType);
-        return completionWith(standardized(recordBuilder.status()), 0L);
+        return completionWith(recordBuilder.status(), 0L);
     }
 }
