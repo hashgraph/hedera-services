@@ -110,6 +110,7 @@ public class HandleWorkflow {
     private final ExchangeRateManager exchangeRateManager;
     private final ParentRecordFinalizer transactionFinalizer;
     private final SystemFileUpdateFacility systemFileUpdateFacility;
+    private final DualStateUpdateFacility dualStateUpdateFacility;
     private final SolvencyPreCheck solvencyPreCheck;
     private final Authorizer authorizer;
 
@@ -130,6 +131,7 @@ public class HandleWorkflow {
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final ParentRecordFinalizer transactionFinalizer,
             @NonNull final SystemFileUpdateFacility systemFileUpdateFacility,
+            @NonNull final DualStateUpdateFacility dualStateUpdateFacility,
             @NonNull final SolvencyPreCheck solvencyPreCheck,
             @NonNull final Authorizer authorizer) {
         this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
@@ -148,6 +150,8 @@ public class HandleWorkflow {
         this.transactionFinalizer = requireNonNull(transactionFinalizer, "transactionFinalizer must not be null");
         this.systemFileUpdateFacility =
                 requireNonNull(systemFileUpdateFacility, "systemFileUpdateFacility must not be null");
+        this.dualStateUpdateFacility =
+                requireNonNull(dualStateUpdateFacility, "dualStateUpdateFacility must not be null");
         this.solvencyPreCheck = requireNonNull(solvencyPreCheck, "solvencyPreCheck must not be null");
         this.authorizer = requireNonNull(authorizer, "authorizer must not be null");
     }
@@ -260,7 +264,7 @@ public class HandleWorkflow {
 
             if (transactionInfo == null) {
                 // FUTURE: Charge node generic penalty, set values in record builder, and remove log statement
-                logger.error("Non-parsable transaction from creator {}", creator);
+                logger.error("Bad transaction from creator {}", creator);
                 return;
             }
 
@@ -291,6 +295,7 @@ public class HandleWorkflow {
 
             // Setup context
             final var context = new HandleContextImpl(
+                    txBody,
                     transactionInfo,
                     payer,
                     preHandleResult.payerKey(),
@@ -307,10 +312,12 @@ public class HandleWorkflow {
                     blockRecordManager,
                     recordCache,
                     feeManager,
+                    exchangeRateManager,
                     consensusNow);
 
             // Calculate the fee
             fees = dispatcher.dispatchComputeFees(context);
+            recordBuilder.transactionFee(fees.totalFee());
 
             // Run all pre-checks
             final var validationResult = validate(
@@ -326,7 +333,7 @@ public class HandleWorkflow {
                 }
                 final var penaltyFee = new Fees(fees.nodeFee(), fees.networkFee(), 0L);
                 feeAccumulator.charge(payer, penaltyFee);
-                recordBuilder.status(validationResult.responseCodeEnum());
+                recordBuilder.status(validationResult.responseCodeEnum()).transactionFee(penaltyFee.totalFee());
 
             } else {
                 feeAccumulator.charge(payer, fees);
@@ -337,6 +344,9 @@ public class HandleWorkflow {
 
                     // Notify responsible facility if system-file was uploaded
                     systemFileUpdateFacility.handleTxBody(stack, txBody);
+
+                    // Notify if dual state was updated
+                    dualStateUpdateFacility.handleTxBody(stack, txBody);
 
                 } catch (final HandleException e) {
                     rollback(e.getStatus(), stack, recordListBuilder);

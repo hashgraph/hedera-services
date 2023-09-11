@@ -184,6 +184,9 @@ class HandleWorkflowTest extends AppTestBase {
     private SystemFileUpdateFacility systemFileUpdateFacility;
 
     @Mock
+    private DualStateUpdateFacility dualStateUpdateFacility;
+
+    @Mock
     private SolvencyPreCheck solvencyPreCheck;
 
     @Mock(strictness = LENIENT)
@@ -255,6 +258,7 @@ class HandleWorkflowTest extends AppTestBase {
                 exchangeRateManager,
                 finalizer,
                 systemFileUpdateFacility,
+                dualStateUpdateFacility,
                 solvencyPreCheck,
                 authorizer);
     }
@@ -278,6 +282,7 @@ class HandleWorkflowTest extends AppTestBase {
                         exchangeRateManager,
                         finalizer,
                         systemFileUpdateFacility,
+                        dualStateUpdateFacility,
                         solvencyPreCheck,
                         authorizer))
                 .isInstanceOf(NullPointerException.class);
@@ -297,6 +302,7 @@ class HandleWorkflowTest extends AppTestBase {
                         exchangeRateManager,
                         finalizer,
                         systemFileUpdateFacility,
+                        dualStateUpdateFacility,
                         solvencyPreCheck,
                         authorizer))
                 .isInstanceOf(NullPointerException.class);
@@ -316,6 +322,7 @@ class HandleWorkflowTest extends AppTestBase {
                         exchangeRateManager,
                         finalizer,
                         systemFileUpdateFacility,
+                        dualStateUpdateFacility,
                         solvencyPreCheck,
                         authorizer))
                 .isInstanceOf(NullPointerException.class);
@@ -335,6 +342,7 @@ class HandleWorkflowTest extends AppTestBase {
                         exchangeRateManager,
                         finalizer,
                         systemFileUpdateFacility,
+                        dualStateUpdateFacility,
                         solvencyPreCheck,
                         authorizer))
                 .isInstanceOf(NullPointerException.class);
@@ -354,6 +362,7 @@ class HandleWorkflowTest extends AppTestBase {
                         exchangeRateManager,
                         finalizer,
                         systemFileUpdateFacility,
+                        dualStateUpdateFacility,
                         solvencyPreCheck,
                         authorizer))
                 .isInstanceOf(NullPointerException.class);
@@ -373,6 +382,7 @@ class HandleWorkflowTest extends AppTestBase {
                         exchangeRateManager,
                         finalizer,
                         systemFileUpdateFacility,
+                        dualStateUpdateFacility,
                         solvencyPreCheck,
                         authorizer))
                 .isInstanceOf(NullPointerException.class);
@@ -392,6 +402,7 @@ class HandleWorkflowTest extends AppTestBase {
                         exchangeRateManager,
                         finalizer,
                         systemFileUpdateFacility,
+                        dualStateUpdateFacility,
                         solvencyPreCheck,
                         authorizer))
                 .isInstanceOf(NullPointerException.class);
@@ -411,6 +422,7 @@ class HandleWorkflowTest extends AppTestBase {
                         exchangeRateManager,
                         finalizer,
                         systemFileUpdateFacility,
+                        dualStateUpdateFacility,
                         solvencyPreCheck,
                         authorizer))
                 .isInstanceOf(NullPointerException.class);
@@ -430,6 +442,7 @@ class HandleWorkflowTest extends AppTestBase {
                         exchangeRateManager,
                         finalizer,
                         systemFileUpdateFacility,
+                        dualStateUpdateFacility,
                         solvencyPreCheck,
                         authorizer))
                 .isInstanceOf(NullPointerException.class);
@@ -449,6 +462,7 @@ class HandleWorkflowTest extends AppTestBase {
                         exchangeRateManager,
                         finalizer,
                         systemFileUpdateFacility,
+                        dualStateUpdateFacility,
                         solvencyPreCheck,
                         authorizer))
                 .isInstanceOf(NullPointerException.class);
@@ -468,6 +482,7 @@ class HandleWorkflowTest extends AppTestBase {
                         exchangeRateManager,
                         finalizer,
                         systemFileUpdateFacility,
+                        dualStateUpdateFacility,
                         solvencyPreCheck,
                         authorizer))
                 .isInstanceOf(NullPointerException.class);
@@ -487,6 +502,7 @@ class HandleWorkflowTest extends AppTestBase {
                         exchangeRateManager,
                         finalizer,
                         systemFileUpdateFacility,
+                        dualStateUpdateFacility,
                         solvencyPreCheck,
                         authorizer))
                 .isInstanceOf(NullPointerException.class);
@@ -506,6 +522,7 @@ class HandleWorkflowTest extends AppTestBase {
                         null,
                         finalizer,
                         systemFileUpdateFacility,
+                        dualStateUpdateFacility,
                         solvencyPreCheck,
                         authorizer))
                 .isInstanceOf(NullPointerException.class);
@@ -525,6 +542,7 @@ class HandleWorkflowTest extends AppTestBase {
                         exchangeRateManager,
                         null,
                         systemFileUpdateFacility,
+                        dualStateUpdateFacility,
                         solvencyPreCheck,
                         authorizer))
                 .isInstanceOf(NullPointerException.class);
@@ -544,6 +562,7 @@ class HandleWorkflowTest extends AppTestBase {
                         exchangeRateManager,
                         finalizer,
                         null,
+                        dualStateUpdateFacility,
                         solvencyPreCheck,
                         authorizer))
                 .isInstanceOf(NullPointerException.class);
@@ -564,6 +583,7 @@ class HandleWorkflowTest extends AppTestBase {
                         finalizer,
                         systemFileUpdateFacility,
                         null,
+                        solvencyPreCheck,
                         authorizer))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
@@ -582,6 +602,27 @@ class HandleWorkflowTest extends AppTestBase {
                         exchangeRateManager,
                         finalizer,
                         systemFileUpdateFacility,
+                        dualStateUpdateFacility,
+                        null,
+                        authorizer))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new HandleWorkflow(
+                        networkInfo,
+                        preHandleWorkflow,
+                        dispatcher,
+                        blockRecordManager,
+                        signatureExpander,
+                        signatureVerifier,
+                        checker,
+                        serviceLookup,
+                        configProvider,
+                        recordCache,
+                        stakingPeriodTimeHook,
+                        feeManager,
+                        exchangeRateManager,
+                        finalizer,
+                        systemFileUpdateFacility,
+                        dualStateUpdateFacility,
                         solvencyPreCheck,
                         null))
                 .isInstanceOf(NullPointerException.class);
@@ -614,6 +655,7 @@ class HandleWorkflowTest extends AppTestBase {
         assertThat(alice).isEqualTo(ALICE.account().accountId());
         // TODO: Check that record was created
         verify(systemFileUpdateFacility).handleTxBody(any(), any());
+        verify(dualStateUpdateFacility).handleTxBody(any(), any());
     }
 
     @Nested

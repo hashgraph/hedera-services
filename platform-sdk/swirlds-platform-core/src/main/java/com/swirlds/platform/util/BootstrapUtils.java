@@ -132,15 +132,22 @@ public final class BootstrapUtils {
      */
     public static @NonNull PathsConfig loadPathsConfig() {
         final PathsConfig pathsConfig = ConfigurationHolder.getConfigData(PathsConfig.class);
+        validatePathToConfigTxt(pathsConfig);
+        return pathsConfig;
+    }
+
+    /**
+     * Validate the "config.txt" exists. Program terminates if not.
+     */
+    public static void validatePathToConfigTxt(@NonNull final PathsConfig pathsConfig) {
         if (Files.exists(pathsConfig.getConfigPath())) {
             CommonUtils.tellUserConsole("Reading the configuration from the file:   " + pathsConfig.getConfigPath());
         } else {
-            final String message = "A config.txt file could be created here:   " + pathsConfig.getConfigPath();
+            final String message = "A config.txt file could not be found here:   " + pathsConfig.getConfigPath();
             CommonUtils.tellUserConsole(message);
             logger.error(STARTUP.getMarker(), message);
             SystemExitUtils.exitSystem(SystemExitCode.CONFIGURATION_ERROR, message);
         }
-        return pathsConfig;
     }
 
     /**
@@ -156,8 +163,34 @@ public final class BootstrapUtils {
     public static @NonNull Configuration loadConfig(
             @NonNull final PathsConfig pathsConfig, @NonNull final Map<NodeId, SwirldMain> appMains)
             throws IOException {
-        Objects.requireNonNull(pathsConfig, "pathsConfig must not be null");
         Objects.requireNonNull(appMains, "appMains must not be null");
+        final var configurationBuilder = ConfigurationBuilder.create();
+        setupConfigBuilder(configurationBuilder, pathsConfig);
+
+        // Assume all locally run instances provide the same configuration definitions to the configuration builder.
+        if (!appMains.isEmpty()) {
+            appMains.values().iterator().next().updateConfigurationBuilder(configurationBuilder);
+        }
+
+        final Configuration configuration = configurationBuilder.build();
+
+        // Set the configuration on all SwirldMain instances.
+        appMains.values().forEach(swirldMain -> swirldMain.setConfiguration(configuration));
+
+        return configuration;
+    }
+
+    /**
+     * Load the configuration for the platform.
+     *
+     * @param configurationBuilder the configuration builder to setup
+     * @param pathsConfig the paths of configuration files
+     * @throws IOException if there is a problem reading the configuration files
+     */
+    public static void setupConfigBuilder(
+            @NonNull final ConfigurationBuilder configurationBuilder, @NonNull final PathsConfig pathsConfig)
+            throws IOException {
+        Objects.requireNonNull(pathsConfig, "pathsConfig must not be null");
 
         // The properties from the config.txt
         final LegacyConfigProperties configurationProperties =
@@ -170,7 +203,7 @@ public final class BootstrapUtils {
         final ConfigSource threadCountPropertyConfigSource = new ThreadCountPropertyConfigSource();
 
         // Load Configuration Definitions
-        final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create()
+        configurationBuilder
                 .withSource(mappedSettingsConfigSource)
                 .withSource(configPropertiesConfigSource)
                 .withSource(threadCountPropertyConfigSource)
@@ -202,18 +235,6 @@ public final class BootstrapUtils {
                 .withConfigDataType(PlatformStatusConfig.class)
                 .withConfigDataType(TransactionConfig.class)
                 .withConfigDataType(ProtocolConfig.class);
-
-        // Assume all locally run instances provide the same configuration definitions to the configuration builder.
-        if (!appMains.isEmpty()) {
-            appMains.values().iterator().next().updateConfigurationBuilder(configurationBuilder);
-        }
-
-        final Configuration configuration = configurationBuilder.build();
-
-        // Set the configuration on all SwirldMain instances.
-        appMains.values().forEach(swirldMain -> swirldMain.setConfiguration(configuration));
-
-        return configuration;
     }
 
     /**

@@ -24,13 +24,10 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.base.TokenID;
-import com.hedera.hapi.node.state.token.Account;
-import com.hedera.hapi.node.state.token.Token;
-import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
@@ -38,7 +35,6 @@ import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
 
 /**
@@ -57,40 +53,32 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
      * {@inheritDoc}
      */
     @Override
-    public @Nullable Account getAccount(final long number) {
-        final var accountStore = context.readableStore(ReadableAccountStore.class);
-        return accountStore.getAccountById(
-                AccountID.newBuilder().accountNum(number).build());
+    public @NonNull ReadableNftStore readableNftStore() {
+        return context.readableStore(ReadableNftStore.class);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public @Nullable Token getToken(final long number) {
-        final var tokenStore = context.readableStore(ReadableTokenStore.class);
-        return tokenStore.get(TokenID.newBuilder().tokenNum(number).build());
+    public @NonNull ReadableTokenRelationStore readableTokenRelationStore() {
+        return context.readableStore(ReadableTokenRelationStore.class);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public @Nullable TokenRelation getTokenRelation(final long accountNumber, final long tokenNumber) {
-        final var relationStore = context.readableStore(ReadableTokenRelationStore.class);
-        return relationStore.get(
-                AccountID.newBuilder().accountNum(accountNumber).build(),
-                TokenID.newBuilder().tokenNum(tokenNumber).build());
+    public @NonNull ReadableTokenStore readableTokenStore() {
+        return context.readableStore(ReadableTokenStore.class);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public long resolveAlias(@NonNull final Bytes evmAddress) {
-        final var accountStore = context.readableStore(ReadableAccountStore.class);
-        final var account = accountStore.getAccountIDByAlias(evmAddress);
-        return account == null ? MISSING_ENTITY_NUMBER : account.accountNumOrThrow();
+    public @NonNull ReadableAccountStore readableAccountStore() {
+        return context.readableStore(ReadableAccountStore.class);
     }
 
     /**
@@ -113,7 +101,7 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
                 .build();
         // TODO - implement proper signature VerificationAssistant
         final var childRecordBuilder =
-                context.dispatchChildTransaction(synthTxn, CryptoCreateRecordBuilder.class, key -> false);
+                context.dispatchChildTransaction(synthTxn, CryptoCreateRecordBuilder.class, key -> true);
         // TODO - switch OK to SUCCESS once some status-setting responsibilities are clarified
         if (childRecordBuilder.status() != OK && childRecordBuilder.status() != SUCCESS) {
             throw new AssertionError("Not implemented");
