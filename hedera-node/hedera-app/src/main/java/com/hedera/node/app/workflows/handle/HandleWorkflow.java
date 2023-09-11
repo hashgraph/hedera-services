@@ -74,6 +74,7 @@ import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.system.Round;
+import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.config.api.Configuration;
@@ -162,7 +163,8 @@ public class HandleWorkflow {
      * @param state the writable {@link HederaState} that this round will work on
      * @param round the next {@link Round} that needs to be processed
      */
-    public void handleRound(@NonNull final HederaState state, @NonNull final Round round) {
+    public void handleRound(
+            @NonNull final HederaState state, @NonNull final SwirldDualState dualState, @NonNull final Round round) {
         // Keep track of whether any user transactions were handled. If so, then we will need to close the round
         // with the block record manager.
         final var userTransactionsHandled = new AtomicBoolean(false);
@@ -187,7 +189,7 @@ public class HandleWorkflow {
                     // skip system transactions
                     if (!platformTxn.isSystem()) {
                         userTransactionsHandled.set(true);
-                        handlePlatformTransaction(state, event, creator, platformTxn);
+                        handlePlatformTransaction(state, dualState, event, creator, platformTxn);
                     }
                 } catch (final Exception e) {
                     logger.fatal(
@@ -209,6 +211,7 @@ public class HandleWorkflow {
 
     private void handlePlatformTransaction(
             @NonNull final HederaState state,
+            @NonNull final SwirldDualState dualState,
             @NonNull final ConsensusEvent platformEvent,
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction platformTxn) {
@@ -217,7 +220,7 @@ public class HandleWorkflow {
         final Instant consensusNow = platformTxn.getConsensusTimestamp();
 
         // handle user transaction
-        handleUserTransaction(consensusNow, state, platformEvent, creator, platformTxn);
+        handleUserTransaction(consensusNow, state, dualState, platformEvent, creator, platformTxn);
 
         // TODO: handle long scheduled transactions
 
@@ -228,6 +231,7 @@ public class HandleWorkflow {
     private void handleUserTransaction(
             @NonNull final Instant consensusNow,
             @NonNull final HederaState state,
+            @NonNull final SwirldDualState dualState,
             @NonNull final ConsensusEvent platformEvent,
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction platformTxn) {
@@ -346,7 +350,7 @@ public class HandleWorkflow {
                     systemFileUpdateFacility.handleTxBody(stack, txBody);
 
                     // Notify if dual state was updated
-                    dualStateUpdateFacility.handleTxBody(stack, txBody);
+                    dualStateUpdateFacility.handleTxBody(stack, dualState, txBody);
 
                 } catch (final HandleException e) {
                     rollback(e.getStatus(), stack, recordListBuilder);

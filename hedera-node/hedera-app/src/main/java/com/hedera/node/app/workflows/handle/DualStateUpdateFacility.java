@@ -32,20 +32,24 @@ import com.hedera.node.app.state.HederaState;
 import com.swirlds.common.system.DualState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Simple facility that notifies interested parties when the freeze state is updated.
  */
+@Singleton
 public class DualStateUpdateFacility {
-    private final DualState dualState;
+    private static final Logger logger = LogManager.getLogger(DualStateUpdateFacility.class);
 
     /**
      * Creates a new instance of this class.
-     *
-     * @param dualState the configuration provider
      */
-    public DualStateUpdateFacility(@NonNull final DualState dualState) {
-        this.dualState = requireNonNull(dualState, "configProvider must not be null");
+    @Inject
+    public DualStateUpdateFacility() {
+        // For dagger
     }
 
     /**
@@ -55,13 +59,17 @@ public class DualStateUpdateFacility {
      * @param state the current state
      * @param txBody the transaction body
      */
-    public void handleTxBody(@NonNull final HederaState state, @NonNull final TransactionBody txBody) {
+    public void handleTxBody(
+            @NonNull final HederaState state,
+            @NonNull final DualState dualState,
+            @NonNull final TransactionBody txBody) {
         requireNonNull(state, "state must not be null");
         requireNonNull(txBody, "txBody must not be null");
 
         if (txBody.hasFreeze()) {
             final FreezeType freezeType = txBody.freezeOrThrow().freezeType();
             if (freezeType == FREEZE_UPGRADE || freezeType == FREEZE_ONLY) {
+                logger.info("Transaction freeze of type {} detected", freezeType);
                 // copy freeze state to dual state
                 final ReadableStates states = state.createReadableStates(FreezeService.NAME);
                 final ReadableSingletonState<Timestamp> freezeTime =
@@ -69,8 +77,10 @@ public class DualStateUpdateFacility {
                 requireNonNull(freezeTime.get());
                 final Instant freezeTimeInstant = Instant.ofEpochSecond(
                         freezeTime.get().seconds(), freezeTime.get().nanos());
+                logger.info("Freeze time will be {}", freezeTimeInstant);
                 dualState.setFreezeTime(freezeTimeInstant);
             } else if (freezeType == FREEZE_ABORT) {
+                logger.info("Aborting freeze");
                 // copy freeze state (which is null) to dual state
                 // we just set dual state to null
                 dualState.setFreezeTime(null);
