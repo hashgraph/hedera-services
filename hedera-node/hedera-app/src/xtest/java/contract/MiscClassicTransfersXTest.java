@@ -59,6 +59,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersCall;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -88,7 +89,7 @@ public class MiscClassicTransfersXTest extends AbstractContractXTest {
                                 SN_1234.serialNumber())
                         .array()),
                 output -> assertEquals(
-                        Bytes.wrap(ClassicTransfersCall.encodedStatus(SUCCESS).array()), output));
+                        Bytes.wrap(ReturnTypes.encodedStatus(SUCCESS).array()), output));
         // Fungible transfer to an available alias can auto-create an account, while also
         // transferring a second NFT to same receiver as in the first call
         runHtsCallAndExpectOnSuccess(
@@ -110,7 +111,7 @@ public class MiscClassicTransfersXTest extends AbstractContractXTest {
                         })
                         .array()),
                 output -> assertEquals(
-                        Bytes.wrap(ClassicTransfersCall.encodedStatus(SUCCESS).array()), output));
+                        Bytes.wrap(ReturnTypes.encodedStatus(SUCCESS).array()), output));
     }
 
     @Override

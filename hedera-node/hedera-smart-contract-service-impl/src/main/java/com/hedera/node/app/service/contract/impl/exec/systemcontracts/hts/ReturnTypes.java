@@ -16,6 +16,12 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
+import com.esaulpaugh.headlong.abi.TupleType;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
+import java.nio.ByteBuffer;
+
 /**
  * Literal representations of output types used by HTS system contract functions.
  */
@@ -30,4 +36,16 @@ public class ReturnTypes {
     public static final String BOOL = "(bool)";
     public static final String STRING = "(string)";
     public static final String ADDRESS = "(address)";
+
+    private static final TupleType RC_ENCODER = TupleType.parse(INT_64);
+
+    /**
+     * Encodes the given {@code status} as a return value for a classic transfer call.
+     *
+     * @param status the status to encode
+     * @return the encoded status
+     */
+    public static ByteBuffer encodedStatus(@NonNull final ResponseCodeEnum status) {
+        return RC_ENCODER.encodeElements((long) status.protoOrdinal());
+    }
 }

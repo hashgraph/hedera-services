@@ -19,7 +19,6 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.trans
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.revertResult;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ApprovalSwitchHelper.APPROVAL_SWITCH_HELPER;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.SystemAccountCreditScreen.SYSTEM_ACCOUNT_CREDIT_SCREEN;
@@ -27,7 +26,6 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.as
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Function;
-import com.esaulpaugh.headlong.abi.TupleType;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
@@ -43,7 +41,7 @@ import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.nio.ByteBuffer;
+
 import java.util.Arrays;
 
 /**
@@ -79,18 +77,6 @@ public class ClassicTransfersCall extends AbstractHtsCall {
             new Function("transferFrom(address,address,address,uint256)", ReturnTypes.INT_64);
     public static final Function HRC_TRANSFER_NFT_FROM =
             new Function("transferFromNFT(address,address,address,uint256)", ReturnTypes.INT_64);
-
-    /**
-     * Encodes the given {@code status} as a return value for a classic transfer call.
-     *
-     * @param status the status to encode
-     * @return the encoded status
-     */
-    public static ByteBuffer encodedStatus(@NonNull final ResponseCodeEnum status) {
-        return OUTPUT_ENCODER.encodeElements((long) status.protoOrdinal());
-    }
-
-    private static final TupleType OUTPUT_ENCODER = TupleType.parse(ReturnTypes.INT_64);
 
     private final byte[] selector;
     private final AccountID spenderId;
@@ -157,10 +143,6 @@ public class ClassicTransfersCall extends AbstractHtsCall {
 
     private boolean shouldRetryWithApprovals() {
         return approvalSwitchHelper != null;
-    }
-
-    private PricedResult completionWith(@NonNull final ResponseCodeEnum status) {
-        return gasOnly(successResult(encodedStatus(status), 0L));
     }
 
     private boolean executionIsNotSupported() {
