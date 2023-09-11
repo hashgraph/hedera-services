@@ -35,5 +35,6 @@ public interface Consensus extends GraphGenerations, RoundNumberProvider, Loadab
      * @return A list of consensus rounds, each with a list of consensus events (that can be empty).
      *     Returns null if no consensus was reached
      */
-    List<ConsensusRound> addEvent(EventImpl event, AddressBook addressBook);
+    @Nullable
+    List<ConsensusRound> addEvent(@NonNull EventImpl event, @NonNull AddressBook addressBook);
 }
