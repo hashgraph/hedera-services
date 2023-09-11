@@ -69,9 +69,9 @@ public final class StartupStateUtils {
      * @param recycleBin          a utility for deleting files in a way that allows them to possibly be recovered
      * @param selfId              the ID of this node
      * @param swirldName          the name of this swirld
-     * @param actualMainClassName the name of the app's SwirldMain class (may be a value provided by configuration){}
+     * @param actualMainClassName the name of the app's SwirldMain class (may be a value provided by configuration)
      * @param epoch               the epoch that the platform wants to be in (defined either by the emergency recovery
-     *                            file)
+     *                            file or the state loaded from disk if it is not overridden by a recovery file)
      * @param initialStateRound   the round number of the initial state
      */
     public static void doRecoveryCleanup(
@@ -242,10 +242,10 @@ public final class StartupStateUtils {
 
         final State stateCopy = initialSignedState.getState().copy();
         final SignedState signedStateCopy =
-                new SignedState(platformContext, stateCopy, "Browser create new copy of initial state", false);
+                new SignedState(platformContext, stateCopy, "StartupStateUtils: copy initial state", false);
         signedStateCopy.setSigSet(initialSignedState.getSigSet());
 
-        return signedStateCopy.reserve("Browser copied initial state");
+        return signedStateCopy.reserve("Copied initial state");
     }
 
     /**
@@ -344,7 +344,7 @@ public final class StartupStateUtils {
         final Hash stateEpoch = savedStateFile.metadata().epochHash();
         final long stateRound = savedStateFile.metadata().round();
 
-        final boolean isStateSuitable = isInHashEpoch(targetEpoch, stateHash, stateEpoch) || stateRound < targetRound;
+        final boolean isStateSuitable = isInEpoch(targetEpoch, stateHash, stateEpoch) || stateRound < targetRound;
 
         if (isStateSuitable) {
             logger.info(
@@ -385,11 +385,11 @@ public final class StartupStateUtils {
      * @param stateEpoch  the epoch hash of the state
      * @return true if the state is in the hash epoch, false otherwise. Null states are not in the hash epoch.
      */
-    private static boolean isInHashEpoch(
+    private static boolean isInEpoch(
             @Nullable final Hash targetEpoch, @Nullable final Hash stateHash, @Nullable final Hash stateEpoch) {
 
         if (stateHash == null) {
-            // State is from an old version of hte code that did not store state hash in metadata
+            // State is from an old version of the code that did not store state hash in metadata
             return false;
         }
 
@@ -415,7 +415,7 @@ public final class StartupStateUtils {
                 ? null
                 : state.get().getState().getPlatformState().getPlatformData().getEpochHash();
 
-        final boolean inEpoch = isInHashEpoch(targetEpoch, stateHash, stateEpoch);
+        final boolean inEpoch = isInEpoch(targetEpoch, stateHash, stateEpoch);
 
         if (state == null) {
             logger.warn(
@@ -537,13 +537,8 @@ public final class StartupStateUtils {
         final Hash oldHash = deserializedSignedState.originalHash();
         final Hash newHash = rehashTree(state);
 
-        final SoftwareVersion loadedVersion = deserializedSignedState
-                .reservedSignedState()
-                .get()
-                .getState()
-                .getPlatformState()
-                .getPlatformData()
-                .getCreationSoftwareVersion();
+        final SoftwareVersion loadedVersion =
+                state.getPlatformState().getPlatformData().getCreationSoftwareVersion();
 
         if (oldHash.equals(newHash)) {
             logger.info(STARTUP.getMarker(), "Loaded state's hash is the same as when it was saved.");
@@ -552,7 +547,7 @@ public final class StartupStateUtils {
                     EXCEPTION.getMarker(),
                     "The saved state file {} was created with the current version of the software, "
                             + "but the state hash has changed. Unless the state was intentionally modified, "
-                            + "this good indicator that there is probably a bug.",
+                            + "this is a good indicator that there is probably a bug.",
                     savedStateFile.stateFile());
         } else {
             logger.warn(
@@ -579,8 +574,8 @@ public final class StartupStateUtils {
         logger.warn(STARTUP.getMarker(), "Moving state {} to the recycle bin.", stateInfo.stateFile());
         try {
             recycleBin.recycle(stateInfo.getDirectory());
-        } catch (final IOException ee) {
-            throw new UncheckedIOException("unable to recycle state", ee);
+        } catch (final IOException e) {
+            throw new UncheckedIOException("unable to recycle state", e);
         }
     }
 }

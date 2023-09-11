@@ -508,7 +508,7 @@ class StateSigningTests {
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
-    @DisplayName("Recovery Test Is Complete Test")
+    @DisplayName("Recovery State Is Complete Test")
     void recoveryStateIsCompleteTest(final boolean evenWeighting) {
         final Random random = getRandomPrintSeed();
 
