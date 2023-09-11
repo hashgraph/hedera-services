@@ -237,7 +237,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                                 BigInteger.ONE)
                         .array(),
                 NON_SYSTEM_LONG_ZERO_ADDRESS);
-        given(verificationStrategies.activatingContractKeysFor(EIP_1014_ADDRESS, true, nativeOperations))
+        given(verificationStrategies.activatingOnlyContractKeysFor(EIP_1014_ADDRESS, true, nativeOperations))
                 .willReturn(strategy);
         final var subject = new HtsCallAttempt(
                 input,
@@ -261,7 +261,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                                 BigInteger.TWO)
                         .array(),
                 NON_SYSTEM_LONG_ZERO_ADDRESS);
-        given(verificationStrategies.activatingContractKeysFor(EIP_1014_ADDRESS, true, nativeOperations))
+        given(verificationStrategies.activatingOnlyContractKeysFor(EIP_1014_ADDRESS, true, nativeOperations))
                 .willReturn(strategy);
         final var subject = new HtsCallAttempt(
                 input,
@@ -282,7 +282,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                         .encodeCallWithArgs(asHeadlongAddress(NON_SYSTEM_LONG_ZERO_ADDRESS), BigInteger.TWO)
                         .array(),
                 NON_SYSTEM_LONG_ZERO_ADDRESS);
-        given(verificationStrategies.activatingContractKeysFor(EIP_1014_ADDRESS, true, nativeOperations))
+        given(verificationStrategies.activatingOnlyContractKeysFor(EIP_1014_ADDRESS, true, nativeOperations))
                 .willReturn(strategy);
         final var subject = new HtsCallAttempt(
                 input,
@@ -310,7 +310,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
         final var selectorHex = hexedSelector.substring(2);
         // Even the approval-based transfers need a verification strategy since the receiver could have
         // receiverSigRequired on; in which case the sender will need to activate a contract id key
-        given(verificationStrategies.activatingContractKeysFor(EIP_1014_ADDRESS, true, nativeOperations))
+        given(verificationStrategies.activatingOnlyContractKeysFor(EIP_1014_ADDRESS, true, nativeOperations))
                 .willReturn(strategy);
         if (ClassicTransfersCall.CRYPTO_TRANSFER.selectorHex().equals(selectorHex)) {
             given(decodingStrategies.decodeCryptoTransfer(any(), any())).willReturn(TransactionBody.DEFAULT);

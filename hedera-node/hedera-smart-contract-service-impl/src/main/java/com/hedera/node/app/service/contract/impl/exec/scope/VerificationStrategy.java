@@ -17,7 +17,9 @@
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import com.hedera.hapi.node.base.Key;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.function.Predicate;
 
 /**
  * A strategy interface to allow a dispatcher to optionally set the verification status of a
@@ -48,4 +50,20 @@ public interface VerificationStrategy {
      * @return a decision on whether to verify the signature, or delegate back to the crypto engine results
      */
     Decision decideFor(@NonNull Key key);
+
+    /**
+     * Returns a predicate that tests whether a given key is a valid signature for a given key
+     * given this strategy within the given {@link HandleContext}.
+     *
+     * @param context the context in which this strategy will be used
+     * @return a predicate that tests whether a given key is a valid signature for a given key
+     */
+    default Predicate<Key> asSignatureTestIn(@NonNull final HandleContext context) {
+        return key -> switch (decideFor(key)) {
+            case VALID -> true;
+            case INVALID -> false;
+            case DELEGATE_TO_CRYPTOGRAPHIC_VERIFICATION -> context.verificationFor(key)
+                    .passed();
+        };
+    }
 }

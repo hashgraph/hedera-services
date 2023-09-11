@@ -88,12 +88,7 @@ public class HandleSystemContractOperations implements SystemContractOperations 
      */
     @Override
     public @NonNull Predicate<Key> activeSignatureTestWith(@NonNull final VerificationStrategy strategy) {
-        return (key) -> switch (strategy.decideFor(key)) {
-            case VALID -> true;
-            case INVALID -> false;
-            case DELEGATE_TO_CRYPTOGRAPHIC_VERIFICATION -> context.verificationFor(key)
-                    .passed();
-        };
+        return strategy.asSignatureTestIn(context);
     }
 
     /**

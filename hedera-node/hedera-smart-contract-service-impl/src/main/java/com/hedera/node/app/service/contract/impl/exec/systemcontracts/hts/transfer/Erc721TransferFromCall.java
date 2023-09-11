@@ -148,7 +148,7 @@ public class Erc721TransferFromCall extends AbstractHtsCall {
                 call.get(1),
                 requireNonNull(attempt.redirectToken()).tokenIdOrThrow(),
                 attempt.verificationStrategies()
-                        .activatingContractKeysFor(
+                        .activatingOnlyContractKeysFor(
                                 sender,
                                 senderNeedsDelegatableContractKeys,
                                 attempt.enhancement().nativeOperations()),

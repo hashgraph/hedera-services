@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.processors.ProcessorModule.INITIAL_CONTRACT_NONCE;
@@ -99,9 +100,9 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
         final var synthTxn = TransactionBody.newBuilder()
                 .cryptoCreateAccount(synthHollowAccountCreation(evmAddress))
                 .build();
-        // TODO - implement proper signature VerificationAssistant
+        // There are no non-payer keys that will need to sign this transaction, activate no keys
         final var childRecordBuilder = context.dispatchChildTransaction(
-                synthTxn, CryptoCreateRecordBuilder.class, key -> true, context.payer());
+                synthTxn, CryptoCreateRecordBuilder.class, key -> false, context.payer());
         // TODO - switch OK to SUCCESS once some status-setting responsibilities are clarified
         if (childRecordBuilder.status() != OK && childRecordBuilder.status() != SUCCESS) {
             throw new AssertionError("Not implemented");
@@ -132,12 +133,16 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
             final long fromEntityNumber,
             final long toEntityNumber,
             @NonNull final VerificationStrategy strategy) {
+        final var to = requireNonNull(getAccount(toEntityNumber));
+        final var signatureTest = strategy.asSignatureTestIn(context);
+        if (to.receiverSigRequired() && !signatureTest.test(to.keyOrThrow())) {
+            return INVALID_SIGNATURE;
+        }
         final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
         tokenServiceApi.transferFromTo(
                 AccountID.newBuilder().accountNum(fromEntityNumber).build(),
                 AccountID.newBuilder().accountNum(toEntityNumber).build(),
                 amount);
-        // TODO - enforce receiver sig requirement
         return OK;
     }
 

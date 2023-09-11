@@ -210,7 +210,7 @@ public class ClassicTransfersCall extends AbstractHtsCall {
                 attempt.configuration(),
                 isLegacyCall(selector) ? APPROVAL_SWITCH_HELPER : null,
                 attempt.verificationStrategies()
-                        .activatingContractKeysFor(sender, onlyDelegatable, attempt.nativeOperations()),
+                        .activatingOnlyContractKeysFor(sender, onlyDelegatable, attempt.nativeOperations()),
                 SYSTEM_ACCOUNT_CREDIT_SCREEN);
     }
 

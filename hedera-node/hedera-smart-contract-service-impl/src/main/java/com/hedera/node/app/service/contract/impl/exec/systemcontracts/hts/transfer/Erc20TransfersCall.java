@@ -177,7 +177,7 @@ public class Erc20TransfersCall extends AbstractHtsCall {
                 to,
                 requireNonNull(attempt.redirectToken()).tokenIdOrThrow(),
                 attempt.verificationStrategies()
-                        .activatingContractKeysFor(
+                        .activatingOnlyContractKeysFor(
                                 sender,
                                 senderNeedsDelegatableContractKeys,
                                 attempt.enhancement().nativeOperations()),

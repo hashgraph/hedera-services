@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.scope;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.node.app.service.contract.impl.exec.processors.ProcessorModule.INITIAL_CONTRACT_NONCE;
@@ -31,6 +32,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NFT_SER
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_FUNGIBLE_TOKEN_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_ACCOUNT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_CONTRACT_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.PARANOID_SOMEBODY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SOMEBODY;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthHollowAccountCreation;
@@ -42,13 +44,15 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaNativeOperations;
-import com.hedera.node.app.service.contract.impl.test.TestHelpers;
+import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
@@ -76,6 +80,12 @@ class HandleHederaNativeOperationsTest {
 
     @Mock
     private ReadableTokenRelationStore relationStore;
+
+    @Mock
+    private VerificationStrategy verificationStrategy;
+
+    @Mock
+    private Predicate<Key> signatureTest;
 
     @Mock
     private ReadableAccountStore accountStore;
@@ -179,16 +189,57 @@ class HandleHederaNativeOperationsTest {
     @Test
     void transferWithReceiverSigCheckUsesApi() {
         given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
+        given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+        final var contractAccountId = AccountID.newBuilder()
+                .accountNum(NON_SYSTEM_CONTRACT_ID.contractNumOrThrow())
+                .build();
+        given(accountStore.getAccountById(contractAccountId)).willReturn(PARANOID_SOMEBODY);
+        given(verificationStrategy.asSignatureTestIn(context)).willReturn(signatureTest);
+        given(signatureTest.test(PARANOID_SOMEBODY.keyOrThrow())).willReturn(true);
 
         final var result = subject.transferWithReceiverSigCheck(
                 1L,
                 NON_SYSTEM_ACCOUNT_ID.accountNumOrThrow(),
                 NON_SYSTEM_CONTRACT_ID.contractNumOrThrow(),
-                TestHelpers.MOCK_VERIFICATION_STRATEGY);
+                verificationStrategy);
         assertEquals(OK, result);
+        verify(tokenServiceApi).transferFromTo(NON_SYSTEM_ACCOUNT_ID, contractAccountId, 1L);
+    }
+
+    @Test
+    void transferWithReceiverSigCheckReturnsInvalidSigIfAppropriate() {
+        given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
         final var contractAccountId = AccountID.newBuilder()
                 .accountNum(NON_SYSTEM_CONTRACT_ID.contractNumOrThrow())
                 .build();
+        given(accountStore.getAccountById(contractAccountId)).willReturn(PARANOID_SOMEBODY);
+        given(verificationStrategy.asSignatureTestIn(context)).willReturn(signatureTest);
+        given(signatureTest.test(PARANOID_SOMEBODY.keyOrThrow())).willReturn(false);
+
+        final var result = subject.transferWithReceiverSigCheck(
+                1L,
+                NON_SYSTEM_ACCOUNT_ID.accountNumOrThrow(),
+                NON_SYSTEM_CONTRACT_ID.contractNumOrThrow(),
+                verificationStrategy);
+        assertEquals(INVALID_SIGNATURE, result);
+        verify(tokenServiceApi, never()).transferFromTo(NON_SYSTEM_ACCOUNT_ID, contractAccountId, 1L);
+    }
+
+    @Test
+    void transferWithReceiverSigCheckSkipsCheckWithoutRequirement() {
+        given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
+        given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+        final var contractAccountId = AccountID.newBuilder()
+                .accountNum(NON_SYSTEM_CONTRACT_ID.contractNumOrThrow())
+                .build();
+        given(accountStore.getAccountById(contractAccountId)).willReturn(SOMEBODY);
+
+        final var result = subject.transferWithReceiverSigCheck(
+                1L,
+                NON_SYSTEM_ACCOUNT_ID.accountNumOrThrow(),
+                NON_SYSTEM_CONTRACT_ID.contractNumOrThrow(),
+                verificationStrategy);
+        assertEquals(OK, result);
         verify(tokenServiceApi).transferFromTo(NON_SYSTEM_ACCOUNT_ID, contractAccountId, 1L);
     }
 

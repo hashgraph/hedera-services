@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.contract.impl.test;
 
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmAddress;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asHeadlongAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToBesuAddress;
@@ -56,6 +55,7 @@ import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.service.contract.impl.exec.failure.ResourceExhaustedException;
 import com.hedera.node.app.service.contract.impl.exec.gas.GasCharges;
 import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy;
+import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy.UseTopLevelSigs;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
@@ -266,6 +266,13 @@ public class TestHelpers {
             .accountId(A_NEW_ACCOUNT_ID)
             .alias(tuweniToPbjBytes(EIP_1014_ADDRESS))
             .build();
+
+    public static final Account PARANOID_SOMEBODY = Account.newBuilder()
+            .accountId(B_NEW_ACCOUNT_ID)
+            .receiverSigRequired(true)
+            .key(AN_ED25519_KEY)
+            .alias(tuweniToPbjBytes(EIP_1014_ADDRESS))
+            .build();
     public static final TokenRelation A_FUNGIBLE_RELATION = TokenRelation.newBuilder()
             .tokenId(FUNGIBLE_TOKEN_ID)
             .accountId(A_NEW_ACCOUNT_ID)
@@ -401,7 +408,7 @@ public class TestHelpers {
             TransactionBody.newBuilder().ethereumTransaction(MOCK_ETH_BODY).build();
 
     public static final VerificationStrategy MOCK_VERIFICATION_STRATEGY =
-            new ActiveContractVerificationStrategy(1, Bytes.EMPTY, true);
+            new ActiveContractVerificationStrategy(1, Bytes.EMPTY, true, UseTopLevelSigs.NO);
     public static final AccountID OWNER_ID =
             AccountID.newBuilder().accountNum(121212L).build();
     public static final Bytes OWNER_ADDRESS = Bytes.fromHex("a213624b8b83a724438159ba7c0d333a2b6b3990");
