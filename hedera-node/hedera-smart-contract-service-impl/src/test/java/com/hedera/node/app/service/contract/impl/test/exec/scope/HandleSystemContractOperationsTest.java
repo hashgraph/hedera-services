@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.ContractID;
@@ -97,6 +98,7 @@ class HandleSystemContractOperationsTest {
         given(passed.passed()).willReturn(true);
         given(context.verificationFor(AN_ED25519_KEY)).willReturn(passed);
         given(context.verificationFor(TestHelpers.B_SECP256K1_KEY)).willReturn(failed);
+        doCallRealMethod().when(strategy).asSignatureTestIn(context);
 
         subject.dispatch(TransactionBody.DEFAULT, strategy, A_NEW_ACCOUNT_ID, CryptoTransferRecordBuilder.class);
 

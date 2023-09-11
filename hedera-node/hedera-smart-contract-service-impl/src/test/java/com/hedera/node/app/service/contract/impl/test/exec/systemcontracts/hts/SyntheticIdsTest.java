@@ -89,7 +89,7 @@ class SyntheticIdsTest {
         given(nativeOperations.getAccount(A_NEW_ACCOUNT_ID.accountNumOrThrow())).willReturn(ALIASED_SOMEBODY);
         final var nonCanonicalLongZeroAddress = asHeadlongAddress(A_NEW_ACCOUNT_ID.accountNumOrThrow());
         final var subject = implicitSubject.converterFor(nativeOperations);
-        final var synthId = subject.convert(nonCanonicalLongZeroAddress);
+        final var synthId = subject.convertCredit(nonCanonicalLongZeroAddress);
         assertEquals(expectedId, synthId);
     }
 }

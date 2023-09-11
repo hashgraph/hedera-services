@@ -101,7 +101,7 @@ class Erc721TransferFromCallTest extends HtsCallTestBase {
 
     private void givenSynthIdHelperWithCaller(
             @NonNull final org.hyperledger.besu.datatypes.Address caller, @NonNull final AccountID callerId) {
-        given(addressIdConverter.convertCredit(asHeadlongAddress(caller))).willReturn(callerId);
+        given(addressIdConverter.convert(asHeadlongAddress(caller))).willReturn(callerId);
         given(addressIdConverter.convert(FROM_ADDRESS)).willReturn(A_NEW_ACCOUNT_ID);
         given(addressIdConverter.convertCredit(TO_ADDRESS)).willReturn(B_NEW_ACCOUNT_ID);
     }

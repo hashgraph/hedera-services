@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts;
 
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.balanceof.BalanceOfCall.BALANCE_OF;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_ACCOUNT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN;
@@ -334,6 +335,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
             given(nativeOperations.getToken(numberOfLongZero(NON_SYSTEM_LONG_ZERO_ADDRESS)))
                     .willReturn(FUNGIBLE_TOKEN);
         }
+        given(addressIdConverter.convert(asHeadlongAddress(EIP_1014_ADDRESS))).willReturn(A_NEW_ACCOUNT_ID);
 
         final var subject = new HtsCallAttempt(
                 input,
