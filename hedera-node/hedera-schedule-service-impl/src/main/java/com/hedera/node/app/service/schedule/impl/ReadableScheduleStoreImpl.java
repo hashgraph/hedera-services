@@ -22,7 +22,6 @@ import com.hedera.hapi.node.state.primitives.ProtoString;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.schedule.ScheduleList;
 import com.hedera.node.app.service.schedule.ReadableScheduleStore;
-import com.hedera.node.app.service.schedule.impl.handlers.ScheduleUtility;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -72,7 +71,7 @@ public class ReadableScheduleStoreImpl implements ReadableScheduleStore {
     @Override
     @Nullable
     public List<Schedule> getByEquality(final @NonNull Schedule scheduleToMatch) {
-        String stringHash = ScheduleUtility.calculateStringHash(scheduleToMatch);
+        String stringHash = ScheduleStoreUtility.calculateStringHash(scheduleToMatch);
         final ScheduleList inStateValue = schedulesByStringHash.get(new ProtoString(stringHash));
         return inStateValue != null ? inStateValue.schedules() : null;
     }

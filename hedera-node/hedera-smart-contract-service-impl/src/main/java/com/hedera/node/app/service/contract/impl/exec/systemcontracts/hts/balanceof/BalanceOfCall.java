@@ -17,18 +17,17 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.balanceof;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.fromHeadlongAddress;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.maybeMissingNumberOf;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.maybeMissingNumberOfEvmReference;
 import static java.util.Objects.requireNonNull;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.state.token.Token;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractTokenViewCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
@@ -36,16 +35,12 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
 import java.util.Arrays;
-import org.hyperledger.besu.datatypes.Address;
 
 /**
  * Implements the token redirect {@code balanceOf()} call of the HTS system contract.
  */
-public class BalanceOfCall extends AbstractHtsCall {
+public class BalanceOfCall extends AbstractTokenViewCall {
     public static final Function BALANCE_OF = new Function("balanceOf(address)", ReturnTypes.INT);
-
-    @Nullable
-    private final Token token;
 
     private final Address owner;
 
@@ -67,8 +62,8 @@ public class BalanceOfCall extends AbstractHtsCall {
      * @return the constructed {@link BalanceOfCall}
      */
     public static BalanceOfCall from(@NonNull final HtsCallAttempt attempt) {
-        final var owner = fromHeadlongAddress(
-                BALANCE_OF.decodeCall(attempt.input().toArrayUnsafe()).get(0));
+        final Address owner =
+                BALANCE_OF.decodeCall(attempt.input().toArrayUnsafe()).get(0);
         return new BalanceOfCall(attempt.enhancement(), attempt.redirectToken(), owner);
     }
 
@@ -76,20 +71,19 @@ public class BalanceOfCall extends AbstractHtsCall {
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             @Nullable final Token token,
             @NonNull final Address owner) {
-        super(enhancement);
+        super(enhancement, token);
         this.owner = requireNonNull(owner);
-        this.token = token;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public @NonNull PricedResult execute() {
+    protected @NonNull HederaSystemContract.FullResult resultOfViewingToken(@NonNull Token token) {
         // TODO - gas calculation
-        if (token == null) {
-            return gasOnly(revertResult(INVALID_TOKEN_ID, 0L));
-        }
-        final var ownerNum = maybeMissingNumberOf(owner, nativeOperations());
+        final var ownerNum = maybeMissingNumberOfEvmReference(owner, nativeOperations());
         if (ownerNum == MISSING_ENTITY_NUMBER) {
-            return gasOnly(revertResult(INVALID_ACCOUNT_ID, 0L));
+            return revertResult(INVALID_ACCOUNT_ID, 0L);
         }
 
         final var tokenNum = token.tokenIdOrThrow().tokenNum();
@@ -97,6 +91,6 @@ public class BalanceOfCall extends AbstractHtsCall {
         final var balance = relation == null ? 0 : relation.balance();
         final var output = BALANCE_OF.getOutputs().encodeElements(BigInteger.valueOf(balance));
 
-        return gasOnly(successResult(output, 0L));
+        return successResult(output, 0L);
     }
 }

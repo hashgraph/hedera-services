@@ -27,7 +27,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ensureDissociated;
 import static com.hedera.services.bdd.suites.validation.YamlHelper.serializeEntity;
 import static com.hedera.services.bdd.suites.validation.YamlHelper.yaml;
 
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.persistence.Account;
 import com.hedera.services.bdd.spec.persistence.Entity;
@@ -46,7 +45,6 @@ import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-@HapiTestSuite
 public class TokenPuvSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(TokenPuvSuite.class);
