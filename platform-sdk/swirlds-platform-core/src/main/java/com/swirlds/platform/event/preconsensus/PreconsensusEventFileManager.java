@@ -244,15 +244,6 @@ public class PreconsensusEventFileManager {
      * come after the discontinuity.
      */
     private void resolveDiscontinuities() throws IOException {
-        //        if (files.size() <= firstFileIndex) {
-        //            // None of the stream files are compatible with the starting round
-        //
-        //            return;
-        //        }
-
-        // For all files that come after the first file, any change in origin indicates a discontinuity.
-        // No discontinuities are permitted after the first file, so it is necessary to delete these files.
-
         int firstIndexToDelete = firstFileIndex + 1;
         for (; firstIndexToDelete < files.size(); firstIndexToDelete++) {
             final PreconsensusEventFile file = files.get(firstIndexToDelete);
