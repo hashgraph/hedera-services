@@ -102,12 +102,12 @@ public class MiscViewsXTest extends AbstractContractXTest {
                 ERC_USER_ID,
                 assertingCallLocalResultIs(UNCOVERED_SECRET));
         doPrngQuery();
-        // TODO - uncomment once 0x168 precompile is implemented
-        //        doExchangeRateQuery();
+        doExchangeRateQuery();
         // TODO - uncomment once 0x167 precompile is implemented for ERC-20 redirects
         //        doErc20Queries();
-        // TODO - uncomment once 0x167 precompile is implemented for ERC-721 redirects
-        //        doErc721Queries();
+        doExchangeRateQuery();
+        doErc20Queries();
+        doErc721Queries();
     }
 
     private void doPrngQuery() {
@@ -274,6 +274,7 @@ public class MiscViewsXTest extends AbstractContractXTest {
                     Nft.newBuilder()
                             .nftId(id)
                             .ownerId(ERC_USER_ID)
+                            .spenderId(OPERATOR_ID)
                             .metadata(Bytes.wrap("https://example.com/721/" + sn))
                             .build());
         }

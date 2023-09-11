@@ -287,7 +287,7 @@ public class SyncGossip extends AbstractGossip {
                                             reconnectConfig.asyncStreamTimeout(),
                                             reconnectMetrics,
                                             reconnectController,
-                                            new DefaultSignedStateValidator(),
+                                            new DefaultSignedStateValidator(platformContext),
                                             fallenBehindManager,
                                             platformContext.getConfiguration()),
                                     new SyncProtocol(

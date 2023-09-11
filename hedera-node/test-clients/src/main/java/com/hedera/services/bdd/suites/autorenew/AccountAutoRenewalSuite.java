@@ -38,7 +38,6 @@ import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.pr
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
@@ -53,7 +52,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
-@HapiTestSuite
 public class AccountAutoRenewalSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(AccountAutoRenewalSuite.class);

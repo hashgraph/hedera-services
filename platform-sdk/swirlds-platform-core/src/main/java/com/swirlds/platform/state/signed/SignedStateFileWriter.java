@@ -67,29 +67,20 @@ public final class SignedStateFileWriter {
      */
     public static void writeHashInfoFile(final Path directory, final State state) throws IOException {
         final StateConfig stateConfig = ConfigurationHolder.getConfigData(StateConfig.class);
-        final String platformInfo = state.getPlatformState().getInfoString();
-        final String hashInfo = new MerkleTreeVisualizer(state)
-                .setDepth(stateConfig.debugHashDepth())
-                .render();
-
-        // the merkle tree visualizer prints hashes as mnemonics, which are good for most cases
-        // just in case, we print the unabbreviated root hash here as well
-        final String fullRootHashLine = "Root hash: " + state.getHash();
+        final String platformInfo = state.getInfoString(stateConfig.debugHashDepth());
 
         logger.info(
                 STATE_TO_DISK.getMarker(),
                 """
                         Information for state written to disk:
-                        {}
-                        {}
-
-                        {}
-                        """,
-                platformInfo,
-                fullRootHashLine,
-                hashInfo);
+                        {}""",
+                platformInfo);
 
         final Path hashInfoFile = directory.resolve(HASH_INFO_FILE_NAME);
+
+        final String hashInfo = new MerkleTreeVisualizer(state)
+                .setDepth(stateConfig.debugHashDepth())
+                .render();
 
         try (final BufferedWriter writer = new BufferedWriter(new FileWriter(hashInfoFile.toFile()))) {
             writer.write(hashInfo);

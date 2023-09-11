@@ -29,7 +29,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withLiveNode;
 import static com.hedera.services.bdd.suites.reconnect.AutoRenewEntitiesForReconnect.runTransfersBeforeReconnect;
 
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -46,7 +45,6 @@ import org.apache.logging.log4j.Logger;
  * network. Once the node is reconnected the state of tokens is verified on reconnected node and
  * other node
  */
-@HapiTestSuite
 public class ValidateTokensDeleteAfterReconnect extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ValidateTokensDeleteAfterReconnect.class);
     public static final String reconnectingNode = "0.0.8";

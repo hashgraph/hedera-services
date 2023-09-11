@@ -18,11 +18,11 @@ package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.base.TokenRelationship;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.ResultStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -72,24 +72,6 @@ public interface SystemContractOperations {
             long number, long callingContractNumber, @NonNull ResultTranslator<Account> translator);
 
     /**
-     * Returns the {@link TokenRelationship} between the given account and token numbers, and also externalizes the
-     * result of the state read via a record whose (1) origin is a given contract number and (2) result is derived from
-     * the read state via a given {@link ResultTranslator}.
-     *
-     * @param accountNumber         the account number in the relationship
-     * @param tokenNumber           the token number in the relationship
-     * @param callingContractNumber the number of the contract that is calling this method
-     * @param translator            the {@link ResultTranslator} that derives the record result from the read state
-     * @return the relationship, or {@code null} if no such relationship exists
-     */
-    @Nullable
-    TokenRelationship getRelationshipAndExternalizeResult(
-            long accountNumber,
-            long tokenNumber,
-            long callingContractNumber,
-            @NonNull ResultTranslator<TokenRelationship> translator);
-
-    /**
      * Attempts to dispatch the given {@code syntheticTransaction} in the context of the current
      * {@link HandleHederaOperations}, performing signature verification with priority given to the included
      * {@code VerificationStrategy}.
@@ -111,4 +93,13 @@ public interface SystemContractOperations {
      * @param status    whether the result is success or an error
      */
     public void externalizeResult(@NonNull final ContractFunctionResult result, @NonNull final ResultStatus status);
+
+    /**
+     * Returns the {@Link ExchangeRate} for the current consensus time.  This will enable the translation from hbars
+     * to dollars
+     *
+     * @return ExchangeRate for the current consensus time
+     */
+    @NonNull
+    public ExchangeRate currentExchangeRate();
 }

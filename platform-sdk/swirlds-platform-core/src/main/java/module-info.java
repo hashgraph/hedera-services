@@ -73,7 +73,8 @@ module com.swirlds.platform.core {
             com.swirlds.platform.test,
             com.swirlds.platform.core.test.fixtures;
     exports com.swirlds.platform.crypto to
-            com.swirlds.platform.test;
+            com.swirlds.platform.test,
+            com.hedera.node.test.clients;
     exports com.swirlds.platform.event.linking to
             com.swirlds.common,
             com.swirlds.platform.test;
@@ -89,11 +90,13 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.dispatch to
             com.swirlds.platform.test,
             com.swirlds.config.impl,
-            com.swirlds.common;
+            com.swirlds.common,
+            com.hedera.node.test.clients;
     exports com.swirlds.platform.dispatch.types to
             com.swirlds.platform.test;
     exports com.swirlds.platform.dispatch.triggers.control to
-            com.swirlds.platform.test;
+            com.swirlds.platform.test,
+            com.hedera.node.test.clients;
     exports com.swirlds.platform.dispatch.triggers.error to
             com.swirlds.platform.test;
     exports com.swirlds.platform.dispatch.triggers.flow to
@@ -106,13 +109,16 @@ module com.swirlds.platform.core {
             com.swirlds.platform.test;
     exports com.swirlds.platform.uptime to
             com.swirlds.config.impl,
-            com.swirlds.common;
+            com.swirlds.common,
+            com.hedera.node.test.clients;
     exports com.swirlds.platform.gossip.sync.config to
             com.swirlds.config.impl,
-            com.swirlds.common;
+            com.swirlds.common,
+            com.hedera.node.test.clients;
     exports com.swirlds.platform.event.tipset to
             com.swirlds.config.impl,
-            com.swirlds.common;
+            com.swirlds.common,
+            com.hedera.node.test.clients;
 
     opens com.swirlds.platform.cli to
             info.picocli;

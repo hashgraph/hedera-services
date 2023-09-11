@@ -99,7 +99,8 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
         requireNonNull(metrics);
 
         // Convert the various RPC service definitions into transaction or query endpoints using the GrpcServiceBuilder.
-        services = servicesRegistry.services().stream()
+        services = servicesRegistry.registrations().stream()
+                .map(ServicesRegistry.Registration::service)
                 .flatMap(s -> s.rpcDefinitions().stream())
                 .map(d -> {
                     final var builder = new GrpcServiceBuilder(d.basePath(), ingestWorkflow, queryWorkflow);
