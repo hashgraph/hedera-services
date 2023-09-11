@@ -209,11 +209,9 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
     }
 
     protected void givenAutoCreationDispatchEffects(AccountID syntheticPayer) {
-        System.out.println("Expecting synthetic payer: " + syntheticPayer);
         given(handleContext.dispatchRemovableChildTransaction(
                         any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(syntheticPayer)))
                 .will((invocation) -> {
-                    System.out.println("FIRST");
                     final var copy = account.copyBuilder()
                             .alias(ecKeyAlias.value())
                             .accountId(AccountID.newBuilder().accountNum(hbarReceiver))

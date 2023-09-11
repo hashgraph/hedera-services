@@ -100,7 +100,7 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
         final var synthTxn = TransactionBody.newBuilder()
                 .cryptoCreateAccount(synthHollowAccountCreation(evmAddress))
                 .build();
-        // There are no non-payer keys that will need to sign this transaction, activate no keys
+        // There are no non-payer keys that will need to sign this transaction; therefore, activate no keys
         final var childRecordBuilder = context.dispatchChildTransaction(
                 synthTxn, CryptoCreateRecordBuilder.class, key -> false, context.payer());
         // TODO - switch OK to SUCCESS once some status-setting responsibilities are clarified
