@@ -39,6 +39,7 @@ public class GlobalContextExtension implements BeforeEachCallback, AfterEachCall
     @Override
     public void afterEach(ExtensionContext context) throws Exception {
         GlobalContext.getInstance().clear();
-        Optional.ofNullable(savedSate.get()).ifPresent(map -> map.forEach(GlobalContext.getInstance()::add));
+        Optional.ofNullable(savedSate.get())
+                .ifPresent(map -> map.forEach(GlobalContext.getInstance()::addWithRemovalOnClose));
     }
 }

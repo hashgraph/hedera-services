@@ -37,14 +37,14 @@ public class ThreadLocalContextTest {
         ThreadLocalContext context = ThreadLocalContext.getInstance();
 
         // then
-        assertThrows(NullPointerException.class, () -> context.add(null, "value"));
-        assertThrows(NullPointerException.class, () -> context.add(null, 1));
-        assertThrows(NullPointerException.class, () -> context.add(null, 1L));
-        assertThrows(NullPointerException.class, () -> context.add(null, 1.0D));
-        assertThrows(NullPointerException.class, () -> context.add(null, 1.0F));
-        assertThrows(NullPointerException.class, () -> context.add(null, true));
-        assertThrows(NullPointerException.class, () -> context.add("foo", null));
-        assertThrows(NullPointerException.class, () -> context.add(null, null));
+        assertThrows(NullPointerException.class, () -> context.addWithRemovalOnClose(null, "value"));
+        assertThrows(NullPointerException.class, () -> context.addWithRemovalOnClose(null, 1));
+        assertThrows(NullPointerException.class, () -> context.addWithRemovalOnClose(null, 1L));
+        assertThrows(NullPointerException.class, () -> context.addWithRemovalOnClose(null, 1.0D));
+        assertThrows(NullPointerException.class, () -> context.addWithRemovalOnClose(null, 1.0F));
+        assertThrows(NullPointerException.class, () -> context.addWithRemovalOnClose(null, true));
+        assertThrows(NullPointerException.class, () -> context.addWithRemovalOnClose("foo", null));
+        assertThrows(NullPointerException.class, () -> context.addWithRemovalOnClose(null, null));
     }
 
     @Test
@@ -53,12 +53,12 @@ public class ThreadLocalContextTest {
         ThreadLocalContext context = ThreadLocalContext.getInstance();
 
         // when
-        context.add("key-string", "value");
-        context.add("key-int", 1);
-        context.add("key-long", 1L);
-        context.add("key-double", 1.0D);
-        context.add("key-float", 1.0F);
-        context.add("key-boolean", true);
+        context.addWithRemovalOnClose("key-string", "value");
+        context.addWithRemovalOnClose("key-int", 1);
+        context.addWithRemovalOnClose("key-long", 1L);
+        context.addWithRemovalOnClose("key-double", 1.0D);
+        context.addWithRemovalOnClose("key-float", 1.0F);
+        context.addWithRemovalOnClose("key-boolean", true);
 
         // then
         final Map<String, String> contextMap = context.getContextMap();
@@ -77,9 +77,9 @@ public class ThreadLocalContextTest {
         ThreadLocalContext context = ThreadLocalContext.getInstance();
 
         // when
-        context.add("key", "a");
-        context.add("key", "b");
-        context.add("key", "c");
+        context.addWithRemovalOnClose("key", "a");
+        context.addWithRemovalOnClose("key", "b");
+        context.addWithRemovalOnClose("key", "c");
 
         // then
         final Map<String, String> contextMap = context.getContextMap();
@@ -93,7 +93,7 @@ public class ThreadLocalContextTest {
         ThreadLocalContext context = ThreadLocalContext.getInstance();
 
         // when
-        context.add("key", "a");
+        context.addWithRemovalOnClose("key", "a");
         context.remove("key");
 
         // then
@@ -114,8 +114,8 @@ public class ThreadLocalContextTest {
     void testClear() {
         // given
         ThreadLocalContext context = ThreadLocalContext.getInstance();
-        context.add("key", "a");
-        context.add("key-2", "a");
+        context.addWithRemovalOnClose("key", "a");
+        context.addWithRemovalOnClose("key-2", "a");
 
         // when
         context.clear();
@@ -129,7 +129,7 @@ public class ThreadLocalContextTest {
     void testAutocloseable() {
         // given
         ThreadLocalContext context = ThreadLocalContext.getInstance();
-        AutoCloseable closeable = context.add("key", "a");
+        AutoCloseable closeable = context.addWithRemovalOnClose("key", "a");
 
         // when
         assertDoesNotThrow(() -> closeable.close());
@@ -150,14 +150,14 @@ public class ThreadLocalContextTest {
         // when
         final Map<String, String> mapFromExecutor1 = executor1
                 .submit(() -> {
-                    context.add("key", "a1");
+                    context.addWithRemovalOnClose("key", "a1");
                     return context.getContextMap();
                 })
                 .get();
 
         final Map<String, String> mapFromExecutor2 = executor2
                 .submit(() -> {
-                    context.add("key", "a2");
+                    context.addWithRemovalOnClose("key", "a2");
                     return context.getContextMap();
                 })
                 .get();

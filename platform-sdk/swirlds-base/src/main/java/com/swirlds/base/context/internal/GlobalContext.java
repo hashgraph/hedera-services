@@ -44,12 +44,10 @@ public final class GlobalContext implements Context {
     }
 
     @Override
-    public AutoCloseable add(@NonNull String key, @NonNull String value) {
+    public void add(@NonNull String key, @NonNull String value) {
         Objects.requireNonNull(key, "key must not be null");
         Objects.requireNonNull(value, "value must not be null");
-
         contextMap.put(key, value);
-        return () -> remove(key);
     }
 
     @Override

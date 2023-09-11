@@ -39,6 +39,7 @@ public class ThreadLocalContextExtension implements BeforeEachCallback, AfterEac
     @Override
     public void afterEach(ExtensionContext context) throws Exception {
         ThreadLocalContext.getInstance().clear();
-        Optional.ofNullable(savedSate.get()).ifPresent(map -> map.forEach(ThreadLocalContext.getInstance()::add));
+        Optional.ofNullable(savedSate.get())
+                .ifPresent(map -> map.forEach(ThreadLocalContext.getInstance()::addWithRemovalOnClose));
     }
 }

@@ -44,7 +44,7 @@ public final class ThreadLocalContext implements Context {
     }
 
     @Override
-    public AutoCloseable add(@NonNull String key, @NonNull String value) {
+    public void add(@NonNull String key, @NonNull String value) {
         Objects.requireNonNull(key, "key must not be null");
         Objects.requireNonNull(value, "value must not be null");
 
@@ -54,7 +54,6 @@ public final class ThreadLocalContext implements Context {
             contextThreadLocal.set(contextMap);
         }
         contextMap.put(key, value);
-        return () -> remove(key);
     }
 
     @Override

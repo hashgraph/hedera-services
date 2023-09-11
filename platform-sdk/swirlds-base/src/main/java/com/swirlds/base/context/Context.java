@@ -35,11 +35,8 @@ public interface Context {
      *
      * @param key   the key
      * @param value the value
-     * @return an {@link AutoCloseable} that can be used to remove the key-value pair from the context
-     * @throws NullPointerException if the key or value is null
      */
-    @NonNull
-    AutoCloseable add(@NonNull final String key, @NonNull final String value);
+    void add(@NonNull final String key, @NonNull final String value);
 
     /**
      * remove a key-value pair from the context if available.
@@ -49,15 +46,21 @@ public interface Context {
     void remove(@NonNull final String key);
 
     /**
-     * Adds a key-value pair to the context.
+     * Adds a key-value pair to the context. The returned {@link AutoCloseable} can be used to remove the value for the
+     * given key.
+     * <p>
+     * Internally the context does not use a stack to store changes. If the value has been changed between this call and
+     * any future call that sets the same key, the new value will be removed.
      *
      * @param key   the key
      * @param value the value
      * @return an {@link AutoCloseable} that can be used to remove the key-value pair from the context
+     * @throws NullPointerException if the key or value is null
      */
     @NonNull
-    default AutoCloseable add(@NonNull final String key, final int value) {
-        return add(key, Integer.toString(value));
+    default AutoCloseable addWithRemovalOnClose(@NonNull final String key, @NonNull final String value) {
+        add(key, value);
+        return () -> remove(key);
     }
 
     /**
@@ -65,11 +68,23 @@ public interface Context {
      *
      * @param key   the key
      * @param value the value
+     */
+    @NonNull
+    default void add(@NonNull final String key, final int value) {
+        add(key, Integer.toString(value));
+    }
+
+    /**
+     * Adds a key-value pair to the context. The returned {@link AutoCloseable} can be used to remove the value for the given key.
+     *<p>
+     *     Internally the context does not use a stack to store changes. If the value has been changed between this call and any future call that sets the same key, the new value will be removed.
+     * @param key   the key
+     * @param value the value
      * @return an {@link AutoCloseable} that can be used to remove the key-value pair from the context
      */
     @NonNull
-    default AutoCloseable add(@NonNull final String key, final long value) {
-        return add(key, Long.toString(value));
+    default AutoCloseable addWithRemovalOnClose(@NonNull final String key, final int value) {
+        return addWithRemovalOnClose(key, Integer.toString(value));
     }
 
     /**
@@ -77,11 +92,23 @@ public interface Context {
      *
      * @param key   the key
      * @param value the value
+     */
+    @NonNull
+    default void add(@NonNull final String key, final long value) {
+        add(key, Long.toString(value));
+    }
+
+    /**
+     * Adds a key-value pair to the context. The returned {@link AutoCloseable} can be used to remove the value for the given key.
+     *<p>
+     *     Internally the context does not use a stack to store changes. If the value has been changed between this call and any future call that sets the same key, the new value will be removed.
+     * @param key   the key
+     * @param value the value
      * @return an {@link AutoCloseable} that can be used to remove the key-value pair from the context
      */
     @NonNull
-    default AutoCloseable add(@NonNull final String key, final float value) {
-        return add(key, Float.toString(value));
+    default AutoCloseable addWithRemovalOnClose(@NonNull final String key, final long value) {
+        return addWithRemovalOnClose(key, Long.toString(value));
     }
 
     /**
@@ -89,11 +116,26 @@ public interface Context {
      *
      * @param key   the key
      * @param value the value
+     */
+    @NonNull
+    default void add(@NonNull final String key, final float value) {
+        add(key, Float.toString(value));
+    }
+
+    /**
+     * Adds a key-value pair to the context. The returned {@link AutoCloseable} can be used to remove the value for the
+     * given key.
+     * <p>
+     * Internally the context does not use a stack to store changes. If the value has been changed between this call and
+     * any future call that sets the same key, the new value will be removed.
+     *
+     * @param key   the key
+     * @param value the value
      * @return an {@link AutoCloseable} that can be used to remove the key-value pair from the context
      */
     @NonNull
-    default AutoCloseable add(@NonNull final String key, final double value) {
-        return add(key, Double.toString(value));
+    default AutoCloseable addWithRemovalOnClose(@NonNull final String key, final float value) {
+        return addWithRemovalOnClose(key, Float.toString(value));
     }
 
     /**
@@ -101,11 +143,53 @@ public interface Context {
      *
      * @param key   the key
      * @param value the value
+     */
+    @NonNull
+    default void add(@NonNull final String key, final double value) {
+        add(key, Double.toString(value));
+    }
+
+    /**
+     * Adds a key-value pair to the context. The returned {@link AutoCloseable} can be used to remove the value for the
+     * given key.
+     * <p>
+     * Internally the context does not use a stack to store changes. If the value has been changed between this call and
+     * any future call that sets the same key, the new value will be removed.
+     *
+     * @param key   the key
+     * @param value the value
      * @return an {@link AutoCloseable} that can be used to remove the key-value pair from the context
      */
     @NonNull
-    default AutoCloseable add(@NonNull final String key, final boolean value) {
-        return add(key, Boolean.toString(value));
+    default AutoCloseable addWithRemovalOnClose(@NonNull final String key, final double value) {
+        return addWithRemovalOnClose(key, Double.toString(value));
+    }
+
+    /**
+     * Adds a key-value pair to the context.
+     *
+     * @param key   the key
+     * @param value the value
+     */
+    @NonNull
+    default void add(@NonNull final String key, final boolean value) {
+        add(key, Boolean.toString(value));
+    }
+
+    /**
+     * Adds a key-value pair to the context. The returned {@link AutoCloseable} can be used to remove the value for the
+     * given key.
+     * <p>
+     * Internally the context does not use a stack to store changes. If the value has been changed between this call and
+     * any future call that sets the same key, the new value will be removed.
+     *
+     * @param key   the key
+     * @param value the value
+     * @return an {@link AutoCloseable} that can be used to remove the key-value pair from the context
+     */
+    @NonNull
+    default AutoCloseable addWithRemovalOnClose(@NonNull final String key, final boolean value) {
+        return addWithRemovalOnClose(key, Boolean.toString(value));
     }
 
     /**
