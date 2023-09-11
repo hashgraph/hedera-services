@@ -115,6 +115,19 @@ public class RecycleBinImpl implements RecycleBin, Startable, Stoppable {
     }
 
     /**
+     * Manually clear the recycle bin.
+     */
+    public void clear() throws IOException {
+        try (final Locked ignored = lock.lock()) {
+            deleteDirectory(recycleBinPath);
+            Files.createDirectories(recycleBinPath);
+            topLevelRecycledFileCount = 0;
+            recycledFileCountMetric.set(0);
+        }
+    }
+    // TODO test
+
+    /**
      * Count the number of top level files in the recycle bin directory.
      */
     private static int countRecycledFiles(@NonNull final Path recycleBinPath) {
