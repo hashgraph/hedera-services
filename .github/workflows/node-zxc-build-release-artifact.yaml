@@ -575,7 +575,7 @@ jobs:
           OSSRH_PASSWORD: ${{ secrets.svcs-ossrh-password }}
         with:
           gradle-version: ${{ inputs.gradle-version }}
-          arguments: ":hedera-node:hedera-evm:releaseMavenCentral --scan -PpublishSigningEnabled=true"
+          arguments: ":hedera-node:app-service-evm:releaseMavenCentral --scan -PpublishSigningEnabled=true"
 
       - name: Gradle Maven Central Snapshot
         uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
@@ -585,4 +585,4 @@ jobs:
           OSSRH_PASSWORD: ${{ secrets.svcs-ossrh-password }}
         with:
           gradle-version: ${{ inputs.gradle-version }}
-          arguments: ":hedera-node:hedera-evm:releaseMavenCentralSnapshot --scan -PpublishSigningEnabled=true"
+          arguments: ":hedera-node:app-service-evm:releaseMavenCentralSnapshot --scan -PpublishSigningEnabled=true"
