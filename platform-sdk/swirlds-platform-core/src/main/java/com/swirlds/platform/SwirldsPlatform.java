@@ -655,10 +655,9 @@ public class SwirldsPlatform implements Platform, Startable {
             eventLinker.loadFromSignedState(initialState);
 
             // We don't want to invoke these callbacks until after we are starting up.
+            final long round = initialState.getRound();
+            final Hash hash = initialState.getState().getHash();
             components.add((Startable) () -> {
-                final long round = initialState.getRound();
-                final Hash hash = initialState.getState().getHash();
-
                 // If we loaded from disk then call the appropriate dispatch.
                 // It is important that this is sent after the ConsensusHashManager
                 // is initialized.
