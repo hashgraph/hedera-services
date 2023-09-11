@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import gradle.kotlin.dsl.accessors._c5ed198e191f30f39ee46d0abbbd888f.publishing
 
 /*
  * Copyright (C) 2023 Hedera Hashgraph, LLC
@@ -34,12 +33,12 @@ import gradle.kotlin.dsl.accessors._c5ed198e191f30f39ee46d0abbbd888f.publishing
 
 plugins {
     id("java")
-    id("maven-publish")
+    id("com.hedera.hashgraph.maven-publish")
 }
 
 publishing {
     publications {
-        named<MavenPublication>("maven").configure {
+        named<MavenPublication>("maven") {
             pom.developers {
                 developer {
                     name.set("Hedera Base Team")

@@ -16,6 +16,5 @@
 
 plugins {
     id("com.hedera.hashgraph.sdk.conventions")
-    id("com.hedera.hashgraph.maven-publish")
     id("com.hedera.hashgraph.platform-maven-publish")
 }
