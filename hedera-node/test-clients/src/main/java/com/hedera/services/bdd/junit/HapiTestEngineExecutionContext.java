@@ -30,6 +30,7 @@ public class HapiTestEngineExecutionContext implements EngineExecutionContext {
 
     private final Path savedStateDirectory;
     private final Path eventsLogDir;
+    private HapiTestEnv env;
 
     public HapiTestEngineExecutionContext(final Path savedStateDirectory, final Path eventsLogDir) {
         this.savedStateDirectory = savedStateDirectory;
@@ -42,5 +43,13 @@ public class HapiTestEngineExecutionContext implements EngineExecutionContext {
 
     public Path getEventsLogDir() {
         return eventsLogDir;
+    }
+
+    public void setEnv(HapiTestEnv env) {
+        this.env = env;
+    }
+
+    public HapiTestEnv getEnv() {
+        return env;
     }
 }

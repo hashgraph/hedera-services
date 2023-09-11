@@ -21,6 +21,8 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.hapiPrng;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.shutdownNode;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.startupNode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PRNG_RANGE;
@@ -117,10 +119,12 @@ public class UtilPrngSuite extends HapiSuite {
                         // n-1, n-2, n-3 running hash and running has set
                         hapiPrng(10).payingWith(BOB).via(rangeTxn1).blankMemo().logged(),
                         getTxnRecord(rangeTxn1).logged(),
-                        hapiPrng().payingWith(BOB).via("prng2").blankMemo().logged())
+                        hapiPrng().payingWith(BOB).via("prng2").blankMemo().logged(),
+                        shutdownNode("Dave"))
                 .when(
                         // should have pseudo random data
                         hapiPrng(10).payingWith(BOB).via(rangeTxn).blankMemo().logged(),
+                        startupNode("Dave"),
                         getTxnRecord(rangeTxn)
                                 .hasOnlyPseudoRandomNumberInRange(10)
                                 .logged())

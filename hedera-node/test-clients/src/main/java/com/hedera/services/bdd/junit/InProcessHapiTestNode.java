@@ -19,12 +19,20 @@ package com.hedera.services.bdd.junit;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.Hedera;
 import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.SwirldsPlatformBuilder;
 import com.swirlds.platform.util.BootstrapUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Comparator;
+import java.util.Map;
+import java.util.concurrent.TimeoutException;
 
 /**
  * An implementation of {@link HapiTestNode} that runs the node in this JVM process. The advantage of the in-process
@@ -40,8 +48,12 @@ import java.nio.file.Path;
 public class InProcessHapiTestNode implements HapiTestNode {
     /** The thread in which the Hedera node will run */
     private WorkerThread th;
+    /** The name of the node, such as Alice or Bob */
+    private final String name;
     /** The ID of the node. This is probably always 0. */
     private final long nodeId;
+    /** The account ID of the node, such as 0.0.3 */
+    private final AccountID accountId;
     /** The directory in which the config.txt, settings.txt, and other files live. */
     private final Path workingDir;
     /** The port on which the grpc server will be listening */
@@ -50,19 +62,52 @@ public class InProcessHapiTestNode implements HapiTestNode {
     /**
      * Create a new in-process node.
      *
-     * @param workingDir The working directory. Must already be created and setup with all the files.
+     * @param name the name of the node, like Alice, Bob
      * @param nodeId The node ID
+     * @param accountId The account ID of the node, such as 0.0.3.
+     * @param workingDir The working directory. Must already be created and setup with all the files.
      * @param grpcPort The grpc port to configure the server with.
      */
-    public InProcessHapiTestNode(@NonNull final Path workingDir, final long nodeId, final int grpcPort) {
-        this.workingDir = requireNonNull(workingDir);
+    public InProcessHapiTestNode(
+            @NonNull final String name,
+            final long nodeId,
+            @NonNull final AccountID accountId,
+            @NonNull final Path workingDir,
+            final int grpcPort) {
+        this.name = requireNonNull(name);
         this.nodeId = nodeId;
+        this.accountId = requireNonNull(accountId);
+        this.workingDir = requireNonNull(workingDir);
         this.grpcPort = grpcPort;
     }
 
     @Override
+    public long getId() {
+        return nodeId;
+    }
+
+    @Override
+    public String getName() {
+        return name;
+    }
+
+    @Override
+    public AccountID getAccountId() {
+        return accountId;
+    }
+
+    @Override
+    public String toString() {
+        return "InProcessHapiTestNode{" +
+                "name='" + name + '\'' +
+                ", nodeId=" + nodeId +
+                ", accountId=" + accountId +
+                '}';
+    }
+
+    @Override
     public void start() {
-        if (th != null) throw new IllegalStateException("Node is not stopped, cannot start it!");
+        if (th != null && th.hedera.isActive()) throw new IllegalStateException("Node is not stopped, cannot start it!");
 
         try {
             th = new WorkerThread(workingDir, nodeId, grpcPort);
@@ -74,11 +119,11 @@ public class InProcessHapiTestNode implements HapiTestNode {
     }
 
     @Override
-    public void waitForActive(long seconds) {
+    public void waitForActive(long seconds) throws TimeoutException {
         final var waitUntil = System.currentTimeMillis() + (seconds * 1000);
         while (th == null || th.hedera == null || !th.hedera.isActive()) {
             if (System.currentTimeMillis() > waitUntil) {
-                throw new RuntimeException(
+                throw new TimeoutException(
                         "node " + nodeId + ": Waited " + seconds + " seconds, but node did not become active!");
             }
 
@@ -93,18 +138,111 @@ public class InProcessHapiTestNode implements HapiTestNode {
     }
 
     @Override
-    public void stop() {
-        if (th != null) {
+    public void shutdown() {
+        if (th != null && (th.hedera.isFrozen() || th.hedera.isActive())) {
             if (th.hedera != null) th.hedera.shutdown();
             th.interrupt();
-            th = null;
+
+            // This is a hack, but it's the best I can do without classloader isolation and without a systematic
+            // way to shut down a node. Normally, nodes are shutdown by existing the JVM. However, we don't want to
+            // do that here, because we're in-process! So what I'm going to do is:
+            //  1. Search through all the threads in the JVM to find all of them with a callstack with "WorkerThread"
+            //     in the stack. This means they were called by the WorkerThread. Only objects that are part of the
+            //     node will be in this callstack.
+            //  2. For each such thread, stop it. Thread.stop is deprecated and discouraged, because it is almost
+            //     always the wrong thing. In our case though, NOTHING in the Junit JVM is working with any locks or
+            //     semaphores, etc. in the node. So we should be safe.
+            //  3. There are some places in the node software that uses statics -- like MerkleDb. I've got to try to
+            //     reset those.
+            //
+            // This is an error-prone approach, because at any time someone might add new static state to the node and
+            // fail to update this code accordingly. But it's the best we can do without removing all static state and
+            // having a clean shutdown procedure for the node. Fixing that should be a priority, allowing us to simplify
+            // this code and make it more foolproof.
+
+            //noinspection deprecation
+            final var threadsToStop = Thread.getAllStackTraces().entrySet().stream()
+                    .filter(entry -> {
+                        for (final var stackTraceElement : entry.getValue()) {
+                            final var className = stackTraceElement.getClassName();
+                            if (className.contains("WorkerThread") || className.contains("com.swirlds")) {
+                                return true;
+                            }
+                        }
+                        return false;
+                    })
+                    .map(Map.Entry::getKey)
+                    .toList();
+
+            threadsToStop.forEach(Thread::interrupt);
+            threadsToStop.forEach(Thread::stop);
+
+            MerkleDb.setDefaultPath(null);
+            ConstructableRegistry.getInstance().reset();
+        }
+    }
+
+    @Override
+    public void waitForShutdown(long seconds) throws TimeoutException {
+        final var waitUntil = System.currentTimeMillis() + (seconds * 1000);
+        while (th != null && th.hedera != null && th.hedera.isActive()) {
+            if (System.currentTimeMillis() > waitUntil) {
+                throw new TimeoutException(
+                        "node " + nodeId + ": Waited " + seconds + " seconds, but node did not shut down!");
+            }
+
+            try {
+                MILLISECONDS.sleep(10);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(
+                        "node " + nodeId + ": Interrupted while sleeping in waitForShutdown busy loop", e);
+            }
+        }
+    }
+
+    @Override
+    public void waitForFreeze(long seconds) throws TimeoutException {
+        final var waitUntil = System.currentTimeMillis() + (seconds * 1000);
+        while (th != null && !th.hedera.isFrozen()) {
+            if (System.currentTimeMillis() > waitUntil) {
+                throw new TimeoutException(
+                        "node " + nodeId + ": Waited " + seconds + " seconds, but node did not freeze!");
+            }
+
+            try {
+                MILLISECONDS.sleep(10);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(
+                        "node " + nodeId + ": Interrupted while sleeping in waitForFreeze busy loop", e);
+            }
         }
     }
 
     @Override
     public void terminate() {
         // There really isn't anything better I can do without classloader isolation
-        stop();
+        shutdown();
+    }
+
+    @Override
+    public void clearState() {
+        if (th != null && th.hedera.isActive()) {
+            throw new IllegalStateException("Cannot clear state from a running node. At least, not yet.");
+        }
+
+        final var saved = workingDir.resolve("data/saved").toAbsolutePath().normalize();
+        try {
+            if (Files.exists(saved)) {
+                Files.walk(saved)
+                        .sorted(Comparator.reverseOrder())
+                        .map(Path::toFile)
+                        .forEach(File::delete);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Could not delete saved state " + saved, e);
+        }
     }
 
     /**

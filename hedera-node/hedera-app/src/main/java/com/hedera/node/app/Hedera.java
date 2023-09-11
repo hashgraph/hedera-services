@@ -243,6 +243,14 @@ public final class Hedera implements SwirldMain {
     }
 
     /**
+     * Indicates whether this node is FROZEN.
+     * @return True if the platform is frozen
+     */
+    public boolean isFrozen() {
+        return platformStatus == PlatformStatus.FREEZE_COMPLETE;
+    }
+
+    /**
      * {@inheritDoc}
      *
      * <p>Called immediately after the constructor to get the version of this software. In an upgrade scenario, this
@@ -400,7 +408,7 @@ public final class Hedera implements SwirldMain {
     @SuppressWarnings("java:S1181") // catching Throwable instead of Exception when we do a direct System.exit()
     @Override
     public void init(@NonNull final Platform platform, @NonNull final NodeId nodeId) {
-        if (this.platform != platform) {
+        if (this.platform != null && this.platform != platform) {
             throw new IllegalArgumentException("Platform must be the same instance");
         }
         logger.info("Initializing Hedera app with HederaNode#{}", nodeId);
@@ -523,6 +531,7 @@ public final class Hedera implements SwirldMain {
      */
     @Override
     public void run() {
+        logger.info("Starting the Hedera node");
         startGrpcServer();
     }
 
@@ -543,6 +552,9 @@ public final class Hedera implements SwirldMain {
             logger.debug("Shutting down the block manager");
             daggerApp.blockRecordManager().close();
         }
+
+        platform = null;
+        daggerApp = null;
     }
 
     /**

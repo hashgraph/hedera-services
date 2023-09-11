@@ -72,7 +72,8 @@ import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public abstract class HapiSpecOperation {
+public abstract class
+HapiSpecOperation {
     private static final Logger log = LogManager.getLogger(HapiSpecOperation.class);
 
     protected static final FileOpsUsage fileOpsUsage = new FileOpsUsage();

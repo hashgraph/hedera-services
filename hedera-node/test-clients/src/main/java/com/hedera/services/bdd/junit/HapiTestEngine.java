@@ -159,11 +159,12 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
 
             env = new HapiTestEnv("HAPI Tests", true);
             env.start();
+            context.setEnv(env);
 
             final var tmpDir = Path.of("data");
             final var defaultProperties = JutilPropertySource.getDefaultInstance();
             HapiSpec.runInCiMode(
-                    String.valueOf(env.getNodes()),
+                    String.valueOf(env.getNodeInfo()),
                     defaultProperties.get("default.payer"),
                     defaultProperties.get("default.node").split("\\.")[2],
                     defaultProperties.get("tls"),
@@ -282,7 +283,8 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
             testMethod.setAccessible(true);
             final var spec = (HapiSpec) testMethod.invoke(suite);
             // Third, call `runSuite` with just the one HapiSpec.
-            final var result = suite.runSpecSync(spec);
+            final var env = context.getEnv();
+            final var result = suite.runSpecSync(spec, env.getNodes());
             // Fourth, report the result. YAY!!
             if (result == HapiSuite.FinalOutcome.SUITE_FAILED) {
                 throw new AssertionError();
