@@ -37,6 +37,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -447,6 +448,14 @@ public class DataFileCollection<D> implements Snapshotable {
                             serializationVersion, reader.readDataItemBytes(fileOffset));
                     // update the index
                     index.putIfEqual(path, dataLocation, newLocation);
+                } catch (final ClosedByInterruptException e) {
+                    logger.info(
+                            MERKLE_DB.getMarker(),
+                            "Failed to copy data item {} / {} due to thread interruption",
+                            fileIndex,
+                            fileOffset,
+                            e);
+                    throw e;
                 } catch (final IOException z) {
                     logger.error(EXCEPTION.getMarker(), "Failed to copy data item {} / {}", fileIndex, fileOffset, z);
                     throw z;

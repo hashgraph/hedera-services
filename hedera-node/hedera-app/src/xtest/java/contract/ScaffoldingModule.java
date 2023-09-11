@@ -24,8 +24,12 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.config.VersionedConfigImpl;
+import com.hedera.node.app.authorization.AuthorizerImpl;
+import com.hedera.node.app.authorization.PrivilegesVerifier;
+import com.hedera.node.app.config.ConfigProviderImpl;
+import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.records.BlockRecordManager;
@@ -50,12 +54,14 @@ import com.hedera.node.app.spi.info.SelfNodeInfo;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
+import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.recordcache.DeduplicationCacheImpl;
 import com.hedera.node.app.state.recordcache.RecordCacheImpl;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.HandleContextImpl;
 import com.hedera.node.app.workflows.handle.HandlersInjectionModule;
@@ -64,7 +70,9 @@ import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilde
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.handle.verifier.BaseHandleContextVerifier;
 import com.hedera.node.app.workflows.prehandle.DummyPreHandleDispatcher;
+import com.hedera.node.app.workflows.query.QueryContextImpl;
 import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -80,6 +88,7 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.time.Instant;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import javax.inject.Singleton;
 
@@ -114,7 +123,9 @@ public interface ScaffoldingModule {
     @Provides
     @Singleton
     static CryptoSignatureWaivers provideCryptoSignatureWaivers() {
-        return new CryptoSignatureWaiversImpl(new FakeHederaNumbers());
+        final var configProvider = new ConfigProviderImpl();
+        final var authorizer = new AuthorizerImpl(configProvider, new PrivilegesVerifier(configProvider));
+        return new CryptoSignatureWaiversImpl(authorizer);
     }
 
     @Binds
@@ -185,6 +196,23 @@ public interface ScaffoldingModule {
 
     @Provides
     @Singleton
+    static BiFunction<Query, AccountID, QueryContext> provideQueryContextFactory(
+            @NonNull final HederaState state,
+            @NonNull final RecordCache recordCache,
+            @NonNull final Configuration configuration,
+            @NonNull final ExchangeRateManager exchangeRateManager) {
+        return (query, payerId) -> new QueryContextImpl(
+                state,
+                new ReadableStoreFactory(state),
+                query,
+                configuration,
+                recordCache,
+                exchangeRateManager,
+                payerId);
+    }
+
+    @Provides
+    @Singleton
     static Function<TransactionBody, HandleContext> provideHandleContextCreator(
             @NonNull final Metrics metrics,
             @NonNull final NetworkInfo networkInfo,
@@ -195,6 +223,7 @@ public interface ScaffoldingModule {
             @NonNull final BlockRecordManager blockRecordManager,
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final HederaState state,
+            @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final FeeManager feeManager) {
         final var consensusTime = Instant.now();
         final var parentRecordBuilder = new SingleTransactionRecordBuilderImpl(consensusTime);
@@ -225,6 +254,7 @@ public interface ScaffoldingModule {
                     blockRecordManager,
                     recordCache,
                     feeManager,
+                    exchangeRateManager,
                     consensusTime);
         };
     }

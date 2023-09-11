@@ -7,6 +7,6 @@ module com.hedera.node.app.test.fixtures {
     requires com.hedera.node.app.spi.test.fixtures;
     requires com.hedera.node.hapi;
     requires com.hedera.pbj.runtime;
-    requires com.swirlds.config;
+    requires com.swirlds.config.api;
     requires static com.github.spotbugs.annotations;
 }

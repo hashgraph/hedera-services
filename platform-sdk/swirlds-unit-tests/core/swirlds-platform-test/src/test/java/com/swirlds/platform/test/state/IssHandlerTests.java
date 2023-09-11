@@ -28,6 +28,7 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
 import com.swirlds.platform.components.state.output.IssConsumer;
@@ -75,6 +76,7 @@ class IssHandlerTests {
                 dispatchBuilder,
                 stateConfig,
                 new NodeId(selfId),
+                mock(StatusActionSubmitter.class),
                 haltRequestedConsumer,
                 fatalErrorConsumer,
                 (r, type, otherId) -> {});
@@ -122,6 +124,7 @@ class IssHandlerTests {
                 dispatchBuilder,
                 stateConfig,
                 new NodeId(selfId),
+                mock(StatusActionSubmitter.class),
                 haltRequestedConsumer,
                 fatalErrorConsumer,
                 (r, type, otherId) -> {});
@@ -175,6 +178,7 @@ class IssHandlerTests {
                 dispatchBuilder,
                 stateConfig,
                 new NodeId(selfId),
+                mock(StatusActionSubmitter.class),
                 haltRequestedConsumer,
                 fatalErrorConsumer,
                 (r, type, otherId) -> {});
@@ -225,6 +229,7 @@ class IssHandlerTests {
                 dispatchBuilder,
                 stateConfig,
                 new NodeId(selfId),
+                mock(StatusActionSubmitter.class),
                 haltRequestedConsumer,
                 fatalErrorConsumer,
                 (r, type, otherId) -> {});
@@ -271,6 +276,7 @@ class IssHandlerTests {
                 dispatchBuilder,
                 stateConfig,
                 new NodeId(selfId),
+                mock(StatusActionSubmitter.class),
                 haltRequestedConsumer,
                 fatalErrorConsumer,
                 (r, type, otherId) -> {});
@@ -325,6 +331,7 @@ class IssHandlerTests {
                 dispatchBuilder,
                 stateConfig,
                 new NodeId(selfId),
+                mock(StatusActionSubmitter.class),
                 haltRequestedConsumer,
                 fatalErrorConsumer,
                 (r, type, otherId) -> {});
@@ -369,6 +376,7 @@ class IssHandlerTests {
                 dispatchBuilder,
                 stateConfig,
                 new NodeId(selfId),
+                mock(StatusActionSubmitter.class),
                 haltRequestedConsumer,
                 fatalErrorConsumer,
                 (r, type, otherId) -> {});
@@ -416,6 +424,7 @@ class IssHandlerTests {
                 dispatchBuilder,
                 stateConfig,
                 new NodeId(selfId),
+                mock(StatusActionSubmitter.class),
                 haltRequestedConsumer,
                 fatalErrorConsumer,
                 (r, type, otherId) -> {});
@@ -470,6 +479,7 @@ class IssHandlerTests {
                 dispatchBuilder,
                 stateConfig,
                 new NodeId(selfId),
+                mock(StatusActionSubmitter.class),
                 haltRequestedConsumer,
                 fatalErrorConsumer,
                 (r, type, otherId) -> {});
@@ -521,6 +531,7 @@ class IssHandlerTests {
                 dispatchBuilder,
                 stateConfig,
                 new NodeId(selfId),
+                mock(StatusActionSubmitter.class),
                 haltRequestedConsumer,
                 fatalErrorConsumer,
                 (r, type, otherId) -> {});
@@ -568,6 +579,7 @@ class IssHandlerTests {
                 dispatchBuilder,
                 stateConfig,
                 new NodeId(selfId),
+                mock(StatusActionSubmitter.class),
                 haltRequestedConsumer,
                 fatalErrorConsumer,
                 (r, type, otherId) -> {});
@@ -622,6 +634,7 @@ class IssHandlerTests {
                 dispatchBuilder,
                 stateConfig,
                 new NodeId(selfId),
+                mock(StatusActionSubmitter.class),
                 haltRequestedConsumer,
                 fatalErrorConsumer,
                 (r, type, otherId) -> {});
@@ -676,6 +689,7 @@ class IssHandlerTests {
                 dispatchBuilder,
                 stateConfig,
                 new NodeId(selfId),
+                mock(StatusActionSubmitter.class),
                 haltRequestedConsumer,
                 fatalErrorConsumer,
                 (r, type, otherId) -> {});
@@ -718,6 +732,7 @@ class IssHandlerTests {
                 dispatchBuilder,
                 stateConfig,
                 new NodeId(0L),
+                mock(StatusActionSubmitter.class),
                 (reason) -> {},
                 (msg, t, code) -> {},
                 issConsumer);

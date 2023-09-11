@@ -30,7 +30,7 @@ import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
-import com.hedera.node.app.service.schedule.impl.ReadableScheduleStoreImpl;
+import com.hedera.node.app.service.schedule.ReadableScheduleStore;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -147,7 +147,7 @@ public final class ScheduleServiceStateTranslator {
 
     @NonNull
     public static com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue pbjToState(
-            @NonNull final ScheduleID scheduleID, @NonNull final ReadableScheduleStoreImpl readableScheduleStore) {
+            @NonNull final ScheduleID scheduleID, @NonNull final ReadableScheduleStore readableScheduleStore) {
         Objects.requireNonNull(scheduleID);
         Objects.requireNonNull(readableScheduleStore);
         final Schedule optionalSchedule = readableScheduleStore.get(scheduleID);
@@ -155,44 +155,6 @@ public final class ScheduleServiceStateTranslator {
             throw new IllegalArgumentException("Schedule not found");
         }
         return pbjToState(optionalSchedule);
-    }
-
-    @NonNull
-    public static List<com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue> pbjToState(
-            final long expiration, @NonNull final ReadableScheduleStoreImpl readableScheduleStore) {
-        Objects.requireNonNull(readableScheduleStore);
-        final List<Schedule> expiringSchedules = readableScheduleStore.getByExpirationSecond(expiration);
-        if (expiringSchedules == null || expiringSchedules.isEmpty()) {
-            throw new IllegalArgumentException("Schedule not found base on expirationTime");
-        }
-
-        final List<com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue> schedules =
-                new ArrayList<>();
-        for (final Schedule schedule : expiringSchedules) {
-            schedules.add(pbjToState(schedule));
-        }
-
-        return schedules;
-    }
-
-    @NonNull
-    public static List<com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue> pbjToState(
-            @NonNull final Schedule schedule, @NonNull final ReadableScheduleStoreImpl readableScheduleStore)
-            throws IllegalArgumentException {
-        Objects.requireNonNull(schedule);
-        Objects.requireNonNull(readableScheduleStore);
-        final List<Schedule> optionalSchedules = readableScheduleStore.getByEquality(schedule);
-        if (optionalSchedules == null || optionalSchedules.isEmpty()) {
-            throw new IllegalArgumentException("Schedule not found base on expirationTime");
-        }
-
-        final List<com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue> schedules =
-                new ArrayList<>();
-        for (final Schedule scheduleElm : optionalSchedules) {
-            schedules.add(pbjToState(scheduleElm));
-        }
-
-        return schedules;
     }
 
     @NonNull

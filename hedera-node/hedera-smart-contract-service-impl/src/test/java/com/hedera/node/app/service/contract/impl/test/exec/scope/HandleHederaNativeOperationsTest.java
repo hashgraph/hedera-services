@@ -20,11 +20,15 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_R
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.node.app.service.contract.impl.exec.processors.ProcessorModule.INITIAL_CONTRACT_NONCE;
 import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_FUNGIBLE_RELATION;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_ACCOUNT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CANONICAL_ALIAS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CIVILIAN_OWNED_NFT;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NFT_SERIAL_NO;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_FUNGIBLE_TOKEN_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_ACCOUNT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
@@ -33,6 +37,8 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -42,10 +48,13 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableNftStore;
+import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import java.util.function.Predicate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -64,10 +73,16 @@ class HandleHederaNativeOperationsTest {
     private CryptoCreateRecordBuilder cryptoCreateRecordBuilder;
 
     @Mock
+    private ReadableTokenRelationStore relationStore;
+
+    @Mock
     private ReadableAccountStore accountStore;
 
     @Mock
     private TokenServiceApi tokenServiceApi;
+
+    @Mock
+    private ReadableNftStore nftStore;
 
     private HandleHederaNativeOperations subject;
 
@@ -109,7 +124,7 @@ class HandleHederaNativeOperationsTest {
         final var synthTxn = TransactionBody.newBuilder()
                 .cryptoCreateAccount(synthHollowAccountCreation(CANONICAL_ALIAS))
                 .build();
-        given(context.dispatchChildTransaction(synthTxn, CryptoCreateRecordBuilder.class))
+        given(context.dispatchChildTransaction(eq(synthTxn), eq(CryptoCreateRecordBuilder.class), any(Predicate.class)))
                 .willReturn(cryptoCreateRecordBuilder);
         given(cryptoCreateRecordBuilder.status()).willReturn(OK);
 
@@ -123,7 +138,7 @@ class HandleHederaNativeOperationsTest {
         final var synthTxn = TransactionBody.newBuilder()
                 .cryptoCreateAccount(synthHollowAccountCreation(CANONICAL_ALIAS))
                 .build();
-        given(context.dispatchChildTransaction(synthTxn, CryptoCreateRecordBuilder.class))
+        given(context.dispatchChildTransaction(eq(synthTxn), eq(CryptoCreateRecordBuilder.class), any(Predicate.class)))
                 .willReturn(cryptoCreateRecordBuilder);
         given(cryptoCreateRecordBuilder.status()).willReturn(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
 
@@ -170,5 +185,21 @@ class HandleHederaNativeOperationsTest {
         subject.setNonce(123L, 456L);
 
         verify(tokenServiceApi).setNonce(AccountID.newBuilder().accountNum(123L).build(), 456L);
+    }
+
+    @Test
+    void getRelationshipUsesStore() {
+        given(context.readableStore(ReadableTokenRelationStore.class)).willReturn(relationStore);
+        given(relationStore.get(A_NEW_ACCOUNT_ID, FUNGIBLE_TOKEN_ID)).willReturn(A_FUNGIBLE_RELATION);
+        assertSame(
+                A_FUNGIBLE_RELATION,
+                subject.getTokenRelation(A_NEW_ACCOUNT_ID.accountNumOrThrow(), FUNGIBLE_TOKEN_ID.tokenNum()));
+    }
+
+    @Test
+    void getNftUsesStore() {
+        given(context.readableStore(ReadableNftStore.class)).willReturn(nftStore);
+        given(nftStore.get(CIVILIAN_OWNED_NFT.nftIdOrThrow())).willReturn(CIVILIAN_OWNED_NFT);
+        assertSame(CIVILIAN_OWNED_NFT, subject.getNft(NON_FUNGIBLE_TOKEN_ID.tokenNum(), NFT_SERIAL_NO));
     }
 }

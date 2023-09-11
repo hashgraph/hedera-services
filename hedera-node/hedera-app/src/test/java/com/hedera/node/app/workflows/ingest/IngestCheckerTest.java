@@ -18,10 +18,12 @@ package com.hedera.node.app.workflows.ingest;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
@@ -34,33 +36,43 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SignatureMap;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.UncheckedSubmitBody;
 import com.hedera.node.app.AppTestBase;
+import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.info.CurrentPlatformStatus;
 import com.hedera.node.app.signature.SignatureExpander;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.signature.SignatureVerifier;
-import com.hedera.node.app.solvency.SolvencyPreCheck;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.state.DeduplicationCache;
+import com.hedera.node.app.state.recordcache.DeduplicationCacheImpl;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
+import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
+import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.common.system.status.PlatformStatus;
+import java.time.Instant;
 import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -80,6 +92,8 @@ class IngestCheckerTest extends AppTestBase {
     private static final SignatureMap MOCK_SIGNATURE_MAP =
             SignatureMap.newBuilder().build();
 
+    private static final Fees DEFAULT_FEES = new Fees(100L, 20L, 3L);
+
     @Mock(strictness = LENIENT)
     CurrentPlatformStatus currentPlatformStatus;
 
@@ -98,6 +112,14 @@ class IngestCheckerTest extends AppTestBase {
     @Mock(strictness = LENIENT)
     private SolvencyPreCheck solvencyPreCheck;
 
+    @Mock(strictness = LENIENT)
+    private TransactionDispatcher dispatcher;
+
+    @Mock(strictness = LENIENT)
+    private FeeManager feeManager;
+
+    private DeduplicationCache deduplicationCache;
+
     private TransactionBody txBody;
     private Transaction tx;
 
@@ -110,8 +132,10 @@ class IngestCheckerTest extends AppTestBase {
 
         txBody = TransactionBody.newBuilder()
                 .uncheckedSubmit(UncheckedSubmitBody.newBuilder().build())
-                .transactionID(
-                        TransactionID.newBuilder().accountID(ALICE.accountID()).build())
+                .transactionID(TransactionID.newBuilder()
+                        .accountID(ALICE.accountID())
+                        .transactionValidStart(
+                                Timestamp.newBuilder().seconds(Instant.now().getEpochSecond())))
                 .nodeAccountID(nodeSelfAccountId)
                 .build();
         final var signedTx = SignedTransaction.newBuilder()
@@ -125,13 +149,23 @@ class IngestCheckerTest extends AppTestBase {
                 tx, txBody, MOCK_SIGNATURE_MAP, tx.signedTransactionBytes(), HederaFunctionality.UNCHECKED_SUBMIT);
         when(transactionChecker.check(tx)).thenReturn(transactionInfo);
 
+        final var configProvider = HederaTestConfigBuilder.createConfigProvider();
+        this.deduplicationCache = new DeduplicationCacheImpl(configProvider);
+
+        when(solvencyPreCheck.getPayerAccount(any(), eq(ALICE.accountID()))).thenReturn(ALICE.account());
+        when(dispatcher.dispatchComputeFees(any())).thenReturn(DEFAULT_FEES);
+
         subject = new IngestChecker(
+                nodeSelfAccountId,
                 currentPlatformStatus,
                 transactionChecker,
                 throttleAccumulator,
                 solvencyPreCheck,
                 signatureExpander,
-                signatureVerifier);
+                signatureVerifier,
+                deduplicationCache,
+                dispatcher,
+                feeManager);
     }
 
     @Nested
@@ -159,6 +193,32 @@ class IngestCheckerTest extends AppTestBase {
                         .has(responseCode(PLATFORM_NOT_ACTIVE));
             }
         }
+    }
+
+    @Test
+    @DisplayName("A wrong nodeId in transaction fails")
+    void testWrongNodeIdFails() {
+        // Given a transaction with an unknown node ID
+        final var otherNodeSelfAccountId = AccountID.newBuilder()
+                .accountNum(nodeSelfAccountId.accountNumOrElse(0L) + 1L)
+                .build();
+
+        subject = new IngestChecker(
+                otherNodeSelfAccountId,
+                currentPlatformStatus,
+                transactionChecker,
+                throttleAccumulator,
+                solvencyPreCheck,
+                signatureExpander,
+                signatureVerifier,
+                deduplicationCache,
+                dispatcher,
+                feeManager);
+
+        // Then the checker should throw a PreCheckException
+        assertThatThrownBy(() -> subject.runAllChecks(state, tx))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(INVALID_NODE_ACCOUNT));
     }
 
     @Test
@@ -219,10 +279,24 @@ class IngestCheckerTest extends AppTestBase {
         }
     }
 
-    // TODO: #2 Test deduplication
+    @Nested
+    @DisplayName("3. Deduplication")
+    class DuplicationTests {
+        @Test
+        @DisplayName("The second of two transactions with the same transaction ID should be rejected")
+        void testThrottleFails() throws PreCheckException {
+            // Given a deduplication cache, and a transaction with an ID already in the deduplication cache
+            final var id = txBody.transactionIDOrThrow();
+            deduplicationCache.add(id);
+            // When the transaction is checked, then it throws a PreCheckException due to duplication
+            assertThatThrownBy(() -> subject.runAllChecks(state, tx))
+                    .isInstanceOf(PreCheckException.class)
+                    .hasFieldOrPropertyWithValue("responseCode", DUPLICATE_TRANSACTION);
+        }
+    }
 
     @Nested
-    @DisplayName("3. Check throttles")
+    @DisplayName("4. Check throttles")
     class ThrottleTests {
         @Test
         @DisplayName("When the transaction is throttled, the transaction should be rejected")
@@ -262,7 +336,7 @@ class IngestCheckerTest extends AppTestBase {
         @MethodSource("failureReasons")
         @DisplayName("If the status of the payer account is invalid, the transaction should be rejected")
         void payerAccountStatusFails(ResponseCodeEnum failureReason) throws PreCheckException {
-            doThrow(new PreCheckException(failureReason)).when(solvencyPreCheck).checkPayerAccountStatus(any(), any());
+            doThrow(new PreCheckException(failureReason)).when(solvencyPreCheck).getPayerAccount(any(), any());
 
             assertThatThrownBy(() -> subject.runAllChecks(state, tx))
                     .isInstanceOf(PreCheckException.class)
@@ -275,12 +349,26 @@ class IngestCheckerTest extends AppTestBase {
             // Given an IngestChecker that will throw a RuntimeException from checkPayerSignature
             doThrow(new RuntimeException("checkPayerAccountStatus exception"))
                     .when(solvencyPreCheck)
-                    .checkPayerAccountStatus(any(), any());
+                    .getPayerAccount(any(), any());
 
             // When the transaction is submitted, then the exception is bubbled up
             assertThatThrownBy(() -> subject.runAllChecks(state, tx))
                     .isInstanceOf(RuntimeException.class)
                     .hasMessageContaining("checkPayerAccountStatus exception");
+        }
+
+        // NOTE: This should never happen in real life, but we need to code defensively for it anyway.
+        @Test
+        @DisplayName("No key for payer in state")
+        void noKeyForPayer() throws PreCheckException {
+            // The tx payer is ALICE. We remove her key from state
+            final var account = ALICE.account().copyBuilder().key((Key) null).build();
+            when(solvencyPreCheck.getPayerAccount(any(), eq(ALICE.accountID()))).thenReturn(account);
+
+            // When the transaction is submitted, then the exception is thrown
+            assertThatThrownBy(() -> subject.runAllChecks(state, tx))
+                    .isInstanceOf(PreCheckException.class)
+                    .has(responseCode(UNAUTHORIZED));
         }
     }
 
@@ -301,7 +389,7 @@ class IngestCheckerTest extends AppTestBase {
         void payerAccountStatusFails(ResponseCodeEnum failureReason) throws PreCheckException {
             doThrow(new InsufficientBalanceException(failureReason, 123L))
                     .when(solvencyPreCheck)
-                    .checkSolvencyOfVerifiedPayer(any(), any());
+                    .checkSolvency(any(), any(), anyLong());
 
             assertThatThrownBy(() -> subject.runAllChecks(state, tx))
                     .isInstanceOf(InsufficientBalanceException.class)
@@ -315,7 +403,7 @@ class IngestCheckerTest extends AppTestBase {
             // Given an IngestChecker that will throw a RuntimeException from checkPayerSignature
             doThrow(new RuntimeException("checkSolvency exception"))
                     .when(solvencyPreCheck)
-                    .checkSolvencyOfVerifiedPayer(any(), any());
+                    .checkSolvency(any(), any(), anyLong());
 
             // When the transaction is submitted, then the exception is bubbled up
             assertThatThrownBy(() -> subject.runAllChecks(state, tx))
@@ -327,33 +415,6 @@ class IngestCheckerTest extends AppTestBase {
     @Nested
     @DisplayName("6. Check payer's signature")
     class PayerSignatureTests {
-        @Test
-        @DisplayName("No account for payer")
-        void noAccountForPayer() {
-            // The tx payer is ALICE. If we remove her from the state, then the payer has no account
-            accountsState.remove(ALICE.accountID());
-
-            // When the transaction is submitted, then the exception is thrown
-            assertThatThrownBy(() -> subject.runAllChecks(state, tx))
-                    .isInstanceOf(PreCheckException.class)
-                    .has(responseCode(INVALID_ACCOUNT_ID));
-        }
-
-        // NOTE: This should never happen in real life, but we need to code defensively for it anyway.
-        @Test
-        @DisplayName("No key for payer in state")
-        void noKeyForPayer() {
-            // The tx payer is ALICE. We remove her key from state
-            final var account = accountsState.get(ALICE.accountID());
-            assertThat(account).isNotNull();
-            accountsState.put(
-                    ALICE.accountID(), account.copyBuilder().key((Key) null).build());
-
-            // When the transaction is submitted, then the exception is thrown
-            assertThatThrownBy(() -> subject.runAllChecks(state, tx))
-                    .isInstanceOf(PreCheckException.class)
-                    .has(responseCode(UNAUTHORIZED));
-        }
 
         @Test
         @DisplayName("Payer signature is missing")

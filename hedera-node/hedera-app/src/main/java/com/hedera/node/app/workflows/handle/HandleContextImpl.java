@@ -28,13 +28,16 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.UnknownHederaFunctionality;
+import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeContext;
@@ -62,7 +65,7 @@ import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilde
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.handle.validation.AttributeValidatorImpl;
 import com.hedera.node.app.workflows.handle.validation.ExpiryValidatorImpl;
-import com.hedera.node.app.workflows.handle.verifier.ChildHandleContextVerifier;
+import com.hedera.node.app.workflows.handle.verifier.DelegateHandleContextVerifier;
 import com.hedera.node.app.workflows.handle.verifier.HandleContextVerifier;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -71,6 +74,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -101,28 +105,31 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     private final Function<SubType, FeeCalculator> feeCalculatorCreator;
     private final FeeManager feeManager;
     private final Instant userTransactionConsensusTime;
+    private final ExchangeRateManager exchangeRateManager;
 
     private ReadableStoreFactory readableStoreFactory;
     private AttributeValidator attributeValidator;
     private ExpiryValidator expiryValidator;
+    private ExchangeRateInfo exchangeRateInfo;
 
     /**
      * Constructs a {@link HandleContextImpl}.
      *
-     * @param txInfo             The {@link TransactionInfo} of the transaction
-     * @param payer              The {@link AccountID} of the payer
-     * @param payerKey           The {@link Key} of the payer
-     * @param networkInfo        The {@link NetworkInfo} of the network
-     * @param category           The {@link TransactionCategory} of the transaction (either user, preceding, or child)
-     * @param recordBuilder      The main {@link SingleTransactionRecordBuilderImpl}
-     * @param stack              The {@link SavepointStackImpl} used to manage savepoints
-     * @param configuration      The current {@link Configuration}
-     * @param verifier           The {@link HandleContextVerifier} used to verify signatures and hollow accounts
-     * @param recordListBuilder  The {@link RecordListBuilder} used to build the record stream
-     * @param checker            The {@link TransactionChecker} used to check dispatched transaction
-     * @param dispatcher         The {@link TransactionDispatcher} used to dispatch child transactions
-     * @param serviceScopeLookup The {@link ServiceScopeLookup} used to look up the scope of a service
-     * @param feeManager         The {@link FeeManager} used to convert usage into fees
+     * @param txInfo                The {@link TransactionInfo} of the transaction
+     * @param payer                 The {@link AccountID} of the payer
+     * @param payerKey              The {@link Key} of the payer
+     * @param networkInfo           The {@link NetworkInfo} of the network
+     * @param category              The {@link TransactionCategory} of the transaction (either user, preceding, or child)
+     * @param recordBuilder         The main {@link SingleTransactionRecordBuilderImpl}
+     * @param stack                 The {@link SavepointStackImpl} used to manage savepoints
+     * @param configuration         The current {@link Configuration}
+     * @param verifier              The {@link HandleContextVerifier} used to verify signatures and hollow accounts
+     * @param recordListBuilder     The {@link RecordListBuilder} used to build the record stream
+     * @param checker               The {@link TransactionChecker} used to check dispatched transaction
+     * @param dispatcher            The {@link TransactionDispatcher} used to dispatch child transactions
+     * @param serviceScopeLookup    The {@link ServiceScopeLookup} used to look up the scope of a service
+     * @param feeManager            The {@link FeeManager} used to convert usage into fees
+     * @param exchangeRateManager   The {@link ExchangeRateManager} used to obtain exchange rate information
      * @param userTransactionConsensusTime The consensus time of the user transaction, not any child transactions
      */
     public HandleContextImpl(
@@ -142,6 +149,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             @NonNull final BlockRecordInfo blockRecordInfo,
             @NonNull final RecordCache recordCache,
             @NonNull final FeeManager feeManager,
+            @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final Instant userTransactionConsensusTime) {
         this.txBody = requireNonNull(txInfo, "txInfo must not be null").txBody();
         this.payer = requireNonNull(payer, "payer must not be null");
@@ -180,6 +188,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 tokenApi.refundFees(receiver, fees, recordBuilder);
             }
         };
+        this.exchangeRateManager = requireNonNull(exchangeRateManager, "exchangeRateManager must not be null");
     }
 
     private WrappedHederaState current() {
@@ -220,6 +229,15 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     @Override
     public FeeAccumulator feeAccumulator() {
         return feeAccumulator;
+    }
+
+    @NonNull
+    @Override
+    public ExchangeRateInfo exchangeRateInfo() {
+        if (exchangeRateInfo == null) {
+            exchangeRateInfo = exchangeRateManager.exchangeRateInfo(current());
+        }
+        return exchangeRateInfo;
     }
 
     @Override
@@ -364,9 +382,12 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     @Override
     @NonNull
     public <T> T dispatchPrecedingTransaction(
-            @NonNull final TransactionBody txBody, @NonNull final Class<T> recordBuilderClass) {
+            @NonNull final TransactionBody txBody,
+            @NonNull final Class<T> recordBuilderClass,
+            @NonNull final Predicate<Key> callback) {
         requireNonNull(txBody, "txBody must not be null");
         requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
+        requireNonNull(callback, "callback must not be null");
 
         if (category != TransactionCategory.USER) {
             throw new IllegalArgumentException("Only user-transactions can dispatch preceding transactions");
@@ -382,7 +403,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
 
         // run the transaction
         final var precedingRecordBuilder = recordListBuilder.addPreceding(configuration());
-        dispatchSyntheticTxn(txBody, PRECEDING, verifier, precedingRecordBuilder);
+        dispatchSyntheticTxn(txBody, PRECEDING, precedingRecordBuilder, callback);
 
         return castRecordBuilder(precedingRecordBuilder, recordBuilderClass);
     }
@@ -392,18 +413,9 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     public <T> T dispatchChildTransaction(
             @NonNull final TransactionBody txBody,
             @NonNull final Class<T> recordBuilderClass,
-            @NonNull final VerificationAssistant callback) {
-        final var childVerifier = new ChildHandleContextVerifier(verifier, callback);
+            @NonNull final Predicate<Key> callback) {
         final var childRecordBuilder = recordListBuilder.addChild(configuration());
-        return dispatchChildTransaction(txBody, childVerifier, childRecordBuilder, recordBuilderClass);
-    }
-
-    @Override
-    @NonNull
-    public <T> T dispatchChildTransaction(
-            @NonNull final TransactionBody txBody, @NonNull final Class<T> recordBuilderClass) {
-        final var childRecordBuilder = recordListBuilder.addChild(configuration());
-        return dispatchChildTransaction(txBody, verifier, childRecordBuilder, recordBuilderClass);
+        return doDispatchChildTransaction(txBody, childRecordBuilder, recordBuilderClass, callback);
     }
 
     @NonNull
@@ -411,40 +423,27 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     public <T> T dispatchRemovableChildTransaction(
             @NonNull final TransactionBody txBody,
             @NonNull final Class<T> recordBuilderClass,
-            @NonNull final VerificationAssistant callback) {
-        final var childVerifier = new ChildHandleContextVerifier(verifier, callback);
+            @NonNull final Predicate<Key> callback) {
         final var childRecordBuilder = recordListBuilder.addRemovableChild(configuration());
-        return dispatchChildTransaction(txBody, childVerifier, childRecordBuilder, recordBuilderClass);
-    }
-
-    @Override
-    @NonNull
-    public <T> T dispatchRemovableChildTransaction(
-            @NonNull final TransactionBody txBody, @NonNull final Class<T> recordBuilderClass) {
-        final var childRecordBuilder = recordListBuilder.addRemovableChild(configuration());
-        return dispatchChildTransaction(txBody, verifier, childRecordBuilder, recordBuilderClass);
+        return doDispatchChildTransaction(txBody, childRecordBuilder, recordBuilderClass, callback);
     }
 
     @NonNull
-    private <T> T dispatchChildTransaction(
+    private <T> T doDispatchChildTransaction(
             @NonNull final TransactionBody txBody,
-            @NonNull final HandleContextVerifier childVerifier,
             @NonNull final SingleTransactionRecordBuilderImpl childRecordBuilder,
-            @NonNull final Class<T> recordBuilderClass) {
+            @NonNull final Class<T> recordBuilderClass,
+            @NonNull final Predicate<Key> callback) {
+        requireNonNull(txBody, "txBody must not be null");
+        requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
+        requireNonNull(callback, "callback must not be null");
+
         if (category == PRECEDING) {
             throw new IllegalArgumentException("A preceding transaction cannot have child transactions");
         }
 
-        // create a savepoint
-        stack.createSavepoint();
-
         // run the child-transaction
-        dispatchSyntheticTxn(txBody, CHILD, childVerifier, childRecordBuilder);
-
-        // rollback if the child-transaction failed
-        if (childRecordBuilder.status() != ResponseCodeEnum.OK) {
-            stack.rollback();
-        }
+        dispatchSyntheticTxn(txBody, CHILD, childRecordBuilder, callback);
 
         return castRecordBuilder(childRecordBuilder, recordBuilderClass);
     }
@@ -452,8 +451,27 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     private void dispatchSyntheticTxn(
             @NonNull final TransactionBody txBody,
             @NonNull final TransactionCategory childCategory,
-            @NonNull final HandleContextVerifier childVerifier,
-            @NonNull final SingleTransactionRecordBuilderImpl childRecordBuilder) {
+            @NonNull final SingleTransactionRecordBuilderImpl childRecordBuilder,
+            @NonNull final Predicate<Key> callback) {
+        // Initialize record builder list
+        final var bodyBytes = TransactionBody.PROTOBUF.toBytes(txBody);
+        final var signedTransaction =
+                SignedTransaction.newBuilder().bodyBytes(bodyBytes).build();
+        final var signedTransactionBytes = SignedTransaction.PROTOBUF.toBytes(signedTransaction);
+        final var transaction = Transaction.newBuilder()
+                .signedTransactionBytes(signedTransactionBytes)
+                .build();
+        childRecordBuilder
+                .transaction(transaction)
+                .transactionBytes(signedTransactionBytes)
+                .memo(txBody.memo());
+
+        // Set the transactionId if provided
+        final var transactionID = txBody.transactionID();
+        if (transactionID != null) {
+            childRecordBuilder.transactionID(transactionID);
+        }
+
         try {
             // Synthetic transaction bodies do not have transaction ids, node account
             // ids, and so on; hence we don't need to validate them with the checker
@@ -473,6 +491,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             return;
         }
 
+        final var childVerifier = new DelegateHandleContextVerifier(callback);
+
         final var childContext = new HandleContextImpl(
                 new TransactionInfo(Transaction.DEFAULT, txBody, SignatureMap.DEFAULT, Bytes.EMPTY, function),
                 payer,
@@ -490,10 +510,12 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 blockRecordInfo,
                 recordCache,
                 feeManager,
+                exchangeRateManager,
                 userTransactionConsensusTime);
 
         try {
             dispatcher.dispatchHandle(childContext);
+            childRecordBuilder.status(ResponseCodeEnum.SUCCESS);
             childStack.commitFullStack();
         } catch (HandleException e) {
             childRecordBuilder.status(e.getStatus());

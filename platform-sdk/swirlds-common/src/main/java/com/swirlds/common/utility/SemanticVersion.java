@@ -20,11 +20,10 @@ import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.IOException;
+import java.util.Comparator;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.builder.CompareToBuilder;
 
 /**
  * A standard representation of a semantic version number.
@@ -34,7 +33,7 @@ public final class SemanticVersion implements Comparable<SemanticVersion>, SelfS
     /**
      * Constant value representing a zero version number.
      */
-    public static final SemanticVersion ZERO = new SemanticVersion(0, 0, 0, StringUtils.EMPTY, StringUtils.EMPTY);
+    public static final SemanticVersion ZERO = new SemanticVersion(0, 0, 0, "", "");
 
     /**
      * Constant value representing an ASCII period.
@@ -149,13 +148,12 @@ public final class SemanticVersion implements Comparable<SemanticVersion>, SelfS
             return 0;
         }
 
-        return new CompareToBuilder()
-                .append(major, that.major)
-                .append(minor, that.minor)
-                .append(patch, that.patch)
-                .append(prerelease, that.prerelease)
-                .append(build, that.build)
-                .build();
+        return Comparator.comparing(SemanticVersion::major)
+                .thenComparing(SemanticVersion::minor)
+                .thenComparing(SemanticVersion::patch)
+                .thenComparing(SemanticVersion::prerelease, Comparator.nullsFirst(Comparator.naturalOrder()))
+                .thenComparing(SemanticVersion::build, Comparator.nullsFirst(Comparator.naturalOrder()))
+                .compare(this, that);
     }
 
     /**

@@ -20,7 +20,6 @@ import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
@@ -517,30 +516,6 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
      */
     public long getMinimumGenerationNonAncient() {
         return RoundCalculationUtils.getMinGenNonAncient(roundsNonAncient, round, this::getMinGen);
-    }
-
-    /**
-     * Informational method used in reconnect diagnostics. This method constructs a {@link String} containing the
-     * critical attributes of this data object. The original use is during reconnect to produce useful information sent
-     * to diagnostic event output.
-     *
-     * @return a {@link String} containing the core data from this object, in human-readable form.
-     * @see PlatformState#getInfoString()
-     */
-    public String getInfoString() {
-        return new TextTable()
-                .setBordersEnabled(false)
-                .addRow("Round", round)
-                .addRow("Number of consensus events", numEventsCons)
-                .addRow("Consensus events running hash", hashEventsCons == null ? "null" : hashEventsCons.toMnemonic())
-                .addRow("Consensus timestamp", consensusTimestamp)
-                .addRow("Last timestamp", lastTransactionTimestamp)
-                .addRow("Rounds non-ancient", roundsNonAncient)
-                .addRow("Creation software version", creationSoftwareVersion)
-                .addRow("Epoch hash", epochHash == null ? "null" : epochHash.toMnemonic())
-                .addRow("Min gen info hash code", minGenInfo == null ? "null" : minGenInfo.hashCode())
-                .addRow("Events hash code", Arrays.hashCode(events))
-                .render();
     }
 
     /**

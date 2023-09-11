@@ -66,6 +66,11 @@ public class HandleException extends RuntimeException {
         validateTrue(!flag, errorStatus);
     }
 
+    @Override
+    public String toString() {
+        return "HandleException{" + "status=" + status + '}';
+    }
+
     /**
      * <strong>Disallowed</strong> constructor of {@code HandleException}.
      * This {@link Exception} subclass is used as a form of unconditional jump, rather than a true

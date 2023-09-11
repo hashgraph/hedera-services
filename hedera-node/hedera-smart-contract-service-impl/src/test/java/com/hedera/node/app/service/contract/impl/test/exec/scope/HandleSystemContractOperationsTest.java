@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.test.exec.scope;
 
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.MOCK_VERIFICATION_STRATEGY;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -29,8 +30,11 @@ import com.hedera.node.app.service.contract.impl.exec.scope.HandleSystemContract
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils;
 import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.ResultStatus;
+import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.config.api.Configuration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,6 +48,15 @@ class HandleSystemContractOperationsTest {
 
     @Mock
     private ContractCallRecordBuilder recordBuilder;
+
+    @Mock
+    private ExchangeRateInfo exchangeRateInfo;
+
+    @Mock
+    private Configuration configuration;
+
+    @Mock
+    private ContractsConfig contractsConfig;
 
     private HandleSystemContractOperations subject;
 
@@ -67,13 +80,6 @@ class HandleSystemContractOperationsTest {
     @Test
     void getAccountNotImplementedYet() {
         assertThrows(AssertionError.class, () -> subject.getAccountAndExternalizeResult(1L, 2L, entity -> Bytes.EMPTY));
-    }
-
-    @Test
-    void getRelationshipNotImplementedYet() {
-        assertThrows(
-                AssertionError.class,
-                () -> subject.getRelationshipAndExternalizeResult(1L, 2L, 3L, entity -> Bytes.EMPTY));
     }
 
     @Test
@@ -117,5 +123,13 @@ class HandleSystemContractOperationsTest {
         verify(recordBuilder).contractID(ContractID.DEFAULT);
         verify(recordBuilder).status(ResponseCodeEnum.FAIL_INVALID);
         verify(recordBuilder).contractCallResult(contractFunctionResult);
+    }
+
+    @Test
+    void currentExchangeRateTest() {
+        given(context.exchangeRateInfo()).willReturn(exchangeRateInfo);
+        subject.currentExchangeRate();
+        verify(context).exchangeRateInfo();
+        verify(exchangeRateInfo).activeRate(any());
     }
 }

@@ -17,7 +17,6 @@
 package com.hedera.node.app.workflows;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_DURATION;
@@ -309,11 +308,6 @@ public class TransactionChecker {
      * @throws NullPointerException if any of the parameters is {@code null}
      */
     public void checkTransactionBody(@NonNull final TransactionBody txBody) throws PreCheckException {
-        // The transaction MUST have been sent to *this* node
-        if (!nodeAccount.equals(txBody.nodeAccountID())) {
-            throw new PreCheckException(INVALID_NODE_ACCOUNT);
-        }
-
         final var config = props.getConfiguration().getConfigData(HederaConfig.class);
         checkTransactionID(txBody.transactionID());
         checkMemo(txBody.memo(), config.transactionMaxMemoUtf8Bytes());

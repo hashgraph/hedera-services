@@ -20,7 +20,6 @@ import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.state.file.File;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Optional;
 
 /**
  * Provides read-only methods for interacting with the underlying data storage mechanisms for
@@ -39,13 +38,13 @@ public interface ReadableFileStore {
      */
     // TODO : Change to return File instead of FileMetadata
     @Nullable
-    FileMetadata getFileMetadata(@Nullable FileID id);
+    FileMetadata getFileMetadata(@NonNull FileID id);
 
     /**
      * Returns the file needed from state, if not exist will return null.
      * @param id file id being looked up
      * @return
      */
-    @NonNull
-    Optional<File> getFileLeaf(@NonNull FileID id);
+    @Nullable
+    File getFileLeaf(@NonNull FileID id);
 }

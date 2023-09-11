@@ -76,7 +76,7 @@ public final class NetworkUtils {
         Marker marker = NetworkUtils.determineExceptionMarker(e);
         if (SOCKET_EXCEPTIONS.getMarker().equals(marker)) {
             String formattedException = NetworkUtils.formatException(e);
-            logger.error(marker, "Connection broken: {} {}", description, formattedException);
+            logger.warn(marker, "Connection broken: {} {}", description, formattedException);
         } else {
             logger.error(marker, "Connection broken: {}", description, e);
         }

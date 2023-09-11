@@ -16,22 +16,24 @@
 
 package com.hedera.services.cli.signedstate;
 
+import static com.hedera.services.cli.utils.ThingsToStrings.toStructureSummaryOfJKey;
+import static java.util.function.Predicate.not;
+
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.services.cli.signedstate.DumpStateCommand.Format;
+import com.hedera.services.cli.signedstate.DumpStateCommand.KeyDetails;
 import com.hedera.services.cli.signedstate.SignedStateCommand.Verbosity;
 import com.hedera.services.cli.utils.ThingsToStrings;
+import com.hedera.services.cli.utils.Writer;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.lang.reflect.Proxy;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -49,7 +51,7 @@ import java.util.stream.Stream;
 import org.apache.commons.lang3.tuple.Pair;
 
 /** Dump all Hedera account objects, from a signed state file, to a text file, in deterministic order.
- * Can output in either CSV format (actually: semicolon-separated) or in a "elided field" format where fields are
+ * Can output in either CSV format (actually: semicolon-separated) or in an "elided field" format where fields are
  * dumped in "name:value" pairs and missing fields or fields with default values are skipped.
  */
 @SuppressWarnings("java:S106") // "use of system.out/system.err instead of logger" - not needed/desirable for CLI tool
@@ -60,9 +62,10 @@ public class DumpAccountsSubcommand {
             @NonNull final Path accountPath,
             final int lowLimit,
             final int highLimit,
+            @NonNull final EnumSet<KeyDetails> keyDetails,
             @NonNull final Format format,
             @NonNull final Verbosity verbosity) {
-        new DumpAccountsSubcommand(state, accountPath, lowLimit, highLimit, format, verbosity).doit();
+        new DumpAccountsSubcommand(state, accountPath, lowLimit, highLimit, keyDetails, format, verbosity).doit();
     }
 
     @NonNull
@@ -81,17 +84,22 @@ public class DumpAccountsSubcommand {
 
     final int highLimit;
 
+    @NonNull
+    final EnumSet<KeyDetails> keyDetails;
+
     DumpAccountsSubcommand(
             @NonNull final SignedStateHolder state,
             @NonNull final Path accountPath,
             final int lowLimit,
             final int highLimit,
+            @NonNull final EnumSet<KeyDetails> keyDetails,
             @NonNull final Format format,
             @NonNull final Verbosity verbosity) {
         this.state = state;
         this.accountPath = accountPath;
         this.lowLimit = Math.max(lowLimit, 0);
         this.highLimit = Math.max(highLimit, 0);
+        this.keyDetails = keyDetails;
         this.format = format;
         this.verbosity = verbosity;
     }
@@ -103,36 +111,71 @@ public class DumpAccountsSubcommand {
 
         final var accountsArr = gatherAccounts(accountsStore);
 
-        final var sb = new StringBuilder(1000);
-        final var reportSize = new int[1];
-
-        try (final var fileWriter = new FileWriter(accountPath.toFile(), StandardCharsets.UTF_8);
-                final var writer = new BufferedWriter(fileWriter)) {
-
-            if (format == Format.CSV) {
-                writer.write("account#");
-                writer.write(FIELD_SEPARATOR);
-                writer.write(formatCsvHeader(allFieldNamesInOrder()));
-                writer.newLine();
-            }
-
-            Arrays.stream(accountsArr).map(a -> formatAccount(sb, a)).forEachOrdered(s -> {
-                try {
-                    writer.write(s);
-                    writer.newLine();
-                } catch (final IOException ex) {
-                    System.err.printf("Error writing to '%s':%n", accountPath);
-                    throw new UncheckedIOException(ex);
-                }
-                reportSize[0] += s.length() + 1;
-            });
-        } catch (final IOException ex) {
-            System.err.printf("Error creating or closing '%s'%n", accountPath);
-            throw new UncheckedIOException(ex); // CLI program: Java will print the exception + stacktrace
+        int reportSize;
+        try (@NonNull final var writer = new Writer(accountPath)) {
+            reportOnAccounts(writer, accountsArr);
+            if (keyDetails.contains(KeyDetails.STRUCTURE) || keyDetails.contains(KeyDetails.STRUCTURE_WITH_IDS))
+                reportOnKeyStructure(writer, accountsArr);
+            reportSize = writer.getSize();
         }
 
-        System.out.printf("=== accounts report is %d bytes%n", reportSize[0]);
+        System.out.printf("=== accounts report is %d bytes%n", reportSize);
         System.out.printf("=== fields with exceptions: %s%n", String.join(",", fieldsWithExceptions));
+    }
+
+    void reportOnAccounts(@NonNull final Writer writer, @NonNull final HederaAccount[] accountsArr) {
+        if (format == Format.CSV) {
+            writer.write("account#");
+            writer.write(FIELD_SEPARATOR);
+            writer.write(formatCsvHeader(allFieldNamesInOrder()));
+            writer.newLine();
+        }
+
+        final var sb = new StringBuilder();
+        Arrays.stream(accountsArr).map(a -> formatAccount(sb, a)).forEachOrdered(s -> {
+            writer.write(s);
+            writer.newLine();
+        });
+    }
+
+    void reportOnKeyStructure(@NonNull final Writer writer, @NonNull final HederaAccount[] accountsArr) {
+        final var eoaKeySummary = new HashMap<String, Integer>();
+        accumulateSummaries(not(HederaAccount::isSmartContract), eoaKeySummary, accountsArr);
+        writeKeySummaryReport(writer, "EOA", eoaKeySummary);
+
+        final var scKeySummary = new HashMap<String, Integer>();
+        accumulateSummaries(HederaAccount::isSmartContract, scKeySummary, accountsArr);
+        writeKeySummaryReport(writer, "Smart Contract", scKeySummary);
+    }
+
+    @SuppressWarnings(
+            "java:S135") // Loops should not contain more than a single "break" or "continue" statement - disagree it
+    // would make things clearer here
+    void accumulateSummaries(
+            @NonNull final Predicate<HederaAccount> filter,
+            @NonNull final HashMap<String, Integer> structureSummary,
+            @NonNull final HederaAccount[] accountsArr) {
+        for (@NonNull final var ha : accountsArr) {
+            if (ha.isDeleted()) continue;
+            if (!filter.test(ha)) continue;
+            final var jkey = ha.getAccountKey();
+            final var sb = new StringBuilder();
+            final var b = toStructureSummaryOfJKey(sb, jkey);
+            if (!b) {
+                sb.setLength(0);
+                sb.append("NULL-KEY");
+            }
+            structureSummary.merge(sb.toString(), 1, Integer::sum);
+        }
+    }
+
+    void writeKeySummaryReport(
+            @NonNull final Writer writer, @NonNull final String kind, @NonNull final Map<String, Integer> keySummary) {
+
+        writer.write("=== %s Key Summary ===%n".formatted(kind));
+        keySummary.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .forEachOrdered(e -> writer.write("%7d: %s%n".formatted(e.getValue(), e.getKey())));
     }
 
     /** Traverses the dehydrated signed state file to pull out all the accounts for later processing.
@@ -337,7 +380,7 @@ public class DumpAccountsSubcommand {
             Pair.of("TSL", coerceMinus1ToBeDefault(HederaAccount::totalStakeAtStartOfLastRewardedPeriod)));
 
     /** Unfortunately this is a hack to handle the two long-valued fields where `-1` is used as the "missing" marker.
-     * Probably all of the primitive-valued fields should be changed to use `Field` descriptors, which would then be
+     * Probably all the primitive-valued fields should be changed to use `Field` descriptors, which would then be
      * enhanced to have a per-field "is default value?" predicate.  But not now.)
      */
     @SuppressWarnings(

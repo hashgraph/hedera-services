@@ -79,6 +79,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class FileUpdateTest extends FileTestBase {
 
+    private static final long EXPIRATION_TIMESTAMP = 3_456_789L;
     private final FileUpdateTransactionBody.Builder OP_BUILDER = FileUpdateTransactionBody.newBuilder();
 
     private final ExpiryMeta currentExpiryMeta = new ExpiryMeta(expirationTime, NA, null);
@@ -285,7 +286,7 @@ class FileUpdateTest extends FileTestBase {
     }
 
     @Test
-    void validatesExpirationTimeIsNotInRange() {
+    void validatesAutoRenewDurationIsInRange() {
         givenValidFile(false);
         refreshStoresWithCurrentFileInBothReadableAndWritable();
 
@@ -293,7 +294,13 @@ class FileUpdateTest extends FileTestBase {
                 .fileID(wellKnownId())
                 .expirationTime(Timestamp.newBuilder().seconds(-1_234_567_890L).build())
                 .build();
-        final var txBody = TransactionBody.newBuilder().fileUpdate(op).build();
+        final var txBody = TransactionBody.newBuilder()
+                .fileUpdate(op)
+                .transactionID(TransactionID.newBuilder()
+                        .transactionValidStart(
+                                Timestamp.newBuilder().seconds(100L).build())
+                        .build())
+                .build();
         when(handleContext.body()).thenReturn(txBody);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
         given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
@@ -405,9 +412,15 @@ class FileUpdateTest extends FileTestBase {
     void appliesNewExpiryViaMeta() {
         refreshStoresWithCurrentFileInBothReadableAndWritable();
 
-        final var expiry = Timestamp.newBuilder().seconds(1_234_568L).build();
+        final var expiry = Timestamp.newBuilder().seconds(EXPIRATION_TIMESTAMP).build();
         final var op = OP_BUILDER.fileID(wellKnownId()).expirationTime(expiry).build();
-        final var txBody = TransactionBody.newBuilder().fileUpdate(op).build();
+        final var txBody = TransactionBody.newBuilder()
+                .fileUpdate(op)
+                .transactionID(TransactionID.newBuilder()
+                        .transactionValidStart(
+                                Timestamp.newBuilder().seconds(100L).build())
+                        .build())
+                .build();
         when(handleContext.body()).thenReturn(txBody);
         given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
         given(signatureVerification.failed()).willReturn(false);
@@ -415,16 +428,22 @@ class FileUpdateTest extends FileTestBase {
         subject.handle(handleContext);
 
         final var newFile = writableFileState.get(fileId);
-        assertEquals(1_234_568L, newFile.expirationSecond());
+        assertEquals(EXPIRATION_TIMESTAMP, newFile.expirationSecond());
     }
 
     @Test
     void appliesNewExpiryLowerExpirationTimeViaMeta() {
         refreshStoresWithCurrentFileInBothReadableAndWritable();
 
-        final var expiry = Timestamp.newBuilder().seconds(1_234_566L).build();
+        final var expiry = Timestamp.newBuilder().seconds(EXPIRATION_TIMESTAMP).build();
         final var op = OP_BUILDER.fileID(wellKnownId()).expirationTime(expiry).build();
-        final var txBody = TransactionBody.newBuilder().fileUpdate(op).build();
+        final var txBody = TransactionBody.newBuilder()
+                .fileUpdate(op)
+                .transactionID(TransactionID.newBuilder()
+                        .transactionValidStart(
+                                Timestamp.newBuilder().seconds(100L).build())
+                        .build())
+                .build();
         when(handleContext.body()).thenReturn(txBody);
         given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
         given(signatureVerification.failed()).willReturn(false);
@@ -432,7 +451,7 @@ class FileUpdateTest extends FileTestBase {
         subject.handle(handleContext);
 
         final var newFile = writableFileState.get(fileId);
-        assertEquals(1_234_567L, newFile.expirationSecond());
+        assertEquals(EXPIRATION_TIMESTAMP, newFile.expirationSecond());
     }
 
     @Test

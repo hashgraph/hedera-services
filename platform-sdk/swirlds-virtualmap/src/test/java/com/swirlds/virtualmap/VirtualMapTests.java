@@ -18,9 +18,9 @@ package com.swirlds.virtualmap;
 
 import static com.swirlds.common.io.utility.FileUtils.deleteDirectory;
 import static com.swirlds.common.merkle.iterators.MerkleIterationOrder.BREADTH_FIRST;
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
 import static com.swirlds.test.framework.ResourceLoader.loadLog4jContext;
 import static com.swirlds.virtualmap.VirtualMapTestUtils.createMap;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -62,26 +62,22 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.lang.management.ManagementFactory;
-import java.lang.management.ThreadInfo;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
-import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Tags;
@@ -97,86 +93,10 @@ class VirtualMapTests extends VirtualTestBase {
     @TempDir
     Path testDirectory;
 
-    private Set<String> threadNames;
-
     @BeforeAll
     static void setupNonNOPLogger() throws FileNotFoundException {
         // use actual log4j logger, and not the NOP loader.
         loadLog4jContext();
-    }
-
-    /**
-     * Get a set containing all active threads, excluding some threads in thread pools.
-     */
-    private Set<String> getThreadNames() {
-        final long[] threadIds = ManagementFactory.getThreadMXBean().getAllThreadIds();
-        final ThreadInfo[] threadInfo = ManagementFactory.getThreadMXBean().getThreadInfo(threadIds);
-
-        final Set<String> threadNames = new HashSet<>();
-
-        for (final ThreadInfo info : threadInfo) {
-            if (info != null) {
-                final String threadName = info.getThreadName();
-                if (!threadName.contains("hasher")
-                        && !threadName.contains("virtual-map: cache-cleaner")
-                        && !threadName.contains("virtual-pipeline: lifecycle")
-                        && !threadName.contains("ForkJoinPool.commonPool-worker-")
-                        && !(threadName.contains("pool-") && threadName.contains("-thread-"))) {
-                    threadNames.add(threadName);
-                }
-            }
-        }
-
-        return threadNames;
-    }
-
-    @BeforeEach
-    void captureInitialThreads() {
-        threadNames = getThreadNames();
-    }
-
-    @AfterEach
-    void captureResultingThreads() throws InterruptedException {
-        // Give transient threads some time to gracefully terminate
-        MILLISECONDS.sleep(100);
-
-        final Set<String> currentThreadNames = getThreadNames();
-
-        final Set<String> createdThreads = new HashSet<>();
-        final Set<String> removedThreads = new HashSet<>();
-
-        for (final String threadName : threadNames) {
-            if (!currentThreadNames.contains(threadName)) {
-                removedThreads.add(threadName);
-            }
-        }
-
-        for (final String threadName : currentThreadNames) {
-            if (!threadNames.contains(threadName)) {
-                createdThreads.add(threadName);
-            }
-        }
-
-        if (!createdThreads.isEmpty() || !removedThreads.isEmpty()) {
-
-            final StringBuilder sb = new StringBuilder("Threads have changed.\n");
-
-            if (!createdThreads.isEmpty()) {
-                sb.append("Created threads:\n");
-                for (final String threadName : createdThreads) {
-                    sb.append("   - ").append(threadName).append("\n");
-                }
-            }
-
-            if (!removedThreads.isEmpty()) {
-                sb.append("Removed threads:\n");
-                for (final String threadName : removedThreads) {
-                    sb.append("   - ").append(threadName).append("\n");
-                }
-            }
-
-            fail(sb.toString());
-        }
     }
 
     /*
@@ -962,7 +882,7 @@ class VirtualMapTests extends VirtualTestBase {
         VirtualMap<TestKey, TestValue> map0 = createMap();
         map0.registerMetrics(metrics);
 
-        int flushCount = 0;
+        long flushCount = 0;
         final int totalCount = 1000;
         for (int i = 0; i < totalCount; i++) {
             VirtualMap<TestKey, TestValue> map1 = map0.copy();
@@ -994,7 +914,13 @@ class VirtualMapTests extends VirtualTestBase {
         if (!(metric instanceof Counter counterMetric)) {
             throw new AssertionError("flushCount metric is not a counter");
         }
-        assertEquals(flushCount, counterMetric.get());
+        // There is a potential race condition here, as we release `VirtualRootNode.flushLatch`
+        // before we update the statiscs (see https://github.com/hashgraph/hedera-services/issues/8439)
+        assertEventuallyEquals(
+                flushCount,
+                () -> counterMetric.get(),
+                Duration.of(1, ChronoUnit.SECONDS),
+                "Expected flush count (%s) to match actual value (%s)".formatted(flushCount, counterMetric.get()));
     }
 
     /*

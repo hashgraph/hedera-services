@@ -178,13 +178,13 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
 
     /**
      * Cache size for reading virtual leaf records. Initialized in data source creation time from
-     * JasperDB settings. If the value is zero, leaf records cache isn't used.
+     * MerkleDb settings. If the value is zero, leaf records cache isn't used.
      */
     private final int leafRecordCacheSize;
 
     /**
      * Virtual leaf records cache. It's a simple array indexed by leaf keys % cache size. Cache
-     * eviction is not needed, as array size is fixed and can be configured in JasperDB settings.
+     * eviction is not needed, as array size is fixed and can be configured in MerkleDb settings.
      * Index conflicts are resolved in a very straightforward way: whatever entry is read last, it's
      * put to the cache.
      */
@@ -1418,7 +1418,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
             logger.info(MERKLE_DB.getMarker(), "[{}] Finished compaction", tableName);
             return true;
         } catch (final InterruptedException | ClosedByInterruptException e) {
-            logger.info(MERKLE_DB.getMarker(), "Interrupted while merging, this is allowed.");
+            logger.info(MERKLE_DB.getMarker(), "Interrupted while merging, this is allowed.", e);
             Thread.currentThread().interrupt();
             return false;
         } catch (final Throwable e) {
