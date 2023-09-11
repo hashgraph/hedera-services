@@ -198,20 +198,32 @@ public class PreconsensusEventFileManager {
     }
 
     /**
-     * Get the index of the first file to consider when streaming files at startup time.
+     * Get the index of the first file to consider when streaming files at startup time. If no file is compatible with
+     * the starting round, return -1.
      */
     private int getFirstFileIndex(final long startingRound) {
         // When streaming from the preconsensus event stream, we need to start at
         // the file with the largest origin that does not exceed the starting round.
-        for (int firstFileIndex = 0; firstFileIndex < files.size(); firstFileIndex++) {
-            final PreconsensusEventFile file = files.get(firstFileIndex);
-            if (file.getMaximumGeneration() >= startingRound) {
-                return firstFileIndex;
+
+        int candidateIndex = -1;
+        long candidateOrigin = -1;
+
+        for (int index = 0; index < files.size(); index++) {
+            final long fileOrigin = files.get(index).getOrigin();
+
+            if (fileOrigin > startingRound) {
+                // Once we find the first file with an origin that exceeds the starting round, we can stop searching.
+                // File origins only increase, so we know that all files after this one will also exceed the round.
+                return candidateIndex;
+            } else if (fileOrigin > candidateOrigin) {
+                // We've discovered a higher legal origin. Keep track of the first file with this origin.
+                candidateIndex = index;
+                candidateOrigin = fileOrigin;
             }
         }
 
-        // None of the files are compatible with the starting round.
-        return files.size();
+        // If all files have a legal origin, return the index of the first file with the highest index.
+        return candidateIndex;
     }
 
     /**
@@ -221,7 +233,7 @@ public class PreconsensusEventFileManager {
      * @return the origin round that should be used at startup time
      */
     private long getInitialOrigin(final long startingRound) {
-        if (firstFileIndex < files.size()) {
+        if (firstFileIndex >= 0) {
             return files.get(firstFileIndex).getOrigin();
         }
         return startingRound;
@@ -232,15 +244,16 @@ public class PreconsensusEventFileManager {
      * come after the discontinuity.
      */
     private void resolveDiscontinuities() throws IOException {
-        if (files.size() <= firstFileIndex) {
-            // None of the stream files are compatible with the starting round
-            return;
-        }
+        //        if (files.size() <= firstFileIndex) {
+        //            // None of the stream files are compatible with the starting round
+        //
+        //            return;
+        //        }
 
         // For all files that come after the first file, any change in origin indicates a discontinuity.
         // No discontinuities are permitted after the first file, so it is necessary to delete these files.
 
-        int firstIndexToDelete = firstFileIndex;
+        int firstIndexToDelete = firstFileIndex + 1;
         for (; firstIndexToDelete < files.size(); firstIndexToDelete++) {
             final PreconsensusEventFile file = files.get(firstIndexToDelete);
             if (file.getOrigin() != currentOrigin) {
@@ -269,7 +282,7 @@ public class PreconsensusEventFileManager {
                 files.getLast());
 
         // Delete files in reverse order so that if we crash we don't leave gaps in the sequence number if we crash.
-        while (files.size() >= firstIndexToDelete) {
+        while (files.size() > firstIndexToDelete) {
             files.removeLast().deleteFile(databaseDirectory, recycleBin);
         }
     }
@@ -439,7 +452,7 @@ public class PreconsensusEventFileManager {
         }
 
         // Edge case: our first file comes after the requested starting generation
-        if (files.getFirst().getMinimumGeneration() >= minimumGeneration) {
+        if (files.get(firstFileIndex).getMinimumGeneration() >= minimumGeneration) {
             // Unless we observe at least one file with a minimum generation less than the requested minimum,
             // then we can't know for certain that we have all data for the requested minimum generation.
             logger.warn(
