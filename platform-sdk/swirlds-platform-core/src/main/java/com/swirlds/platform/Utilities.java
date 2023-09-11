@@ -330,4 +330,25 @@ public final class Utilities {
         }
         return type.isInstance(cause);
     }
+
+    /**
+     * Checks all nesting of causes for any instance of the supplied type.
+     *
+     * @param t
+     * 		the throwable to unwrap
+     * @param type
+     * 		the type to check against
+     * @return true if any of the causes matches the supplied type, false otherwise.
+     */
+    public static boolean hasAnyCauseSuppliedType(final Throwable t, final Class<? extends Throwable> type) {
+        Throwable cause = t;
+        // check all causes
+        while (cause != null) {
+            if (type.isInstance(cause)) {
+                return true;
+            }
+            cause = cause.getCause();
+        }
+        return false;
+    }
 }
