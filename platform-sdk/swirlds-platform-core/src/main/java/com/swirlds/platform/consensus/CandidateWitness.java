@@ -20,12 +20,13 @@ import static com.swirlds.logging.LogMarker.CONSENSUS_VOTING;
 
 import com.swirlds.common.utility.IntReference;
 import com.swirlds.platform.internal.EventImpl;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /** A wrapper for a witness which holds additional metadata while an election is ongoing */
 public final class CandidateWitness {
-    private static final Logger LOG = LogManager.getLogger(CandidateWitness.class);
+    private static final Logger logger = LogManager.getLogger(CandidateWitness.class);
     private final EventImpl witness;
     private final IntReference numUnknownFame;
     private final int electionIndex;
@@ -38,7 +39,7 @@ public final class CandidateWitness {
      *     witness still don't have their fame decided
      * @param electionIndex the index of the witness in the current election
      */
-    public CandidateWitness(final EventImpl witness, final IntReference numUnknownFame, final int electionIndex) {
+    public CandidateWitness(@NonNull final EventImpl witness, @NonNull final IntReference numUnknownFame, final int electionIndex) {
         this.witness = witness;
         this.numUnknownFame = numUnknownFame;
         this.electionIndex = electionIndex;
@@ -49,7 +50,7 @@ public final class CandidateWitness {
     /**
      * @return the witness being voted on
      */
-    public EventImpl getWitness() {
+    public @NonNull EventImpl getWitness() {
         return witness;
     }
 
@@ -95,15 +96,15 @@ public final class CandidateWitness {
         this.decided = true;
         this.famous = isFamous;
 
-        LOG.info(
+        logger.info(
                 CONSENSUS_VOTING.getMarker(),
                 "Fame decided for {}, round {} unknown fame: {} ",
-                witness::toShortString,
-                witness::getRoundCreated,
-                numUnknownFame::get);
+                witness,
+                witness.getRoundCreated(),
+                numUnknownFame.get());
 
         if (numUnknownFame.equalsInt(0)) {
-            LOG.info(CONSENSUS_VOTING.getMarker(), "Fame decided for round {}", witness.getRoundCreated());
+            logger.info(CONSENSUS_VOTING.getMarker(), "Fame decided for round {}", witness.getRoundCreated());
         }
     }
 }

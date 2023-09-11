@@ -290,12 +290,10 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
      * round.
      *
      * @param event the event to be added
-     * @param addressBook the address book to be used
      * @return A list of consensus rounds, or null if no consensus was reached
      */
     @Override
-    public @Nullable List<ConsensusRound> addEvent(
-            @NonNull final EventImpl event, @NonNull final AddressBook addressBook) {
+    public @Nullable List<ConsensusRound> addEvent(@NonNull final EventImpl event) {
         recentEvents.add(event);
         final List<ConsensusRound> toReturn = new ArrayList<>();
         // set its round to undefined so that it gets calculated
@@ -381,31 +379,23 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         }
 
         // in most cases, we only need to do this check after voting, since that is the only time a
-        // round could be
-        // decided. but there is an edge case for which we need to check it for non-witnesses
+        // round could be decided. but there is an edge case for which we need to check it for
+        // non-witnesses
         // EDGE CASE:
         // if a round gets decided before we have found all the init judges, we cannot proceed with
-        // finding consensus
-        // events. this is because we need to find all the init judges so that we can find their
-        // common ancestors and
-        // mark them as having reached consensus. once we have done this, we can find the consensus
-        // events for the next
-        // round, which in this case would be the election round. if we didn't do that, then an
-        // event could reach
-        // consensus twice.
+        // finding consensus events. this is because we need to find all the init judges so that we
+        // can find their common ancestors and mark them as having reached consensus. once we have
+        // done this, we can find the consensus events for the next round, which in this case would
+        // be the election round. if we didn't do that, then an event could reach consensus twice.
         final ElectionRound electionRound = rounds.getElectionRound();
         if (electionRound.isDecided() && noInitJudgesMissing()) {
             // all famous witnesses for this round are now known. None will ever be added again. We
-            // know this
-            // round has at least one witness. We know they all have fame decided. We know the next
-            // 2 rounds have events
-            // in them, because otherwise we couldn't have decided the fame here.
-            // Therefore, any new witness added to this round
-            // in the future will be instantly decided as not famous. Therefore, the set of famous
-            // witnesses
+            // know this round has at least one witness. We know they all have fame decided. We
+            // know the next 2 rounds have events in them, because otherwise we couldn't have
+            // decided the fame here. Therefore, any new witness added to this round in the future
+            // will be instantly decided as not famous. Therefore, the set of famous witnesses
             // in this round is now completely known and immutable. So we can call the following, to
-            // record
-            // that fact, and propagate appropriately.
+            // record that fact, and propagate appropriately.
             return roundDecided(electionRound);
         }
         return null;
@@ -499,14 +489,13 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
                 final CandidateWitness candidateWitness = it.next();
                 final boolean firstVote = firstVote(votingWitness, candidateWitness.getWitness());
                 votingWitness.setVote(candidateWitness, firstVote);
-                logVote(votingWitness, candidateWitness, "first");
+                logVote(votingWitness, candidateWitness, "first", diff);
             }
             return;
         }
 
         // if diff > 1, we are counting the votes of the witnesses in the previous round. Vote with
-        // the majority of
-        // witnesses strongly seen.
+        // the majority of witnesses strongly seen.
         final List<EventImpl> stronglySeen = getStronglySeenInPreviousRound(votingWitness);
 
         for (final Iterator<CandidateWitness> it = electionRound.undecidedWitnesses(); it.hasNext(); ) {
@@ -517,12 +506,18 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
             if (isCoinRound(diff)) {
                 // a coin round. Don't decide.
                 coinVote(votingWitness, candidateWitness, countingVote);
+                logVote(
+                        votingWitness,
+                        candidateWitness,
+                        "coin-" + (countingVote.isSupermajority() ? "counting" : "sig"),
+                        diff
+                );
                 continue;
             }
 
             // a normal round. Vote with the majority of those you strongly see
             votingWitness.setVote(candidateWitness, countingVote.getVote());
-            logVote(votingWitness, candidateWitness, "counting");
+            logVote(votingWitness, candidateWitness, "counting", diff);
             // If you strongly see a supermajority one way, then decide that way.
             if (countingVote.isSupermajority()) {
                 // we've decided one famous event. Set it as famous.
@@ -611,22 +606,22 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
                 countingVote.isSupermajority() ? countingVote.getVote() : ConsensusUtils.coin(votingWitness);
 
         votingWitness.setVote(candidateWitness, vote);
-        logVote(votingWitness, candidateWitness, "coin-" + (countingVote.isSupermajority() ? "counting" : "sig"));
     }
 
     /** Logs the outcome of voting */
     private void logVote(
             @NonNull final EventImpl votingWitness,
             @NonNull final CandidateWitness candidateWitness,
-            @NonNull final String votingType) {
+            @NonNull final String votingType,
+            final long diff) {
         logger.info(
                 CONSENSUS_VOTING.getMarker(),
                 "Witness {} voted on {}. vote:{} type:{} diff:{}",
-                votingWitness::toShortString,
-                candidateWitness.getWitness()::toShortString,
-                () -> votingWitness.getVote(candidateWitness),
-                () -> votingType,
-                () -> diff(votingWitness, candidateWitness.getWitness()));
+                votingWitness,
+                candidateWitness.getWitness(),
+                votingWitness.getVote(candidateWitness),
+                votingType,
+                diff);
     }
 
     private boolean firstVote(@NonNull final EventImpl voting, @NonNull final EventImpl votedOn) {

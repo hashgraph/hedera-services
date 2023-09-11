@@ -97,7 +97,7 @@ class EventIntakeTest {
         when(consensus.getMinRoundGeneration()).thenAnswer(i -> minNonAncient.get() - 1);
         when(consensus.getMinGenerationNonAncient()).thenAnswer(i -> minNonAncient.get());
         when(consensus.getMaxRoundGeneration()).thenAnswer(i -> minNonAncient.get() + 1);
-        when(consensus.addEvent(any(EventImpl.class), any(AddressBook.class))).thenAnswer(i -> {
+        when(consensus.addEvent(any(EventImpl.class))).thenAnswer(i -> {
             minNonAncient.set(20);
             return List.of(new ConsensusRound(
                     List.of(consEvent1, consEvent2), added, generations, mock(ConsensusSnapshot.class)));
@@ -115,10 +115,10 @@ class EventIntakeTest {
         assertTrue(roundCaptor.getValue().getConsensusEvents().contains(consEvent2));
         verify(dispatcher).staleEvent(stale);
 
-        verify(consensus).addEvent(added, addressBook);
+        verify(consensus).addEvent(added);
 
         // cover other conditions
-        when(consensus.addEvent(any(EventImpl.class), any(AddressBook.class))).thenReturn(null);
+        when(consensus.addEvent(any(EventImpl.class))).thenReturn(null);
         intake.addEvent(added);
         verify(dispatcher, times(1)).consensusRound(roundCaptor.getValue());
     }

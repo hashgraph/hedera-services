@@ -18,6 +18,8 @@ package com.swirlds.platform.consensus;
 
 import com.swirlds.platform.Utilities;
 import com.swirlds.platform.internal.EventImpl;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
@@ -30,7 +32,7 @@ public class ConsensusSorter implements Comparator<EventImpl> {
     /**
      * @param whitening an XOR of the signatures of unique famous witnesses in a round
      */
-    public ConsensusSorter(final byte[] whitening) {
+    public ConsensusSorter(@NonNull final byte[] whitening) {
         this.whitening = whitening;
     }
 
@@ -39,7 +41,7 @@ public class ConsensusSorter implements Comparator<EventImpl> {
      * whitened signature.
      */
     @Override
-    public int compare(final EventImpl e1, final EventImpl e2) {
+    public int compare(@NonNull final EventImpl e1, @NonNull final EventImpl e2) {
         int c;
 
         // sort by consensus timestamp

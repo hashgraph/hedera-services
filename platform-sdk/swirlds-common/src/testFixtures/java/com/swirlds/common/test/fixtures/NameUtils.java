@@ -16,13 +16,15 @@
 
 package com.swirlds.common.test.fixtures;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 /** Utility for creating human-readable names deterministically */
 public final class NameUtils {
     private NameUtils() {}
 
     private static final String[] NAMES = {
-        "Alice", "Bob", "Carol", "Dave", "Eric", "Fred", "Gina", "Hank", "Iris", "Judy", "Kent",
-        "Lucy", "Mike", "Nina", "Olie", "Pete", "Quin", "Rita", "Susi", "Tina", "Ursa", "Vera",
+        "Austin", "Bob", "Cody", "Dave", "Edward", "Fred", "Gina", "Hank", "Iris", "Judy", "Kelly",
+        "Lazar", "Mike", "Nina", "Olie", "Pete", "Quin", "Rita", "Susi", "Tina", "Ursa", "Vera",
         "Will", "Xeno", "York", "Zeke"
     };
 

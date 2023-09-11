@@ -185,7 +185,7 @@ public class EventIntake {
         }
 
         // record the event in the hashgraph, which results in the events in consEvent reaching consensus
-        final List<ConsensusRound> consRounds = consensus().addEvent(event, addressBook);
+        final List<ConsensusRound> consRounds = consensus().addEvent(event);
         stats.addedToConsensus();
         dispatcher.eventAdded(event);
         stats.dispatchedAdded();

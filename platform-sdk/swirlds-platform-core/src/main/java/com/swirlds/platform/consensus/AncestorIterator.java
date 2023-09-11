@@ -77,6 +77,10 @@ public class AncestorIterator implements Iterator<EventImpl> {
     /** is curr a self ancestor of the judge? */
     private boolean selfAncestor;
 
+    /**
+     * Create an iterator that will iterate over all ancestors of a given event
+     * @param mark the instance to use to mark events as visited
+     */
     public AncestorIterator(@NonNull final EventVisitedMark mark) {
         this.mark = mark;
     }

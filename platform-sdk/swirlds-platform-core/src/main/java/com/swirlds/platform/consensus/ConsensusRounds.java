@@ -34,7 +34,7 @@ import org.apache.logging.log4j.Logger;
  * <p>It keeps track of what rounds are stored and creates elections when needed.
  */
 public class ConsensusRounds {
-    private static final Logger LOG = LogManager.getLogger(ConsensusRounds.class);
+    private static final Logger logger = LogManager.getLogger(ConsensusRounds.class);
     /** consensus configuration */
     private final ConsensusConfig config;
     /** stores the minimum generation for all decided and non-expired rounds */
@@ -209,7 +209,7 @@ public class ConsensusRounds {
     private MinGenInfo getMinGen(final long round) {
         final MinGenInfo minGenInfo = minGenStorage.get(round);
         if (minGenInfo == null) {
-            LOG.error(
+            logger.error(
                     LogMarker.EXCEPTION.getMarker(),
                     "Missing round {}. Fame decided below {}, oldest non-ancient round {}",
                     round,

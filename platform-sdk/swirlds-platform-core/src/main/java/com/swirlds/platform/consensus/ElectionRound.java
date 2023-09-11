@@ -30,6 +30,9 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -38,7 +41,7 @@ import org.apache.logging.log4j.Logger;
  * the witnesses and their decided status.
  */
 public class ElectionRound {
-    private static final Logger LOG = LogManager.getLogger(ElectionRound.class);
+    private static final Logger logger = LogManager.getLogger(ElectionRound.class);
     /** the round number of witnesses we are voting on */
     private long round = ConsensusConstants.ROUND_FIRST;
     /** number of known witnesses in this round with unknown fame */
@@ -72,8 +75,8 @@ public class ElectionRound {
      *
      * @param witness the witness being added
      */
-    public void addWitness(final EventImpl witness) {
-        LOG.info(CONSENSUS_VOTING.getMarker(), "Adding witness for election {}", witness::toShortString);
+    public void addWitness(@NonNull final EventImpl witness) {
+        logger.info(CONSENSUS_VOTING.getMarker(), "Adding witness for election {}", witness::toShortString);
         numUnknownFame.increment();
         elections.add(new CandidateWitness(witness, numUnknownFame, elections.size()));
     }
@@ -88,7 +91,7 @@ public class ElectionRound {
     /**
      * @return an iterator of all undecided witnesses
      */
-    public Iterator<CandidateWitness> undecidedWitnesses() {
+    public @NonNull Iterator<CandidateWitness> undecidedWitnesses() {
         return elections.stream().filter(CandidateWitness::isNotDecided).iterator();
     }
 
@@ -112,7 +115,7 @@ public class ElectionRound {
     /**
      * @return create a {@link MinGenInfo} instance for this round
      */
-    public MinGenInfo creatMinGenInfo() {
+    public @NonNull MinGenInfo creatMinGenInfo() {
         return new MinGenInfo(round, getMinGeneration());
     }
 
@@ -122,7 +125,7 @@ public class ElectionRound {
      *
      * @return all the judges for this round
      */
-    public List<EventImpl> findAllJudges() {
+    public @NonNull List<EventImpl> findAllJudges() {
         if (!isDecided()) {
             throw new IllegalStateException("Cannot find all judges if the round has not been decided yet");
         }
@@ -153,7 +156,7 @@ public class ElectionRound {
      * @param e2 famous witness 2
      * @return the witness which should be the judge
      */
-    private static EventImpl uniqueFamous(final EventImpl e1, final EventImpl e2) {
+    private static @NonNull EventImpl uniqueFamous(@NonNull final EventImpl e1, @Nullable final EventImpl e2) {
         if (e2 == null) {
             return e1;
         }

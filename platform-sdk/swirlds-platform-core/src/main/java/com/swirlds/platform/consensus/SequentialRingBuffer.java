@@ -18,6 +18,8 @@ package com.swirlds.platform.consensus;
 
 import com.swirlds.common.utility.RandomAccessDeque;
 import com.swirlds.logging.LogMarker;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -27,7 +29,7 @@ import org.apache.logging.log4j.Logger;
  * order. Intentionally tries to handle bad calls without throwing.
  */
 public class SequentialRingBuffer<T> {
-    private static final Logger LOG = LogManager.getLogger(SequentialRingBuffer.class);
+    private static final Logger logger = LogManager.getLogger(SequentialRingBuffer.class);
     /** the default capacity for elements */
     private static final int DEFAULT_CAPACITY = 1000;
     /** a deque of elements */
@@ -78,9 +80,9 @@ public class SequentialRingBuffer<T> {
      * @param index the index number to store the value at
      * @param element the element to add
      */
-    public void add(final long index, final T element) {
+    public void add(final long index, @Nullable final T element) {
         if (index < minIndex) {
-            LOG.error(
+            logger.error(
                     LogMarker.EXCEPTION.getMarker(),
                     "SequentialRingBuffer.add called for an old, discarded index."
                             + " Index requested:{}, Min index:{}, Next index:{} ",
@@ -90,7 +92,7 @@ public class SequentialRingBuffer<T> {
             return;
         }
         if (index < nextIndex()) {
-            LOG.error(
+            logger.error(
                     LogMarker.EXCEPTION.getMarker(),
                     "SequentialRingBuffer.add called for an existing index."
                             + " Index requested:{}, Min index:{}, Next index:{} ",
@@ -101,7 +103,7 @@ public class SequentialRingBuffer<T> {
             return;
         }
         if (index != nextIndex()) {
-            LOG.error(
+            logger.error(
                     LogMarker.EXCEPTION.getMarker(),
                     "SequentialRingBuffer.add called for a index that is not the next one."
                             + " Index requested:{}, Min index:{}, Next index:{} ",
@@ -146,7 +148,7 @@ public class SequentialRingBuffer<T> {
      * @param index the index number
      * @return the element or null if it doesn't exist
      */
-    public T get(final long index) {
+    public @Nullable T get(final long index) {
         if (exists(index)) {
             return elements.get(dequeIndex(index));
         }
@@ -156,7 +158,7 @@ public class SequentialRingBuffer<T> {
     /**
      * @return the latest element stored, or null if none are stored
      */
-    public T getLatest() {
+    public @Nullable T getLatest() {
         return get(maxIndex());
     }
 

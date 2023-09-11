@@ -17,6 +17,8 @@
 package com.swirlds.platform.consensus;
 
 import com.swirlds.platform.internal.EventImpl;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
@@ -30,7 +32,11 @@ public class AncestorSearch {
         this(new EventVisitedMark());
     }
 
-    public AncestorSearch(final EventVisitedMark mark) {
+    /**
+     * Create a new ancestor search with the given mark
+     * @param mark the instance to use to mark events as visited
+     */
+    public AncestorSearch(@NonNull final EventVisitedMark mark) {
         this.iterator = new AncestorIterator(mark);
     }
 
@@ -41,7 +47,7 @@ public class AncestorSearch {
      * @param root the root event whose ancestors should be searched
      * @param valid do a depth-first search, but backtrack from any event e where valid(e)==false
      */
-    public AncestorIterator search(final EventImpl root, final Predicate<EventImpl> valid) {
+    public @NonNull AncestorIterator search(@NonNull final EventImpl root, @NonNull final Predicate<EventImpl> valid) {
         iterator.search(root, valid);
         return iterator;
     }
@@ -55,12 +61,11 @@ public class AncestorSearch {
      * @param valid checks if the event should be part of the search
      * @return a list of all common ancestors
      */
-    public List<EventImpl> commonAncestorsOf(final List<EventImpl> events, final Predicate<EventImpl> valid) {
+    public @NonNull List<EventImpl> commonAncestorsOf(@NonNull final List<EventImpl> events, @NonNull final Predicate<EventImpl> valid) {
         // each event visited by iterator from at least one of the provided events
         final ArrayList<EventImpl> visited = new ArrayList<>();
         // Do a non-recursive search of the hashgraph, without using the Java stack, and being
-        // efficient when it's a
-        // DAG that isn't a tree.
+        // efficient when it's a DAG that isn't a tree.
         for (final EventImpl e : events) {
             final AncestorIterator validAncestors = search(e, valid);
             while (validAncestors.hasNext()) {
@@ -74,14 +79,14 @@ public class AncestorSearch {
         }
 
         final ArrayList<EventImpl> commonAncestors = new ArrayList<>();
-        visited.forEach(e -> {
+        for (final EventImpl e : visited) {
             if (e.getRecTimes().size() == events.size()) {
                 commonAncestors.add(e);
             } else {
                 // reclaim the memory for the list of received times
                 e.setRecTimes(null);
             }
-        });
+        }
         return commonAncestors;
     }
 }

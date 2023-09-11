@@ -22,6 +22,9 @@ import com.swirlds.platform.consensus.RoundNumberProvider;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.LoadableFromSignedState;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.util.List;
 
 /** An interface for classes that calculate consensus of events */
@@ -31,10 +34,9 @@ public interface Consensus extends GraphGenerations, RoundNumberProvider, Loadab
      * the state of the object.
      *
      * @param event the event to be added
-     * @param addressBook the address book to be used
      * @return A list of consensus rounds, each with a list of consensus events (that can be empty).
      *     Returns null if no consensus was reached
      */
     @Nullable
-    List<ConsensusRound> addEvent(@NonNull EventImpl event, @NonNull AddressBook addressBook);
+    List<ConsensusRound> addEvent(@NonNull EventImpl event);
 }

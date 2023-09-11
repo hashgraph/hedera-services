@@ -44,6 +44,10 @@ public class ConsensusSnapshot implements SelfSerializable {
     private long nextConsensusNumber;
     private Instant consensusTimestamp;
 
+    private static final class ClassVersion {
+        public static final int ORIGINAL = 1;
+    }
+
     public ConsensusSnapshot() {}
 
     /**
@@ -89,22 +93,37 @@ public class ConsensusSnapshot implements SelfSerializable {
         consensusTimestamp = in.readInstant();
     }
 
+    /**
+     * @return the round number of this snapshot
+     */
     public long round() {
         return round;
     }
 
+    /**
+     * @return the hashes of all the judges for this round, ordered by their creator ID
+     */
     public @NonNull Collection<Hash> judgeHashes() {
         return judgeHashes;
     }
 
+    /**
+     * @return the round generation numbers for all non-ancient rounds
+     */
     public @NonNull List<MinGenInfo> minGens() {
         return minGens;
     }
 
+    /**
+     * @return the consensus order of the next event that will reach consensus
+     */
     public long nextConsensusNumber() {
         return nextConsensusNumber;
     }
 
+    /**
+     * @return the consensus time of this snapshot
+     */
     public @NonNull Instant consensusTimestamp() {
         return consensusTimestamp;
     }
@@ -187,9 +206,5 @@ public class ConsensusSnapshot implements SelfSerializable {
     @Override
     public int getVersion() {
         return ClassVersion.ORIGINAL;
-    }
-
-    private static final class ClassVersion {
-        public static final int ORIGINAL = 1;
     }
 }

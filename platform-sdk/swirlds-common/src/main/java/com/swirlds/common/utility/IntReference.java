@@ -16,6 +16,8 @@
 
 package com.swirlds.common.utility;
 
+import java.util.Objects;
+
 /** An object wrapper for an int that allows it to mutate, unlike {@link Integer}. */
 public class IntReference {
     /** the int value */
@@ -62,5 +64,18 @@ public class IntReference {
      */
     public boolean equalsInt(final int value) {
         return this.value == value;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        IntReference that = (IntReference) o;
+        return equalsInt(that.value);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(value);
     }
 }

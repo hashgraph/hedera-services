@@ -23,6 +23,8 @@ import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Objects;
@@ -117,7 +119,7 @@ public class GossipEvent implements EventIntakeTask, BaseEvent, ChatterEvent {
      * {@inheritDoc}
      */
     @Override
-    public Instant getTimeReceived() {
+    public @NonNull Instant getTimeReceived() {
         return timeReceived;
     }
 

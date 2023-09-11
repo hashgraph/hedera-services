@@ -88,7 +88,7 @@ public class ConsensusBenchmark {
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
     public void calculateConsensus(final Blackhole bh) {
         for (final IndexedEvent event : events) {
-            bh.consume(consensus.addEvent(event, null));
+            bh.consume(consensus.addEvent(event));
         }
     }
 

@@ -21,6 +21,8 @@ import static com.swirlds.platform.consensus.ConsensusConstants.MIN_TRANS_TIMEST
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.crypto.CryptoConstants;
 import com.swirlds.platform.internal.EventImpl;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
@@ -40,7 +42,7 @@ public final class ConsensusUtils {
      * @param event the event that will vote with a coin flip
      * @return true if voting for famous, false if voting for not famous
      */
-    public static boolean coin(final EventImpl event) {
+    public static boolean coin(@NonNull final EventImpl event) {
         // coin is one bit from signature (LSB of second of two middle bytes)
         return ((event.getSignature()[(event.getSignature().length / 2)] & 1) == 1);
     }
@@ -52,7 +54,7 @@ public final class ConsensusUtils {
      * @param lastTransTimestamp current event's last transaction timestamp
      * @return the minimum consensus timestamp for the next event that reaches consensus
      */
-    public static Instant calcMinTimestampForNextEvent(final Instant lastTransTimestamp) {
+    public static @NonNull Instant calcMinTimestampForNextEvent(@NonNull final Instant lastTransTimestamp) {
         // adds minTransTimestampIncrNanos
         Instant t = lastTransTimestamp.plusNanos(MIN_TRANS_TIMESTAMP_INCR_NANOS);
         // rounds up to the nearest multiple of minTransTimestampIncrNanos
@@ -65,7 +67,7 @@ public final class ConsensusUtils {
     /**
      * @return a XOR of all judge signatures in this round
      */
-    public static byte[] generateWhitening(final Iterable<EventImpl> judges) {
+    public static @NonNull byte[] generateWhitening(@NonNull final Iterable<EventImpl> judges) {
         // an XOR of the signatures of judges in a round, used during sorting
         final byte[] whitening = new byte[CryptoConstants.SIG_SIZE_BYTES];
         // find whitening for round
@@ -83,7 +85,7 @@ public final class ConsensusUtils {
     /**
      * @return a list of all base hashes of the provided events
      */
-    public static List<Hash> getHashes(final Collection<EventImpl> events) {
+    public static @NonNull List<Hash> getHashes(@NonNull final Collection<EventImpl> events) {
         return events.stream().map(EventImpl::getBaseHash).toList();
     }
 }

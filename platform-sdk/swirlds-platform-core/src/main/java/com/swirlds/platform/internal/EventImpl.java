@@ -600,7 +600,7 @@ public class EventImpl extends EventMetadata
      * {@inheritDoc}
      */
     @Override
-    public Instant getEstimatedTime() {
+    public @NonNull Instant getEstimatedTime() {
         // Return the real thing if we have it
         if (getConsensusTimestamp() != null) {
             return getConsensusTimestamp();

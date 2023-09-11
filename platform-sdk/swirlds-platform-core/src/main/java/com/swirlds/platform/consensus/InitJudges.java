@@ -18,6 +18,8 @@ package com.swirlds.platform.consensus;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.internal.EventImpl;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -47,7 +49,7 @@ public final class InitJudges {
      * @param round the round created of the init judges
      * @param judgeHashes the hashes of the init judges
      */
-    public InitJudges(final long round, final Set<Hash> judgeHashes) {
+    public InitJudges(final long round, @NonNull final Set<Hash> judgeHashes) {
         this.round = round;
         this.judgeHashes = judgeHashes;
         this.judges = new ArrayList<>();
@@ -66,7 +68,7 @@ public final class InitJudges {
      * @param hash the hash to check
      * @return true if this hash belongs to one of the init judges
      */
-    public boolean isInitJudge(final Hash hash) {
+    public boolean isInitJudge(@NonNull final Hash hash) {
         return judgeHashes.contains(hash);
     }
 
@@ -75,7 +77,7 @@ public final class InitJudges {
      *
      * @param judge the judge
      */
-    public void judgeFound(final EventImpl judge) {
+    public void judgeFound(@NonNull final EventImpl judge) {
         judges.add(judge);
         judgeHashes.remove(judge.getBaseHash());
         judge.setRoundCreated(getRound());
@@ -101,7 +103,7 @@ public final class InitJudges {
     /**
      * @return a list of all init judges that have been found
      */
-    public List<EventImpl> getJudges() {
+    public @NonNull List<EventImpl> getJudges() {
         return judges;
     }
 }
