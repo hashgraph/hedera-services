@@ -67,6 +67,14 @@ on:
         required: true
       svcs-gpg-key-passphrase:
         required: true
+      sdk-ossrh-username:
+        required: true
+      sdk-ossrh-password:
+        required: true
+      sdk-gpg-key-contents:
+        required: true
+      sdk-gpg-key-passphrase:
+        required: true
       jenkins-integration-url:
         required: false
 
