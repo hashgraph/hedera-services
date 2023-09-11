@@ -82,7 +82,8 @@ class DualStateUpdateFacilityTest implements TransactionFactory {
         final var txBody = simpleCryptoTransfer().body();
 
         // then
-        assertThatThrownBy(() -> subject.handleTxBody(null, dualState, txBody)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> subject.handleTxBody(null, dualState, txBody))
+                .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> subject.handleTxBody(state, null, txBody)).isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> subject.handleTxBody(state, dualState, null)).isInstanceOf(NullPointerException.class);
     }
@@ -95,7 +96,8 @@ class DualStateUpdateFacilityTest implements TransactionFactory {
                 .build();
 
         // then
-        Assertions.assertThatCode(() -> subject.handleTxBody(state, dualState, txBody)).doesNotThrowAnyException();
+        Assertions.assertThatCode(() -> subject.handleTxBody(state, dualState, txBody))
+                .doesNotThrowAnyException();
     }
 
     @Test
