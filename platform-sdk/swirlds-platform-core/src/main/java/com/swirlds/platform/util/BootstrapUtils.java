@@ -579,7 +579,7 @@ public final class BootstrapUtils {
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
         final String actualMainClassName = stateConfig.getMainClassName(mainClassName);
 
-        final SavedStateInfo[] savedStateFiles = getSavedStateFiles(actualMainClassName, selfId, swirldName);
+        final List<SavedStateInfo> savedStateFiles = getSavedStateFiles(actualMainClassName, selfId, swirldName);
 
         // We can't send a "real" dispatcher for shutdown, since the dispatcher will not have been started by the
         // time this class is used.

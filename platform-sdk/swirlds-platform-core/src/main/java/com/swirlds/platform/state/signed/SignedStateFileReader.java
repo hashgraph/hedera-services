@@ -17,6 +17,7 @@
 package com.swirlds.platform.state.signed;
 
 import static com.swirlds.common.io.streams.StreamDebugUtils.deserializeAndDebugOnFailure;
+import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.MAX_MERKLE_NODES_IN_STATE;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.SIGNED_STATE_FILE_NAME;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.VERSIONED_FILE_BYTE;
@@ -29,7 +30,6 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedInputStream;
@@ -38,6 +38,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.TreeMap;
@@ -54,7 +55,7 @@ public final class SignedStateFileReader {
     private SignedStateFileReader() {}
 
     /**
-     * Looks for saved state files locally and returns an array of them sorted from newest to oldest
+     * Looks for saved state files locally and returns a list of them sorted from newest to oldest
      *
      * @param mainClassName
      * 		the name of the main app class
@@ -65,14 +66,15 @@ public final class SignedStateFileReader {
      * @return Information about saved states on disk, or null if none are found
      */
     @SuppressWarnings("resource")
-    public static SavedStateInfo[] getSavedStateFiles(
+    @NonNull
+    public static List<SavedStateInfo> getSavedStateFiles(
             final String mainClassName, final NodeId platformId, final String swirldName) {
 
         try {
             final Path dir = getSignedStatesDirectoryForSwirld(mainClassName, platformId, swirldName);
 
             if (!exists(dir) || !isDirectory(dir)) {
-                return new SavedStateInfo[0];
+                return List.of();
             }
 
             final List<Path> dirs = Files.list(dir).filter(Files::isDirectory).toList();
@@ -84,23 +86,34 @@ public final class SignedStateFileReader {
                     final Path stateFile = subDir.resolve(SIGNED_STATE_FILE_NAME);
                     if (!exists(stateFile)) {
                         logger.warn(
-                                LogMarker.ERROR.getMarker(),
+                                EXCEPTION.getMarker(),
                                 "Saved state file ({}) not found, but directory exists '{}'",
                                 stateFile.getFileName(),
                                 subDir.toAbsolutePath());
                         continue;
                     }
 
-                    savedStates.put(round, new SavedStateInfo(round, stateFile));
+                    final Path metdataPath = subDir.resolve(SavedStateMetadata.FILE_NAME);
+                    final SavedStateMetadata metadata;
+                    try {
+                        metadata = SavedStateMetadata.parse(metdataPath);
+                    } catch (final IOException e) {
+                        logger.error(
+                                EXCEPTION.getMarker(), "Unable to read saved state metadata file '{}'", metdataPath);
+                        continue;
+                    }
+
+                    savedStates.put(round, new SavedStateInfo(stateFile, metadata));
+
                 } catch (final NumberFormatException e) {
                     logger.warn(
-                            LogMarker.ERROR.getMarker(),
+                            EXCEPTION.getMarker(),
                             "Unexpected directory '{}' in '{}'",
                             subDir.getFileName(),
                             dir.toAbsolutePath());
                 }
             }
-            return savedStates.descendingMap().values().toArray(new SavedStateInfo[] {});
+            return new ArrayList<>(savedStates.descendingMap().values());
         } catch (final IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -153,7 +166,7 @@ public final class SignedStateFileReader {
                 });
 
         final SignedState newSignedState =
-                new SignedState(platformContext, data.left(), "SignedStateFileReader.readStateFile()");
+                new SignedState(platformContext, data.left(), "SignedStateFileReader.readStateFile()", false);
 
         newSignedState.setSigSet(data.right());
 

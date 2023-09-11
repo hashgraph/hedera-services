@@ -19,16 +19,19 @@ package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ALIASED_SOMEBODY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_FUNGIBLE_RELATION;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_ACCOUNT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.asHeadlongAddress;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.revertOutputFor;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.balanceof.BalanceOfCall;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
 import java.math.BigInteger;
@@ -37,11 +40,12 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
 
 class BalanceOfCallTest extends HtsCallTestBase {
+    private final Address OWNER = asHeadlongAddress(EIP_1014_ADDRESS);
     private BalanceOfCall subject;
 
     @Test
     void revertsWithMissingToken() {
-        subject = new BalanceOfCall(mockEnhancement(), null, EIP_1014_ADDRESS);
+        subject = new BalanceOfCall(mockEnhancement(), null, OWNER);
 
         final var result = subject.execute().fullResult().result();
 
@@ -51,7 +55,7 @@ class BalanceOfCallTest extends HtsCallTestBase {
 
     @Test
     void revertsWithMissingAccount() {
-        subject = new BalanceOfCall(mockEnhancement(), FUNGIBLE_TOKEN, EIP_1014_ADDRESS);
+        subject = new BalanceOfCall(mockEnhancement(), FUNGIBLE_TOKEN, OWNER);
         given(nativeOperations.resolveAlias(tuweniToPbjBytes(EIP_1014_ADDRESS))).willReturn(MISSING_ENTITY_NUMBER);
 
         final var result = subject.execute().fullResult().result();
@@ -62,9 +66,10 @@ class BalanceOfCallTest extends HtsCallTestBase {
 
     @Test
     void returnsZeroBalanceForAbsentRelationship() {
-        subject = new BalanceOfCall(mockEnhancement(), FUNGIBLE_TOKEN, EIP_1014_ADDRESS);
+        subject = new BalanceOfCall(mockEnhancement(), FUNGIBLE_TOKEN, OWNER);
         given(nativeOperations.resolveAlias(tuweniToPbjBytes(EIP_1014_ADDRESS)))
                 .willReturn(A_NEW_ACCOUNT_ID.accountNumOrThrow());
+        given(nativeOperations.getAccount(A_NEW_ACCOUNT_ID.accountNumOrThrow())).willReturn(ALIASED_SOMEBODY);
 
         final var result = subject.execute().fullResult().result();
 
@@ -79,11 +84,12 @@ class BalanceOfCallTest extends HtsCallTestBase {
 
     @Test
     void returnsNominalBalanceForPresentRelationship() {
-        subject = new BalanceOfCall(mockEnhancement(), FUNGIBLE_TOKEN, EIP_1014_ADDRESS);
+        subject = new BalanceOfCall(mockEnhancement(), FUNGIBLE_TOKEN, OWNER);
         given(nativeOperations.resolveAlias(tuweniToPbjBytes(EIP_1014_ADDRESS)))
                 .willReturn(A_NEW_ACCOUNT_ID.accountNumOrThrow());
         given(nativeOperations.getTokenRelation(A_NEW_ACCOUNT_ID.accountNumOrThrow(), FUNGIBLE_TOKEN_ID.tokenNum()))
                 .willReturn(A_FUNGIBLE_RELATION);
+        given(nativeOperations.getAccount(A_NEW_ACCOUNT_ID.accountNumOrThrow())).willReturn(ALIASED_SOMEBODY);
 
         final var result = subject.execute().fullResult().result();
 

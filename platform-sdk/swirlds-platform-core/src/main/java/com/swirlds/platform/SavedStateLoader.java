@@ -39,6 +39,7 @@ import com.swirlds.platform.state.signed.SignedStateInvalidException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
@@ -51,8 +52,8 @@ public class SavedStateLoader {
 
     /** use this for all logging, as controlled by the optional data/log4j2.xml file */
     private static final Logger logger = LogManager.getLogger(SavedStateLoader.class);
-    /** An array of saved states to consider for loading, ordered from newest to oldest */
-    private final SavedStateInfo[] savedStateFiles;
+    /** A List of saved states to consider for loading, ordered from newest to oldest */
+    private final List<SavedStateInfo> savedStateFiles;
 
     private final AddressBook addressBook;
     /** Triggers a system shutdown request */
@@ -82,7 +83,7 @@ public class SavedStateLoader {
             @NonNull final PlatformContext platformContext,
             @NonNull final ShutdownRequestedTrigger shutdownRequestedTrigger,
             @NonNull final AddressBook addressBook,
-            @Nullable final SavedStateInfo[] savedStateFiles,
+            @Nullable final List<SavedStateInfo> savedStateFiles,
             @NonNull final SoftwareVersion currentSoftwareVersion,
             @NonNull final Supplier<EmergencySignedStateValidator> emergencyStateValidator,
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
@@ -101,7 +102,7 @@ public class SavedStateLoader {
         this.emergencyStateValidator = emergencyStateValidator;
         this.emergencyRecoveryManager = emergencyRecoveryManager;
 
-        if (savedStateFiles == null || savedStateFiles.length == 0) {
+        if (savedStateFiles == null || savedStateFiles.isEmpty()) {
             logger.info(STARTUP.getMarker(), "No saved states were found on disk");
         } else {
             final StringBuilder sb = new StringBuilder();
@@ -258,7 +259,7 @@ public class SavedStateLoader {
             throws IOException, SignedStateLoadingException {
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
 
-        if (savedStateFiles == null || savedStateFiles.length == 0) {
+        if (savedStateFiles == null || savedStateFiles.isEmpty()) {
             if (stateConfig.requireStateLoad()) {
                 throw new SignedStateLoadingException("No saved states found on disk!");
             } else {
@@ -267,7 +268,7 @@ public class SavedStateLoader {
         }
 
         for (final SavedStateInfo savedStateFile : savedStateFiles) {
-            if (savedStateFile.round() <= maxRound) {
+            if (savedStateFile.metadata().round() <= maxRound) {
                 final SignedStateWithHashes stateWithHashes = readAndRehashState(platformContext, savedStateFile);
 
                 if (stateConfig.checkSignedStateFromDisk()) {

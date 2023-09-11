@@ -35,7 +35,6 @@ import static com.hedera.services.bdd.suites.reconnect.AutoRenewEntitiesForRecon
 import static com.hedera.services.bdd.suites.reconnect.ValidateTokensStateAfterReconnect.reconnectingNode;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsLoader.protoDefsFromResource;
 
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
@@ -57,7 +56,6 @@ import org.junit.jupiter.api.Assertions;
  * disconnected from the network. Once the node is reconnected validate that the congestion pricing is in affect on
  * reconnected node
  */
-@HapiTestSuite
 public class ValidateCongestionPricingAfterReconnect extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ValidateCongestionPricingAfterReconnect.class);
     private static final String FEES_PERCENT_CONGESTION_MULTIPLIERS = "fees.percentCongestionMultipliers";

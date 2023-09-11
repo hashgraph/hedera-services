@@ -85,6 +85,7 @@ JVM_ARGS=()
 LOG4J_SET=false
 IGNORE_JARS=false
 COLOR=true
+NO_PIPING=false
 for ((CURRENT_INDEX=1; CURRENT_INDEX<=$#; CURRENT_INDEX++)); do
 
   # The current argument we are considering.
@@ -122,6 +123,11 @@ for ((CURRENT_INDEX=1; CURRENT_INDEX<=$#; CURRENT_INDEX++)); do
       CURRENT_INDEX=$NEXT_INDEX
 
       JVM_ARGS+=("-Xmx${NEXT_ARG}g")
+  elif [[ "$ARG" = 'jtr' ]]; then
+    # The jtr suite of commands does not want its output passed through the log colorizer or spam squelcher.
+    # Piping output streams disrupts dynamic loading bars.
+    NO_PIPING=true
+    PROGRAM_ARGS+=("${ARG}")
   else
     # The argument should be passed to the PCLI java process.
 
@@ -160,6 +166,11 @@ if [[ "$JVM_CLASSPATH" = '' ]]; then
   echo 'ERROR: the JVM classpath is empty!'
   echo 'Try adding jar or directories containing jarfiles to the classpath via the "--load /path/to/my/jars" argument.'
   exit 1
+fi
+
+if [[ "$NO_PIPING" = true ]]; then
+  COLOR=false
+  SQUELCH_SPAM=false
 fi
 
 run () {
