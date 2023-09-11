@@ -93,15 +93,16 @@ public class HapiApiClients {
     private ManagedChannel createNettyChannel(boolean useTls, final String host, final int port, final int tlsPort) {
         try {
             ManagedChannel channel;
-            String[] protocols = new String[] {"TLSv1.2", "TLSv1.3"};
-            List<String> ciphers = Arrays.asList(
-                    "TLS_DHE_RSA_WITH_AES_256_GCM_SHA384",
-                    "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
-                    "TLS_AES_256_GCM_SHA384");
-            SslContextBuilder contextBuilder = GrpcSslContexts.configure(SslContextBuilder.forClient());
-            contextBuilder.protocols(protocols).ciphers(ciphers, SupportedCipherSuiteFilter.INSTANCE);
 
             if (useTls) {
+                String[] protocols = new String[] {"TLSv1.2", "TLSv1.3"};
+                List<String> ciphers = Arrays.asList(
+                        "TLS_DHE_RSA_WITH_AES_256_GCM_SHA384",
+                        "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
+                        "TLS_AES_256_GCM_SHA384");
+                SslContextBuilder contextBuilder = GrpcSslContexts.configure(SslContextBuilder.forClient());
+                contextBuilder.protocols(protocols).ciphers(ciphers, SupportedCipherSuiteFilter.INSTANCE);
+
                 channel = NettyChannelBuilder.forAddress(host, tlsPort)
                         .negotiationType(NegotiationType.TLS)
                         .sslContext(contextBuilder.build())

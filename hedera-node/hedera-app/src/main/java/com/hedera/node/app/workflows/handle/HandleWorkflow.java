@@ -264,7 +264,7 @@ public class HandleWorkflow {
 
             if (transactionInfo == null) {
                 // FUTURE: Charge node generic penalty, set values in record builder, and remove log statement
-                logger.error("Non-parsable transaction from creator {}", creator);
+                logger.error("Bad transaction from creator {}", creator);
                 return;
             }
 
