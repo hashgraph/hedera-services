@@ -31,8 +31,7 @@ public class Validations {
             INPUTS_ARE_SAME, InputEventsValidation::validateInputsAreTheSame,
             DIFFERENT_ORDER, InputEventsValidation::validateEventsAreInDifferentOrder,
             CONSENSUS_EVENTS, ConsensusRoundValidation::validateConsensusRounds,
-            CONSENSUS_TIMESTAMPS, TimestampChecker::validateConsensusTimestamps
-            ));
+            CONSENSUS_TIMESTAMPS, TimestampChecker::validateConsensusTimestamps));
 
     public static Validations standard() {
         return new Validations();

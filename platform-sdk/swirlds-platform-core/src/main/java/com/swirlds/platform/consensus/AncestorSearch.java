@@ -18,7 +18,6 @@ package com.swirlds.platform.consensus;
 
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
@@ -61,7 +60,8 @@ public class AncestorSearch {
      * @param valid checks if the event should be part of the search
      * @return a list of all common ancestors
      */
-    public @NonNull List<EventImpl> commonAncestorsOf(@NonNull final List<EventImpl> events, @NonNull final Predicate<EventImpl> valid) {
+    public @NonNull List<EventImpl> commonAncestorsOf(
+            @NonNull final List<EventImpl> events, @NonNull final Predicate<EventImpl> valid) {
         // each event visited by iterator from at least one of the provided events
         final ArrayList<EventImpl> visited = new ArrayList<>();
         // Do a non-recursive search of the hashgraph, without using the Java stack, and being

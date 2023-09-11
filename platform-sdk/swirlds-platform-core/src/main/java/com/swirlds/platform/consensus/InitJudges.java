@@ -19,7 +19,6 @@ package com.swirlds.platform.consensus;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;

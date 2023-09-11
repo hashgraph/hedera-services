@@ -448,7 +448,7 @@ class RandomAccessDequeTests {
 
     @Test
     @DisplayName("clear() method Test")
-    void clearTest(){
+    void clearTest() {
         final RandomAccessDeque<Integer> deque = new RandomAccessDeque<>(100);
         for (int i = 0; i < 10; i++) {
             deque.addLast(i);

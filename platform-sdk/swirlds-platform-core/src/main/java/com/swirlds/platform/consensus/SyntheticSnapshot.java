@@ -20,7 +20,6 @@ import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.state.MinGenInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.time.Instant;
 import java.util.List;
 import java.util.stream.LongStream;

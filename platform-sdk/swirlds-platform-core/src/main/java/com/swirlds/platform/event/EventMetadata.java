@@ -22,7 +22,6 @@ import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;

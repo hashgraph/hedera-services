@@ -18,7 +18,6 @@ package com.swirlds.platform.consensus;
 
 import com.swirlds.common.utility.RandomAccessDeque;
 import com.swirlds.logging.LogMarker;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

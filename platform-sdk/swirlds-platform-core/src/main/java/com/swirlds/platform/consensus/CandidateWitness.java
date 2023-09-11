@@ -39,7 +39,8 @@ public final class CandidateWitness {
      *     witness still don't have their fame decided
      * @param electionIndex the index of the witness in the current election
      */
-    public CandidateWitness(@NonNull final EventImpl witness, @NonNull final IntReference numUnknownFame, final int electionIndex) {
+    public CandidateWitness(
+            @NonNull final EventImpl witness, @NonNull final IntReference numUnknownFame, final int electionIndex) {
         this.witness = witness;
         this.numUnknownFame = numUnknownFame;
         this.electionIndex = electionIndex;

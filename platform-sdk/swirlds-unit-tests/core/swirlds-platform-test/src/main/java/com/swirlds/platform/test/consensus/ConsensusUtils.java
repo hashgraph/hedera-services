@@ -58,8 +58,7 @@ public abstract class ConsensusUtils {
 
         for (int i = 0; i < numberOfEvents; i++) {
             final IndexedEvent genEvent = emitter.emitEvent();
-            final List<ConsensusRound> rounds =
-                    consensus.addEvent(genEvent);
+            final List<ConsensusRound> rounds = consensus.addEvent(genEvent);
             if (rounds != null) {
                 allConsensusRounds.addAll(rounds);
             }

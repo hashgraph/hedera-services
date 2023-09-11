@@ -510,8 +510,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
                         votingWitness,
                         candidateWitness,
                         "coin-" + (countingVote.isSupermajority() ? "counting" : "sig"),
-                        diff
-                );
+                        diff);
                 continue;
             }
 
