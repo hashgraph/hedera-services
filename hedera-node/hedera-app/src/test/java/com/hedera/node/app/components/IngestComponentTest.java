@@ -35,6 +35,7 @@ import com.hedera.node.app.spi.workflows.record.GenesisRecordsConsensusHook;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.throttle.ThrottleManager;
 import com.hedera.node.app.version.HederaSoftwareVersion;
+import com.hedera.node.app.workflows.handle.DualStateUpdateFacility;
 import com.hedera.node.app.workflows.handle.SystemFileUpdateFacility;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.common.context.PlatformContext;
@@ -43,6 +44,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.Platform;
+import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.config.api.Configuration;
 import java.time.InstantSource;
@@ -91,6 +93,7 @@ class IngestComponentTest {
         final var configProvider = new ConfigProviderImpl(false);
         final var throttleManager = new ThrottleManager();
         final var exchangeRateManager = new ExchangeRateManager(configProvider);
+        final var dualState = mock(SwirldDualState.class);
         app = DaggerHederaInjectionComponent.builder()
                 .initTrigger(InitTrigger.GENESIS)
                 .platform(platform)
@@ -99,6 +102,7 @@ class IngestComponentTest {
                 .configuration(configProvider)
                 .systemFileUpdateFacility(
                         new SystemFileUpdateFacility(configProvider, throttleManager, exchangeRateManager))
+                .dualStateUpdateFacility(new DualStateUpdateFacility(dualState))
                 .throttleManager(throttleManager)
                 .self(selfNodeInfo)
                 .initialHash(new Hash())

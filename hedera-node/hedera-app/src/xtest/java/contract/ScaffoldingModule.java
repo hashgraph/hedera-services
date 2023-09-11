@@ -26,6 +26,9 @@ import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.authorization.AuthorizerImpl;
+import com.hedera.node.app.authorization.PrivilegesVerifier;
+import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
@@ -120,7 +123,9 @@ public interface ScaffoldingModule {
     @Provides
     @Singleton
     static CryptoSignatureWaivers provideCryptoSignatureWaivers() {
-        return new CryptoSignatureWaiversImpl(new FakeHederaNumbers());
+        final var configProvider = new ConfigProviderImpl();
+        final var authorizer = new AuthorizerImpl(configProvider, new PrivilegesVerifier(configProvider));
+        return new CryptoSignatureWaiversImpl(authorizer);
     }
 
     @Binds
@@ -218,6 +223,7 @@ public interface ScaffoldingModule {
             @NonNull final BlockRecordManager blockRecordManager,
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final HederaState state,
+            @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final FeeManager feeManager) {
         final var consensusTime = Instant.now();
         final var parentRecordBuilder = new SingleTransactionRecordBuilderImpl(consensusTime);
@@ -232,6 +238,7 @@ public interface ScaffoldingModule {
             final var txInfo =
                     new TransactionInfo(Transaction.DEFAULT, body, SignatureMap.DEFAULT, Bytes.EMPTY, function);
             return new HandleContextImpl(
+                    body,
                     txInfo,
                     body.transactionIDOrThrow().accountIDOrThrow(),
                     Key.DEFAULT,
@@ -248,6 +255,7 @@ public interface ScaffoldingModule {
                     blockRecordManager,
                     recordCache,
                     feeManager,
+                    exchangeRateManager,
                     consensusTime);
         };
     }

@@ -27,6 +27,7 @@ import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doCallRealMethod;
@@ -53,6 +54,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
@@ -61,6 +63,7 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.precompile.AltBN128AddPrecompiledContract;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
@@ -371,6 +374,11 @@ class HederaMessageCallProcessorTest {
         verify(frame).setState(EXCEPTIONAL_HALT);
         verify(frame, times(1)).getState();
         verify(hederaTracer).traceAccountCreationResult(frame, Optional.of(INSUFFICIENT_GAS));
+        verify(hederaTracer)
+                .tracePostExecution(
+                        eq(frame),
+                        argThat(result ->
+                                isSameResult(result, new Operation.OperationResult(initialGas, INSUFFICIENT_GAS))));
         verify(transactionalLedger, never()).set(change.accountId(), BALANCE, 1000L);
         verifyNoMoreInteractions(autoCreationLogic);
         verify(hederaTracer, never()).tracePrecompileCall(any(), anyLong(), any());
@@ -401,11 +409,16 @@ class HederaMessageCallProcessorTest {
 
         subject.start(frame, hederaTracer);
 
-        verify(frame).decrementRemainingGas(frame.getRemainingGas());
+        verify(frame).decrementRemainingGas(initialGas);
         verify(frame).setState(EXCEPTIONAL_HALT);
         verify(frame, times(1)).getState();
         verify(hederaTracer).traceAccountCreationResult(frame, Optional.of(FAILURE_DURING_LAZY_ACCOUNT_CREATE));
         verifyNoMoreInteractions(autoCreationLogic);
         verify(hederaTracer, never()).tracePrecompileCall(any(), anyLong(), any());
+    }
+
+    static boolean isSameResult(final Operation.OperationResult expected, final Operation.OperationResult actual) {
+        return Objects.equals(expected.getHaltReason(), actual.getHaltReason())
+                && expected.getGasCost() == actual.getGasCost();
     }
 }
