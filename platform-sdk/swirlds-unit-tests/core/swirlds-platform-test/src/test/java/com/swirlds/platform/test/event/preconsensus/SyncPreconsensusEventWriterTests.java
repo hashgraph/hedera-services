@@ -321,7 +321,10 @@ class SyncPreconsensusEventWriterTests {
 
         // Without advancing the first non-ancient generation,
         // we should never be able to increase the minimum generation from 0.
-        for (final Iterator<PreconsensusEventFile> it = fileManager.getFileIterator(0); it.hasNext(); ) {
+        final PreconsensusEventFileManager fileManager2 = new PreconsensusEventFileManager(
+                platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0), 0);
+
+        for (final Iterator<PreconsensusEventFile> it = fileManager2.getFileIterator(0); it.hasNext(); ) {
             final PreconsensusEventFile file = it.next();
             assertEquals(0, file.getMinimumGeneration());
         }
@@ -431,7 +434,7 @@ class SyncPreconsensusEventWriterTests {
             writer.writeEvent(event);
         }
 
-        writer.registerDiscontinuity(100); // TODO this test needs to be revisited
+        writer.registerDiscontinuity(100);
 
         final Iterator<EventImpl> iterator2 = eventsAfterDiscontinuity.iterator();
         while (iterator2.hasNext()) {
@@ -458,7 +461,7 @@ class SyncPreconsensusEventWriterTests {
                 eventsAfterDiscontinuity.get(eventsAfterDiscontinuity.size() - 1), Duration.ofSeconds(1)));
         assertTrue(writer.isEventDurable(eventsAfterDiscontinuity.get(eventsAfterDiscontinuity.size() - 1)));
 
-        verifyStream(eventsBeforeDiscontinuity, platformContext, 0); // TODO this used to have an extra flag
+        verifyStream(eventsBeforeDiscontinuity, platformContext, 0);
 
         writer.stop();
     }

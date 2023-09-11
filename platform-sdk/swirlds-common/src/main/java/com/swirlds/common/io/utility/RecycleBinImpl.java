@@ -125,7 +125,6 @@ public class RecycleBinImpl implements RecycleBin, Startable, Stoppable {
             recycledFileCountMetric.set(0);
         }
     }
-    // TODO test
 
     /**
      * Count the number of top level files in the recycle bin directory.
