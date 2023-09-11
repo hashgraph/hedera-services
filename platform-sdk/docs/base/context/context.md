@@ -30,6 +30,25 @@ threadLocalContext.add("key","value");
 ```
 [@formatter:on]: # (enable the code formatter for this section)
 
+### AutoCloseable support
+
+The `com.swirlds.base.context.Context` interface provides for each 'add()' method a corresponding '
+addWithRemovalOnClose()' method. The 'addWithRemovalOnClose()' method returns an `AutoCloseable` which removes the value
+for the given key when the `close()` method is called. This can be used to add metadata to a context for a specific
+call.
+
+Example:
+
+[@formatter:off]: # (disable the code formatter for this section)
+
+```java
+Context threadLocalContext = Context.getThreadLocalContext();
+try (AutoCloseable closeable = threadLocalContext.addWithRemovalOnClose("key", "value")) {
+    // In this code the context contains the key "key" with the value "value"
+}
+```
+[@formatter:on]: # (enable the code formatter for this section)
+
 ### Creating a new context type
 
 Modules can implement the `com.swirlds.base.context.Context` interface to create a context with a specific scope or
