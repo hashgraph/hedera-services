@@ -51,6 +51,7 @@ public class RecordBlockNumberTool {
     private static final String DEFAULT_LOG_CONFIG = "log4j2.xml";
     /** name of RecordStreamType */
     private static final String RECORD_STREAM_EXTENSION = "rcd";
+    private static final String COMPRESSED_RECORD_STREAM_EXTENSION = "rcd.gz";
 
     private static long prevBlockNumber = 0;
 
@@ -65,6 +66,12 @@ public class RecordBlockNumberTool {
         registry.registerConstructables("com.hedera.services.stream");
     }
 
+    private static Pair<Integer, Optional<RecordStreamFile>> readMaybeCompressedRecordStreamFile(final String loc)
+            throws IOException {
+        final var isCompressed = loc.endsWith(COMPRESSED_RECORD_STREAM_EXTENSION);
+        return isCompressed ? readRecordStreamFile(loc) : readUncompressedRecordStreamFile(loc);
+    }
+
     private static Pair<Integer, Optional<RecordStreamFile>> readUncompressedRecordStreamFile(final String fileLoc)
             throws IOException {
         try (final FileInputStream fin = new FileInputStream(fileLoc)) {
@@ -72,6 +79,16 @@ public class RecordBlockNumberTool {
             final RecordStreamFile recordStreamFile = RecordStreamFile.parseFrom(fin);
             return Pair.of(recordFileVersion, Optional.ofNullable(recordStreamFile));
         }
+    }
+
+    private static Pair<Integer, Optional<RecordStreamFile>> readRecordStreamFile(final String fileLoc)
+            throws IOException {
+        final var uncompressedFileContents = FileCompressionUtils.readUncompressedFileBytes(fileLoc);
+        final var recordFileVersion =
+                ByteBuffer.wrap(uncompressedFileContents, 0, 4).getInt();
+        final var recordStreamFile = RecordStreamFile.parseFrom(
+                ByteBuffer.wrap(uncompressedFileContents, 4, uncompressedFileContents.length - 4));
+        return Pair.of(recordFileVersion, Optional.ofNullable(recordStreamFile));
     }
 
     private static void trackBlockNumber(final long currentBlockNumber) {
@@ -180,7 +197,8 @@ public class RecordBlockNumberTool {
     public static void readAllFiles(final String sourceDir) throws IOException {
         System.out.println("Reading all files in directory " + sourceDir);
         final File folder = new File(sourceDir);
-        final File[] streamFiles = folder.listFiles(f -> f.getAbsolutePath().endsWith(RECORD_STREAM_EXTENSION));
+        final File[] streamFiles = folder.listFiles(f -> f.getAbsolutePath().endsWith(COMPRESSED_RECORD_STREAM_EXTENSION ||
+                f.getAbsolutePath().endsWith(RECORD_STREAM_EXTENSION));
         Arrays.sort(streamFiles); // sort by file names and timestamps
 
         final List<File> totalList = new ArrayList<>();
