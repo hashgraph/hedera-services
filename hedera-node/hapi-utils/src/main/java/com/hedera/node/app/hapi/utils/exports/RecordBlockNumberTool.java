@@ -198,7 +198,7 @@ public class RecordBlockNumberTool {
         System.out.println("Reading all files in directory " + sourceDir);
         final File folder = new File(sourceDir);
         final File[] streamFiles = folder.listFiles(f -> f.getAbsolutePath().endsWith(COMPRESSED_RECORD_STREAM_EXTENSION ||
-                f.getAbsolutePath().endsWith(RECORD_STREAM_EXTENSION));
+                f.getAbsolutePath().endsWith(RECORD_STREAM_EXTENSION)));
         Arrays.sort(streamFiles); // sort by file names and timestamps
 
         final List<File> totalList = new ArrayList<>();
