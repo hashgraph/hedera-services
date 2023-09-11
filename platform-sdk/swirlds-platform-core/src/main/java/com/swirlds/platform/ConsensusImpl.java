@@ -301,7 +301,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         // set its round to undefined so that it gets calculated
         event.setRoundCreated(ConsensusConstants.ROUND_UNDEFINED);
         checkInitJudges(event);
-        ConsensusRound consensusRound = calculateAndVote(event);
+        final ConsensusRound consensusRound = calculateAndVote(event);
 
         while (consensusRound != null) {
             toReturn.add(consensusRound);
