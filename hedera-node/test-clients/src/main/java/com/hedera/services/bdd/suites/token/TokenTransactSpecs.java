@@ -1000,7 +1000,6 @@ public class TokenTransactSpecs extends HapiSuite {
                         getAccountBalance(BENEFICIARY).logged());
     }
 
-    @HapiTest
     public HapiSpec duplicateAccountsInTokenTransferRejected() {
         return defaultHapiSpec("DuplicateAccountsInTokenTransferRejected")
                 .given(
@@ -1014,7 +1013,6 @@ public class TokenTransactSpecs extends HapiSuite {
                         .hasPrecheck(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS));
     }
 
-    @HapiTest
     public HapiSpec nonZeroTransfersRejected() {
         return defaultHapiSpec("NonZeroTransfersRejected")
                 .given(cryptoCreate(FIRST_TREASURY).balance(0L))

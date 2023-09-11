@@ -317,6 +317,7 @@ public class HandleWorkflow {
 
             // Calculate the fee
             fees = dispatcher.dispatchComputeFees(context);
+            recordBuilder.transactionFee(fees.totalFee());
 
             // Run all pre-checks
             final var validationResult = validate(
@@ -332,7 +333,7 @@ public class HandleWorkflow {
                 }
                 final var penaltyFee = new Fees(fees.nodeFee(), fees.networkFee(), 0L);
                 feeAccumulator.charge(payer, penaltyFee);
-                recordBuilder.status(validationResult.responseCodeEnum());
+                recordBuilder.status(validationResult.responseCodeEnum()).transactionFee(penaltyFee.totalFee());
 
             } else {
                 feeAccumulator.charge(payer, fees);
