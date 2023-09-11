@@ -318,6 +318,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
      *
      * @return a consensus round if fame has been decided, null otherwise
      */
+    @Nullable
     private ConsensusRound recalculateAndVote() {
         rounds.recalculating();
         for (final Iterator<EventImpl> iterator = recentEvents.iterator(); iterator.hasNext(); ) {
