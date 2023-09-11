@@ -118,7 +118,7 @@ public class RecordBlockNumberTool {
     private static Pair<byte[], byte[]> readRecordFile(final String recordFile) {
         try {
             // parse record file
-            final Pair<Integer, Optional<RecordStreamFile>> recordResult = readUncompressedRecordStreamFile(recordFile);
+            final Pair<Integer, Optional<RecordStreamFile>> recordResult = readMaybeCompressedRecordStreamFile(recordFile);
 
             if (recordResult.getValue().isEmpty()) {
                 throw new RuntimeException("Record result is empty");
@@ -144,7 +144,7 @@ public class RecordBlockNumberTool {
             return Pair.of((startRunningHash), (endRunningHash));
         } catch (final IOException e) {
             Thread.currentThread().interrupt();
-            LOGGER.error(MARKER, "Got IOException when reading record file {}", recordFile, e);
+            LOGGER.error(MARKER, "Got IOException when reading record file {} : {}", recordFile, e);
             return Pair.of(null, null);
         }
     }
