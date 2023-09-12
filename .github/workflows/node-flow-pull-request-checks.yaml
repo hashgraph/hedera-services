@@ -48,6 +48,7 @@ jobs:
       enable-unit-tests: false
       enable-e2e-tests: false
       enable-integration-tests: false
+      enable-hapi-tests: false
       enable-sonar-analysis: false
       enable-spotless-check: true
     secrets:
@@ -61,6 +62,7 @@ jobs:
       enable-unit-tests: true
       enable-e2e-tests: false
       enable-integration-tests: false
+      enable-hapi-tests: false
       enable-sonar-analysis: true
     secrets:
       access-token: ${{ secrets.GITHUB_TOKEN }}
@@ -74,6 +76,7 @@ jobs:
       enable-unit-tests: false
       enable-e2e-tests: true
       enable-integration-tests: false
+      enable-hapi-tests: false
       enable-sonar-analysis: false
       enable-network-log-capture: true
     secrets:
@@ -88,6 +91,22 @@ jobs:
       enable-unit-tests: false
       enable-e2e-tests: false
       enable-integration-tests: true
+      enable-hapi-tests: false
+      enable-sonar-analysis: false
+      enable-network-log-capture: true
+    secrets:
+      access-token: ${{ secrets.GITHUB_TOKEN }}
+      sonar-token: ${{ secrets.SONAR_TOKEN }}
+
+  hapi-tests:
+    name: HAPI Tests
+    uses: ./.github/workflows/node-zxc-compile-application-code.yaml
+    with:
+      custom-job-label: Standard
+      enable-unit-tests: false
+      enable-e2e-tests: false
+      enable-integration-tests: false
+      enable-hapi-tests: true
       enable-sonar-analysis: false
       enable-network-log-capture: true
     secrets:
@@ -120,6 +139,7 @@ jobs:
       enable-unit-tests: false
       enable-e2e-tests: false
       enable-integration-tests: false
+      enable-hapi-tests: false
       enable-sonar-analysis: false
       enable-snyk-scan: true
     secrets:

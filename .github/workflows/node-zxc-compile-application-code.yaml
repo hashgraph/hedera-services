@@ -33,6 +33,11 @@ on:
         type: boolean
         required: false
         default: false
+      enable-hapi-tests:
+        description: "HAPI Testing Enabled"
+        type: boolean
+        required: false
+        default: false
       enable-sonar-analysis:
         description: "Sonar Analysis Enabled"
         type: boolean
@@ -210,6 +215,31 @@ jobs:
           name: Integration Test Network Logs
           path: |
             hedera-node/test-clients/build/network/itest/output/**
+
+      - name: HAPI Testing
+        id: gradle-hapiTest
+        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
+        if: ${{ inputs.enable-hapi-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        with:
+          gradle-version: ${{ inputs.gradle-version }}
+          arguments: -p hedera-node hapiTest --scan
+
+      - name: Publish HAPI Test Report
+        uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # v2.3.0
+        if: ${{ inputs.enable-hapi-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        with:
+          check_name: 'Node: HAPI Test Results'
+          check_run_disabled: true
+          json_thousands_separator: ','
+          junit_files: "**/build/test-results/hapiTest/TEST-*.xml"
+
+      - name: Publish HAPI Test Network Logs
+        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
+        if: ${{ inputs.enable-hapi-tests && inputs.enable-network-log-capture && !cancelled() }}
+        with:
+          name: HAPI Test Network Logs
+          path: |
+            hedera-node/test-clients/build/hapi-test/**/output/**
 
       - name: E2E Testing
         id: gradle-eet
