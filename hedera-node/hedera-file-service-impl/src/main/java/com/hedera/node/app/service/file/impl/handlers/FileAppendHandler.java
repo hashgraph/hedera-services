@@ -159,15 +159,16 @@ public class FileAppendHandler implements TransactionHandler {
          * PR conversation: 8089
          */
         final long effectiveLifeTime;
-        final var fileServiceConfig = feeContext.configuration().getConfigData(FilesConfig.class);
+        // TODO revert it back to config when it will be exist in FeeContextImpl - 8545 issue
+        //        final var fileServiceConfig = feeContext.configuration().getConfigData(FilesConfig.class);
         final var file = feeContext
                 .readableStore(ReadableFileStore.class)
-                .getFileLeaf(op.fileUpdateOrThrow().fileIDOrThrow());
+                .getFileLeaf(op.fileAppendOrThrow().fileIDOrThrow());
         final var fileNum = file.fileId().fileNum();
-        final var firstSoftwareUpdateFile =
-                fileServiceConfig.softwareUpdateRange().left();
-        final var lastSoftwareUpdateFile =
-                fileServiceConfig.softwareUpdateRange().right();
+        final var firstSoftwareUpdateFile = 150L; // temporary
+        //                fileServiceConfig.softwareUpdateRange().left();
+        final var lastSoftwareUpdateFile = 159L; // temporary
+        //                fileServiceConfig.softwareUpdateRange().right();
         if (firstSoftwareUpdateFile <= fileNum && fileNum <= lastSoftwareUpdateFile) {
             effectiveLifeTime = THREE_MONTHS_IN_SECONDS;
         } else {

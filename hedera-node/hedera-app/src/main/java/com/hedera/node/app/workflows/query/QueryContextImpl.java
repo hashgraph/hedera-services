@@ -24,6 +24,7 @@ import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.node.app.fees.ExchangeRateManager;
+import com.hedera.node.app.fees.NoOpFeeCalculator;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.records.impl.BlockRecordInfoImpl;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
@@ -136,6 +137,7 @@ public class QueryContextImpl implements QueryContext {
     @NonNull
     @Override
     public FeeCalculator feeCalculator(@NonNull SubType subType) {
-        return null;
+        // TODO: issue 8543 - implement fee calculator
+        return new NoOpFeeCalculator();
     }
 }
