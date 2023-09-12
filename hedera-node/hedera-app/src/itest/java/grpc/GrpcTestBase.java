@@ -175,7 +175,7 @@ abstract class GrpcTestBase extends TestBase {
         };
 
         final var cr = ConstructableRegistry.getInstance();
-        final var registry = new MerkleSchemaRegistry(cr, "TestService");
+        final var registry = new MerkleSchemaRegistry(cr, "TestService", null);
         final var registration = new ServicesRegistry.Registration(testService, registry);
         final var config = createConfig(new TestSource());
         this.grpcServer = new NettyGrpcServerManager(

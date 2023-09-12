@@ -18,14 +18,14 @@ package com.hedera.node.app.spi.workflows.record;
 
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
-import com.hedera.node.app.spi.workflows.ConsensusTimeHook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 
 /**
- * A {@link ConsensusTimeHook} that creates records for entities created during node startup
+ * A class that stores entities created during node startup, for the purpose of creating synthetic
+ * records after startup
  */
-public interface GenesisRecordsConsensusHook extends ConsensusTimeHook {
+public interface GenesisRecordsBuilder {
     /**
      * Tracks the system accounts created during node startup
      */

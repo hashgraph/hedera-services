@@ -29,12 +29,10 @@ import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
-import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.record.GenesisRecordsConsensusHook;
+import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Instant;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -99,8 +97,8 @@ public class FakeSchemaRegistry implements SchemaRegistry {
 
                 @NonNull
                 @Override
-                public GenesisRecordsConsensusHook genesisRecordsBuilder() {
-                    return new NoOpGenesisRecordsConsensusHook();
+                public GenesisRecordsBuilder genesisRecordsBuilder() {
+                    return new NoOpGenesisRecordsBuilder();
                 }
 
                 @Override
@@ -134,13 +132,7 @@ public class FakeSchemaRegistry implements SchemaRegistry {
         return this;
     }
 
-    private class NoOpGenesisRecordsConsensusHook implements GenesisRecordsConsensusHook {
-
-        @Override
-        public void process(@NonNull final Instant consensusTime, @NonNull final HandleContext context) {
-            // Intentional no-op
-        }
-
+    private class NoOpGenesisRecordsBuilder implements GenesisRecordsBuilder {
         @Override
         public void systemAccounts(@NonNull final Map<Account, CryptoCreateTransactionBody.Builder> accounts) {
             // Intentional no-op

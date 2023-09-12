@@ -19,8 +19,8 @@ package com.hedera.node.app.workflows.handle.record;
 import static com.hedera.node.app.spi.HapiUtils.FUNDING_ACCOUNT_EXPIRY;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
-import static org.mockito.BDDMockito.verifyNoInteractions;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
@@ -29,7 +29,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.records.GenesisAccountRecordBuilder;
-import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.service.token.records.StakingContext;
 import java.time.Instant;
 import java.util.Map;
 import org.assertj.core.api.Assertions;
@@ -41,7 +41,7 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class GenesisRecordsConsensusHookImplTest {
+class GenesisRecordsConsensusHookTest {
     private static final AccountID ACCOUNT_ID_1 =
             AccountID.newBuilder().accountNum(1).build();
     private static final AccountID ACCOUNT_ID_2 =
@@ -61,26 +61,26 @@ class GenesisRecordsConsensusHookImplTest {
     private static final String EXPECTED_TREASURY_CLONE_MEMO = "Synthetic zero-balance treasury clone";
 
     @Mock(strictness = Mock.Strictness.LENIENT)
-    private HandleContext context;
+    private StakingContext context;
 
     @Mock
     private GenesisAccountRecordBuilder genesisAccountRecordBuilder;
 
-    private GenesisRecordsConsensusHookImpl subject;
+    private GenesisRecordsConsensusHook subject;
 
     @BeforeEach
     void setup() {
+        given(context.consensusTime()).willReturn(CONSENSUS_NOW);
         given(context.addPrecedingChildRecordBuilder(GenesisAccountRecordBuilder.class))
                 .willReturn(genesisAccountRecordBuilder);
 
-        subject = new GenesisRecordsConsensusHookImpl();
+        subject = new GenesisRecordsConsensusHook();
     }
 
     @Test
     void processCreatesSystemAccounts() {
         subject.systemAccounts(Map.of(ACCOUNT_1, ACCT_1_CREATE.copyBuilder(), ACCOUNT_2, ACCT_2_CREATE.copyBuilder()));
-
-        subject.process(CONSENSUS_NOW, context);
+        subject.process(context);
 
         verifyBuilderInvoked(ACCOUNT_ID_1, ACCT_1_CREATE, EXPECTED_SYSTEM_ACCOUNT_CREATION_MEMO);
         verifyBuilderInvoked(ACCOUNT_ID_2, ACCT_2_CREATE, EXPECTED_SYSTEM_ACCOUNT_CREATION_MEMO);
@@ -90,7 +90,7 @@ class GenesisRecordsConsensusHookImplTest {
     void processCreatesStakingAccountsWithImplicitExpiry() {
         subject.stakingAccounts(Map.of(ACCOUNT_1, ACCT_1_CREATE.copyBuilder(), ACCOUNT_2, ACCT_2_CREATE.copyBuilder()));
 
-        subject.process(CONSENSUS_NOW, context);
+        subject.process(context);
 
         final var expectedAutoRenew = FUNDING_ACCOUNT_EXPIRY - CONSENSUS_NOW.getEpochSecond();
         verifyBuilderInvoked(
@@ -115,7 +115,7 @@ class GenesisRecordsConsensusHookImplTest {
     void processCreatesMultipurposeAccounts() {
         subject.miscAccounts(Map.of(ACCOUNT_1, ACCT_1_CREATE.copyBuilder(), ACCOUNT_2, ACCT_2_CREATE.copyBuilder()));
 
-        subject.process(CONSENSUS_NOW, context);
+        subject.process(context);
 
         verifyBuilderInvoked(ACCOUNT_ID_1, ACCT_1_CREATE, null);
         verifyBuilderInvoked(ACCOUNT_ID_2, ACCT_2_CREATE, null);
@@ -125,7 +125,7 @@ class GenesisRecordsConsensusHookImplTest {
     void processCreatesTreasuryClones() {
         subject.treasuryClones(Map.of(ACCOUNT_1, ACCT_1_CREATE.copyBuilder(), ACCOUNT_2, ACCT_2_CREATE.copyBuilder()));
 
-        subject.process(CONSENSUS_NOW, context);
+        subject.process(context);
 
         verifyBuilderInvoked(ACCOUNT_ID_1, ACCT_1_CREATE, EXPECTED_TREASURY_CLONE_MEMO);
         verifyBuilderInvoked(ACCOUNT_ID_2, ACCT_2_CREATE, EXPECTED_TREASURY_CLONE_MEMO);
@@ -145,7 +145,7 @@ class GenesisRecordsConsensusHookImplTest {
         subject.treasuryClones(Map.of(acct4, acct4Create.copyBuilder()));
 
         // Call the first time to make sure records are generated
-        subject.process(CONSENSUS_NOW, context);
+        subject.process(context);
 
         verifyBuilderInvoked(ACCOUNT_ID_1, ACCT_1_CREATE, EXPECTED_SYSTEM_ACCOUNT_CREATION_MEMO);
         verifyBuilderInvoked(
@@ -162,13 +162,13 @@ class GenesisRecordsConsensusHookImplTest {
 
         // Call process() a second time to make sure no other records are created
         Mockito.clearInvocations(genesisAccountRecordBuilder);
-        subject.process(CONSENSUS_NOW, context);
+        subject.process(context);
         verifyNoInteractions(genesisAccountRecordBuilder);
     }
 
     @Test
     void processCreatesNoRecordsWhenEmpty() {
-        subject.process(CONSENSUS_NOW, context);
+        subject.process(context);
         verifyNoInteractions(genesisAccountRecordBuilder);
     }
 
@@ -178,7 +178,7 @@ class GenesisRecordsConsensusHookImplTest {
         // Add a single account, so we know the subject isn't skipping processing because there's no data
         subject.stakingAccounts(
                 Map.of(Account.newBuilder().accountId(ACCOUNT_ID_1).build(), ACCT_1_CREATE.copyBuilder()));
-        subject.process(CONSENSUS_NOW, context);
+        subject.process(context);
         verifyNoInteractions(genesisAccountRecordBuilder);
     }
 

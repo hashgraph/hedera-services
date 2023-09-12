@@ -17,7 +17,7 @@
 package com.hedera.node.app.spi.state;
 
 import com.hedera.node.app.spi.info.NetworkInfo;
-import com.hedera.node.app.spi.workflows.record.GenesisRecordsConsensusHook;
+import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -72,5 +72,5 @@ public interface MigrationContext {
      * or otherwise) in the future.
      */
     @NonNull
-    GenesisRecordsConsensusHook genesisRecordsBuilder();
+    GenesisRecordsBuilder genesisRecordsBuilder();
 }

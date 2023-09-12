@@ -19,6 +19,7 @@ package com.hedera.node.app.services;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.Service;
+import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -41,11 +42,16 @@ public final class ServicesRegistryImpl implements ServicesRegistry {
     /** The set of registered services */
     private final SortedSet<Registration> entries;
 
+    private final GenesisRecordsBuilder genesisRecords;
+
     /**
      * Creates a new registry.
      */
-    public ServicesRegistryImpl(@NonNull final ConstructableRegistry constructableRegistry) {
+    public ServicesRegistryImpl(
+            @NonNull final ConstructableRegistry constructableRegistry,
+            @NonNull final GenesisRecordsBuilder genesisRecords) {
         this.constructableRegistry = requireNonNull(constructableRegistry);
+        this.genesisRecords = requireNonNull(genesisRecords);
         this.entries = new TreeSet<>(Comparator.comparing(r -> r.service().getServiceName()));
     }
 
@@ -58,7 +64,7 @@ public final class ServicesRegistryImpl implements ServicesRegistry {
         final var serviceName = service.getServiceName();
 
         logger.debug("Registering schemas for service {}", serviceName);
-        final var registry = new MerkleSchemaRegistry(constructableRegistry, serviceName);
+        final var registry = new MerkleSchemaRegistry(constructableRegistry, serviceName, genesisRecords);
         service.registerSchemas(registry);
 
         entries.add(new Registration(service, registry));

@@ -26,8 +26,9 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.records.GenesisAccountRecordBuilder;
-import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.record.GenesisRecordsConsensusHook;
+import com.hedera.node.app.service.token.records.StakingContext;
+import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
+import com.hedera.node.app.workflows.handle.ConsensusTimeHook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -43,8 +44,8 @@ import org.apache.logging.log4j.Logger;
  * the corresponding synthetic records when a consensus time becomes available.
  */
 @Singleton
-public class GenesisRecordsConsensusHookImpl implements GenesisRecordsConsensusHook {
-    private static final Logger log = LogManager.getLogger(GenesisRecordsConsensusHookImpl.class);
+public class GenesisRecordsConsensusHook implements GenesisRecordsBuilder, ConsensusTimeHook {
+    private static final Logger log = LogManager.getLogger(GenesisRecordsConsensusHook.class);
     private static final String SYSTEM_ACCOUNT_CREATION_MEMO = "Synthetic system creation";
     private static final String STAKING_MEMO = "Release 0.24.1 migration record";
     private static final String TREASURY_CLONE_MEMO = "Synthetic zero-balance treasury clone";
@@ -64,11 +65,12 @@ public class GenesisRecordsConsensusHookImpl implements GenesisRecordsConsensusH
      * It would be great if we could find a way to not have to invoke this method multiple times...
      */
     @Override
-    public void process(@NonNull final Instant consensusTime, @NonNull final HandleContext context) {
+    public void process(@NonNull final StakingContext context) {
         // This process should only run ONCE, when a node receives its first transaction after startup
         if (consensusTimeOfLastHandledTxn != null) return;
 
         // First we set consensusTimeOfLastHandledTxn so that this process won't run again
+        final var consensusTime = context.consensusTime();
         consensusTimeOfLastHandledTxn = consensusTime;
 
         if (!systemAccounts.isEmpty()) {
@@ -120,14 +122,14 @@ public class GenesisRecordsConsensusHookImpl implements GenesisRecordsConsensusH
 
     private void createAccountRecordBuilders(
             @NonNull final Map<Account, CryptoCreateTransactionBody.Builder> map,
-            @NonNull final HandleContext context,
+            @NonNull final StakingContext context,
             @Nullable final String recordMemo) {
         createAccountRecordBuilders(map, context, recordMemo, null);
     }
 
     private void createAccountRecordBuilders(
             @NonNull final Map<Account, CryptoCreateTransactionBody.Builder> map,
-            @NonNull final HandleContext context,
+            @NonNull final StakingContext context,
             @Nullable final String recordMemo,
             @Nullable final Long overrideAutoRenewPeriod) {
         for (Map.Entry<Account, CryptoCreateTransactionBody.Builder> entry : map.entrySet()) {

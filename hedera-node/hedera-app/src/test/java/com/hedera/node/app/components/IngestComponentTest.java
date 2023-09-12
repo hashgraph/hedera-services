@@ -31,7 +31,7 @@ import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.info.SelfNodeInfoImpl;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
-import com.hedera.node.app.spi.workflows.record.GenesisRecordsConsensusHook;
+import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.throttle.ThrottleManager;
 import com.hedera.node.app.version.HederaSoftwareVersion;
@@ -109,7 +109,7 @@ class IngestComponentTest {
                 .servicesRegistry(Set::of)
                 .instantSource(InstantSource.system())
                 .exchangeRateManager(exchangeRateManager)
-                .genesisRecordsBuilder(mock(GenesisRecordsConsensusHook.class))
+                .genesisRecordsBuilder(mock(GenesisRecordsBuilder.class))
                 .build();
 
         final var state = new FakeHederaState();

@@ -58,13 +58,13 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.hedera.node.app.spi.workflows.record.GenesisRecordsConsensusHook;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionScenarioBuilder;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecord;
 import com.hedera.node.app.workflows.prehandle.FakeSignatureVerificationFuture;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
@@ -460,24 +460,6 @@ class HandleWorkflowTest extends AppTestBase {
                         feeManager,
                         exchangeRateManager,
                         finalizer,
-                        systemFileUpdateFacility))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new HandleWorkflow(
-                        networkInfo,
-                        preHandleWorkflow,
-                        dispatcher,
-                        blockRecordManager,
-                        signatureExpander,
-                        signatureVerifier,
-                        checker,
-                        serviceLookup,
-                        null,
-                        recordCache,
-                        genesisRecordsTimeHook,
-                        stakingPeriodTimeHook,
-                        feeManager,
-                        exchangeRateManager,
-                        finalizer,
                         systemFileUpdateFacility,
                         dualStateUpdateFacility,
                         solvencyPreCheck,
@@ -541,7 +523,10 @@ class HandleWorkflowTest extends AppTestBase {
                         feeManager,
                         exchangeRateManager,
                         finalizer,
-                        systemFileUpdateFacility))
+                        systemFileUpdateFacility,
+                        dualStateUpdateFacility,
+                        solvencyPreCheck,
+                        authorizer))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -638,6 +623,7 @@ class HandleWorkflowTest extends AppTestBase {
                         serviceLookup,
                         configProvider,
                         recordCache,
+                        genesisRecordsTimeHook,
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
@@ -658,6 +644,7 @@ class HandleWorkflowTest extends AppTestBase {
                         serviceLookup,
                         configProvider,
                         recordCache,
+                        genesisRecordsTimeHook,
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
@@ -678,6 +665,7 @@ class HandleWorkflowTest extends AppTestBase {
                         serviceLookup,
                         configProvider,
                         recordCache,
+                        genesisRecordsTimeHook,
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
@@ -1560,8 +1548,8 @@ class HandleWorkflowTest extends AppTestBase {
     @Test
     void testConsensusTimeHooksCalled() {
         workflow.handleRound(state, dualState, round);
-        verify(genesisRecordsTimeHook).process(eq(CONSENSUS_NOW), notNull());
-        verify(stakingPeriodTimeHook).process(any());
+        verify(genesisRecordsTimeHook).process(notNull());
+        verify(stakingPeriodTimeHook).process(notNull());
     }
 
     private SingleTransactionRecord getRecordFromStream() {

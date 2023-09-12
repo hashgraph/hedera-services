@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.workflows;
+package com.hedera.node.app.workflows.handle;
 
+import com.hedera.node.app.service.token.records.StakingContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

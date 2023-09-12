@@ -47,8 +47,7 @@ import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.util.impl.UtilServiceImpl;
 import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.spi.HapiUtils;
-import com.hedera.node.app.spi.Service;
-import com.hedera.node.app.spi.workflows.record.GenesisRecordsConsensusHook;
+import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
@@ -57,7 +56,7 @@ import com.hedera.node.app.throttle.ThrottleManager;
 import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.handle.SystemFileUpdateFacility;
-import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHookImpl;
+import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.Utils;
 import com.hedera.node.config.data.FilesConfig;
@@ -139,7 +138,7 @@ public final class Hedera implements SwirldMain {
     /** The exchange rate manager */
     private ExchangeRateManager exchangeRateManager;
     /** The class responsible for remembering objects created in genesis cases */
-    private final GenesisRecordsConsensusHook genesisRecordsTimeHook;
+    private final GenesisRecordsBuilder genesisRecordsBuilder;
     /**
      * Dependencies managed by Dagger. Set during state initialization. The mono-service requires this object, but none
      * of the rest of the system (and particularly the modular implementation) uses it directly. Rather, it is created
@@ -162,7 +161,6 @@ public final class Hedera implements SwirldMain {
      */
     public Hedera(@NonNull final ConstructableRegistry constructableRegistry) {
         requireNonNull(constructableRegistry);
-        this.genesisRecordsTimeHook = new GenesisRecordsConsensusHookImpl();
 
         // Print welcome message
         logger.info(
@@ -204,10 +202,13 @@ public final class Hedera implements SwirldMain {
                 () -> HapiUtils.toString(version.getHapiVersion()),
                 () -> HapiUtils.toString(version.getServicesVersion()));
 
+        // Create a record builder for any genesis records that need to be created
+        this.genesisRecordsBuilder = new GenesisRecordsConsensusHook();
+
         // Create all the service implementations
         logger.info("Registering services");
         // FUTURE: Use the service loader framework to load these services!
-        this.servicesRegistry = new ServicesRegistryImpl(constructableRegistry);
+        this.servicesRegistry = new ServicesRegistryImpl(constructableRegistry, genesisRecordsBuilder);
         Set.of(
                         new ConsensusServiceImpl(),
                         CONTRACT_SERVICE,
@@ -723,7 +724,7 @@ public final class Hedera implements SwirldMain {
                     .servicesRegistry(servicesRegistry)
                     .bootstrapProps(new BootstrapProperties(false)) // TBD REMOVE
                     .instantSource(InstantSource.system())
-                    .genesisRecordsBuilder(genesisRecordsTimeHook)
+                    .genesisRecordsBuilder(genesisRecordsBuilder)
                     .build();
 
             daggerApp.workingStateAccessor().setHederaState(state);

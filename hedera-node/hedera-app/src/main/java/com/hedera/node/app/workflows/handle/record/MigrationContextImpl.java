@@ -22,7 +22,7 @@ import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
-import com.hedera.node.app.spi.workflows.record.GenesisRecordsConsensusHook;
+import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -39,7 +39,7 @@ public record MigrationContextImpl(
         @NonNull WritableStates newStates,
         @NonNull Configuration configuration,
         @NonNull NetworkInfo networkInfo,
-        @NonNull GenesisRecordsConsensusHook genesisRecordsBuilder)
+        @NonNull GenesisRecordsBuilder genesisRecordsBuilder)
         implements MigrationContext {
 
     public MigrationContextImpl {

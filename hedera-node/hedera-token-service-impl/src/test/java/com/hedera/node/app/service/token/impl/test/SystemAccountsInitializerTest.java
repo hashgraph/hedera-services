@@ -30,7 +30,7 @@ import com.hedera.node.app.service.token.impl.SystemAccountsInitializer;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.state.MigrationContext;
-import com.hedera.node.app.spi.workflows.record.GenesisRecordsConsensusHook;
+import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
@@ -58,7 +58,7 @@ class SystemAccountsInitializerTest {
     private MigrationContext migrationContext;
 
     @Mock
-    private GenesisRecordsConsensusHook genesisRecordsBuilder;
+    private GenesisRecordsBuilder genesisRecordsBuilder;
 
     @Captor
     private ArgumentCaptor<Map<Account, CryptoCreateTransactionBody.Builder>> sysAcctMapCaptor;
