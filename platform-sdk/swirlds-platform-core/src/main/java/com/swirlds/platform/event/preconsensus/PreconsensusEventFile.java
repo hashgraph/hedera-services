@@ -293,7 +293,7 @@ public final class PreconsensusEventFile implements Comparable<PreconsensusEvent
 
     /**
      * Get the origin of the stream containing this file. A stream's origin is defined as the round number after which
-     * the stream is broken. When the origin of two sequential files is different, this signals a discontinuity in the
+     * the stream is unbroken. When the origin of two sequential files is different, this signals a discontinuity in the
      * stream (i.e. the end of one stream and the beginning of another). When replaying events, it is never ok to stream
      * events from files with different origins.
      *

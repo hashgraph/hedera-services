@@ -85,6 +85,9 @@ public class AsyncPreconsensusEventWriter implements PreconsensusEventWriter {
 
     /**
      * This class is used as a flag to indicate that there is a discontinuity in the stream.
+     *
+     * @param originRound the origin round following the discontinuity. For discontinuities caused by reconnects, the
+     *                    origin round is the round of the state received from the teacher.
      */
     private record Discontinuity(long originRound) {}
 

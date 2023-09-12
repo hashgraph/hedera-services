@@ -156,7 +156,12 @@ class PreconsensusEventReadWriteTests {
         maximumGeneration += random.nextInt(0, 10);
 
         final PreconsensusEventFile file = PreconsensusEventFile.of(
-                RandomUtils.randomInstant(random), random.nextInt(0, 100), 0, 0, maximumGeneration, testDirectory);
+                RandomUtils.randomInstant(random),
+                random.nextInt(0, 100),
+                0,
+                maximumGeneration,
+                maximumGeneration,
+                testDirectory);
 
         final PreconsensusEventMutableFile mutableFile = file.getMutableFile();
         for (final EventImpl event : events) {
@@ -232,7 +237,12 @@ class PreconsensusEventReadWriteTests {
         maximumGeneration += random.nextInt(0, 10);
 
         final PreconsensusEventFile file = PreconsensusEventFile.of(
-                RandomUtils.randomInstant(random), random.nextInt(0, 100), 0, 0, maximumGeneration, testDirectory);
+                RandomUtils.randomInstant(random),
+                random.nextInt(0, 100),
+                0,
+                maximumGeneration,
+                maximumGeneration,
+                testDirectory);
 
         final Map<Integer /* event index */, Integer /* last byte position */> byteBoundaries = new HashMap<>();
 
