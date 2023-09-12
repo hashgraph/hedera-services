@@ -23,9 +23,11 @@ import com.swirlds.common.metrics.extensions.FractionalTimer;
 import java.time.Duration;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-class FractionalTimerTest {
+@DisplayName("FractionalTimer Tests")
+class FractionalTimerTests {
     private final FakeTime clock = new FakeTime(Instant.EPOCH, Duration.ZERO);
     private FractionalTimer metric;
 
