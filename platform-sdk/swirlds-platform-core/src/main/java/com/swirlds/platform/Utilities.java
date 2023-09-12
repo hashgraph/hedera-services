@@ -341,7 +341,8 @@ public final class Utilities {
      * 		the type to check against
      * @return true if any of the causes matches the supplied type, false otherwise.
      */
-    public static boolean hasAnyCauseSuppliedType(@NonNull final Throwable throwable, @NonNull final Class<? extends Throwable> type) {
+    public static boolean hasAnyCauseSuppliedType(
+            @NonNull final Throwable throwable, @NonNull final Class<? extends Throwable> type) {
         Throwable cause = throwable;
         // check all causes
         while (cause != null) {

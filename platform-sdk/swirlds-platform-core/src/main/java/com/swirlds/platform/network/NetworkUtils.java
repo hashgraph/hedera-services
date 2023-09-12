@@ -92,6 +92,8 @@ public final class NetworkUtils {
     public static Marker determineExceptionMarker(final Exception e) {
         return Utilities.isCausedByIOException(e)
                         || Utilities.isRootCauseSuppliedType(e, SyncTimeoutException.class)
+                        // All SSLExceptions regardless of nested root cause need to be classified as SOCKET_EXCEPTIONS.
+                        // https://github.com/hashgraph/hedera-services/issues/7762
                         || Utilities.hasAnyCauseSuppliedType(e, SSLException.class)
                 ? SOCKET_EXCEPTIONS.getMarker()
                 : EXCEPTION.getMarker();
