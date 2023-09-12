@@ -29,7 +29,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.records.GenesisAccountRecordBuilder;
-import com.hedera.node.app.service.token.records.StakingContext;
+import com.hedera.node.app.service.token.records.TokenContext;
 import java.time.Instant;
 import java.util.Map;
 import org.assertj.core.api.Assertions;
@@ -61,7 +61,7 @@ class GenesisRecordsConsensusHookTest {
     private static final String EXPECTED_TREASURY_CLONE_MEMO = "Synthetic zero-balance treasury clone";
 
     @Mock(strictness = Mock.Strictness.LENIENT)
-    private StakingContext context;
+    private TokenContext context;
 
     @Mock
     private GenesisAccountRecordBuilder genesisAccountRecordBuilder;

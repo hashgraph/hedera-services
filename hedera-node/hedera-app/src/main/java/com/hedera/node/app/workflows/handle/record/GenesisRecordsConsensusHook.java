@@ -26,7 +26,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.records.GenesisAccountRecordBuilder;
-import com.hedera.node.app.service.token.records.StakingContext;
+import com.hedera.node.app.service.token.records.TokenContext;
 import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.hedera.node.app.workflows.handle.ConsensusTimeHook;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -65,7 +65,7 @@ public class GenesisRecordsConsensusHook implements GenesisRecordsBuilder, Conse
      * It would be great if we could find a way to not have to invoke this method multiple times...
      */
     @Override
-    public void process(@NonNull final StakingContext context) {
+    public void process(@NonNull final TokenContext context) {
         // This process should only run ONCE, when a node receives its first transaction after startup
         if (consensusTimeOfLastHandledTxn != null) return;
 
@@ -122,14 +122,14 @@ public class GenesisRecordsConsensusHook implements GenesisRecordsBuilder, Conse
 
     private void createAccountRecordBuilders(
             @NonNull final Map<Account, CryptoCreateTransactionBody.Builder> map,
-            @NonNull final StakingContext context,
+            @NonNull final TokenContext context,
             @Nullable final String recordMemo) {
         createAccountRecordBuilders(map, context, recordMemo, null);
     }
 
     private void createAccountRecordBuilders(
             @NonNull final Map<Account, CryptoCreateTransactionBody.Builder> map,
-            @NonNull final StakingContext context,
+            @NonNull final TokenContext context,
             @Nullable final String recordMemo,
             @Nullable final Long overrideAutoRenewPeriod) {
         for (Map.Entry<Account, CryptoCreateTransactionBody.Builder> entry : map.entrySet()) {

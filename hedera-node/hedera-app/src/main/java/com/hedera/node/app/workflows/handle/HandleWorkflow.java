@@ -250,7 +250,9 @@ public class HandleWorkflow {
         final var readableStoreFactory = new ReadableStoreFactory(stack);
         final var feeAccumulator = createFeeAccumulator(stack, configuration, recordBuilder);
 
-        final var tokenServiceContext = new TokenServiceContextImpl(configuration, stack, recordListBuilder);
+        final var tokenServiceContext = new TokenContextImpl(configuration, stack, recordListBuilder);
+        // It's awful that we have to check this every time a transaction is handled, especially since this mostly
+        // applies to non-production cases. Let's find a way to 💥💥 remove this 💥💥
         genesisRecordsTimeHook.process(tokenServiceContext);
         try {
             // If this is the first user transaction after midnight, then handle staking updates prior to handling the
