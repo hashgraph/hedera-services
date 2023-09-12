@@ -21,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.transaction.ThrottleDefinitions;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
@@ -36,9 +37,7 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Set;
-import com.hedera.hapi.node.transaction.ThrottleDefinitions;
 import java.util.stream.Collectors;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -51,8 +50,7 @@ import org.apache.logging.log4j.Logger;
 public class SystemFileUpdateFacility {
 
     private static final Logger logger = LogManager.getLogger(SystemFileUpdateFacility.class);
-    static final Set<HederaFunctionality> expectedOps = ExpectedCustomThrottles.ACTIVE_OPS
-            .stream()
+    static final Set<HederaFunctionality> expectedOps = ExpectedCustomThrottles.ACTIVE_OPS.stream()
             .map(protoOp -> HederaFunctionality.fromProtobufOrdinal(protoOp.getNumber()))
             .collect(Collectors.toSet());
 
@@ -137,6 +135,11 @@ public class SystemFileUpdateFacility {
         }
     }
 
+    /**
+     * Checks if the throttle definitions are valid.
+     *
+     * @param recordBuilder record builder used to set the status of the transaction
+     */
     private void throttleValidations(SingleTransactionRecordBuilderImpl recordBuilder) {
         final var defs = throttleManager.throttleDefinitions();
         try {
@@ -148,8 +151,11 @@ public class SystemFileUpdateFacility {
         }
     }
 
-    private void checkForMissingExpectedOperations(
-            ThrottleDefinitions defs) {
+    /**
+     * Checks if there are missing {@link HederaFunctionality} operations from the expected ones that should be throttled.
+     * @param defs throttle definitions
+     */
+    private void checkForMissingExpectedOperations(ThrottleDefinitions defs) {
         Set<HederaFunctionality> customizedOps = new HashSet<>();
         for (var bucket : defs.throttleBuckets()) {
             for (var group : bucket.throttleGroups()) {
@@ -161,8 +167,11 @@ public class SystemFileUpdateFacility {
         }
     }
 
-    private void checkForZeroOpsPerSec(
-            ThrottleDefinitions defs) {
+    /**
+     * Checks if there are throttle groups defined with zero operations per second.
+     * @param defs throttle definitions
+     */
+    private void checkForZeroOpsPerSec(ThrottleDefinitions defs) {
         for (var bucket : defs.throttleBuckets()) {
             for (var group : bucket.throttleGroups()) {
                 if (group.milliOpsPerSec() == 0) {
@@ -172,8 +181,11 @@ public class SystemFileUpdateFacility {
         }
     }
 
-    private void checkForRepeatedOperations(
-            ThrottleDefinitions defs) {
+    /**
+     * Checks if an operation was assigned to more than one throttle group in a given bucket.
+     * @param defs throttle definitions
+     */
+    private void checkForRepeatedOperations(ThrottleDefinitions defs) {
         for (var bucket : defs.throttleBuckets()) {
             final Set<HederaFunctionality> seenSoFar = new HashSet<>();
             for (var group : bucket.throttleGroups()) {
