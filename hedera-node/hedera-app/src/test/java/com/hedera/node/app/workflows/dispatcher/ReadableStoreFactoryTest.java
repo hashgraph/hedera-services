@@ -22,8 +22,8 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.file.ReadableFileStore;
+import com.hedera.node.app.service.networkadmin.ReadableFreezeStore;
 import com.hedera.node.app.service.networkadmin.ReadableRunningHashLeafStore;
-import com.hedera.node.app.service.networkadmin.ReadableUpgradeStore;
 import com.hedera.node.app.service.schedule.ReadableScheduleStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableNftStore;
@@ -62,7 +62,7 @@ class ReadableStoreFactoryTest {
                 ReadableTopicStore.class,
                 ReadableScheduleStore.class,
                 ReadableFileStore.class,
-                ReadableUpgradeStore.class,
+                ReadableFreezeStore.class,
                 ReadableRunningHashLeafStore.class,
                 ReadableTokenRelationStore.class
             })

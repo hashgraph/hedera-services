@@ -16,13 +16,16 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts;
 
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.haltResult;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AttemptFactory;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttemptFactory;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
@@ -31,10 +34,11 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
     private static final String HTS_PRECOMPILE_NAME = "HTS";
     public static final String HTS_PRECOMPILE_ADDRESS = "0x167";
 
-    private final AttemptFactory attemptFactory;
+    private final HtsCallAttemptFactory attemptFactory;
 
     @Inject
-    public HtsSystemContract(@NonNull final GasCalculator gasCalculator, @NonNull final AttemptFactory attemptFactory) {
+    public HtsSystemContract(
+            @NonNull final GasCalculator gasCalculator, @NonNull final HtsCallAttemptFactory attemptFactory) {
         super(HTS_PRECOMPILE_NAME, gasCalculator);
         this.attemptFactory = requireNonNull(attemptFactory);
     }
@@ -44,16 +48,17 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
         requireNonNull(input);
         requireNonNull(frame);
 
-        final var callAttempt = attemptFactory.createFrom(input, frame);
-        final var call = callAttempt.asCallFrom(frame.getSenderAddress());
-        if (call == null) {
-            throw new AssertionError("Not implemented");
-        } else {
-            final var pricedResult = call.execute();
-            if (pricedResult.nonGasCost() > 0) {
-                throw new AssertionError("Not implemented");
-            }
-            return pricedResult.fullResult();
+        final HtsCall call;
+        try {
+            call = attemptFactory.createCallFrom(input, frame);
+        } catch (RuntimeException ignore) {
+            // Halt and consume all remaining gas if call could not be decoded
+            return haltResult(ExceptionalHaltReason.INVALID_OPERATION, frame.getRemainingGas());
         }
+        final var pricedResult = call.execute();
+        if (pricedResult.nonGasCost() > 0) {
+            throw new AssertionError("Not implemented");
+        }
+        return pricedResult.fullResult();
     }
 }

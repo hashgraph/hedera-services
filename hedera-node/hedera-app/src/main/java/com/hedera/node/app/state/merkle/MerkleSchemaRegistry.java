@@ -17,6 +17,7 @@
 package com.hedera.node.app.state.merkle;
 
 import static com.hedera.node.app.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.spi.HapiUtils;
@@ -24,9 +25,10 @@ import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.state.FilteredReadableStates;
 import com.hedera.node.app.spi.state.FilteredWritableStates;
+import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
-import com.hedera.node.app.state.merkle.MerkleHederaState.MerkleWritableStates;
+import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.app.state.merkle.disk.OnDiskKey;
 import com.hedera.node.app.state.merkle.disk.OnDiskKeySerializer;
 import com.hedera.node.app.state.merkle.disk.OnDiskValue;
@@ -49,12 +51,9 @@ import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import org.apache.logging.log4j.LogManager;
@@ -93,8 +92,8 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
      */
     public MerkleSchemaRegistry(
             @NonNull final ConstructableRegistry constructableRegistry, @NonNull final String serviceName) {
-        this.constructableRegistry = Objects.requireNonNull(constructableRegistry);
-        this.serviceName = StateUtils.validateStateKey(Objects.requireNonNull(serviceName));
+        this.constructableRegistry = requireNonNull(constructableRegistry);
+        this.serviceName = StateUtils.validateStateKey(requireNonNull(serviceName));
     }
 
     /**
@@ -105,7 +104,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
     @Override
     public SchemaRegistry register(@NonNull Schema schema) {
         schemas.remove(schema);
-        schemas.add(Objects.requireNonNull(schema));
+        schemas.add(requireNonNull(schema));
         logger.debug(
                 "Registering schema {} for service {} ",
                 () -> HapiUtils.toString(schema.getVersion()),
@@ -126,6 +125,11 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
      * the supplied versions, applies all necessary migrations for every {@link Schema} newer than
      * {@code previousVersion} and no newer than {@code currentVersion}.
      *
+     * <p>If the {@code previousVersion} and {@code currentVersion} are the same, then we do not need
+     * to migrate, but instead we just call {@link Schema#restart(MigrationContext)} to allow the schema
+     * to perform any necessary logic on restart. Most services have nothing to do, but some may need
+     * to read files from disk, and could potentially change their state as a result.
+     *
      * @param hederaState The {@link MerkleHederaState} instance for this registry to use.
      * @param previousVersion The version of state loaded from disk. Possibly null.
      * @param currentVersion The current version. Never null. Must be newer than {@code
@@ -139,37 +143,15 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             @NonNull final SemanticVersion currentVersion,
             @NonNull final Configuration config,
             @NonNull final NetworkInfo networkInfo) {
-        Objects.requireNonNull(hederaState);
-        Objects.requireNonNull(currentVersion);
-        Objects.requireNonNull(config);
-        Objects.requireNonNull(networkInfo);
-
-        // If the previous and current versions are the same, then we have no need to migrate
-        // to achieve the correct merkle tree version. All we need to do is register with
-        // the MerkleHederaState the metadata for this version
-        if (isSameVersion(previousVersion, currentVersion)) {
-            final var schemasToApply = computeApplicableSchemas(null, currentVersion);
-            final Map<String, StateMetadata<?, ?>> metadata = new HashMap<>();
-            for (Schema schema : schemasToApply) {
-                for (var def : schema.statesToCreate()) {
-                    final var md = new StateMetadata<>(serviceName, schema, def);
-                    metadata.put(def.stateKey(), md);
-                }
-                for (var stateKey : schema.statesToRemove()) {
-                    metadata.remove(stateKey);
-                }
-            }
-
-            for (final var md : metadata.values()) {
-                hederaState.putServiceStateIfAbsent((StateMetadata) md);
-            }
-
-            return;
-        }
+        requireNonNull(hederaState);
+        requireNonNull(currentVersion);
+        requireNonNull(config);
+        requireNonNull(networkInfo);
 
         // Figure out which schemas need to be applied based on the previous and current versions, and then for each
         // of those schemas, create the new states and remove the old states and migrate the data.
         final var schemasToApply = computeApplicableSchemas(previousVersion, currentVersion);
+        final var updateInsteadOfMigrate = isSameVersion(previousVersion, currentVersion);
         for (final var schema : schemasToApply) {
             // Now we can migrate the schema and then commit all the changes
             // We just have one merkle tree -- the just-loaded working tree -- to work from.
@@ -183,37 +165,40 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
 
             // Create the new states (based on the schema) which, thanks to the above, does not
             // expand the set of states that the migration code will see
-            final var statesToCreate = schema.statesToCreate();
-            statesToCreate.forEach(def -> {
-                final var stateKey = def.stateKey();
-                logger.debug("Creating state {} for {}", stateKey, serviceName);
-                final var md = new StateMetadata<>(serviceName, schema, def);
-                if (def.singleton()) {
-                    final var singleton = new SingletonNode<>(md, null);
-                    hederaState.putServiceStateIfAbsent(md, singleton);
-                } else if (def.queue()) {
-                    final var queue = new QueueNode<>(md);
-                    hederaState.putServiceStateIfAbsent(md, queue);
-                } else if (!def.onDisk()) {
-                    final var map = new MerkleMap<>();
-                    map.setLabel(StateUtils.computeLabel(serviceName, stateKey));
-                    hederaState.putServiceStateIfAbsent(md, map);
-                } else {
-                    // MAX_IN_MEMORY_HASHES (ramToDiskThreshold) = 8388608
-                    // PREFER_DISK_BASED_INDICES = false
-                    final var tableConfig = new MerkleDbTableConfig<>(
-                                    (short) 1,
-                                    DigestType.SHA_384,
-                                    (short) 1,
-                                    new OnDiskKeySerializer<>(md),
-                                    (short) 1,
-                                    new OnDiskValueSerializer<>(md))
-                            .maxNumberOfKeys(def.maxKeysHint());
-                    final var label = StateUtils.computeLabel(serviceName, stateKey);
-                    final var dsBuilder = new MerkleDbDataSourceBuilder<>(tableConfig);
-                    hederaState.putServiceStateIfAbsent(md, new VirtualMap<>(label, dsBuilder));
-                }
-            });
+            schema.statesToCreate().stream()
+                    .sorted(Comparator.comparing(StateDefinition::stateKey))
+                    .forEach(def -> {
+                        final var stateKey = def.stateKey();
+                        logger.debug("Creating state {} for {}", stateKey, serviceName);
+                        final var md = new StateMetadata<>(serviceName, schema, def);
+                        if (def.singleton()) {
+                            hederaState.putServiceStateIfAbsent(md, () -> new SingletonNode<>(md, null));
+                        } else if (def.queue()) {
+                            hederaState.putServiceStateIfAbsent(md, () -> new QueueNode<>(md));
+                        } else if (!def.onDisk()) {
+                            hederaState.putServiceStateIfAbsent(md, () -> {
+                                final var map = new MerkleMap<>();
+                                map.setLabel(StateUtils.computeLabel(serviceName, stateKey));
+                                return map;
+                            });
+                        } else {
+                            hederaState.putServiceStateIfAbsent(md, () -> {
+                                // MAX_IN_MEMORY_HASHES (ramToDiskThreshold) = 8388608
+                                // PREFER_DISK_BASED_INDICES = false
+                                final var tableConfig = new MerkleDbTableConfig<>(
+                                                (short) 1,
+                                                DigestType.SHA_384,
+                                                (short) 1,
+                                                new OnDiskKeySerializer<>(md),
+                                                (short) 1,
+                                                new OnDiskValueSerializer<>(md))
+                                        .maxNumberOfKeys(def.maxKeysHint());
+                                final var label = StateUtils.computeLabel(serviceName, stateKey);
+                                final var dsBuilder = new MerkleDbDataSourceBuilder<>(tableConfig);
+                                return new VirtualMap<>(label, dsBuilder);
+                            });
+                        }
+                    });
 
             // Create the writable states. We won't commit anything from these states
             // until we have completed migration.
@@ -224,8 +209,12 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             final var newStates = new FilteredWritableStates(writeableStates, remainingStates);
 
             final var migrationContext = new MigrationContextImpl(previousStates, newStates, config, networkInfo);
-            schema.migrate(migrationContext);
-            if (writeableStates instanceof MerkleWritableStates mws) {
+            if (updateInsteadOfMigrate) {
+                schema.restart(migrationContext);
+            } else {
+                schema.migrate(migrationContext);
+            }
+            if (writeableStates instanceof MerkleHederaState.MerkleWritableStates mws) {
                 mws.commit();
             }
 
@@ -252,14 +241,8 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
     private List<Schema> computeApplicableSchemas(
             @Nullable final SemanticVersion previousVersion, @NonNull final SemanticVersion currentVersion) {
 
-        // If the previous and current versions are the same, then we have no need to migrate
-        // to achieve the correct merkle tree version.
-        if (isSameVersion(previousVersion, currentVersion)) {
-            return Collections.emptyList();
-        }
-
-        // The previous version MUST be strictly less than the current version
-        if (!isSoOrdered(previousVersion, currentVersion)) {
+        // The previous version MUST be strictly less than or equal to the current version
+        if (!isSameVersion(previousVersion, currentVersion) && !isSoOrdered(previousVersion, currentVersion)) {
             throw new IllegalArgumentException("The currentVersion must be strictly greater than the previousVersion");
         }
 

@@ -22,6 +22,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
+import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations;
@@ -270,4 +271,12 @@ public interface HederaWorldUpdater extends WorldUpdater {
      * @param status    Whether the result is an error
      */
     void externalizeSystemContractResults(@NonNull final ContractFunctionResult result, ResultStatus status);
+
+    /**
+     * Returns the {@link ExchangeRate} for the current consensus timestamp
+     * Delegates to {@link SystemContractOperations#currentExchangeRate()} ()}
+     * @return the current exchange rate
+     */
+    @NonNull
+    ExchangeRate currentExchangeRate();
 }
