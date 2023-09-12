@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.networkadmin.impl.test;
 
+import static com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl.FREEZE_TIME_KEY;
+import static com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl.LAST_FROZEN_TIME_KEY;
 import static com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl.UPGRADE_FILE_HASH_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -67,9 +69,11 @@ class FreezeServiceImplTest {
         final var schema = schemaCaptor.getValue();
 
         final var statesToCreate = schema.statesToCreate();
-        assertEquals(1, statesToCreate.size());
+        assertEquals(3, statesToCreate.size());
         final var iter =
                 statesToCreate.stream().map(StateDefinition::stateKey).sorted().iterator();
+        assertEquals(FREEZE_TIME_KEY, iter.next());
+        assertEquals(LAST_FROZEN_TIME_KEY, iter.next());
         assertEquals(UPGRADE_FILE_HASH_KEY, iter.next());
     }
 

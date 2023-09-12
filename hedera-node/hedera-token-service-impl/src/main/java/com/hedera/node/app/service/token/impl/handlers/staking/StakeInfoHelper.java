@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUti
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtilities.totalStake;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -34,6 +35,9 @@ import org.apache.logging.log4j.Logger;
 @Singleton
 public class StakeInfoHelper {
     private static final Logger log = LogManager.getLogger(StakeInfoHelper.class);
+    public static final int SENTINEL_NODE_ID = -1;
+    public static final AccountID SENTINEL_ACCOUNT_ID =
+            AccountID.newBuilder().accountNum(0).build();
 
     @Inject
     public StakeInfoHelper() {
@@ -90,15 +94,19 @@ public class StakeInfoHelper {
         final var isDeclineReward = account.declineReward();
 
         final var stakingInfo = stakingInfoStore.get(nodeId);
-        final var copy = stakingInfo.copyBuilder();
-        if (isDeclineReward) {
-            final var stakedToNotReward = stakingInfo.stakeToNotReward() + stakeToAward;
-            copy.stakeToNotReward(stakedToNotReward);
+        if (stakingInfo != null) {
+            final var copy = stakingInfo.copyBuilder();
+            if (isDeclineReward) {
+                final var stakedToNotReward = stakingInfo.stakeToNotReward() + stakeToAward;
+                copy.stakeToNotReward(stakedToNotReward);
+            } else {
+                final var stakedToReward = stakingInfo.stakeToReward() + stakeToAward;
+                copy.stakeToReward(stakedToReward);
+            }
+            stakingInfoStore.put(nodeId, copy.build());
         } else {
-            final var stakedToReward = stakingInfo.stakeToReward() + stakeToAward;
-            copy.stakeToReward(stakedToReward);
+            log.error("Staking info is null for node {}", nodeId);
         }
-        stakingInfoStore.put(nodeId, copy.build());
     }
 
     /**

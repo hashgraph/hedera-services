@@ -25,6 +25,7 @@ import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
@@ -99,5 +100,14 @@ public class HandleSystemContractOperations implements SystemContractOperations 
                 .contractID(result.contractID())
                 .status(status == ResultStatus.IS_ERROR ? FAIL_INVALID : SUCCESS)
                 .contractCallResult(result);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @NonNull
+    public ExchangeRate currentExchangeRate() {
+        return context.exchangeRateInfo().activeRate(context.consensusNow());
     }
 }

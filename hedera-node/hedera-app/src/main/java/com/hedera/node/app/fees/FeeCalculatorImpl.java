@@ -131,6 +131,12 @@ public class FeeCalculatorImpl implements FeeCalculator {
     @NonNull
     @Override
     public FeeCalculator addNetworkRamByteSeconds(long amount) {
+        usage.addNetworkRbs(amount);
+        return this;
+    }
+
+    @NonNull
+    public FeeCalculator addRamByteSeconds(long amount) {
         usage.addRbs(amount);
         return this;
     }
