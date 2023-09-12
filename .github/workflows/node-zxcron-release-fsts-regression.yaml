@@ -14,7 +14,7 @@
 # limitations under the License.
 ##
 
-name: "ZXCron: (Node) Release JRS Tests"
+name: "ZXCron: [Node] Release JRS Tests"
 on:
   schedule:
     - cron: '30 10 * * *'

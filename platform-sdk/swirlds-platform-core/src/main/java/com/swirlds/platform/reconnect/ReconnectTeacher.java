@@ -69,8 +69,7 @@ public class ReconnectTeacher {
     private final ThreadManager threadManager;
 
     /**
-     * A function to check periodically if teaching should be stopped, e.g. when the
-     * teacher has fallen behind.
+     * A function to check periodically if teaching should be stopped, e.g. when the teacher has fallen behind.
      */
     @Nullable
     private final BooleanSupplier requestToStopTeaching;
@@ -192,8 +191,8 @@ public class ReconnectTeacher {
         logger.info(
                 RECONNECT.getMarker(),
                 """
-                The following state will be sent to the learner:
-                {}""",
+                        The following state will be sent to the learner:
+                        {}""",
                 () -> signedState.getState().getInfoString(stateConfig.debugHashDepth()));
     }
 
