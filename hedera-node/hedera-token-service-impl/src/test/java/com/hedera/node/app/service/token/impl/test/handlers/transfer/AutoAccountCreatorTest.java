@@ -62,7 +62,7 @@ class AutoAccountCreatorTest extends StepsBase {
         given(handleContext.configuration()).willReturn(configuration);
         transferContext = new TransferContextImpl(handleContext);
         final var aliasBytes = alias.alias();
-        assertThatThrownBy(() -> subject.create(aliasBytes, false))
+        assertThatThrownBy(() -> subject.create(aliasBytes, 0))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED));
     }
@@ -71,7 +71,7 @@ class AutoAccountCreatorTest extends StepsBase {
     // TODO: In end to end tests need to validate other fields set correctly on auto created accounts
     void happyPathECKeyAliasWorks() {
         given(handleContext.dispatchRemovableChildTransaction(
-                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class)))
+                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(payerId)))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
@@ -87,7 +87,7 @@ class AutoAccountCreatorTest extends StepsBase {
         assertThat(writableAccountStore.get(asAccount(tokenReceiver))).isNull();
         assertThat(writableAliases.get(ecKeyAlias)).isNull();
 
-        subject.create(ecKeyAlias.value(), false);
+        subject.create(ecKeyAlias.value(), 0);
 
         assertThat(writableAccountStore.modifiedAliasesInState()).hasSize(1);
         assertThat(writableAccountStore.modifiedAccountsInState()).hasSize(1);
@@ -100,7 +100,7 @@ class AutoAccountCreatorTest extends StepsBase {
     // TODO: In end to end tests need to validate other fields set correctly on auto created accounts
     void happyPathEDKeyAliasWorks() {
         given(handleContext.dispatchRemovableChildTransaction(
-                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class)))
+                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(payerId)))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
@@ -116,7 +116,7 @@ class AutoAccountCreatorTest extends StepsBase {
         assertThat(writableAccountStore.get(asAccount(tokenReceiver))).isNull();
         assertThat(writableAliases.get(edKeyAlias)).isNull();
 
-        subject.create(edKeyAlias.value(), false);
+        subject.create(edKeyAlias.value(), 0);
 
         assertThat(writableAccountStore.modifiedAliasesInState()).hasSize(1);
         assertThat(writableAccountStore.modifiedAccountsInState()).hasSize(1);
@@ -130,7 +130,7 @@ class AutoAccountCreatorTest extends StepsBase {
     void happyPathWithHollowAccountAliasInHbarTransfersWorks() {
         final var address = new ProtoBytes(Bytes.wrap(evmAddress));
         given(handleContext.dispatchRemovableChildTransaction(
-                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class)))
+                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(payerId)))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
@@ -146,7 +146,7 @@ class AutoAccountCreatorTest extends StepsBase {
         assertThat(writableAccountStore.get(asAccount(tokenReceiver))).isNull();
         assertThat(writableAliases.get(address)).isNull();
 
-        subject.create(address.value(), false);
+        subject.create(address.value(), 0);
 
         assertThat(writableAccountStore.modifiedAliasesInState()).hasSize(1);
         assertThat(writableAccountStore.modifiedAccountsInState()).hasSize(1);

@@ -81,7 +81,6 @@ public final class SignedStateFileWriter {
         final String hashInfo = new MerkleTreeVisualizer(state)
                 .setDepth(stateConfig.debugHashDepth())
                 .render();
-
         try (final BufferedWriter writer = new BufferedWriter(new FileWriter(hashInfoFile.toFile()))) {
             writer.write(hashInfo);
         }

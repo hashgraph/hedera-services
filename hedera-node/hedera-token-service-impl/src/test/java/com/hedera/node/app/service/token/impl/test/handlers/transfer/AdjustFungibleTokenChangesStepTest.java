@@ -59,6 +59,7 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
     @Test
     void doesTokenBalanceChangesWithoutAllowances() {
         final var receiver = asAccount(tokenReceiver);
+        given(handleContext.payer()).willReturn(spenderId);
         final var replacedOp = getReplacedOp();
         adjustFungibleTokenChangesStep = new AdjustFungibleTokenChangesStep(replacedOp, payerId);
 
@@ -151,6 +152,7 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
         associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
         given(handleContext.body()).willReturn(txn);
+        given(handleContext.payer()).willReturn(spenderId);
 
         final var replacedOp = getReplacedOp();
         // payer is spender for allowances
@@ -203,6 +205,7 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
         associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
         given(handleContext.body()).willReturn(txn);
+        given(handleContext.payer()).willReturn(spenderId);
 
         final var replacedOp = getReplacedOp();
         adjustFungibleTokenChangesStep = new AdjustFungibleTokenChangesStep(replacedOp, spenderId);
