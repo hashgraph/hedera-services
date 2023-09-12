@@ -60,6 +60,11 @@ public class TransactionScenarioBuilder implements Scenarios {
         return this;
     }
 
+    public TransactionScenarioBuilder withNodeAccount(@Nullable final AccountID nodeAccount) {
+        body = body.copyBuilder().nodeAccountID(nodeAccount).build();
+        return this;
+    }
+
     public TransactionScenarioBuilder withPayer(@Nullable final AccountID payer) {
         final var oldId = body.transactionID();
         final var id = oldId == null
@@ -117,6 +122,7 @@ public class TransactionScenarioBuilder implements Scenarios {
 
     public static TransactionBody goodDefaultBody() {
         return TransactionBody.newBuilder()
+                .nodeAccountID(NODE_1.nodeAccountID())
                 .transactionID(TransactionID.newBuilder()
                         .accountID(ALICE.accountID())
                         .transactionValidStart(Timestamp.newBuilder()

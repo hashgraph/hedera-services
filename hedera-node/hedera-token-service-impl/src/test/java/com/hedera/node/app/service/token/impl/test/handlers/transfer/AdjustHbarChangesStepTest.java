@@ -59,6 +59,7 @@ class AdjustHbarChangesStepTest extends StepsBase {
     @Test
     void doesHbarBalanceChangesWithoutAllowances() {
         final var receiver = asAccount(hbarReceiver);
+        given(handleContext.payer()).willReturn(spenderId);
         final var replacedOp = getReplacedOp();
         adjustHbarChangesStep = new AdjustHbarChangesStep(replacedOp, payerId);
 

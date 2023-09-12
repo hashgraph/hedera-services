@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.networkadmin.impl;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.node.app.service.networkadmin.FreezeService;
 import com.hedera.node.app.spi.state.MigrationContext;
@@ -29,6 +30,8 @@ import java.util.Set;
 /** Standard implementation of the {@link FreezeService} {@link com.hedera.node.app.spi.Service}. */
 public final class FreezeServiceImpl implements FreezeService {
     public static final String UPGRADE_FILE_HASH_KEY = "UPGRADE_FILE_HASH";
+    public static final String FREEZE_TIME_KEY = "FREEZE_TIME";
+    public static final String LAST_FROZEN_TIME_KEY = "LAST_FROZEN_TIME";
     private static final SemanticVersion GENESIS_VERSION = SemanticVersion.DEFAULT;
 
     @Override
@@ -42,16 +45,23 @@ public final class FreezeServiceImpl implements FreezeService {
             @Override
             @SuppressWarnings("rawtypes")
             public Set<StateDefinition> statesToCreate() {
-                return Set.of(StateDefinition.singleton(UPGRADE_FILE_HASH_KEY, ProtoBytes.PROTOBUF));
+                return Set.of(
+                        StateDefinition.singleton(UPGRADE_FILE_HASH_KEY, ProtoBytes.PROTOBUF),
+                        StateDefinition.singleton(FREEZE_TIME_KEY, Timestamp.PROTOBUF),
+                        StateDefinition.singleton(LAST_FROZEN_TIME_KEY, Timestamp.PROTOBUF));
             }
 
             @Override
             public void migrate(@NonNull final MigrationContext ctx) {
                 // Reset the upgrade file hash to empty
                 // It should always be empty at genesis or after an upgrade, to indicate that no upgrade is in progress
-                // Nothing in state can ever be null, so use Bytes.EMPTY to indicate an empty hash
+                // Nothing in state can ever be null, so use Type.DEFAULT to indicate an empty hash
                 final var upgradeFileHashKeyState = ctx.newStates().<ProtoBytes>getSingleton(UPGRADE_FILE_HASH_KEY);
                 upgradeFileHashKeyState.put(ProtoBytes.DEFAULT);
+                final var freezeTimeKeyState = ctx.newStates().<Timestamp>getSingleton(FREEZE_TIME_KEY);
+                freezeTimeKeyState.put(Timestamp.DEFAULT);
+                final var lastFrozenTimeKeyState = ctx.newStates().<Timestamp>getSingleton(LAST_FROZEN_TIME_KEY);
+                lastFrozenTimeKeyState.put(Timestamp.DEFAULT);
             }
         };
     }

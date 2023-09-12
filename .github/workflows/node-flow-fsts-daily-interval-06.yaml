@@ -14,7 +14,7 @@
 # limitations under the License.
 ##
 
-name: "Node: FSTS Daily (Interval: 6)"
+name: "ZXF: [Node] FSTS Daily (Interval: 6)"
 on:
   workflow_dispatch:
     inputs:

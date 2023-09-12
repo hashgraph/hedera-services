@@ -18,7 +18,6 @@ package com.hedera.node.app.workflows;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_CREATE_TOPIC;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_DURATION;
@@ -725,22 +724,6 @@ final class TransactionCheckerTest extends AppTestBase {
                 assertThatThrownBy(() -> checker.check(tx))
                         .isInstanceOf(PreCheckException.class)
                         .has(responseCode(PAYER_ACCOUNT_NOT_FOUND));
-            }
-
-            @Test
-            @DisplayName("A wrong nodeId in transaction fails")
-            void testWrongNodeIdFails() {
-                // Given a transaction with an unknown node ID
-                final var unknownNodeId = AccountID.newBuilder()
-                        .accountNum(nodeSelfAccountId.accountNumOrElse(0L) + 1L)
-                        .build();
-                final var body = bodyBuilder(txIdBuilder()).nodeAccountID(unknownNodeId);
-                final var tx = txBuilder(signedTxBuilder(body, sigMapBuilder())).build();
-
-                // Then the checker should throw a PreCheckException
-                assertThatThrownBy(() -> checker.check(tx))
-                        .isInstanceOf(PreCheckException.class)
-                        .has(responseCode(INVALID_NODE_ACCOUNT));
             }
 
             @Test

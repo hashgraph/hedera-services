@@ -20,6 +20,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.info.NetworkInfo;
@@ -131,6 +132,14 @@ public interface HandleContext {
      */
     @NonNull
     FeeAccumulator feeAccumulator();
+
+    /**
+     * Gets a {@link ExchangeRateInfo} which provides information about the current exchange rate.
+     *
+     * @return The {@link ExchangeRateInfo} .
+     */
+    @NonNull
+    ExchangeRateInfo exchangeRateInfo();
 
     /**
      * Consumes and returns the next entity number, for use by handlers that create entities.
@@ -308,21 +317,45 @@ public interface HandleContext {
      * <p>The provided {@link Predicate} callback will be called to verify simple keys when the child transaction calls
      * any of the {@code verificationFor} methods.
      *
-     * @param txBody the {@link TransactionBody} of the transaction to dispatch
+     * @param txBody             the {@link TransactionBody} of the transaction to dispatch
      * @param recordBuilderClass the record builder class of the transaction
-     * @param verifier a {@link Predicate} that will be used to validate primitive keys
+     * @param verifier           a {@link Predicate} that will be used to validate primitive keys
+     * @param syntheticPayer    the payer of the transaction
      * @return the record builder of the transaction
-     * @throws NullPointerException if {@code txBody} is {@code null}
+     * @throws NullPointerException     if {@code txBody} is {@code null}
      * @throws IllegalArgumentException if the transaction is not a {@link TransactionCategory#USER}-transaction or if
-     * the record builder type is unknown to the app
-     * @throws IllegalStateException if the current transaction has already introduced state changes
+     *                                  the record builder type is unknown to the app
+     * @throws IllegalStateException    if the current transaction has already introduced state changes
      */
     @NonNull
     <T> T dispatchPrecedingTransaction(
-            @NonNull TransactionBody txBody, @NonNull Class<T> recordBuilderClass, @NonNull Predicate<Key> verifier);
+            @NonNull TransactionBody txBody,
+            @NonNull Class<T> recordBuilderClass,
+            @NonNull Predicate<Key> verifier,
+            AccountID syntheticPayer);
 
     /**
-     * @deprecated Use {@link #dispatchPrecedingTransaction(TransactionBody, Class, Predicate)} instead.
+     * Dispatches a preceding transaction that already has an ID.
+     *
+     * @param txBody            the {@link TransactionBody} of the transaction to dispatch
+     * @param recordBuilderClass the record builder class of the transaction
+     * @param verifier         a {@link Predicate} that will be used to validate primitive keys
+     * @return the record builder of the transaction
+     * @param <T> the record type
+     * @throws IllegalArgumentException if the transaction body did not have an id
+     */
+    default <T> T dispatchPrecedingTransaction(
+            @NonNull TransactionBody txBody, @NonNull Class<T> recordBuilderClass, @NonNull Predicate<Key> verifier) {
+        throwIfMissingPayerId(txBody);
+        return dispatchPrecedingTransaction(
+                txBody,
+                recordBuilderClass,
+                verifier,
+                txBody.transactionIDOrThrow().accountIDOrThrow());
+    }
+
+    /**
+     * @deprecated Use {@link #dispatchPrecedingTransaction(TransactionBody, Class, Predicate, AccountID)} instead.
      */
     @Deprecated(forRemoval = true)
     @NonNull
@@ -349,20 +382,45 @@ public interface HandleContext {
      *
      * <p>A {@link TransactionCategory#PRECEDING}-transaction must not dispatch a child transaction.
      *
+     * @param txBody             the {@link TransactionBody} of the child transaction to dispatch
+     * @param recordBuilderClass the record builder class of the child transaction
+     * @param callback           a {@link Predicate} callback function that will observe each primitive key
+     * @param syntheticPayer   the payer of the child transaction
+     * @return the record builder of the child transaction
+     * @throws NullPointerException     if any of the arguments is {@code null}
+     * @throws IllegalArgumentException if the current transaction is a
+     *                                  {@link TransactionCategory#PRECEDING}-transaction or if the record builder type is unknown to the app
+     */
+    @NonNull
+    <T> T dispatchChildTransaction(
+            @NonNull TransactionBody txBody,
+            @NonNull Class<T> recordBuilderClass,
+            @NonNull Predicate<Key> callback,
+            @NonNull AccountID syntheticPayer);
+
+    /**
+     * Dispatches a child transaction that already has a transaction ID.
+     *
      * @param txBody the {@link TransactionBody} of the child transaction to dispatch
      * @param recordBuilderClass the record builder class of the child transaction
      * @param callback a {@link Predicate} callback function that will observe each primitive key
      * @return the record builder of the child transaction
-     * @throws NullPointerException if any of the arguments is {@code null}
-     * @throws IllegalArgumentException if the current transaction is a
-     * {@link TransactionCategory#PRECEDING}-transaction or if the record builder type is unknown to the app
+     * @param <T> the record type
+     * @throws IllegalArgumentException if the transaction body did not have an id
      */
     @NonNull
-    <T> T dispatchChildTransaction(
-            @NonNull TransactionBody txBody, @NonNull Class<T> recordBuilderClass, @NonNull Predicate<Key> callback);
+    default <T> T dispatchChildTransaction(
+            @NonNull TransactionBody txBody, @NonNull Class<T> recordBuilderClass, @NonNull Predicate<Key> callback) {
+        throwIfMissingPayerId(txBody);
+        return dispatchChildTransaction(
+                txBody,
+                recordBuilderClass,
+                callback,
+                txBody.transactionIDOrThrow().accountIDOrThrow());
+    }
 
     /**
-     * @deprecated Use {@link #dispatchChildTransaction(TransactionBody, Class, Predicate)} instead.
+     * @deprecated Use {@link #dispatchChildTransaction(TransactionBody, Class, Predicate, AccountID)} instead.
      */
     @Deprecated(forRemoval = true)
     @NonNull
@@ -370,14 +428,19 @@ public interface HandleContext {
             @NonNull TransactionBody txBody,
             @NonNull Class<T> recordBuilderClass,
             @NonNull VerificationAssistant callback) {
-        return dispatchChildTransaction(txBody, recordBuilderClass, key -> callback.test(key, verificationFor(key)));
+        throwIfMissingPayerId(txBody);
+        return dispatchChildTransaction(
+                txBody,
+                recordBuilderClass,
+                key -> callback.test(key, verificationFor(key)),
+                txBody.transactionIDOrThrow().accountIDOrThrow());
     }
 
     /**
      * Dispatches a removable child transaction.
      *
      * <p>A removable child transaction depends on the current transaction. It behaves in almost all aspects like a
-     * regular child transaction (see {@link #dispatchChildTransaction(TransactionBody, Class, Predicate)}.
+     * regular child transaction (see {@link #dispatchChildTransaction(TransactionBody, Class, Predicate, AccountID)}.
      * But unlike regular child transactions, the records of removable child transactions are removed and not reverted.
      *
      * <p>The provided {@link Predicate} callback will be called to verify simple keys when the child transaction calls
@@ -385,20 +448,45 @@ public interface HandleContext {
      *
      * <p>A {@link TransactionCategory#PRECEDING}-transaction must not dispatch a child transaction.
      *
-     * @param txBody the {@link TransactionBody} of the child transaction to dispatch
+     * @param txBody             the {@link TransactionBody} of the child transaction to dispatch
      * @param recordBuilderClass the record builder class of the child transaction
-     * @param callback a {@link Predicate} callback function that will observe each primitive key
+     * @param callback           a {@link Predicate} callback function that will observe each primitive key
+     * @param payer
      * @return the record builder of the child transaction
-     * @throws NullPointerException if any of the arguments is {@code null}
+     * @throws NullPointerException     if any of the arguments is {@code null}
      * @throws IllegalArgumentException if the current transaction is a
-     * {@link TransactionCategory#PRECEDING}-transaction or if the record builder type is unknown to the app
+     *                                  {@link TransactionCategory#PRECEDING}-transaction or if the record builder type is unknown to the app
      */
     @NonNull
     <T> T dispatchRemovableChildTransaction(
-            @NonNull TransactionBody txBody, @NonNull Class<T> recordBuilderClass, @NonNull Predicate<Key> callback);
+            @NonNull TransactionBody txBody,
+            @NonNull Class<T> recordBuilderClass,
+            @NonNull Predicate<Key> callback,
+            AccountID payer);
 
     /**
-     * @deprecated Use {@link #dispatchRemovableChildTransaction(TransactionBody, Class, Predicate)} instead.
+     * Dispatches a removable child transaction that already has a transaction ID.
+     *
+     * @param txBody          the {@link TransactionBody} of the child transaction to dispatch
+     * @param recordBuilderClass the record builder class of the child transaction
+     * @param callback      a {@link Predicate} callback function that will observe each primitive key
+     * @return the record builder of the child transaction
+     * @param <T> the record type
+     * @throws IllegalArgumentException if the transaction body did not have an id
+     */
+    @NonNull
+    default <T> T dispatchRemovableChildTransaction(
+            @NonNull TransactionBody txBody, @NonNull Class<T> recordBuilderClass, @NonNull Predicate<Key> callback) {
+        throwIfMissingPayerId(txBody);
+        return dispatchRemovableChildTransaction(
+                txBody,
+                recordBuilderClass,
+                callback,
+                txBody.transactionIDOrThrow().accountIDOrThrow());
+    }
+
+    /**
+     * @deprecated Use {@link #dispatchRemovableChildTransaction(TransactionBody, Class, Predicate, AccountID)} instead.
      */
     @Deprecated(forRemoval = true)
     @NonNull
@@ -495,5 +583,11 @@ public interface HandleContext {
          * @return the depth of the savepoint stack
          */
         int depth();
+    }
+
+    static void throwIfMissingPayerId(@NonNull final TransactionBody body) {
+        if (!body.hasTransactionID() || !body.transactionIDOrThrow().hasAccountID()) {
+            throw new IllegalArgumentException("Transaction id must be set if dispatching without an explicit payer");
+        }
     }
 }

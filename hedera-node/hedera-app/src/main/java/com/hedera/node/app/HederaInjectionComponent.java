@@ -45,6 +45,7 @@ import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.throttle.ThrottleInjectionModule;
 import com.hedera.node.app.throttle.ThrottleManager;
 import com.hedera.node.app.workflows.WorkflowsInjectionModule;
+import com.hedera.node.app.workflows.handle.DualStateUpdateFacility;
 import com.hedera.node.app.workflows.handle.HandleWorkflow;
 import com.hedera.node.app.workflows.handle.SystemFileUpdateFacility;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
@@ -116,6 +117,8 @@ public interface HederaInjectionComponent {
     ExchangeRateManager exchangeRateManager();
 
     ThrottleManager throttleManager();
+
+    DualStateUpdateFacility dualStateUpdateFacility();
 
     @Component.Builder
     interface Builder {

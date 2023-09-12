@@ -25,5 +25,9 @@ public class ReturnTypes {
     }
 
     public static final String INT = "(int)";
+    public static final String INT_64 = "(int64)";
+    public static final String BYTE = "(uint8)";
     public static final String BOOL = "(bool)";
+    public static final String STRING = "(string)";
+    public static final String ADDRESS = "(address)";
 }
