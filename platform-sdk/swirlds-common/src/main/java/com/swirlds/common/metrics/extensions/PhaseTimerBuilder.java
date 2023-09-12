@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.swirlds.common.metrics.extensions;
 
 import static com.swirlds.common.units.TimeUnit.UNIT_MICROSECONDS;
@@ -6,6 +22,7 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.units.TimeUnit;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.EnumSet;
 import java.util.Objects;
 import java.util.Set;
 
@@ -21,8 +38,8 @@ public class PhaseTimerBuilder<T extends Enum<T>> {
 
     private String metricsNamePrefix;
     private T initialPhase;
-    private boolean fractionMetricsEnabled = true;
-    private boolean absoluteTimeMetricsEnabled = true;
+    private boolean fractionMetricsEnabled = false;
+    private boolean absoluteTimeMetricsEnabled = false;
     private TimeUnit absoluteTimeUnit = UNIT_MICROSECONDS;
 
     /**
@@ -31,18 +48,22 @@ public class PhaseTimerBuilder<T extends Enum<T>> {
      * @param platformContext the platform context
      * @param time            the time provider
      * @param metricsCategory the metrics category
-     * @param phases          the set of phases that the phase timer will be tracking
+     * @param clazz           the enum class that describes the phases
      */
     public PhaseTimerBuilder(
             @NonNull final PlatformContext platformContext,
             @NonNull final Time time,
             @NonNull final String metricsCategory,
-            @NonNull final Set<T> phases) { // TODO can we pass an enum class directly?
+            @NonNull final Class<T> clazz) {
 
         this.platformContext = Objects.requireNonNull(platformContext);
         this.time = Objects.requireNonNull(time);
         this.metricsCategory = Objects.requireNonNull(metricsCategory);
-        this.phases = Objects.requireNonNull(phases);
+        this.phases = EnumSet.allOf(Objects.requireNonNull(clazz));
+        if (phases.isEmpty()) {
+            throw new IllegalArgumentException("The enum class " + clazz.getName() + " has zero values.");
+        }
+        this.initialPhase = phases.iterator().next();
     }
 
     /**
@@ -80,24 +101,24 @@ public class PhaseTimerBuilder<T extends Enum<T>> {
     }
 
     /**
-     * Disable fractional networks. Enabled by default.
+     * Enable fractional metrics. Disabled by default.
      *
      * @return this
      */
     @NonNull
-    public PhaseTimerBuilder<T> disableFractionalMetrics() {
-        this.fractionMetricsEnabled = false;
+    public PhaseTimerBuilder<T> enableFractionalMetrics() {
+        this.fractionMetricsEnabled = true;
         return this;
     }
 
     /**
-     * Disable absolute time metrics. Enabled by default.
+     * Enable absolute time metrics. Disabled by default.
      *
      * @return this
      */
     @NonNull
-    public PhaseTimerBuilder<T> disableAbsoluteTimeMetrics() {
-        this.absoluteTimeMetricsEnabled = false;
+    public PhaseTimerBuilder<T> enableAbsoluteTimeMetrics() {
+        this.absoluteTimeMetricsEnabled = true;
         return this;
     }
 
@@ -172,11 +193,9 @@ public class PhaseTimerBuilder<T extends Enum<T>> {
      *
      * @return the initial phase
      */
+    @NonNull
     T getInitialPhase() {
-        if (initialPhase == null) {
-            return initialPhase;
-        }
-        return null; // TODO return ordinal 0
+        return initialPhase;
     }
 
     /**

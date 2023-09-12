@@ -16,7 +16,6 @@
 
 package com.swirlds.common.metrics.extensions;
 
-import static com.swirlds.common.units.TimeUnit.UNIT_MICROSECONDS;
 import static com.swirlds.common.units.TimeUnit.UNIT_NANOSECONDS;
 
 import com.swirlds.base.time.Time;
@@ -48,11 +47,9 @@ public class PhaseTimer<T extends Enum<T>> {
     /**
      * The previous time as measured by {@link Time#nanoTime()}.
      */
-    private long previousTime = -1;
+    private long previousTime;
 
     private final TimeUnit absoluteTimeUnit;
-
-    // TODO is this complex enough for a builder?
 
     /**
      * Create a new {@link PhaseTimer} instance. Do not call this directly, use {@link PhaseTimerBuilder#build()}.
@@ -72,16 +69,15 @@ public class PhaseTimer<T extends Enum<T>> {
         }
 
         absoluteTimeUnit = builder.getAbsoluteTimeUnit();
-        if (absoluteTimeMetricsEnabled) {
-            // TODO
-        }
 
         registerMetrics(
                 builder.getPlatformContext().getMetrics(),
                 builder.getMetricsCategory(),
-                builder.getMetricsNamePrefix());
+                builder.getMetricsNamePrefix(),
+                builder.getPhases());
 
         activePhase = builder.getInitialPhase();
+        previousTime = time.nanoTime();
     }
 
     /**
@@ -101,24 +97,19 @@ public class PhaseTimer<T extends Enum<T>> {
         final long now = time.nanoTime();
 
         if (fractionMetricsEnabled) {
-            // Fractional metrics are enabled
             // TODO pass in now
             fractionalTimers.get(activePhase).deactivate();
             fractionalTimers.get(phase).activate();
         }
 
-        if (absoluteTimeMetricsEnabled && previousTime != -1) {
-            // Absolute time metrics are enabled
+        if (absoluteTimeMetricsEnabled) {
             final long elapsedNanos = now - previousTime;
-
-            // TODO allow custom unit
             absoluteTimeMetrics.get(activePhase).update(UNIT_NANOSECONDS.convertTo(elapsedNanos, absoluteTimeUnit));
         }
 
         previousTime = now;
         activePhase = phase;
     }
-
 
     /**
      * Build the metric name for the fraction of time spent in a given phase.
@@ -128,7 +119,18 @@ public class PhaseTimer<T extends Enum<T>> {
      * @return the metric name
      */
     private String buildPhaseMetricName(@NonNull final String metricsNamePrefix, @NonNull final T phase) {
-        return metricsNamePrefix + "_" + phase;
+        return metricsNamePrefix + "_fraction_" + phase;
+    }
+
+    /**
+     * Build the metric name for the average absolute time spent in a given phase.
+     *
+     * @param metricsNamePrefix the base name of the metric
+     * @param phase             the phase
+     * @return the metric name
+     */
+    private String buildAbsoluteTimeMetricName(@NonNull final String metricsNamePrefix, @NonNull final T phase) {
+        return metricsNamePrefix + "_fraction_" + phase;
     }
 
     /**
@@ -137,26 +139,35 @@ public class PhaseTimer<T extends Enum<T>> {
      * @param metrics           the metrics object
      * @param metricsCategory   the category for metrics created by this object
      * @param metricsNamePrefix the base name of the metric
+     * @param phases            the phases
      */
     private void registerMetrics(
             @NonNull final Metrics metrics,
             @NonNull final String metricsCategory,
-            @NonNull final String metricsNamePrefix) {
+            @NonNull final String metricsNamePrefix,
+            @NonNull final Set<T> phases) {
 
-        final String description = ""; // TODO
-
-        if (fractionalTimers != null) {
-            for (final Map.Entry<T, FractionalTimer> entry : fractionalTimers.entrySet()) {
-                final T phase = entry.getKey();
-                final FractionalTimer timer = entry.getValue();
+        if (fractionMetricsEnabled) {
+            for (final T phase : phases) {
+                final FractionalTimer timer = fractionalTimers.get(phase);
                 timer.registerMetric(
                         metrics,
                         metricsCategory,
                         buildPhaseMetricName(metricsNamePrefix, phase),
-                        description + " (phase = " + phase + ")");
+                        "Fraction (out of 1.0) of time spent in phase " + phase.name());
             }
         }
 
-        // TODO
+        if (absoluteTimeMetricsEnabled) {
+            for (final T phase : phases) {
+                final RunningAverageMetric.Config config = new RunningAverageMetric.Config(
+                                metricsCategory, buildAbsoluteTimeMetricName(metricsNamePrefix, phase))
+                        .withDescription("Average time spent in phase " + phase.name())
+                        .withUnit(absoluteTimeUnit.getName());
+
+                final RunningAverageMetric metric = metrics.getOrCreate(config);
+                absoluteTimeMetrics.put(phase, metric);
+            }
+        }
     }
 }
