@@ -30,7 +30,7 @@ import java.time.Duration;
  * @param handleTime simulated handle time for each consensus transaction
  * @param preHandleTime simulated handle time for each consensus transaction
  */
-@ConfigData("stt")
+@ConfigData("stressTestingTool")
 public record StressTestingToolConfig(
         @ConfigProperty(defaultValue = "100") @Positive int bytesPerTrans,
         @ConfigProperty(defaultValue = "500") @Positive int transPerSecToCreate,

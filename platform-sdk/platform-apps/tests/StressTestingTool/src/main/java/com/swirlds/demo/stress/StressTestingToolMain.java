@@ -113,7 +113,6 @@ public class StressTestingToolMain implements SwirldMain {
     }
 
     public StressTestingToolMain() {
-        System.out.println("Main");
         transactionGenerator = new StoppableThreadConfiguration<>(getStaticThreadManager())
                 .setComponent("demo")
                 .setThreadName("transaction-generator")
@@ -151,14 +150,13 @@ public class StressTestingToolMain implements SwirldMain {
                 .setComponent("app")
                 .setThreadName("demo_log_time_pulse")
                 .setRunnable(() -> {
-                    final Logger logger = LogManager.getLogger(getClass());
+                    final Logger logger = LogManager.getLogger(StressTestingToolMain.class);
                     logger.debug(STARTUP.getMarker(), "Keepalive Event for Regression Timing");
                 })
                 .build();
 
         Runtime.getRuntime().addShutdownHook(shutdownHook);
 
-        System.out.println("starting transaction generator");
         transactionGenerator.start();
 
         while (true) {
@@ -178,7 +176,6 @@ public class StressTestingToolMain implements SwirldMain {
             return;
         }
 
-        System.out.println("transaction generator started");
         byte[] transaction;
         final long now = System.nanoTime();
         int numCreated = 0;
@@ -189,7 +186,6 @@ public class StressTestingToolMain implements SwirldMain {
         if (lastTPSMeasureTime == 0) {
             lastTPSMeasureTime = now;
             rampUpStartTimeMilliSeconds = now / MILLISECONDS_TO_NANOSECONDS;
-            System.out.println("configured TPS: " + expectedTPS);
             logger.info(
                     STARTUP.getMarker(),
                     "First time calling generateTransactions() Expected TPS per code is {}",

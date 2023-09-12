@@ -77,10 +77,10 @@ public class StressTestingToolState extends PartialMerkleLeaf implements SwirldS
     }
 
     public void init(
-            final Platform platform,
-            final SwirldDualState swirldDualState,
-            final InitTrigger trigger,
-            final SoftwareVersion previousSoftwareVersion) {
+            @NonNull final Platform platform,
+            @NonNull final SwirldDualState swirldDualState,
+            @NonNull final InitTrigger trigger,
+            @NonNull final SoftwareVersion previousSoftwareVersion) {
         this.config = platform.getContext().getConfiguration().getConfigData(StressTestingToolConfig.class);
     }
 

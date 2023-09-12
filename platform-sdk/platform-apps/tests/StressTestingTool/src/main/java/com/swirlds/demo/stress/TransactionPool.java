@@ -16,6 +16,7 @@
 
 package com.swirlds.demo.stress;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Random;
 
 /**
@@ -35,12 +36,10 @@ final class TransactionPool {
     /**
      * Constructs a TransactionPool instance with a fixed pool size, fixed transaction size.
      *
-     * @param poolSize
-     * 		the number of pre-generated transactions
-     * @param transactionSize
-     * 		the size of randomly generated transaction
-     * @throws IllegalArgumentException
-     * 		if the {@code poolSize} or the {@code transactionSize} parameters are less than one (1)
+     * @param poolSize        the number of pre-generated transactions
+     * @param transactionSize the size of randomly generated transaction
+     * @throws IllegalArgumentException if the {@code poolSize} or the {@code transactionSize} parameters are less than
+     *                                  one (1)
      */
     TransactionPool(final int poolSize, final int transactionSize) {
         if (poolSize < 1) {
@@ -68,6 +67,7 @@ final class TransactionPool {
      *
      * @return a random transaction from the pool
      */
+    @NonNull
     byte[] transaction() {
         return transactions[random.nextInt(transactions.length)];
     }
