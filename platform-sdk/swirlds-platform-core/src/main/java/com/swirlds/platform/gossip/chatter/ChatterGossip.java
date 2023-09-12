@@ -208,7 +208,11 @@ public class ChatterGossip extends AbstractGossip {
                 networkMetrics::recordPingTime,
                 platformContext.getMetrics());
 
-        reconnectController = new ReconnectController(threadManager, reconnectHelper, this::resume);
+        reconnectController = new ReconnectController(
+                platformContext.getConfiguration().getConfigData(ReconnectConfig.class),
+                threadManager,
+                reconnectHelper,
+                this::resume);
 
         // first create all instances because of thread safety
         for (final NodeId otherId : topology.getNeighbors()) {

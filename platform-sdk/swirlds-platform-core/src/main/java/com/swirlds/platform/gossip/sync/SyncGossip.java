@@ -219,7 +219,11 @@ public class SyncGossip extends AbstractGossip {
                         Pair.of(eventMapper, "eventMapper"),
                         Pair.of(shadowGraph, "shadowGraph")));
 
-        reconnectController = new ReconnectController(threadManager, reconnectHelper, this::resume);
+        reconnectController = new ReconnectController(
+                platformContext.getConfiguration().getConfigData(ReconnectConfig.class),
+                threadManager,
+                reconnectHelper,
+                this::resume);
 
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
         final ProtocolConfig protocolConfig = platformContext.getConfiguration().getConfigData(ProtocolConfig.class);

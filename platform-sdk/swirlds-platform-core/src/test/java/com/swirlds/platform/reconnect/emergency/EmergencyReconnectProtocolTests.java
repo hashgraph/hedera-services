@@ -155,8 +155,11 @@ public class EmergencyReconnectProtocolTests {
         final EmergencyRecoveryManager emergencyRecoveryManager = mock(EmergencyRecoveryManager.class);
         when(emergencyRecoveryManager.isEmergencyStateRequired()).thenReturn(true);
 
-        final ReconnectController reconnectController =
-                new ReconnectController(getStaticThreadManager(), mock(ReconnectHelper.class), () -> {});
+        final ReconnectConfig reconnectConfig = mock(ReconnectConfig.class);
+        when(reconnectConfig.minimumTimeBetweenReconnects()).thenReturn(Duration.ofSeconds(0));
+
+        final ReconnectController reconnectController = new ReconnectController(
+                reconnectConfig, getStaticThreadManager(), mock(ReconnectHelper.class), () -> {});
 
         final FallenBehindManager fallenBehindManager = mock(FallenBehindManager.class);
         when(fallenBehindManager.hasFallenBehind()).thenReturn(false);

@@ -30,6 +30,7 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
@@ -243,7 +244,10 @@ class EmergencyReconnectTests {
                         mock(ReconnectMetrics.class)),
                 stateConfig);
 
-        return new ReconnectController(getStaticThreadManager(), helper, () -> {});
+        final ReconnectConfig reconnectConfig = mock(ReconnectConfig.class);
+        when(reconnectConfig.minimumTimeBetweenReconnects()).thenReturn(Duration.ofSeconds(0));
+
+        return new ReconnectController(reconnectConfig, getStaticThreadManager(), helper, () -> {});
     }
 
     private void executeReconnect() {

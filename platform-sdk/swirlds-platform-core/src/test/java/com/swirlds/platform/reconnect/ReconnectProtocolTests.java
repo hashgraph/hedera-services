@@ -184,8 +184,11 @@ public class ReconnectProtocolTests {
         final FallenBehindManager fallenBehindManager = mock(FallenBehindManager.class);
         when(fallenBehindManager.shouldReconnectFrom(any())).thenReturn(false);
 
-        final ReconnectController reconnectController =
-                new ReconnectController(getStaticThreadManager(), mock(ReconnectHelper.class), () -> {});
+        final ReconnectConfig reconnectConfig = mock(ReconnectConfig.class);
+        when(reconnectConfig.minimumTimeBetweenReconnects()).thenReturn(Duration.ofSeconds(0));
+
+        final ReconnectController reconnectController = new ReconnectController(
+                reconnectConfig, getStaticThreadManager(), mock(ReconnectHelper.class), () -> {});
 
         final ReconnectProtocol protocol = new ReconnectProtocol(
                 getStaticThreadManager(),
