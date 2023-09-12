@@ -505,4 +505,33 @@ class StateSigningTests {
         assertEquals(0, signedState.getSigningWeight());
         assertFalse(signedState.isComplete());
     }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    @DisplayName("Recovery State Is Complete Test")
+    void recoveryStateIsCompleteTest(final boolean evenWeighting) {
+        final Random random = getRandomPrintSeed();
+
+        final int nodeCount = random.nextInt(10, 20);
+
+        final AddressBook addressBook = new RandomAddressBookGenerator(random)
+                .setWeightDistributionStrategy(
+                        evenWeighting
+                                ? RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED
+                                : RandomAddressBookGenerator.WeightDistributionStrategy.GAUSSIAN)
+                .setSize(nodeCount)
+                .build();
+
+        final SignedState signedState = new RandomSignedStateGenerator(random)
+                .setAddressBook(addressBook)
+                .setSignatures(new HashMap<>())
+                .build();
+
+        assertFalse(signedState.isComplete());
+
+        signedState.markAsRecoveryState();
+
+        // Recovery states are considered to be complete regardless of signature count
+        assertTrue(signedState.isComplete());
+    }
 }

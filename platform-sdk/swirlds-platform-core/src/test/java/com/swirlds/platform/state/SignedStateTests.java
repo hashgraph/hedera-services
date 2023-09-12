@@ -283,7 +283,7 @@ class SignedStateTests {
         when(platformState.getPlatformData()).thenReturn(platformData);
         when(platformData.getRound()).thenReturn(0L);
         final SignedState signedState =
-                new SignedState(TestPlatformContextBuilder.create().build(), state, "test");
+                new SignedState(TestPlatformContextBuilder.create().build(), state, "test", false);
 
         assertFalse(state.isDestroyed(), "state should not yet be destroyed");
 

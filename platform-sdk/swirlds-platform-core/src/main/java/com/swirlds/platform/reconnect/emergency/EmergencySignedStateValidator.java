@@ -106,6 +106,7 @@ public class EmergencySignedStateValidator implements SignedStateValidator {
         // FUTURE WORK: move this to the calling code (saved state loading and emergency reconnect) when
         // reconnect is refactored such that it no longer needs to be called by sync
         signedState.getState().getPlatformState().getPlatformData().setNextEpochHash(emergencyRecoveryFile.hash());
+        signedState.markAsRecoveryState();
 
         logger.info(
                 SIGNED_STATE.getMarker(),
