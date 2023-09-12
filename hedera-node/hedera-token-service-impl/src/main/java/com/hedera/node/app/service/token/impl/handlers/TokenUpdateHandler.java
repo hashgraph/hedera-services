@@ -16,19 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.CURRENT_TREASURY_STILL_OWNS_NFTS;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FEE_SCHEDULE_KEY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
 import static com.hedera.hapi.node.base.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
@@ -155,6 +143,10 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
                 // TODO : Not sure why we are checking existing treasury account here
                 final var existingTreasuryAccount = getIfUsable(
                         existingTreasury, accountStore, context.expiryValidator(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+                // Check whether new treasury has balance, if it does throw TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES
+                if (newTreasuryRel != null) {
+                    validateTrue(newTreasuryRel.balance() == 0, TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
+                }
                 updateTreasuryTitles(existingTreasuryAccount, newTreasuryAccount, token, accountStore, tokenRelStore);
                 // If the token is fungible, transfer fungible balance to new treasury
                 // If it is non-fungible token transfer the ownership of the NFTs from old treasury to new treasury
