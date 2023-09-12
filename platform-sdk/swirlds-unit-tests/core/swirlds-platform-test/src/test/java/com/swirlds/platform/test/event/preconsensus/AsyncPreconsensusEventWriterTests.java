@@ -302,7 +302,9 @@ class AsyncPreconsensusEventWriterTests {
 
         // Without advancing the first non-ancient generation,
         // we should never be able to increase the minimum generation from 0.
-        for (final Iterator<PreconsensusEventFile> it = fileManager.getFileIterator(0); it.hasNext(); ) {
+        final PreconsensusEventFileManager fileManager2 = new PreconsensusEventFileManager(
+                buildContext(), Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0), 0);
+        for (final Iterator<PreconsensusEventFile> it = fileManager2.getFileIterator(0); it.hasNext(); ) {
             final PreconsensusEventFile file = it.next();
             assertEquals(0, file.getMinimumGeneration());
         }
@@ -421,7 +423,10 @@ class AsyncPreconsensusEventWriterTests {
         writer.waitUntilNotBusy();
 
         // We shouldn't see any files that are incapable of storing events above the minimum
-        fileManager
+        final PreconsensusEventFileManager fileManager2 = new PreconsensusEventFileManager(
+                buildContext(), Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0), 0);
+
+        fileManager2
                 .getFileIterator(NO_MINIMUM_GENERATION)
                 .forEachRemaining(file -> assertTrue(file.getMaximumGeneration() >= minimumGenerationToStore));
 
@@ -430,7 +435,7 @@ class AsyncPreconsensusEventWriterTests {
         // Since we were very careful to always advance the first non-ancient generation, we should
         // find lots of files with a minimum generation exceeding 0.
         boolean foundNonZeroMinimumGeneration = false;
-        for (Iterator<PreconsensusEventFile> it2 = fileManager.getFileIterator(0); it2.hasNext(); ) {
+        for (Iterator<PreconsensusEventFile> it2 = fileManager2.getFileIterator(0); it2.hasNext(); ) {
             final PreconsensusEventFile file = it2.next();
             if (file.getMinimumGeneration() > 0) {
                 foundNonZeroMinimumGeneration = true;
@@ -502,9 +507,11 @@ class AsyncPreconsensusEventWriterTests {
         // Simulate a restart.
         writer1.stop();
 
+        final PreconsensusEventFileManager fileManager1b = new PreconsensusEventFileManager(
+                buildContext(), Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0), 0);
         if (truncateLastFile) {
             // Remove a single byte from the last file. This will corrupt the last event that was written.
-            final Iterator<PreconsensusEventFile> it = fileManager1.getFileIterator(NO_MINIMUM_GENERATION);
+            final Iterator<PreconsensusEventFile> it = fileManager1b.getFileIterator(NO_MINIMUM_GENERATION);
             while (it.hasNext()) {
                 final PreconsensusEventFile file = it.next();
                 if (!it.hasNext()) {
@@ -525,7 +532,7 @@ class AsyncPreconsensusEventWriterTests {
         writer2.start();
 
         // Write all events currently in the stream, we expect these to be ignored and not written to the stream twice.
-        final IOIterator<GossipEvent> iterator = fileManager1.getEventIterator(NO_MINIMUM_GENERATION);
+        final IOIterator<GossipEvent> iterator = fileManager1b.getEventIterator(NO_MINIMUM_GENERATION);
         while (iterator.hasNext()) {
             final GossipEvent gossipEvent = iterator.next();
             final EventImpl next = new EventImpl(gossipEvent.getHashedData(), gossipEvent.getUnhashedData());
