@@ -28,6 +28,7 @@ import com.swirlds.logging.LogMarker;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.LongBinaryOperator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -41,16 +42,6 @@ import org.apache.logging.log4j.Logger;
  */
 public class FractionalTimer {
     private static final Logger logger = LogManager.getLogger(FractionalTimer.class);
-
-    /**
-     * passed to the accumulator method to indicate that work has started
-     */
-    private static final long WORK_START = 0;
-
-    /**
-     * passed to the accumulator method to indicate that work has ended
-     */
-    private static final long WORK_END = 1;
 
     /**
      * the initial value of status when the instance is created
@@ -83,6 +74,16 @@ public class FractionalTimer {
     private final RateLimitedLogger errorLogger;
 
     /**
+     * This lambda is used to enter an active state.
+     */
+    private final LongBinaryOperator activationUpdate;
+
+    /**
+     * This lambda is used to enter an inactive state.
+     */
+    private final LongBinaryOperator deactivationUpdate;
+
+    /**
      * A constructor where a custom {@link Time} instance could be supplied
      *
      * @param time provides the current time
@@ -91,6 +92,9 @@ public class FractionalTimer {
         this.time = new IntegerEpochTime(time);
         this.accumulator = new AtomicLong(ByteUtils.combineInts(this.time.getMicroTime(), INITIAL_STATUS));
         this.errorLogger = new RateLimitedLogger(logger, time, LOG_PERIOD);
+
+        activationUpdate = (currentState, now) -> statusUpdate(currentState, true, now);
+        deactivationUpdate = (currentState, now) -> statusUpdate(currentState, false, now);
     }
 
     /**
@@ -115,16 +119,34 @@ public class FractionalTimer {
 
     /**
      * Notifies the metric that we are entering an active period.
+     *
+     * @param now the current time in microseconds
      */
-    public void activate() { // TODO method that takes time from the caller
-        accumulator.accumulateAndGet(WORK_START, this::statusUpdate);
+    public void activate(final long now) {
+        accumulator.accumulateAndGet(now, activationUpdate);
+    }
+
+    /**
+     * Notifies the metric that we are entering an active period.
+     */
+    public void activate() {
+        this.activate(time.getMicroTime());
+    }
+
+    /**
+     * Notifies the metric that we are entering an inactive period.
+     *
+     * @param now the current time in microseconds
+     */
+    public void deactivate(final long now) {
+        accumulator.accumulateAndGet(now, deactivationUpdate);
     }
 
     /**
      * Notifies the metric that we are entering an inactive period.
      */
-    public void deactivate() { // TODO method that takes time from the caller
-        accumulator.accumulateAndGet(WORK_END, this::statusUpdate);
+    public void deactivate() {
+        this.deactivate(time.getMicroTime());
     }
 
     /**
@@ -172,35 +194,57 @@ public class FractionalTimer {
         return ((double) activeTime) / elapsedTime;
     }
 
+    /**
+     * Check if this timer is currently inactive.
+     *
+     * @param status the current status of this object
+     * @return true if this timer is currently inactive
+     */
     private boolean isInactive(final int status) {
         return status < 0;
     }
 
-    private long statusUpdate(final long previousPair, final long statusChange) {
+    /**
+     * Update the state of this object. The state is the value stored in an atomic long.
+     *
+     * @param currentState     the current value of the atomic long. Two integers are packed into this long value. The
+     *                         first four bytes represent the timestamp when we initially began the current measurement
+     *                         period. The last four bytes represent the total time spent in the opposite status. The
+     *                         right four bytes can be positive or negative. If positive, it means that the object is
+     *                         currently active. If negative, it means that the object is currently inactive.
+     * @param isBecomingActive true if the object is currently becoming active, false if it is currently becoming
+     *                         inactive
+     * @param now              the current time in microseconds
+     * @return the new value that will be stored in the atomic long.
+     */
+    private long statusUpdate(final long currentState, final boolean isBecomingActive, final long now) {
+
         // the epoch time when the last reset occurred
-        final int measurementStart = ByteUtils.extractLeftInt(previousPair);
+        final int measurementStart = ByteUtils.extractLeftInt(currentState);
         // The current status is represented by the (+ -) sign. The number represents the time spent in the
         // opposite status. This is that its time spent being active/inactive can be deduced whenever the sample is
         // taken. If the time spent active is X, and the measurement time is Y, then inactive time is Y-X. Since zero
         // is neither positive nor negative, the values are offset by 1
-        final int currentStatus = ByteUtils.extractRightInt(previousPair);
-        // the current micro epoch time
-        final int currentTime = time.getMicroTime();
+        final int currentStatus = ByteUtils.extractRightInt(currentState);
 
-        if ((statusChange == WORK_START && !isInactive(currentStatus))
-                || (statusChange == WORK_END && isInactive(currentStatus))) {
+        // In order to fit the time into 4 bytes, we need to truncate the time to the lower 31 bits.
+        // This causes the timer to become inaccurate after 34 minutes, but that is not a problem,
+        // since this utility is intended to be used to measure time over much shorter intervals.
+        final int truncatedTime = (int) now;
+
+        if ((isBecomingActive && !isInactive(currentStatus)) || (!isBecomingActive && isInactive(currentStatus))) {
             // this means that the metric has not been updated correctly, we will not change the value
             errorLogger.error(
                     LogMarker.EXCEPTION.getMarker(),
                     "FractionalTimer has been updated incorrectly. "
-                            + "Current status: {}, status change: {}, stack trace: \n{}",
+                            + "Current status: {}, is becoming active: {}, stack trace: \n{}",
                     currentStatus,
-                    statusChange,
+                    isBecomingActive,
                     StackTrace.getStackTrace().toString());
-            return previousPair;
+            return currentState;
         }
         // the time elapsed since the last reset
-        final int elapsedTime = IntegerEpochTime.elapsed(measurementStart, currentTime);
+        final int elapsedTime = IntegerEpochTime.elapsed(measurementStart, truncatedTime);
         // the time spent in the opposite status, either active or inactive
         final int statusTime = Math.abs(currentStatus) - 1;
         // the time spent inactive is all the elapsed time minus the time spent active
@@ -209,9 +253,9 @@ public class FractionalTimer {
         if (newTime < 0 || measurementStart < 0) {
             // this is an overflow because the metric was not reset, we are in a state where we can no longer track
             // the time spent inactive or active
-            return ByteUtils.combineInts(OVERFLOW, statusChange == WORK_START ? 1 : -1);
+            return ByteUtils.combineInts(OVERFLOW, isBecomingActive ? 1 : -1);
         }
-        if (statusChange == WORK_START) {
+        if (isBecomingActive) {
             // this means this was previously inactive and now started working
             return ByteUtils.combineInts(measurementStart, newTime + 1);
         }
@@ -219,10 +263,22 @@ public class FractionalTimer {
         return ByteUtils.combineInts(measurementStart, -newTime - 1);
     }
 
-    private long reset(final long currentPair) {
-        return ByteUtils.combineInts(time.getMicroTime(), resetStatus(ByteUtils.extractRightInt(currentPair)));
+    /**
+     * This lambda is used to reset all data stored by this object and begin a new measurement period.
+     *
+     * @param currentState the current state of this object
+     * @return the new state of this object
+     */
+    private long reset(final long currentState) {
+        return ByteUtils.combineInts(time.getMicroTime(), resetStatus(ByteUtils.extractRightInt(currentState)));
     }
 
+    /**
+     * Used to generate the rightmost four bytes in the state during a restart.
+     *
+     * @param status the current rightmost four bytes
+     * @return the new rightmost four bytes
+     */
     private int resetStatus(final int status) {
         if (status > 0) {
             return 1;

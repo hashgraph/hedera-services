@@ -16,6 +16,7 @@
 
 package com.swirlds.common.metrics.extensions;
 
+import static com.swirlds.common.units.TimeUnit.UNIT_MICROSECONDS;
 import static com.swirlds.common.units.TimeUnit.UNIT_NANOSECONDS;
 
 import com.swirlds.base.time.Time;
@@ -97,9 +98,9 @@ public class PhaseTimer<T extends Enum<T>> {
         final long now = time.nanoTime();
 
         if (fractionMetricsEnabled) {
-            // TODO pass in now
-            fractionalTimers.get(activePhase).deactivate();
-            fractionalTimers.get(phase).activate();
+            final long microNow = (long) UNIT_NANOSECONDS.convertTo(now, UNIT_MICROSECONDS);
+            fractionalTimers.get(activePhase).deactivate(microNow);
+            fractionalTimers.get(phase).activate(microNow);
         }
 
         if (absoluteTimeMetricsEnabled) {
