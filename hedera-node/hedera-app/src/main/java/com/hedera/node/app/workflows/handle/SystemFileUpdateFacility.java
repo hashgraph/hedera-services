@@ -19,6 +19,7 @@ package com.hedera.node.app.workflows.handle;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.FileID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.config.ConfigProviderImpl;
@@ -30,14 +31,14 @@ import com.hedera.node.app.util.FileUtilities;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.LedgerConfig;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.function.Function;
+import com.hedera.hapi.node.transaction.ThrottleDefinitions;
+import java.util.stream.Collectors;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -50,10 +51,10 @@ import org.apache.logging.log4j.Logger;
 public class SystemFileUpdateFacility {
 
     private static final Logger logger = LogManager.getLogger(SystemFileUpdateFacility.class);
-    static final Set<HederaFunctionality> expectedOps = ExpectedCustomThrottles.ACTIVE_OPS;
-    private static final Function<
-                    ThrottleDefinitions, com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions>
-            toPojo = com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions::fromProto;
+    static final Set<HederaFunctionality> expectedOps = ExpectedCustomThrottles.ACTIVE_OPS
+            .stream()
+            .map(protoOp -> HederaFunctionality.fromProtobufOrdinal(protoOp.getNumber()))
+            .collect(Collectors.toSet());
 
     private final ConfigProviderImpl configProvider;
     private final ThrottleManager throttleManager;
@@ -137,7 +138,7 @@ public class SystemFileUpdateFacility {
     }
 
     private void throttleValidations(SingleTransactionRecordBuilderImpl recordBuilder) {
-        final var defs = toPojo.apply(throttleManager.throttleDefinitionsProto());
+        final var defs = throttleManager.throttleDefinitions();
         try {
             checkForMissingExpectedOperations(defs);
             checkForZeroOpsPerSec(defs);
@@ -148,11 +149,11 @@ public class SystemFileUpdateFacility {
     }
 
     private void checkForMissingExpectedOperations(
-            com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions defs) {
+            ThrottleDefinitions defs) {
         Set<HederaFunctionality> customizedOps = new HashSet<>();
-        for (var bucket : defs.getBuckets()) {
-            for (var group : bucket.getThrottleGroups()) {
-                customizedOps.addAll(group.getOperations());
+        for (var bucket : defs.throttleBuckets()) {
+            for (var group : bucket.throttleGroups()) {
+                customizedOps.addAll(group.operations());
             }
         }
         if (customizedOps.isEmpty() || !expectedOps.equals(EnumSet.copyOf(customizedOps))) {
@@ -161,10 +162,10 @@ public class SystemFileUpdateFacility {
     }
 
     private void checkForZeroOpsPerSec(
-            com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions defs) {
-        for (var bucket : defs.getBuckets()) {
-            for (var group : bucket.getThrottleGroups()) {
-                if (group.impliedMilliOpsPerSec() == 0) {
+            ThrottleDefinitions defs) {
+        for (var bucket : defs.throttleBuckets()) {
+            for (var group : bucket.throttleGroups()) {
+                if (group.milliOpsPerSec() == 0) {
                     throw new IllegalStateException(ResponseCodeEnum.THROTTLE_GROUP_HAS_ZERO_OPS_PER_SEC.name());
                 }
             }
@@ -172,11 +173,11 @@ public class SystemFileUpdateFacility {
     }
 
     private void checkForRepeatedOperations(
-            com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions defs) {
-        for (var bucket : defs.getBuckets()) {
+            ThrottleDefinitions defs) {
+        for (var bucket : defs.throttleBuckets()) {
             final Set<HederaFunctionality> seenSoFar = new HashSet<>();
-            for (var group : bucket.getThrottleGroups()) {
-                final var functions = group.getOperations();
+            for (var group : bucket.throttleGroups()) {
+                final var functions = group.operations();
                 if (!Collections.disjoint(seenSoFar, functions)) {
                     throw new IllegalStateException(ResponseCodeEnum.OPERATION_REPEATED_IN_BUCKET_GROUPS.name());
                 }

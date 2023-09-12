@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.workflows.handle;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_CREATE;
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
 import static com.hedera.node.app.service.file.impl.FileServiceImpl.BLOBS_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -30,11 +32,13 @@ import com.hedera.hapi.node.file.FileAppendTransactionBody;
 import com.hedera.hapi.node.file.FileUpdateTransactionBody;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
+import com.hedera.hapi.node.transaction.ThrottleBucket;
+import com.hedera.hapi.node.transaction.ThrottleDefinitions;
+import com.hedera.hapi.node.transaction.ThrottleGroup;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
-import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleGroup;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.spi.fixtures.TransactionFactory;
 import com.hedera.node.app.throttle.ThrottleManager;
@@ -203,16 +207,15 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
         // given
         final var txBody = generateThrottleDefFileTransaction();
 
-        final var throttleBucket =
-                new com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleBucket<HederaFunctionality>();
-        throttleBucket.setName("test");
-        throttleBucket.setBurstPeriod(100);
-        throttleBucket.setThrottleGroups(List.of()); // no throttle groups added
+        final var throttleBucket = ThrottleBucket.newBuilder()
+                .name("test")
+                .burstPeriodMs(100)
+                .throttleGroups(List.of()) // no throttle groups added
+                .build();
 
-        var throttleDefinitions = new com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions();
-        throttleDefinitions.setBuckets(List.of(throttleBucket));
+        var throttleDefinitions = new ThrottleDefinitions(List.of(throttleBucket));
 
-        when(throttleManager.throttleDefinitionsProto()).thenReturn(throttleDefinitions.toProto());
+        when(throttleManager.throttleDefinitions()).thenReturn(throttleDefinitions);
 
         // when
         final var recordBuilder = new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW);
@@ -227,21 +230,20 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
         // given
         final var txBody = generateThrottleDefFileTransaction();
 
-        var throttleGroup = new ThrottleGroup<HederaFunctionality>();
-        throttleGroup.setOpsPerSec(10);
-        // setting only a few operations. We require a lot more
-        throttleGroup.setOperations(List.of(HederaFunctionality.CryptoCreate, HederaFunctionality.CryptoTransfer));
+        var throttleGroup = ThrottleGroup.newBuilder()
+                .milliOpsPerSec(10)
+                .operations(List.of(CRYPTO_CREATE, CRYPTO_TRANSFER)) // setting only a few operations. We require a lot more
+                .build();
 
-        final var throttleBucket =
-                new com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleBucket<HederaFunctionality>();
-        throttleBucket.setName("test");
-        throttleBucket.setBurstPeriod(100);
-        throttleBucket.setThrottleGroups(List.of(throttleGroup));
+        final var throttleBucket = ThrottleBucket.newBuilder()
+                .name("test")
+                .burstPeriodMs(100)
+                .throttleGroups(List.of(throttleGroup))
+                .build();
 
-        var throttleDefinitions = new com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions();
-        throttleDefinitions.setBuckets(List.of(throttleBucket));
+        var throttleDefinitions = new ThrottleDefinitions(List.of(throttleBucket));
 
-        when(throttleManager.throttleDefinitionsProto()).thenReturn(throttleDefinitions.toProto());
+        when(throttleManager.throttleDefinitions()).thenReturn(throttleDefinitions);
 
         // when
         final var recordBuilder = new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW);
@@ -256,21 +258,20 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
         // given
         final var txBody = generateThrottleDefFileTransaction();
 
-        var throttleGroup = new ThrottleGroup<HederaFunctionality>();
-        throttleGroup.setOpsPerSec(0); // the ops per sec should be more than 0
-        throttleGroup.setOperations(
-                SystemFileUpdateFacility.expectedOps.stream().toList());
+        var throttleGroup = ThrottleGroup.newBuilder()
+                .milliOpsPerSec(0) // the ops per sec should be more than 0
+                .operations(SystemFileUpdateFacility.expectedOps.stream().toList())
+                .build();
 
-        final var throttleBucket =
-                new com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleBucket<HederaFunctionality>();
-        throttleBucket.setName("test");
-        throttleBucket.setBurstPeriod(100);
-        throttleBucket.setThrottleGroups(List.of(throttleGroup));
+        final var throttleBucket = ThrottleBucket.newBuilder()
+                .name("test")
+        .burstPeriodMs(100)
+                .throttleGroups(List.of(throttleGroup))
+                .build();
 
-        var throttleDefinitions = new com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions();
-        throttleDefinitions.setBuckets(List.of(throttleBucket));
+        var throttleDefinitions = new ThrottleDefinitions(List.of(throttleBucket));
 
-        when(throttleManager.throttleDefinitionsProto()).thenReturn(throttleDefinitions.toProto());
+        when(throttleManager.throttleDefinitions()).thenReturn(throttleDefinitions);
 
         // when
         final var recordBuilder = new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW);
@@ -285,26 +286,25 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
         // given
         final var txBody = generateThrottleDefFileTransaction();
 
-        final var throttleGroup = new ThrottleGroup<HederaFunctionality>();
-        throttleGroup.setOpsPerSec(10);
-        throttleGroup.setOperations(
-                SystemFileUpdateFacility.expectedOps.stream().toList());
+        final var throttleGroup = ThrottleGroup.newBuilder()
+                .milliOpsPerSec(10)
+                .operations(SystemFileUpdateFacility.expectedOps.stream().toList())
+                        .build();
 
-        final var repeatedThrottleGroup = new ThrottleGroup<HederaFunctionality>();
-        repeatedThrottleGroup.setOpsPerSec(10);
-        // repeating an operation that exists in the first throttle group
-        repeatedThrottleGroup.setOperations(List.of(HederaFunctionality.CryptoCreate));
+        final var repeatedThrottleGroup = ThrottleGroup.newBuilder()
+                .milliOpsPerSec(10)
+                .operations(List.of(CRYPTO_CREATE))  // repeating an operation that exists in the first throttle group
+                .build();
 
-        final var throttleBucket =
-                new com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleBucket<HederaFunctionality>();
-        throttleBucket.setName("test");
-        throttleBucket.setBurstPeriod(100);
-        throttleBucket.setThrottleGroups(List.of(throttleGroup, repeatedThrottleGroup));
+        final var throttleBucket = ThrottleBucket.newBuilder()
+                        .name("test")
+                        .burstPeriodMs(100)
+                        .throttleGroups(List.of(throttleGroup, repeatedThrottleGroup))
+                        .build();
 
-        var throttleDefinitions = new com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions();
-        throttleDefinitions.setBuckets(List.of(throttleBucket));
+        var throttleDefinitions = new ThrottleDefinitions(List.of(throttleBucket));
 
-        when(throttleManager.throttleDefinitionsProto()).thenReturn(throttleDefinitions.toProto());
+        when(throttleManager.throttleDefinitions()).thenReturn(throttleDefinitions);
 
         // when
         final var recordBuilder = new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW);
