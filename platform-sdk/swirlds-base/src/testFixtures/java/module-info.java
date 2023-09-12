@@ -3,4 +3,5 @@ open module com.swirlds.base.test.fixtures {
 
     requires transitive com.swirlds.base;
     requires com.swirlds.common; // Should be removed in future
+    requires org.junit.jupiter.api;
 }
