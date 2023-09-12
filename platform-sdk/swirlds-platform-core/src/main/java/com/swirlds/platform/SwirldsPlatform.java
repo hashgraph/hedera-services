@@ -560,7 +560,7 @@ public class SwirldsPlatform implements Platform, Startable {
         validators.add(new TransactionSizeValidator(transactionConfig.maxTransactionBytesPerEvent()));
         // some events in the PCES might have been created by nodes that are no longer in the current
         // address book but are in the previous one, so we need both for signature validation
-        final List<AddressBook> validationAddressBooks = Stream.of(previousAddressBook, currentAddressBook)
+        final List<AddressBook> validationAddressBooks = Stream.of(currentAddressBook, previousAddressBook)
                 .filter(Objects::nonNull)
                 .toList();
         if (basicConfig.verifyEventSigs()) {
