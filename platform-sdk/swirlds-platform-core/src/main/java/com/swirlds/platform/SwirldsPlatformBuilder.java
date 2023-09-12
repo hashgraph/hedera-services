@@ -25,9 +25,9 @@ import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
 import static com.swirlds.platform.util.BootstrapUtils.getInitialState;
 import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
-import static com.swirlds.platform.util.BootstrapUtils.loadPathsConfig;
 import static com.swirlds.platform.util.BootstrapUtils.startJVMPauseDetectorThread;
 import static com.swirlds.platform.util.BootstrapUtils.startThreadDumpGenerator;
+import static com.swirlds.platform.util.BootstrapUtils.validatePathToConfigTxt;
 import static com.swirlds.platform.util.BootstrapUtils.writeSettingsUsed;
 
 import com.swirlds.base.time.Time;
@@ -93,10 +93,12 @@ public final class SwirldsPlatformBuilder {
     private String swirldName = "Unspecified";
     private Supplier<SwirldMain> mainSupplier = null;
     private final ConfigurationBuilder configBuilder;
+    private final ConfigurationBuilder bootstrapConfigBuilder;
 
     public SwirldsPlatformBuilder() {
-        configBuilder = ConfigUtils.scanAndRegisterAllConfigTypes(
-                ConfigurationBuilder.create(), Set.of(SWIRLDS_PACKAGE, HEDERA_PACKAGE));
+        configBuilder =
+                ConfigUtils.scanAndRegisterAllConfigTypes(ConfigurationBuilder.create(), Set.of(SWIRLDS_PACKAGE));
+        bootstrapConfigBuilder = ConfigurationBuilder.create().withConfigDataType(PathsConfig.class);
     }
 
     public SwirldsPlatformBuilder withNodeId(final long nodeId) {
@@ -116,44 +118,46 @@ public final class SwirldsPlatformBuilder {
 
     public SwirldsPlatformBuilder withConfigSource(@NonNull final ConfigSource source) {
         configBuilder.withSource(source);
+        bootstrapConfigBuilder.withSource(source);
         return this;
     }
 
     public SwirldsPlatformBuilder withConfigValue(@NonNull final String name, @Nullable final String value) {
-        configBuilder.withSource(new SimpleConfigSource(name, value));
-        return this;
+        return withConfigSource(new SimpleConfigSource(name, value));
     }
 
     public SwirldsPlatformBuilder withConfigValue(@NonNull final String name, final boolean value) {
-        configBuilder.withSource(new SimpleConfigSource(name, value));
-        return this;
+        return withConfigSource(new SimpleConfigSource(name, value));
     }
 
     public SwirldsPlatformBuilder withConfigValue(@NonNull final String name, final int value) {
-        configBuilder.withSource(new SimpleConfigSource(name, value));
-        return this;
+        return withConfigSource(new SimpleConfigSource(name, value));
     }
 
     public SwirldsPlatformBuilder withConfigValue(@NonNull final String name, final long value) {
-        configBuilder.withSource(new SimpleConfigSource(name, value));
-        return this;
+        return withConfigSource(new SimpleConfigSource(name, value));
     }
 
     public SwirldsPlatformBuilder withConfigValue(@NonNull final String name, final double value) {
-        configBuilder.withSource(new SimpleConfigSource(name, value));
-        return this;
+        return withConfigSource(new SimpleConfigSource(name, value));
     }
 
     public SwirldsPlatformBuilder withConfigValue(@NonNull final String name, @NonNull final Object value) {
-        configBuilder.withSource(new SimpleConfigSource(name, value.toString()));
-        return this;
+        return withConfigSource(new SimpleConfigSource(name, value.toString()));
     }
 
     public SwirldsPlatform buildAndStart() {
         StartupTime.markStartupTime();
 
-        // This contains the default PathsConfigs values, since the overrides haven't been loaded in yet
-        final PathsConfig pathsConfig = loadPathsConfig();
+        // Setup the configuration, taking into account overrides from the platform builder
+        final Configuration bootstrapConfig = bootstrapConfigBuilder.build();
+        final PathsConfig bootstrapPaths = bootstrapConfig.getConfigData(PathsConfig.class);
+        rethrowIO(() -> BootstrapUtils.setupConfigBuilder(configBuilder, bootstrapPaths));
+        final Configuration configuration = configBuilder.build();
+        ConfigurationHolder.getInstance().setConfiguration(configuration);
+
+        // Setup logging, using the configuration to tell us the location of the log4j2.xml
+        final PathsConfig pathsConfig = configuration.getConfigData(PathsConfig.class);
         final Path log4jPath = pathsConfig.getLogPath();
         try {
             Log4jSetup.startLoggingFramework(log4jPath).await();
@@ -162,8 +166,13 @@ public final class SwirldsPlatformBuilder {
             Thread.currentThread().interrupt();
         }
 
+        // Now that we have a logger, we can start using it for further messages
         logger.info(STARTUP.getMarker(), "\n\n" + STARTUP_MESSAGE + "\n");
         logger.debug(STARTUP.getMarker(), () -> new NodeStartPayload().toString());
+
+        // Validate the configuration
+        validatePathToConfigTxt(pathsConfig);
+        PlatformConfigUtils.checkConfiguration(configuration);
 
         // Load config.txt file, parse application jar file name, main class name, address book, and parameters
         final var legacyConfig = LegacyConfigPropertiesLoader.loadConfigFile(pathsConfig.getConfigPath());
@@ -177,12 +186,8 @@ public final class SwirldsPlatformBuilder {
         final var appMain = mainSupplier.get();
         final var appMains = Map.of(nodeId, appMain);
         legacyConfig.appConfig().ifPresent(c -> ParameterProvider.getInstance().setParameters(c.params()));
-        final Configuration configuration = rethrowIO(() -> BootstrapUtils.loadConfig(pathsConfig, appMains));
-        PlatformConfigUtils.checkConfiguration(configuration);
 
-        ConfigurationHolder.getInstance().setConfiguration(configuration);
-        CryptographyHolder.reset();
-
+        // Check the OS to see if it is healthy
         BootstrapUtils.performHealthChecks(configuration);
 
         // Write the settingsUsed.txt file

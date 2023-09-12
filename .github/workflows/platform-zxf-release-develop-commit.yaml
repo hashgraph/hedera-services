@@ -14,7 +14,7 @@
 # limitations under the License.
 ##
 
-name: "Z-Platform XF: Release Develop (On: Commit)"
+name: "ZXF: [Platform] Release Develop (On: Commit)"
 on:
   workflow_dispatch:
     inputs:

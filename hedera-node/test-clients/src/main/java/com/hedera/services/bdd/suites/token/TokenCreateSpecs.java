@@ -546,7 +546,6 @@ public class TokenCreateSpecs extends HapiSuite {
                 .then(tokenCreate(PRIMARY).expiry(1000).hasPrecheck(INVALID_EXPIRATION_TIME));
     }
 
-    @HapiTest
     public HapiSpec creationValidatesFreezeDefaultWithNoFreezeKey() {
         return defaultHapiSpec("CreationValidatesFreezeDefaultWithNoFreezeKey")
                 .given()
@@ -561,7 +560,6 @@ public class TokenCreateSpecs extends HapiSuite {
                 .then(tokenCreate(PRIMARY).entityMemo("N\u0000!!!").hasPrecheck(INVALID_ZERO_BYTE_IN_STRING));
     }
 
-    @HapiTest
     public HapiSpec creationValidatesNonFungiblePrechecks() {
         return defaultHapiSpec("CreationValidatesNonFungiblePrechecks")
                 .given()
@@ -584,7 +582,6 @@ public class TokenCreateSpecs extends HapiSuite {
                                 .hasPrecheck(INVALID_TOKEN_DECIMALS));
     }
 
-    @HapiTest
     public HapiSpec creationValidatesMaxSupply() {
         return defaultHapiSpec("CreationValidatesMaxSupply")
                 .given()
@@ -927,7 +924,6 @@ public class TokenCreateSpecs extends HapiSuite {
                         .hasKnownStatus(INVALID_TREASURY_ACCOUNT_FOR_TOKEN));
     }
 
-    @HapiTest
     public HapiSpec initialSupplyMustBeSane() {
         return defaultHapiSpec("InitialSupplyMustBeSane")
                 .given()
