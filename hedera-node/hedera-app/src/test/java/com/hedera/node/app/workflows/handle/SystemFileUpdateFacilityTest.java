@@ -50,7 +50,6 @@ import com.hedera.node.config.converter.LongPairConverter;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.time.Instant;
 import java.util.HashMap;
@@ -232,7 +231,8 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
 
         var throttleGroup = ThrottleGroup.newBuilder()
                 .milliOpsPerSec(10)
-                .operations(List.of(CRYPTO_CREATE, CRYPTO_TRANSFER)) // setting only a few operations. We require a lot more
+                .operations(
+                        List.of(CRYPTO_CREATE, CRYPTO_TRANSFER)) // setting only a few operations. We require a lot more
                 .build();
 
         final var throttleBucket = ThrottleBucket.newBuilder()
@@ -265,7 +265,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
 
         final var throttleBucket = ThrottleBucket.newBuilder()
                 .name("test")
-        .burstPeriodMs(100)
+                .burstPeriodMs(100)
                 .throttleGroups(List.of(throttleGroup))
                 .build();
 
@@ -289,18 +289,18 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
         final var throttleGroup = ThrottleGroup.newBuilder()
                 .milliOpsPerSec(10)
                 .operations(SystemFileUpdateFacility.expectedOps.stream().toList())
-                        .build();
+                .build();
 
         final var repeatedThrottleGroup = ThrottleGroup.newBuilder()
                 .milliOpsPerSec(10)
-                .operations(List.of(CRYPTO_CREATE))  // repeating an operation that exists in the first throttle group
+                .operations(List.of(CRYPTO_CREATE)) // repeating an operation that exists in the first throttle group
                 .build();
 
         final var throttleBucket = ThrottleBucket.newBuilder()
-                        .name("test")
-                        .burstPeriodMs(100)
-                        .throttleGroups(List.of(throttleGroup, repeatedThrottleGroup))
-                        .build();
+                .name("test")
+                .burstPeriodMs(100)
+                .throttleGroups(List.of(throttleGroup, repeatedThrottleGroup))
+                .build();
 
         var throttleDefinitions = new ThrottleDefinitions(List.of(throttleBucket));
 
