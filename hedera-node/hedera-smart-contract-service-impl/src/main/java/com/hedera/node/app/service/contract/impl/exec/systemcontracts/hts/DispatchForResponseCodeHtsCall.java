@@ -30,7 +30,7 @@ import java.util.Objects;
  *
  * @param <T> the type of the record builder to expect from the dispatch
  */
-public class DispatchForRcHtsCall<T extends SingleTransactionRecordBuilder> extends AbstractHtsCall {
+public class DispatchForResponseCodeHtsCall<T extends SingleTransactionRecordBuilder> extends AbstractHtsCall {
     private final AccountID spenderId;
     private final TransactionBody syntheticBody;
     private final Class<T> recordBuilderType;
@@ -45,7 +45,7 @@ public class DispatchForRcHtsCall<T extends SingleTransactionRecordBuilder> exte
      * @param syntheticBody the synthetic body to dispatch
      * @param recordBuilderType the type of the record builder to expect from the dispatch
      */
-    public DispatchForRcHtsCall(
+    public DispatchForResponseCodeHtsCall(
             final boolean onlyDelegatable,
             @NonNull final HtsCallAttempt attempt,
             @NonNull final org.hyperledger.besu.datatypes.Address sender,
@@ -69,7 +69,7 @@ public class DispatchForRcHtsCall<T extends SingleTransactionRecordBuilder> exte
      * @param recordBuilderType the type of the record builder to expect from the dispatch
      * @param verificationStrategy the verification strategy to use
      */
-    public <U extends SingleTransactionRecordBuilder> DispatchForRcHtsCall(
+    public <U extends SingleTransactionRecordBuilder> DispatchForResponseCodeHtsCall(
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             @NonNull final AccountID spenderId,
             @NonNull final TransactionBody syntheticBody,

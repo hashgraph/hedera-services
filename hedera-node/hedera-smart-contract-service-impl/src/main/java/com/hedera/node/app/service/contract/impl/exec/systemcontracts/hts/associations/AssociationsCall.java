@@ -22,10 +22,9 @@ import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.token.TokenAssociateTransactionBody;
 import com.hedera.hapi.node.token.TokenDissociateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForRcHtsCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersCall;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -35,7 +34,7 @@ import org.hyperledger.besu.datatypes.Address;
 /**
  * Implements the associate and dissociate calls of the HTS contract.
  */
-public class AssociationsCall extends DispatchForRcHtsCall<SingleTransactionRecordBuilder> {
+public class AssociationsCall extends DispatchForResponseCodeHtsCall<SingleTransactionRecordBuilder> {
     public static final Function HRC_ASSOCIATE = new Function("associate()", ReturnTypes.INT);
     public static final Function ASSOCIATE_ONE = new Function("associateToken(address,address)", ReturnTypes.INT_64);
     public static final Function DISSOCIATE_ONE = new Function("dissociateToken(address,address)", ReturnTypes.INT_64);
@@ -66,12 +65,12 @@ public class AssociationsCall extends DispatchForRcHtsCall<SingleTransactionReco
     }
 
     /**
-     * Creates a {@link ClassicTransfersCall} from the given {@code attempt} and {@code senderAddress}.
+     * Creates a {@link AssociationsCall} from the given {@code attempt} and {@code senderAddress}.
      *
-     * @param attempt         the attempt to create a {@link ClassicTransfersCall} from
+     * @param attempt         the attempt to create a {@link AssociationsCall} from
      * @param sender          the address of the sender
      * @param onlyDelegatable whether the sender needs delegatable contract keys
-     * @return a {@link ClassicTransfersCall} if the given {@code attempt} is a valid {@link ClassicTransfersCall}, otherwise {@code null}
+     * @return a {@link AssociationsCall} if the given {@code attempt} is a valid {@link AssociationsCall}, otherwise {@code null}
      */
     public static AssociationsCall from(
             @NonNull final HtsCallAttempt attempt,
