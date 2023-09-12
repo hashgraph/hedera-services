@@ -397,67 +397,32 @@ class SavedStateMetadataTests {
         if (invalidFields.contains(HASH_MNEMONIC)) {
             assertNull(deserialized.hashMnemonic());
         } else {
-            assertEquals(timestamp, deserialized.consensusTimestamp());
-        }
-
-        if (invalidFields.contains(SavedStateMetadataField.RUNNING_EVENT_HASH)) {
-            assertNull(deserialized.runningEventHash());
-        } else {
-            assertEquals(runningEventHash, deserialized.runningEventHash());
-        }
-
-        if (invalidFields.contains(SavedStateMetadataField.MINIMUM_GENERATION_NON_ANCIENT)) {
-            assertNull(deserialized.minimumGenerationNonAncient());
-        } else {
-            assertEquals(minimumGenerationNonAncient, deserialized.minimumGenerationNonAncient());
-        }
-
-        if (invalidFields.contains(SavedStateMetadataField.SOFTWARE_VERSION)) {
-            assertNull(deserialized.softwareVersion());
-        } else {
-            assertEquals(softwareVersion.toString(), deserialized.softwareVersion());
-        }
-
-        if (invalidFields.contains(SavedStateMetadataField.WALL_CLOCK_TIME)) {
-            assertNull(deserialized.wallClockTime());
-        } else {
-            assertEquals(wallClockTime, deserialized.wallClockTime());
-        }
-
-        if (invalidFields.contains(SavedStateMetadataField.NODE_ID)) {
-            assertNull(deserialized.nodeId());
-        } else {
-            assertEquals(nodeId, deserialized.nodeId());
             assertEquals(hash.toMnemonic(), deserialized.hashMnemonic());
         }
-
-        if (invalidFields.contains(SavedStateMetadataField.SIGNING_NODES)) {
-            assertNull(deserialized.signingNodes());
-            assertEquals(numberOfConsensusEvents, deserialized.numberOfConsensusEvents());
-            assertEquals(timestamp, deserialized.consensusTimestamp());
-            assertEquals(runningEventHash, deserialized.runningEventHash());
-            if (invalidFields.contains(RUNNING_EVENT_HASH_MNEMONIC)) {
-                assertNull(deserialized.runningEventHashMnemonic());
-            } else {
-                assertEquals(runningEventHash.toMnemonic(), deserialized.runningEventHashMnemonic());
-            }
-            assertEquals(minimumGenerationNonAncient, deserialized.minimumGenerationNonAncient());
-            assertEquals(softwareVersion.toString(), deserialized.softwareVersion());
-            assertEquals(wallClockTime, deserialized.wallClockTime());
-            assertEquals(nodeId, deserialized.nodeId());
-            assertEquals(signingNodes, deserialized.signingNodes());
-            assertEquals(signingWeightSum, deserialized.signingWeightSum());
-            assertEquals(totalWeight, deserialized.totalWeight());
-            if (invalidFields.contains(EPOCH_HASH)) {
-                assertNull(deserialized.epochHash());
-            } else {
-                assertEquals(epochHash, deserialized.epochHash());
-            }
-            if (invalidFields.contains(SavedStateMetadataField.EPOCH_HASH_MNEMONIC)) {
-                assertNull(deserialized.epochHashMnemonic());
-            } else {
-                assertEquals(epochHash.toMnemonic(), deserialized.epochHashMnemonic());
-            }
+        assertEquals(numberOfConsensusEvents, deserialized.numberOfConsensusEvents());
+        assertEquals(timestamp, deserialized.consensusTimestamp());
+        assertEquals(runningEventHash, deserialized.runningEventHash());
+        if (invalidFields.contains(RUNNING_EVENT_HASH_MNEMONIC)) {
+            assertNull(deserialized.runningEventHashMnemonic());
+        } else {
+            assertEquals(runningEventHash.toMnemonic(), deserialized.runningEventHashMnemonic());
+        }
+        assertEquals(minimumGenerationNonAncient, deserialized.minimumGenerationNonAncient());
+        assertEquals(softwareVersion.toString(), deserialized.softwareVersion());
+        assertEquals(wallClockTime, deserialized.wallClockTime());
+        assertEquals(nodeId, deserialized.nodeId());
+        assertEquals(signingNodes, deserialized.signingNodes());
+        assertEquals(signingWeightSum, deserialized.signingWeightSum());
+        assertEquals(totalWeight, deserialized.totalWeight());
+        if (invalidFields.contains(EPOCH_HASH)) {
+            assertNull(deserialized.epochHash());
+        } else {
+            assertEquals(epochHash, deserialized.epochHash());
+        }
+        if (invalidFields.contains(SavedStateMetadataField.EPOCH_HASH_MNEMONIC)) {
+            assertNull(deserialized.epochHashMnemonic());
+        } else {
+            assertEquals(epochHash.toMnemonic(), deserialized.epochHashMnemonic());
         }
     }
 
