@@ -22,7 +22,9 @@
 
 #############################################################################################################
 #
-# TO USE: Place this script in the SAME DIRECTORY as `services-cli-fat.jar` and INVOKE it from that directory
+# TO USE: Place this script in the SAME DIRECTORY as `services-cli-*.jar` and INVOKE it from that directory
+# (where `services-cli-*.jar` is shorthand for `services-cli-0.xx.y-SNAPSHOT.jar` or whatever the build
+# system produces for you in `hedera-node/cli-clients/build/libs`.
 #
 #############################################################################################################
 

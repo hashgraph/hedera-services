@@ -14,16 +14,12 @@
  * limitations under the License.
  */
 
-import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-
 plugins {
     id("com.hedera.hashgraph.conventions")
     id("com.hedera.hashgraph.shadow-jar")
 }
 
 description = "Hedera Services Command-Line Clients"
-
-mainModuleInfo {}
 
 testModuleInfo {
     requires("org.junit.jupiter.api")
@@ -32,17 +28,10 @@ testModuleInfo {
     runtimeOnly("org.mockito.inline")
 }
 
-var cliJar =
-    tasks.register<ShadowJar>("services-cli-fat") {
-        exclude(listOf("META-INF/*.DSA", "META-INF/*.RSA", "META-INF/*.SF", "META-INF/INDEX.LIST"))
-        archiveFileName.set("services-cli-fat.jar")
-        archiveClassifier.set("pcli-plugin")
-        manifest {
-            attributes("Main-Class" to "com.swirlds.cli.PlatformCli", "Multi-Release" to "true")
-        }
+tasks.shadowJar {
+    manifest {
+        attributes("Main-Class" to "com.swirlds.cli.PlatformCli", "Multi-Release" to "true")
     }
-
-tasks.assemble {
-    dependsOn(tasks.shadowJar)
-    dependsOn(cliJar)
 }
+
+tasks.assemble { dependsOn(tasks.shadowJar) }
