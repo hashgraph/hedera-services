@@ -33,6 +33,7 @@ public class PhaseTimerBuilder<T extends Enum<T>> {
 
     private final PlatformContext platformContext;
     private final Time time;
+    private final Class<T> clazz;
     private final Set<T> phases;
     private final String metricsCategory;
 
@@ -56,6 +57,7 @@ public class PhaseTimerBuilder<T extends Enum<T>> {
             @NonNull final String metricsCategory,
             @NonNull final Class<T> clazz) {
 
+        this.clazz = Objects.requireNonNull(clazz);
         this.platformContext = Objects.requireNonNull(platformContext);
         this.time = Objects.requireNonNull(time);
         this.metricsCategory = Objects.requireNonNull(metricsCategory);
@@ -183,7 +185,7 @@ public class PhaseTimerBuilder<T extends Enum<T>> {
     String getMetricsNamePrefix() {
         if (metricsNamePrefix == null) {
             // No metrics prefix provided, generate a default.
-            return "TODO"; // TODO
+            return clazz.getSimpleName();
         }
         return metricsNamePrefix;
     }

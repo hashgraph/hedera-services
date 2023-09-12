@@ -130,7 +130,7 @@ public class PhaseTimer<T extends Enum<T>> {
      * @return the metric name
      */
     private String buildAbsoluteTimeMetricName(@NonNull final String metricsNamePrefix, @NonNull final T phase) {
-        return metricsNamePrefix + "_fraction_" + phase;
+        return metricsNamePrefix + "_time_" + phase;
     }
 
     /**
