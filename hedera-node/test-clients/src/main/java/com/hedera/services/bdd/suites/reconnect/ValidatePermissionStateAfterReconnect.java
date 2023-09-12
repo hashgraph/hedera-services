@@ -24,7 +24,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withLiveNode;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.time.Duration;
@@ -34,7 +33,6 @@ import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-@HapiTestSuite
 public class ValidatePermissionStateAfterReconnect extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ValidatePermissionStateAfterReconnect.class);
     public static final String NODE_ACCOUNT = "0.0.6";

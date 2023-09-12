@@ -73,6 +73,7 @@ import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.system.Round;
+import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
@@ -184,10 +185,16 @@ class HandleWorkflowTest extends AppTestBase {
     private SystemFileUpdateFacility systemFileUpdateFacility;
 
     @Mock
+    private DualStateUpdateFacility dualStateUpdateFacility;
+
+    @Mock
     private SolvencyPreCheck solvencyPreCheck;
 
     @Mock(strictness = LENIENT)
     private Authorizer authorizer;
+
+    @Mock
+    private SwirldDualState dualState;
 
     private HandleWorkflow workflow;
 
@@ -255,6 +262,7 @@ class HandleWorkflowTest extends AppTestBase {
                 exchangeRateManager,
                 finalizer,
                 systemFileUpdateFacility,
+                dualStateUpdateFacility,
                 solvencyPreCheck,
                 authorizer);
     }
@@ -278,6 +286,7 @@ class HandleWorkflowTest extends AppTestBase {
                         exchangeRateManager,
                         finalizer,
                         systemFileUpdateFacility,
+                        dualStateUpdateFacility,
                         solvencyPreCheck,
                         authorizer))
                 .isInstanceOf(NullPointerException.class);
@@ -297,6 +306,7 @@ class HandleWorkflowTest extends AppTestBase {
                         exchangeRateManager,
                         finalizer,
                         systemFileUpdateFacility,
+                        dualStateUpdateFacility,
                         solvencyPreCheck,
                         authorizer))
                 .isInstanceOf(NullPointerException.class);
@@ -316,6 +326,7 @@ class HandleWorkflowTest extends AppTestBase {
                         exchangeRateManager,
                         finalizer,
                         systemFileUpdateFacility,
+                        dualStateUpdateFacility,
                         solvencyPreCheck,
                         authorizer))
                 .isInstanceOf(NullPointerException.class);
@@ -335,6 +346,7 @@ class HandleWorkflowTest extends AppTestBase {
                         exchangeRateManager,
                         finalizer,
                         systemFileUpdateFacility,
+                        dualStateUpdateFacility,
                         solvencyPreCheck,
                         authorizer))
                 .isInstanceOf(NullPointerException.class);
@@ -354,6 +366,7 @@ class HandleWorkflowTest extends AppTestBase {
                         exchangeRateManager,
                         finalizer,
                         systemFileUpdateFacility,
+                        dualStateUpdateFacility,
                         solvencyPreCheck,
                         authorizer))
                 .isInstanceOf(NullPointerException.class);
@@ -373,6 +386,7 @@ class HandleWorkflowTest extends AppTestBase {
                         exchangeRateManager,
                         finalizer,
                         systemFileUpdateFacility,
+                        dualStateUpdateFacility,
                         solvencyPreCheck,
                         authorizer))
                 .isInstanceOf(NullPointerException.class);
@@ -392,6 +406,7 @@ class HandleWorkflowTest extends AppTestBase {
                         exchangeRateManager,
                         finalizer,
                         systemFileUpdateFacility,
+                        dualStateUpdateFacility,
                         solvencyPreCheck,
                         authorizer))
                 .isInstanceOf(NullPointerException.class);
@@ -411,6 +426,7 @@ class HandleWorkflowTest extends AppTestBase {
                         exchangeRateManager,
                         finalizer,
                         systemFileUpdateFacility,
+                        dualStateUpdateFacility,
                         solvencyPreCheck,
                         authorizer))
                 .isInstanceOf(NullPointerException.class);
@@ -430,6 +446,7 @@ class HandleWorkflowTest extends AppTestBase {
                         exchangeRateManager,
                         finalizer,
                         systemFileUpdateFacility,
+                        dualStateUpdateFacility,
                         solvencyPreCheck,
                         authorizer))
                 .isInstanceOf(NullPointerException.class);
@@ -449,6 +466,7 @@ class HandleWorkflowTest extends AppTestBase {
                         exchangeRateManager,
                         finalizer,
                         systemFileUpdateFacility,
+                        dualStateUpdateFacility,
                         solvencyPreCheck,
                         authorizer))
                 .isInstanceOf(NullPointerException.class);
@@ -468,6 +486,7 @@ class HandleWorkflowTest extends AppTestBase {
                         exchangeRateManager,
                         finalizer,
                         systemFileUpdateFacility,
+                        dualStateUpdateFacility,
                         solvencyPreCheck,
                         authorizer))
                 .isInstanceOf(NullPointerException.class);
@@ -487,6 +506,7 @@ class HandleWorkflowTest extends AppTestBase {
                         exchangeRateManager,
                         finalizer,
                         systemFileUpdateFacility,
+                        dualStateUpdateFacility,
                         solvencyPreCheck,
                         authorizer))
                 .isInstanceOf(NullPointerException.class);
@@ -506,6 +526,7 @@ class HandleWorkflowTest extends AppTestBase {
                         null,
                         finalizer,
                         systemFileUpdateFacility,
+                        dualStateUpdateFacility,
                         solvencyPreCheck,
                         authorizer))
                 .isInstanceOf(NullPointerException.class);
@@ -525,6 +546,7 @@ class HandleWorkflowTest extends AppTestBase {
                         exchangeRateManager,
                         null,
                         systemFileUpdateFacility,
+                        dualStateUpdateFacility,
                         solvencyPreCheck,
                         authorizer))
                 .isInstanceOf(NullPointerException.class);
@@ -544,6 +566,7 @@ class HandleWorkflowTest extends AppTestBase {
                         exchangeRateManager,
                         finalizer,
                         null,
+                        dualStateUpdateFacility,
                         solvencyPreCheck,
                         authorizer))
                 .isInstanceOf(NullPointerException.class);
@@ -564,6 +587,7 @@ class HandleWorkflowTest extends AppTestBase {
                         finalizer,
                         systemFileUpdateFacility,
                         null,
+                        solvencyPreCheck,
                         authorizer))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
@@ -582,6 +606,27 @@ class HandleWorkflowTest extends AppTestBase {
                         exchangeRateManager,
                         finalizer,
                         systemFileUpdateFacility,
+                        dualStateUpdateFacility,
+                        null,
+                        authorizer))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new HandleWorkflow(
+                        networkInfo,
+                        preHandleWorkflow,
+                        dispatcher,
+                        blockRecordManager,
+                        signatureExpander,
+                        signatureVerifier,
+                        checker,
+                        serviceLookup,
+                        configProvider,
+                        recordCache,
+                        stakingPeriodTimeHook,
+                        feeManager,
+                        exchangeRateManager,
+                        finalizer,
+                        systemFileUpdateFacility,
+                        dualStateUpdateFacility,
                         solvencyPreCheck,
                         null))
                 .isInstanceOf(NullPointerException.class);
@@ -594,7 +639,7 @@ class HandleWorkflowTest extends AppTestBase {
         when(platformTxn.isSystem()).thenReturn(true);
 
         // when
-        workflow.handleRound(state, round);
+        workflow.handleRound(state, dualState, round);
 
         // then
         assertThat(accountsState.isModified()).isFalse();
@@ -607,13 +652,14 @@ class HandleWorkflowTest extends AppTestBase {
     @DisplayName("Successful execution of simple case")
     void testHappyPath() {
         // when
-        workflow.handleRound(state, round);
+        workflow.handleRound(state, dualState, round);
 
         // then
         final var alice = aliasesState.get(new ProtoBytes(Bytes.wrap(ALICE_ALIAS)));
         assertThat(alice).isEqualTo(ALICE.account().accountId());
         // TODO: Check that record was created
         verify(systemFileUpdateFacility).handleTxBody(any(), any(), any());
+        verify(dualStateUpdateFacility).handleTxBody(any(), any(), any());
     }
 
     @Nested
@@ -633,7 +679,7 @@ class HandleWorkflowTest extends AppTestBase {
             when(platformTxn.getMetadata()).thenReturn(null);
 
             // when
-            workflow.handleRound(state, round);
+            workflow.handleRound(state, dualState, round);
 
             // then
             verify(preHandleWorkflow).preHandleTransaction(any(), any(), any(), eq(platformTxn));
@@ -646,7 +692,7 @@ class HandleWorkflowTest extends AppTestBase {
             when(platformTxn.getMetadata()).thenReturn(PRE_HANDLE_FAILURE_RESULT);
 
             // when
-            workflow.handleRound(state, round);
+            workflow.handleRound(state, dualState, round);
 
             // then
             verify(preHandleWorkflow).preHandleTransaction(any(), any(), any(), eq(platformTxn));
@@ -659,7 +705,7 @@ class HandleWorkflowTest extends AppTestBase {
             when(platformTxn.getMetadata()).thenReturn(PreHandleResult.unknownFailure());
 
             // when
-            workflow.handleRound(state, round);
+            workflow.handleRound(state, dualState, round);
 
             // then
             verify(preHandleWorkflow).preHandleTransaction(any(), any(), any(), eq(platformTxn));
@@ -684,7 +730,7 @@ class HandleWorkflowTest extends AppTestBase {
             when(platformTxn.getMetadata()).thenReturn(preHandleResult);
 
             // when
-            workflow.handleRound(state, round);
+            workflow.handleRound(state, dualState, round);
 
             // then
             verify(preHandleWorkflow).preHandleTransaction(any(), any(), any(), eq(platformTxn));
@@ -697,7 +743,7 @@ class HandleWorkflowTest extends AppTestBase {
             when(platformTxn.getMetadata()).thenReturn(null);
 
             // when
-            workflow.handleRound(state, round);
+            workflow.handleRound(state, dualState, round);
 
             // then
             final var alice = aliasesState.get(new ProtoBytes(Bytes.wrap(ALICE_ALIAS)));
@@ -714,7 +760,7 @@ class HandleWorkflowTest extends AppTestBase {
                     .thenReturn(DUE_DILIGENCE_RESULT);
 
             // when
-            workflow.handleRound(state, round);
+            workflow.handleRound(state, dualState, round);
 
             // then
             assertThat(aliasesState.isModified()).isFalse();
@@ -730,7 +776,7 @@ class HandleWorkflowTest extends AppTestBase {
                     .thenReturn(DUE_DILIGENCE_RESULT);
 
             // when
-            workflow.handleRound(state, round);
+            workflow.handleRound(state, dualState, round);
 
             // then
             assertThat(aliasesState.isModified()).isFalse();
@@ -745,7 +791,7 @@ class HandleWorkflowTest extends AppTestBase {
                     .thenReturn(PreHandleResult.unknownFailure());
 
             // when
-            workflow.handleRound(state, round);
+            workflow.handleRound(state, dualState, round);
 
             // then
             assertThat(accountsState.isModified()).isFalse();
@@ -760,7 +806,7 @@ class HandleWorkflowTest extends AppTestBase {
         // given
         when(platformTxn.getMetadata()).thenReturn(DUE_DILIGENCE_RESULT);
         // when
-        workflow.handleRound(state, round);
+        workflow.handleRound(state, dualState, round);
 
         // then
         assertThat(aliasesState.isModified()).isFalse();
@@ -808,7 +854,7 @@ class HandleWorkflowTest extends AppTestBase {
                     .expand(eq(Set.of(bobsKey)), any(), any());
 
             // when
-            workflow.handleRound(state, round);
+            workflow.handleRound(state, dualState, round);
 
             // then
             final var argCapture = ArgumentCaptor.forClass(HandleContext.class);
@@ -862,7 +908,7 @@ class HandleWorkflowTest extends AppTestBase {
                     .expand(eq(Set.of(bobsKey)), any(), any());
 
             // when
-            workflow.handleRound(state, round);
+            workflow.handleRound(state, dualState, round);
 
             // then
             verify(dispatcher, never()).dispatchHandle(any());
@@ -897,7 +943,7 @@ class HandleWorkflowTest extends AppTestBase {
                     .thenReturn(verificationResults);
 
             // when
-            workflow.handleRound(state, round);
+            workflow.handleRound(state, dualState, round);
 
             // then
             final var argCapture = ArgumentCaptor.forClass(HandleContext.class);
@@ -942,7 +988,7 @@ class HandleWorkflowTest extends AppTestBase {
                     .thenReturn(verificationResults);
 
             // when
-            workflow.handleRound(state, round);
+            workflow.handleRound(state, dualState, round);
 
             // then
             verify(dispatcher, never()).dispatchHandle(any());
@@ -985,7 +1031,7 @@ class HandleWorkflowTest extends AppTestBase {
                     .expand(eq(Set.of(bobsKey)), any(), any());
 
             // when
-            workflow.handleRound(state, round);
+            workflow.handleRound(state, dualState, round);
 
             // then
             final var argCapture = ArgumentCaptor.forClass(HandleContext.class);
@@ -1039,7 +1085,7 @@ class HandleWorkflowTest extends AppTestBase {
                     .expand(eq(Set.of(bobsKey)), any(), any());
 
             // when
-            workflow.handleRound(state, round);
+            workflow.handleRound(state, dualState, round);
 
             // then
             final var argCapture = ArgumentCaptor.forClass(HandleContext.class);
@@ -1085,7 +1131,7 @@ class HandleWorkflowTest extends AppTestBase {
                     .thenReturn(verificationResults);
 
             // when
-            workflow.handleRound(state, round);
+            workflow.handleRound(state, dualState, round);
 
             // then
             final var argCapture = ArgumentCaptor.forClass(HandleContext.class);
@@ -1131,7 +1177,7 @@ class HandleWorkflowTest extends AppTestBase {
                     .thenReturn(verificationResults);
 
             // when
-            workflow.handleRound(state, round);
+            workflow.handleRound(state, dualState, round);
 
             // then
             final var argCapture = ArgumentCaptor.forClass(HandleContext.class);
@@ -1202,7 +1248,7 @@ class HandleWorkflowTest extends AppTestBase {
                     .thenReturn(verificationResults);
 
             // when
-            workflow.handleRound(state, round);
+            workflow.handleRound(state, dualState, round);
 
             // then
             final var argCapture = ArgumentCaptor.forClass(HandleContext.class);
@@ -1242,7 +1288,7 @@ class HandleWorkflowTest extends AppTestBase {
                     .thenReturn(DuplicateCheckResult.OTHER_NODE);
 
             // when
-            workflow.handleRound(state, round);
+            workflow.handleRound(state, dualState, round);
 
             // then
             assertThat(accountsState.get(ALICE.accountID()).tinybarBalance()).isLessThan(DEFAULT_FEES.totalFee());
@@ -1257,7 +1303,7 @@ class HandleWorkflowTest extends AppTestBase {
                     .thenReturn(DuplicateCheckResult.SAME_NODE);
 
             // when
-            workflow.handleRound(state, round);
+            workflow.handleRound(state, dualState, round);
 
             // then
             assertThat(accountsState.get(ALICE.accountID()).tinybarBalance()).isEqualTo(DEFAULT_FEES.totalFee());
@@ -1274,7 +1320,7 @@ class HandleWorkflowTest extends AppTestBase {
                     .checkTimeBox(OK_RESULT.txInfo().txBody(), CONSENSUS_NOW);
 
             // when
-            workflow.handleRound(state, round);
+            workflow.handleRound(state, dualState, round);
 
             // then
             final var block = getRecordFromStream();
@@ -1293,7 +1339,7 @@ class HandleWorkflowTest extends AppTestBase {
                     .getPayerAccount(any(), eq(ALICE.accountID()));
 
             // when
-            workflow.handleRound(state, round);
+            workflow.handleRound(state, dualState, round);
 
             // then
             final var block = getRecordFromStream();
@@ -1318,7 +1364,7 @@ class HandleWorkflowTest extends AppTestBase {
                     .checkSolvency(eq(OK_RESULT.txInfo()), any(), eq(DEFAULT_FEES.totalWithoutServiceFee()));
 
             // when
-            workflow.handleRound(state, round);
+            workflow.handleRound(state, dualState, round);
 
             // then
             final var block = getRecordFromStream();
@@ -1335,7 +1381,7 @@ class HandleWorkflowTest extends AppTestBase {
                     .thenReturn(false);
 
             // when
-            workflow.handleRound(state, round);
+            workflow.handleRound(state, dualState, round);
 
             // then
             final var block = getRecordFromStream();
@@ -1355,7 +1401,7 @@ class HandleWorkflowTest extends AppTestBase {
                     .thenReturn(SystemPrivilege.UNAUTHORIZED);
 
             // when
-            workflow.handleRound(state, round);
+            workflow.handleRound(state, dualState, round);
 
             // then
             final var block = getRecordFromStream();
@@ -1375,7 +1421,7 @@ class HandleWorkflowTest extends AppTestBase {
                     .thenReturn(SystemPrivilege.IMPERMISSIBLE);
 
             // when
-            workflow.handleRound(state, round);
+            workflow.handleRound(state, dualState, round);
 
             // then
             final var block = getRecordFromStream();
@@ -1396,7 +1442,7 @@ class HandleWorkflowTest extends AppTestBase {
                     .thenReturn(privilege);
 
             // when
-            workflow.handleRound(state, round);
+            workflow.handleRound(state, dualState, round);
 
             // then
             final var block = getRecordFromStream();
@@ -1414,7 +1460,7 @@ class HandleWorkflowTest extends AppTestBase {
             doThrow(new HandleException(ResponseCodeEnum.INVALID_SIGNATURE))
                     .when(dispatcher)
                     .dispatchHandle(any());
-            workflow.handleRound(state, round);
+            workflow.handleRound(state, dualState, round);
 
             // then
             assertThat(aliasesState.isModified()).isFalse();
@@ -1426,7 +1472,7 @@ class HandleWorkflowTest extends AppTestBase {
         void testUnknownFailure() {
             // when
             doThrow(new ArrayIndexOutOfBoundsException()).when(dispatcher).dispatchHandle(any());
-            workflow.handleRound(state, round);
+            workflow.handleRound(state, dualState, round);
 
             // then
             assertThat(accountsState.isModified()).isFalse();
@@ -1445,7 +1491,7 @@ class HandleWorkflowTest extends AppTestBase {
         @Test
         void testSimpleRun() {
             // when
-            workflow.handleRound(state, round);
+            workflow.handleRound(state, dualState, round);
 
             // then
             verify(blockRecordManager).startUserTransaction(CONSENSUS_NOW, state);
@@ -1456,7 +1502,7 @@ class HandleWorkflowTest extends AppTestBase {
 
     @Test
     void testConsensusTimeHookCalled() {
-        workflow.handleRound(state, round);
+        workflow.handleRound(state, dualState, round);
         verify(stakingPeriodTimeHook).process(any());
     }
 

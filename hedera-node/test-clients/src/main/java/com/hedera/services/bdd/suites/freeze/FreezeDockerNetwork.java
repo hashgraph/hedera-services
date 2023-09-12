@@ -19,7 +19,6 @@ package com.hedera.services.bdd.suites.freeze;
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
@@ -27,7 +26,6 @@ import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-@HapiTestSuite
 public class FreezeDockerNetwork extends HapiSuite {
     private static final Logger log = LogManager.getLogger(FreezeDockerNetwork.class);
 

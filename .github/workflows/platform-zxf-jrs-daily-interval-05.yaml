@@ -14,7 +14,7 @@
 # limitations under the License.
 ##
 
-name: "Z-Platform XF: JRS Daily (Interval: 5)"
+name: "ZXF: [Platform] JRS Daily (Interval: 5)"
 on:
   workflow_dispatch:
     inputs:
