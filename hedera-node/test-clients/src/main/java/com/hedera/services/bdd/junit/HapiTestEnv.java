@@ -16,7 +16,6 @@
 
 package com.hedera.services.bdd.junit;
 
-import com.hedera.hapi.node.base.AccountID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
 import java.nio.file.Files;
@@ -25,7 +24,6 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.TimeoutException;
 
 public class HapiTestEnv {
     private static final String[] NODE_NAMES = new String[] {"Alice", "Bob", "Carol", "Dave"};
@@ -67,15 +65,13 @@ public class HapiTestEnv {
             final var configText = sb.toString();
 
             for (int nodeId = 0; nodeId < numNodes; nodeId++) {
-                final var workingDir = Path.of("./build/hapi-test/node" + nodeId)
+                final var workingDir = Path.of("./build/hapi-test/" + testName + "/node" + nodeId)
                         .normalize();
                 setupWorkingDirectory(workingDir, configText);
-                final var nodeName = NODE_NAMES[nodeId];
-                final var acct = AccountID.newBuilder().accountNum(3L + nodeId).build();
                 if (nodeId == 0) {
-                    nodes.add(new InProcessHapiTestNode(nodeName, nodeId, acct, workingDir, FIRST_GRPC_PORT));
+                    nodes.add(new InProcessHapiTestNode(workingDir, 0, FIRST_GRPC_PORT));
                 } else {
-                    nodes.add(new SubProcessHapiTestNode(nodeName, nodeId, acct, workingDir, FIRST_GRPC_PORT + (nodeId * 2)));
+                    nodes.add(new SubProcessHapiTestNode(workingDir, nodeId, FIRST_GRPC_PORT + (nodeId * 2)));
                 }
             }
         } catch (Exception e) {
@@ -89,11 +85,7 @@ public class HapiTestEnv {
         }
 
         for (final var node : nodes) {
-            try {
-                node.waitForActive(60);
-            } catch (TimeoutException e) {
-                throw new RuntimeException(e);
-            }
+            node.waitForActive(60);
         }
     }
 
@@ -103,12 +95,8 @@ public class HapiTestEnv {
         }
     }
 
-    public String getNodeInfo() {
+    public String getNodes() {
         return String.join(",", nodeHosts);
-    }
-
-    public List<HapiTestNode> getNodes() {
-        return nodes;
     }
 
     private void setupWorkingDirectory(@NonNull final Path workingDir, @NonNull final String configText) {

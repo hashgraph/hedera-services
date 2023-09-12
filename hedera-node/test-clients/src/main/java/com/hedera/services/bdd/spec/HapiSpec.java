@@ -21,21 +21,14 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asSources;
 import static com.hedera.services.bdd.spec.HapiPropertySource.inPriorityOrder;
 import static com.hedera.services.bdd.spec.HapiSpec.CostSnapshotMode.COMPARE;
 import static com.hedera.services.bdd.spec.HapiSpec.CostSnapshotMode.TAKE;
-import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.ERROR;
-import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.FAILED;
-import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.FAILED_AS_EXPECTED;
-import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.PASSED;
-import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.PASSED_UNEXPECTEDLY;
-import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.PENDING;
-import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.RUNNING;
+import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.*;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.infrastructure.HapiApiClients.clientsFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
-import static com.hedera.services.bdd.spec.utilops.UtilStateChange.initializeEthereumAccountForSpec;
-import static com.hedera.services.bdd.spec.utilops.UtilStateChange.isEthereumAccountCreatedForSpec;
+import static com.hedera.services.bdd.spec.utilops.UtilStateChange.*;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.noOp;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
@@ -46,7 +39,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static java.util.Collections.emptyList;
 import static java.util.concurrent.CompletableFuture.allOf;
 import static java.util.concurrent.CompletableFuture.runAsync;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -56,7 +48,6 @@ import com.google.common.base.MoreObjects;
 import com.google.common.io.ByteSource;
 import com.google.common.io.CharSink;
 import com.google.common.io.Files;
-import com.hedera.services.bdd.junit.HapiTestNode;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.fees.FeesAndRatesProvider;
 import com.hedera.services.bdd.spec.fees.Payment;
@@ -157,7 +148,7 @@ public class HapiSpec implements Runnable {
     private final boolean onlySpecToRunInSuite;
     private final List<String> propertiesToPreserve;
     List<Payment> costs = new ArrayList<>();
-    List<Payment> costSnapshot = emptyList();
+    List<Payment> costSnapshot = Collections.emptyList();
     String name;
     String suitePrefix = "";
     SpecStatus status;
@@ -182,8 +173,6 @@ public class HapiSpec implements Runnable {
     BlockingQueue<HapiSpecOpFinisher> pendingOps = new PriorityBlockingQueue<>();
     EnumMap<ResponseCodeEnum, AtomicInteger> precheckStatusCounts = new EnumMap<>(ResponseCodeEnum.class);
     EnumMap<ResponseCodeEnum, AtomicInteger> finalizedStatusCounts = new EnumMap<>(ResponseCodeEnum.class);
-    /** These nodes can be used by some ops for controlling the nodes, such as restart, reconnect, etc. */
-    List<HapiTestNode> nodes = emptyList();
 
     List<SingleAccountBalances> accountBalances = new ArrayList<>();
 
@@ -288,14 +277,6 @@ public class HapiSpec implements Runnable {
     public HapiSpec setSuitePrefix(String suitePrefix) {
         this.suitePrefix = suitePrefix;
         return this;
-    }
-
-    public void setNodes(List<HapiTestNode> nodes) {
-        if (nodes != null) this.nodes = nodes;
-    }
-
-    public List<HapiTestNode> getNodes() {
-        return nodes;
     }
 
     public static boolean ok(HapiSpec spec) {
@@ -789,7 +770,7 @@ public class HapiSpec implements Runnable {
     }
 
     public static Def.Given defaultHapiSpec(String name) {
-        return internalDefaultHapiSpec(name, false, emptyList());
+        return internalDefaultHapiSpec(name, false, Collections.emptyList());
     }
 
     public static Def.PropertyPreserving propertyPreservingHapiSpec(final String name) {
@@ -801,7 +782,7 @@ public class HapiSpec implements Runnable {
     }
 
     public static Def.Given onlyDefaultHapiSpec(final String name) {
-        return internalDefaultHapiSpec(name, true, emptyList());
+        return internalDefaultHapiSpec(name, true, Collections.emptyList());
     }
 
     private static Def.Given internalDefaultHapiSpec(
@@ -861,7 +842,7 @@ public class HapiSpec implements Runnable {
 
     private static <T> Def.Sourced customizedHapiSpec(
             final boolean isOnly, final String name, final Stream<T> prioritySource) {
-        return customizedHapiSpec(isOnly, name, prioritySource, emptyList());
+        return customizedHapiSpec(isOnly, name, prioritySource, Collections.emptyList());
     }
 
     private static <T> Def.Sourced customizedHapiSpec(

@@ -19,15 +19,10 @@ package com.hedera.services.bdd.junit;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-import com.hedera.hapi.node.base.AccountID;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.File;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Comparator;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 /**
@@ -42,12 +37,8 @@ import java.util.stream.Collectors;
 final class SubProcessHapiTestNode implements HapiTestNode {
     /** The Hedera instance we are testing */
     private ProcessHandle handle;
-    /** The name of the node, such as Alice or Bob */
-    private final String name;
     /** The ID of the node */
     private final long nodeId;
-    /** The account ID of the node, such as 0.0.3 */
-    private final AccountID accountId;
     /** The directory in which the config.txt, settings.txt, and other files live. */
     private final Path workingDir;
     /** The port on which the grpc server will be listening */
@@ -56,47 +47,14 @@ final class SubProcessHapiTestNode implements HapiTestNode {
     /**
      * Create a new sub-process node.
      *
-     * @param name the name of the node, like Alice, Bob
-     * @param nodeId The node ID
-     * @param accountId The account ID of the node, such as 0.0.3.
      * @param workingDir The working directory. Must already be created and setup with all the files.
+     * @param nodeId The node ID
      * @param grpcPort The grpc port to configure the server with.
      */
-    public SubProcessHapiTestNode(
-            @NonNull final String name,
-            final long nodeId,
-            @NonNull final AccountID accountId,
-            @NonNull final Path workingDir,
-            final int grpcPort) {
-        this.name = requireNonNull(name);
-        this.nodeId = nodeId;
-        this.accountId = requireNonNull(accountId);
+    public SubProcessHapiTestNode(@NonNull final Path workingDir, final long nodeId, final int grpcPort) {
         this.workingDir = requireNonNull(workingDir);
+        this.nodeId = nodeId;
         this.grpcPort = grpcPort;
-    }
-
-    @Override
-    public long getId() {
-        return nodeId;
-    }
-
-    @Override
-    public String getName() {
-        return name;
-    }
-
-    @Override
-    public AccountID getAccountId() {
-        return accountId;
-    }
-
-    @Override
-    public String toString() {
-        return "SubProcessHapiTestNode{" +
-                "name='" + name + '\'' +
-                ", nodeId=" + nodeId +
-                ", accountId=" + accountId +
-                '}';
     }
 
     @Override
@@ -147,12 +105,12 @@ final class SubProcessHapiTestNode implements HapiTestNode {
     }
 
     @Override
-    public void waitForActive(long seconds) throws TimeoutException {
+    public void waitForActive(long seconds) {
         final var waitUntil = System.currentTimeMillis() + (seconds * 1000);
         final var log = workingDir.resolve("output").resolve("hgcaa.log");
         while (handle != null) {
             if (System.currentTimeMillis() > waitUntil) {
-                throw new TimeoutException(
+                throw new RuntimeException(
                         "node " + nodeId + ": Waited " + seconds + " seconds, but node did not become active!");
             }
 
@@ -181,92 +139,17 @@ final class SubProcessHapiTestNode implements HapiTestNode {
         }
     }
 
-    public void shutdown() {
+    public void stop() {
         if (handle != null) {
             handle.destroy();
             handle = null;
         }
     }
 
-    @Override
-    public void waitForShutdown(long seconds) throws TimeoutException {
-        final var waitUntil = System.currentTimeMillis() + (seconds * 1000);
-        while (handle != null && handle.isAlive()) {
-            if (System.currentTimeMillis() > waitUntil) {
-                throw new TimeoutException(
-                        "node " + nodeId + ": Waited " + seconds + " seconds, but node did not shut down!");
-            }
-
-            try {
-                MILLISECONDS.sleep(10);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new RuntimeException(
-                        "node " + nodeId + ": Interrupted while sleeping in waitForShutdown busy loop", e);
-            }
-        }
-    }
-
-
-    @Override
-    public void waitForFreeze(long seconds) throws TimeoutException {
-        final var waitUntil = System.currentTimeMillis() + (seconds * 1000);
-        final var log = workingDir.resolve("output").resolve("hgcaa.log");
-        while (handle != null && handle.isAlive()) {
-            if (System.currentTimeMillis() > waitUntil) {
-                throw new TimeoutException(
-                        "node " + nodeId + ": Waited " + seconds + " seconds, but node did not freeze!");
-            }
-
-            try {
-                // FUTURE This isn't quite right, I don't want to read from the start of the log, but from
-                // some point in time. I'm not sure how to know what point in time to look for yet.
-                if (Files.exists(log)) {
-                    try (final var in = Files.newBufferedReader(log)) {
-                        String line;
-                        while ((line = in.readLine()) != null) {
-                            if (line.contains("FREEZE_COMPLETE")) {
-                                return;
-                            }
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                throw new RuntimeException("node " + nodeId + ": Unable to read from the hgcaa log file " + log, e);
-            }
-
-            try {
-                MILLISECONDS.sleep(10);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new RuntimeException(
-                        "node " + nodeId + ": Interrupted while sleeping in waitForFreeze busy loop", e);
-            }
-        }
-    }
     public void terminate() {
         if (handle != null) {
             handle.destroyForcibly();
             handle = null;
-        }
-    }
-
-    @Override
-    public void clearState() {
-        if (handle == null) {
-            throw new IllegalStateException("Cannot clear state from a running node. At least, not yet.");
-        }
-
-        final var saved = workingDir.resolve("data/saved").toAbsolutePath().normalize();
-        try {
-            if (Files.exists(saved)) {
-                Files.walk(saved)
-                        .sorted(Comparator.reverseOrder())
-                        .map(Path::toFile)
-                        .forEach(File::delete);
-            }
-        } catch (IOException e) {
-            throw new RuntimeException("Could not delete saved state " + saved, e);
         }
     }
 

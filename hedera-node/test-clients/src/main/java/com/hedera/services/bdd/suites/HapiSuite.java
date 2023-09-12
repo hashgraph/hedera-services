@@ -19,7 +19,6 @@ package com.hedera.services.bdd.suites;
 import static com.hedera.services.bdd.suites.HapiSuite.FinalOutcome.SUITE_FAILED;
 import static com.hedera.services.bdd.suites.HapiSuite.FinalOutcome.SUITE_PASSED;
 
-import com.hedera.services.bdd.junit.HapiTestNode;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
@@ -217,14 +216,13 @@ public abstract class HapiSuite {
         return runSuite(HapiSuite::runSequentialSpecs);
     }
 
-    public FinalOutcome runSpecSync(HapiSpec spec, List<HapiTestNode> nodes) {
+    public FinalOutcome runSpecSync(HapiSpec spec) {
         if (!overrides.isEmpty()) {
             spec.addOverrideProperties(overrides);
         }
 
         final var name = name();
         spec.setSuitePrefix(name);
-        spec.setNodes(nodes);
         spec.run();
         finalSpecs = List.of(spec);
         //        summarizeResults(getResultsLogger());
