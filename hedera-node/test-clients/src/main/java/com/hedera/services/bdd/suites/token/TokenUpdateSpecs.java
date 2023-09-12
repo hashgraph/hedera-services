@@ -63,6 +63,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_RE
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
@@ -144,6 +145,7 @@ public class TokenUpdateSpecs extends HapiSuite {
                         tokenUpdate("tbu").expiry(okExpiry));
     }
 
+    @HapiTest
     private HapiSpec validatesAlreadyDeletedToken() {
         return defaultHapiSpec("ValidatesAlreadyDeletedToken")
                 .given(
@@ -185,6 +187,7 @@ public class TokenUpdateSpecs extends HapiSuite {
                 .then(getTokenInfo(immutable).logged());
     }
 
+    @HapiTest
     private HapiSpec validatesMissingRef() {
         return defaultHapiSpec("ValidatesMissingRef")
                 .given(cryptoCreate(PAYER))
@@ -202,6 +205,7 @@ public class TokenUpdateSpecs extends HapiSuite {
                                 .hasKnownStatus(INVALID_TOKEN_ID));
     }
 
+    @HapiTest
     private HapiSpec validatesMissingAdminKey() {
         return defaultHapiSpec("ValidatesMissingAdminKey")
                 .given(
@@ -324,6 +328,7 @@ public class TokenUpdateSpecs extends HapiSuite {
                         getTxnRecord(TREASURY_UPDATE_TXN).logged());
     }
 
+    @HapiTest
     public HapiSpec validAutoRenewWorks() {
         final var firstPeriod = THREE_MONTHS_IN_SECONDS;
         final var secondPeriod = THREE_MONTHS_IN_SECONDS + 1234;

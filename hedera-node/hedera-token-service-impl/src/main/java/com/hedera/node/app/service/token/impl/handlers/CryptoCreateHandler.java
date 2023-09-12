@@ -25,6 +25,14 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SEND_RECORD_THRESHOLD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
+import static com.hedera.node.app.hapi.fees.usage.SingletonUsageProperties.USAGE_PROPERTIES;
+import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.CREATE_SLOT_MULTIPLIER;
+import static com.hedera.node.app.hapi.fees.usage.crypto.entities.CryptoEntitySizes.CRYPTO_ENTITY_SIZES;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BOOL_SIZE;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.INT_SIZE;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.LONG_SIZE;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.getAccountKeyStorageSize;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
@@ -33,19 +41,20 @@ import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePr
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
-import com.hedera.node.app.hapi.utils.fee.CryptoFeeBuilder;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.validators.CryptoCreateValidator;
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -98,7 +107,7 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
                         && Arrays.equals(
                                 recoverAddressFromPubKey(key.ecdsaSecp256k1().toByteArray()), alias.toByteArray()));
                 if (isAliasDerivedFromDiffKey) {
-                    // TODO : Need to decide what to do about JWildcardECDSAKey
+                    context.requireSignatureForHollowAccountCreation(alias);
                 }
             }
 
@@ -128,19 +137,6 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         requireNonNull(handleContext);
         final var txnBody = handleContext.body();
         final var op = txnBody.cryptoCreateAccount();
-
-        final var fees = handleContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> {
-            try {
-                final var protoBody = fromPbj(handleContext.body());
-                return CryptoFeeBuilder.getCryptoCreateTxFeeMatrices(protoBody, sigValueObj);
-            } catch (InvalidTxBodyException e) {
-                // FUTURE : ('post-modularization-cleanup') Replace this with an appropriate HandleException
-                throw new RuntimeException(e);
-            }
-        });
-
-        handleContext.feeAccumulator().charge(handleContext.payer(), fees);
-
         final var accountStore = handleContext.writableStore(WritableAccountStore.class);
 
         // FUTURE: Use the config and check if accounts can be created.
@@ -326,5 +322,23 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
      */
     private boolean keyAndAliasProvided(@NonNull final CryptoCreateTransactionBody op) {
         return op.hasKey() && !op.alias().equals(Bytes.EMPTY);
+    }
+
+    @Override
+    @NonNull
+    public Fees calculateFees(@NonNull final FeeContext feeContext) {
+        // Variable bytes plus two additional longs for balance and auto-renew period; plus a boolean for receiver sig
+        // required.
+        final var op = feeContext.body().cryptoCreateAccountOrThrow();
+        final var keySize = op.hasKey() ? getAccountKeyStorageSize(fromPbj(op.keyOrThrow())) : 0L;
+        final var baseSize = op.memo().length() + keySize + (op.maxAutomaticTokenAssociations() > 0 ? INT_SIZE : 0L);
+        final var lifeTime = op.autoRenewPeriodOrElse(Duration.DEFAULT).seconds();
+        return feeContext
+                .feeCalculator(SubType.DEFAULT)
+                .addBytesPerTransaction(baseSize + 2 * LONG_SIZE + BOOL_SIZE)
+                .addRamByteSeconds((CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + baseSize) * lifeTime)
+                .addRamByteSeconds(op.maxAutomaticTokenAssociations() * lifeTime * CREATE_SLOT_MULTIPLIER)
+                .addNetworkRamByteSeconds(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs())
+                .calculate();
     }
 }

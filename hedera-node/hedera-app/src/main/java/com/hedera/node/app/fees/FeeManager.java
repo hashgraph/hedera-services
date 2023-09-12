@@ -31,6 +31,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
@@ -137,14 +138,18 @@ public final class FeeManager {
      */
     @NonNull
     public FeeCalculator createFeeCalculator(
-            @NonNull final TransactionInfo txInfo,
-            @NonNull final Key payerKey,
+            @Nullable final TransactionInfo txInfo,
+            @Nullable final Key payerKey,
             final int numVerifications,
             @NonNull final Instant consensusTime,
             @NonNull final SubType subType) {
 
+        if (txInfo == null || payerKey == null) {
+            return NoOpFeeCalculator.INSTANCE;
+        }
+
         // Determine which fee schedule to use, based on the consensus time
-        final var feeData = getFeeData(txInfo, consensusTime, subType);
+        final var feeData = getFeeData(txInfo.functionality(), consensusTime, subType);
 
         // Create the fee calculator
         return new FeeCalculatorImpl(
@@ -155,15 +160,15 @@ public final class FeeManager {
      * Looks up the fee data for the given transaction and its details.
      */
     @NonNull
-    private FeeData getFeeData(
-            @NonNull TransactionInfo txInfo, @NonNull Instant consensusTime, @NonNull SubType subType) {
+    public FeeData getFeeData(
+            @NonNull HederaFunctionality functionality, @NonNull Instant consensusTime, @NonNull SubType subType) {
         final var feeDataMap =
                 consensusTime.getEpochSecond() > currentScheduleExpirationSeconds ? nextFeeDataMap : currentFeeDataMap;
 
         // Now, lookup the fee data for the transaction type. If it is not known, that is, if we have no fee data for
         // that transaction, then we MUST NOT execute that transaction! We will not be able to charge appropriately
         // for it.
-        final var feeData = feeDataMap.get(new Entry(txInfo.functionality(), subType));
+        final var feeData = feeDataMap.get(new Entry(functionality, subType));
         if (feeData == null) {
             throw new HandleException(ResponseCodeEnum.NOT_SUPPORTED);
         }

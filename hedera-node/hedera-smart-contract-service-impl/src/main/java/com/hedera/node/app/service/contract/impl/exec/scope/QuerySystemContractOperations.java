@@ -18,16 +18,18 @@ package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.base.TokenRelationship;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.QueryScope;
 import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.ResultStatus;
+import com.hedera.node.app.spi.workflows.QueryContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Instant;
 import javax.inject.Inject;
 
 /**
@@ -40,9 +42,11 @@ import javax.inject.Inject;
 @QueryScope
 public class QuerySystemContractOperations implements SystemContractOperations {
 
+    private final QueryContext context;
+
     @Inject
-    public QuerySystemContractOperations() {
-        // Dagger
+    public QuerySystemContractOperations(@NonNull final QueryContext queryContext) {
+        this.context = queryContext;
     }
 
     /**
@@ -78,18 +82,6 @@ public class QuerySystemContractOperations implements SystemContractOperations {
      * {@inheritDoc}
      */
     @Override
-    public @Nullable TokenRelationship getRelationshipAndExternalizeResult(
-            final long accountNumber,
-            final long tokenNumber,
-            final long callingContractNumber,
-            @NonNull final ResultTranslator<TokenRelationship> translator) {
-        throw new UnsupportedOperationException("Cannot get token relationships and externalize result");
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public @NonNull ResponseCodeEnum dispatch(
             @NonNull final TransactionBody syntheticTransaction, @NonNull final VerificationStrategy strategy) {
         throw new UnsupportedOperationException("Cannot dispatch synthetic transaction");
@@ -101,5 +93,14 @@ public class QuerySystemContractOperations implements SystemContractOperations {
     @Override
     public void externalizeResult(@NonNull final ContractFunctionResult result, @NonNull final ResultStatus status) {
         throw new UnsupportedOperationException("Cannot externalize result");
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @NonNull
+    public ExchangeRate currentExchangeRate() {
+        return context.exchangeRateInfo().activeRate(Instant.now());
     }
 }

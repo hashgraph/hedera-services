@@ -25,6 +25,7 @@ import com.hedera.node.config.converter.ContractIDConverter;
 import com.hedera.node.config.converter.EntityScaleFactorsConverter;
 import com.hedera.node.config.converter.EntityTypeConverter;
 import com.hedera.node.config.converter.FileIDConverter;
+import com.hedera.node.config.converter.FunctionalitySetConverter;
 import com.hedera.node.config.converter.HederaFunctionalityConverter;
 import com.hedera.node.config.converter.KeyValuePairConverter;
 import com.hedera.node.config.converter.KnownBlockValuesConverter;
@@ -174,6 +175,7 @@ public final class HederaTestConfigBuilder {
                 .withConfigDataType(StakingConfig.class)
                 .withConfigDataType(StatsConfig.class)
                 .withConfigDataType(TokensConfig.class)
+                .withConverter(new ScaleFactorConverter())
                 .withConfigDataType(TopicsConfig.class)
                 .withConfigDataType(TraceabilityConfig.class)
                 .withConfigDataType(UpgradeConfig.class)
@@ -196,6 +198,7 @@ public final class HederaTestConfigBuilder {
                 .withConverter(new SemanticVersionConverter())
                 .withConverter(new KeyValuePairConverter())
                 .withConverter(new LongPairConverter())
+                .withConverter(new FunctionalitySetConverter())
                 .withConverter(new BytesConverter())
                 .withValidator(new EmulatesMapValidator());
     }

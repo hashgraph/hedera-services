@@ -109,7 +109,7 @@ public class HandleThrottleAccumulator {
     public boolean shouldThrottleQuery(HederaFunctionality queryFunction, Instant now, Query query) {
         final var configuration = configProvider.getConfiguration();
         final var shouldThrottleByGas =
-            configuration.getConfigData(ContractsConfig.class).throttleThrottleByGas();
+                configuration.getConfigData(ContractsConfig.class).throttleThrottleByGas();
 
         // Note that by payer exempt from throttling we mean just that those transactions will not be throttled,
         // such payer accounts neither impact the throttles nor are they impacted by them
@@ -126,9 +126,9 @@ public class HandleThrottleAccumulator {
 
         resetLastAllowedUse();
         if (isGasThrottled(queryFunction)
-            && shouldThrottleByGas
-            && (gasThrottle == null
-            || !gasThrottle.allow(now, query.getContractCallLocal().getGas()))) {
+                && shouldThrottleByGas
+                && (gasThrottle == null
+                        || !gasThrottle.allow(now, query.getContractCallLocal().getGas()))) {
             reclaimLastAllowedUse();
             return true;
         }
