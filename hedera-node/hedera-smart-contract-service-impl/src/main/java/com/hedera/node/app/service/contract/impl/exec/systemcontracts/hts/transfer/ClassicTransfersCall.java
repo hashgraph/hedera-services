@@ -186,13 +186,13 @@ public class ClassicTransfersCall extends AbstractHtsCall {
                 attempt.addressIdConverter().convertSender(sender),
                 nominalBodyFor(attempt),
                 attempt.configuration(),
-                isLegacyCall(selector) ? APPROVAL_SWITCH_HELPER : null,
+                isClassicCall(selector) ? APPROVAL_SWITCH_HELPER : null,
                 attempt.verificationStrategies()
                         .activatingOnlyContractKeysFor(sender, onlyDelegatable, attempt.nativeOperations()),
                 SYSTEM_ACCOUNT_CREDIT_SCREEN);
     }
 
-    private static boolean isLegacyCall(@NonNull final byte[] selector) {
+    private static boolean isClassicCall(@NonNull final byte[] selector) {
         return Arrays.equals(selector, CRYPTO_TRANSFER.selector())
                 || Arrays.equals(selector, TRANSFER_TOKENS.selector())
                 || Arrays.equals(selector, TRANSFER_TOKEN.selector())

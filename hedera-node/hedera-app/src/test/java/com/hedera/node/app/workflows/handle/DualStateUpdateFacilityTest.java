@@ -72,7 +72,7 @@ class DualStateUpdateFacilityTest implements TransactionFactory {
                 .when(dualState)
                 .setFreezeTime(any(Instant.class));
 
-        subject = new DualStateUpdateFacility(dualState);
+        subject = new DualStateUpdateFacility();
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -82,9 +82,10 @@ class DualStateUpdateFacilityTest implements TransactionFactory {
         final var txBody = simpleCryptoTransfer().body();
 
         // then
-        assertThatThrownBy(() -> new DualStateUpdateFacility(null)).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> subject.handleTxBody(null, txBody)).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> subject.handleTxBody(state, null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> subject.handleTxBody(null, dualState, txBody))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> subject.handleTxBody(state, null, txBody)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> subject.handleTxBody(state, dualState, null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
@@ -95,7 +96,8 @@ class DualStateUpdateFacilityTest implements TransactionFactory {
                 .build();
 
         // then
-        Assertions.assertThatCode(() -> subject.handleTxBody(state, txBody)).doesNotThrowAnyException();
+        Assertions.assertThatCode(() -> subject.handleTxBody(state, dualState, txBody))
+                .doesNotThrowAnyException();
     }
 
     @Test
@@ -107,7 +109,7 @@ class DualStateUpdateFacilityTest implements TransactionFactory {
                 .freeze(FreezeTransactionBody.newBuilder().freezeType(FREEZE_UPGRADE));
 
         // when
-        subject.handleTxBody(state, txBody.build());
+        subject.handleTxBody(state, dualState, txBody.build());
 
         // then
         assertEquals(freezeTime.seconds(), dualState.getFreezeTime().getEpochSecond());
