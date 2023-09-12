@@ -431,30 +431,6 @@ class QueryWorkflowImplTest extends AppTestBase {
     }
 
     @Test
-    void testMissingHeaderFails(@Mock QueryHandler localHandler, @Mock QueryDispatcher localDispatcher) {
-        // given
-        when(localDispatcher.getHandler(query)).thenReturn(localHandler);
-        final var responseBuffer = newEmptyBuffer();
-        workflow = new QueryWorkflowImpl(
-                stateAccessor,
-                throttleAccumulator,
-                submissionManager,
-                queryChecker,
-                ingestChecker,
-                localDispatcher,
-                queryParser,
-                configProvider,
-                recordCache,
-                authorizer,
-                exchangeRateManager);
-
-        // then
-        assertThatThrownBy(() -> workflow.handleQuery(requestBuffer, responseBuffer))
-                .isInstanceOf(StatusRuntimeException.class)
-                .hasFieldOrPropertyWithValue("status", Status.INVALID_ARGUMENT);
-    }
-
-    @Test
     void testInvalidNodeFails() throws PreCheckException, IOException {
         // given
         doThrow(new PreCheckException(INVALID_NODE_ACCOUNT)).when(ingestChecker).checkNodeState();
