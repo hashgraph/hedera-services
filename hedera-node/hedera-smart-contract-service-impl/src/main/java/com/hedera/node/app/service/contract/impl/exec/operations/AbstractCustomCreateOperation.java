@@ -150,6 +150,7 @@ public abstract class AbstractCustomCreateOperation extends AbstractOperation {
         final var childGasStipend = gasCalculator().gasAvailableForChildCreate(frame.getRemainingGas());
         frame.decrementRemainingGas(childGasStipend);
         final var childFrame = MessageFrame.builder()
+                .parentMessageFrame(frame)
                 .type(MessageFrame.Type.CONTRACT_CREATION)
                 .worldUpdater(frame.getWorldUpdater().updater())
                 .initialGas(childGasStipend)
@@ -169,7 +170,6 @@ public abstract class AbstractCustomCreateOperation extends AbstractOperation {
                 .maxStackSize(frame.getMaxStackSize())
                 .build();
         frame.incrementRemainingGas(cost);
-        frame.getMessageFrameStack().addFirst(childFrame);
         frame.setState(MessageFrame.State.CODE_SUSPENDED);
     }
 

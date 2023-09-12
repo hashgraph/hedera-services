@@ -137,6 +137,7 @@ public abstract class AbstractEvmRecordingCreateOperation extends AbstractOperat
         frame.decrementRemainingGas(childGasStipend);
 
         final MessageFrame childFrame = MessageFrame.builder()
+                .parentMessageFrame(frame)
                 .type(MessageFrame.Type.CONTRACT_CREATION)
                 .worldUpdater(frame.getWorldUpdater().updater())
                 .initialGas(childGasStipend)
@@ -158,7 +159,6 @@ public abstract class AbstractEvmRecordingCreateOperation extends AbstractOperat
 
         frame.incrementRemainingGas(cost);
 
-        frame.getMessageFrameStack().addFirst(childFrame);
         frame.setState(MessageFrame.State.CODE_SUSPENDED);
     }
 
