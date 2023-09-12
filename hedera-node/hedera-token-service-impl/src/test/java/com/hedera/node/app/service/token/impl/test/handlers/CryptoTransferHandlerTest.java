@@ -235,7 +235,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         givenStoresAndConfig(handleContext);
 
         given(handleContext.dispatchRemovableChildTransaction(
-                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class)))
+                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(payerId)))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
@@ -265,7 +265,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         givenStoresAndConfig(handleContext);
 
         given(handleContext.dispatchRemovableChildTransaction(
-                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class)))
+                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(payerId)))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
@@ -336,7 +336,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         givenStoresAndConfig(handleContext);
 
         given(handleContext.dispatchRemovableChildTransaction(
-                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class)))
+                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(payerId)))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
@@ -382,7 +382,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         givenStoresAndConfig(handleContext);
 
         given(handleContext.dispatchRemovableChildTransaction(
-                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class)))
+                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(payerId)))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();

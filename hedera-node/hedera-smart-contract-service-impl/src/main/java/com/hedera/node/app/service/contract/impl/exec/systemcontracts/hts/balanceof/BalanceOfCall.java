@@ -17,10 +17,9 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.balanceof;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.maybeMissingNumberOfEvmReference;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.accountNumberForEvmReference;
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Address;
@@ -81,8 +80,8 @@ public class BalanceOfCall extends AbstractTokenViewCall {
     @Override
     protected @NonNull HederaSystemContract.FullResult resultOfViewingToken(@NonNull Token token) {
         // TODO - gas calculation
-        final var ownerNum = maybeMissingNumberOfEvmReference(owner, nativeOperations());
-        if (ownerNum == MISSING_ENTITY_NUMBER) {
+        final var ownerNum = accountNumberForEvmReference(owner, nativeOperations());
+        if (ownerNum < 0) {
             return revertResult(INVALID_ACCOUNT_ID, 0L);
         }
 
