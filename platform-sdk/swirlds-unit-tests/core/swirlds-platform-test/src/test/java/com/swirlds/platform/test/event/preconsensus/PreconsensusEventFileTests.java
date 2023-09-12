@@ -105,7 +105,8 @@ class PreconsensusEventFileTests {
         assertThrows(NullPointerException.class, () -> PreconsensusEventFile.of(null, 1, 1, 2, 0, Path.of("foo")));
 
         assertThrows(
-                NullPointerException.class, () -> PreconsensusEventFile.of(Instant.now(), 1, 1, 2, -1, Path.of("foo")));
+                IllegalArgumentException.class,
+                () -> PreconsensusEventFile.of(Instant.now(), 1, 1, 2, -1, Path.of("foo")));
 
         assertThrows(NullPointerException.class, () -> PreconsensusEventFile.of(Instant.now(), 1, 1, 2, 0, null));
     }
@@ -127,7 +128,7 @@ class PreconsensusEventFileTests {
                     timestamp.toString().replace(":", "+") + EVENT_FILE_SEPARATOR + SEQUENCE_NUMBER_PREFIX
                             + sequenceNumber + EVENT_FILE_SEPARATOR + MINIMUM_GENERATION_PREFIX
                             + minimumGeneration + EVENT_FILE_SEPARATOR + MAXIMUM_GENERATION_PREFIX
-                            + maximumGeneration + EVENT_FILE_SEPARATOR + origin + ORIGIN_PREFIX + ".pces";
+                            + maximumGeneration + EVENT_FILE_SEPARATOR + ORIGIN_PREFIX + origin + ".pces";
 
             final PreconsensusEventFile file = PreconsensusEventFile.of(
                     timestamp, sequenceNumber, minimumGeneration, maximumGeneration, origin, Path.of("foo/bar"));
