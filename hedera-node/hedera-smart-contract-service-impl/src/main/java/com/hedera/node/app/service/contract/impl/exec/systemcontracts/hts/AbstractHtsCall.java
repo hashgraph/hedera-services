@@ -16,10 +16,15 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
+import static java.util.Objects.requireNonNull;
+
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
+import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Objects;
 
 /**
  * Minimal implementation support for an {@link HtsCall} that needs an {@link HederaWorldUpdater.Enhancement}.
@@ -28,10 +33,18 @@ public abstract class AbstractHtsCall implements HtsCall {
     protected final HederaWorldUpdater.Enhancement enhancement;
 
     protected AbstractHtsCall(@NonNull final HederaWorldUpdater.Enhancement enhancement) {
-        this.enhancement = Objects.requireNonNull(enhancement);
+        this.enhancement = requireNonNull(enhancement);
     }
 
     protected HederaNativeOperations nativeOperations() {
         return enhancement.nativeOperations();
+    }
+
+    protected SystemContractOperations systemContractOperations() {
+        return enhancement.systemOperations();
+    }
+
+    protected ResponseCodeEnum standardized(@NonNull final ResponseCodeEnum status) {
+        return requireNonNull(status) == INVALID_SIGNATURE ? INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE : status;
     }
 }

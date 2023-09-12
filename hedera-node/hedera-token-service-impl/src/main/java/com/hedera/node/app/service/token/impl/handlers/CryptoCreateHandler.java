@@ -221,8 +221,14 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         }
 
         context.attributeValidator().validateMemo(op.memo());
+        // If the body has no transaction id, this is an internal dispatch, and we
+        // should allow the empty key list in case of a hollow account creation
         cryptoCreateValidator.validateKeyAliasAndEvmAddressCombinations(
-                op, context.attributeValidator(), cryptoCreateWithAliasConfig, accountStore);
+                op,
+                context.attributeValidator(),
+                cryptoCreateWithAliasConfig,
+                accountStore,
+                !context.body().hasTransactionID());
         context.attributeValidator()
                 .validateAutoRenewPeriod(op.autoRenewPeriod().seconds());
         validateFalse(

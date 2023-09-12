@@ -289,7 +289,7 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
         logger.info(
                 STARTUP.getMarker(),
                 "ISS intentionally provoked. This ISS was planned to occur at time after genesis {}, "
-                        + "and actually occurred at time after genesis {}. This node ({}) is in partition {} and will"
+                        + "and actually occurred at time after genesis {}. This node ({}) is in partition {} and will "
                         + "agree with the hashes of all other nodes in partition {}. Nodes in other partitions "
                         + "are expected to have divergent hashes.",
                 plannedIss.getTimeAfterGenesis(),

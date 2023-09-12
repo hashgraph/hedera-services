@@ -18,10 +18,9 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.isope
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.maybeMissingNumberOfEvmReference;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.accountNumberForEvmReference;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
@@ -73,13 +72,13 @@ public class IsApprovedForAllCall extends AbstractTokenViewCall {
         if (token.tokenType() != TokenType.NON_FUNGIBLE_UNIQUE) {
             return revertResult(INVALID_TOKEN_ID, 0L);
         }
-        final var ownerNum = maybeMissingNumberOfEvmReference(owner, nativeOperations());
-        if (ownerNum == MISSING_ENTITY_NUMBER) {
+        final var ownerNum = accountNumberForEvmReference(owner, nativeOperations());
+        if (ownerNum < 0) {
             return revertResult(INVALID_ACCOUNT_ID, 0L);
         }
-        final var operatorNum = maybeMissingNumberOfEvmReference(operator, nativeOperations());
+        final var operatorNum = accountNumberForEvmReference(operator, nativeOperations());
         final boolean verdict;
-        if (operatorNum == MISSING_ENTITY_NUMBER) {
+        if (operatorNum < 0) {
             verdict = false;
         } else {
             verdict = operatorMatches(

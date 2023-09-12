@@ -21,9 +21,9 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static com.swirlds.logging.LogMarker.STARTUP;
 import static com.swirlds.platform.crypto.CryptoSetup.initNodeSecurity;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getPlatforms;
+import static com.swirlds.platform.state.signed.StartupStateUtils.getInitialState;
 import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
-import static com.swirlds.platform.util.BootstrapUtils.getInitialState;
 import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.startJVMPauseDetectorThread;
 import static com.swirlds.platform.util.BootstrapUtils.startThreadDumpGenerator;
@@ -56,6 +56,7 @@ import com.swirlds.config.api.source.ConfigSource;
 import com.swirlds.logging.payloads.NodeStartPayload;
 import com.swirlds.platform.config.internal.PlatformConfigUtils;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
+import com.swirlds.platform.internal.SignedStateLoadingException;
 import com.swirlds.platform.network.Network;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.State;
@@ -232,14 +233,20 @@ public final class SwirldsPlatformBuilder {
         final EmergencyRecoveryManager emergencyRecoveryManager = new EmergencyRecoveryManager(
                 stateConfig, new Shutdown()::shutdown, basicConfig.getEmergencyRecoveryFileLoadDir());
 
-        final ReservedSignedState initialState = getInitialState(
-                platformContext,
-                appMain,
-                mainClassName,
-                swirldName,
-                nodeId,
-                configAddressBook,
-                emergencyRecoveryManager);
+        final ReservedSignedState initialState;
+        try {
+            initialState = getInitialState(
+                    platformContext,
+                    recycleBin,
+                    appMain,
+                    mainClassName,
+                    swirldName,
+                    nodeId,
+                    configAddressBook,
+                    emergencyRecoveryManager);
+        } catch (final SignedStateLoadingException e) {
+            throw new RuntimeException("unable to load state from disk", e);
+        }
 
         SwirldsPlatform platform;
         try (initialState) {

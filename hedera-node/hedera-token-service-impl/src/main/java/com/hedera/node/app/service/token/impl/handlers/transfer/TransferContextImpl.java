@@ -67,7 +67,7 @@ public class TransferContextImpl implements TransferContext {
     }
 
     @Override
-    public void createFromAlias(final Bytes alias, final boolean isFromTokenTransfer) {
+    public void createFromAlias(final Bytes alias, final int reqMaxAutoAssociations) {
         // if it is a serialized proto key, auto-create account
         if (isSerializedProtoKey(alias)) {
             validateTrue(autoCreationConfig.enabled(), NOT_SUPPORTED);
@@ -78,11 +78,11 @@ public class TransferContextImpl implements TransferContext {
             numLazyCreations++;
         }
         // if this auto creation is from a token transfer, check if auto creation from tokens is enabled
-        if (isFromTokenTransfer) {
+        if (reqMaxAutoAssociations > 0) {
             validateTrue(tokensConfig.autoCreationsIsEnabled(), NOT_SUPPORTED);
         }
         // Keep the created account in the resolutions map
-        final var createdAccount = autoAccountCreator.create(alias, isFromTokenTransfer);
+        final var createdAccount = autoAccountCreator.create(alias, reqMaxAutoAssociations);
         resolutions.put(alias, createdAccount);
     }
 

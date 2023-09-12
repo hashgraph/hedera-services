@@ -17,10 +17,9 @@
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.List;
+import java.util.function.Predicate;
 
 /**
  * A strategy interface to allow a dispatcher to optionally set the verification status of a
@@ -43,39 +42,28 @@ public interface VerificationStrategy {
         DELEGATE_TO_CRYPTOGRAPHIC_VERIFICATION
     }
 
-    enum KeyRole {
-        TOKEN_ADMIN,
-        TOKEN_TREASURY,
-        TOKEN_AUTO_RENEW_ACCOUNT,
-        TOKEN_FEE_COLLECTOR,
-        OTHER
-    }
-
     /**
      * Returns a decision on whether to verify the signature of a transaction, given a key and
      * the role that its "parent" key structure plays in the transaction.
      *
-     * <p>The {@link KeyRole} is necessary to allow the contract service to implement the "legacy" key
-     * activations that are currently allow-listed on mainnet via the {@code contracts.keys.legacyActivations}
-     * property.
-     *
      * @param key the key to verify
-     * @param keyRole the role that the key plays in the transaction
      * @return a decision on whether to verify the signature, or delegate back to the crypto engine results
      */
-    Decision maybeVerifySignature(@NonNull Key key, @NonNull KeyRole keyRole);
+    Decision decideFor(@NonNull Key key);
 
     /**
-     * Given a {@link CryptoTransferTransactionBody} and list of account numbers that were judged to have an
-     * invalid signature, may return an amended transaction body that will be dispatched instead of the original.
+     * Returns a predicate that tests whether a given key is a valid signature for a given key
+     * given this strategy within the given {@link HandleContext}.
      *
-     * @param transfer the original CryptoTransfer
-     * @param invalidSignerNumbers a list of account numbers that were judged to have an invalid signature
-     * @return an amended CryptoTransfer, or null if no amendment is necessary
+     * @param context the context in which this strategy will be used
+     * @return a predicate that tests whether a given key is a valid signature for a given key
      */
-    @Nullable
-    default CryptoTransferTransactionBody maybeAmendTransfer(
-            @NonNull CryptoTransferTransactionBody transfer, List<Long> invalidSignerNumbers) {
-        throw new UnsupportedOperationException("Default verification strategy does not amend transfers");
+    default Predicate<Key> asSignatureTestIn(@NonNull final HandleContext context) {
+        return key -> switch (decideFor(key)) {
+            case VALID -> true;
+            case INVALID -> false;
+            case DELEGATE_TO_CRYPTOGRAPHIC_VERIFICATION -> context.verificationFor(key)
+                    .passed();
+        };
     }
 }

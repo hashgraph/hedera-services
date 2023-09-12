@@ -16,9 +16,11 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.configOf;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -29,24 +31,22 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
  * Factory to create a new {@link HtsCallAttempt} for a given input and message frame.
  */
 @Singleton
-public class HtsCallAttemptFactory {
-    @Inject
-    public HtsCallAttemptFactory() {
-        // Dagger2
-    }
+public class HtsCallFactory {
+    private final SyntheticIds syntheticIds;
+    private final HtsCallAddressChecks addressChecks;
+    private final DecodingStrategies decodingStrategies;
+    private final VerificationStrategies verificationStrategies;
 
-    /**
-     * Creates a new {@link HtsCallAttempt} for the given input and message frame.
-     *
-     * @param input the input
-     * @param frame the message frame
-     * @return the new attempt
-     */
-    public @NonNull HtsCallAttempt createFrom(@NonNull final Bytes input, @NonNull final MessageFrame frame) {
-        requireNonNull(input);
-        requireNonNull(frame);
-        final var updater = proxyUpdaterFor(frame);
-        return new HtsCallAttempt(input, updater.enhancement());
+    @Inject
+    public HtsCallFactory(
+            @NonNull final SyntheticIds syntheticIds,
+            @NonNull final HtsCallAddressChecks addressChecks,
+            @NonNull final DecodingStrategies decodingStrategies,
+            @NonNull final VerificationStrategies verificationStrategies) {
+        this.syntheticIds = syntheticIds;
+        this.addressChecks = requireNonNull(addressChecks);
+        this.decodingStrategies = decodingStrategies;
+        this.verificationStrategies = requireNonNull(verificationStrategies);
     }
 
     /**
@@ -60,8 +60,14 @@ public class HtsCallAttemptFactory {
     public @NonNull HtsCall createCallFrom(@NonNull final Bytes input, @NonNull final MessageFrame frame) {
         requireNonNull(input);
         requireNonNull(frame);
-        final var updater = proxyUpdaterFor(frame);
-        final var attempt = new HtsCallAttempt(input, updater.enhancement());
-        return requireNonNull(attempt.asCallFrom(frame.getSenderAddress()));
+        final var enhancement = proxyUpdaterFor(frame).enhancement();
+        final var attempt = new HtsCallAttempt(
+                input,
+                enhancement,
+                configOf(frame),
+                decodingStrategies,
+                syntheticIds.converterFor(enhancement.nativeOperations()),
+                verificationStrategies);
+        return requireNonNull(attempt.asCallFrom(frame.getSenderAddress(), addressChecks.hasParentDelegateCall(frame)));
     }
 }
