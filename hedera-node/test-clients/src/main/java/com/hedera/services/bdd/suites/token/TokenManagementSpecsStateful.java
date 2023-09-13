@@ -63,9 +63,8 @@ public class TokenManagementSpecsStateful extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(new HapiSpec[] {
-                /* Stateful specs from TokenManagementSpecs */
-                freezeMgmtFailureCasesWork(),
-                nftMintingCapIsEnforced()
+            /* Stateful specs from TokenManagementSpecs */
+            freezeMgmtFailureCasesWork(), nftMintingCapIsEnforced()
         });
     }
 
