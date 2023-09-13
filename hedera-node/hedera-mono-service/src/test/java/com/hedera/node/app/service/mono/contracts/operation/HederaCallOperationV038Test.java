@@ -133,7 +133,7 @@ class HederaCallOperationV038Test {
         // and:
         given(evmMsgFrame.stackSize()).willReturn(20);
         given(evmMsgFrame.getRemainingGas()).willReturn(cost);
-        given(evmMsgFrame.getMessageStackDepth()).willReturn(1025);
+        given(evmMsgFrame.getDepth()).willReturn(1025);
 
         given(evmMsgFrame.getContractAddress()).willReturn(Address.ALTBN128_ADD);
         given(evmMsgFrame.getRecipientAddress()).willReturn(Address.ALTBN128_ADD);
@@ -226,7 +226,7 @@ class HederaCallOperationV038Test {
         // and:
         given(evmMsgFrame.stackSize()).willReturn(20);
         given(evmMsgFrame.getRemainingGas()).willReturn(cost);
-        given(evmMsgFrame.getMessageStackDepth()).willReturn(1025);
+        given(evmMsgFrame.getDepth()).willReturn(1025);
 
         given(evmMsgFrame.getRecipientAddress()).willReturn(Address.ALTBN128_ADD);
 
@@ -260,7 +260,7 @@ class HederaCallOperationV038Test {
         // and:
         given(evmMsgFrame.stackSize()).willReturn(20);
         given(evmMsgFrame.getRemainingGas()).willReturn(cost);
-        given(evmMsgFrame.getMessageStackDepth()).willReturn(1025);
+        given(evmMsgFrame.getDepth()).willReturn(1025);
 
         given(worldUpdater.get(any())).willReturn(acc);
         given(acc.getBalance()).willReturn(Wei.of(100));
