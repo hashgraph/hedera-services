@@ -17,17 +17,14 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.totalsupply;
 
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
-import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractTokenViewCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
-import java.util.Arrays;
 
 /**
  * Implements the token redirect {@code totalSupply()} call of the HTS system contract.
@@ -43,7 +40,8 @@ public class TotalSupplyCall extends AbstractTokenViewCall {
      */
     @Override
     protected @NonNull HederaSystemContract.FullResult resultOfViewingToken(@NonNull Token token) {
-        final var output = TotalSupplyTranslator.TOTAL_SUPPLY.getOutputs().encodeElements(BigInteger.valueOf(token.totalSupply()));
+        final var output =
+                TotalSupplyTranslator.TOTAL_SUPPLY.getOutputs().encodeElements(BigInteger.valueOf(token.totalSupply()));
         return successResult(output, 0L);
     }
 }

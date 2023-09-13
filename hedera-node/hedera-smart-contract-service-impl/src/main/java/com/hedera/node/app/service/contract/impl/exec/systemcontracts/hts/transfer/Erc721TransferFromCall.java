@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
@@ -35,12 +34,9 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.math.BigInteger;
-import java.util.Arrays;
 
 /**
  * Implements the ERC-721 {@code transferFrom()} call of the HTS contract.
@@ -96,7 +92,11 @@ public class Erc721TransferFromCall extends AbstractHtsCall {
         if (recordBuilder.status() != ResponseCodeEnum.SUCCESS) {
             return gasOnly(revertResult(recordBuilder.status(), 0L));
         } else {
-            return gasOnly(successResult(Erc721TransferFromTranslator.ERC_721_TRANSFER_FROM.getOutputs().encodeElements(), 0L));
+            return gasOnly(successResult(
+                    Erc721TransferFromTranslator.ERC_721_TRANSFER_FROM
+                            .getOutputs()
+                            .encodeElements(),
+                    0L));
         }
     }
 

@@ -1,4 +1,22 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokenuri;
+
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asExactLongValueOrZero;
 
 import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
@@ -6,12 +24,9 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
+import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.Arrays;
-
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asExactLongValueOrZero;
 
 @Singleton
 public class TokenUriTranslator extends AbstractHtsCallTranslator {
@@ -29,8 +44,9 @@ public class TokenUriTranslator extends AbstractHtsCallTranslator {
 
     @Override
     public HtsCall callFrom(@NonNull final HtsCallAttempt attempt) {
-        final var serialNo = asExactLongValueOrZero(
-                TokenUriTranslator.TOKEN_URI.decodeCall(attempt.input().toArrayUnsafe()).get(0));
+        final var serialNo = asExactLongValueOrZero(TokenUriTranslator.TOKEN_URI
+                .decodeCall(attempt.input().toArrayUnsafe())
+                .get(0));
         return new TokenUriCall(attempt.enhancement(), attempt.redirectToken(), serialNo);
     }
 }

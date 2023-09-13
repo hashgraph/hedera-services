@@ -18,4 +18,4 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.mint;
 
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
 
-public interface MintCall extends HtsCall { }
+public interface MintCall extends HtsCall {}

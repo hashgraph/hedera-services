@@ -67,8 +67,10 @@ class DecimalsCallTest extends HtsCallTestBase {
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
-                Bytes.wrap(
-                        DecimalsTranslator.DECIMALS.getOutputs().encodeElements(0xFF).array()),
+                Bytes.wrap(DecimalsTranslator.DECIMALS
+                        .getOutputs()
+                        .encodeElements(0xFF)
+                        .array()),
                 result.getOutput());
     }
 }

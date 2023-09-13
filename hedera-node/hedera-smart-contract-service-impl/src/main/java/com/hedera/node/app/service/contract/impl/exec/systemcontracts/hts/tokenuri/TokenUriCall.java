@@ -17,18 +17,15 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokenuri;
 
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asExactLongValueOrZero;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractNftViewCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Arrays;
 
 /**
  * Implements the token redirect {@code tokenURI()} call of the HTS system contract.

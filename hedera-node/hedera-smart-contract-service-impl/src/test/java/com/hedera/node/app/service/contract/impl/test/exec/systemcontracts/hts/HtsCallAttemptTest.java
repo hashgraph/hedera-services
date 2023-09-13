@@ -95,6 +95,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
 
     @Mock
     private AssociationsDecoder associationsDecoder;
+
     @Mock
     private ClassicTransfersDecoder classicTransfersDecoder;
 
@@ -120,7 +121,8 @@ class HtsCallAttemptTest extends HtsCallTestBase {
 
     @Test
     void nonLongZeroAddressesArentTokens() {
-        final var input = TestHelpers.bytesForRedirect(Erc20TransfersTranslator.ERC_20_TRANSFER.selector(), EIP_1014_ADDRESS);
+        final var input =
+                TestHelpers.bytesForRedirect(Erc20TransfersTranslator.ERC_20_TRANSFER.selector(), EIP_1014_ADDRESS);
         final var subject = new HtsCallAttempt(
                 input,
                 EIP_1014_ADDRESS,
@@ -256,8 +258,8 @@ class HtsCallAttemptTest extends HtsCallTestBase {
 
     @Test
     void constructsName() {
-        final var input =
-                TestHelpers.bytesForRedirect(NameTranslator.NAME.encodeCallWithArgs().array(), NON_SYSTEM_LONG_ZERO_ADDRESS);
+        final var input = TestHelpers.bytesForRedirect(
+                NameTranslator.NAME.encodeCallWithArgs().array(), NON_SYSTEM_LONG_ZERO_ADDRESS);
         final var subject = new HtsCallAttempt(
                 input,
                 EIP_1014_ADDRESS,
@@ -453,7 +455,8 @@ class HtsCallAttemptTest extends HtsCallTestBase {
         } else if (ClassicTransfersTranslator.TRANSFER_FROM.selectorHex().equals(selectorHex)) {
             given(classicTransfersDecoder.decodeHrcTransferFrom(any(), any())).willReturn(TransactionBody.DEFAULT);
         } else if (ClassicTransfersTranslator.TRANSFER_NFT_FROM.selectorHex().equals(selectorHex)) {
-            given(classicTransfersDecoder.decodeHrcTransferNftFrom(any(), any())).willReturn(TransactionBody.DEFAULT);
+            given(classicTransfersDecoder.decodeHrcTransferNftFrom(any(), any()))
+                    .willReturn(TransactionBody.DEFAULT);
         }
         final var input = Bytes.wrap(selector);
         given(addressIdConverter.convertSender(EIP_1014_ADDRESS)).willReturn(A_NEW_ACCOUNT_ID);
