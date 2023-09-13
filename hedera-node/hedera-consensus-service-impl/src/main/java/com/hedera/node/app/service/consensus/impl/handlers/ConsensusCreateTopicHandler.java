@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_DURATION_NOT_
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BAD_ENCODING;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl.RUNNING_HASH_BYTE_ARRAY_SIZE;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
@@ -82,8 +83,6 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     @Override
-    // Suppress the warning that we shouldn't throw generic exceptions
-    @SuppressWarnings("java:S112")
     public void handle(@NonNull final HandleContext handleContext) {
         requireNonNull(handleContext, "The argument 'context' must not be null");
 
@@ -94,7 +93,7 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
                 final var protoBody = fromPbj(handleContext.body());
                 return ConsensusServiceFeeBuilder.getConsensusCreateTopicFee(protoBody, sigValueObj);
             } catch (InvalidTxBodyException e) {
-                throw new RuntimeException(e);
+                throw new HandleException(INVALID_TRANSACTION_BODY);
             }
         });
 

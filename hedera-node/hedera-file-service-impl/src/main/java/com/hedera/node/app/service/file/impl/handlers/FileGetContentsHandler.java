@@ -35,7 +35,7 @@ import com.hedera.node.app.service.file.impl.base.FileQueryBase;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Optional;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -84,14 +84,14 @@ public class FileGetContentsHandler extends FileQueryBase {
         final var responseType = op.headerOrElse(QueryHeader.DEFAULT).responseType();
         responseBuilder.header(header);
         if (header.nodeTransactionPrecheckCode() == OK && responseType != COST_ANSWER) {
-            final var optionalInfo = contentFile(file, fileStore);
+            final var info = contentFile(file, fileStore);
 
-            if (optionalInfo.isEmpty()) {
+            if (info == null) {
                 responseBuilder.header(header.copyBuilder()
                         .nodeTransactionPrecheckCode(INVALID_FILE_ID)
                         .build());
             } else {
-                responseBuilder.fileContents(optionalInfo.get());
+                responseBuilder.fileContents(info);
             }
         }
 
@@ -104,16 +104,16 @@ public class FileGetContentsHandler extends FileQueryBase {
      * @param fileStore the file store
      * @return the content about the file
      */
-    private Optional<FileContents> contentFile(
+    private @Nullable FileContents contentFile(
             @NonNull final FileID fileID, @NonNull final ReadableFileStore fileStore) {
         final var meta = fileStore.getFileMetadata(fileID);
         if (meta == null) {
-            return Optional.empty();
-        } else {
-            final var info = FileContents.newBuilder();
-            info.fileID(fileID);
-            info.contents(meta.contents());
-            return Optional.of(info.build());
+            return null;
         }
+
+        final var info = FileContents.newBuilder();
+        info.fileID(fileID);
+        info.contents(meta.contents());
+        return info.build();
     }
 }

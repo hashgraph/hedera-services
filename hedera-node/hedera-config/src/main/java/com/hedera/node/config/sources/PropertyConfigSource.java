@@ -22,6 +22,7 @@ import com.swirlds.config.api.source.ConfigSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.NoSuchElementException;
 import java.util.Properties;
 import java.util.Set;
@@ -57,8 +58,6 @@ public class PropertyConfigSource implements ConfigSource {
         this(properties, ConfigSource.DEFAULT_ORDINAL);
     }
 
-    // Suppress the warning that we shouldn't throw generic exceptions
-    @SuppressWarnings("java:S112")
     private static Properties loadProperties(@NonNull final String resourceName) {
         requireNonNull(resourceName, "resourceName must not be null");
         // It is important to use the Thread's context class loader because the resource we want to load might
@@ -68,7 +67,7 @@ public class PropertyConfigSource implements ConfigSource {
             props.load(in);
             return props;
         } catch (IOException e) {
-            throw new RuntimeException("Unable to load resource " + resourceName + " as property file", e);
+            throw new UncheckedIOException("Unable to load resource " + resourceName + " as property file", e);
         }
     }
 

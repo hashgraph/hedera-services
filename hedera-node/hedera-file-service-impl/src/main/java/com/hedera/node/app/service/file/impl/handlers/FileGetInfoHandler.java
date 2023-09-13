@@ -44,6 +44,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.CryptographyHolder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -81,8 +82,6 @@ public class FileGetInfoHandler extends FileQueryBase {
         }
     }
 
-    // Suppress the warning that we shouldn't throw generic exceptions
-    @SuppressWarnings("java:S112")
     @Override
     public @NonNull Response findResponse(@NonNull final QueryContext context, @NonNull final ResponseHeader header) {
         requireNonNull(header);
@@ -102,7 +101,7 @@ public class FileGetInfoHandler extends FileQueryBase {
             try {
                 optionalInfo = infoForFile(file, fileStore, ledgerConfig, upgradeFileStore, fileServiceConfig);
             } catch (IOException e) {
-                throw new RuntimeException("Unable to read file contents", e);
+                throw new UncheckedIOException("Unable to read file contents", e);
             }
 
             if (optionalInfo.isEmpty()) {
