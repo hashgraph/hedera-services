@@ -51,6 +51,7 @@ public class RecordBlockNumberTool {
     private static final String DEFAULT_LOG_CONFIG = "log4j2.xml";
     /** name of RecordStreamType */
     private static final String RECORD_STREAM_EXTENSION = "rcd";
+
     private static final String COMPRESSED_RECORD_STREAM_EXTENSION = "rcd.gz";
 
     private static long prevBlockNumber = -1;
@@ -118,7 +119,8 @@ public class RecordBlockNumberTool {
     private static Pair<byte[], byte[]> readRecordFile(final String recordFile) {
         try {
             // parse record file
-            final Pair<Integer, Optional<RecordStreamFile>> recordResult = readMaybeCompressedRecordStreamFile(recordFile);
+            final Pair<Integer, Optional<RecordStreamFile>> recordResult =
+                    readMaybeCompressedRecordStreamFile(recordFile);
 
             if (recordResult.getValue().isEmpty()) {
                 throw new RuntimeException("Record result is empty");
@@ -194,8 +196,9 @@ public class RecordBlockNumberTool {
     @SuppressWarnings("java:S1130")
     public static void readAllFiles(final String sourceDir) throws IOException {
         final File folder = new File(sourceDir);
-        final File[] streamFiles = folder.listFiles(f -> f.getAbsolutePath().endsWith(COMPRESSED_RECORD_STREAM_EXTENSION) ||
-                f.getAbsolutePath().endsWith(RECORD_STREAM_EXTENSION));
+        final File[] streamFiles =
+                folder.listFiles(f -> f.getAbsolutePath().endsWith(COMPRESSED_RECORD_STREAM_EXTENSION)
+                        || f.getAbsolutePath().endsWith(RECORD_STREAM_EXTENSION));
         Arrays.sort(streamFiles); // sort by file names and timestamps
 
         final List<File> totalList = new ArrayList<>();
