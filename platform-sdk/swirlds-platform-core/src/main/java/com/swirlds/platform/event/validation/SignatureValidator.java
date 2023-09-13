@@ -21,6 +21,7 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.INVALID_EVENT_ERROR;
 
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.BaseEvent;
@@ -31,7 +32,6 @@ import com.swirlds.platform.event.GossipEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.PublicKey;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
@@ -43,16 +43,28 @@ import org.apache.logging.log4j.Logger;
 public class SignatureValidator implements GossipEventValidator {
     private static final Logger logger = LogManager.getLogger(SignatureValidator.class);
     private final SignatureVerifier signatureVerifier;
-    private final Map<NodeId, PublicKey> keyMap;
+    private final Map<NodeId, PublicKey> previousKeyMap = new HashMap<>();
+    private final Map<NodeId, PublicKey> currentKeyMap = new HashMap<>();
+    private final SoftwareVersion currentSoftwareVersion;
 
+    /**
+     * @param previousAddressBook    the previous address book
+     * @param currentAddressBook     the current address book
+     * @param currentSoftwareVersion the current software version
+     * @param signatureVerifier      the signature verifier
+     */
     public SignatureValidator(
-            @NonNull final List<AddressBook> addressBooks, @NonNull final SignatureVerifier signatureVerifier) {
+            @NonNull final AddressBook previousAddressBook,
+            @NonNull final AddressBook currentAddressBook,
+            @NonNull SoftwareVersion currentSoftwareVersion,
+            @NonNull final SignatureVerifier signatureVerifier) {
         this.signatureVerifier = Objects.requireNonNull(signatureVerifier);
-        this.keyMap = new HashMap<>();
-        for (final AddressBook addressBook : addressBooks) {
-            for (final Address address : Objects.requireNonNull(addressBook)) {
-                keyMap.put(address.getNodeId(), address.getSigPublicKey());
-            }
+        this.currentSoftwareVersion = Objects.requireNonNull(currentSoftwareVersion);
+        for (final Address address : Objects.requireNonNull(previousAddressBook)) {
+            previousKeyMap.put(address.getNodeId(), address.getSigPublicKey());
+        }
+        for (final Address address : Objects.requireNonNull(currentAddressBook)) {
+            currentKeyMap.put(address.getNodeId(), address.getSigPublicKey());
         }
     }
 
@@ -99,7 +111,24 @@ public class SignatureValidator implements GossipEventValidator {
     @Override
     public boolean isEventValid(final GossipEvent event) {
         final NodeId creatorId = event.getHashedData().getCreatorId();
-        final PublicKey publicKey = keyMap.get(creatorId);
+        final SoftwareVersion eventSoftwareVersion = event.getHashedData().getSoftwareVersion();
+        final int softwareComparison = currentSoftwareVersion.compareTo(eventSoftwareVersion);
+        final PublicKey publicKey;
+        if (softwareComparison < 0) {
+            // current software version is less than event software version
+            logger.error(
+                    EXCEPTION.getMarker(),
+                    "Cannot validate events for software version {} that is greater than the current software version {}",
+                    eventSoftwareVersion,
+                    currentSoftwareVersion);
+            return false;
+        } else if (softwareComparison > 0) {
+            // current software version is greater than event software version
+            publicKey = previousKeyMap.get(creatorId);
+        } else {
+            // current software version is equal to event software version
+            publicKey = currentKeyMap.get(creatorId);
+        }
         if (publicKey == null) {
             logger.error(EXCEPTION.getMarker(), "Cannot find publicKey for creator with ID: {}", () -> creatorId);
             return false;
