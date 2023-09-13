@@ -65,10 +65,10 @@ import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
  * best performance profile as by using an in memory index we avoid the need for random disk writes.
  * Random disk writes are horrible performance wise in our testing.
  *
- * This implementation depends on good hashCode() implementation on the keys, if there are too
+ * <p>This implementation depends on good hashCode() implementation on the keys, if there are too
  * many hash collisions the performance can get bad.
  *
- * <b>IMPORTANT: This implementation assumes a single writing thread. There can be multiple
+ * <p><b>IMPORTANT: This implementation assumes a single writing thread. There can be multiple
  * readers while writing is happening.</b>
  */
 public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Snapshotable {
@@ -91,13 +91,11 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
     protected static final int VALUE_SIZE = Long.BYTES;
     /**
      * This is the average number of entries per bucket we aim for when filled to mapSize. It is a
-     * heuristic used alongside LOADING_FACTOR in calculation for how many buckets to create. The
-     * larger this number the slower lookups will be but the more even distribution of entries
-     * across buckets will be. So it is a matter of balance.
+     * heuristic used in calculation for how many buckets to create. The larger this number the
+     * slower lookups will be but the more even distribution of entries across buckets will be. So
+     * it is a matter of balance.
      */
-    private static final long GOOD_AVERAGE_BUCKET_ENTRY_COUNT = 20;
-    /** how full should all available bins be if we are at the specified map size */
-    public static final double LOADING_FACTOR = 0.6;
+    private static final long GOOD_AVERAGE_BUCKET_ENTRY_COUNT = 64;
     /** The limit on the number of concurrent read tasks in {@code endWriting()} */
     private static final int MAX_IN_FLIGHT = 64;
     /**
@@ -233,7 +231,7 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
             // create new index
             bucketIndexToBucketLocation = preferDiskBasedIndex ? new LongListDisk(indexFile) : new LongListOffHeap();
             // calculate number of entries we can store in a disk page
-            minimumBuckets = (int) Math.ceil((mapSize / LOADING_FACTOR) / GOOD_AVERAGE_BUCKET_ENTRY_COUNT);
+            minimumBuckets = (int) (mapSize / GOOD_AVERAGE_BUCKET_ENTRY_COUNT);
             // numOfBuckets is the nearest power of two greater than minimumBuckets with a min of
             // 4096
             numOfBuckets = Integer.highestOneBit(minimumBuckets) * 2;

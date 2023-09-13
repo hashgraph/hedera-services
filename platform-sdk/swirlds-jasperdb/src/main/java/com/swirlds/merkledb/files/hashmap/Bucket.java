@@ -34,8 +34,8 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -45,7 +45,7 @@ import org.apache.logging.log4j.Logger;
  * of bucket entries. Entries contain key hash codes (as a single bucket may contain keys
  * with different hash codes), values, and full serialized key bytes.
  *
- * This class is not fully thread safe. Buckets may be updated in one thread and then
+ * <p>This class is not fully thread safe. Buckets may be updated in one thread and then
  * accessed from different threads, this use case is supported. However, buckets aren't
  * designed to be updated concurrently from multiple threads.
  */
@@ -80,7 +80,7 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
     private final AtomicInteger bucketIndex = new AtomicInteger(0);
 
     /** List of bucket entries in this bucket */
-    private final List<BucketEntry> entries = new CopyOnWriteArrayList<>();
+    private final List<BucketEntry> entries = new ArrayList<>();
 
     /**
      * Create a new bucket with the default size.
@@ -141,11 +141,13 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
         return entries.size();
     }
 
-    private void checkLargestBucket() {
-        final int count = entries.size();
+    private void checkLargestBucket(final int count) {
+        if (!logger.isDebugEnabled(MERKLE_DB.getMarker())) {
+            return;
+        }
         if (count > LARGEST_BUCKET_CREATED.get()) {
             LARGEST_BUCKET_CREATED.set(count);
-            logger.info(MERKLE_DB.getMarker(), "New largest bucket, now = {} entries", count);
+            logger.debug(MERKLE_DB.getMarker(), "New largest bucket, now = {} entries", count);
         }
     }
 
@@ -209,7 +211,7 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
             final BucketEntry newEntry = new BucketEntry(keyHashCode, value, key);
             entries.add(newEntry);
 
-            checkLargestBucket();
+            checkLargestBucket(entries.size());
         } catch (IOException e) {
             logger.error(EXCEPTION.getMarker(), "Failed putting key={} value={} in a bucket", key, value, e);
             throw new UncheckedIOException(e);
@@ -221,6 +223,7 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
         bucketIndex.set(0);
         entries.clear();
 
+        int entriesCount = 0;
         while (in.hasRemaining()) {
             final int tag = in.readVarInt(false);
             final int number = tag >> TAG_FIELD_OFFSET;
@@ -228,16 +231,17 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
                 bucketIndex.set(in.readVarInt(false));
             } else if (number == FIELD_BUCKET_ENTRIES.number()) {
                 final int entryBytesSize = in.readVarInt(false);
-                final BufferedData entryData = BufferedData.allocate(entryBytesSize);
-                in.readBytes(entryData);
-                entryData.reset();
-                entries.add(new BucketEntry(entryData));
+                final long oldLimit = in.limit();
+                in.limit(in.position() + entryBytesSize);
+                entries.add(new BucketEntry(in));
+                in.limit(oldLimit);
+                entriesCount++;
             } else {
                 throw new IllegalArgumentException("Unknown bucket field: " + number);
             }
         }
 
-        checkLargestBucket();
+        checkLargestBucket(entriesCount);
     }
 
     void readFrom(final ByteBuffer buffer) throws IOException {
@@ -333,7 +337,7 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
      * A single entry in a bucket, which contains key hash code, value (usually, path), and
      * full serialized key. A bucket may contain multiple such entries.
      *
-     * This class would be a record, if it was immutable. However, when a value is updated
+     * <p>This class would be a record, if it was immutable. However, when a value is updated
      * in a bucket, and a bucket entry already exists for the same key, instead of creating
      * a new entry, we just update the value in the existing entry.
      */
@@ -357,7 +361,7 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
         }
 
         /** Creates new bucket entry by reading its fields from the given protobuf buffer */
-        public BucketEntry(final BufferedData entryData) {
+        public BucketEntry(final ReadableSequentialData entryData) {
             // defaults
             hashCode = 0;
             value = 0;
@@ -374,8 +378,8 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
                     value = entryData.readVarLong(false);
                 } else if (number == FIELD_BUCKETENTRY_KEYBYTES.number()) {
                     final int bytesSize = entryData.readVarInt(false);
-                    keyBytes = entryData.slice(entryData.position(), bytesSize);
-                    entryData.skip(bytesSize);
+                    keyBytes = BufferedData.allocate(bytesSize);
+                    entryData.readBytes(keyBytes);
                 } else {
                     throw new IllegalArgumentException("Unknown bucket entry field: " + number);
                 }
@@ -455,7 +459,7 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
             ProtoUtils.writeBytes(out, FIELD_BUCKETENTRY_KEYBYTES, (int) keyb.capacity(), o -> o.writeBytes(keyb));
         }
 
-        public boolean equals(final KeySerializer<K> keySerializer, final K key) throws IOException {
+        public boolean equals(final KeySerializer<K> keySerializer, final K key) {
             if (this.key != null) {
                 return this.key.equals(key);
             } else {

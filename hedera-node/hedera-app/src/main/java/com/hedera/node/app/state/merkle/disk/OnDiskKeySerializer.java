@@ -149,8 +149,6 @@ public final class OnDiskKeySerializer<K> implements KeySerializer<OnDiskKey<K>>
     @Override
     @Deprecated(forRemoval = true)
     public void serialize(final OnDiskKey<K> key, final ByteBuffer buffer) throws IOException {
-        //        final BufferedData out = BufferedData.wrap(buffer);
-        //        codec.write(key.getKey(), out);
         throw new UnsupportedOperationException();
     }
 
@@ -171,10 +169,6 @@ public final class OnDiskKeySerializer<K> implements KeySerializer<OnDiskKey<K>>
 
     @Override
     public OnDiskKey<K> deserialize(final ByteBuffer buffer, final long ignored) throws IOException {
-        //        final BufferedData in = BufferedData.wrap(buffer);
-        //        final var k = codec.parse(in);
-        //        Objects.requireNonNull(k);
-        //        return new OnDiskKey<>(md, k);
         throw new UnsupportedOperationException();
     }
 
@@ -190,8 +184,6 @@ public final class OnDiskKeySerializer<K> implements KeySerializer<OnDiskKey<K>>
 
     @Override
     public boolean equals(final ByteBuffer byteBuffer, final int ignored, final OnDiskKey<K> key) throws IOException {
-        //        final var other = deserialize(byteBuffer, 0);
-        //        return other.equals(key);
         throw new UnsupportedOperationException();
     }
 }

@@ -23,6 +23,7 @@ import com.swirlds.merkledb.serialize.DataItemHeader;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.virtualmap.VirtualKey;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -118,24 +119,24 @@ public class BucketSerializer<K extends VirtualKey> implements DataItemSerialize
     }
 
     @Override
-    public void serialize(final Bucket<K> bucket, final WritableSequentialData out) {
+    public void serialize(@NonNull final Bucket<K> bucket, @NonNull final WritableSequentialData out) {
         bucket.writeTo(out);
     }
 
     @Override
-    public void serialize(Bucket<K> bucket, ByteBuffer buffer) throws IOException {
+    public void serialize(final Bucket<K> bucket, final ByteBuffer buffer) throws IOException {
         bucket.writeTo(buffer);
     }
 
     @Override
-    public Bucket<K> deserialize(ReadableSequentialData in) {
+    public Bucket<K> deserialize(@NonNull final ReadableSequentialData in) {
         final Bucket<K> bucket = reusableBucketPool.getBucket();
         bucket.readFrom(in);
         return bucket;
     }
 
     @Override
-    public Bucket<K> deserialize(ByteBuffer buffer, long dataVersion) throws IOException {
+    public Bucket<K> deserialize(final ByteBuffer buffer, final long dataVersion) throws IOException {
         final Bucket<K> bucket = reusableBucketPool.getBucket();
         bucket.readFrom(buffer);
         return bucket;

@@ -18,27 +18,24 @@ package com.swirlds.merkledb.files;
 
 import static com.hedera.pbj.runtime.ProtoParserTools.TAG_FIELD_OFFSET;
 import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_ITEMS;
-import static com.swirlds.merkledb.files.DataFileCommon.PAGE_SIZE;
 import static com.swirlds.merkledb.utilities.ProtoUtils.WIRE_TYPE_DELIMITED;
 
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
+import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
 import com.swirlds.merkledb.utilities.ProtoUtils;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.MappedByteBuffer;
+import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.FileChannel;
-import java.nio.channels.FileChannel.MapMode;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
@@ -53,20 +50,31 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 // https://github.com/hashgraph/hedera-services/issues/8344
 public class DataFileReaderPbj<D> implements DataFileReader<D> {
 
-    private static final int MMAP_BUF_SIZE = PAGE_SIZE * 1024 * 16;
-    private static final long MAX_FILE_SIZE = 32L * 1024 * 1024 * 1024;
-    /** FileChannel's for each thread */
-    private static final ThreadLocal<BufferedData> BUFFER_CACHE = new ThreadLocal<>();
+    protected static final ThreadLocal<ByteBuffer> BUFFER_CACHE = new ThreadLocal<>();
+    private static final ThreadLocal<BufferedData> BUFFEREDDATA_CACHE = new ThreadLocal<>();
+
+    /** Max number of file channels to use for reading */
+    protected static final int MAX_FILE_CHANNELS = 8;
     /**
+     * When a data file reader is created, a single file channel is open to read data from the
+     * file. This channel is used by all threads. Number of threads currently reading data is
+     * tracked in {@link #fileChannelsInUse}. When the number of threads per opened file channel
+     * exceeds this threshold, a new file channel is open, unless there are {@link #MAX_FILE_CHANNELS}
+     * channels are already opened.
      */
-    private FileChannel fileChannel;
-
-    private final AtomicReferenceArray<MappedByteBuffer> readingMmaps =
-            new AtomicReferenceArray<>(Math.toIntExact(MAX_FILE_SIZE / MMAP_BUF_SIZE * 2));
-    private final AtomicReferenceArray<BufferedData> readingBufs =
-            new AtomicReferenceArray<>(Math.toIntExact(MAX_FILE_SIZE / MMAP_BUF_SIZE * 2));
-
-    private final List<MappedByteBuffer> mmapsToClean = Collections.synchronizedList(new ArrayList<>());
+    protected static final int THREADS_PER_FILECHANNEL = 8;
+    /**
+     * A single data file reader may use multiple file channels. Previously, a single file channel
+     * was used, and it resulted in unnecessary locking in FileChannelImpl.readInternal(), when
+     * the number of threads working with the channel in parallel was high. Now a single file
+     * channel is open in the constructor, and additioinal file channels up to {@link #MAX_FILE_CHANNELS}
+     * are opened as needed
+     */
+    protected final AtomicReferenceArray<FileChannel> fileChannels = new AtomicReferenceArray<>(MAX_FILE_CHANNELS);
+    /** Number of currently opened file channels */
+    protected final AtomicInteger fileChannelsCount = new AtomicInteger(0);
+    /** Number of file channels currently in use by all threads working with this data file reader */
+    protected final AtomicInteger fileChannelsInUse = new AtomicInteger(0);
 
     /** Indicates whether this file reader is open */
     private final AtomicBoolean open = new AtomicBoolean(true);
@@ -84,6 +92,7 @@ public class DataFileReaderPbj<D> implements DataFileReader<D> {
     protected final DataItemSerializer<D> dataItemSerializer;
     /** A flag for if the underlying file is fully written and ready to be compacted. */
     private final AtomicBoolean fileCompleted = new AtomicBoolean(false);
+
     /**
      * The size of this file in bytes, cached as need it often. This size is updated in {@link
      * #setFileCompleted()}, which is called for existing files right after the reader is created,
@@ -118,7 +127,7 @@ public class DataFileReaderPbj<D> implements DataFileReader<D> {
         this.path = path;
         this.metadata = metadata;
         this.dataItemSerializer = dataItemSerializer;
-        openNewFileChannel();
+        openNewFileChannel(0);
     }
 
     @Override
@@ -143,7 +152,7 @@ public class DataFileReaderPbj<D> implements DataFileReader<D> {
      */
     public void setFileCompleted() {
         try {
-            fileSizeBytes.set(fileChannel.size());
+            fileSizeBytes.set(fileChannels.get(0).size());
         } catch (final IOException e) {
             throw new UncheckedIOException("Failed to update data file reader size", e);
         } finally {
@@ -268,57 +277,88 @@ public class DataFileReaderPbj<D> implements DataFileReader<D> {
     /** Close this data file, it can not be used once closed. */
     public void close() throws IOException {
         open.set(false);
-        fileChannel.close();
-        for (final MappedByteBuffer mmap : mmapsToClean) {
-            DataFileCommon.closeMmapBuffer(mmap);
+        for (int i = 0; i < MAX_FILE_CHANNELS; i++) {
+            final FileChannel fileChannel = fileChannels.getAndSet(i, null);
+            if (fileChannel != null) {
+                fileChannel.close();
+            }
         }
     }
 
     // =================================================================================================================
     // Private methods
 
-    private BufferedData getReadBuffer(final int index) throws IOException {
-        final long bufOffset = (long) index * (MMAP_BUF_SIZE / 2);
-        long bufSize = Math.min(MMAP_BUF_SIZE, fileChannel.size() - bufOffset);
-        MappedByteBuffer buf = readingMmaps.get(index);
-        if ((buf == null) || (buf.capacity() < bufSize)) {
-            MappedByteBuffer newBuf;
-            try {
-                newBuf = fileChannel.map(MapMode.READ_ONLY, bufOffset, bufSize);
-            } catch (final IOException e) {
-                // In very rare cases, the file may be being written in parallel in a different
-                // thread. If the writer finishes writing between the call to fileChannel.size()
-                // and fileChannel.map(), bufOffset + bufSize may exceed total file size. It
-                // happens because writers truncate file to actual size in finishWriting(). In
-                // this case, fileChannel.map() fails with an exception. There is no clean way
-                // to sync data file readers and writers, but fortunately it's enough to just
-                // retry with updated file size
-                bufSize = Math.min(MMAP_BUF_SIZE, fileChannel.size() - bufOffset);
-                newBuf = fileChannel.map(MapMode.READ_ONLY, bufOffset, bufSize);
-            }
-            if (readingMmaps.compareAndSet(index, buf, newBuf)) {
-                mmapsToClean.add(newBuf);
-                buf = newBuf;
-            } else {
-                DataFileCommon.closeMmapBuffer(newBuf);
-                buf = readingMmaps.get(index);
-            }
+    /**
+     * Opens a new file channel for reading the file, if the total number of channels opened is
+     * less than {@link #MAX_FILE_CHANNELS}. This method is safe to call from multiple threads.
+     *
+     * @param index Index of the new file channel. If greater or equal to {@link
+     *                            #MAX_FILE_CHANNELS}, no new channel is opened
+     * @throws IOException
+     *      If an I/O error occurs
+     */
+    protected void openNewFileChannel(final int index) throws IOException {
+        if (index >= MAX_FILE_CHANNELS) {
+            return;
         }
-        BufferedData readBuf = readingBufs.get(index);
-        if ((readBuf == null) || (readBuf.capacity() != buf.capacity())) {
-            final BufferedData newReadBuf = BufferedData.wrap(buf);
-            if (readingBufs.compareAndSet(index, readBuf, newReadBuf)) {
-                readBuf = newReadBuf;
-            } else {
-                readBuf = readingBufs.get(index);
-            }
+        final FileChannel fileChannel = FileChannel.open(path, StandardOpenOption.READ);
+        if (fileChannels.compareAndSet(index, null, fileChannel)) {
+            fileChannelsCount.incrementAndGet();
+        } else {
+            fileChannel.close();
         }
-        return readBuf;
     }
 
-    private void openNewFileChannel() throws IOException {
-        assert (fileChannel == null) || !fileChannel.isOpen();
-        fileChannel = FileChannel.open(path, StandardOpenOption.READ);
+    /**
+     * Replaces a closed file channel at a given index in {@link #fileChannels} with a new one.
+     * This method is safe to be called from multiple threads. If a channel is closed, and two
+     * threads are calling this method to replace it with a new channel, only one of them will
+     * proceed, while the channel opened in the other thread will be closed immediately and
+     * not used any further.
+     *
+     * @param index File channel index in {@link #fileChannels}
+     * @param closedChannel Closed file channel to replace
+     * @throws IOException
+     *      If an I/O error occurs
+     */
+    protected void reopenFileChannel(final int index, final FileChannel closedChannel) throws IOException {
+        assert index < MAX_FILE_CHANNELS;
+        // May be closedChannel or may be already reopened in a different thread
+        assert fileChannels.get(index) != null;
+        assert !closedChannel.isOpen();
+        final FileChannel fileChannel = FileChannel.open(path, StandardOpenOption.READ);
+        if (!fileChannels.compareAndSet(index, closedChannel, fileChannel)) {
+            fileChannel.close();
+        }
+    }
+
+    /**
+     * Returns an index of an opened file channel to read data. Opens a new file channel, if
+     * possible, when the number of file channels currently in use is much greater than the number
+     * of opened file channels.
+     *
+     * @return An index of a file channel to read data
+     * @throws IOException
+     *      If an I/O exception occurs
+     */
+    protected int leaseFileChannel() throws IOException {
+        int count = fileChannelsCount.get();
+        final int inUse = fileChannelsInUse.incrementAndGet();
+        // Although openNewFileChannel() is thread safe, it makes sense to check the count here.
+        // Since the channels are never closed (other than when the data file reader is closed),
+        // it's safe to check count against MAX_FILE_CHANNELS
+        if ((inUse / count > THREADS_PER_FILECHANNEL) && (count < MAX_FILE_CHANNELS)) {
+            openNewFileChannel(count);
+            count = fileChannelsCount.get();
+        }
+        return inUse % count;
+    }
+
+    /**
+     * Decreases the number of opened file channels in use by one.
+     */
+    protected void releaseFileChannel() {
+        fileChannelsInUse.decrementAndGet();
     }
 
     /**
@@ -333,32 +373,57 @@ public class DataFileReaderPbj<D> implements DataFileReader<D> {
      * @throws ClosedChannelException if the file was closed
      */
     private BufferedData read(final long byteOffsetInFile) throws IOException {
-        final int bufIndex = Math.toIntExact(byteOffsetInFile / (MMAP_BUF_SIZE / 2));
+        // Buffer size to read data item tag and size. If the whole item is small and
+        // fits into this buffer, there is no need to make an extra file read
+        final int PRE_READ_BUF_SIZE = 2048;
+        ByteBuffer readBB = BUFFER_CACHE.get();
+        BufferedData readBuf = BUFFEREDDATA_CACHE.get();
+        if (readBuf == null) {
+            readBB = ByteBuffer.allocate(PRE_READ_BUF_SIZE);
+            BUFFER_CACHE.set(readBB);
+            readBuf = BufferedData.wrap(readBB);
+            BUFFEREDDATA_CACHE.set(readBuf);
+        }
         // Try a few times. It's very unlikely (other than in tests) that a thread is
         // interrupted more than once in short period of time, so 3 retries should be enough
-        final long mmapOffset = (long) bufIndex * (MMAP_BUF_SIZE / 2);
         for (int retries = 3; retries > 0; retries--) {
+            final int fcIndex = leaseFileChannel();
+            final FileChannel fileChannel = fileChannels.get(fcIndex);
+            assert fileChannel != null;
             try {
-                final BufferedData in = getReadBuffer(bufIndex);
-                final int tag = in.getVarInt(byteOffsetInFile - mmapOffset, false); // tag
+                // Fill the byte buffer from the channel
+                readBB.clear();
+                readBB.limit(PRE_READ_BUF_SIZE); // No need to read more than that for a header
+                MerkleDbFileUtils.completelyRead(fileChannel, readBB, byteOffsetInFile);
+                // Then read the tag and size from the read buffer, since it's wrapped over the byte buffer
+                readBuf.reset();
+                final int tag = readBuf.getVarInt(0, false); // tag
                 assert tag == ((FIELD_DATAFILE_ITEMS.number() << TAG_FIELD_OFFSET) | WIRE_TYPE_DELIMITED);
                 final int sizeOfTag = ProtoUtils.sizeOfUnsignedVarInt32(tag);
-                final int size = in.getVarInt(byteOffsetInFile + sizeOfTag - mmapOffset, false);
-                if (size >= MMAP_BUF_SIZE / 2) {
-                    throw new UnsupportedOperationException("Data item is too large");
-                }
+                final int size = readBuf.getVarInt(sizeOfTag, false);
                 final int sizeOfSize = ProtoUtils.sizeOfUnsignedVarInt32(size);
-                BufferedData buf = BUFFER_CACHE.get();
-                if ((buf == null) || (buf.capacity() < size)) {
-                    buf = BufferedData.allocate(size);
-                    BUFFER_CACHE.set(buf);
+                // Check if the whole data item is already read in the header
+                if (PRE_READ_BUF_SIZE >= sizeOfTag + sizeOfSize + size) {
+                    readBuf.position(sizeOfTag + sizeOfSize);
+                    readBuf.limit(sizeOfTag + sizeOfSize + size);
+                    return readBuf;
                 }
-                buf.position(0);
-                buf.limit(size);
-                in.getBytes(byteOffsetInFile + sizeOfTag + sizeOfSize - mmapOffset, buf);
-                // Uncomment this once https://github.com/hashgraph/pbj/issues/78 is fixed
-                // buf.flip();
-                return buf;
+                // Otherwise read it separately
+                if (readBB.capacity() <= size) {
+                    readBB = ByteBuffer.allocate(size);
+                    BUFFER_CACHE.set(readBB);
+                    readBuf = BufferedData.wrap(readBB);
+                    BUFFEREDDATA_CACHE.set(readBuf);
+                } else {
+                    readBB.position(0);
+                    readBB.limit(size);
+                }
+                final int bytesRead = MerkleDbFileUtils.completelyRead(
+                        fileChannel, readBB, byteOffsetInFile + sizeOfTag + sizeOfSize);
+                assert bytesRead == size : "Failed to read all data item bytes";
+                readBuf.position(0);
+                readBuf.limit(bytesRead);
+                return readBuf;
             } catch (final ClosedByInterruptException e) {
                 // If the thread and the channel are interrupted, propagate it to the callers
                 throw e;
@@ -366,7 +431,9 @@ public class DataFileReaderPbj<D> implements DataFileReader<D> {
                 // This exception may be thrown, if the channel was closed, because a different
                 // thread reading from the channel was interrupted. Re-create the file channel
                 // and retry
-                openNewFileChannel();
+                reopenFileChannel(fcIndex, fileChannel);
+            } finally {
+                releaseFileChannel();
             }
         }
         throw new IOException("Failed to read from file, file channel keeps getting closed");
