@@ -48,6 +48,31 @@ import org.apache.logging.log4j.Logger;
  * <p>This class is not fully thread safe. Buckets may be updated in one thread and then
  * accessed from different threads, this use case is supported. However, buckets aren't
  * designed to be updated concurrently from multiple threads.
+ *
+ * <p>Protobuf schema:
+ *
+ * <p><pre>
+ * message Bucket {
+ *
+ *     // Bucket index
+ *     optional uint32 index = 1;
+ *
+ *     // Items
+ *     repeated BucketEntry entries = 11;
+ * }
+ *
+ * message BucketEntry {
+ *
+ *     // Key hash code
+ *     int32 hashCode = 1;
+ *
+ *     // Entry value, e.g. path
+ *     optional int64 value = 2;
+ *
+ *     // Serialized key
+ *     bytes keyBytes = 3;
+ * }
+ * </pre>
  */
 public final class Bucket<K extends VirtualKey> implements Closeable {
     private static final Logger logger = LogManager.getLogger(Bucket.class);

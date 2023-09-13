@@ -39,6 +39,25 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
+/**
+ * Serializer to store and read virtual leaf records in MerkleDb data files.
+ *
+ * <p>Protobuf schema:
+ *
+ * <p><pre>
+ * message LeafRecord {
+ *
+ *     // Virtual node path
+ *     optional uint64 path = 1;
+ *
+ *     // Virtual key
+ *     bytes key = 2;
+ *
+ *     // Virtual value
+ *     bytes value = 3;
+ * }
+ * </pre>>
+ */
 public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends VirtualValue>
         implements DataItemSerializer<VirtualLeafRecord<K, V>> {
 

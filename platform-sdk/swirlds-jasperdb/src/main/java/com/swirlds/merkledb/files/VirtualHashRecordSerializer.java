@@ -34,6 +34,22 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+/**
+ * Serializer to store and read virtual hash records in MerkleDb data files.
+ *
+ * <p>Protobuf schema:
+ *
+ * <p><pre>
+ * message HashRecord {
+ *
+ *     // Virtual node path
+ *     optional uint64 path = 1;
+ *
+ *     // Hash. Always DigestType.SHA_384 for now
+ *     bytes hash = 2;
+ * }
+ * </pre>>
+ */
 public final class VirtualHashRecordSerializer implements DataItemSerializer<VirtualHashRecord> {
 
     private static final FieldDefinition FIELD_HASHRECORD_PATH =

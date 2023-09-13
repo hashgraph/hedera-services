@@ -43,9 +43,33 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
  * The aim for a DataFileReader is to facilitate fast highly concurrent random reading of items from
  * a data file. It is designed to be used concurrently from many threads.
  *
+ * <p>Protobuf schema:
+ *
+ * <p><pre>
+ * message DataFile {
+ *
+ *     // File index in its file collection
+ *     uint32 index = 1;
+ *
+ *     // Creation timestamp, seconds
+ *     uint64 creationDateSeconds = 2;
+ *
+ *     // Creation timestamp, nanos
+ *     uint32 creationDateNanos = 3;
+ *
+ *     // Items count
+ *     uint64 itemsCount = 4;
+ *
+ *     // Data item version. May not be needed
+ *     uint64 itemVersion = 5;
+ *
+ *     // Data items
+ *     repeated bytes items = 11;
+ * }
+ * </pre>
+ *
  * @param <D> Data item type
  */
-@SuppressWarnings({"DuplicatedCode", "NullableProblems"})
 // Future work: make it final again after DataFileReaderJdb is dropped
 // https://github.com/hashgraph/hedera-services/issues/8344
 public class DataFileReaderPbj<D> implements DataFileReader<D> {

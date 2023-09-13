@@ -38,10 +38,12 @@ import java.time.Instant;
  * be variable or fixed size and is considered as a black box. All access to contents of the data
  * item is done via the DataItemSerializer.
  *
- * <b>This is designed to be used from a single thread.</b>
+ * <p><b>This is designed to be used from a single thread.</b>
  *
- * At the end of the file it is padded till a 4096 byte page boundary then a footer page is
+ * <p>At the end of the file it is padded till a 4096 byte page boundary then a footer page is
  * written by DataFileMetadata.
+ *
+ * <p>Protobuf schema: see {@link DataFileReaderPbj} for details.
  *
  * @param <D> Data item type
  */
