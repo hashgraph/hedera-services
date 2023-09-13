@@ -29,6 +29,18 @@ on:
         type: string
         required: true
         default: "none"
+      # Valid SDK release profiles are as follows:
+      # - none
+      # - AdhocCommit
+      # - DevelopCommit
+      # - DevelopDailySnapshot
+      # - DevelopSnapshot
+      # - PrereleaseChannel
+      sdk-release-profile:
+        description: "SDK Release Profile:"
+        type: string
+        required: true
+        default: "none"
       new-version:
         description: "New Version:"
         type: string
@@ -252,10 +264,6 @@ jobs:
         uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
         with:
           gradle-version: ${{ inputs.gradle-version }}
-          gradle-home-cache-includes: |
-            caches
-            notifications
-            jdks
 
       - name: Restore Build Version
         uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
@@ -543,10 +551,6 @@ jobs:
         uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
         with:
           gradle-version: ${{ inputs.gradle-version }}
-          gradle-home-cache-includes: |
-            caches
-            notifications
-            jdks
 
       - name: Restore Build Version
         uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
@@ -594,3 +598,67 @@ jobs:
         with:
           gradle-version: ${{ inputs.gradle-version }}
           arguments: ":hedera-node:app-service-evm:releaseMavenCentralSnapshot --scan -PpublishSigningEnabled=true"
+
+  sdk-mc-publish:
+    name: Publish Platform SDK to ${{ inputs.version-policy == 'specified' && 'Maven Central' || 'Google Artifact Registry' }}
+    runs-on: [ self-hosted, Linux, large, ephemeral ]
+    needs:
+      - validate
+    if: ${{ inputs.sdk-release-profile != 'none' }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4.0.0
+
+      - name: Install GnuPG Tools
+        if: ${{ inputs.dry-run-enabled != true }}
+        run: |
+          if ! command -v gpg2 >/dev/null 2>&1; then
+            echo "::group::Updating APT Repository Indices"
+              sudo apt update
+            echo "::endgroup::"
+            echo "::group::Installing GnuPG Tools"
+              sudo apt install -y gnupg2
+            echo "::endgroup::"
+          fi
+
+      - name: Import GPG key
+        id: gpg_key
+        uses: crazy-max/ghaction-import-gpg@d6f3f49f3345e29369fe57596a3ca8f94c4d2ca7 # v5.4.0
+        if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
+        with:
+          gpg_private_key: ${{ secrets.sdk-gpg-key-contents }}
+          passphrase: ${{ secrets.sdk-gpg-key-passphrase }}
+          git_config_global: true
+          git_user_signingkey: true
+          git_commit_gpgsign: true
+          git_tag_gpgsign: true
+
+      - name: Authenticate to Google Cloud
+        id: google-auth
+        uses: google-github-actions/auth@35b0e87d162680511bf346c299f71c9c5c379033 # v1.1.1
+        if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
+        with:
+          workload_identity_provider: "projects/229164983194/locations/global/workloadIdentityPools/registry-identity-pool/providers/gh-provider"
+          service_account: "artifact-deployer@swirlds-registry.iam.gserviceaccount.com"
+
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@e30db14379863a8c79331b04a9969f4c1e225e0b # v1.1.1
+        if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
+
+      - name: Setup Java
+        uses: actions/setup-java@cd89f46ac9d01407894225f350157564c9c7cee2 # v3.12.0
+        with:
+          distribution: ${{ inputs.java-distribution }}
+          java-version: ${{ inputs.java-version }}
+
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
+        with:
+          gradle-version: ${{ inputs.gradle-version }}
+
+      - name: Restore Build Version
+        uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
+        with:
+          fail-on-cache-miss: true
+          path: version.txt
+          key: node-build-version-${{ needs.validate.outputs.version }}-${{ github.sha }}
