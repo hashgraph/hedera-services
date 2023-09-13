@@ -35,6 +35,7 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.token.TokenMintTransactionBody;
+import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.ThrottleDefinitions;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
@@ -42,7 +43,6 @@ import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleBucket;
 import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleGroup;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.hapi.utils.throttles.GasLimitDeterministicThrottle;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.throttling.ThrottleReqsManager;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.state.HederaState;
@@ -55,7 +55,6 @@ import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.LazyCreationConfig;
 import com.hedera.node.config.data.TokensConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.hederahashgraph.api.proto.java.Query;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
@@ -119,7 +118,7 @@ public class GeneralThrottleAccumulator {
         // exemption
         // but this is only possible for the case of triggered transactions which is not yet implemented (see
         // MonoMultiplierSources.java)
-        final var payer = PbjConverter.toPbj(query.getAccountDetails().getAccountId());
+        final var payer = query.accountDetails().accountId();
         final var isPayerThrottleExempt = throttleExempt(payer, configuration);
         if (isPayerThrottleExempt) {
             return false;
@@ -129,7 +128,7 @@ public class GeneralThrottleAccumulator {
         if (isGasThrottled(queryFunction)
                 && shouldThrottleByGas
                 && (gasThrottle == null
-                        || !gasThrottle.allow(now, query.getContractCallLocal().getGas()))) {
+                        || !gasThrottle.allow(now, query.contractCallLocal().gas()))) {
             reclaimLastAllowedUse();
             return true;
         }

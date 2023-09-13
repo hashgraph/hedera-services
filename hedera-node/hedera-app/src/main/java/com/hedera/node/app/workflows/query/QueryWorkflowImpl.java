@@ -34,7 +34,6 @@ import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.ExchangeRateManager;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.UnknownHederaFunctionality;
@@ -163,8 +162,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
 
             // 3. Check query throttles
             if (hapiThrottling.shouldThrottleQuery(
-                    PbjConverter.toProtoQuery(query),
-                    HederaFunctionality.fromProtobufOrdinal(function.protoOrdinal()))) {
+                    query, HederaFunctionality.fromProtobufOrdinal(function.protoOrdinal()))) {
                 throw new PreCheckException(BUSY);
             }
 
