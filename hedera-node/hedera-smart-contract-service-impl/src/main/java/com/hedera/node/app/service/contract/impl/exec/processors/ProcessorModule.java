@@ -16,8 +16,15 @@
 
 package com.hedera.node.app.service.contract.impl.exec.processors;
 
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.ExchangeRateSystemContract.EXCHANGE_RATE_SYSTEM_CONTRACT_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract.HTS_PRECOMPILE_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.PrngSystemContract.PRNG_PRECOMPILE_ADDRESS;
+import static java.util.Map.entry;
+import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.ExchangeRateSystemContract;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.PrngSystemContract;
 import dagger.Module;
 import dagger.Provides;
@@ -29,11 +36,10 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.contractvalidation.ContractValidationRule;
 import org.hyperledger.besu.evm.contractvalidation.MaxCodeSizeRule;
 import org.hyperledger.besu.evm.contractvalidation.PrefixCodeRule;
-import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
 @Module
 public interface ProcessorModule {
+    int EVM_ADDRESS_SIZE = 20;
     long INITIAL_CONTRACT_NONCE = 1L;
     boolean REQUIRE_CODE_DEPOSIT_TO_SUCCEED = true;
 
@@ -53,7 +59,15 @@ public interface ProcessorModule {
 
     @Provides
     @Singleton
-    static Map<Address, PrecompiledContract> provideHederaSystemContracts(@NonNull final GasCalculator gasCalculator) {
-        return Map.of(Address.fromHexString(PRNG_PRECOMPILE_ADDRESS), new PrngSystemContract(gasCalculator));
+    static Map<Address, HederaSystemContract> provideHederaSystemContracts(
+            @NonNull final HtsSystemContract htsSystemContract,
+            @NonNull final ExchangeRateSystemContract exchangeRateSystemContract,
+            @NonNull final PrngSystemContract prngSystemContract) {
+        return Map.ofEntries(
+                entry(Address.fromHexString(HTS_PRECOMPILE_ADDRESS), requireNonNull(htsSystemContract)),
+                entry(
+                        Address.fromHexString(EXCHANGE_RATE_SYSTEM_CONTRACT_ADDRESS),
+                        requireNonNull(exchangeRateSystemContract)),
+                entry(Address.fromHexString(PRNG_PRECOMPILE_ADDRESS), requireNonNull(prngSystemContract)));
     }
 }

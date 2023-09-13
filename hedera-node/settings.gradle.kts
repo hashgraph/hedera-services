@@ -16,7 +16,7 @@
 
 import me.champeau.gradle.igp.gitRepositories
 
-pluginManagement { @Suppress("UnstableApiUsage") includeBuild("../build-logic") }
+pluginManagement { includeBuild("../build-logic") }
 
 plugins { id("com.hedera.hashgraph.settings") }
 
@@ -89,7 +89,9 @@ gitRepositories {
     // check branch in repo for updates every second
     refreshIntervalMillis.set(1000)
     include("hedera-protobufs") {
-        uri.set("https://github.com/LimeChain/hedera-protobufs.git") // TODO: Temporary override for Limechain fork, revert when
+        uri.set(
+            "https://github.com/LimeChain/hedera-protobufs.git"
+        ) // TODO: Temporary override for Limechain fork, revert when
         // https://github.com/hashgraph/hedera-protobufs/pull/304 is merged
         // HAPI repo version
         tag.set(hapiProtoBranchOrTag)
@@ -99,7 +101,6 @@ gitRepositories {
 }
 
 // Define the library catalogs available for projects to make use of
-@Suppress("UnstableApiUsage")
 dependencyResolutionManagement {
     versionCatalogs {
         // The libs of this catalog are the **ONLY** ones that are authorized to be part of the

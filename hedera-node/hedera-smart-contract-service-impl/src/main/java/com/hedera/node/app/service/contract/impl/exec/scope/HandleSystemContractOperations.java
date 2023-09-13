@@ -21,11 +21,11 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.base.TokenRelationship;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
@@ -85,18 +85,6 @@ public class HandleSystemContractOperations implements SystemContractOperations 
      * {@inheritDoc}
      */
     @Override
-    public @Nullable TokenRelationship getRelationshipAndExternalizeResult(
-            final long accountNumber,
-            final long tokenNumber,
-            final long callingContractNumber,
-            @NonNull final ResultTranslator<TokenRelationship> translator) {
-        throw new AssertionError("Not implemented");
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public @NonNull ResponseCodeEnum dispatch(
             @NonNull final TransactionBody syntheticTransaction, @NonNull final VerificationStrategy strategy) {
         throw new AssertionError("Not implemented");
@@ -112,5 +100,14 @@ public class HandleSystemContractOperations implements SystemContractOperations 
                 .contractID(result.contractID())
                 .status(status == ResultStatus.IS_ERROR ? FAIL_INVALID : SUCCESS)
                 .contractCallResult(result);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @NonNull
+    public ExchangeRate currentExchangeRate() {
+        return context.exchangeRateInfo().activeRate(context.consensusNow());
     }
 }

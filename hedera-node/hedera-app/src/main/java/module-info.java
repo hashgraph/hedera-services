@@ -66,6 +66,8 @@ module com.hedera.node.app {
             com.swirlds.platform.core;
     exports com.hedera.node.app.fees to
             com.swirlds.platform.core;
+    exports com.hedera.node.app.fees.congestion to
+            com.swirlds.platform.core;
     exports com.hedera.node.app.throttle to
             com.swirlds.platform.core;
     exports com.hedera.node.app.workflows.dispatcher;
@@ -83,10 +85,13 @@ module com.hedera.node.app {
             com.swirlds.platform.core;
     exports com.hedera.node.app.workflows.handle to
             com.hedera.node.app.test.fixtures;
+    exports com.hedera.node.app.workflows.handle.record to
+            com.hedera.node.app.test.fixtures;
     exports com.hedera.node.app.state.merkle.queue to
             com.swirlds.common,
             com.swirlds.platform;
     exports com.hedera.node.app.version to
             com.swirlds.common,
             com.swirlds.platform;
+    exports com.hedera.node.app.validation;
 }

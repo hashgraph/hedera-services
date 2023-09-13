@@ -16,21 +16,19 @@
 
 package com.hedera.node.app.workflows.handle;
 
-import static com.hedera.node.app.service.file.impl.FileServiceImpl.BLOBS_KEY;
 import static java.util.Objects.requireNonNull;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.base.FileID;
-import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
-import com.hedera.node.app.service.file.FileService;
+import com.hedera.node.app.fees.congestion.MonoMultiplierSources;
 import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.throttle.HandleThrottleAccumulator;
 import com.hedera.node.app.throttle.ThrottleManager;
+import com.hedera.node.app.util.FileUtilities;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.LedgerConfig;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -48,6 +46,8 @@ public class SystemFileUpdateFacility {
     private final ConfigProviderImpl configProvider;
     private final ThrottleManager throttleManager;
     private final ExchangeRateManager exchangeRateManager;
+    private final MonoMultiplierSources monoMultiplierSources;
+    private final HandleThrottleAccumulator handleThrottleAccumulator;
 
     /**
      * Creates a new instance of this class.
@@ -57,10 +57,15 @@ public class SystemFileUpdateFacility {
     public SystemFileUpdateFacility(
             @NonNull final ConfigProviderImpl configProvider,
             @NonNull final ThrottleManager throttleManager,
-            @NonNull final ExchangeRateManager exchangeRateManager) {
+            @NonNull final ExchangeRateManager exchangeRateManager,
+            @NonNull final MonoMultiplierSources monoMultiplierSources,
+            @NonNull final HandleThrottleAccumulator handleThrottleAccumulator) {
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
         this.throttleManager = requireNonNull(throttleManager, " throttleManager must not be null");
         this.exchangeRateManager = requireNonNull(exchangeRateManager, "exchangeRateManager must not be null");
+        this.monoMultiplierSources = requireNonNull(monoMultiplierSources, "multiplierSources must not be null");
+        this.handleThrottleAccumulator =
+                requireNonNull(handleThrottleAccumulator, "handleThrottleAccumulator must not be null");
     }
 
     /**
@@ -103,13 +108,21 @@ public class SystemFileUpdateFacility {
             } else if (fileNum == config.feeSchedules()) {
                 logger.error("Update of fee schedules not implemented");
             } else if (fileNum == config.exchangeRates()) {
-                exchangeRateManager.update(getFileContent(state, fileID));
+                exchangeRateManager.update(FileUtilities.getFileContent(state, fileID));
             } else if (fileNum == config.networkProperties()) {
-                configProvider.update(getFileContent(state, fileID));
+                configProvider.update(FileUtilities.getFileContent(state, fileID));
+
+                // Updating the multiplier source to use the new gas throttle
+                // values that are coming from the network properties
+                monoMultiplierSources.resetExpectations();
             } else if (fileNum == config.hapiPermissions()) {
                 logger.error("Update of HAPI permissions not implemented");
             } else if (fileNum == config.throttleDefinitions()) {
-                throttleManager.update(getFileContent(state, fileID));
+                throttleManager.update(FileUtilities.getFileContent(state, fileID));
+                handleThrottleAccumulator.rebuildFor(throttleManager.throttleDefinitions());
+
+                // Updating the multiplier source to use the new throttle definitions
+                monoMultiplierSources.resetExpectations();
             } else if (fileNum == config.upgradeFileNumber()) {
                 logger.error("Update of file number not implemented");
             }
@@ -119,14 +132,5 @@ public class SystemFileUpdateFacility {
                     fileID,
                     e);
         }
-    }
-
-    @NonNull
-    @VisibleForTesting
-    static Bytes getFileContent(@NonNull final HederaState state, @NonNull final FileID fileID) {
-        final var states = state.createReadableStates(FileService.NAME);
-        final var filesMap = states.<FileID, File>get(BLOBS_KEY);
-        final var file = filesMap.get(fileID);
-        return file != null ? file.contents() : Bytes.EMPTY;
     }
 }

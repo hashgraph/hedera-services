@@ -24,7 +24,6 @@ import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.merkle.synchronization.TeachingSynchronizer;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
-import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.config.api.Configuration;
@@ -192,11 +191,10 @@ public class ReconnectTeacher {
         final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
         logger.info(
                 RECONNECT.getMarker(),
-                "The following state will be sent to the learner:\n{}\n{}",
-                () -> signedState.getState().getPlatformState().getInfoString(),
-                () -> new MerkleTreeVisualizer(signedState.getState())
-                        .setDepth(stateConfig.debugHashDepth())
-                        .render());
+                """
+                The following state will be sent to the learner:
+                {}""",
+                () -> signedState.getState().getInfoString(stateConfig.debugHashDepth()));
     }
 
     private void logReconnectFinish() {
