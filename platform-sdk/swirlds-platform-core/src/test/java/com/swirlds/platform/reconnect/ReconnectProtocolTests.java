@@ -184,8 +184,8 @@ public class ReconnectProtocolTests {
         final FallenBehindManager fallenBehindManager = mock(FallenBehindManager.class);
         when(fallenBehindManager.shouldReconnectFrom(any())).thenReturn(false);
 
-        final ReconnectConfig reconnectConfig = mock(ReconnectConfig.class);
-        when(reconnectConfig.minimumTimeBetweenReconnects()).thenReturn(Duration.ofSeconds(0));
+        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
+        final ReconnectConfig reconnectConfig = configuration.getConfigData(ReconnectConfig.class);
 
         final ReconnectController reconnectController = new ReconnectController(
                 reconnectConfig, getStaticThreadManager(), mock(ReconnectHelper.class), () -> {});
