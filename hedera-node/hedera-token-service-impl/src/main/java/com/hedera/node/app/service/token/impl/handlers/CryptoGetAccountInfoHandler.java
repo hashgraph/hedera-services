@@ -23,6 +23,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
 import static com.hedera.hapi.node.base.TokenFreezeStatus.FREEZE_NOT_APPLICABLE;
 import static com.hedera.hapi.node.base.TokenFreezeStatus.FROZEN;
+import static com.hedera.hapi.node.base.TokenFreezeStatus.UNFROZEN;
 import static com.hedera.hapi.node.base.TokenKycStatus.GRANTED;
 import static com.hedera.hapi.node.base.TokenKycStatus.KYC_NOT_APPLICABLE;
 import static com.hedera.node.app.hapi.utils.CommonUtils.asEvmAddress;
@@ -42,6 +43,7 @@ import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseHeader;
 import com.hedera.hapi.node.base.StakingInfo;
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.TokenFreezeStatus;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenRelationship;
 import com.hedera.hapi.node.state.token.Account;
@@ -238,13 +240,19 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
      */
     private void addTokenRelation(
             ArrayList<TokenRelationship> ret, Token token, TokenRelation tokenRelation, TokenID tokenId) {
+
+        TokenFreezeStatus freezeStatus = FREEZE_NOT_APPLICABLE;
+        if (token.hasFreezeKey()) {
+            freezeStatus = tokenRelation.frozen() ? FROZEN : UNFROZEN;
+        }
+
         final var tokenRelationship = TokenRelationship.newBuilder()
                 .tokenId(tokenId)
                 .symbol(token.symbol())
                 .balance(tokenRelation.balance())
                 .decimals(token.decimals())
                 .kycStatus(tokenRelation.kycGranted() ? GRANTED : KYC_NOT_APPLICABLE)
-                .freezeStatus(tokenRelation.frozen() ? FROZEN : FREEZE_NOT_APPLICABLE)
+                .freezeStatus(freezeStatus)
                 .automaticAssociation(tokenRelation.automaticAssociation())
                 .build();
         ret.add(tokenRelationship);
