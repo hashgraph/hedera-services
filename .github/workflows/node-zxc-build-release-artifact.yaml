@@ -602,7 +602,7 @@ jobs:
           arguments: ":hedera-node:app-service-evm:releaseMavenCentralSnapshot --scan -PpublishSigningEnabled=true"
 
   sdk-mc-publish:
-    name: Publish Platform SDK to ${{ inputs.version-policy == 'specified' && 'Maven Central' || 'Google Artifact Registry' }}
+    name: Publish Platform to ${{ inputs.version-policy == 'specified' && 'Maven Central' || 'GAR' }}
     runs-on: [ self-hosted, Linux, large, ephemeral ]
     needs:
       - validate
