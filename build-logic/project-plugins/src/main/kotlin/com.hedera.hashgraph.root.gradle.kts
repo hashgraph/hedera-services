@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import com.hedera.hashgraph.gradlebuild.lifecycle.LifecycleSupport.Companion.configureLifecycleTask
+
 plugins {
     id("com.hedera.hashgraph.aggregate-reports")
     id("com.hedera.hashgraph.dependency-analysis")
@@ -33,38 +35,18 @@ tasks.register("checkAllModuleInfo")
 
 tasks.register("jacocoTestReport") { group = "verification" }
 
-configureLifecycleTask("clean")
+configureLifecycleTask(project, "clean")
 
-configureLifecycleTask("assemble")
+configureLifecycleTask(project, "assemble")
 
-configureLifecycleTask("check")
+configureLifecycleTask(project, "check")
 
-configureLifecycleTask("build")
+configureLifecycleTask(project, "build")
 
-configureLifecycleTask("spotlessCheck")
+configureLifecycleTask(project, "spotlessCheck")
 
-configureLifecycleTask("spotlessApply")
+configureLifecycleTask(project, "spotlessApply")
 
-configureLifecycleTask("checkAllModuleInfo")
+configureLifecycleTask(project, "checkAllModuleInfo")
 
-configureLifecycleTask("jacocoTestReport")
-
-fun configureLifecycleTask(taskName: String) {
-    tasks.named(taskName) {
-        // Link the lifecycle tasks in the root project to the corresponding lifecycle tasks in the
-        // root projects of all included builds.
-        dependsOn(
-            gradle.includedBuilds
-                // Not this build
-                .filter { it.projectDir != projectDir }
-                // Not the build-logic build
-                .filter { it.name != "build-logic" }
-                // Not the depependency-versions build
-                .filter { it.name != "hedera-dependency-versions" }
-                .map { build -> build.task(":${taskName}") }
-        )
-        // Link the lifecycle tasks in the root project to the corresponding lifecycle tasks in the
-        // subprojects.
-        dependsOn(subprojects.map { subproject -> ":${subproject.name}:${taskName}" })
-    }
-}
+configureLifecycleTask(project, "jacocoTestReport")
