@@ -19,10 +19,23 @@ package com.hedera.node.app.service.contract.impl.exec.processors;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.associations.AssociationsTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.balanceof.BalanceOfTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.decimals.DecimalsTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.isapprovedforall.IsApprovedForAllTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.mint.MintTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.name.NameTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ownerof.OwnerOfTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.symbol.SymbolTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokenuri.TokenUriTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.totalsupply.TotalSupplyTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc20TransfersTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc721TransferFromTranslator;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.IntoSet;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
@@ -30,6 +43,12 @@ import javax.inject.Singleton;
 
 @Module
 public interface HtsTranslatorsModule {
+    @Provides
+    @Singleton
+    static List<Function<HtsCallAttempt, HtsCall>> provideCallAttemptTranslators(
+            @NonNull final Set<Function<HtsCallAttempt, HtsCall>> translators) {
+        return List.copyOf(translators);
+    }
 
     @Provides
     @Singleton
@@ -41,8 +60,97 @@ public interface HtsTranslatorsModule {
 
     @Provides
     @Singleton
-    static List<Function<HtsCallAttempt, HtsCall>> provideCallAttemptTranslators(
-            @NonNull final Set<Function<HtsCallAttempt, HtsCall>> translators) {
-        return List.copyOf(translators);
+    @IntoSet
+    static Function<HtsCallAttempt, HtsCall> provideErc20TransfersTranslator(
+            @NonNull final Erc20TransfersTranslator translator) {
+        return translator::translate;
+    }
+
+    @Provides
+    @Singleton
+    @IntoSet
+    static Function<HtsCallAttempt, HtsCall> provideErc721TransferFromTranslator(
+            @NonNull final Erc721TransferFromTranslator translator) {
+        return translator::translate;
+    }
+
+    @Provides
+    @Singleton
+    @IntoSet
+    static Function<HtsCallAttempt, HtsCall> provideClassicTransfersTranslator(
+            @NonNull final ClassicTransfersTranslator translator) {
+        return translator::translate;
+    }
+
+    @Provides
+    @Singleton
+    @IntoSet
+    static Function<HtsCallAttempt, HtsCall> provideMintTranslator(
+            @NonNull final MintTranslator translator) {
+        return translator::translate;
+    }
+
+    @Provides
+    @Singleton
+    @IntoSet
+    static Function<HtsCallAttempt, HtsCall> provideBalanceOfTranslator(
+            @NonNull final BalanceOfTranslator translator) {
+        return translator::translate;
+    }
+
+    @Provides
+    @Singleton
+    @IntoSet
+    static Function<HtsCallAttempt, HtsCall> provideIsApprovedForAllTranslator(
+            @NonNull final IsApprovedForAllTranslator translator) {
+        return translator::translate;
+    }
+
+    @Provides
+    @Singleton
+    @IntoSet
+    static Function<HtsCallAttempt, HtsCall> provideNameTranslator(
+            @NonNull final NameTranslator translator) {
+        return translator::translate;
+    }
+
+    @Provides
+    @Singleton
+    @IntoSet
+    static Function<HtsCallAttempt, HtsCall> provideSymbolTranslator(
+            @NonNull final SymbolTranslator translator) {
+        return translator::translate;
+    }
+
+    @Provides
+    @Singleton
+    @IntoSet
+    static Function<HtsCallAttempt, HtsCall> provideTotalSupplyTranslator(
+            @NonNull final TotalSupplyTranslator translator) {
+        return translator::translate;
+    }
+
+    @Provides
+    @Singleton
+    @IntoSet
+    static Function<HtsCallAttempt, HtsCall> provideOwnerOfTranslator(
+            @NonNull final OwnerOfTranslator translator) {
+        return translator::translate;
+    }
+
+    @Provides
+    @Singleton
+    @IntoSet
+    static Function<HtsCallAttempt, HtsCall> provideDecimalsTranslator(
+            @NonNull final DecimalsTranslator translator) {
+        return translator::translate;
+    }
+
+    @Provides
+    @Singleton
+    @IntoSet
+    static Function<HtsCallAttempt, HtsCall> provideTokenUriTranslator(
+            @NonNull final TokenUriTranslator translator) {
+        return translator::translate;
     }
 }

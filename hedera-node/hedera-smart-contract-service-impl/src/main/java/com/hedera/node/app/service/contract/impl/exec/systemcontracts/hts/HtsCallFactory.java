@@ -36,7 +36,6 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 public class HtsCallFactory {
     private final SyntheticIds syntheticIds;
     private final HtsCallAddressChecks addressChecks;
-    private final DecodingStrategies decodingStrategies;
     private final VerificationStrategies verificationStrategies;
     private final List<Function<HtsCallAttempt, HtsCall>> callAttemptTranslators;
 
@@ -44,12 +43,10 @@ public class HtsCallFactory {
     public HtsCallFactory(
             @NonNull final SyntheticIds syntheticIds,
             @NonNull final HtsCallAddressChecks addressChecks,
-            @NonNull final DecodingStrategies decodingStrategies,
             @NonNull final VerificationStrategies verificationStrategies,
             @NonNull final List<Function<HtsCallAttempt, HtsCall>> callAttemptTranslators) {
         this.syntheticIds = requireNonNull(syntheticIds);
         this.addressChecks = requireNonNull(addressChecks);
-        this.decodingStrategies = requireNonNull(decodingStrategies);
         this.verificationStrategies = requireNonNull(verificationStrategies);
         this.callAttemptTranslators = requireNonNull(callAttemptTranslators);
     }
@@ -72,7 +69,6 @@ public class HtsCallFactory {
                 addressChecks.hasParentDelegateCall(frame),
                 enhancement,
                 configOf(frame),
-                decodingStrategies,
                 syntheticIds.converterFor(enhancement.nativeOperations()),
                 verificationStrategies,
                 callAttemptTranslators);

@@ -16,18 +16,17 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.associations;
 
-import static java.util.Objects.requireNonNull;
-
 import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -37,8 +36,7 @@ import javax.inject.Singleton;
  * these calls, so the returned {@link HtsCall} is simply an instance of {@link DispatchForResponseCodeHtsCall}.
  */
 @Singleton
-public class AssociationsTranslator
-        implements HtsCallTranslator<DispatchForResponseCodeHtsCall<SingleTransactionRecordBuilder>> {
+public class AssociationsTranslator extends AbstractHtsCallTranslator {
     public static final Function HRC_ASSOCIATE = new Function("associate()", ReturnTypes.INT);
     public static final Function ASSOCIATE_ONE = new Function("associateToken(address,address)", ReturnTypes.INT_64);
     public static final Function DISSOCIATE_ONE = new Function("dissociateToken(address,address)", ReturnTypes.INT_64);
@@ -56,16 +54,17 @@ public class AssociationsTranslator
     }
 
     @Override
-    public @Nullable DispatchForResponseCodeHtsCall<SingleTransactionRecordBuilder> translate(
-            @NonNull final HtsCallAttempt attempt) {
-        requireNonNull(attempt);
-        if (matches(attempt)) {
-            return new DispatchForResponseCodeHtsCall<>(
-                    attempt,
-                    matchesHrcSelector(attempt.selector()) ? bodyForHrc(attempt) : bodyForClassic(attempt),
-                    SingleTransactionRecordBuilder.class);
-        }
-        return null;
+    public boolean matches(@NonNull final HtsCallAttempt attempt) {
+        return (attempt.isTokenRedirect() && matchesHrcSelector(attempt.selector()))
+                || (!attempt.isTokenRedirect() && matchesClassicSelector(attempt.selector()));
+    }
+
+    @Override
+    public HtsCall callFrom(@NonNull final HtsCallAttempt attempt) {
+        return new DispatchForResponseCodeHtsCall<>(
+                attempt,
+                matchesHrcSelector(attempt.selector()) ? bodyForHrc(attempt) : bodyForClassic(attempt),
+                SingleTransactionRecordBuilder.class);
     }
 
     private TransactionBody bodyForHrc(@NonNull final HtsCallAttempt attempt) {
@@ -86,11 +85,6 @@ public class AssociationsTranslator
         } else {
             return decoder.decodeDissociateMany(attempt);
         }
-    }
-
-    private boolean matches(@NonNull final HtsCallAttempt attempt) {
-        return (attempt.isTokenRedirect() && matchesHrcSelector(attempt.selector()))
-                || (!attempt.isTokenRedirect() && matchesClassicSelector(attempt.selector()));
     }
 
     private static boolean matchesHrcSelector(@NonNull final byte[] selector) {

@@ -25,7 +25,6 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.as
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Address;
-import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -47,7 +46,6 @@ import java.util.Arrays;
  * Implements the ERC-721 {@code transferFrom()} call of the HTS contract.
  */
 public class Erc721TransferFromCall extends AbstractHtsCall {
-    public static final Function ERC_721_TRANSFER_FROM = new Function("transferFrom(address,address,uint256)");
 
     private final long serialNo;
     private final Address from;
@@ -98,7 +96,7 @@ public class Erc721TransferFromCall extends AbstractHtsCall {
         if (recordBuilder.status() != ResponseCodeEnum.SUCCESS) {
             return gasOnly(revertResult(recordBuilder.status(), 0L));
         } else {
-            return gasOnly(successResult(ERC_721_TRANSFER_FROM.getOutputs().encodeElements(), 0L));
+            return gasOnly(successResult(Erc721TransferFromTranslator.ERC_721_TRANSFER_FROM.getOutputs().encodeElements(), 0L));
         }
     }
 
@@ -117,47 +115,5 @@ public class Erc721TransferFromCall extends AbstractHtsCall {
                                         .build())
                                 .build()))
                 .build();
-    }
-
-    /**
-     * Indicates if the given {@link HtsCallAttempt} is an {@link Erc721TransferFromCall}.
-     *
-     * @param attempt the attempt to check
-     * @return {@code true} if the given {@code attempt} is an {@link Erc721TransferFromCall}, otherwise {@code false}
-     */
-    public static boolean matches(@NonNull final HtsCallAttempt attempt) {
-        requireNonNull(attempt);
-        // We only match calls to existing tokens (i.e., with known token type)
-        return attempt.isTokenRedirect()
-                && Arrays.equals(attempt.selector(), ERC_721_TRANSFER_FROM.selector())
-                && attempt.redirectTokenType() == NON_FUNGIBLE_UNIQUE;
-    }
-
-    /**
-     * Creates a {@link Erc721TransferFromCall} from the given {@code attempt} and {@code senderAddress}.
-     *
-     * @param attempt the attempt to create a {@link ClassicTransfersCall} from
-     * @param sender  the address of the caller
-     * @param senderNeedsDelegatableContractKeys {@code true} if the {@code sender} needs delegatable contract keys
-     * @return a {@link Erc721TransferFromCall} if the given {@code attempt} is a valid {@link ClassicTransfersCall}, otherwise {@code null}
-     */
-    public static Erc721TransferFromCall from(
-            @NonNull final HtsCallAttempt attempt,
-            @NonNull final org.hyperledger.besu.datatypes.Address sender,
-            final boolean senderNeedsDelegatableContractKeys) {
-        final var call = ERC_721_TRANSFER_FROM.decodeCall(attempt.input().toArrayUnsafe());
-        return new Erc721TransferFromCall(
-                ((BigInteger) call.get(2)).longValueExact(),
-                call.get(0),
-                call.get(1),
-                requireNonNull(attempt.redirectToken()).tokenIdOrThrow(),
-                attempt.verificationStrategies()
-                        .activatingOnlyContractKeysFor(
-                                sender,
-                                senderNeedsDelegatableContractKeys,
-                                attempt.enhancement().nativeOperations()),
-                sender,
-                attempt.enhancement(),
-                attempt.addressIdConverter());
     }
 }

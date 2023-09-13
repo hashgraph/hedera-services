@@ -22,7 +22,6 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.SystemAccountCreditScreen.SYSTEM_ACCOUNT_CREDIT_SCREEN;
 import static java.util.Objects.requireNonNull;
 
-import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
@@ -30,7 +29,6 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.config.data.ContractsConfig;
@@ -56,23 +54,6 @@ import java.util.Arrays;
  * But the basic pattern of constructing and dispatching a synthetic {@link CryptoTransferTransactionBody} remains.
  */
 public class ClassicTransfersCall extends AbstractHtsCall {
-    public static final Function CRYPTO_TRANSFER =
-            new Function("cryptoTransfer((address,(address,int64)[],(address,address,int64)[])[])", ReturnTypes.INT_64);
-    public static final Function CRYPTO_TRANSFER_V2 = new Function(
-            "cryptoTransfer(((address,int64,bool)[]),(address,(address,int64,bool)[],(address,address,int64,bool)[])[])",
-            ReturnTypes.INT_64);
-    public static final Function TRANSFER_TOKENS =
-            new Function("transferTokens(address,address[],int64[])", ReturnTypes.INT_64);
-    public static final Function TRANSFER_TOKEN =
-            new Function("transferToken(address,address,address,int64)", ReturnTypes.INT_64);
-    public static final Function TRANSFER_NFTS =
-            new Function("transferNFTs(address,address[],address[],int64[])", ReturnTypes.INT_64);
-    public static final Function TRANSFER_NFT =
-            new Function("transferNFT(address,address,address,int64)", ReturnTypes.INT_64);
-    public static final Function TRANSFER_FROM =
-            new Function("transferFrom(address,address,address,uint256)", ReturnTypes.INT_64);
-    public static final Function TRANSFER_NFT_FROM =
-            new Function("transferFromNFT(address,address,address,uint256)", ReturnTypes.INT_64);
 
     private final byte[] selector;
     private final AccountID spenderId;
@@ -142,92 +123,7 @@ public class ClassicTransfersCall extends AbstractHtsCall {
     }
 
     private boolean executionIsNotSupported() {
-        return Arrays.equals(selector, CRYPTO_TRANSFER_V2.selector())
+        return Arrays.equals(selector, ClassicTransfersTranslator.CRYPTO_TRANSFER_V2.selector())
                 && !configuration.getConfigData(ContractsConfig.class).precompileAtomicCryptoTransferEnabled();
-    }
-
-    /**
-     * Indicates if the given call attempt is for {@link ClassicTransfersCall}.
-     *
-     * @param attempt the attempt to check
-     * @return {@code true} if the given {@code selector} is a selector for {@link ClassicTransfersCall}
-     */
-    public static boolean matches(@NonNull final HtsCallAttempt attempt) {
-        requireNonNull(attempt);
-        return !attempt.isTokenRedirect()
-                && (Arrays.equals(attempt.selector(), CRYPTO_TRANSFER.selector())
-                        || Arrays.equals(attempt.selector(), CRYPTO_TRANSFER_V2.selector())
-                        || Arrays.equals(attempt.selector(), TRANSFER_TOKENS.selector())
-                        || Arrays.equals(attempt.selector(), TRANSFER_TOKEN.selector())
-                        || Arrays.equals(attempt.selector(), TRANSFER_NFTS.selector())
-                        || Arrays.equals(attempt.selector(), TRANSFER_NFT.selector())
-                        || Arrays.equals(attempt.selector(), TRANSFER_FROM.selector())
-                        || Arrays.equals(attempt.selector(), TRANSFER_NFT_FROM.selector()));
-    }
-
-    /**
-     * Creates a {@link ClassicTransfersCall} from the given {@code attempt} and {@code senderAddress}.
-     *
-     * @param attempt         the attempt to create a {@link ClassicTransfersCall} from
-     * @param sender          the address of the sender
-     * @param onlyDelegatable whether the sender needs delegatable contract keys
-     * @return a {@link ClassicTransfersCall} if the given {@code attempt} is a valid {@link ClassicTransfersCall}, otherwise {@code null}
-     */
-    public static ClassicTransfersCall from(
-            @NonNull final HtsCallAttempt attempt,
-            @NonNull final org.hyperledger.besu.datatypes.Address sender,
-            final boolean onlyDelegatable) {
-        requireNonNull(attempt);
-        requireNonNull(sender);
-        final var selector = attempt.selector();
-        return new ClassicTransfersCall(
-                attempt.enhancement(),
-                selector,
-                attempt.addressIdConverter().convertSender(sender),
-                nominalBodyFor(attempt),
-                attempt.configuration(),
-                isClassicCall(selector) ? APPROVAL_SWITCH_HELPER : null,
-                attempt.verificationStrategies()
-                        .activatingOnlyContractKeysFor(sender, onlyDelegatable, attempt.nativeOperations()),
-                SYSTEM_ACCOUNT_CREDIT_SCREEN);
-    }
-
-    private static boolean isClassicCall(@NonNull final byte[] selector) {
-        return Arrays.equals(selector, CRYPTO_TRANSFER.selector())
-                || Arrays.equals(selector, TRANSFER_TOKENS.selector())
-                || Arrays.equals(selector, TRANSFER_TOKEN.selector())
-                || Arrays.equals(selector, TRANSFER_NFTS.selector())
-                || Arrays.equals(selector, TRANSFER_NFT.selector());
-    }
-
-    private static TransactionBody nominalBodyFor(@NonNull final HtsCallAttempt attempt) {
-        if (Arrays.equals(attempt.selector(), CRYPTO_TRANSFER.selector())) {
-            return attempt.decodingStrategies()
-                    .decodeCryptoTransfer(attempt.input().toArrayUnsafe(), attempt.addressIdConverter());
-        } else if (Arrays.equals(attempt.selector(), CRYPTO_TRANSFER_V2.selector())) {
-            return attempt.decodingStrategies()
-                    .decodeCryptoTransferV2(attempt.input().toArrayUnsafe(), attempt.addressIdConverter());
-        } else if (Arrays.equals(attempt.selector(), TRANSFER_TOKENS.selector())) {
-            return attempt.decodingStrategies()
-                    .decodeTransferTokens(attempt.input().toArrayUnsafe(), attempt.addressIdConverter());
-        } else if (Arrays.equals(attempt.selector(), TRANSFER_TOKEN.selector())) {
-            return attempt.decodingStrategies()
-                    .decodeTransferToken(attempt.input().toArrayUnsafe(), attempt.addressIdConverter());
-        } else if (Arrays.equals(attempt.selector(), TRANSFER_NFTS.selector())) {
-            return attempt.decodingStrategies()
-                    .decodeTransferNfts(attempt.input().toArrayUnsafe(), attempt.addressIdConverter());
-        } else if (Arrays.equals(attempt.selector(), TRANSFER_NFT.selector())) {
-            return attempt.decodingStrategies()
-                    .decodeTransferNft(attempt.input().toArrayUnsafe(), attempt.addressIdConverter());
-        } else if (Arrays.equals(attempt.selector(), TRANSFER_FROM.selector())) {
-            return attempt.decodingStrategies()
-                    .decodeHrcTransferFrom(attempt.input().toArrayUnsafe(), attempt.addressIdConverter());
-        } else if (Arrays.equals(attempt.selector(), TRANSFER_NFT_FROM.selector())) {
-            return attempt.decodingStrategies()
-                    .decodeHrcTransferNftFrom(attempt.input().toArrayUnsafe(), attempt.addressIdConverter());
-        } else {
-            throw new IllegalArgumentException(
-                    "Selector " + CommonUtils.hex(attempt.selector()) + "is not a classic transfer");
-        }
     }
 }

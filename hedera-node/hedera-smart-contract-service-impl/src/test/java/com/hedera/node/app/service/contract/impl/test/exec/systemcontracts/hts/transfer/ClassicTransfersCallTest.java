@@ -43,7 +43,8 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ApprovalSwitchHelper;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc20TransfersCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc20TransfersTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.SystemAccountCreditScreen;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
@@ -79,16 +80,6 @@ class ClassicTransfersCallTest extends HtsCallTestBase {
     private SystemAccountCreditScreen systemAccountCreditScreen;
 
     private ClassicTransfersCall subject;
-
-    @Test
-    void throwsOnUnrecognizedSelector() {
-        given(attempt.selector()).willReturn(Erc20TransfersCall.ERC_20_TRANSFER.selector());
-        given(attempt.enhancement()).willReturn(mockEnhancement());
-        given(attempt.addressIdConverter()).willReturn(addressIdConverter);
-        final var e = assertThrows(
-                IllegalArgumentException.class, () -> ClassicTransfersCall.from(attempt, EIP_1014_ADDRESS, true));
-        assertTrue(e.getMessage().endsWith("is not a classic transfer"));
-    }
 
     @Test
     void transferHappyPathCompletesWithSuccessResponseCode() {
@@ -209,7 +200,7 @@ class ClassicTransfersCallTest extends HtsCallTestBase {
     private void givenRetryingSubject() {
         subject = new ClassicTransfersCall(
                 mockEnhancement(),
-                ClassicTransfersCall.CRYPTO_TRANSFER.selector(),
+                ClassicTransfersTranslator.CRYPTO_TRANSFER.selector(),
                 A_NEW_ACCOUNT_ID,
                 PRETEND_TRANSFER,
                 DEFAULT_CONFIG,
@@ -224,7 +215,7 @@ class ClassicTransfersCallTest extends HtsCallTestBase {
                 .getOrCreateConfig();
         subject = new ClassicTransfersCall(
                 mockEnhancement(),
-                ClassicTransfersCall.CRYPTO_TRANSFER_V2.selector(),
+                ClassicTransfersTranslator.CRYPTO_TRANSFER_V2.selector(),
                 A_NEW_ACCOUNT_ID,
                 PRETEND_TRANSFER,
                 config,
@@ -236,7 +227,7 @@ class ClassicTransfersCallTest extends HtsCallTestBase {
     private void givenV2SubjectWithV2Disabled() {
         subject = new ClassicTransfersCall(
                 mockEnhancement(),
-                ClassicTransfersCall.CRYPTO_TRANSFER_V2.selector(),
+                ClassicTransfersTranslator.CRYPTO_TRANSFER_V2.selector(),
                 A_NEW_ACCOUNT_ID,
                 PRETEND_TRANSFER,
                 DEFAULT_CONFIG,

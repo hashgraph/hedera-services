@@ -29,18 +29,12 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.balanceof.BalanceOfCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.decimals.DecimalsCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.isoperator.IsApprovedForAllCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.mint.MintCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.name.NameCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ownerof.OwnerOfCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.symbol.SymbolCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokenuri.TokenUriCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.totalsupply.TotalSupplyCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc20TransfersCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc721TransferFromCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -71,7 +65,6 @@ public class HtsCallAttempt {
 
     private final HederaWorldUpdater.Enhancement enhancement;
     private final Configuration configuration;
-    private final DecodingStrategies decodingStrategies;
     private final AddressIdConverter addressIdConverter;
     private final VerificationStrategies verificationStrategies;
     private final List<java.util.function.Function<HtsCallAttempt, HtsCall>> callAttemptTranslators;
@@ -82,7 +75,6 @@ public class HtsCallAttempt {
             boolean onlyDelegatableContractKeysActive,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             @NonNull final Configuration configuration,
-            @NonNull final DecodingStrategies decodingStrategies,
             @NonNull final AddressIdConverter addressIdConverter,
             @NonNull final VerificationStrategies verificationStrategies,
             @NonNull final List<java.util.function.Function<HtsCallAttempt, HtsCall>> callAttemptTranslators) {
@@ -92,7 +84,6 @@ public class HtsCallAttempt {
         this.configuration = requireNonNull(configuration);
         this.addressIdConverter = requireNonNull(addressIdConverter);
         this.enhancement = requireNonNull(enhancement);
-        this.decodingStrategies = requireNonNull(decodingStrategies);
         this.verificationStrategies = requireNonNull(verificationStrategies);
         this.onlyDelegatableContractKeysActive = onlyDelegatableContractKeysActive;
 
@@ -204,33 +195,7 @@ public class HtsCallAttempt {
                 return maybeCall;
             }
         }
-        if (Erc721TransferFromCall.matches(this)) {
-            return Erc721TransferFromCall.from(this, senderAddress, onlyDelegatableContractKeysActive);
-        } else if (Erc20TransfersCall.matches(this)) {
-            return Erc20TransfersCall.from(this, senderAddress, onlyDelegatableContractKeysActive);
-        } else if (ClassicTransfersCall.matches(this)) {
-            return ClassicTransfersCall.from(this, senderAddress, onlyDelegatableContractKeysActive);
-        } else if (MintCall.matches(selector)) {
-            return MintCall.from(this, senderAddress);
-        } else if (BalanceOfCall.matches(selector)) {
-            return BalanceOfCall.from(this);
-        } else if (IsApprovedForAllCall.matches(selector)) {
-            return IsApprovedForAllCall.from(this);
-        } else if (TotalSupplyCall.matches(selector)) {
-            return TotalSupplyCall.from(this);
-        } else if (NameCall.matches(selector)) {
-            return NameCall.from(this);
-        } else if (SymbolCall.matches(selector)) {
-            return SymbolCall.from(this);
-        } else if (OwnerOfCall.matches(selector)) {
-            return OwnerOfCall.from(this);
-        } else if (TokenUriCall.matches(selector)) {
-            return TokenUriCall.from(this);
-        } else if (DecimalsCall.matches(selector)) {
-            return DecimalsCall.from(this);
-        } else {
-            return null;
-        }
+        return null;
     }
 
     /**
@@ -276,15 +241,6 @@ public class HtsCallAttempt {
      */
     public Configuration configuration() {
         return configuration;
-    }
-
-    /**
-     * Returns the decoding strategies for this call.
-     *
-     * @return the decoding strategies for this call
-     */
-    public DecodingStrategies decodingStrategies() {
-        return decodingStrategies;
     }
 
     /**

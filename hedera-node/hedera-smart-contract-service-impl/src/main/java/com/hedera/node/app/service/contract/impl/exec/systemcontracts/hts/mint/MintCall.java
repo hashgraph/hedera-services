@@ -16,59 +16,6 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.mint;
 
-import static java.util.Objects.requireNonNull;
-
-import com.esaulpaugh.headlong.abi.Function;
-import com.esaulpaugh.headlong.abi.Tuple;
-import com.hedera.hapi.node.base.TokenType;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Arrays;
-import org.hyperledger.besu.datatypes.Address;
 
-public interface MintCall extends HtsCall {
-    Function MINT = new Function("mintToken(address,uint64,bytes[])", ReturnTypes.INT);
-    Function MINT_V2 = new Function("mintToken(address,int64,bytes[])", ReturnTypes.INT);
-
-    /**
-     * Indicates if the given {@code selector} is a selector for {@link MintCall}.
-     *
-     * @param selector the selector to check
-     * @return {@code true} if the given {@code selector} is a selector for {@link MintCall}
-     */
-    static boolean matches(@NonNull final byte[] selector) {
-        requireNonNull(selector);
-        return Arrays.equals(selector, MINT.selector()) || Arrays.equals(selector, MINT_V2.selector());
-    }
-
-    /**
-     * Creates a {@link MintCall} from the given {@code attempt} and {@code senderAddress}.
-     *
-     * @param attempt the attempt to create a {@link MintCall} from
-     * @param caller the address of the caller
-     * @return a {@link MintCall} if the given {@code attempt} is a valid {@link MintCall}, otherwise {@code null}
-     */
-    static @Nullable MintCall from(@NonNull final HtsCallAttempt attempt, @NonNull final Address caller) {
-        requireNonNull(attempt);
-        final var selector = attempt.selector();
-        final Tuple call;
-        if (Arrays.equals(selector, MINT.selector())) {
-            call = MINT.decodeCall(attempt.input().toArrayUnsafe());
-        } else if (Arrays.equals(selector, MINT_V2.selector())) {
-            call = MINT_V2.decodeCall(attempt.input().toArrayUnsafe());
-        } else {
-            return null;
-        }
-        final var token = attempt.linkedToken(Address.fromHexString(call.get(0).toString()));
-        if (token == null) {
-            return null;
-        } else {
-            return token.tokenType() == TokenType.FUNGIBLE_COMMON
-                    ? new FungibleMintCall(attempt.enhancement())
-                    : new NonFungibleMintCall(attempt.enhancement());
-        }
-    }
-}
+public interface MintCall extends HtsCall { }

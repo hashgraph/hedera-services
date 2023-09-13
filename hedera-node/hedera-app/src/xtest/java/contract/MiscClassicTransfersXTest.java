@@ -61,7 +61,7 @@ import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersTranslator;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
@@ -82,7 +82,7 @@ public class MiscClassicTransfersXTest extends AbstractContractXTest {
         // Unassociated account can receive a NFT since it has open auto-association slots
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
-                Bytes.wrap(ClassicTransfersCall.TRANSFER_NFT
+                Bytes.wrap(ClassicTransfersTranslator.TRANSFER_NFT
                         .encodeCallWithArgs(
                                 XTestConstants.ERC721_TOKEN_ADDRESS,
                                 OWNER_HEADLONG_ADDRESS,
@@ -94,7 +94,7 @@ public class MiscClassicTransfersXTest extends AbstractContractXTest {
         // transferring a second NFT to same receiver as in the first call
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
-                Bytes.wrap(ClassicTransfersCall.CRYPTO_TRANSFER
+                Bytes.wrap(ClassicTransfersTranslator.CRYPTO_TRANSFER
                         .encodeCallWithArgs(new Object[] {
                             new Tuple[] {
                                 Tuple.of(

@@ -23,12 +23,10 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.ac
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Address;
-import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractTokenViewCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -39,32 +37,7 @@ import java.util.Arrays;
  * Implements the token redirect {@code balanceOf()} call of the HTS system contract.
  */
 public class BalanceOfCall extends AbstractTokenViewCall {
-    public static final Function BALANCE_OF = new Function("balanceOf(address)", ReturnTypes.INT);
-
     private final Address owner;
-
-    /**
-     * Indicates if the given {@code selector} is a selector for {@link BalanceOfCall}.
-     *
-     * @param selector the selector to check
-     * @return {@code true} if the given {@code selector} is a selector for {@link BalanceOfCall}
-     */
-    public static boolean matches(@NonNull final byte[] selector) {
-        requireNonNull(selector);
-        return Arrays.equals(selector, BALANCE_OF.selector());
-    }
-
-    /**
-     * Constructs a {@link BalanceOfCall} from the given {@code attempt}.
-     *
-     * @param attempt the attempt to construct from
-     * @return the constructed {@link BalanceOfCall}
-     */
-    public static BalanceOfCall from(@NonNull final HtsCallAttempt attempt) {
-        final Address owner =
-                BALANCE_OF.decodeCall(attempt.input().toArrayUnsafe()).get(0);
-        return new BalanceOfCall(attempt.enhancement(), attempt.redirectToken(), owner);
-    }
 
     public BalanceOfCall(
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
@@ -88,7 +61,7 @@ public class BalanceOfCall extends AbstractTokenViewCall {
         final var tokenNum = token.tokenIdOrThrow().tokenNum();
         final var relation = nativeOperations().getTokenRelation(ownerNum, tokenNum);
         final var balance = relation == null ? 0 : relation.balance();
-        final var output = BALANCE_OF.getOutputs().encodeElements(BigInteger.valueOf(balance));
+        final var output = BalanceOfTranslator.BALANCE_OF.getOutputs().encodeElements(BigInteger.valueOf(balance));
 
         return successResult(output, 0L);
     }

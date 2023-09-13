@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts;
 
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.balanceof.BalanceOfCall.BALANCE_OF;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.balanceof.BalanceOfTranslator.BALANCE_OF;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN;
@@ -28,7 +28,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DecodingStrategies;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAddressChecks;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
@@ -57,9 +56,6 @@ class HtsCallFactoryTest extends HtsCallTestBase {
     private VerificationStrategies verificationStrategies;
 
     @Mock
-    private DecodingStrategies decodingStrategies;
-
-    @Mock
     private SyntheticIds syntheticIds;
 
     @Mock
@@ -78,7 +74,7 @@ class HtsCallFactoryTest extends HtsCallTestBase {
     @BeforeEach
     void setUp() {
         subject = new HtsCallFactory(
-                syntheticIds, addressChecks, decodingStrategies, verificationStrategies, NO_TRANSLATORS);
+                syntheticIds, addressChecks, verificationStrategies, NO_TRANSLATORS);
     }
 
     @Test

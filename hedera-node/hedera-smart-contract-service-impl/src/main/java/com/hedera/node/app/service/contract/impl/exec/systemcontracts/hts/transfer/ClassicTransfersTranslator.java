@@ -1,0 +1,103 @@
+package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer;
+
+import com.esaulpaugh.headlong.abi.Function;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+import java.util.Arrays;
+
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ApprovalSwitchHelper.APPROVAL_SWITCH_HELPER;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.SystemAccountCreditScreen.SYSTEM_ACCOUNT_CREDIT_SCREEN;
+
+@Singleton
+public class ClassicTransfersTranslator extends AbstractHtsCallTranslator {
+    public static final Function CRYPTO_TRANSFER =
+            new Function("cryptoTransfer((address,(address,int64)[],(address,address,int64)[])[])", ReturnTypes.INT_64);
+    public static final Function CRYPTO_TRANSFER_V2 = new Function(
+            "cryptoTransfer(((address,int64,bool)[]),(address,(address,int64,bool)[],(address,address,int64,bool)[])[])",
+            ReturnTypes.INT_64);
+    public static final Function TRANSFER_TOKENS =
+            new Function("transferTokens(address,address[],int64[])", ReturnTypes.INT_64);
+    public static final Function TRANSFER_TOKEN =
+            new Function("transferToken(address,address,address,int64)", ReturnTypes.INT_64);
+    public static final Function TRANSFER_NFTS =
+            new Function("transferNFTs(address,address[],address[],int64[])", ReturnTypes.INT_64);
+    public static final Function TRANSFER_NFT =
+            new Function("transferNFT(address,address,address,int64)", ReturnTypes.INT_64);
+    public static final Function TRANSFER_FROM =
+            new Function("transferFrom(address,address,address,uint256)", ReturnTypes.INT_64);
+    public static final Function TRANSFER_NFT_FROM =
+            new Function("transferFromNFT(address,address,address,uint256)", ReturnTypes.INT_64);
+    private final ClassicTransfersDecoder decoder;
+
+    @Inject
+    public ClassicTransfersTranslator(ClassicTransfersDecoder decoder) {
+        this.decoder = decoder;
+    }
+
+    @Override
+    public boolean matches(@NonNull final HtsCallAttempt attempt) {
+        return !attempt.isTokenRedirect()
+                && (Arrays.equals(attempt.selector(), ClassicTransfersTranslator.CRYPTO_TRANSFER.selector())
+                || Arrays.equals(attempt.selector(), ClassicTransfersTranslator.CRYPTO_TRANSFER_V2.selector())
+                || Arrays.equals(attempt.selector(), ClassicTransfersTranslator.TRANSFER_TOKENS.selector())
+                || Arrays.equals(attempt.selector(), ClassicTransfersTranslator.TRANSFER_TOKEN.selector())
+                || Arrays.equals(attempt.selector(), ClassicTransfersTranslator.TRANSFER_NFTS.selector())
+                || Arrays.equals(attempt.selector(), ClassicTransfersTranslator.TRANSFER_NFT.selector())
+                || Arrays.equals(attempt.selector(), ClassicTransfersTranslator.TRANSFER_FROM.selector())
+                || Arrays.equals(attempt.selector(), ClassicTransfersTranslator.TRANSFER_NFT_FROM.selector()));
+    }
+
+    @Override
+    public ClassicTransfersCall callFrom(@NonNull final HtsCallAttempt attempt) {
+        final var selector = attempt.selector();
+        return new ClassicTransfersCall(
+                attempt.enhancement(),
+                selector,
+                attempt.senderId(),
+                nominalBodyFor(attempt),
+                attempt.configuration(),
+                isClassicCall(selector) ? APPROVAL_SWITCH_HELPER : null,
+                attempt.verificationStrategies()
+                        .activatingOnlyContractKeysFor(
+                                attempt.senderAddress(),
+                                attempt.onlyDelegatableContractKeysActive(),
+                                attempt.nativeOperations()),
+                SYSTEM_ACCOUNT_CREDIT_SCREEN);
+    }
+
+    private TransactionBody nominalBodyFor(@NonNull final HtsCallAttempt attempt) {
+        if (Arrays.equals(attempt.selector(), ClassicTransfersTranslator.CRYPTO_TRANSFER.selector())) {
+            return decoder.decodeCryptoTransfer(attempt.inputBytes(), attempt.addressIdConverter());
+        } else if (Arrays.equals(attempt.selector(), ClassicTransfersTranslator.CRYPTO_TRANSFER_V2.selector())) {
+            return decoder.decodeCryptoTransferV2(attempt.inputBytes(), attempt.addressIdConverter());
+        } else if (Arrays.equals(attempt.selector(), ClassicTransfersTranslator.TRANSFER_TOKENS.selector())) {
+            return decoder.decodeTransferTokens(attempt.inputBytes(), attempt.addressIdConverter());
+        } else if (Arrays.equals(attempt.selector(), ClassicTransfersTranslator.TRANSFER_TOKEN.selector())) {
+            return decoder.decodeTransferToken(attempt.inputBytes(), attempt.addressIdConverter());
+        } else if (Arrays.equals(attempt.selector(), ClassicTransfersTranslator.TRANSFER_NFTS.selector())) {
+            return decoder.decodeTransferNfts(attempt.inputBytes(), attempt.addressIdConverter());
+        } else if (Arrays.equals(attempt.selector(), ClassicTransfersTranslator.TRANSFER_NFT.selector())) {
+            return decoder.decodeTransferNft(attempt.inputBytes(), attempt.addressIdConverter());
+        } else if (Arrays.equals(attempt.selector(), ClassicTransfersTranslator.TRANSFER_FROM.selector())) {
+            return decoder.decodeHrcTransferFrom(attempt.inputBytes(), attempt.addressIdConverter());
+        } else {
+            return decoder.decodeHrcTransferNftFrom(attempt.inputBytes(), attempt.addressIdConverter());
+        }
+    }
+
+    private boolean isClassicCall(@NonNull final byte[] selector) {
+        return Arrays.equals(selector, ClassicTransfersTranslator.CRYPTO_TRANSFER.selector())
+                || Arrays.equals(selector, ClassicTransfersTranslator.TRANSFER_TOKENS.selector())
+                || Arrays.equals(selector, ClassicTransfersTranslator.TRANSFER_TOKEN.selector())
+                || Arrays.equals(selector, ClassicTransfersTranslator.TRANSFER_NFTS.selector())
+                || Arrays.equals(selector, ClassicTransfersTranslator.TRANSFER_NFT.selector());
+    }
+}

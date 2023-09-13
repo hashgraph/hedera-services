@@ -17,8 +17,8 @@
 package contract;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc20TransfersCall.ERC_20_TRANSFER;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc20TransfersCall.ERC_20_TRANSFER_FROM;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc20TransfersTranslator.ERC_20_TRANSFER;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc20TransfersTranslator.ERC_20_TRANSFER_FROM;
 import static contract.HtsErc721TransferXTestConstants.APPROVED_ADDRESS;
 import static contract.HtsErc721TransferXTestConstants.APPROVED_BESU_ADDRESS;
 import static contract.HtsErc721TransferXTestConstants.APPROVED_ID;
