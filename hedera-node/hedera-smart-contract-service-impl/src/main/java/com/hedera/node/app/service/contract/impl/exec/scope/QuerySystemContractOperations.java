@@ -16,8 +16,9 @@
 
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftID;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
@@ -30,6 +31,7 @@ import com.hedera.node.app.spi.workflows.QueryContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.function.Predicate;
 import javax.inject.Inject;
 
 /**
@@ -82,9 +84,20 @@ public class QuerySystemContractOperations implements SystemContractOperations {
      * {@inheritDoc}
      */
     @Override
-    public @NonNull ResponseCodeEnum dispatch(
-            @NonNull final TransactionBody syntheticTransaction, @NonNull final VerificationStrategy strategy) {
+    public @NonNull <T> T dispatch(
+            @NonNull final TransactionBody syntheticTransaction,
+            @NonNull final VerificationStrategy strategy,
+            @NonNull AccountID syntheticPayerId,
+            @NonNull Class<T> recordBuilderClass) {
         throw new UnsupportedOperationException("Cannot dispatch synthetic transaction");
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public @NonNull Predicate<Key> activeSignatureTestWith(@NonNull final VerificationStrategy strategy) {
+        throw new UnsupportedOperationException("Cannot compute a signature test");
     }
 
     /**

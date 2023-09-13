@@ -14,7 +14,7 @@
 # limitations under the License.
 ##
 
-name: "Z-Platform XCron: Develop Daily Snapshot"
+name: "ZXCron: [Platform] Develop Daily Snapshot"
 on:
   schedule:
     - cron: '0 1 * * *'

@@ -17,12 +17,15 @@
 package com.hedera.node.app.fees;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.base.TimestampSeconds;
+import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
+import com.hedera.node.config.data.BootstrapConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 
@@ -49,7 +52,23 @@ public class FeeService implements Service {
 
             @Override
             public void migrate(@NonNull MigrationContext ctx) {
-                ctx.newStates().getSingleton(MIDNIGHT_RATES_STATE_KEY).put(ExchangeRateSet.DEFAULT);
+                final var bootstrapConfig = ctx.configuration().getConfigData(BootstrapConfig.class);
+                final var exchangeRateSet = ExchangeRateSet.newBuilder()
+                        .currentRate(ExchangeRate.newBuilder()
+                                .centEquiv(bootstrapConfig.ratesCurrentCentEquiv())
+                                .hbarEquiv(bootstrapConfig.ratesCurrentHbarEquiv())
+                                .expirationTime(
+                                        TimestampSeconds.newBuilder().seconds(bootstrapConfig.ratesCurrentExpiry()))
+                                .build())
+                        .nextRate(ExchangeRate.newBuilder()
+                                .centEquiv(bootstrapConfig.ratesNextCentEquiv())
+                                .hbarEquiv(bootstrapConfig.ratesNextHbarEquiv())
+                                .expirationTime(
+                                        TimestampSeconds.newBuilder().seconds(bootstrapConfig.ratesNextExpiry()))
+                                .build())
+                        .build();
+
+                ctx.newStates().getSingleton(MIDNIGHT_RATES_STATE_KEY).put(exchangeRateSet);
             }
         });
     }

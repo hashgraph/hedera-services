@@ -16,7 +16,7 @@
 
 plugins {
     id("com.hedera.hashgraph.application")
-    id("com.hedera.hashgraph.maven-publish")
+    id("com.hedera.hashgraph.platform-maven-publish")
 }
 
 application.mainClass.set("com.swirlds.signingtool.FileSignTool")

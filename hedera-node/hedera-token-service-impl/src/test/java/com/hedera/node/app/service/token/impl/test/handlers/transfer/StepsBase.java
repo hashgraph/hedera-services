@@ -191,11 +191,12 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
     protected void givenTxn(CryptoTransferTransactionBody txnBody, AccountID payerId) {
         body = txnBody;
         txn = asTxn(body, payerId);
+        given(handleContext.payer()).willReturn(payerId);
         given(handleContext.body()).willReturn(txn);
         given(handleContext.configuration()).willReturn(configuration);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(handleContext.dispatchRemovableChildTransaction(
-                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class)))
+                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(payerId)))
                 .willReturn(cryptoCreateRecordBuilder);
         transferContext = new TransferContextImpl(handleContext);
         given(configProvider.getConfiguration()).willReturn(versionedConfig);
@@ -204,8 +205,12 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
     }
 
     protected void givenAutoCreationDispatchEffects() {
+        givenAutoCreationDispatchEffects(spenderId);
+    }
+
+    protected void givenAutoCreationDispatchEffects(AccountID syntheticPayer) {
         given(handleContext.dispatchRemovableChildTransaction(
-                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class)))
+                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(syntheticPayer)))
                 .will((invocation) -> {
                     final var copy = account.copyBuilder()
                             .alias(ecKeyAlias.value())
