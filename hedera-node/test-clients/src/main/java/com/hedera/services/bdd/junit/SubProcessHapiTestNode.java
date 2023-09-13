@@ -88,6 +88,7 @@ final class SubProcessHapiTestNode implements HapiTestNode {
                             javaCmd,
                             "-classpath",
                             classPath,
+                            "-Dfile.encoding=utf-8",
                             "-Dhedera.workflows.enabled=true",
                             "com.hedera.node.app.ServicesMain",
                             "" + nodeId)
