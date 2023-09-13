@@ -37,7 +37,6 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.config.api.Configuration;
 import dagger.BindsInstance;
 import dagger.Component;
-
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -67,12 +66,7 @@ import javax.inject.Singleton;
  * {@link ScaffoldingModule}.
  */
 @Singleton
-@Component(
-        modules = {
-                HandlersInjectionModule.class,
-                ScaffoldingModule.class,
-                HtsTranslatorsModule.class
-        })
+@Component(modules = {HandlersInjectionModule.class, ScaffoldingModule.class, HtsTranslatorsModule.class})
 public interface ScaffoldingComponent {
     @Component.Factory
     interface Factory {
@@ -92,5 +86,6 @@ public interface ScaffoldingComponent {
     FeeManager feeManager();
 
     ExchangeRateManager exchangeRateManager();
+
     List<Function<HtsCallAttempt, HtsCall>> callAttemptTranslators();
 }

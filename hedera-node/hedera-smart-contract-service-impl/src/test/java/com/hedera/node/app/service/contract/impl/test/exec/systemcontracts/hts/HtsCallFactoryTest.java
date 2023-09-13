@@ -42,7 +42,6 @@ import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
 import java.util.function.Function;
-
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,6 +49,7 @@ import org.mockito.Mock;
 
 class HtsCallFactoryTest extends HtsCallTestBase {
     private static final List<Function<HtsCallAttempt, HtsCall>> NO_TRANSLATORS = Collections.emptyList();
+
     @Mock
     private HtsCallAddressChecks addressChecks;
 
@@ -77,7 +77,8 @@ class HtsCallFactoryTest extends HtsCallTestBase {
 
     @BeforeEach
     void setUp() {
-        subject = new HtsCallFactory(syntheticIds, addressChecks, decodingStrategies, verificationStrategies, NO_TRANSLATORS);
+        subject = new HtsCallFactory(
+                syntheticIds, addressChecks, decodingStrategies, verificationStrategies, NO_TRANSLATORS);
     }
 
     @Test

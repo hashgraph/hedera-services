@@ -47,7 +47,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
 import java.util.List;
-
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
@@ -66,6 +65,7 @@ public class HtsCallAttempt {
     private final AccountID senderId;
     private final Address senderAddress;
     private final boolean onlyDelegatableContractKeysActive;
+
     @Nullable
     private final Token redirectToken;
 

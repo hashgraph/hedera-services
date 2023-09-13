@@ -22,13 +22,12 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
+import java.util.function.Function;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-
-import java.util.List;
-import java.util.function.Function;
 
 /**
  * Factory to create a new {@link HtsCallAttempt} for a given input and message frame.
@@ -75,7 +74,8 @@ public class HtsCallFactory {
                 configOf(frame),
                 decodingStrategies,
                 syntheticIds.converterFor(enhancement.nativeOperations()),
-                verificationStrategies, callAttemptTranslators);
+                verificationStrategies,
+                callAttemptTranslators);
         return requireNonNull(attempt.asExecutableCall());
     }
 }

@@ -1,4 +1,22 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.associations;
+
+import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -10,20 +28,17 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Return
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
+import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
-import java.util.Arrays;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * Translates associate and dissociate calls to the HTS system contract. There are no special cases for
  * these calls, so the returned {@link HtsCall} is simply an instance of {@link DispatchForResponseCodeHtsCall}.
  */
 @Singleton
-public class AssociationsTranslator implements HtsCallTranslator<DispatchForResponseCodeHtsCall<SingleTransactionRecordBuilder>> {
+public class AssociationsTranslator
+        implements HtsCallTranslator<DispatchForResponseCodeHtsCall<SingleTransactionRecordBuilder>> {
     public static final Function HRC_ASSOCIATE = new Function("associate()", ReturnTypes.INT);
     public static final Function ASSOCIATE_ONE = new Function("associateToken(address,address)", ReturnTypes.INT_64);
     public static final Function DISSOCIATE_ONE = new Function("dissociateToken(address,address)", ReturnTypes.INT_64);
@@ -41,7 +56,8 @@ public class AssociationsTranslator implements HtsCallTranslator<DispatchForResp
     }
 
     @Override
-    public @Nullable DispatchForResponseCodeHtsCall<SingleTransactionRecordBuilder> translate(@NonNull final HtsCallAttempt attempt) {
+    public @Nullable DispatchForResponseCodeHtsCall<SingleTransactionRecordBuilder> translate(
+            @NonNull final HtsCallAttempt attempt) {
         requireNonNull(attempt);
         if (matches(attempt)) {
             return new DispatchForResponseCodeHtsCall<>(

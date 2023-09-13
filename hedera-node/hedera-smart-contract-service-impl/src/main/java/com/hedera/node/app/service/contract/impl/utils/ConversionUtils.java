@@ -629,5 +629,4 @@ public class ConversionUtils {
                 ? account.alias().toByteArray()
                 : asEvmAddress(account.accountIdOrThrow().accountNumOrThrow());
     }
-
 }

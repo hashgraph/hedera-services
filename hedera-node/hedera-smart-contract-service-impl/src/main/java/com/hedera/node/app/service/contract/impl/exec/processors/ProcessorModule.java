@@ -24,22 +24,13 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.ExchangeRateSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsCallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.PrngSystemContract;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.associations.AssociationsTranslator;
-import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.IntoSet;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.function.Function;
 import javax.inject.Singleton;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.contractvalidation.ContractValidationRule;

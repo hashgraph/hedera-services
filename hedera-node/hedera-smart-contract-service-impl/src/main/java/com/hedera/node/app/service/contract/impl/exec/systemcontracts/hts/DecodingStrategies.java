@@ -16,9 +16,6 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
-import static java.util.Objects.requireNonNull;
-
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.AccountAmount;

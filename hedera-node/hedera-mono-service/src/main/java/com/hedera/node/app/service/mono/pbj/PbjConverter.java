@@ -394,7 +394,8 @@ public final class PbjConverter {
             case TRANSACTION_GET_RECORD -> com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetRecord;
             case UNCHECKED_SUBMIT -> com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
             case UTIL_PRNG -> com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
-            case TRANSACTION_GET_FAST_RECORD -> com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetFastRecord;
+            case TRANSACTION_GET_FAST_RECORD -> com.hederahashgraph.api.proto.java.HederaFunctionality
+                    .TransactionGetFastRecord;
         };
     }
 
