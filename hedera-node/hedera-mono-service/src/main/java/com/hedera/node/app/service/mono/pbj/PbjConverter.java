@@ -292,6 +292,7 @@ public final class PbjConverter {
             case TokenUnfreezeAccount -> HederaFunctionality.TOKEN_UNFREEZE_ACCOUNT;
             case TokenUnpause -> HederaFunctionality.TOKEN_UNPAUSE;
             case TokenUpdate -> HederaFunctionality.TOKEN_UPDATE;
+            case TransactionGetFastRecord -> HederaFunctionality.TRANSACTION_GET_FAST_RECORD;
             case TransactionGetReceipt -> HederaFunctionality.TRANSACTION_GET_RECEIPT;
             case TransactionGetRecord -> HederaFunctionality.TRANSACTION_GET_RECORD;
             case UncheckedSubmit -> HederaFunctionality.UNCHECKED_SUBMIT;
@@ -388,6 +389,7 @@ public final class PbjConverter {
             case TOKEN_UNFREEZE_ACCOUNT -> com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
             case TOKEN_UNPAUSE -> com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnpause;
             case TOKEN_UPDATE -> com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
+            case TRANSACTION_GET_FAST_RECORD -> com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetFastRecord;
             case TRANSACTION_GET_RECEIPT -> com.hederahashgraph.api.proto.java.HederaFunctionality
                     .TransactionGetReceipt;
             case TRANSACTION_GET_RECORD -> com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetRecord;
