@@ -58,6 +58,7 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SystemExitCode;
+import com.swirlds.common.system.SystemExitUtils;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
