@@ -146,7 +146,7 @@ public abstract class HederaEvmTxProcessor {
                 .contextVariables(Map.of("HederaFunctionality", getFunctionType()));
 
         this.initialFrame = buildInitialFrame(commonInitialFrame, receiver, payload, value);
-        var messageFrameStack = initialFrame.getMessageFrameStack();
+        final var messageFrameStack = initialFrame.getMessageFrameStack();
 
         tracer.init(initialFrame);
 

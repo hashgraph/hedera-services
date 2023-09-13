@@ -241,7 +241,7 @@ class CreateEvmTxProcessorTest {
     @Test
     void assertTransactionSenderAndValue() {
         // setup:
-        Wei oneWei = Wei.of(1L);
+        final Wei oneWei = Wei.of(1L);
         final MessageFrame.Builder commonInitialFrame = MessageFrame.builder()
                 .maxStackSize(MAX_STACK_SIZE)
                 .worldUpdater(mock(WorldUpdater.class))

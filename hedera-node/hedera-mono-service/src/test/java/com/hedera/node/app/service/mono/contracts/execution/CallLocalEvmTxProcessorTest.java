@@ -172,7 +172,7 @@ class CallLocalEvmTxProcessorTest {
     @Test
     void assertTransactionSenderAndValue() {
         // setup:
-        Wei oneWei = Wei.of(1L);
+        final Wei oneWei = Wei.of(1L);
         given(codeCache.getIfPresent(any())).willReturn(CodeV0.EMPTY_CODE);
         final MessageFrame.Builder commonInitialFrame = MessageFrame.builder()
                 .maxStackSize(MAX_STACK_SIZE)
