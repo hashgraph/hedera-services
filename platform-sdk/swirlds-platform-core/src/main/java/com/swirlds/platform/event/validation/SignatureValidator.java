@@ -30,6 +30,7 @@ import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.crypto.SignatureVerifier;
 import com.swirlds.platform.event.GossipEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.PublicKey;
 import java.util.HashMap;
 import java.util.Map;
@@ -54,14 +55,16 @@ public class SignatureValidator implements GossipEventValidator {
      * @param signatureVerifier      the signature verifier
      */
     public SignatureValidator(
-            @NonNull final AddressBook previousAddressBook,
+            @Nullable final AddressBook previousAddressBook,
             @NonNull final AddressBook currentAddressBook,
             @NonNull final SoftwareVersion currentSoftwareVersion,
             @NonNull final SignatureVerifier signatureVerifier) {
         this.signatureVerifier = Objects.requireNonNull(signatureVerifier);
         this.currentSoftwareVersion = Objects.requireNonNull(currentSoftwareVersion);
-        for (final Address address : Objects.requireNonNull(previousAddressBook)) {
-            previousKeyMap.put(address.getNodeId(), address.getSigPublicKey());
+        if (previousAddressBook != null) {
+            for (final Address address : previousAddressBook) {
+                previousKeyMap.put(address.getNodeId(), address.getSigPublicKey());
+            }
         }
         for (final Address address : Objects.requireNonNull(currentAddressBook)) {
             currentKeyMap.put(address.getNodeId(), address.getSigPublicKey());
