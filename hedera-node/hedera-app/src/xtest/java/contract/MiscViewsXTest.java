@@ -20,8 +20,11 @@ import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONT
 import static contract.AssortedOpsXTestConstants.ONE_HBAR;
 import static contract.MiscViewsXTestConstants.COINBASE_ID;
 import static contract.MiscViewsXTestConstants.EQUIV_TINYCENTS;
+import static contract.MiscViewsXTestConstants.ERC20_DECIMALS;
+import static contract.MiscViewsXTestConstants.ERC20_NAME;
+import static contract.MiscViewsXTestConstants.ERC20_SUPPLY;
+import static contract.MiscViewsXTestConstants.ERC20_SYMBOL;
 import static contract.MiscViewsXTestConstants.ERC20_TOKEN_ADDRESS;
-import static contract.MiscViewsXTestConstants.ERC20_TOKEN_ID;
 import static contract.MiscViewsXTestConstants.ERC20_USER_BALANCE;
 import static contract.MiscViewsXTestConstants.ERC721_IS_OPERATOR;
 import static contract.MiscViewsXTestConstants.ERC721_NAME;
@@ -29,13 +32,15 @@ import static contract.MiscViewsXTestConstants.ERC721_OPERATOR_ADDRESS;
 import static contract.MiscViewsXTestConstants.ERC721_SN1_OWNER;
 import static contract.MiscViewsXTestConstants.ERC721_SN2_METADATA;
 import static contract.MiscViewsXTestConstants.ERC721_SYMBOL;
-import static contract.MiscViewsXTestConstants.ERC721_TOKEN_ADDRESS;
-import static contract.MiscViewsXTestConstants.ERC721_TOKEN_ID;
 import static contract.MiscViewsXTestConstants.ERC721_USER_BALANCE;
 import static contract.MiscViewsXTestConstants.ERC_USER_ADDRESS;
 import static contract.MiscViewsXTestConstants.ERC_USER_ID;
 import static contract.MiscViewsXTestConstants.GET_ERC721_IS_OPERATOR;
 import static contract.MiscViewsXTestConstants.GET_ERC_20_BALANCE;
+import static contract.MiscViewsXTestConstants.GET_ERC_20_DECIMALS;
+import static contract.MiscViewsXTestConstants.GET_ERC_20_NAME;
+import static contract.MiscViewsXTestConstants.GET_ERC_20_SUPPLY;
+import static contract.MiscViewsXTestConstants.GET_ERC_20_SYMBOL;
 import static contract.MiscViewsXTestConstants.GET_ERC_721_BALANCE;
 import static contract.MiscViewsXTestConstants.GET_ERC_721_NAME;
 import static contract.MiscViewsXTestConstants.GET_ERC_721_OWNER;
@@ -53,6 +58,9 @@ import static contract.MiscViewsXTestConstants.SPECIAL_QUERIES_X_TEST_ID;
 import static contract.MiscViewsXTestConstants.TINYBARS;
 import static contract.MiscViewsXTestConstants.UNCOVERED_SECRET;
 import static contract.MiscViewsXTestConstants.VIEWS_INITCODE_FILE_ID;
+import static contract.XTestConstants.ERC20_TOKEN_ID;
+import static contract.XTestConstants.ERC721_TOKEN_ADDRESS;
+import static contract.XTestConstants.ERC721_TOKEN_ID;
 
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.TupleType;
@@ -94,11 +102,9 @@ public class MiscViewsXTest extends AbstractContractXTest {
                 ERC_USER_ID,
                 assertingCallLocalResultIs(UNCOVERED_SECRET));
         doPrngQuery();
-        // TODO - uncomment once 0x168 precompile is implemented
-        //        doExchangeRateQuery();
+        doExchangeRateQuery();
         doErc20Queries();
-        // TODO - uncomment once 0x167 precompile is implemented for ERC-721 redirects
-        //        doErc721Queries();
+        doErc721Queries();
     }
 
     private void doPrngQuery() {
@@ -123,27 +129,26 @@ public class MiscViewsXTest extends AbstractContractXTest {
                 miscViewsQuery(GET_ERC_20_BALANCE, ERC20_TOKEN_ADDRESS, ERC_USER_ADDRESS),
                 ERC_USER_ID,
                 assertingCallLocalResultIs(ERC20_USER_BALANCE));
-        // TODO - fix and uncomment
-        //        answerSingleQuery(
-        //                CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
-        //                miscViewsQuery(GET_ERC_20_SUPPLY, ERC20_TOKEN_ADDRESS),
-        //                ERC_USER_ID,
-        //                assertingCallLocalResultIs(ERC20_SUPPLY));
-        //        answerSingleQuery(
-        //                CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
-        //                miscViewsQuery(GET_ERC_20_NAME, ERC20_TOKEN_ADDRESS),
-        //                ERC_USER_ID,
-        //                assertingCallLocalResultIs(ERC20_NAME));
-        //        answerSingleQuery(
-        //                CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
-        //                miscViewsQuery(GET_ERC_20_SYMBOL, ERC20_TOKEN_ADDRESS),
-        //                ERC_USER_ID,
-        //                assertingCallLocalResultIs(ERC20_SYMBOL));
-        //        answerSingleQuery(
-        //                CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
-        //                miscViewsQuery(GET_ERC_20_DECIMALS, ERC20_TOKEN_ADDRESS),
-        //                ERC_USER_ID,
-        //                assertingCallLocalResultIs(ERC20_DECIMALS));
+        answerSingleQuery(
+                CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
+                miscViewsQuery(GET_ERC_20_SUPPLY, ERC20_TOKEN_ADDRESS),
+                ERC_USER_ID,
+                assertingCallLocalResultIs(ERC20_SUPPLY));
+        answerSingleQuery(
+                CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
+                miscViewsQuery(GET_ERC_20_NAME, ERC20_TOKEN_ADDRESS),
+                ERC_USER_ID,
+                assertingCallLocalResultIs(ERC20_NAME));
+        answerSingleQuery(
+                CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
+                miscViewsQuery(GET_ERC_20_SYMBOL, ERC20_TOKEN_ADDRESS),
+                ERC_USER_ID,
+                assertingCallLocalResultIs(ERC20_SYMBOL));
+        answerSingleQuery(
+                CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
+                miscViewsQuery(GET_ERC_20_DECIMALS, ERC20_TOKEN_ADDRESS),
+                ERC_USER_ID,
+                assertingCallLocalResultIs(ERC20_DECIMALS));
     }
 
     private void doErc721Queries() {
@@ -266,6 +271,7 @@ public class MiscViewsXTest extends AbstractContractXTest {
                     Nft.newBuilder()
                             .nftId(id)
                             .ownerId(ERC_USER_ID)
+                            .spenderId(OPERATOR_ID)
                             .metadata(Bytes.wrap("https://example.com/721/" + sn))
                             .build());
         }

@@ -47,6 +47,7 @@ import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
 import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy;
+import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy.UseTopLevelSigs;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.spi.state.WritableKVState;
@@ -334,11 +335,13 @@ public class DispatchingEvmFrameState implements EvmFrameState {
         } else if (to instanceof TokenEvmAccount) {
             return Optional.of(ILLEGAL_STATE_CHANGE);
         }
+        // Note we can still use top-level signatures to meet receiver signature requirements
         final var status = nativeOperations.transferWithReceiverSigCheck(
                 amount,
                 from.number,
                 ((ProxyEvmAccount) to).number,
-                new ActiveContractVerificationStrategy(from.number, tuweniToPbjBytes(from.getAddress()), delegateCall));
+                new ActiveContractVerificationStrategy(
+                        from.number, tuweniToPbjBytes(from.getAddress()), delegateCall, UseTopLevelSigs.YES));
         if (status != OK) {
             if (status == INVALID_SIGNATURE) {
                 return Optional.of(INVALID_RECEIVER_SIGNATURE);

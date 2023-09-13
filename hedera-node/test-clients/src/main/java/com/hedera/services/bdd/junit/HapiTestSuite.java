@@ -31,4 +31,7 @@ import org.junit.platform.commons.annotation.Testable;
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @Testable
-public @interface HapiTestSuite {}
+public @interface HapiTestSuite {
+    /** If true, then a small cluster of 4 nodes is set up. Otherwise, a single node is set up. */
+    boolean cluster() default false;
+}

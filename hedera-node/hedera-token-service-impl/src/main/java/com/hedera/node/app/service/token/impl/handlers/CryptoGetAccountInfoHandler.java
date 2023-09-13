@@ -27,6 +27,7 @@ import static com.hedera.hapi.node.base.TokenKycStatus.GRANTED;
 import static com.hedera.hapi.node.base.TokenKycStatus.KYC_NOT_APPLICABLE;
 import static com.hedera.node.app.hapi.utils.CommonUtils.asEvmAddress;
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.EVM_ADDRESS_LEN;
+import static com.hedera.node.app.service.token.impl.handlers.staking.StakeInfoHelper.SENTINEL_NODE_ID;
 import static com.hedera.node.app.spi.key.KeyUtils.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
@@ -307,7 +308,8 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
 
         final var stakedNode = account.stakedNodeId();
         final var stakedAccount = account.stakedAccountId();
-        if (stakedNode != null) {
+        if (stakedNode != null && stakedNode != SENTINEL_NODE_ID) {
+            // -1 is a special value to remove the account's staked node ID.
             stakingInfo.stakedNodeId(stakedNode);
             addNodeStakeMeta(stakingInfo, account, stakingInfoStore, stakingRewardsStore);
         } else if (stakedAccount != null) {

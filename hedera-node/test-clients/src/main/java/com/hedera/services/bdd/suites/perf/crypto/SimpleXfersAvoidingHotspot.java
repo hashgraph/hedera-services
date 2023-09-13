@@ -31,7 +31,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_EX
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
@@ -50,7 +49,6 @@ import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-@HapiTestSuite
 public class SimpleXfersAvoidingHotspot extends HapiSuite {
     private static final Logger log = LogManager.getLogger(SimpleXfersAvoidingHotspot.class);
 

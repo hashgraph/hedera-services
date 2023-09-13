@@ -228,16 +228,20 @@ class HandleHederaOperationsTest {
                 .cryptoCreateAccount(synthAccountCreation)
                 .build();
         given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
-        given(context.dispatchChildTransaction(eq(synthTxn), eq(CryptoCreateRecordBuilder.class), any(Predicate.class)))
+        given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
+        given(context.dispatchChildTransaction(
+                        eq(synthTxn), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(A_NEW_ACCOUNT_ID)))
                 .willReturn(cryptoCreateRecordBuilder);
         given(cryptoCreateRecordBuilder.status()).willReturn(OK);
         given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
         given(accountStore.getAccountById(NON_SYSTEM_ACCOUNT_ID)).willReturn(parent);
+        given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
 
         subject.createContract(666L, NON_SYSTEM_ACCOUNT_ID.accountNumOrThrow(), CANONICAL_ALIAS);
 
         verify(context)
-                .dispatchChildTransaction(eq(synthTxn), eq(CryptoCreateRecordBuilder.class), any(Predicate.class));
+                .dispatchChildTransaction(
+                        eq(synthTxn), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(A_NEW_ACCOUNT_ID));
         verify(tokenServiceApi)
                 .markAsContract(AccountID.newBuilder().accountNum(666L).build());
     }
@@ -253,15 +257,19 @@ class HandleHederaOperationsTest {
         final var synthTxn = TransactionBody.newBuilder()
                 .cryptoCreateAccount(synthAccountCreationFromHapi(pendingId, CANONICAL_ALIAS, someBody))
                 .build();
+        given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
         given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
-        given(context.dispatchChildTransaction(eq(synthTxn), eq(CryptoCreateRecordBuilder.class), any(Predicate.class)))
+        given(context.dispatchChildTransaction(
+                        eq(synthTxn), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(A_NEW_ACCOUNT_ID)))
                 .willReturn(cryptoCreateRecordBuilder);
         given(cryptoCreateRecordBuilder.status()).willReturn(OK);
+        given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
 
         subject.createContract(666L, someBody, CANONICAL_ALIAS);
 
         verify(context)
-                .dispatchChildTransaction(eq(synthTxn), eq(CryptoCreateRecordBuilder.class), any(Predicate.class));
+                .dispatchChildTransaction(
+                        eq(synthTxn), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(A_NEW_ACCOUNT_ID));
         verify(tokenServiceApi)
                 .markAsContract(AccountID.newBuilder().accountNum(666L).build());
     }
@@ -277,7 +285,9 @@ class HandleHederaOperationsTest {
         final var synthTxn = TransactionBody.newBuilder()
                 .cryptoCreateAccount(synthAccountCreationFromHapi(pendingId, CANONICAL_ALIAS, someBody))
                 .build();
-        given(context.dispatchChildTransaction(eq(synthTxn), eq(CryptoCreateRecordBuilder.class), any(Predicate.class)))
+        given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
+        given(context.dispatchChildTransaction(
+                        eq(synthTxn), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(A_NEW_ACCOUNT_ID)))
                 .willReturn(cryptoCreateRecordBuilder);
         given(cryptoCreateRecordBuilder.status()).willReturn(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
 
