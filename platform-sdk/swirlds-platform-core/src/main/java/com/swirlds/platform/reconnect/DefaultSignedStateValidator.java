@@ -83,8 +83,8 @@ public class DefaultSignedStateValidator implements SignedStateValidator {
                     signedState.getState().getInfoString(hashDepth),
                     previousStateData.getInfoString());
             throw new SignedStateInvalidException(("Received signed state is for a round smaller than or a "
-                            + "consensus earlier than what we started with. Original round %d, received round %d. Original "
-                            + "timestamp %s, received timestamp %s.")
+                            + "consensus earlier than what we started with. Original round %d, received round %d. "
+                            + "Original timestamp %s, received timestamp %s.")
                     .formatted(
                             previousStateData.round(),
                             signedState.getRound(),

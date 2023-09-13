@@ -24,7 +24,6 @@ import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.FileID;
-import com.hedera.hapi.node.base.TokenID;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.math.BigInteger;
 
@@ -43,12 +42,8 @@ public class MiscViewsXTestConstants {
     static final Address ERC721_OPERATOR_ADDRESS =
             asHeadlongAddress(asLongZeroAddress(OPERATOR_ID.accountNumOrThrow()).toArray());
     static final AccountID COINBASE_ID = AccountID.newBuilder().accountNum(98L).build();
-    static final TokenID ERC20_TOKEN_ID = TokenID.newBuilder().tokenNum(1027L).build();
-    static final Address ERC20_TOKEN_ADDRESS =
-            asHeadlongAddress(asLongZeroAddress(ERC20_TOKEN_ID.tokenNum()).toArray());
-    static final TokenID ERC721_TOKEN_ID = TokenID.newBuilder().tokenNum(1028L).build();
-    static final Address ERC721_TOKEN_ADDRESS =
-            asHeadlongAddress(asLongZeroAddress(ERC721_TOKEN_ID.tokenNum()).toArray());
+    static final Address ERC20_TOKEN_ADDRESS = asHeadlongAddress(
+            asLongZeroAddress(XTestConstants.ERC20_TOKEN_ID.tokenNum()).toArray());
     static final ContractID SPECIAL_QUERIES_X_TEST_ID =
             ContractID.newBuilder().contractNum(1030L).build();
 
