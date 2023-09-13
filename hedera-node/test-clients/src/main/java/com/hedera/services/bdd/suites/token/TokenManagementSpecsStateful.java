@@ -19,11 +19,13 @@ package com.hedera.services.bdd.suites.token;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -33,6 +35,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSO
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
@@ -60,17 +63,20 @@ public class TokenManagementSpecsStateful extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(new HapiSpec[] {
-            /* Stateful specs from TokenManagementSpecs */
-            freezeMgmtFailureCasesWork(),
+                /* Stateful specs from TokenManagementSpecs */
+                freezeMgmtFailureCasesWork(),
+                nftMintingCapIsEnforced()
         });
     }
 
+    @HapiTest
     public HapiSpec freezeMgmtFailureCasesWork() {
         var unfreezableToken = "without";
         var freezableToken = "withPlusDefaultTrue";
 
         return defaultHapiSpec("FreezeMgmtFailureCasesWork")
                 .given(
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, ONE_HUNDRED_HBARS)),
                         fileUpdate(APP_PROPERTIES)
                                 .payingWith(ADDRESS_BOOK_CONTROL)
                                 .overridingProps(Map.of("tokens.maxPerAccount", "" + 1000)),
@@ -86,7 +92,7 @@ public class TokenManagementSpecsStateful extends HapiSuite {
                         tokenFreeze(unfreezableToken, TOKEN_TREASURY)
                                 .signedBy(GENESIS)
                                 .hasKnownStatus(TOKEN_HAS_NO_FREEZE_KEY),
-                        tokenFreeze(freezableToken, "1.2.3").hasKnownStatus(INVALID_ACCOUNT_ID),
+                        tokenFreeze(freezableToken, "0.0.999999").hasKnownStatus(INVALID_ACCOUNT_ID),
                         tokenFreeze(freezableToken, TOKEN_TREASURY)
                                 .signedBy(GENESIS)
                                 .hasKnownStatus(INVALID_SIGNATURE),
@@ -95,7 +101,7 @@ public class TokenManagementSpecsStateful extends HapiSuite {
                         tokenUnfreeze(unfreezableToken, TOKEN_TREASURY)
                                 .signedBy(GENESIS)
                                 .hasKnownStatus(TOKEN_HAS_NO_FREEZE_KEY),
-                        tokenUnfreeze(freezableToken, "1.2.3").hasKnownStatus(INVALID_ACCOUNT_ID),
+                        tokenUnfreeze(freezableToken, "0.0.999999").hasKnownStatus(INVALID_ACCOUNT_ID),
                         tokenUnfreeze(freezableToken, TOKEN_TREASURY)
                                 .signedBy(GENESIS)
                                 .hasKnownStatus(INVALID_SIGNATURE))
@@ -104,6 +110,7 @@ public class TokenManagementSpecsStateful extends HapiSuite {
                         .logged());
     }
 
+    @HapiTest
     private HapiSpec nftMintingCapIsEnforced() {
         return defaultHapiSpec("NftMintingCapIsEnforced")
                 .given(
