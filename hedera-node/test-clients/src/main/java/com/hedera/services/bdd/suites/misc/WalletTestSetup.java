@@ -24,7 +24,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.keyFromMnemonic;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.keyFromPem;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
@@ -36,7 +35,6 @@ import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-@HapiTestSuite
 public class WalletTestSetup extends HapiSuite {
     private static final Logger log = LogManager.getLogger(WalletTestSetup.class);
     private static final String NODES = "nodes";

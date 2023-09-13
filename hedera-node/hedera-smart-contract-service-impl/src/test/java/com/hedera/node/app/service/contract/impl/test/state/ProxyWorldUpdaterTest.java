@@ -480,4 +480,10 @@ class ProxyWorldUpdaterTest {
         subject.externalizeSystemContractResults(contractFunctionResult, ResultStatus.IS_SUCCESS);
         verify(systemContractOperations).externalizeResult(contractFunctionResult, ResultStatus.IS_SUCCESS);
     }
+
+    @Test
+    void currentExchangeRateTest() {
+        subject.currentExchangeRate();
+        verify(systemContractOperations).currentExchangeRate();
+    }
 }

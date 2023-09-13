@@ -114,7 +114,6 @@ import static java.util.stream.Collectors.toMap;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.hapi.utils.keys.Ed25519Utils;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -190,7 +189,6 @@ import org.yaml.snakeyaml.nodes.NodeTuple;
 import org.yaml.snakeyaml.nodes.Tag;
 import org.yaml.snakeyaml.representer.Representer;
 
-@HapiTestSuite
 public class ValidationScenarios extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(ValidationScenarios.class);

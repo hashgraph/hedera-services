@@ -48,7 +48,6 @@ import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -76,10 +75,11 @@ public class AutoAccountCreator {
 
     /**
      * Creates an account for the given alias.
-     * @param alias the alias to create the account for
-     * @param isByTokenTransfer whether the account is being created by a token transfer
+     *
+     * @param alias                  the alias to create the account for
+     * @param maxAutoAssociations   the maxAutoAssociations to set on the account
      */
-    public AccountID create(@NonNull final Bytes alias, final boolean isByTokenTransfer) {
+    public AccountID create(@NonNull final Bytes alias, int maxAutoAssociations) {
         requireNonNull(alias);
 
         final var accountsConfig = handleContext.configuration().getConfigData(AccountsConfig.class);
@@ -91,16 +91,9 @@ public class AutoAccountCreator {
         final TransactionBody.Builder syntheticCreation;
         String memo;
 
-        if (isByTokenTransfer) {
-            tokenAliasMap.putIfAbsent(new ProtoBytes(alias), Collections.emptySet());
-        }
-
-        final var maxAutoAssociations = tokenAliasMap
-                .getOrDefault(new ProtoBytes(alias), Collections.emptySet())
-                .size();
         final var isAliasEVMAddress = EntityIdUtils.isOfEvmAddressSize(alias);
         if (isAliasEVMAddress) {
-            syntheticCreation = createHollowAccount(alias, 0L);
+            syntheticCreation = createHollowAccount(alias, 0L, maxAutoAssociations);
             memo = LAZY_MEMO;
         } else {
             final var key = asKeyFromAlias(alias);
@@ -127,7 +120,7 @@ public class AutoAccountCreator {
                 key -> handleContext.verificationFor(key).passed();
 
         final var childRecord = handleContext.dispatchRemovableChildTransaction(
-                syntheticCreation.memo(memo).build(), CryptoCreateRecordBuilder.class, verifier);
+                syntheticCreation.memo(memo).build(), CryptoCreateRecordBuilder.class, verifier, handleContext.payer());
 
         if (!isAliasEVMAddress) {
             final var key = asKeyFromAlias(alias);
@@ -159,7 +152,7 @@ public class AutoAccountCreator {
      * @return fee for auto creation
      */
     private long autoCreationFeeFor(@NonNull final TransactionBody.Builder syntheticCreation) {
-        final var topLevelPayer = handleContext.body().transactionIDOrThrow().accountIDOrThrow();
+        final var topLevelPayer = handleContext.payer();
         final var payerAccount = accountStore.get(topLevelPayer);
         validateTrue(payerAccount != null, PAYER_ACCOUNT_NOT_FOUND);
         final var txn = Transaction.newBuilder().body(syntheticCreation.build()).build();
@@ -173,10 +166,12 @@ public class AutoAccountCreator {
      * Create a transaction body for new hollow-account with the given alias.
      * @param alias alias of the account
      * @param balance initial balance of the account
+     * @param maxAutoAssociations maxAutoAssociations of the account
      * @return transaction body for new hollow-account
      */
-    public TransactionBody.Builder createHollowAccount(@NonNull final Bytes alias, final long balance) {
-        final var baseBuilder = createAccountBase(balance);
+    public TransactionBody.Builder createHollowAccount(
+            @NonNull final Bytes alias, final long balance, final int maxAutoAssociations) {
+        final var baseBuilder = createAccountBase(balance, maxAutoAssociations);
         baseBuilder.key(IMMUTABILITY_SENTINEL_KEY).alias(alias).memo(LAZY_MEMO);
         return TransactionBody.newBuilder().cryptoCreateAccount(baseBuilder.build());
     }
@@ -184,11 +179,13 @@ public class AutoAccountCreator {
     /**
      * Create a transaction body for new account with the given balance and other common fields.
      * @param balance initial balance of the account
+     * @param maxAutoAssociations maxAutoAssociations of the account
      * @return transaction body for new account
      */
-    private CryptoCreateTransactionBody.Builder createAccountBase(final long balance) {
+    private CryptoCreateTransactionBody.Builder createAccountBase(final long balance, final int maxAutoAssociations) {
         return CryptoCreateTransactionBody.newBuilder()
                 .initialBalance(balance)
+                .maxAutomaticTokenAssociations(maxAutoAssociations)
                 .autoRenewPeriod(Duration.newBuilder().seconds(THREE_MONTHS_IN_SECONDS));
     }
 
@@ -202,12 +199,8 @@ public class AutoAccountCreator {
      */
     private TransactionBody.Builder createAccount(
             @NonNull final Bytes alias, @NonNull final Key key, final long balance, final int maxAutoAssociations) {
-        final var baseBuilder = createAccountBase(balance);
+        final var baseBuilder = createAccountBase(balance, maxAutoAssociations);
         baseBuilder.key(key).alias(alias).memo(AUTO_MEMO);
-
-        if (maxAutoAssociations > 0) {
-            baseBuilder.maxAutomaticTokenAssociations(maxAutoAssociations);
-        }
         return TransactionBody.newBuilder().cryptoCreateAccount(baseBuilder.build());
     }
 

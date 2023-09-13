@@ -18,15 +18,18 @@ package com.hedera.node.app.workflows.ingest;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.swirlds.common.system.status.PlatformStatus.ACTIVE;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.node.app.annotations.NodeSelfId;
 import com.hedera.node.app.fees.FeeContextImpl;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.info.CurrentPlatformStatus;
@@ -68,10 +71,12 @@ public final class IngestChecker {
     private final DeduplicationCache deduplicationCache;
     private final TransactionDispatcher dispatcher;
     private final FeeManager feeManager;
+    private final AccountID nodeAccount;
 
     /**
      * Constructor of the {@code IngestChecker}
      *
+     * @param nodeAccount the {@link AccountID} of the node
      * @param currentPlatformStatus the {@link CurrentPlatformStatus} that contains the current status of the platform
      * @param transactionChecker the {@link TransactionChecker} that pre-processes the bytes of a transaction
      * @param throttleAccumulator the {@link ThrottleAccumulator} for throttling
@@ -84,6 +89,7 @@ public final class IngestChecker {
      */
     @Inject
     public IngestChecker(
+            @NodeSelfId @NonNull final AccountID nodeAccount,
             @NonNull final CurrentPlatformStatus currentPlatformStatus,
             @NonNull final TransactionChecker transactionChecker,
             @NonNull final ThrottleAccumulator throttleAccumulator,
@@ -93,6 +99,7 @@ public final class IngestChecker {
             @NonNull final DeduplicationCache deduplicationCache,
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final FeeManager feeManager) {
+        this.nodeAccount = requireNonNull(nodeAccount, "nodeAccount must not be null");
         this.currentPlatformStatus = requireNonNull(currentPlatformStatus, "currentPlatformStatus must not be null");
         this.transactionChecker = requireNonNull(transactionChecker, "transactionChecker must not be null");
         this.throttleAccumulator = requireNonNull(throttleAccumulator, "throttleAccumulator must not be null");
@@ -131,6 +138,11 @@ public final class IngestChecker {
         final var txInfo = transactionChecker.check(tx);
         final var txBody = txInfo.txBody();
         final var functionality = txInfo.functionality();
+
+        // 1a. Verify the transaction has been sent to *this* node
+        if (!nodeAccount.equals(txBody.nodeAccountID())) {
+            throw new PreCheckException(INVALID_NODE_ACCOUNT);
+        }
 
         // 2. Check the time box of the transaction
         transactionChecker.checkTimeBox(txBody, consensusTime);
