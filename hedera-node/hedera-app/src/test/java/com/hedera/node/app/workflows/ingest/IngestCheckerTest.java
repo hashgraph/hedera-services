@@ -208,13 +208,13 @@ class IngestCheckerTest extends AppTestBase {
                 otherNodeSelfAccountId,
                 currentPlatformStatus,
                 transactionChecker,
-                throttleAccumulator,
                 solvencyPreCheck,
                 signatureExpander,
                 signatureVerifier,
                 deduplicationCache,
                 dispatcher,
-                feeManager);
+                feeManager,
+                hapiThrottling);
 
         // Then the checker should throw a PreCheckException
         assertThatThrownBy(() -> subject.runAllChecks(state, tx))
