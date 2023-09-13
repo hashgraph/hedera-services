@@ -22,13 +22,13 @@ import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.associations.AssociationsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.balanceof.BalanceOfCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.decimals.DecimalsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.isoperator.IsApprovedForAllCall;
@@ -46,6 +46,8 @@ import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
+import java.util.List;
+
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
@@ -61,7 +63,9 @@ public class HtsCallAttempt {
     private final byte[] selector;
     private final Bytes input;
     private final boolean isRedirect;
-
+    private final AccountID senderId;
+    private final Address senderAddress;
+    private final boolean onlyDelegatableContractKeysActive;
     @Nullable
     private final Token redirectToken;
 
@@ -70,21 +74,29 @@ public class HtsCallAttempt {
     private final DecodingStrategies decodingStrategies;
     private final AddressIdConverter addressIdConverter;
     private final VerificationStrategies verificationStrategies;
+    private final List<java.util.function.Function<HtsCallAttempt, HtsCall>> callAttemptTranslators;
 
     public HtsCallAttempt(
             @NonNull final Bytes input,
+            @NonNull final Address senderAddress,
+            boolean onlyDelegatableContractKeysActive,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             @NonNull final Configuration configuration,
             @NonNull final DecodingStrategies decodingStrategies,
             @NonNull final AddressIdConverter addressIdConverter,
-            @NonNull final VerificationStrategies verificationStrategies) {
-        this.configuration = configuration;
-        this.addressIdConverter = addressIdConverter;
+            @NonNull final VerificationStrategies verificationStrategies,
+            @NonNull final List<java.util.function.Function<HtsCallAttempt, HtsCall>> callAttemptTranslators) {
         requireNonNull(input);
-        this.isRedirect = isRedirect(input.toArrayUnsafe());
+        this.callAttemptTranslators = requireNonNull(callAttemptTranslators);
+        this.senderAddress = requireNonNull(senderAddress);
+        this.configuration = requireNonNull(configuration);
+        this.addressIdConverter = requireNonNull(addressIdConverter);
         this.enhancement = requireNonNull(enhancement);
         this.decodingStrategies = requireNonNull(decodingStrategies);
         this.verificationStrategies = requireNonNull(verificationStrategies);
+        this.onlyDelegatableContractKeysActive = onlyDelegatableContractKeysActive;
+
+        this.isRedirect = isRedirect(input.toArrayUnsafe());
         if (this.isRedirect) {
             Tuple abiCall = null;
             try {
@@ -107,6 +119,7 @@ public class HtsCallAttempt {
             this.input = input;
         }
         this.selector = this.input.slice(0, 4).toArrayUnsafe();
+        this.senderId = addressIdConverter.convertSender(senderAddress);
     }
 
     /**
@@ -182,21 +195,21 @@ public class HtsCallAttempt {
      *   <li>[ ] UPDATE_TOKEN_EXPIRY (UpdateTokenExpiryInfoPrecompile)</li>
      *   <li>[ ] UPDATE_TOKEN (TokenUpdatePrecompile)</li>
      * </ul>
-     *
-     * @param senderAddress          the address of the sender of the call
-     * @param needingDelegatableKeys whether the sender needs delegatable contract keys to be authorized
-     * @return the call, or null if it couldn't be translated
+     * @return the executable call, or null if this attempt can't be translated to one
      */
-    public @Nullable HtsCall asCallFrom(@NonNull final Address senderAddress, final boolean needingDelegatableKeys) {
-        requireNonNull(senderAddress);
+    public @Nullable HtsCall asExecutableCall() {
+        for (final var translator : callAttemptTranslators) {
+            final var maybeCall = translator.apply(this);
+            if (maybeCall != null) {
+                return maybeCall;
+            }
+        }
         if (Erc721TransferFromCall.matches(this)) {
-            return Erc721TransferFromCall.from(this, senderAddress, needingDelegatableKeys);
+            return Erc721TransferFromCall.from(this, senderAddress, onlyDelegatableContractKeysActive);
         } else if (Erc20TransfersCall.matches(this)) {
-            return Erc20TransfersCall.from(this, senderAddress, needingDelegatableKeys);
+            return Erc20TransfersCall.from(this, senderAddress, onlyDelegatableContractKeysActive);
         } else if (ClassicTransfersCall.matches(this)) {
-            return ClassicTransfersCall.from(this, senderAddress, needingDelegatableKeys);
-        } else if (AssociationsCall.matches(this)) {
-            return AssociationsCall.from(this, senderAddress, needingDelegatableKeys);
+            return ClassicTransfersCall.from(this, senderAddress, onlyDelegatableContractKeysActive);
         } else if (MintCall.matches(selector)) {
             return MintCall.from(this, senderAddress);
         } else if (BalanceOfCall.matches(selector)) {
@@ -218,6 +231,33 @@ public class HtsCallAttempt {
         } else {
             return null;
         }
+    }
+
+    /**
+     * Returns the ID of the sender of this call.
+     *
+     * @return the ID of the sender of this call
+     */
+    public @NonNull AccountID senderId() {
+        return senderId;
+    }
+
+    /**
+     * Returns the address of the sender of this call.
+     *
+     * @return the address of the sender of this call
+     */
+    public @NonNull Address senderAddress() {
+        return senderAddress;
+    }
+
+    /**
+     * Returns whether only delegatable contract keys are active for this call.
+     *
+     * @return whether only delegatable contract keys are active for this call
+     */
+    public boolean onlyDelegatableContractKeysActive() {
+        return onlyDelegatableContractKeysActive;
     }
 
     /**
@@ -284,6 +324,16 @@ public class HtsCallAttempt {
      */
     public Bytes input() {
         return input;
+    }
+
+    /**
+     * Returns the raw byte array input of this call.
+     *
+     * @return the raw input of this call
+     * @throws IllegalStateException if this is not a valid call
+     */
+    public byte[] inputBytes() {
+        return input.toArrayUnsafe();
     }
 
     /**

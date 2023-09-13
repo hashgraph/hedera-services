@@ -47,7 +47,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.associations.AssociationsCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.associations.AssociationsTranslator;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import java.math.BigInteger;
 import java.util.HashMap;
@@ -58,12 +58,12 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Exercises both classic and HRC associations via the following steps relative to an {@code OWNER} account:
  * <ol>
- *     <li>Associates {@code A_TOKEN} via {@link AssociationsCall#ASSOCIATE_ONE}.</li>
- *     <li>Associates {@code B_TOKEN} and {@code C_TOKEN} via {@link AssociationsCall#ASSOCIATE_MANY}.</li>
- *     <li>Dissociates {@code B_TOKEN} via {@link AssociationsCall#HRC_DISSOCIATE}.</li>
- *     <li>Associates {@code D_TOKEN} via {@link AssociationsCall#HRC_ASSOCIATE}.</li>
- *     <li>Associates {@code E_TOKEN} via {@link AssociationsCall#HRC_ASSOCIATE}.</li>
- *     <li>Dissociates {@code C_TOKEN} and {@code D_TOKEN} via {@link AssociationsCall#DISSOCIATE_MANY}.</li>
+ *     <li>Associates {@code A_TOKEN} via {@link AssociationsTranslator#ASSOCIATE_ONE}.</li>
+ *     <li>Associates {@code B_TOKEN} and {@code C_TOKEN} via {@link AssociationsTranslator#ASSOCIATE_MANY}.</li>
+ *     <li>Dissociates {@code B_TOKEN} via {@link AssociationsTranslator#HRC_DISSOCIATE}.</li>
+ *     <li>Associates {@code D_TOKEN} via {@link AssociationsTranslator#HRC_ASSOCIATE}.</li>
+ *     <li>Associates {@code E_TOKEN} via {@link AssociationsTranslator#HRC_ASSOCIATE}.</li>
+ *     <li>Dissociates {@code C_TOKEN} and {@code D_TOKEN} via {@link AssociationsTranslator#DISSOCIATE_MANY}.</li>
  * </ol>
  * So the final associated tokens are just {@code A_TOKEN} and {@code E_TOKEN}.
  */
@@ -75,28 +75,28 @@ public class AssociationsXTest extends AbstractContractXTest {
         // ASSOCIATE_ONE (+A_TOKEN)
         runHtsCallAndExpectOnSuccess(
                 OWNER_BESU_ADDRESS,
-                Bytes.wrap(AssociationsCall.ASSOCIATE_ONE
+                Bytes.wrap(AssociationsTranslator.ASSOCIATE_ONE
                         .encodeCallWithArgs(OWNER_HEADLONG_ADDRESS, A_TOKEN_ADDRESS)
                         .array()),
                 output -> assertEquals(Bytes.wrap(ReturnTypes.encodedRc(SUCCESS).array()), output));
         // ASSOCIATE_MANY (+B_TOKEN, +C_TOKEN)
         runHtsCallAndExpectOnSuccess(
                 OWNER_BESU_ADDRESS,
-                Bytes.wrap(AssociationsCall.ASSOCIATE_MANY
+                Bytes.wrap(AssociationsTranslator.ASSOCIATE_MANY
                         .encodeCallWithArgs(OWNER_HEADLONG_ADDRESS, new Address[] {B_TOKEN_ADDRESS, C_TOKEN_ADDRESS})
                         .array()),
                 output -> assertEquals(Bytes.wrap(ReturnTypes.encodedRc(SUCCESS).array()), output));
         // DISSOCIATE_ONE (-B_TOKEN)
         runHtsCallAndExpectOnSuccess(
                 OWNER_BESU_ADDRESS,
-                Bytes.wrap(AssociationsCall.DISSOCIATE_ONE
+                Bytes.wrap(AssociationsTranslator.DISSOCIATE_ONE
                         .encodeCallWithArgs(OWNER_HEADLONG_ADDRESS, B_TOKEN_ADDRESS)
                         .array()),
                 output -> assertEquals(Bytes.wrap(ReturnTypes.encodedRc(SUCCESS).array()), output));
         // HRC_ASSOCIATE (+D_TOKEN)
         runHtsCallAndExpectOnSuccess(
                 OWNER_BESU_ADDRESS,
-                bytesForRedirect(AssociationsCall.HRC_ASSOCIATE.encodeCallWithArgs(), D_TOKEN_ID),
+                bytesForRedirect(AssociationsTranslator.HRC_ASSOCIATE.encodeCallWithArgs(), D_TOKEN_ID),
                 output -> assertEquals(
                         Bytes.wrap(HRC_ENCODER
                                 .encodeElements(BigInteger.valueOf(SUCCESS.protoOrdinal()))
@@ -105,7 +105,7 @@ public class AssociationsXTest extends AbstractContractXTest {
         // HRC_ASSOCIATE (+E_TOKEN)
         runHtsCallAndExpectOnSuccess(
                 OWNER_BESU_ADDRESS,
-                bytesForRedirect(AssociationsCall.HRC_ASSOCIATE.encodeCallWithArgs(), E_TOKEN_ID),
+                bytesForRedirect(AssociationsTranslator.HRC_ASSOCIATE.encodeCallWithArgs(), E_TOKEN_ID),
                 output -> assertEquals(
                         Bytes.wrap(HRC_ENCODER
                                 .encodeElements(BigInteger.valueOf(SUCCESS.protoOrdinal()))
@@ -114,7 +114,7 @@ public class AssociationsXTest extends AbstractContractXTest {
         // DISSOCIATE_MANY (-C_TOKEN, -D_TOKEN)
         runHtsCallAndExpectOnSuccess(
                 OWNER_BESU_ADDRESS,
-                Bytes.wrap(AssociationsCall.DISSOCIATE_MANY
+                Bytes.wrap(AssociationsTranslator.DISSOCIATE_MANY
                         .encodeCallWithArgs(OWNER_HEADLONG_ADDRESS, new Address[] {C_TOKEN_ADDRESS, D_TOKEN_ADDRESS})
                         .array()),
                 output -> assertEquals(Bytes.wrap(ReturnTypes.encodedRc(SUCCESS).array()), output));

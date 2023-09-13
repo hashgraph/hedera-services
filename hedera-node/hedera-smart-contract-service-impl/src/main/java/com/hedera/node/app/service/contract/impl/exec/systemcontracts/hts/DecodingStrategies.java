@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.explicitFromHeadlong;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
 import static java.util.Objects.requireNonNull;
 
@@ -32,8 +31,9 @@ import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.token.TokenAssociateTransactionBody;
 import com.hedera.hapi.node.token.TokenDissociateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.associations.AssociationsCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.associations.AssociationsTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersCall;
+import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.function.Function;
@@ -70,50 +70,50 @@ public class DecodingStrategies {
     }
 
     /**
-     * Decodes a call to {@link AssociationsCall#ASSOCIATE_ONE} into a synthetic {@link TransactionBody}.
+     * Decodes a call to {@link AssociationsTranslator#ASSOCIATE_ONE} into a synthetic {@link TransactionBody}.
      *
      * @param encoded the encoded call
      * @return the synthetic transaction body
      */
     public TransactionBody decodeAssociateOne(
             @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
-        final var call = AssociationsCall.ASSOCIATE_ONE.decodeCall(encoded);
+        final var call = AssociationsTranslator.ASSOCIATE_ONE.decodeCall(encoded);
         return bodyOf(association(addressIdConverter, call.get(0), call.get(1)));
     }
 
     /**
-     * Decodes a call to {@link AssociationsCall#ASSOCIATE_MANY} into a synthetic {@link TransactionBody}.
+     * Decodes a call to {@link AssociationsTranslator#ASSOCIATE_MANY} into a synthetic {@link TransactionBody}.
      *
      * @param encoded the encoded call
      * @return the synthetic transaction body
      */
     public TransactionBody decodeAssociateMany(
             @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
-        final var call = AssociationsCall.ASSOCIATE_MANY.decodeCall(encoded);
+        final var call = AssociationsTranslator.ASSOCIATE_MANY.decodeCall(encoded);
         return bodyOf(associations(addressIdConverter, call.get(0), call.get(1)));
     }
 
     /**
-     * Decodes a call to {@link AssociationsCall#DISSOCIATE_ONE} into a synthetic {@link TransactionBody}.
+     * Decodes a call to {@link AssociationsTranslator#DISSOCIATE_ONE} into a synthetic {@link TransactionBody}.
      *
      * @param encoded the encoded call
      * @return the synthetic transaction body
      */
     public TransactionBody decodeDissociateOne(
             @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
-        final var call = AssociationsCall.DISSOCIATE_ONE.decodeCall(encoded);
+        final var call = AssociationsTranslator.DISSOCIATE_ONE.decodeCall(encoded);
         return bodyOf(dissociation(addressIdConverter, call.get(0), call.get(1)));
     }
 
     /**
-     * Decodes a call to {@link AssociationsCall#DISSOCIATE_MANY} into a synthetic {@link TransactionBody}.
+     * Decodes a call to {@link AssociationsTranslator#DISSOCIATE_MANY} into a synthetic {@link TransactionBody}.
      *
      * @param encoded the encoded call
      * @return the synthetic transaction body
      */
     public TransactionBody decodeDissociateMany(
             @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
-        final var call = AssociationsCall.DISSOCIATE_MANY.decodeCall(encoded);
+        final var call = AssociationsTranslator.DISSOCIATE_MANY.decodeCall(encoded);
         return bodyOf(dissociations(addressIdConverter, call.get(0), call.get(1)));
     }
 
@@ -169,7 +169,7 @@ public class DecodingStrategies {
             @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
         final var call = ClassicTransfersCall.TRANSFER_TOKEN.decodeCall(encoded);
         return bodyOf(tokenTransfers(sendingUnitsFromTo(
-                asTokenId(call.get(0)),
+                ConversionUtils.asTokenId(call.get(0)),
                 addressIdConverter.convert(call.get(1)),
                 addressIdConverter.convertCredit(call.get(2)),
                 call.get(3),
@@ -200,7 +200,7 @@ public class DecodingStrategies {
                     serialNo[i],
                     IsApproval.FALSE);
         }
-        return bodyOf(tokenTransfers(changingOwners(asTokenId(call.get(0)), ownershipChanges)));
+        return bodyOf(tokenTransfers(changingOwners(ConversionUtils.asTokenId(call.get(0)), ownershipChanges)));
     }
 
     /**
@@ -213,7 +213,7 @@ public class DecodingStrategies {
             @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
         final var call = ClassicTransfersCall.TRANSFER_NFT.decodeCall(encoded);
         return bodyOf(tokenTransfers(changingOwner(
-                asTokenId(call.get(0)),
+                ConversionUtils.asTokenId(call.get(0)),
                 addressIdConverter.convert(call.get(1)),
                 addressIdConverter.convertCredit(call.get(2)),
                 call.get(3),
@@ -230,7 +230,7 @@ public class DecodingStrategies {
             @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
         final var call = ClassicTransfersCall.TRANSFER_FROM.decodeCall(encoded);
         return bodyOf(tokenTransfers(sendingUnitsFromTo(
-                asTokenId(call.get(0)),
+                ConversionUtils.asTokenId(call.get(0)),
                 addressIdConverter.convert(call.get(1)),
                 addressIdConverter.convertCredit(call.get(2)),
                 exactLongValueOrThrow(call.get(3)),
@@ -247,7 +247,7 @@ public class DecodingStrategies {
             @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
         final var call = ClassicTransfersCall.TRANSFER_NFT_FROM.decodeCall(encoded);
         return bodyOf(tokenTransfers(changingOwner(
-                asTokenId(call.get(0)),
+                ConversionUtils.asTokenId(call.get(0)),
                 addressIdConverter.convert(call.get(1)),
                 addressIdConverter.convertCredit(call.get(2)),
                 exactLongValueOrThrow(call.get(3)),
@@ -413,7 +413,7 @@ public class DecodingStrategies {
             @NonNull final Address... tokenAddresses) {
         return TokenAssociateTransactionBody.newBuilder()
                 .account(addressIdConverter.convert(accountAddress))
-                .tokens(asTokenIds(tokenAddresses))
+                .tokens(ConversionUtils.asTokenIds(tokenAddresses))
                 .build();
     }
 
@@ -423,17 +423,8 @@ public class DecodingStrategies {
             @NonNull final Address... tokenAddresses) {
         return TokenDissociateTransactionBody.newBuilder()
                 .account(addressIdConverter.convert(accountAddress))
-                .tokens(asTokenIds(tokenAddresses))
+                .tokens(ConversionUtils.asTokenIds(tokenAddresses))
                 .build();
-    }
-
-    private TokenID[] asTokenIds(@NonNull final Address... tokenAddresses) {
-        requireNonNull(tokenAddresses);
-        final TokenID[] tokens = new TokenID[tokenAddresses.length];
-        for (int i = 0; i < tokens.length; i++) {
-            tokens[i] = asTokenId(tokenAddresses[i]);
-        }
-        return tokens;
     }
 
     private TransferList convertingMaybeApprovedAdjustments(
@@ -457,7 +448,7 @@ public class DecodingStrategies {
             @NonNull final Address token,
             @NonNull final Tuple[] adjustments,
             @NonNull final Function<Tuple, AccountAmount> adjustmentFn) {
-        final var tokenId = asTokenId(token);
+        final var tokenId = ConversionUtils.asTokenId(token);
         final var unitAdjustments = new AccountAmount[adjustments.length];
         for (int i = 0; i < unitAdjustments.length; i++) {
             unitAdjustments[i] = adjustmentFn.apply(adjustments[i]);
@@ -469,7 +460,7 @@ public class DecodingStrategies {
             @NonNull final Address token,
             @NonNull final Tuple[] ownershipChanges,
             @NonNull final AddressIdConverter addressIdConverter) {
-        final var tokenId = asTokenId(token);
+        final var tokenId = ConversionUtils.asTokenId(token);
         final var nftTransfers = new NftTransfer[ownershipChanges.length];
         for (int i = 0; i < ownershipChanges.length; i++) {
             nftTransfers[i] = nftTransfer(
@@ -499,7 +490,7 @@ public class DecodingStrategies {
             @NonNull final Address token,
             @NonNull final Tuple[] ownershipChanges,
             @NonNull final Function<Tuple, NftTransfer> ownershipChangeFn) {
-        final var tokenId = asTokenId(token);
+        final var tokenId = ConversionUtils.asTokenId(token);
         final var nftTransfers = new NftTransfer[ownershipChanges.length];
         for (int i = 0; i < ownershipChanges.length; i++) {
             nftTransfers[i] = ownershipChangeFn.apply(ownershipChanges[i]);
@@ -512,7 +503,7 @@ public class DecodingStrategies {
             @NonNull final Address[] party,
             @NonNull final long[] amount,
             @NonNull final AddressIdConverter addressIdConverter) {
-        final var tokenId = asTokenId(token);
+        final var tokenId = ConversionUtils.asTokenId(token);
         if (party.length != amount.length) {
             throw new IllegalArgumentException(
                     "Mismatched argument arrays (# party=" + party.length + ", # amount=" + amount.length + ")");
@@ -524,14 +515,6 @@ public class DecodingStrategies {
                     : debit(addressIdConverter.convert(party[i]), -amount[i], IsApproval.FALSE);
         }
         return adjustingUnits(tokenId, unitAdjustments);
-    }
-
-    private TokenID asTokenId(@NonNull final Address address) {
-        // Mono-service ignores the shard and realm, c.f. DecodingFacade#convertAddressBytesToTokenID(),
-        // so we continue to do that here; might want to revisit this later
-        return TokenID.newBuilder()
-                .tokenNum(numberOfLongZero(explicitFromHeadlong(address)))
-                .build();
     }
 
     private AccountAmount asMaybeApprovedAdjustment(

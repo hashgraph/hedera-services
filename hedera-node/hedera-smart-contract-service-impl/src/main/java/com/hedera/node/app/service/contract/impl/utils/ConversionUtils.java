@@ -26,6 +26,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.ContractLoginfo;
 import com.hedera.hapi.node.state.token.Account;
@@ -63,6 +64,37 @@ public class ConversionUtils {
 
     private ConversionUtils() {
         throw new UnsupportedOperationException("Utility Class");
+    }
+
+    /**
+     * Given a list of {@link com.esaulpaugh.headlong.abi.Address}, returns their implied token ids.
+     *
+     * @param tokenAddresses the {@link com.esaulpaugh.headlong.abi.Address}es
+     * @return the implied token ids
+     */
+    public static TokenID[] asTokenIds(@NonNull final com.esaulpaugh.headlong.abi.Address... tokenAddresses) {
+        requireNonNull(tokenAddresses);
+        final TokenID[] tokens = new TokenID[tokenAddresses.length];
+        for (int i = 0; i < tokens.length; i++) {
+            tokens[i] = asTokenId(tokenAddresses[i]);
+        }
+        return tokens;
+    }
+
+    /**
+     * Given a {@link com.esaulpaugh.headlong.abi.Address}, returns its implied token id.
+     *
+     * <p><b>IMPORTANT:</b> Mono-service ignores the shard and realm, c.f. De
+     * codingFacade#convertAddressBytesToTokenID(), so we continue to do that here; might
+     * want to revisit this later
+     *
+     * @param address the {@link com.esaulpaugh.headlong.abi.Address}
+     * @return the implied token id
+     */
+    public static TokenID asTokenId(@NonNull final com.esaulpaugh.headlong.abi.Address address) {
+        return TokenID.newBuilder()
+                .tokenNum(numberOfLongZero(explicitFromHeadlong(address)))
+                .build();
     }
 
     /**
@@ -597,4 +629,5 @@ public class ConversionUtils {
                 ? account.alias().toByteArray()
                 : asEvmAddress(account.accountIdOrThrow().accountNumOrThrow());
     }
+
 }

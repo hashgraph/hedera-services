@@ -89,6 +89,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
@@ -135,7 +136,11 @@ public abstract class AbstractContractXTest {
     void setUp() {
         scaffoldingComponent = DaggerScaffoldingComponent.factory().create(metrics);
         callAttemptFactory = new HtsCallFactory(
-                LIVE_SYNTHETIC_IDS, addressChecks, LIVE_DECODING_STRATEGIES, LIVE_VERIFICATION_STRATEGIES);
+                LIVE_SYNTHETIC_IDS,
+                addressChecks,
+                LIVE_DECODING_STRATEGIES,
+                LIVE_VERIFICATION_STRATEGIES,
+                scaffoldingComponent.callAttemptTranslators());
     }
 
     @Test

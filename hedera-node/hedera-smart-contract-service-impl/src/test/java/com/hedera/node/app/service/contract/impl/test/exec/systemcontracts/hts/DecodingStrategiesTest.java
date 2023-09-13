@@ -41,7 +41,7 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DecodingStrategies;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.associations.AssociationsCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.associations.AssociationsTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersCall;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
@@ -69,7 +69,7 @@ class DecodingStrategiesTest {
 
     @Test
     void associateOneWorks() {
-        final var encoded = AssociationsCall.ASSOCIATE_ONE
+        final var encoded = AssociationsTranslator.ASSOCIATE_ONE
                 .encodeCallWithArgs(OWNER_HEADLONG_ADDRESS, NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS)
                 .array();
         givenConvertible(OWNER_HEADLONG_ADDRESS, OWNER_ID);
@@ -79,7 +79,7 @@ class DecodingStrategiesTest {
 
     @Test
     void associateManyWorks() {
-        final var encoded = AssociationsCall.ASSOCIATE_MANY
+        final var encoded = AssociationsTranslator.ASSOCIATE_MANY
                 .encodeCallWithArgs(
                         OWNER_HEADLONG_ADDRESS,
                         new Address[] {NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS, FUNGIBLE_TOKEN_HEADLONG_ADDRESS})
@@ -92,7 +92,7 @@ class DecodingStrategiesTest {
 
     @Test
     void dissociateOneWorks() {
-        final var encoded = AssociationsCall.DISSOCIATE_ONE
+        final var encoded = AssociationsTranslator.DISSOCIATE_ONE
                 .encodeCallWithArgs(OWNER_HEADLONG_ADDRESS, NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS)
                 .array();
         givenConvertible(OWNER_HEADLONG_ADDRESS, OWNER_ID);
@@ -102,7 +102,7 @@ class DecodingStrategiesTest {
 
     @Test
     void dissociateManyWorks() {
-        final var encoded = AssociationsCall.DISSOCIATE_MANY
+        final var encoded = AssociationsTranslator.DISSOCIATE_MANY
                 .encodeCallWithArgs(
                         OWNER_HEADLONG_ADDRESS,
                         new Address[] {NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS, FUNGIBLE_TOKEN_HEADLONG_ADDRESS})

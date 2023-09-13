@@ -27,6 +27,9 @@ import javax.inject.Singleton;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
+import java.util.List;
+import java.util.function.Function;
+
 /**
  * Factory to create a new {@link HtsCallAttempt} for a given input and message frame.
  */
@@ -36,17 +39,20 @@ public class HtsCallFactory {
     private final HtsCallAddressChecks addressChecks;
     private final DecodingStrategies decodingStrategies;
     private final VerificationStrategies verificationStrategies;
+    private final List<Function<HtsCallAttempt, HtsCall>> callAttemptTranslators;
 
     @Inject
     public HtsCallFactory(
             @NonNull final SyntheticIds syntheticIds,
             @NonNull final HtsCallAddressChecks addressChecks,
             @NonNull final DecodingStrategies decodingStrategies,
-            @NonNull final VerificationStrategies verificationStrategies) {
-        this.syntheticIds = syntheticIds;
+            @NonNull final VerificationStrategies verificationStrategies,
+            @NonNull final List<Function<HtsCallAttempt, HtsCall>> callAttemptTranslators) {
+        this.syntheticIds = requireNonNull(syntheticIds);
         this.addressChecks = requireNonNull(addressChecks);
-        this.decodingStrategies = decodingStrategies;
+        this.decodingStrategies = requireNonNull(decodingStrategies);
         this.verificationStrategies = requireNonNull(verificationStrategies);
+        this.callAttemptTranslators = requireNonNull(callAttemptTranslators);
     }
 
     /**
@@ -63,11 +69,13 @@ public class HtsCallFactory {
         final var enhancement = proxyUpdaterFor(frame).enhancement();
         final var attempt = new HtsCallAttempt(
                 input,
+                frame.getSenderAddress(),
+                addressChecks.hasParentDelegateCall(frame),
                 enhancement,
                 configOf(frame),
                 decodingStrategies,
                 syntheticIds.converterFor(enhancement.nativeOperations()),
-                verificationStrategies);
-        return requireNonNull(attempt.asCallFrom(frame.getSenderAddress(), addressChecks.hasParentDelegateCall(frame)));
+                verificationStrategies, callAttemptTranslators);
+        return requireNonNull(attempt.asExecutableCall());
     }
 }

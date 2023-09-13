@@ -39,25 +39,24 @@ public class DispatchForResponseCodeHtsCall<T extends SingleTransactionRecordBui
     /**
      * Convenience overload that slightly eases construction for the most common case.
      *
-     * @param onlyDelegatable whether the call can activate only delegatable contract id keys
      * @param attempt the attempt to translate to a dispatching
-     * @param sender the address of the sender for the EVM call
      * @param syntheticBody the synthetic body to dispatch
      * @param recordBuilderType the type of the record builder to expect from the dispatch
      */
     public DispatchForResponseCodeHtsCall(
-            final boolean onlyDelegatable,
             @NonNull final HtsCallAttempt attempt,
-            @NonNull final org.hyperledger.besu.datatypes.Address sender,
             @NonNull final TransactionBody syntheticBody,
             @NonNull final Class<T> recordBuilderType) {
         this(
                 attempt.enhancement(),
-                attempt.addressIdConverter().convertSender(sender),
+                attempt.addressIdConverter().convertSender(attempt.senderAddress()),
                 syntheticBody,
                 recordBuilderType,
                 attempt.verificationStrategies()
-                        .activatingOnlyContractKeysFor(sender, onlyDelegatable, attempt.nativeOperations()));
+                        .activatingOnlyContractKeysFor(
+                                attempt.senderAddress(),
+                                attempt.onlyDelegatableContractKeysActive(),
+                                attempt.nativeOperations()));
     }
 
     /**
