@@ -1159,6 +1159,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
     private HapiSpec emptyAllowancesRejected() {
         return defaultHapiSpec("emptyAllowancesRejected")
                 .given(cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10))
