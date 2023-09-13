@@ -34,6 +34,7 @@ import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.ExchangeRateManager;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.UnknownHederaFunctionality;
@@ -120,7 +121,6 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final HapiThrottling hapiThrottling) {
         this.stateAccessor = requireNonNull(stateAccessor, "stateAccessor must not be null");
-        this.throttleAccumulator = requireNonNull(throttleAccumulator, "throttleAccumulator must not be null");
         this.submissionManager = requireNonNull(submissionManager, "submissionManager must not be null");
         this.ingestChecker = requireNonNull(ingestChecker, "ingestChecker must not be null");
         this.queryChecker = requireNonNull(queryChecker, "queryChecker must not be null");

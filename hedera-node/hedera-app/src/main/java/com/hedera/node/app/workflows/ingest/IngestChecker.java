@@ -102,7 +102,6 @@ public final class IngestChecker {
         this.nodeAccount = requireNonNull(nodeAccount, "nodeAccount must not be null");
         this.currentPlatformStatus = requireNonNull(currentPlatformStatus, "currentPlatformStatus must not be null");
         this.transactionChecker = requireNonNull(transactionChecker, "transactionChecker must not be null");
-        this.throttleAccumulator = requireNonNull(throttleAccumulator, "throttleAccumulator must not be null");
         this.solvencyPreCheck = requireNonNull(solvencyPreCheck, "solvencyPreCheck must not be null");
         this.signatureVerifier = requireNonNull(signatureVerifier, "signatureVerifier must not be null");
         this.signatureExpander = requireNonNull(signatureExpander, "signatureExpander must not be null");
