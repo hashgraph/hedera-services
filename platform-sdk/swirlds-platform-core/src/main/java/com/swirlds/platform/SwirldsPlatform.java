@@ -65,6 +65,7 @@ import com.swirlds.common.system.status.actions.StartedReplayingEventsAction;
 import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import com.swirlds.common.system.transaction.internal.SystemTransaction;
+import com.swirlds.common.threading.IntakePipelineManager;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
@@ -529,7 +530,9 @@ public class SwirldsPlatform implements Platform, Startable {
         final List<Predicate<EventDescriptor>> isDuplicateChecks = new ArrayList<>();
         isDuplicateChecks.add(d -> shadowGraph.isHashInGraph(d.getHash()));
 
-        eventLinker = buildEventLinker(time, isDuplicateChecks);
+        final IntakePipelineManager intakePipelineManager = new IntakePipelineManager();
+
+        eventLinker = buildEventLinker(time, isDuplicateChecks, intakePipelineManager);
 
         final IntakeCycleStats intakeCycleStats = new IntakeCycleStats(time, metrics);
 
@@ -544,7 +547,8 @@ public class SwirldsPlatform implements Platform, Startable {
                 eventObserverDispatcher,
                 intakeCycleStats,
                 shadowGraph,
-                preConsensusEventHandler::preconsensusEvent);
+                preConsensusEventHandler::preconsensusEvent,
+                intakePipelineManager);
 
         final EventCreator eventCreator = buildEventCreator(eventIntake);
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
@@ -639,6 +643,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 eventObserverDispatcher,
                 eventMapper,
                 eventIntakeMetrics,
+                intakePipelineManager,
                 syncMetrics,
                 eventLinker,
                 platformStatusManager,
@@ -991,10 +996,18 @@ public class SwirldsPlatform implements Platform, Startable {
 
     /**
      * Build the event linker.
+     *
+     * @param time                  a source of time
+     * @param isDuplicateChecks     list of checks for deduplicating events, which this method adds to
+     * @param intakePipelineManager manager to track movement of events through the intake pipeline
+     *
+     * @return a new event linker
      */
     @NonNull
     private EventLinker buildEventLinker(
-            @NonNull final Time time, @NonNull final List<Predicate<EventDescriptor>> isDuplicateChecks) {
+            @NonNull final Time time,
+            @NonNull final List<Predicate<EventDescriptor>> isDuplicateChecks,
+            @Nullable final IntakePipelineManager intakePipelineManager) {
         Objects.requireNonNull(isDuplicateChecks);
         final ParentFinder parentFinder = new ParentFinder(shadowGraph::hashgraphEvent);
         final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
@@ -1004,7 +1017,8 @@ public class SwirldsPlatform implements Platform, Startable {
             final OrphanBufferingLinker orphanBuffer = new OrphanBufferingLinker(
                     platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
                     parentFinder,
-                    chatterConfig.futureGenerationLimit());
+                    chatterConfig.futureGenerationLimit(),
+                    intakePipelineManager);
             metrics.getOrCreate(
                     new FunctionGauge.Config<>("intake", "numOrphans", Integer.class, orphanBuffer::getNumOrphans)
                             .withDescription("the number of events without parents buffered")

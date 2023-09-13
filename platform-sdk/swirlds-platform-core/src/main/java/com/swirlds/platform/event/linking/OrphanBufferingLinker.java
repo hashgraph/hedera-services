@@ -20,12 +20,14 @@ import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.sequence.map.StandardSequenceMap;
+import com.swirlds.common.threading.IntakePipelineManager;
 import com.swirlds.logging.LogMarker;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.EventDescriptor;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.SignedState;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayDeque;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -47,20 +49,31 @@ public class OrphanBufferingLinker extends AbstractEventLinker {
     private final SequenceMap<EventDescriptor, ChildEvent> orphanMap;
 
     /**
+     * The intake pipeline manager, so that we can keep track when we purge orphans.
+     */
+    private final IntakePipelineManager intakePipelineManager;
+
+    /**
      * Create a new orphan buffer.
      *
      * @param config                consensus configuration
      * @param parentFinder          responsible for finding parents of an event
      * @param futureGenerationLimit the maximum number of future generations we are willing to store
+     * @param intakePipelineManager the intake pipeline manager
      */
     public OrphanBufferingLinker(
-            final ConsensusConfig config, final ParentFinder parentFinder, final int futureGenerationLimit) {
+            final ConsensusConfig config,
+            final ParentFinder parentFinder,
+            final int futureGenerationLimit,
+            @Nullable final IntakePipelineManager intakePipelineManager) {
+
         super(config);
         this.parentFinder = parentFinder;
         this.eventOutput = new ArrayDeque<>();
         this.newlyLinkedEvents = new ArrayDeque<>();
         this.orphanMap = new StandardSequenceMap<>(0, futureGenerationLimit, EventDescriptor::getGeneration);
         this.missingParents = new StandardSequenceMap<>(0, futureGenerationLimit, ParentDescriptor::generation);
+        this.intakePipelineManager = intakePipelineManager;
     }
 
     private static void parentNoLongerMissing(final ChildEvent child, final Hash parentHash, final EventImpl parent) {
@@ -76,7 +89,7 @@ public class OrphanBufferingLinker extends AbstractEventLinker {
         }
     }
 
-    private static void orphanPurged(final EventDescriptor key, final ChildEvent orphan) {
+    private void orphanPurged(final EventDescriptor key, final ChildEvent orphan) {
         // this should never happen. an events parents should become ancient and at that point it will no longer be an
         // orphan
         if (orphan == null) {
@@ -85,6 +98,12 @@ public class OrphanBufferingLinker extends AbstractEventLinker {
         }
         orphan.orphanForever();
         logger.error(LogMarker.EXCEPTION.getMarker(), "Purging an orphan: {}", orphan.getChild());
+
+        // notify the intake monitor that this orphan event was purged, and thus is done traversing the intake pipeline
+        if (intakePipelineManager != null) {
+            intakePipelineManager.eventThroughIntakePipeline(
+                    orphan.getChild().getBaseEvent().getSenderNodeId());
+        }
     }
 
     /**
@@ -171,7 +190,7 @@ public class OrphanBufferingLinker extends AbstractEventLinker {
         super.updateGenerations(generations);
         missingParents.shiftWindow(generations.getMinGenerationNonAncient(), this::parentPurged);
         // if an orphan becomes ancient, we don't need it anymore
-        orphanMap.shiftWindow(generations.getMinGenerationNonAncient(), OrphanBufferingLinker::orphanPurged);
+        orphanMap.shiftWindow(generations.getMinGenerationNonAncient(), this::orphanPurged);
         processNewlyLinkedEvents();
     }
 

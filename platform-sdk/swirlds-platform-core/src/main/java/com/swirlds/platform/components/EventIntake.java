@@ -25,6 +25,7 @@ import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.threading.IntakePipelineManager;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.logging.LogMarker;
 import com.swirlds.platform.Consensus;
@@ -38,6 +39,7 @@ import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -77,24 +79,31 @@ public class EventIntake {
     private final ExecutorService prehandlePool;
     private final Consumer<EventImpl> prehandleEvent;
 
+    /**
+     * Used to track how many events received from each peer have been added to the intake pipeline, but haven't
+     * made it through yet
+     */
+    private final IntakePipelineManager intakePipelineManager;
+
     private final EventIntakeMetrics metrics;
     private final Time time;
 
     /**
      * Constructor
      *
-     * @param platformContext   the platform context
-     * @param threadManager     creates new threading resources
-     * @param time              provides the wall clock time
-     * @param selfId            the ID of this node
-     * @param eventLinker       links events together, holding orphaned events until their parents are found (if
-     *                          operating with the orphan buffer enabled)
-     * @param consensusSupplier provides the current consensus instance
-     * @param addressBook       the current address book
-     * @param dispatcher        invokes event related callbacks
-     * @param stats             metrics for event intake
-     * @param shadowGraph       tracks events in the hashgraph
-     * @param prehandleEvent    prehandles transactions in an event
+     * @param platformContext       the platform context
+     * @param threadManager         creates new threading resources
+     * @param time                  provides the wall clock time
+     * @param selfId                the ID of this node
+     * @param eventLinker           links events together, holding orphaned events until their parents are found (if
+     *                              operating with the orphan buffer enabled)
+     * @param consensusSupplier     provides the current consensus instance
+     * @param addressBook           the current address book
+     * @param dispatcher            invokes event related callbacks
+     * @param stats                 metrics for event intake
+     * @param shadowGraph           tracks events in the hashgraph
+     * @param prehandleEvent        prehandles transactions in an event
+     * @param intakePipelineManager tracks events as they move through the intake pipeline
      */
     public EventIntake(
             @NonNull final PlatformContext platformContext,
@@ -107,7 +116,8 @@ public class EventIntake {
             @NonNull final EventObserverDispatcher dispatcher,
             @NonNull final IntakeCycleStats stats,
             @NonNull final ShadowGraph shadowGraph,
-            @NonNull final Consumer<EventImpl> prehandleEvent) {
+            @NonNull final Consumer<EventImpl> prehandleEvent,
+            @Nullable final IntakePipelineManager intakePipelineManager) {
 
         this.time = Objects.requireNonNull(time);
         this.selfId = Objects.requireNonNull(selfId);
@@ -119,6 +129,7 @@ public class EventIntake {
         this.stats = Objects.requireNonNull(stats);
         this.shadowGraph = Objects.requireNonNull(shadowGraph);
         this.prehandleEvent = Objects.requireNonNull(prehandleEvent);
+        this.intakePipelineManager = Objects.requireNonNull(intakePipelineManager);
 
         final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
         final Supplier<Integer> prehandlePoolSize;
@@ -163,66 +174,73 @@ public class EventIntake {
      * @param event an event to be added
      */
     public void addEvent(final EventImpl event) {
-        // an expired event will cause ShadowGraph to throw an exception, so we just to discard it
-        if (consensus().isExpired(event)) {
-            return;
-        }
-        stats.startIntakeAddEvent();
-        if (!StaticValidators.isValidTimeCreated(event)) {
-            event.clear();
-            return;
-        }
+        try {
+            // an expired event will cause ShadowGraph to throw an exception, so we just to discard it
+            if (consensus().isExpired(event)) {
+                return;
+            }
+            stats.startIntakeAddEvent();
+            if (!StaticValidators.isValidTimeCreated(event)) {
+                event.clear();
+                return;
+            }
 
-        stats.doneValidation();
-        logger.debug(SYNC.getMarker(), "{} sees {}", selfId, event);
-        dispatcher.preConsensusEvent(event);
-        logger.debug(INTAKE_EVENT.getMarker(), "Adding {} ", event::toShortString);
-        stats.dispatchedPreConsensus();
-        final long minGenNonAncientBeforeAdding = consensus().getMinGenerationNonAncient();
-        // #5762 if we cannot calculate its roundCreated, then we use the one that was sent to us
-        final boolean missingSelfParent = event.getSelfParentHash() != null && event.getSelfParent() == null;
-        final boolean missingOtherParent = event.getOtherParentHash() != null && event.getOtherParent() == null;
-        // if we have created the event, it could have a missing parent, in this case we need to calculate the round
-        // since it cannot have been calculated before
-        if (!event.isCreatedBy(selfId) && (missingSelfParent || missingOtherParent)) {
-            if (event.getBaseEvent().isRoundCreatedSet()) {
-                // we then use the round created sent to us
-                event.setRoundCreated(event.getBaseEvent().getRoundCreated());
+            stats.doneValidation();
+            logger.debug(SYNC.getMarker(), "{} sees {}", selfId, event);
+            dispatcher.preConsensusEvent(event);
+            logger.debug(INTAKE_EVENT.getMarker(), "Adding {} ", event::toShortString);
+            stats.dispatchedPreConsensus();
+            final long minGenNonAncientBeforeAdding = consensus().getMinGenerationNonAncient();
+            // #5762 if we cannot calculate its roundCreated, then we use the one that was sent to us
+            final boolean missingSelfParent = event.getSelfParentHash() != null && event.getSelfParent() == null;
+            final boolean missingOtherParent = event.getOtherParentHash() != null && event.getOtherParent() == null;
+            // if we have created the event, it could have a missing parent, in this case we need to calculate the round
+            // since it cannot have been calculated before
+            if (!event.isCreatedBy(selfId) && (missingSelfParent || missingOtherParent)) {
+                if (event.getBaseEvent().isRoundCreatedSet()) {
+                    // we then use the round created sent to us
+                    event.setRoundCreated(event.getBaseEvent().getRoundCreated());
+                } else {
+                    logger.error(
+                            LogMarker.EXCEPTION.getMarker(),
+                            "cannot determine round created for event {}",
+                            event::toMediumString);
+                }
+            }
+
+            if (prehandlePool == null) {
+                // Prehandle transactions on the intake thread (i.e. this thread).
+                prehandleEvent.accept(event);
             } else {
-                logger.error(
-                        LogMarker.EXCEPTION.getMarker(),
-                        "cannot determine round created for event {}",
-                        event::toMediumString);
+                // Prehandle transactions on the thread pool.
+                prehandlePool.submit(buildPrehandleTask(event));
+            }
+
+            // record the event in the hashgraph, which results in the events in consEvent reaching consensus
+            final List<ConsensusRound> consRounds = consensusWrapper.addEvent(event, addressBook);
+            // #5762 after we calculate roundCreated, we set its value in GossipEvent so that it can be shared with
+            // other nodes
+            event.getBaseEvent().setRoundCreated(event.getRoundCreated());
+            stats.addedToConsensus();
+            dispatcher.eventAdded(event);
+            stats.dispatchedAdded();
+            if (consRounds != null) {
+                consRounds.forEach(this::handleConsensus);
+                stats.dispatchedRound();
+            }
+            if (consensus().getMinGenerationNonAncient() > minGenNonAncientBeforeAdding) {
+                // consensus rounds can be null and the minNonAncient might change, this is probably because of a round
+                // with no consensus events, so we check the diff in generations to look for stale events
+                handleStale(minGenNonAncientBeforeAdding);
+                stats.dispatchedStale();
+            }
+            stats.doneIntakeAddEvent();
+        } finally {
+            if (intakePipelineManager != null) {
+                intakePipelineManager.eventThroughIntakePipeline(
+                        event.getBaseEvent().getSenderNodeId());
             }
         }
-
-        if (prehandlePool == null) {
-            // Prehandle transactions on the intake thread (i.e. this thread).
-            prehandleEvent.accept(event);
-        } else {
-            // Prehandle transactions on the thread pool.
-            prehandlePool.submit(buildPrehandleTask(event));
-        }
-
-        // record the event in the hashgraph, which results in the events in consEvent reaching consensus
-        final List<ConsensusRound> consRounds = consensusWrapper.addEvent(event, addressBook);
-        // #5762 after we calculate roundCreated, se set its value in GossipEvent so that it can be shared with other
-        // nodes
-        event.getBaseEvent().setRoundCreated(event.getRoundCreated());
-        stats.addedToConsensus();
-        dispatcher.eventAdded(event);
-        stats.dispatchedAdded();
-        if (consRounds != null) {
-            consRounds.forEach(this::handleConsensus);
-            stats.dispatchedRound();
-        }
-        if (consensus().getMinGenerationNonAncient() > minGenNonAncientBeforeAdding) {
-            // consensus rounds can be null and the minNonAncient might change, this is probably because of a round
-            // with no consensus events, so we check the diff in generations to look for stale events
-            handleStale(minGenNonAncientBeforeAdding);
-            stats.dispatchedStale();
-        }
-        stats.doneIntakeAddEvent();
     }
 
     /**

@@ -16,9 +16,9 @@
 
 package com.swirlds.common.threading;
 
-import com.swirlds.common.threading.locks.internal.AcquiredOnTry;
-import com.swirlds.common.threading.locks.locked.MaybeLocked;
+import com.swirlds.common.system.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 import java.util.concurrent.Semaphore;
 
 /**
@@ -32,24 +32,25 @@ public class SyncPermitProvider {
     private final Semaphore syncPermits;
 
     /**
-     * The object returned when a permit is successfully obtained
-     */
-    private final AcquiredOnTry acquired;
-
-    /**
      * The number of permits this provider has available to distribute
      */
     private final int numPermits;
+
+    /**
+     * The manager that keeps track of how many events have been received from each peer, but haven't yet made it
+     * through the intake pipeline
+     */
+    private final IntakePipelineManager intakePipelineManager;
 
     /**
      * Creates a new instance with a maximum number of permits
      *
      * @param numPermits the number of concurrent syncs this provider will allow
      */
-    public SyncPermitProvider(final int numPermits) {
+    public SyncPermitProvider(final int numPermits, @NonNull final IntakePipelineManager intakePipelineManager) {
         this.numPermits = numPermits;
         this.syncPermits = new Semaphore(numPermits);
-        this.acquired = new AcquiredOnTry(syncPermits::release);
+        this.intakePipelineManager = Objects.requireNonNull(intakePipelineManager);
     }
 
     /**
@@ -66,11 +67,15 @@ public class SyncPermitProvider {
      * @return an autocloseable instance that tells the caller if the permit has been acquired and will automatically
      * release the permit when used in a try-with-resources block
      */
-    public @NonNull MaybeLocked tryAcquire() {
-        if (syncPermits.tryAcquire()) {
-            return acquired;
-        }
-        return MaybeLocked.NOT_ACQUIRED;
+    public boolean tryAcquire(@NonNull final NodeId peerId) {
+        return !intakePipelineManager.hasUnprocessedEvents(peerId) && syncPermits.tryAcquire();
+    }
+
+    /**
+     * Returns a permit
+     */
+    public void returnPermit() {
+        syncPermits.release();
     }
 
     /**

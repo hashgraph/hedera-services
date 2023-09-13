@@ -32,6 +32,7 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.status.StatusActionSubmitter;
+import com.swirlds.common.threading.IntakePipelineManager;
 import com.swirlds.common.threading.SyncPermitProvider;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.StoppableThread;
@@ -100,6 +101,11 @@ public class SyncGossip extends AbstractGossip {
     private final InterruptableConsumer<EventIntakeTask> eventIntakeLambda;
 
     /**
+     * Monitor's progress of events from each peer through the intake pipeline
+     */
+    private final IntakePipelineManager intakePipelineManager;
+
+    /**
      * Holds a list of objects that need to be cleared when {@link #clear()} is called on this object.
      */
     private final Clearable clearAllInternalPipelines;
@@ -134,6 +140,7 @@ public class SyncGossip extends AbstractGossip {
      * @param eventObserverDispatcher       the object used to wire event intake
      * @param eventMapper                   a data structure used to track the most recent event from each node
      * @param eventIntakeMetrics            metrics for event intake
+     * @param intakePipelineManager         tracks movement of events through intake pipeline
      * @param syncMetrics                   metrics for sync
      * @param eventLinker                   links events to their parents, buffers orphans if configured to do so
      * @param statusActionSubmitter         enables submitting platform status actions
@@ -162,6 +169,7 @@ public class SyncGossip extends AbstractGossip {
             @NonNull final EventObserverDispatcher eventObserverDispatcher,
             @NonNull final EventMapper eventMapper,
             @NonNull final EventIntakeMetrics eventIntakeMetrics,
+            @NonNull final IntakePipelineManager intakePipelineManager,
             @NonNull final SyncMetrics syncMetrics,
             @NonNull final EventLinker eventLinker,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
@@ -193,6 +201,8 @@ public class SyncGossip extends AbstractGossip {
         final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
         this.eventIntakeLambda = Objects.requireNonNull(eventIntakeLambda);
 
+        this.intakePipelineManager = Objects.requireNonNull(intakePipelineManager);
+
         syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
 
         final ParallelExecutor shadowgraphExecutor = PlatformConstructor.parallelExecutor(threadManager);
@@ -206,6 +216,7 @@ public class SyncGossip extends AbstractGossip {
                 eventTaskCreator::syncDone,
                 eventTaskCreator::addEvent,
                 syncManager,
+                intakePipelineManager,
                 shadowgraphExecutor,
                 // don't send or receive init bytes if running sync as a protocol. the negotiator handles this
                 false,
@@ -226,7 +237,7 @@ public class SyncGossip extends AbstractGossip {
 
         final Duration hangingThreadDuration = basicConfig.hangingThreadDuration();
 
-        syncPermitProvider = new SyncPermitProvider(syncConfig.syncProtocolPermitCount());
+        syncPermitProvider = new SyncPermitProvider(syncConfig.syncProtocolPermitCount(), intakePipelineManager);
 
         if (emergencyRecoveryManager.isEmergencyStateRequired()) {
             // If we still need an emergency recovery state, we need it via emergency reconnect.
@@ -402,6 +413,7 @@ public class SyncGossip extends AbstractGossip {
         throwIfNotInPhase(LifecyclePhase.STARTED);
         gossipHalted.set(true);
         syncPermitProvider.waitForAllSyncsToFinish();
+        intakePipelineManager.reset();
     }
 
     /**

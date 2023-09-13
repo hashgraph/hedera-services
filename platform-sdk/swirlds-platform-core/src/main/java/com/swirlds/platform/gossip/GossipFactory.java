@@ -26,6 +26,7 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.status.StatusActionSubmitter;
+import com.swirlds.common.threading.IntakePipelineManager;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.manager.ThreadManager;
@@ -91,6 +92,8 @@ public final class GossipFactory {
      * @param eventObserverDispatcher       the object used to wire event intake
      * @param eventMapper                   a data structure used to track the most recent event from each node
      * @param eventIntakeMetrics            metrics for event intake
+     * @param intakePipelineManager         tracks events received from peers, and events that have made it through
+     *                                      the intake pipeline
      * @param syncMetrics                   metrics for sync
      * @param eventLinker                   links together events, if chatter is enabled will also buffer orphans
      * @param statusActionSubmitter         enables submitting platform status actions
@@ -121,6 +124,7 @@ public final class GossipFactory {
             @NonNull final EventObserverDispatcher eventObserverDispatcher,
             @NonNull final EventMapper eventMapper,
             @NonNull final EventIntakeMetrics eventIntakeMetrics,
+            @NonNull final IntakePipelineManager intakePipelineManager,
             @NonNull final SyncMetrics syncMetrics,
             @NonNull final EventLinker eventLinker,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
@@ -234,6 +238,7 @@ public final class GossipFactory {
                         eventObserverDispatcher,
                         eventMapper,
                         eventIntakeMetrics,
+                        intakePipelineManager,
                         syncMetrics,
                         eventLinker,
                         statusActionSubmitter,

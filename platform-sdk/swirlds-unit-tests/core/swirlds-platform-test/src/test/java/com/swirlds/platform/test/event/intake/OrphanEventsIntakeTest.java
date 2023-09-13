@@ -95,7 +95,8 @@ class OrphanEventsIntakeTest {
             orphanBuffer = new OrphanBufferingLinker(
                     ConfigurationHolder.getConfigData(ConsensusConfig.class),
                     new ParentFinder(linkedEventMap::get),
-                    100_000);
+                    100_000,
+                    null);
 
             final PlatformContext platformContext =
                     TestPlatformContextBuilder.create().build();
@@ -113,7 +114,8 @@ class OrphanEventsIntakeTest {
                             (ConsensusRoundObserver) rnd -> consensusEvents.addAll(rnd.getConsensusEvents())),
                     mock(IntakeCycleStats.class),
                     mock(ShadowGraph.class),
-                    e -> {});
+                    e -> {},
+                    null);
         }
 
         public void generateAndFeed(final int numEvents) {

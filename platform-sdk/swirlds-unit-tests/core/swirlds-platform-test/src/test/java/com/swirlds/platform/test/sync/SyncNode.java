@@ -223,6 +223,7 @@ public class SyncNode {
                 r -> {},
                 eventHandler,
                 syncManager,
+                null,
                 executor,
                 sendRecInitBytes,
                 () -> {});

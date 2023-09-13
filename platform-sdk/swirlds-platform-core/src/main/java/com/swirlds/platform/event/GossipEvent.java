@@ -18,11 +18,13 @@ package com.swirlds.platform.event;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.BaseEvent;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Objects;
@@ -38,6 +40,13 @@ public class GossipEvent implements EventIntakeTask, BaseEvent, ChatterEvent {
     private EventDescriptor descriptor;
     private Instant timeReceived;
     private long roundCreated = ROUND_CREATED_UNDEFINED;
+
+    /**
+     * The id of the node that sent this event to us.
+     * <p>
+     * Note: this is not necessarily the creator of this event: just the id of the node that this event was received from.
+     */
+    private NodeId senderNodeId;
 
     @SuppressWarnings("unused") // needed for RuntimeConstructable
     public GossipEvent() {}
@@ -138,6 +147,24 @@ public class GossipEvent implements EventIntakeTask, BaseEvent, ChatterEvent {
 
     public void setRoundCreated(final long roundCreated) {
         this.roundCreated = roundCreated;
+    }
+
+    /**
+     * Set the id of the node that this event was received from
+     *
+     * @param senderNodeId the id of the node that this event was received from
+     */
+    public void setSenderNodeId(@NonNull final NodeId senderNodeId) {
+        this.senderNodeId = Objects.requireNonNull(senderNodeId);
+    }
+
+    /**
+     * Get the id of the node that this event was received from
+     *
+     * @return the id of the node that this event was received from
+     */
+    public NodeId getSenderNodeId() {
+        return senderNodeId;
     }
 
     /**

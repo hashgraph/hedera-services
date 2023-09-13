@@ -21,11 +21,10 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 
-import com.swirlds.common.threading.locks.locked.MaybeLocked;
+import com.swirlds.common.system.NodeId;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -34,21 +33,24 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 class SyncPermitProviderTest {
+    private final NodeId nodeId = new NodeId(0);
+
     @Test
     @DisplayName("Permits are acquired and released properly")
     void testPermitRelease() {
         final int numPermits = 3;
-        final SyncPermitProvider syncPermitProvider = new SyncPermitProvider(numPermits);
+        final SyncPermitProvider syncPermitProvider =
+                new SyncPermitProvider(numPermits, mock(IntakePipelineManager.class));
 
         assertEquals(numPermits, syncPermitProvider.getNumAvailable(), "all permits should be available");
 
-        try (final MaybeLocked maybeLocked = syncPermitProvider.tryAcquire()) {
-            assertTrue(maybeLocked.isLockAcquired(), "first acquire should succeed");
-            assertEquals(
-                    numPermits - 1,
-                    syncPermitProvider.getNumAvailable(),
-                    "one less permit should be available when a permit is acquired");
-        }
+        assertTrue(syncPermitProvider.tryAcquire(nodeId), "first acquire should succeed");
+        assertEquals(
+                numPermits - 1,
+                syncPermitProvider.getNumAvailable(),
+                "one less permit should be available when a permit is acquired");
+
+        syncPermitProvider.returnPermit();
 
         assertEquals(
                 numPermits,
@@ -60,17 +62,14 @@ class SyncPermitProviderTest {
     @DisplayName("Once all permits are acquired, further attempts to acquire fail")
     void testAllPermitsAcquired() {
         final int numPermits = 9;
-        final SyncPermitProvider syncPermitProvider = new SyncPermitProvider(numPermits);
+        final SyncPermitProvider syncPermitProvider =
+                new SyncPermitProvider(numPermits, mock(IntakePipelineManager.class));
 
         assertEquals(numPermits, syncPermitProvider.getNumAvailable(), "all permits should be available");
 
-        final List<MaybeLocked> permits = new ArrayList<>(numPermits);
-
         // Acquire all the permits
         for (int i = 0; i < numPermits; i++) {
-            final MaybeLocked maybeLocked = syncPermitProvider.tryAcquire();
-            permits.add(maybeLocked);
-            assertTrue(maybeLocked.isLockAcquired(), "first acquire should succeed");
+            assertTrue(syncPermitProvider.tryAcquire(nodeId), "acquiring permit should succeed");
             assertEquals(
                     numPermits - i - 1,
                     syncPermitProvider.getNumAvailable(),
@@ -78,13 +77,11 @@ class SyncPermitProviderTest {
         }
 
         // Attempts to acquire more permits should fail
-        final MaybeLocked shouldNotAcquire = syncPermitProvider.tryAcquire();
-        assertFalse(shouldNotAcquire.isLockAcquired(), "no further permits should be able to be acquired");
+        assertFalse(syncPermitProvider.tryAcquire(nodeId), "no further permits should be able to be acquired");
 
         // Releasing permits should result in more permits being available
         for (int i = 0; i < numPermits; i++) {
-            final MaybeLocked maybeLocked = permits.get(i);
-            maybeLocked.close();
+            syncPermitProvider.returnPermit();
             assertEquals(
                     i + 1,
                     syncPermitProvider.getNumAvailable(),
@@ -96,19 +93,16 @@ class SyncPermitProviderTest {
     @DisplayName("waitForAllSyncsToFinish blocks until all permits are released")
     void testWaitForAllSyncsToFinish() {
         final int numPermits = 3;
-        final SyncPermitProvider syncPermitProvider = new SyncPermitProvider(numPermits);
+        final SyncPermitProvider syncPermitProvider =
+                new SyncPermitProvider(numPermits, mock(IntakePipelineManager.class));
 
-        final List<MaybeLocked> permits = new ArrayList<>(numPermits);
         // Acquire all the permits
         for (int i = 0; i < numPermits; i++) {
-            final MaybeLocked maybeLocked = syncPermitProvider.tryAcquire();
-            permits.add(maybeLocked);
-            assertTrue(maybeLocked.isLockAcquired());
+            assertTrue(syncPermitProvider.tryAcquire(nodeId));
         }
 
         // Attempts to acquire more permits should fail
-        final MaybeLocked shouldNotAcquire = syncPermitProvider.tryAcquire();
-        assertFalse(shouldNotAcquire.isLockAcquired(), "no further permits should be able to be acquired");
+        assertFalse(syncPermitProvider.tryAcquire(nodeId), "no further permits should be able to be acquired");
 
         final AtomicBoolean waitComplete = new AtomicBoolean(false);
 
@@ -129,8 +123,9 @@ class SyncPermitProviderTest {
 
         assertFalse(waitComplete.get(), "waitForAllSyncsToFinish should not return until all permits are released");
 
-        // close the permits that have already been acquired, so waitForAllSyncsToFinish will return
-        permits.forEach(MaybeLocked::close);
+        for (int i = 0; i < numPermits; i++) {
+            syncPermitProvider.returnPermit();
+        }
 
         assertEventuallyTrue(
                 waitComplete::get,

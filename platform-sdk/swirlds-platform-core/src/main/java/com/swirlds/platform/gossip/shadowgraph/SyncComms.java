@@ -19,12 +19,14 @@ package com.swirlds.platform.gossip.shadowgraph;
 import static com.swirlds.logging.LogMarker.SYNC_INFO;
 
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.threading.IntakePipelineManager;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.SyncException;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.ByteConstants;
 import com.swirlds.platform.network.Connection;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
@@ -240,21 +242,20 @@ public final class SyncComms {
      * the supplied eventHandler. The {@link Callable} will return the number of events read, or a negative number if
      * event reading was aborted.
      *
-     * @param conn
-     * 		the connection to read from
-     * @param eventHandler
-     * 		the consumer of received events
-     * @param syncMetrics
-     * 		tracks event reading metrics
-     * @param eventReadingDone
-     * 		used to notify the writing thread that reading is done
+     * @param conn                  the connection to read from
+     * @param eventHandler          the consumer of received events
+     * @param syncMetrics           tracks event reading metrics
+     * @param eventReadingDone      used to notify the writing thread that reading is done
+     * @param intakePipelineManager used to track how many events sent by each peer are currently in the intake pipeline
      * @return A {@link Callable} that executes this part of the sync
      */
     public static Callable<Integer> phase3Read(
             final Connection conn,
             final Consumer<GossipEvent> eventHandler,
             final SyncMetrics syncMetrics,
-            final CountDownLatch eventReadingDone) {
+            final CountDownLatch eventReadingDone,
+            @Nullable final IntakePipelineManager intakePipelineManager) {
+
         return () -> {
             logger.info(SYNC_INFO.getMarker(), "{} reading events start", conn.getDescription());
             int eventsRead = 0;
@@ -269,6 +270,13 @@ public final class SyncComms {
                     switch (next) {
                         case ByteConstants.COMM_EVENT_NEXT -> {
                             final GossipEvent gossipEvent = conn.getDis().readEventData();
+
+                            gossipEvent.setSenderNodeId(conn.getOtherId());
+
+                            if (intakePipelineManager != null) {
+                                intakePipelineManager.eventAddedToIntakePipeline(conn.getOtherId());
+                            }
+
                             eventHandler.accept(gossipEvent);
                             eventsRead++;
                         }

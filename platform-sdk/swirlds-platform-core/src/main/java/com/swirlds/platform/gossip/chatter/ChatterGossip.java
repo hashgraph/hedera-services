@@ -239,6 +239,7 @@ public class ChatterGossip extends AbstractGossip {
                     sr -> {},
                     eventTaskCreator::addEvent,
                     syncManager,
+                    null,
                     shadowgraphExecutor,
                     false,
                     () -> {
