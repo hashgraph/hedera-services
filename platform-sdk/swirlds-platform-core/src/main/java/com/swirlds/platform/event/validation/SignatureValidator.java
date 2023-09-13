@@ -56,7 +56,7 @@ public class SignatureValidator implements GossipEventValidator {
     public SignatureValidator(
             @NonNull final AddressBook previousAddressBook,
             @NonNull final AddressBook currentAddressBook,
-            @NonNull SoftwareVersion currentSoftwareVersion,
+            @NonNull final SoftwareVersion currentSoftwareVersion,
             @NonNull final SignatureVerifier signatureVerifier) {
         this.signatureVerifier = Objects.requireNonNull(signatureVerifier);
         this.currentSoftwareVersion = Objects.requireNonNull(currentSoftwareVersion);
