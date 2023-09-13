@@ -51,6 +51,7 @@ jobs:
     with:
       version-policy: branch-commit
       trigger-env-deploy: none
+      sdk-release-profile: AdhocCommit
       dry-run-enabled: ${{ github.event.inputs.dry-run-enabled == 'true' }}
       java-version: ${{ github.event.inputs.java-version || '17.0.8' }}
       java-distribution: ${{ github.event.inputs.java-distribution || 'temurin' }}
@@ -63,3 +64,8 @@ jobs:
       svcs-ossrh-password: ${{ secrets.SVCS_OSSRH_PASSWORD }}
       svcs-gpg-key-contents: ${{ secrets.SVCS_GPG_KEY_CONTENTS }}
       svcs-gpg-key-passphrase: ${{ secrets.SVCS_GPG_KEY_PASSPHRASE }}
+      sdk-ossrh-username: ${{ secrets.PLATFORM_OSSRH_USERNAME }}
+      sdk-ossrh-password: ${{ secrets.PLATFORM_OSSRH_PASSWORD }}
+      sdk-gpg-key-contents: ${{ secrets.PLATFORM_GPG_KEY_CONTENTS }}
+      sdk-gpg-key-passphrase: ${{ secrets.PLATFORM_GPG_KEY_PASSPHRASE }}
+      slack-webhook-url: ${{ secrets.PLATFORM_SLACK_RELEASE_WEBHOOK }}

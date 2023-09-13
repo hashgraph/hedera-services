@@ -157,6 +157,7 @@ public class TokenUpdateSpecs extends HapiSuite {
                 .then(tokenUpdate("tbd").hasKnownStatus(TOKEN_WAS_DELETED));
     }
 
+    @HapiTest
     private HapiSpec tokensCanBeMadeImmutableWithEmptyKeyList() {
         final var mutableForNow = "mutableForNow";
         return defaultHapiSpec("TokensCanBeMadeImmutableWithEmptyKeyList")
@@ -220,6 +221,7 @@ public class TokenUpdateSpecs extends HapiSuite {
                         .hasKnownStatus(TOKEN_IS_IMMUTABLE));
     }
 
+    @HapiTest
     public HapiSpec keysChange() {
         return defaultHapiSpec("KeysChange")
                 .given(
@@ -265,6 +267,7 @@ public class TokenUpdateSpecs extends HapiSuite {
                         getAccountInfo(TOKEN_TREASURY).logged());
     }
 
+    @HapiTest
     public HapiSpec newTreasuryAutoAssociationWorks() {
         return defaultHapiSpec("NewTreasuryAutoAssociationWorks")
                 .given(
@@ -351,6 +354,7 @@ public class TokenUpdateSpecs extends HapiSuite {
                 .then(getTokenInfo("tbu").logged());
     }
 
+    @HapiTest
     public HapiSpec symbolChanges() {
         var hopefullyUnique = "ORIGINAL" + TxnUtils.randomUppercase(5);
 
@@ -365,6 +369,7 @@ public class TokenUpdateSpecs extends HapiSuite {
                         cryptoTransfer(moving(1, "tbu").between(TOKEN_TREASURY, GENESIS)));
     }
 
+    @HapiTest
     public HapiSpec nameChanges() {
         var hopefullyUnique = "ORIGINAL" + TxnUtils.randomUppercase(5);
 
@@ -376,7 +381,6 @@ public class TokenUpdateSpecs extends HapiSuite {
                 .then(getTokenInfo("tbu").hasName(hopefullyUnique));
     }
 
-    @HapiTest
     public HapiSpec tooLongNameCheckHolds() {
         var tooLongName = "ORIGINAL" + TxnUtils.randomUppercase(MAX_NAME_LENGTH + 1);
 
@@ -386,7 +390,6 @@ public class TokenUpdateSpecs extends HapiSuite {
                 .then(tokenUpdate("tbu").name(tooLongName).hasPrecheck(TOKEN_NAME_TOO_LONG));
     }
 
-    @HapiTest
     public HapiSpec tooLongSymbolCheckHolds() {
         var tooLongSymbol = TxnUtils.randomUppercase(MAX_SYMBOL_LENGTH + 1);
 
@@ -437,6 +440,7 @@ public class TokenUpdateSpecs extends HapiSuite {
                                 .hasKnownStatus(INVALID_RENEWAL_PERIOD));
     }
 
+    @HapiTest
     public HapiSpec invalidTreasuryCheckHolds() {
         return defaultHapiSpec("InvalidTreasuryCheckHolds")
                 .given(
@@ -531,6 +535,7 @@ public class TokenUpdateSpecs extends HapiSuite {
                                 .hasAutoRenewPeriod(THREE_MONTHS_IN_SECONDS + 1));
     }
 
+    @HapiTest
     public HapiSpec updateTokenTreasuryRequiresZeroTokenBalance() {
         return defaultHapiSpec("updateTokenTreasuryRequiresZeroTokenBalance")
                 .given(
@@ -600,6 +605,7 @@ public class TokenUpdateSpecs extends HapiSuite {
                                 .logged());
     }
 
+    @HapiTest
     private HapiSpec safeToUpdateCustomFeesWithNewFallbackWhileTransferring() {
         final var uniqueTokenFeeKey = "uniqueTokenFeeKey";
         final var hbarCollector = "hbarFee";
