@@ -21,6 +21,7 @@ import static com.swirlds.common.utility.CommonUtils.hex;
 import static com.swirlds.logging.LogMarker.TESTING_EXCEPTIONS;
 
 import com.swirlds.common.crypto.CryptographyException;
+import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.logging.LogMarker;
 import java.math.BigInteger;
 import java.security.AlgorithmParameters;
@@ -40,6 +41,7 @@ import java.security.spec.InvalidParameterSpecException;
 import java.util.Arrays;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1;
 
 /**
  * Verifies signatures created with a ECDSA(secp256k1) private key.
@@ -132,6 +134,19 @@ public class EcdsaSecp256k1Verifier {
         return result;
     }
 
+    // Thread local caches to avoid allocating memory for each verification. They will leak memory for each thread used
+    // for verification but only just over 100 bytes to totally worth it.
+    private static final ThreadLocal<LibSecp256k1.secp256k1_ecdsa_signature> SIGNATURE_CACHE =
+            ThreadLocal.withInitial(LibSecp256k1.secp256k1_ecdsa_signature::new);
+    private static final ThreadLocal<LibSecp256k1.secp256k1_pubkey> PUB_KEY_CACHE =
+            ThreadLocal.withInitial(LibSecp256k1.secp256k1_pubkey::new);
+    private static final ThreadLocal<byte[]> PUBLIC_KEY_INPUT_CACHE =
+            ThreadLocal.withInitial(() -> {
+                byte[] publicKeyInput = new byte[65];
+                publicKeyInput[0] = 0x04;
+                return publicKeyInput;
+            });
+
     /**
      * Verifies a ECDSA(secp256k1) signature of a message is valid for a given public key.
      *
@@ -152,19 +167,37 @@ public class EcdsaSecp256k1Verifier {
      * @return true if the signature is valid
      */
     public boolean verify(final byte[] rawSig, final byte[] msg, final byte[] pubKey) {
-        try {
-            algorithm.initVerify(asCryptographic(pubKey));
-            algorithm.update(msg);
-            final byte[] asn1DerSig = asn1DerEncode(rawSig);
-            return algorithm.verify(asn1DerSig);
-        } catch (InvalidKeySpecException | SignatureException | InvalidKeyException e) {
+        // convert signature to native format
+        final LibSecp256k1.secp256k1_ecdsa_signature nativeSignature = SIGNATURE_CACHE.get();
+        final var signatureParseResult = LibSecp256k1.secp256k1_ecdsa_signature_parse_compact(
+                LibSecp256k1.CONTEXT, nativeSignature, rawSig);
+        if (signatureParseResult != 1) {
             logger.debug(
                     TESTING_EXCEPTIONS.getMarker(),
-                    () -> "Failure while verifying signature [ publicKey = %s, rawSig = %s ]"
-                            .formatted(hex(pubKey), hex(rawSig)),
-                    e);
+                    () -> "Failed to parse signature [ publicKey = %s, rawSig = %s ]"
+                            .formatted(hex(pubKey), hex(rawSig)));
             return false;
         }
+        // Normalize the signature to lower-S form. This will return 1 if the signature was normalized, 0 otherwise.
+        LibSecp256k1.secp256k1_ecdsa_signature_normalize(LibSecp256k1.CONTEXT, nativeSignature, nativeSignature);
+        // convert public key to input format
+        final byte[] publicKeyInput = PUBLIC_KEY_INPUT_CACHE.get();
+        System.arraycopy(pubKey,0, publicKeyInput, 1, 64);
+        // convert public key to native format
+        final LibSecp256k1.secp256k1_pubkey pubkey = PUB_KEY_CACHE.get();
+        final int keyParseResult = LibSecp256k1.secp256k1_ec_pubkey_parse(
+                LibSecp256k1.CONTEXT,
+                pubkey,
+                publicKeyInput,
+                publicKeyInput.length);
+        if (keyParseResult != 1) throw new RuntimeException("Failed to parse public key");
+        // verify signature
+        final int result = LibSecp256k1.secp256k1_ecdsa_verify(
+                LibSecp256k1.CONTEXT,
+                nativeSignature,
+                msg,
+                pubkey);
+        return result == 1;
     }
 
     private ECPublicKey asCryptographic(final byte[] pubKey) throws InvalidKeySpecException {
