@@ -20,9 +20,11 @@ import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.safeResetThrottles;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.congestion.CongestionLevelStarts;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshot;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
@@ -53,7 +55,13 @@ public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager 
     // validity
     // screen; the stand-in is a CryptoTransfer because it best reflects the work done charging fees
     static final TransactionInfo STAND_IN_CRYPTO_TRANSFER = new TransactionInfo(
-            Transaction.DEFAULT, TransactionBody.DEFAULT, SignatureMap.DEFAULT, Bytes.EMPTY, CRYPTO_TRANSFER);
+            Transaction.DEFAULT,
+            TransactionBody.DEFAULT,
+            TransactionID.DEFAULT,
+            AccountID.DEFAULT,
+            SignatureMap.DEFAULT,
+            Bytes.EMPTY,
+            CRYPTO_TRANSFER);
 
     private final HandleThrottleAccumulator handleThrottling;
 

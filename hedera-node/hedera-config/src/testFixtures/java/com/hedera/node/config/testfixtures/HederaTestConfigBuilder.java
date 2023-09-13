@@ -175,7 +175,6 @@ public final class HederaTestConfigBuilder {
                 .withConfigDataType(StakingConfig.class)
                 .withConfigDataType(StatsConfig.class)
                 .withConfigDataType(TokensConfig.class)
-                .withConverter(new ScaleFactorConverter())
                 .withConfigDataType(TopicsConfig.class)
                 .withConfigDataType(TraceabilityConfig.class)
                 .withConfigDataType(UpgradeConfig.class)

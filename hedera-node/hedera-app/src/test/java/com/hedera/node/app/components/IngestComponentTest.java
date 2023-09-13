@@ -28,11 +28,15 @@ import com.hedera.node.app.DaggerHederaInjectionComponent;
 import com.hedera.node.app.HederaInjectionComponent;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
+import com.hedera.node.app.fees.congestion.MonoMultiplierSources;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.info.SelfNodeInfoImpl;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
+import com.hedera.node.app.service.mono.fees.congestion.ThrottleMultiplierSource;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
+import com.hedera.node.app.throttle.HandleThrottleAccumulator;
 import com.hedera.node.app.throttle.ThrottleManager;
+import com.hedera.node.app.throttle.impl.NetworkUtilizationManagerImpl;
 import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.app.workflows.handle.SystemFileUpdateFacility;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -90,7 +94,13 @@ class IngestComponentTest {
 
         final var configProvider = new ConfigProviderImpl(false);
         final var throttleManager = new ThrottleManager();
+        final var handleThrottling = new HandleThrottleAccumulator(configProvider, throttleManager);
+        final var monoMultiplierSources = new MonoMultiplierSources(
+                new ThrottleMultiplierSource(null, null, null, null, null, null, null),
+                new ThrottleMultiplierSource(null, null, null, null, null, null, null));
+
         final var exchangeRateManager = new ExchangeRateManager(configProvider);
+
         final var dualState = mock(SwirldDualState.class);
         app = DaggerHederaInjectionComponent.builder()
                 .initTrigger(InitTrigger.GENESIS)
@@ -98,8 +108,9 @@ class IngestComponentTest {
                 .crypto(CryptographyHolder.get())
                 .bootstrapProps(new BootstrapProperties())
                 .configuration(configProvider)
-                .systemFileUpdateFacility(
-                        new SystemFileUpdateFacility(configProvider, throttleManager, exchangeRateManager))
+                .systemFileUpdateFacility(new SystemFileUpdateFacility(
+                        configProvider, throttleManager, exchangeRateManager, monoMultiplierSources, handleThrottling))
+                .networkUtilizationManager(new NetworkUtilizationManagerImpl(handleThrottling, monoMultiplierSources))
                 .throttleManager(throttleManager)
                 .self(selfNodeInfo)
                 .initialHash(new Hash())

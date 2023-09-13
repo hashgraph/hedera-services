@@ -188,6 +188,7 @@ class HandleWorkflowTest extends AppTestBase {
     @Mock
     private NetworkUtilizationManager networkUtilizationManager;
 
+    @Mock
     private DualStateUpdateFacility dualStateUpdateFacility;
 
     @Mock
