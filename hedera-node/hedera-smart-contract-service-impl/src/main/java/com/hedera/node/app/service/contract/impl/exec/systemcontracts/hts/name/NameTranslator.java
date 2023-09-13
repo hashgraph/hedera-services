@@ -25,6 +25,9 @@ import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/**
+ * Translates {@code name()} calls to the HTS system contract.
+ */
 @Singleton
 public class NameTranslator extends AbstractHtsCallTranslator {
     public static final Function NAME = new Function("name()", ReturnTypes.STRING);
@@ -34,11 +37,17 @@ public class NameTranslator extends AbstractHtsCallTranslator {
         // Dagger2
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean matches(@NonNull final HtsCallAttempt attempt) {
         return Arrays.equals(attempt.selector(), NAME.selector());
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public NameCall callFrom(@NonNull final HtsCallAttempt attempt) {
         return new NameCall(attempt.enhancement(), attempt.redirectToken());

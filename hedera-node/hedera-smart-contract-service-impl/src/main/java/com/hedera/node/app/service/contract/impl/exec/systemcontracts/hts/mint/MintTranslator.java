@@ -29,6 +29,9 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.hyperledger.besu.datatypes.Address;
 
+/**
+ * Translates {@code mintToken()} calls to the HTS system contract.
+ */
 @Singleton
 public class MintTranslator extends AbstractHtsCallTranslator {
     public static final Function MINT = new Function("mintToken(address,uint64,bytes[])", ReturnTypes.INT);
@@ -39,12 +42,18 @@ public class MintTranslator extends AbstractHtsCallTranslator {
         // Dagger2
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean matches(@NonNull final HtsCallAttempt attempt) {
         return Arrays.equals(attempt.selector(), MintTranslator.MINT.selector())
                 || Arrays.equals(attempt.selector(), MintTranslator.MINT_V2.selector());
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public @Nullable MintCall callFrom(@NonNull final HtsCallAttempt attempt) {
         final var selector = attempt.selector();

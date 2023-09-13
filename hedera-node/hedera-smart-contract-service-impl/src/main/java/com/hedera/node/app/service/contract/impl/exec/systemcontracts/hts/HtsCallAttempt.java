@@ -28,6 +28,7 @@ import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
+import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsCallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
@@ -106,6 +107,17 @@ public class HtsCallAttempt {
         }
         this.selector = this.input.slice(0, 4).toArrayUnsafe();
         this.senderId = addressIdConverter.convertSender(senderAddress);
+    }
+
+    /**
+     * Returns the default verification strategy for this call (i.e., the strategy that treats only
+     * contract id and delegatable contract id keys as active when they match the call's sender address).
+     *
+     * @return the default verification strategy for this call
+     */
+    public @NonNull VerificationStrategy defaultVerificationStrategy() {
+        return verificationStrategies.activatingOnlyContractKeysFor(
+                senderAddress, onlyDelegatableContractKeysActive, enhancement.nativeOperations());
     }
 
     /**

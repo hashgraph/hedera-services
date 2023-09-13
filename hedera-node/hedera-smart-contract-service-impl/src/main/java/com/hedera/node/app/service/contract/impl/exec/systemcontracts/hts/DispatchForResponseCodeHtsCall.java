@@ -52,11 +52,7 @@ public class DispatchForResponseCodeHtsCall<T extends SingleTransactionRecordBui
                 attempt.addressIdConverter().convertSender(attempt.senderAddress()),
                 syntheticBody,
                 recordBuilderType,
-                attempt.verificationStrategies()
-                        .activatingOnlyContractKeysFor(
-                                attempt.senderAddress(),
-                                attempt.onlyDelegatableContractKeysActive(),
-                                attempt.nativeOperations()));
+                attempt.defaultVerificationStrategy());
     }
 
     /**

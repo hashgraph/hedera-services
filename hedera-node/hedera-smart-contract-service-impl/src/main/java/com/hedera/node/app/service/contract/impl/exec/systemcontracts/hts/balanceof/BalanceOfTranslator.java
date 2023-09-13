@@ -26,6 +26,9 @@ import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/**
+ * Translates {@code balanceOf} calls to the HTS system contract.
+ */
 @Singleton
 public class BalanceOfTranslator extends AbstractHtsCallTranslator {
     public static final Function BALANCE_OF = new Function("balanceOf(address)", ReturnTypes.INT);
@@ -35,6 +38,9 @@ public class BalanceOfTranslator extends AbstractHtsCallTranslator {
         // Dagger2
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public BalanceOfCall callFrom(@NonNull final HtsCallAttempt attempt) {
         final Address owner = BalanceOfTranslator.BALANCE_OF
@@ -43,6 +49,9 @@ public class BalanceOfTranslator extends AbstractHtsCallTranslator {
         return new BalanceOfCall(attempt.enhancement(), attempt.redirectToken(), owner);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean matches(@NonNull final HtsCallAttempt attempt) {
         return Arrays.equals(attempt.selector(), BALANCE_OF.selector());

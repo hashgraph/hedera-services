@@ -297,7 +297,6 @@ public final class PbjConverter {
             case TransactionGetFastRecord -> HederaFunctionality.TRANSACTION_GET_FAST_RECORD;
             case UncheckedSubmit -> HederaFunctionality.UNCHECKED_SUBMIT;
             case UtilPrng -> HederaFunctionality.UTIL_PRNG;
-            case TransactionGetFastRecord -> HederaFunctionality.TRANSACTION_GET_FAST_RECORD;
             case UNRECOGNIZED -> throw new RuntimeException("Unknown function UNRECOGNIZED");
         };
     }
@@ -397,8 +396,6 @@ public final class PbjConverter {
                     .TransactionGetFastRecord;
             case UNCHECKED_SUBMIT -> com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
             case UTIL_PRNG -> com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
-            case TRANSACTION_GET_FAST_RECORD -> com.hederahashgraph.api.proto.java.HederaFunctionality
-                    .TransactionGetFastRecord;
         };
     }
 

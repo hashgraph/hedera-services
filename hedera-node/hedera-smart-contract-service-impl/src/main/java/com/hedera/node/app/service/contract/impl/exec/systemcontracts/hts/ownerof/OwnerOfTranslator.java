@@ -27,6 +27,9 @@ import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/**
+ * Translates {@code ownerOf()} calls to the HTS system contract.
+ */
 @Singleton
 public class OwnerOfTranslator extends AbstractHtsCallTranslator {
     public static final Function OWNER_OF = new Function("ownerOf(uint256)", ReturnTypes.ADDRESS);
@@ -36,11 +39,17 @@ public class OwnerOfTranslator extends AbstractHtsCallTranslator {
         // Dagger2
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean matches(@NonNull final HtsCallAttempt attempt) {
         return Arrays.equals(attempt.selector(), OWNER_OF.selector());
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public OwnerOfCall callFrom(@NonNull final HtsCallAttempt attempt) {
         // Since zero is never a valid serial number, if we clamp the passed value, the result

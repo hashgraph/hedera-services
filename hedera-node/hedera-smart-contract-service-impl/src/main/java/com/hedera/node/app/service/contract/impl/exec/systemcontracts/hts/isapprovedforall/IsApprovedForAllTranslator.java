@@ -25,6 +25,9 @@ import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/**
+ * Translates {@code isApprovedForAll} calls to the HTS system contract.
+ */
 @Singleton
 public class IsApprovedForAllTranslator extends AbstractHtsCallTranslator {
     @Inject
@@ -32,11 +35,17 @@ public class IsApprovedForAllTranslator extends AbstractHtsCallTranslator {
         // Dagger2
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean matches(@NonNull final HtsCallAttempt attempt) {
         return Arrays.equals(attempt.selector(), IS_APPROVED_FOR_ALL.selector());
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public IsApprovedForAllCall callFrom(@NonNull final HtsCallAttempt attempt) {
         final var args = IS_APPROVED_FOR_ALL.decodeCall(attempt.input().toArrayUnsafe());

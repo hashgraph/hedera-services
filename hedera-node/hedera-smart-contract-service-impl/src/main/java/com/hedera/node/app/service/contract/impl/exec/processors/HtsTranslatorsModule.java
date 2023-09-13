@@ -38,6 +38,9 @@ import java.util.List;
 import java.util.Set;
 import javax.inject.Singleton;
 
+/**
+ * Provides the {@link HtsCallTranslator} implementations for the HTS system contract.
+ */
 @Module
 public interface HtsTranslatorsModule {
     @Provides

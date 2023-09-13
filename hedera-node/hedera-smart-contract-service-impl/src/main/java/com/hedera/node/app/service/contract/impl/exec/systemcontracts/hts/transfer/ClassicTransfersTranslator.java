@@ -29,6 +29,9 @@ import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/**
+ * Translates "classic" {@code cryptoTransfer()} calls to the HTS system contract.
+ */
 @Singleton
 public class ClassicTransfersTranslator extends AbstractHtsCallTranslator {
     public static final Function CRYPTO_TRANSFER =
@@ -78,11 +81,7 @@ public class ClassicTransfersTranslator extends AbstractHtsCallTranslator {
                 nominalBodyFor(attempt),
                 attempt.configuration(),
                 isClassicCall(selector) ? APPROVAL_SWITCH_HELPER : null,
-                attempt.verificationStrategies()
-                        .activatingOnlyContractKeysFor(
-                                attempt.senderAddress(),
-                                attempt.onlyDelegatableContractKeysActive(),
-                                attempt.nativeOperations()),
+                attempt.defaultVerificationStrategy(),
                 SYSTEM_ACCOUNT_CREDIT_SCREEN);
     }
 

@@ -29,6 +29,9 @@ import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/**
+ * Translates ERC-721 {@code transferFrom()} calls to the HTS system contract.
+ */
 @Singleton
 public class Erc721TransferFromTranslator extends AbstractHtsCallTranslator {
 
@@ -56,11 +59,7 @@ public class Erc721TransferFromTranslator extends AbstractHtsCallTranslator {
                 call.get(0),
                 call.get(1),
                 requireNonNull(attempt.redirectToken()).tokenIdOrThrow(),
-                attempt.verificationStrategies()
-                        .activatingOnlyContractKeysFor(
-                                attempt.senderAddress(),
-                                attempt.onlyDelegatableContractKeysActive(),
-                                attempt.enhancement().nativeOperations()),
+                attempt.defaultVerificationStrategy(),
                 attempt.senderAddress(),
                 attempt.enhancement(),
                 attempt.addressIdConverter());

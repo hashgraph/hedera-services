@@ -32,6 +32,9 @@ import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/**
+ * Translates ERC-20 transfer calls to the HTS system contract.
+ */
 @Singleton
 public class Erc20TransfersTranslator extends AbstractHtsCallTranslator {
     public static final Function ERC_20_TRANSFER = new Function("transfer(address,uint256)", ReturnTypes.BOOL);
@@ -56,29 +59,16 @@ public class Erc20TransfersTranslator extends AbstractHtsCallTranslator {
         if (isErc20Transfer(attempt.selector())) {
             final var call = Erc20TransfersTranslator.ERC_20_TRANSFER.decodeCall(
                     attempt.input().toArrayUnsafe());
-            return callFrom(
-                    attempt.senderAddress(),
-                    attempt.onlyDelegatableContractKeysActive(),
-                    null,
-                    call.get(0),
-                    call.get(1),
-                    attempt);
+            return callFrom(attempt.senderAddress(), null, call.get(0), call.get(1), attempt);
         } else {
             final var call = Erc20TransfersTranslator.ERC_20_TRANSFER_FROM.decodeCall(
                     attempt.input().toArrayUnsafe());
-            return callFrom(
-                    attempt.senderAddress(),
-                    attempt.onlyDelegatableContractKeysActive(),
-                    call.get(0),
-                    call.get(1),
-                    call.get(2),
-                    attempt);
+            return callFrom(attempt.senderAddress(), call.get(0), call.get(1), call.get(2), attempt);
         }
     }
 
     private Erc20TransfersCall callFrom(
             @NonNull final org.hyperledger.besu.datatypes.Address sender,
-            final boolean senderNeedsDelegatableContractKeys,
             @Nullable final Address from,
             @NonNull final Address to,
             @NonNull final BigInteger amount,
@@ -89,11 +79,7 @@ public class Erc20TransfersTranslator extends AbstractHtsCallTranslator {
                 from,
                 to,
                 requireNonNull(attempt.redirectToken()).tokenIdOrThrow(),
-                attempt.verificationStrategies()
-                        .activatingOnlyContractKeysFor(
-                                sender,
-                                senderNeedsDelegatableContractKeys,
-                                attempt.enhancement().nativeOperations()),
+                attempt.defaultVerificationStrategy(),
                 sender,
                 attempt.addressIdConverter());
     }

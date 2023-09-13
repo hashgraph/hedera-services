@@ -29,10 +29,12 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAddressChecks;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallFactory;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.SyntheticIds;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.balanceof.BalanceOfCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.balanceof.BalanceOfTranslator;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import java.util.ArrayDeque;
@@ -54,6 +56,9 @@ class HtsCallFactoryTest extends HtsCallTestBase {
     private VerificationStrategies verificationStrategies;
 
     @Mock
+    private AddressIdConverter idConverter;
+
+    @Mock
     private SyntheticIds syntheticIds;
 
     @Mock
@@ -71,7 +76,8 @@ class HtsCallFactoryTest extends HtsCallTestBase {
 
     @BeforeEach
     void setUp() {
-        subject = new HtsCallFactory(syntheticIds, addressChecks, verificationStrategies, NO_TRANSLATORS);
+        subject = new HtsCallFactory(
+                syntheticIds, addressChecks, verificationStrategies, List.of(new BalanceOfTranslator()));
     }
 
     @Test
@@ -86,6 +92,7 @@ class HtsCallFactoryTest extends HtsCallTestBase {
         given(nativeOperations.getToken(FUNGIBLE_TOKEN_ID.tokenNum())).willReturn(FUNGIBLE_TOKEN);
         given(frame.getSenderAddress()).willReturn(EIP_1014_ADDRESS);
         given(addressChecks.hasParentDelegateCall(frame)).willReturn(true);
+        given(syntheticIds.converterFor(nativeOperations)).willReturn(idConverter);
 
         final var input = bytesForRedirect(
                 BALANCE_OF.encodeCallWithArgs(asHeadlongAddress(NON_SYSTEM_LONG_ZERO_ADDRESS)), FUNGIBLE_TOKEN_ID);

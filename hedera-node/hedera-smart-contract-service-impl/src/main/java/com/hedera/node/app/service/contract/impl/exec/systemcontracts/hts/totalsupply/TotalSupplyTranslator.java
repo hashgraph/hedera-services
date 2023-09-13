@@ -34,11 +34,17 @@ public class TotalSupplyTranslator extends AbstractHtsCallTranslator {
         // Dagger2
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean matches(@NonNull final HtsCallAttempt attempt) {
         return Arrays.equals(attempt.selector(), TOTAL_SUPPLY.selector());
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public TotalSupplyCall callFrom(@NonNull final HtsCallAttempt attempt) {
         return new TotalSupplyCall(attempt.enhancement(), attempt.redirectToken());

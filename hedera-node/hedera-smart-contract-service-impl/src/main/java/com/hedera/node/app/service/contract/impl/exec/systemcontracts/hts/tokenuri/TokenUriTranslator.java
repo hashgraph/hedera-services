@@ -28,6 +28,9 @@ import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/**
+ * Translates {@code tokenUri()} calls to the HTS system contract.
+ */
 @Singleton
 public class TokenUriTranslator extends AbstractHtsCallTranslator {
     public static final Function TOKEN_URI = new Function("tokenURI(uint256)", ReturnTypes.STRING);
@@ -37,11 +40,17 @@ public class TokenUriTranslator extends AbstractHtsCallTranslator {
         // Dagger2
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean matches(@NonNull final HtsCallAttempt attempt) {
         return Arrays.equals(attempt.selector(), TOKEN_URI.selector());
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public HtsCall callFrom(@NonNull final HtsCallAttempt attempt) {
         final var serialNo = asExactLongValueOrZero(TokenUriTranslator.TOKEN_URI

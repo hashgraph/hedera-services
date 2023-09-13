@@ -25,6 +25,9 @@ import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/**
+ * Translates {@code symbol()} calls to the HTS system contract.
+ */
 @Singleton
 public class SymbolTranslator extends AbstractHtsCallTranslator {
     public static final Function SYMBOL = new Function("symbol()", ReturnTypes.STRING);
@@ -34,11 +37,17 @@ public class SymbolTranslator extends AbstractHtsCallTranslator {
         // Dagger2
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean matches(@NonNull final HtsCallAttempt attempt) {
         return Arrays.equals(attempt.selector(), SYMBOL.selector());
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public SymbolCall callFrom(@NonNull final HtsCallAttempt attempt) {
         return new SymbolCall(attempt.enhancement(), attempt.redirectToken());

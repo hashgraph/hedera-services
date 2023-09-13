@@ -51,12 +51,18 @@ public class AssociationsTranslator extends AbstractHtsCallTranslator {
         this.decoder = decoder;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean matches(@NonNull final HtsCallAttempt attempt) {
         return (attempt.isTokenRedirect() && matchesHrcSelector(attempt.selector()))
                 || (!attempt.isTokenRedirect() && matchesClassicSelector(attempt.selector()));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public HtsCall callFrom(@NonNull final HtsCallAttempt attempt) {
         return new DispatchForResponseCodeHtsCall<>(

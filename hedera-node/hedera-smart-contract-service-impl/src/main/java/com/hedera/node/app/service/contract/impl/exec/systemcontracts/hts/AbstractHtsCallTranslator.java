@@ -22,9 +22,16 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsCallTra
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
+/**
+ * Basic implementation support for a {@link HtsCallTranslator} that returns a translated
+ * call when the {@link HtsCallAttempt} matches and null otherwise.
+ */
 public abstract class AbstractHtsCallTranslator implements HtsCallTranslator {
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public @Nullable HtsCall translateCallAttempt(@NonNull HtsCallAttempt attempt) {
+    public @Nullable HtsCall translateCallAttempt(@NonNull final HtsCallAttempt attempt) {
         requireNonNull(attempt);
         if (matches(attempt)) {
             return callFrom(attempt);
@@ -38,7 +45,7 @@ public abstract class AbstractHtsCallTranslator implements HtsCallTranslator {
      * @param attempt the selector to match
      * @return true if the selector matches the selector of the call this translator is responsible for
      */
-    public abstract boolean matches(@NonNull final HtsCallAttempt attempt);
+    public abstract boolean matches(@NonNull HtsCallAttempt attempt);
 
     /**
      * Returns a call from the given attempt.
@@ -46,5 +53,5 @@ public abstract class AbstractHtsCallTranslator implements HtsCallTranslator {
      * @param attempt the attempt to get the call from
      * @return a call from the given attempt
      */
-    public abstract HtsCall callFrom(@NonNull final HtsCallAttempt attempt);
+    public abstract HtsCall callFrom(@NonNull HtsCallAttempt attempt);
 }
