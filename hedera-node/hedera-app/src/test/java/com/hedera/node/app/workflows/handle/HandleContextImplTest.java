@@ -34,6 +34,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -82,7 +83,6 @@ import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import java.lang.reflect.InvocationTargetException;
-import java.sql.Savepoint;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
@@ -168,10 +168,11 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         } catch (UnknownHederaFunctionality e) {
             throw new RuntimeException(e);
         }
-
         final var txInfo =
                 new TransactionInfo(Transaction.DEFAULT, txBody, SignatureMap.DEFAULT, Bytes.EMPTY, function);
+
         return new HandleContextImpl(
+                txBody,
                 txInfo,
                 ALICE.accountID(),
                 ALICE.account().keyOrThrow(),
@@ -202,6 +203,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                 Bytes.EMPTY,
                 HederaFunctionality.CRYPTO_TRANSFER);
         final var allArgs = new Object[] {
+            txInfo.txBody(),
             txInfo,
             ALICE.accountID(),
             ALICE.account().keyOrThrow(),
@@ -225,6 +227,10 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         final var constructor = HandleContextImpl.class.getConstructors()[0];
         for (int i = 0; i < allArgs.length; i++) {
             final var index = i;
+            // Skip transactionID and payerKey, they are optional
+            if (index == 1 || index == 3) {
+                continue;
+            }
             assertThatThrownBy(() -> {
                         final var argsWithNull = Arrays.copyOf(allArgs, allArgs.length);
                         argsWithNull[index] = null;
@@ -265,6 +271,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     Bytes.EMPTY,
                     HederaFunctionality.CRYPTO_TRANSFER);
             handleContext = new HandleContextImpl(
+                    txInfo.txBody(),
                     txInfo,
                     payer,
                     payerKey,
@@ -367,12 +374,6 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
     @Nested
     @DisplayName("Handling of stack data")
     final class StackDataTest {
-
-        @Mock
-        private Savepoint savepoint1;
-
-        @Mock
-        private Savepoint savepoint2;
 
         @BeforeEach
         void setUp() {
@@ -746,6 +747,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             final var txInfo =
                     new TransactionInfo(Transaction.DEFAULT, txBody, SignatureMap.DEFAULT, Bytes.EMPTY, function);
             return new HandleContextImpl(
+                    txBody,
                     txInfo,
                     ALICE.accountID(),
                     ALICE.account().keyOrThrow(),
@@ -775,39 +777,51 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
 
             // then
             assertThatThrownBy(() -> context.dispatchPrecedingTransaction(
-                            null, SingleTransactionRecordBuilder.class, VERIFIER_CALLBACK))
-                    .isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() -> context.dispatchPrecedingTransaction(txBody, null, VERIFIER_CALLBACK))
+                            null, SingleTransactionRecordBuilder.class, VERIFIER_CALLBACK, AccountID.DEFAULT))
                     .isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() ->
-                            context.dispatchPrecedingTransaction(txBody, SingleTransactionRecordBuilder.class, null))
+                            context.dispatchPrecedingTransaction(txBody, null, VERIFIER_CALLBACK, AccountID.DEFAULT))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> context.dispatchPrecedingTransaction(
+                            txBody, SingleTransactionRecordBuilder.class, null, AccountID.DEFAULT))
                     .isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() -> context.dispatchChildTransaction(
-                            null, SingleTransactionRecordBuilder.class, VERIFIER_CALLBACK))
+                            null, SingleTransactionRecordBuilder.class, VERIFIER_CALLBACK, AccountID.DEFAULT))
                     .isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() -> context.dispatchChildTransaction(txBody, null, VERIFIER_CALLBACK))
+            assertThatThrownBy(
+                            () -> context.dispatchChildTransaction(txBody, null, VERIFIER_CALLBACK, AccountID.DEFAULT))
                     .isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() -> context.dispatchChildTransaction(
-                            txBody, SingleTransactionRecordBuilder.class, (Predicate<Key>) null))
+                            txBody, SingleTransactionRecordBuilder.class, (Predicate<Key>) null, AccountID.DEFAULT))
                     .isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() -> context.dispatchRemovableChildTransaction(
-                            null, SingleTransactionRecordBuilder.class, VERIFIER_CALLBACK))
-                    .isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() -> context.dispatchRemovableChildTransaction(txBody, null, VERIFIER_CALLBACK))
+                            null, SingleTransactionRecordBuilder.class, VERIFIER_CALLBACK, AccountID.DEFAULT))
                     .isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() -> context.dispatchRemovableChildTransaction(
-                            txBody, SingleTransactionRecordBuilder.class, (Predicate<Key>) null))
+                            txBody, null, VERIFIER_CALLBACK, AccountID.DEFAULT))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> context.dispatchRemovableChildTransaction(
+                            txBody, SingleTransactionRecordBuilder.class, (Predicate<Key>) null, AccountID.DEFAULT))
                     .isInstanceOf(NullPointerException.class);
         }
 
         private static Stream<Arguments> createContextDispatchers() {
             return Stream.of(
                     Arguments.of((Consumer<HandleContext>) context -> context.dispatchPrecedingTransaction(
-                            defaultTransactionBody(), SingleTransactionRecordBuilder.class, VERIFIER_CALLBACK)),
+                            defaultTransactionBody(),
+                            SingleTransactionRecordBuilder.class,
+                            VERIFIER_CALLBACK,
+                            AccountID.DEFAULT)),
                     Arguments.of((Consumer<HandleContext>) context -> context.dispatchChildTransaction(
-                            defaultTransactionBody(), SingleTransactionRecordBuilder.class, VERIFIER_CALLBACK)),
+                            defaultTransactionBody(),
+                            SingleTransactionRecordBuilder.class,
+                            VERIFIER_CALLBACK,
+                            AccountID.DEFAULT)),
                     Arguments.of((Consumer<HandleContext>) context -> context.dispatchRemovableChildTransaction(
-                            defaultTransactionBody(), SingleTransactionRecordBuilder.class, VERIFIER_CALLBACK)));
+                            defaultTransactionBody(),
+                            SingleTransactionRecordBuilder.class,
+                            VERIFIER_CALLBACK,
+                            AccountID.DEFAULT)));
         }
 
         @ParameterizedTest
@@ -893,7 +907,10 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
 
                 // then
                 assertThatThrownBy(() -> context.dispatchPrecedingTransaction(
-                                defaultTransactionBody(), SingleTransactionRecordBuilder.class, VERIFIER_CALLBACK))
+                                defaultTransactionBody(),
+                                SingleTransactionRecordBuilder.class,
+                                VERIFIER_CALLBACK,
+                                AccountID.DEFAULT))
                         .isInstanceOf(IllegalArgumentException.class);
                 verify(recordListBuilder, never()).addPreceding(any());
                 verify(dispatcher, never()).dispatchHandle(any());
@@ -912,7 +929,10 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
 
             // then
             assertThatThrownBy(() -> context.dispatchPrecedingTransaction(
-                            defaultTransactionBody(), SingleTransactionRecordBuilder.class, VERIFIER_CALLBACK))
+                            defaultTransactionBody(),
+                            SingleTransactionRecordBuilder.class,
+                            VERIFIER_CALLBACK,
+                            AccountID.DEFAULT))
                     .isInstanceOf(IllegalStateException.class);
             verify(recordListBuilder, never()).addPreceding(any());
             verify(dispatcher, never()).dispatchHandle(any());
@@ -930,7 +950,10 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
 
             // then
             assertThatThrownBy(() -> context.dispatchPrecedingTransaction(
-                            defaultTransactionBody(), SingleTransactionRecordBuilder.class, VERIFIER_CALLBACK))
+                            defaultTransactionBody(),
+                            SingleTransactionRecordBuilder.class,
+                            VERIFIER_CALLBACK,
+                            AccountID.DEFAULT))
                     .isInstanceOf(IllegalStateException.class);
             verify(recordListBuilder, never()).addPreceding(any());
             verify(dispatcher, never()).dispatchHandle(any());
@@ -947,7 +970,10 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
 
             // then
             assertThatThrownBy(() -> context.dispatchChildTransaction(
-                            defaultTransactionBody(), SingleTransactionRecordBuilder.class, VERIFIER_CALLBACK))
+                            defaultTransactionBody(),
+                            SingleTransactionRecordBuilder.class,
+                            VERIFIER_CALLBACK,
+                            AccountID.DEFAULT))
                     .isInstanceOf(IllegalArgumentException.class);
             verify(recordListBuilder, never()).addPreceding(any());
             verify(dispatcher, never()).dispatchHandle(any());
@@ -964,7 +990,10 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
 
             // then
             assertThatThrownBy(() -> context.dispatchRemovableChildTransaction(
-                            defaultTransactionBody(), SingleTransactionRecordBuilder.class, VERIFIER_CALLBACK))
+                            defaultTransactionBody(),
+                            SingleTransactionRecordBuilder.class,
+                            VERIFIER_CALLBACK,
+                            AccountID.DEFAULT))
                     .isInstanceOf(IllegalArgumentException.class);
             verify(recordListBuilder, never()).addPreceding(any());
             verify(dispatcher, never()).dispatchHandle(any());

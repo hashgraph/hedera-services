@@ -24,6 +24,8 @@ import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
+import com.swirlds.platform.SwirldsPlatformBuilder;
+import com.swirlds.platform.util.BootstrapUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -78,5 +80,20 @@ public class ServicesMain implements SwirldMain {
     @Override
     public void run() {
         delegate.run();
+    }
+
+    /**
+     * Launches the application.
+     *
+     * @param args First arg, if specified, will be the node ID
+     */
+    public static void main(final String... args) throws Exception {
+        BootstrapUtils.setupConstructableRegistry();
+        final var registry = ConstructableRegistry.getInstance();
+        new SwirldsPlatformBuilder()
+                .withName("Hedera")
+                .withMain(() -> new Hedera(registry))
+                .withNodeId(args != null && args.length > 0 ? Integer.parseInt(args[0]) : 0)
+                .buildAndStart();
     }
 }

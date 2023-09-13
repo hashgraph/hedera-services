@@ -118,6 +118,8 @@ public interface HederaInjectionComponent {
 
     ThrottleManager throttleManager();
 
+    DualStateUpdateFacility dualStateUpdateFacility();
+
     @Component.Builder
     interface Builder {
 
@@ -147,9 +149,6 @@ public interface HederaInjectionComponent {
 
         @BindsInstance
         Builder systemFileUpdateFacility(SystemFileUpdateFacility systemFileUpdateFacility);
-
-        @BindsInstance
-        Builder dualStateUpdateFacility(DualStateUpdateFacility dualStateUpdateFacility);
 
         @BindsInstance
         Builder exchangeRateManager(ExchangeRateManager exchangeRateManager);

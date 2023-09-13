@@ -238,6 +238,7 @@ public interface ScaffoldingModule {
             final var txInfo =
                     new TransactionInfo(Transaction.DEFAULT, body, SignatureMap.DEFAULT, Bytes.EMPTY, function);
             return new HandleContextImpl(
+                    body,
                     txInfo,
                     body.transactionIDOrThrow().accountIDOrThrow(),
                     Key.DEFAULT,
