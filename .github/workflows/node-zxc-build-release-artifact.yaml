@@ -14,7 +14,7 @@
 # limitations under the License.
 ##
 
-name: "ZXC: [Node] Build Release Artifact"
+name: "ZXC: [Node] Deploy Release Artifacts"
 on:
   workflow_call:
     inputs:
@@ -602,7 +602,7 @@ jobs:
           arguments: ":hedera-node:app-service-evm:releaseMavenCentralSnapshot --scan -PpublishSigningEnabled=true"
 
   sdk-mc-publish:
-    name: Publish Platform to ${{ inputs.version-policy == 'specified' && 'Maven Central' || 'GAR' }}
+    name: Publish Platform to ${{ inputs.version-policy == 'specified' && 'Maven Central' || 'GCP Registry' }}
     runs-on: [ self-hosted, Linux, large, ephemeral ]
     needs:
       - validate
@@ -755,7 +755,7 @@ jobs:
           OSSRH_PASSWORD: ${{ secrets.sdk-ossrh-password }}
         with:
           gradle-version: ${{ inputs.gradle-version }}
-          arguments: ":swirlds-platform:release{{ inputs.sdk-release-profile }} --scan -PpublishSigningEnabled=true"
+          arguments: ":platform-sdk:release${{ inputs.sdk-release-profile }} --scan -PpublishSigningEnabled=true"
 
       - name: Upload SDK Release Archives
         if: ${{ inputs.dry-run-enabled != true && inputs.version-policy == 'specified' && !cancelled() && !failure() }}
