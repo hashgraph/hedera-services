@@ -32,6 +32,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
+import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -111,8 +112,8 @@ public class TokenUnfreezeAccountHandler implements TransactionHandler {
             @NonNull final WritableTokenRelationStore tokenRelStore)
             throws HandleException {
         // Check that the token exists
-        final var tokenId = op.tokenOrElse(TokenID.DEFAULT);
-        final var tokenMeta = tokenStore.getTokenMeta(tokenId);
+        final var token = TokenHandlerHelper.getIfUsable(op.tokenOrElse(TokenID.DEFAULT), tokenStore);
+        final var tokenMeta = tokenStore.getTokenMeta(token.tokenId());
         validateTrue(tokenMeta != null, INVALID_TOKEN_ID);
 
         // Check that the token has a freeze key
@@ -124,7 +125,7 @@ public class TokenUnfreezeAccountHandler implements TransactionHandler {
         validateTrue(account != null, INVALID_ACCOUNT_ID);
 
         // Check that the token is associated to the account
-        final var tokenRel = tokenRelStore.getForModify(accountId, tokenId);
+        final var tokenRel = tokenRelStore.getForModify(accountId, token.tokenId());
         validateTrue(tokenRel != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
 
         // Return the token relation

@@ -32,6 +32,7 @@ import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.*;
+import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
 import com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator;
 import com.hedera.node.app.service.token.records.TokenMintRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -95,7 +96,7 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
         final var tokenRelStore = context.writableStore(WritableTokenRelationStore.class);
         final var accountStore = context.writableStore(WritableAccountStore.class);
         // validate token exists
-        final var token = tokenStore.get(tokenId);
+        final var token = TokenHandlerHelper.getIfUsable(tokenId, tokenStore);
         validateTrue(token != null, INVALID_TOKEN_ID);
         // validate treasury relation exists
         final var treasuryRel = tokenRelStore.get(token.treasuryAccountId(), tokenId);
