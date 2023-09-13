@@ -28,9 +28,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsCallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAddressChecks;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallFactory;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.SyntheticIds;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.balanceof.BalanceOfCall;
@@ -40,14 +39,13 @@ import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
-import java.util.function.Function;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
 class HtsCallFactoryTest extends HtsCallTestBase {
-    private static final List<Function<HtsCallAttempt, HtsCall>> NO_TRANSLATORS = Collections.emptyList();
+    private static final List<HtsCallTranslator> NO_TRANSLATORS = Collections.emptyList();
 
     @Mock
     private HtsCallAddressChecks addressChecks;

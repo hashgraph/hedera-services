@@ -38,9 +38,9 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsCallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.associations.AssociationsDecoder;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.associations.AssociationsTranslator;
@@ -75,7 +75,6 @@ import com.swirlds.common.utility.CommonUtils;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.Function;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -99,24 +98,24 @@ class HtsCallAttemptTest extends HtsCallTestBase {
     @Mock
     private ClassicTransfersDecoder classicTransfersDecoder;
 
-    private List<Function<HtsCallAttempt, HtsCall>> callAttemptTranslators;
+    private List<HtsCallTranslator> callTranslators;
 
     @BeforeEach
     void setUp() {
-        callAttemptTranslators = List.of(
-                new AssociationsTranslator(associationsDecoder)::translate,
-                new Erc20TransfersTranslator()::translate,
-                new Erc721TransferFromTranslator()::translate,
-                new MintTranslator()::translate,
-                new ClassicTransfersTranslator(classicTransfersDecoder)::translate,
-                new BalanceOfTranslator()::translate,
-                new IsApprovedForAllTranslator()::translate,
-                new NameTranslator()::translate,
-                new TotalSupplyTranslator()::translate,
-                new SymbolTranslator()::translate,
-                new TokenUriTranslator()::translate,
-                new OwnerOfTranslator()::translate,
-                new DecimalsTranslator()::translate);
+        callTranslators = List.of(
+                new AssociationsTranslator(associationsDecoder),
+                new Erc20TransfersTranslator(),
+                new Erc721TransferFromTranslator(),
+                new MintTranslator(),
+                new ClassicTransfersTranslator(classicTransfersDecoder),
+                new BalanceOfTranslator(),
+                new IsApprovedForAllTranslator(),
+                new NameTranslator(),
+                new TotalSupplyTranslator(),
+                new SymbolTranslator(),
+                new TokenUriTranslator(),
+                new OwnerOfTranslator(),
+                new DecimalsTranslator());
     }
 
     @Test
@@ -131,7 +130,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
-                callAttemptTranslators);
+                callTranslators);
         assertNull(subject.redirectToken());
         verifyNoInteractions(nativeOperations);
     }
@@ -149,7 +148,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
-                callAttemptTranslators);
+                callTranslators);
         assertNull(subject.asExecutableCall());
     }
 
@@ -165,7 +164,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
-                callAttemptTranslators);
+                callTranslators);
         assertInstanceOf(DecimalsCall.class, subject.asExecutableCall());
     }
 
@@ -181,7 +180,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
-                callAttemptTranslators);
+                callTranslators);
         assertInstanceOf(TokenUriCall.class, subject.asExecutableCall());
     }
 
@@ -197,7 +196,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
-                callAttemptTranslators);
+                callTranslators);
         assertInstanceOf(OwnerOfCall.class, subject.asExecutableCall());
     }
 
@@ -216,7 +215,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
-                callAttemptTranslators);
+                callTranslators);
         assertInstanceOf(BalanceOfCall.class, subject.asExecutableCall());
     }
 
@@ -236,7 +235,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
-                callAttemptTranslators);
+                callTranslators);
         assertInstanceOf(IsApprovedForAllCall.class, subject.asExecutableCall());
     }
 
@@ -252,7 +251,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
-                callAttemptTranslators);
+                callTranslators);
         assertInstanceOf(TotalSupplyCall.class, subject.asExecutableCall());
     }
 
@@ -268,7 +267,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
-                callAttemptTranslators);
+                callTranslators);
         assertInstanceOf(NameCall.class, subject.asExecutableCall());
     }
 
@@ -284,7 +283,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
-                callAttemptTranslators);
+                callTranslators);
         assertInstanceOf(SymbolCall.class, subject.asExecutableCall());
     }
 
@@ -310,7 +309,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
-                callAttemptTranslators);
+                callTranslators);
         assertInstanceOf(Erc721TransferFromCall.class, subject.asExecutableCall());
     }
 
@@ -336,7 +335,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
-                callAttemptTranslators);
+                callTranslators);
         assertInstanceOf(Erc20TransfersCall.class, subject.asExecutableCall());
     }
 
@@ -359,7 +358,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
-                callAttemptTranslators);
+                callTranslators);
         assertInstanceOf(Erc20TransfersCall.class, subject.asExecutableCall());
     }
 
@@ -409,7 +408,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
-                callAttemptTranslators);
+                callTranslators);
 
         assertInstanceOf(DispatchForResponseCodeHtsCall.class, subject.asExecutableCall());
         assertArrayEquals(selector, subject.selector());
@@ -469,7 +468,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
-                callAttemptTranslators);
+                callTranslators);
 
         assertInstanceOf(ClassicTransfersCall.class, subject.asExecutableCall());
         assertArrayEquals(selector, subject.selector());
@@ -533,7 +532,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
-                callAttemptTranslators);
+                callTranslators);
 
         if (linkedTokenType == LinkedTokenType.MISSING) {
             assertNull(subject.asExecutableCall());

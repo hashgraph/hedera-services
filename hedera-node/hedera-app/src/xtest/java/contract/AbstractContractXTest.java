@@ -136,7 +136,7 @@ public abstract class AbstractContractXTest {
                 LIVE_SYNTHETIC_IDS,
                 addressChecks,
                 LIVE_VERIFICATION_STRATEGIES,
-                scaffoldingComponent.callAttemptTranslators());
+                scaffoldingComponent.callTranslators());
     }
 
     @Test

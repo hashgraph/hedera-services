@@ -22,9 +22,9 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsCallTra
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
-public abstract class AbstractHtsCallTranslator implements HtsCallTranslator<HtsCall> {
+public abstract class AbstractHtsCallTranslator implements HtsCallTranslator {
     @Override
-    public @Nullable HtsCall translate(@NonNull HtsCallAttempt attempt) {
+    public @Nullable HtsCall translateCallAttempt(@NonNull HtsCallAttempt attempt) {
         requireNonNull(attempt);
         if (matches(attempt)) {
             return callFrom(attempt);

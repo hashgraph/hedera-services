@@ -28,6 +28,7 @@ import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsCallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.swirlds.config.api.Configuration;
@@ -61,7 +62,7 @@ public class HtsCallAttempt {
     private final Configuration configuration;
     private final AddressIdConverter addressIdConverter;
     private final VerificationStrategies verificationStrategies;
-    private final List<java.util.function.Function<HtsCallAttempt, HtsCall>> callAttemptTranslators;
+    private final List<HtsCallTranslator> callTranslators;
 
     public HtsCallAttempt(
             @NonNull final Bytes input,
@@ -71,9 +72,9 @@ public class HtsCallAttempt {
             @NonNull final Configuration configuration,
             @NonNull final AddressIdConverter addressIdConverter,
             @NonNull final VerificationStrategies verificationStrategies,
-            @NonNull final List<java.util.function.Function<HtsCallAttempt, HtsCall>> callAttemptTranslators) {
+            @NonNull final List<HtsCallTranslator> callTranslators) {
         requireNonNull(input);
-        this.callAttemptTranslators = requireNonNull(callAttemptTranslators);
+        this.callTranslators = requireNonNull(callTranslators);
         this.senderAddress = requireNonNull(senderAddress);
         this.configuration = requireNonNull(configuration);
         this.addressIdConverter = requireNonNull(addressIdConverter);
@@ -183,10 +184,10 @@ public class HtsCallAttempt {
      * @return the executable call, or null if this attempt can't be translated to one
      */
     public @Nullable HtsCall asExecutableCall() {
-        for (final var translator : callAttemptTranslators) {
-            final var maybeCall = translator.apply(this);
-            if (maybeCall != null) {
-                return maybeCall;
+        for (final var translator : callTranslators) {
+            final var call = translator.translateCallAttempt(this);
+            if (call != null) {
+                return call;
             }
         }
         return null;

@@ -21,9 +21,9 @@ import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.pr
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsCallTranslator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
-import java.util.function.Function;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.tuweni.bytes.Bytes;
@@ -37,18 +37,18 @@ public class HtsCallFactory {
     private final SyntheticIds syntheticIds;
     private final HtsCallAddressChecks addressChecks;
     private final VerificationStrategies verificationStrategies;
-    private final List<Function<HtsCallAttempt, HtsCall>> callAttemptTranslators;
+    private final List<HtsCallTranslator> callTranslators;
 
     @Inject
     public HtsCallFactory(
             @NonNull final SyntheticIds syntheticIds,
             @NonNull final HtsCallAddressChecks addressChecks,
             @NonNull final VerificationStrategies verificationStrategies,
-            @NonNull final List<Function<HtsCallAttempt, HtsCall>> callAttemptTranslators) {
+            @NonNull final List<HtsCallTranslator> callTranslators) {
         this.syntheticIds = requireNonNull(syntheticIds);
         this.addressChecks = requireNonNull(addressChecks);
         this.verificationStrategies = requireNonNull(verificationStrategies);
-        this.callAttemptTranslators = requireNonNull(callAttemptTranslators);
+        this.callTranslators = requireNonNull(callTranslators);
     }
 
     /**
@@ -71,7 +71,7 @@ public class HtsCallFactory {
                 configOf(frame),
                 syntheticIds.converterFor(enhancement.nativeOperations()),
                 verificationStrategies,
-                callAttemptTranslators);
+                callTranslators);
         return requireNonNull(attempt.asExecutableCall());
     }
 }
