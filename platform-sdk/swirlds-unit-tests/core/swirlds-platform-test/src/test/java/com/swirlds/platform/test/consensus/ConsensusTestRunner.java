@@ -17,9 +17,8 @@
 package com.swirlds.platform.test.consensus;
 
 import com.swirlds.platform.test.consensus.framework.TestInput;
-import java.util.Random;
-
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Random;
 import org.junit.jupiter.api.function.ThrowingConsumer;
 
 public class ConsensusTestRunner {

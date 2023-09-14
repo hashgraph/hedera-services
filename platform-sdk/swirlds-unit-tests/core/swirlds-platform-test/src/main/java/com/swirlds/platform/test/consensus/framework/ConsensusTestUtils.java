@@ -18,7 +18,6 @@ package com.swirlds.platform.test.consensus.framework;
 
 import com.swirlds.common.utility.Threshold;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;

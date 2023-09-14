@@ -16,14 +16,13 @@
 
 package com.swirlds.platform.test.consensus.framework.validation;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
-
 import static com.swirlds.platform.test.consensus.framework.validation.Validations.ValidationType.CONSENSUS_EVENTS;
 import static com.swirlds.platform.test.consensus.framework.validation.Validations.ValidationType.CONSENSUS_TIMESTAMPS;
 import static com.swirlds.platform.test.consensus.framework.validation.Validations.ValidationType.DIFFERENT_ORDER;
 import static com.swirlds.platform.test.consensus.framework.validation.Validations.ValidationType.INPUTS_ARE_SAME;
 import static com.swirlds.platform.test.consensus.framework.validation.Validations.ValidationType.RATIOS;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

@@ -34,7 +34,6 @@ import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
 import com.swirlds.test.framework.ResourceLoader;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.awt.FlowLayout;
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -63,9 +62,7 @@ public class TestGuiSource {
         guiSource = new FinalShadowgraphGuiSource(intake.getShadowGraph(), graphGenerator.getAddressBook());
     }
 
-    public TestGuiSource(
-            @NonNull final GraphGenerator<?> graphGenerator,
-            @NonNull final TestIntake intake) {
+    public TestGuiSource(@NonNull final GraphGenerator<?> graphGenerator, @NonNull final TestIntake intake) {
         this.graphGenerator = graphGenerator;
         this.intake = intake;
         this.guiSource = new FinalShadowgraphGuiSource(intake.getShadowGraph(), graphGenerator.getAddressBook());

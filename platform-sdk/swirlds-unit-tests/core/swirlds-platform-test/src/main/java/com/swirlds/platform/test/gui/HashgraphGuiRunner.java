@@ -20,7 +20,6 @@ import com.swirlds.gui.hashgraph.HashgraphGuiSource;
 import com.swirlds.platform.gui.hashgraph.HashgraphGui;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.awt.BorderLayout;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
@@ -39,8 +38,7 @@ public final class HashgraphGuiRunner {
      * @param additionalControls additional controls that will be added to the bottom of the screen
      */
     public static void runHashgraphGui(
-            @NonNull final HashgraphGuiSource guiSource,
-            @Nullable final JComponent additionalControls) {
+            @NonNull final HashgraphGuiSource guiSource, @Nullable final JComponent additionalControls) {
         final JFrame frame = new JFrame();
         final CloseDetector closeDetector = new CloseDetector();
         frame.addWindowListener(closeDetector);

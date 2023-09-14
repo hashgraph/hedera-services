@@ -161,7 +161,6 @@ public class ThreadSafeConsensusInfo implements GraphGenerations, RoundNumberPro
 
         long newMinRoundGeneration = info.minimumGeneration();
 
-
         // Guarantee that the round generation is non-decreasing.
         // Once we remove support for states with events, this can be removed
         newMinRoundGeneration = Math.max(newMinRoundGeneration, minRoundGeneration);

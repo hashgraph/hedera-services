@@ -24,8 +24,7 @@ import org.junit.jupiter.api.Assertions;
 
 public class TimestampChecker {
     public static void validateConsensusTimestamps(
-            @NonNull final ConsensusOutput output1,
-            @NonNull final ConsensusOutput ignored) {
+            @NonNull final ConsensusOutput output1, @NonNull final ConsensusOutput ignored) {
         EventImpl previousConsensusEvent = null;
 
         for (final ConsensusRound round : output1.getConsensusRounds()) {

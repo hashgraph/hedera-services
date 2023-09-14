@@ -24,7 +24,6 @@ import com.swirlds.platform.observers.ConsensusRoundObserver;
 import com.swirlds.platform.observers.EventAddedObserver;
 import com.swirlds.platform.observers.StaleEventObserver;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedList;

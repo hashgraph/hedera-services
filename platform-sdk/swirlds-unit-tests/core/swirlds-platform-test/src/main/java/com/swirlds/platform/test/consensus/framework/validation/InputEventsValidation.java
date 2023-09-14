@@ -18,10 +18,9 @@ package com.swirlds.platform.test.consensus.framework.validation;
 
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.consensus.framework.ConsensusOutput;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Objects;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
 import org.junit.jupiter.api.Assertions;
 
 public class InputEventsValidation {
@@ -29,8 +28,7 @@ public class InputEventsValidation {
      * Validate that the events are added in a different order
      */
     public static void validateEventsAreInDifferentOrder(
-            @NonNull final ConsensusOutput output1,
-            @NonNull final ConsensusOutput output2) {
+            @NonNull final ConsensusOutput output1, @NonNull final ConsensusOutput output2) {
         assertBaseEventLists(
                 "Verifying input events are not equal", output1.getAddedEvents(), output2.getAddedEvents(), false);
     }
@@ -40,8 +38,7 @@ public class InputEventsValidation {
      * non-consensus events, the consensus data does not have to match
      */
     public static void validateInputsAreTheSame(
-            @NonNull final ConsensusOutput output1,
-            @NonNull final ConsensusOutput output2) {
+            @NonNull final ConsensusOutput output1, @NonNull final ConsensusOutput output2) {
         assertBaseEventLists(
                 "Verifying sorted input events are equal",
                 output1.sortedAddedEvents(),

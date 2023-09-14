@@ -28,7 +28,6 @@ import com.swirlds.platform.test.event.source.EventSourceFactory;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.EventSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -73,17 +72,20 @@ public class OrchestratorBuilder {
         return this;
     }
 
-    public @NonNull OrchestratorBuilder setEventSourceConfigurator(@NonNull final Consumer<EventSource<?>> eventSourceConfigurator) {
+    public @NonNull OrchestratorBuilder setEventSourceConfigurator(
+            @NonNull final Consumer<EventSource<?>> eventSourceConfigurator) {
         this.eventSourceConfigurator = eventSourceConfigurator;
         return this;
     }
 
-    public @NonNull OrchestratorBuilder setNode1EventEmitterGenerator(@NonNull final EventEmitterGenerator node1EventEmitterGenerator) {
+    public @NonNull OrchestratorBuilder setNode1EventEmitterGenerator(
+            @NonNull final EventEmitterGenerator node1EventEmitterGenerator) {
         this.node1EventEmitterGenerator = node1EventEmitterGenerator;
         return this;
     }
 
-    public @NonNull OrchestratorBuilder setNode2EventEmitterGenerator(@NonNull final EventEmitterGenerator node2EventEmitterGenerator) {
+    public @NonNull OrchestratorBuilder setNode2EventEmitterGenerator(
+            @NonNull final EventEmitterGenerator node2EventEmitterGenerator) {
         this.node2EventEmitterGenerator = node2EventEmitterGenerator;
         return this;
     }
