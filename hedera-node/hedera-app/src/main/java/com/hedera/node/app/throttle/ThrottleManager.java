@@ -16,11 +16,20 @@
 
 package com.hedera.node.app.throttle;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.ThrottleBucket;
 import com.hedera.hapi.node.transaction.ThrottleDefinitions;
+import com.hedera.node.app.hapi.utils.sysfiles.validation.ExpectedCustomThrottles;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -34,6 +43,9 @@ public class ThrottleManager {
 
     private static final Logger logger = LogManager.getLogger(ThrottleManager.class);
     private static final ThrottleDefinitions DEFAULT_THROTTLE_DEFINITIONS = ThrottleDefinitions.DEFAULT;
+    public static final Set<HederaFunctionality> expectedOps = ExpectedCustomThrottles.ACTIVE_OPS.stream()
+            .map(protoOp -> HederaFunctionality.fromProtobufOrdinal(protoOp.getNumber()))
+            .collect(Collectors.toSet());
 
     private ThrottleDefinitions throttleDefinitions;
     private com.hederahashgraph.api.proto.java.ThrottleDefinitions throttleDefinitionsProto;
@@ -68,6 +80,65 @@ public class ThrottleManager {
         } else {
             logger.warn("Throttle definition file did not contain throttle buckets!");
             throttleBuckets = DEFAULT_THROTTLE_DEFINITIONS.throttleBuckets();
+        }
+
+        validate();
+    }
+
+    /**
+     * Checks if the throttle definitions are valid.
+     */
+    private void validate() {
+        try {
+            checkForMissingExpectedOperations();
+            checkForZeroOpsPerSec();
+            checkForRepeatedOperations();
+        } catch (IllegalStateException e) {
+            throw new HandleException(ResponseCodeEnum.valueOf(e.getMessage()));
+        }
+    }
+
+    /**
+     * Checks if there are missing {@link HederaFunctionality} operations from the expected ones that should be throttled.
+     */
+    private void checkForMissingExpectedOperations() {
+        Set<HederaFunctionality> customizedOps = new HashSet<>();
+        for (var bucket : throttleDefinitions().throttleBuckets()) {
+            for (var group : bucket.throttleGroups()) {
+                customizedOps.addAll(group.operations());
+            }
+        }
+        if (customizedOps.isEmpty() || !expectedOps.equals(EnumSet.copyOf(customizedOps))) {
+            throw new IllegalStateException(ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION.name());
+        }
+    }
+
+    /**
+     * Checks if there are throttle groups defined with zero operations per second.
+     */
+    private void checkForZeroOpsPerSec() {
+        for (var bucket : throttleBuckets()) {
+            for (var group : bucket.throttleGroups()) {
+                if (group.milliOpsPerSec() == 0) {
+                    throw new IllegalStateException(ResponseCodeEnum.THROTTLE_GROUP_HAS_ZERO_OPS_PER_SEC.name());
+                }
+            }
+        }
+    }
+
+    /**
+     * Checks if an operation was assigned to more than one throttle group in a given bucket.
+     */
+    private void checkForRepeatedOperations() {
+        for (var bucket : throttleBuckets()) {
+            final Set<HederaFunctionality> seenSoFar = new HashSet<>();
+            for (var group : bucket.throttleGroups()) {
+                final var functions = group.operations();
+                if (!Collections.disjoint(seenSoFar, functions)) {
+                    throw new IllegalStateException(ResponseCodeEnum.OPERATION_REPEATED_IN_BUCKET_GROUPS.name());
+                }
+                seenSoFar.addAll(functions);
+            }
         }
     }
 

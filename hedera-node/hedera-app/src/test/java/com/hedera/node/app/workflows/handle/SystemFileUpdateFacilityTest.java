@@ -22,6 +22,7 @@ import static com.hedera.node.app.service.file.impl.FileServiceImpl.BLOBS_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchException;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -41,6 +42,7 @@ import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.spi.fixtures.TransactionFactory;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.throttle.ThrottleManager;
 import com.hedera.node.app.util.FileUtilities;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
@@ -60,6 +62,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mock.Strictness;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -77,7 +80,6 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
 
     private SystemFileUpdateFacility subject;
 
-    @Mock
     private ThrottleManager throttleManager;
 
     @Mock
@@ -96,6 +98,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
                 .getOrCreateConfig();
         when(configProvider.getConfiguration()).thenReturn(new VersionedConfigImpl(config, 1L));
 
+        throttleManager = new ThrottleManager();
         subject = new SystemFileUpdateFacility(configProvider, throttleManager, exchangeRateManager);
     }
 
@@ -175,6 +178,9 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
                 .fileAppend(FileAppendTransactionBody.newBuilder().fileID(fileID));
         files.put(fileID, File.newBuilder().contents(FILE_BYTES).build());
 
+        throttleManager = Mockito.mock(ThrottleManager.class);
+        subject = new SystemFileUpdateFacility(configProvider, throttleManager, exchangeRateManager);
+
         // when
         subject.handleTxBody(state, txBody.build(), new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW));
 
@@ -204,8 +210,6 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
     @Test
     void handleThrottleFileTxBodyWithEmptyListOfGroups() {
         // given
-        final var txBody = generateThrottleDefFileTransaction();
-
         final var throttleBucket = ThrottleBucket.newBuilder()
                 .name("test")
                 .burstPeriodMs(100)
@@ -214,21 +218,22 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
 
         var throttleDefinitions = new ThrottleDefinitions(List.of(throttleBucket));
 
-        when(throttleManager.throttleDefinitions()).thenReturn(throttleDefinitions);
+        final var txBody =
+                generateThrottleDefFileTransaction(ThrottleDefinitions.PROTOBUF.toBytes(throttleDefinitions));
 
         // when
-        final var recordBuilder = new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW);
-        subject.handleTxBody(state, txBody, recordBuilder);
+        Exception exception = catchException(
+                () -> subject.handleTxBody(state, txBody, new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW)));
 
         // then
-        assertThat(recordBuilder.status()).isEqualTo(ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION);
+        assertThat(exception).isInstanceOf(HandleException.class);
+        assertThat(((HandleException) exception).getStatus())
+                .isEqualTo(ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION);
     }
 
     @Test
     void handleThrottleFileTxBodyWithNotAllRequiredOperations() {
         // given
-        final var txBody = generateThrottleDefFileTransaction();
-
         var throttleGroup = ThrottleGroup.newBuilder()
                 .milliOpsPerSec(10)
                 .operations(
@@ -243,24 +248,25 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
 
         var throttleDefinitions = new ThrottleDefinitions(List.of(throttleBucket));
 
-        when(throttleManager.throttleDefinitions()).thenReturn(throttleDefinitions);
+        final var txBody =
+                generateThrottleDefFileTransaction(ThrottleDefinitions.PROTOBUF.toBytes(throttleDefinitions));
 
         // when
-        final var recordBuilder = new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW);
-        subject.handleTxBody(state, txBody, recordBuilder);
+        Exception exception = catchException(
+                () -> subject.handleTxBody(state, txBody, new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW)));
 
         // then
-        assertThat(recordBuilder.status()).isEqualTo(ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION);
+        assertThat(exception).isInstanceOf(HandleException.class);
+        assertThat(((HandleException) exception).getStatus())
+                .isEqualTo(ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION);
     }
 
     @Test
     void handleThrottleFileTxBodyWithZeroOpsPerSec() {
         // given
-        final var txBody = generateThrottleDefFileTransaction();
-
         var throttleGroup = ThrottleGroup.newBuilder()
                 .milliOpsPerSec(0) // the ops per sec should be more than 0
-                .operations(SystemFileUpdateFacility.expectedOps.stream().toList())
+                .operations(ThrottleManager.expectedOps.stream().toList())
                 .build();
 
         final var throttleBucket = ThrottleBucket.newBuilder()
@@ -271,24 +277,25 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
 
         var throttleDefinitions = new ThrottleDefinitions(List.of(throttleBucket));
 
-        when(throttleManager.throttleDefinitions()).thenReturn(throttleDefinitions);
+        final var txBody =
+                generateThrottleDefFileTransaction(ThrottleDefinitions.PROTOBUF.toBytes(throttleDefinitions));
 
         // when
-        final var recordBuilder = new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW);
-        subject.handleTxBody(state, txBody, recordBuilder);
+        Exception exception = catchException(
+                () -> subject.handleTxBody(state, txBody, new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW)));
 
         // then
-        assertThat(recordBuilder.status()).isEqualTo(ResponseCodeEnum.THROTTLE_GROUP_HAS_ZERO_OPS_PER_SEC);
+        assertThat(exception).isInstanceOf(HandleException.class);
+        assertThat(((HandleException) exception).getStatus())
+                .isEqualTo(ResponseCodeEnum.THROTTLE_GROUP_HAS_ZERO_OPS_PER_SEC);
     }
 
     @Test
     void handleThrottleFileTxBodyWithRepeatedOperation() {
         // given
-        final var txBody = generateThrottleDefFileTransaction();
-
         final var throttleGroup = ThrottleGroup.newBuilder()
                 .milliOpsPerSec(10)
-                .operations(SystemFileUpdateFacility.expectedOps.stream().toList())
+                .operations(ThrottleManager.expectedOps.stream().toList())
                 .build();
 
         final var repeatedThrottleGroup = ThrottleGroup.newBuilder()
@@ -304,23 +311,26 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
 
         var throttleDefinitions = new ThrottleDefinitions(List.of(throttleBucket));
 
-        when(throttleManager.throttleDefinitions()).thenReturn(throttleDefinitions);
+        final var txBody =
+                generateThrottleDefFileTransaction(ThrottleDefinitions.PROTOBUF.toBytes(throttleDefinitions));
 
         // when
-        final var recordBuilder = new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW);
-        subject.handleTxBody(state, txBody, recordBuilder);
+        Exception exception = catchException(
+                () -> subject.handleTxBody(state, txBody, new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW)));
 
         // then
-        assertThat(recordBuilder.status()).isEqualTo(ResponseCodeEnum.OPERATION_REPEATED_IN_BUCKET_GROUPS);
+        assertThat(exception).isInstanceOf(HandleException.class);
+        assertThat(((HandleException) exception).getStatus())
+                .isEqualTo(ResponseCodeEnum.OPERATION_REPEATED_IN_BUCKET_GROUPS);
     }
 
-    private TransactionBody generateThrottleDefFileTransaction() {
+    private TransactionBody generateThrottleDefFileTransaction(Bytes contents) {
         final var configuration = configProvider.getConfiguration();
         final var config = configuration.getConfigData(FilesConfig.class);
 
         final var fileNum = config.throttleDefinitions();
         final var fileID = FileID.newBuilder().fileNum(fileNum).build();
-        files.put(fileID, File.newBuilder().contents(FILE_BYTES).build());
+        files.put(fileID, File.newBuilder().contents(contents).build());
         return TransactionBody.newBuilder()
                 .fileAppend(FileAppendTransactionBody.newBuilder().fileID(fileID))
                 .build();

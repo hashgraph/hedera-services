@@ -20,8 +20,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.ThrottleBucket;
 import com.hedera.hapi.node.transaction.ThrottleDefinitions;
 import com.hedera.hapi.node.transaction.ThrottleGroup;
@@ -29,6 +31,7 @@ import com.hedera.node.app.spi.fixtures.util.LogCaptor;
 import com.hedera.node.app.spi.fixtures.util.LogCaptureExtension;
 import com.hedera.node.app.spi.fixtures.util.LoggingSubject;
 import com.hedera.node.app.spi.fixtures.util.LoggingTarget;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.List;
 import java.util.stream.Stream;
@@ -43,7 +46,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 class ThrottleManagerTest {
 
     ThrottleGroup throttleGroup = ThrottleGroup.newBuilder()
-            .operations(List.of(HederaFunctionality.CRYPTO_CREATE, HederaFunctionality.FREEZE))
+            .operations(ThrottleManager.expectedOps.stream().toList())
             .milliOpsPerSec(100)
             .build();
 
@@ -100,7 +103,7 @@ class ThrottleManagerTest {
     @MethodSource("invalidArgumentsOnUpdateSource")
     void invalidArgumentsOnUpdate(Bytes bytes) {
         // when
-        subject.update(bytes);
+        final var exception = assertThrows(HandleException.class, () -> subject.update(bytes));
 
         // expect
         assertThat(logCaptor.warnLogs(), hasItems(startsWith("Unable to parse the throttle file")));
@@ -108,6 +111,7 @@ class ThrottleManagerTest {
         // default values are applied
         assertEquals(ThrottleDefinitions.DEFAULT, subject.throttleDefinitions());
         assertEquals(ThrottleDefinitions.DEFAULT.throttleBuckets(), subject.throttleBuckets());
+        assertEquals(ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION, exception.getStatus());
     }
 
     private static Stream<Arguments> invalidArgumentsOnUpdateSource() {
