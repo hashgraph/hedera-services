@@ -621,7 +621,10 @@ public class PreconsensusEventFileManager {
             @NonNull final RecycleBin recycleBin,
             @NonNull final NodeId selfId) {
         try {
-            recycleBin.recycle(getDatabaseDirectory(platformContext, selfId));
+            final Path path = getDatabaseDirectory(platformContext, selfId);
+            if (Files.exists(path)) {
+                recycleBin.recycle(path);
+            }
         } catch (final IOException e) {
             throw new UncheckedIOException("unable to recycle preconsensus event files", e);
         }
