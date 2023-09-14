@@ -18,23 +18,41 @@ package com.hedera.node.app.service.mono.sigs.utils;
 
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.HexFormat;
+
+import com.sun.jna.ptr.LongByReference;
 import org.bouncycastle.jcajce.provider.digest.Keccak;
 import org.bouncycastle.jce.ECNamedCurveTable;
 import org.bouncycastle.jce.spec.ECNamedCurveParameterSpec;
 import org.bouncycastle.math.ec.ECCurve;
+import org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1;
 
 public class MiscCryptoUtils {
     private MiscCryptoUtils() {
         throw new UnsupportedOperationException("Utility Class");
     }
 
-    private static final ECNamedCurveParameterSpec secp256k1 = ECNamedCurveTable.getParameterSpec("secp256k1");
-    private static final ECCurve curveSecp256k1 = secp256k1.getCurve();
-
     public static byte[] keccak256DigestOf(final byte[] msg) {
         return new Keccak.Digest256().digest(msg);
     }
+
+    private static final LongByReference OUTPUT_LENGTH_65 = new LongByReference(65);
+    private static final LongByReference OUTPUT_LENGTH_33 = new LongByReference(33);
+
+    // Thread local caches to avoid allocating memory for each verification. They will leak memory for each thread used
+    // for verification but only just over 100 bytes to totally worth it.
+    private static final ThreadLocal<LibSecp256k1.secp256k1_pubkey> PUB_KEY_CACHE =
+            ThreadLocal.withInitial(LibSecp256k1.secp256k1_pubkey::new);
+    private static final ThreadLocal<byte[]> UNCOMPRESSED_PUBLIC_KEY_INPUT_CACHE =
+            ThreadLocal.withInitial(() -> {
+                byte[] publicKeyInput = new byte[65];
+                publicKeyInput[0] = 0x04;
+                return publicKeyInput;
+            });
+    private static final ThreadLocal<ByteBuffer> UNCOMPRESSED_PUBLIC_KEY_BYTEBUFFER_CACHE =
+            ThreadLocal.withInitial(() -> ByteBuffer.allocate(65));
 
     /**
      * Given a 33-byte compressed ECDSA(secp256k1) public key, returns the uncompressed key as a
@@ -45,11 +63,25 @@ public class MiscCryptoUtils {
      * @return the raw bytes of the public key coordinates
      */
     public static byte[] decompressSecp256k1(final byte[] compressedKey) {
-        final var pk = curveSecp256k1.decodePoint(compressedKey);
-
+        // convert public key to native format
+        final LibSecp256k1.secp256k1_pubkey pubkey = PUB_KEY_CACHE.get();
+        final int keyParseResult = LibSecp256k1.secp256k1_ec_pubkey_parse(
+                LibSecp256k1.CONTEXT,
+                pubkey,
+                compressedKey,
+                compressedKey.length);
+        if (keyParseResult != 1) throw new RuntimeException("Failed to parse public key");
+        final ByteBuffer outputBuffer = UNCOMPRESSED_PUBLIC_KEY_BYTEBUFFER_CACHE.get();
+        final int keySerializeResult = LibSecp256k1.secp256k1_ec_pubkey_serialize(
+                LibSecp256k1.CONTEXT,
+                outputBuffer,
+                OUTPUT_LENGTH_65,
+                pubkey,
+                LibSecp256k1.SECP256K1_EC_UNCOMPRESSED);
+        if (keySerializeResult != 1) throw new RuntimeException("Failed to serialize public key");
+        // chop off header first byte
         final var rawKey = new byte[64];
-        System.arraycopy(pk.getRawXCoord().getEncoded(), 0, rawKey, 0, 32);
-        System.arraycopy(pk.getRawYCoord().getEncoded(), 0, rawKey, 32, 32);
+        outputBuffer.get(1,rawKey);
         return rawKey;
     }
 
@@ -62,11 +94,27 @@ public class MiscCryptoUtils {
      * @return the raw bytes of the compressed public key
      */
     public static byte[] compressSecp256k1(final byte[] decompressedKey) {
-        final var decompressedBytes = new byte[65];
-        decompressedBytes[0] = 0x04;
-        System.arraycopy(decompressedKey, 0, decompressedBytes, 1, 32);
-        System.arraycopy(decompressedKey, 32, decompressedBytes, 33, 32);
-        return curveSecp256k1.decodePoint(decompressedBytes).getEncoded(true);
+        // add header byte on to decompressed key
+        final var decompressedBytes = UNCOMPRESSED_PUBLIC_KEY_INPUT_CACHE.get();
+        System.arraycopy(decompressedKey, 0, decompressedBytes, 1, 64);;
+        // convert public key to native format
+        final LibSecp256k1.secp256k1_pubkey pubkey = PUB_KEY_CACHE.get();
+        final int keyParseResult = LibSecp256k1.secp256k1_ec_pubkey_parse(
+                LibSecp256k1.CONTEXT,
+                pubkey,
+                decompressedBytes,
+                decompressedBytes.length);
+        if (keyParseResult != 1) throw new RuntimeException("Failed to parse public key");
+        // serialize public key to compressed format
+        final ByteBuffer outputBuffer = ByteBuffer.allocate(33);
+        final int keySerializeResult = LibSecp256k1.secp256k1_ec_pubkey_serialize(
+                LibSecp256k1.CONTEXT,
+                outputBuffer,
+                OUTPUT_LENGTH_33,
+                pubkey,
+                LibSecp256k1.SECP256K1_EC_COMPRESSED);
+        if (keySerializeResult != 1) throw new RuntimeException("Failed to serialize public key");
+        return outputBuffer.array();
     }
 
     /**
