@@ -26,6 +26,7 @@ import org.hyperledger.besu.evm.gascalculator.LondonGasCalculator;
  * that gets its price and exchange rate from the {@link HederaOperations}.
  */
 @Singleton
+@SuppressWarnings("java:S110") // suppress the warning that the class inheritance shouldn't be too deep
 public class CustomGasCalculator extends LondonGasCalculator {
     @Inject
     public CustomGasCalculator() {
