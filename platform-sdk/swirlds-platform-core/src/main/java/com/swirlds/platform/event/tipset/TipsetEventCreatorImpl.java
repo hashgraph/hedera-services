@@ -69,7 +69,11 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
     private final ChildlessEventTracker childlessOtherEventTracker;
     private final TransactionSupplier transactionSupplier;
     private final SoftwareVersion softwareVersion;
-    /** The address book for the current network. */
+    private long minimumGenerationNonAncient = GENERATION_UNDEFINED + 1;
+
+    /**
+     * The address book for the current network.
+     */
     private final AddressBook addressBook;
 
     private final int networkSize;
@@ -196,6 +200,7 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
      */
     @Override
     public void setMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
+        this.minimumGenerationNonAncient = minimumGenerationNonAncient;
         tipsetTracker.setMinimumGenerationNonAncient(minimumGenerationNonAncient);
         childlessOtherEventTracker.pruneOldEvents(minimumGenerationNonAncient);
     }
@@ -268,10 +273,11 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
             }
         }
 
-        if (lastSelfEvent != null && bestOtherParent == null) {
-            // There exist no parents that can advance consensus, and this is not our first event.
-            // The only time it's ok to create an event with no other parent is when we are creating
-            // our first event.
+        if (bestOtherParent == null
+                && (minimumGenerationNonAncient > GENERATION_UNDEFINED + 1 || lastSelfEvent != null)) {
+            // If there are no available other parents, it is only legal to create a new event if we are
+            // creating a genesis event. In order to create a genesis event, we must have never created
+            // an event before and the current minimum generation non ancient must have never been advanced.
             return null;
         }
 
