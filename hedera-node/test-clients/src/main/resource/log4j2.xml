@@ -18,7 +18,7 @@
 		<!-- Transaction state logs -->
 		<RollingFile name="TransactionStateLogs"
 								 fileName="output/transaction-state/state-changes.log"
-								 filePattern="transaction-state/state-changes-%d{yyyy-MM-dd--HH-mm-ss}-%i.log.gz">
+								 filePattern="output/transaction-state/state-changes-%d{yyyy-MM-dd--HH-mm-ss}-%i.log.gz">
 			<PatternLayout>
 				<pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} - %m{nolookups}%n</pattern>
 			</PatternLayout>

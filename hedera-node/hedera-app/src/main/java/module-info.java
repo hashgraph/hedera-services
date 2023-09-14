@@ -41,7 +41,6 @@ module com.hedera.node.app {
     requires io.netty.transport.classes.epoll;
     requires io.netty.transport;
     requires org.apache.logging.log4j;
-    requires org.apache.logging.log4j.core;
     requires org.slf4j;
     requires static com.github.spotbugs.annotations;
 
@@ -93,5 +92,4 @@ module com.hedera.node.app {
             com.swirlds.common,
             com.swirlds.platform;
     exports com.hedera.node.app.validation;
-    exports com.hedera.node.app.state.logging to com.hedera.node.app.test.fixtures, com.swirlds.common;
 }

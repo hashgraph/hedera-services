@@ -16,6 +16,7 @@ import com.swirlds.common.system.Round;
 import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.fcqueue.FCQueue;
+import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.internal.merkle.VirtualLeafNode;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -34,9 +35,20 @@ import java.util.stream.StreamSupport;
 /**
  * A logger for state changes. This records a separate log file for all input state read and output state changes from
  * each transaction. This makes it easy to trace what happened if an ISS happens.
+ *
+ * <p>All methods are called on the handle transaction thread or check they are on handle transaction thread before
+ * doing any work. Therefore state does not need to be thread safe.</p>
  */
 public final class TransactionStateLogger {
+    /** The logger we are using for Transaction State log */
     private static final Logger logger = LogManager.getLogger(TransactionStateLogger.class);
+
+    static {
+        logger.info("JASPER Starting Transaction State Logger");
+        System.out.println("JASPER logger.isInfoEnabled() = " + logger.isInfoEnabled());
+        System.out.println("JASPER logger.isDebugEnabled() = " + logger.isDebugEnabled());
+        System.out.println("JASPER logger.getName() = " + logger.getName());
+    }
 
     /**
      * Log the start of a round if it contains any non-system transactions.
@@ -59,7 +71,7 @@ public final class TransactionStateLogger {
     }
 
     /**
-     * Log the start of a event if it contains any non-system transactions.
+     * Log the start of an event if it contains any non-system transactions.
      *
      * @param event The event to log
      */
@@ -72,7 +84,7 @@ public final class TransactionStateLogger {
                 }
             });
             if (!isAllSystem.get()) {
-                logger.info("Starting event {} at {} from node {}", event.getConsensusOrder(), event.getConsensusTimestamp(),
+                logger.info("  Starting event {} at {} from node {}", event.getConsensusOrder(), event.getConsensusTimestamp(),
                         creator.nodeId());
             }
         }
@@ -81,7 +93,7 @@ public final class TransactionStateLogger {
     public static void logStartUserTransaction(@NonNull final ConsensusTransaction transaction,
                                                @Nullable final TransactionBody txBody,
                                                @NonNull final AccountID payer) {
-        logger.info("Starting user transaction {} at platform time {} from payer 0.0.{}",
+        logger.info("    Starting user transaction {} at platform time {} from payer 0.0.{}",
                 txBody == null ? "null" : txBody.transactionID(),
                 transaction.getConsensusTimestamp(),
                 payer.accountNum());
@@ -91,7 +103,7 @@ public final class TransactionStateLogger {
                                                                 @Nullable Key payerKey,
                                                                 @NonNull PreHandleResult.Status status,
                                                                 @NonNull ResponseCodeEnum responseCode) {
-        logger.debug("with preHandleResult: payer 0.0.{} with key {} with status {} with response code {}",
+        logger.debug("      with preHandleResult: payer 0.0.{} with key {} with status {} with response code {}",
                 payer == null ? "null" : payer.accountNum(),
                 payerKey == null ? "null" : payerKey.toString(),
                 status,
@@ -100,7 +112,7 @@ public final class TransactionStateLogger {
     public static void logStartUserTransactionPreHandleResultP3(@Nullable TransactionInfo txInfo,
                                                                 @Nullable Set<Key> requiredKeys,
                                                                 @Nullable Map<Key, SignatureVerificationFuture> verificationResults) {
-        logger.trace("with preHandleResult: txInfo {} with requiredKeys {} with verificationResults {}",
+        logger.trace("      with preHandleResult: txInfo {} with requiredKeys {} with verificationResults {}",
                 txInfo, requiredKeys, verificationResults);
     }
 
@@ -112,7 +124,7 @@ public final class TransactionStateLogger {
      */
     public static void logEndTransactionRecord(@NonNull final TransactionID txID,
                                              @NonNull final TransactionRecord transactionRecord) {
-        logger.info("Ending transaction {} response code {} with record:\n{}",
+        logger.info("    Ending transaction {} response code {} with record:\n{}",
                 txID,
                 transactionRecord.receipt() == null ? "null" : transactionRecord.receipt().status(),
                 TransactionRecord.JSON.toJSON(transactionRecord));
@@ -121,39 +133,48 @@ public final class TransactionStateLogger {
     // =========== Singleton Methods ==================================================================
 
     public static <T> void logSingletonRead(@NonNull final String label, @Nullable final ValueLeaf<T> value) {
-        logger.debug("READ singleton {} value {}", label,
-                value == null ? "null" : value.getValue());
+        if (logger.isDebugEnabled() && Thread.currentThread().getName().equals(ConsensusRoundHandler.THREAD_CONS_NAME)) {
+            logger.debug("      READ singleton {} value {}", label,
+                    value == null ? "null" : value.getValue());
+        }
     }
     public static void logSingletonWrite(@NonNull final String label, @Nullable final Object value) {
-        logger.info("WRITTEN singleton {} value {}", label,
-                value == null ? "null" : value.toString());
+        if (logger.isInfoEnabled() && Thread.currentThread().getName().equals(ConsensusRoundHandler.THREAD_CONS_NAME)) {
+            logger.info("      WRITTEN singleton {} value {}", label,
+                    value == null ? "null" : value.toString());
+        }
     }
 
     // =========== Queue Methods ======================================================================
 
     public static void logQueueAdd(@NonNull final String label, @Nullable final Object value) {
-        logger.info("ADD to queue {} value {}", label,
-                value == null ? "null" : value.toString());
+        if (logger.isInfoEnabled() && Thread.currentThread().getName().equals(ConsensusRoundHandler.THREAD_CONS_NAME)) {
+            logger.info("      ADD to queue {} value {}", label,
+                    value == null ? "null" : value.toString());
+        }
     }
 
     public static void logQueueRemove(@NonNull final String label, @Nullable final Object value) {
-        logger.info("REMOVE from queue {} value {}", label,
-                value == null ? "null" : value.toString());
+        if (logger.isInfoEnabled() && Thread.currentThread().getName().equals(ConsensusRoundHandler.THREAD_CONS_NAME)) {
+            logger.info("      REMOVE from queue {} value {}", label,
+                    value == null ? "null" : value.toString());
+        }
     }
 
     public static void logQueuePeek(@NonNull final String label, @Nullable final Object value) {
-        logger.debug("PEEK on queue {} value {}", label,
-                value == null ? "null" : value.toString());
+        if (logger.isDebugEnabled() && Thread.currentThread().getName().equals(ConsensusRoundHandler.THREAD_CONS_NAME)) {
+            logger.debug("      PEEK on queue {} value {}", label,
+                    value == null ? "null" : value.toString());
+        }
     }
 
     public static <K> void logQueueIterate(@NonNull final String label, @NonNull final FCQueue<ValueLeaf<K>> queue) {
-
-        if (logger.isDebugEnabled()) {
+        if (logger.isDebugEnabled() && Thread.currentThread().getName().equals(ConsensusRoundHandler.THREAD_CONS_NAME)) {
             if (queue.size() == 0) {
-                logger.debug("ITERATE queue {} size 0 values:EMPTY", label);
+                logger.debug("      ITERATE queue {} size 0 values:EMPTY", label);
                 return;
             } else {
-                logger.debug("ITERATE queue {} size {} values:\n{}", label, queue.size(),
+                logger.debug("      ITERATE queue {} size {} values:\n{}", label, queue.size(),
                         queue.stream()
                                 .map(leaf -> leaf == null ? "null" : leaf.toString())
                                 .collect(Collectors.joining(",\n"))
@@ -166,46 +187,58 @@ public final class TransactionStateLogger {
 
     public static <K, V> void logMapPut(@NonNull final String label, @NonNull final K key,
                                         @Nullable final V value) {
-        logger.info("PUT into map {} key {} value {}", label, formatKey(key),
-                value == null ? "null" : value.toString());
+        if (logger.isInfoEnabled() && Thread.currentThread().getName().equals(ConsensusRoundHandler.THREAD_CONS_NAME)) {
+            logger.info("      PUT into map {} key {} value {}", label, formatKey(key),
+                    value == null ? "null" : value.toString());
+        }
     }
 
     public static <K, V> void logMapRemove(@NonNull final String label, @NonNull final K key,
                                     @Nullable final InMemoryValue<K, V> value) {
-        logger.info("REMOVE from map {} key {} removed value {}", label, formatKey(key),
-                value == null ? "null" : value.toString());
+        if (logger.isInfoEnabled() && Thread.currentThread().getName().equals(ConsensusRoundHandler.THREAD_CONS_NAME)) {
+            logger.info("      REMOVE from map {} key {} removed value {}", label, formatKey(key),
+                    value == null ? "null" : value.toString());
+        }
     }
 
     public static <K, V> void logMapRemove(@NonNull final String label, @NonNull final K key,
                                     @Nullable final OnDiskValue<V> value) {
-        logger.info("REMOVE from map {} key {} removed value {}", label, formatKey(key),
-                value == null ? "null" : value.toString());
+        if (logger.isInfoEnabled() && Thread.currentThread().getName().equals(ConsensusRoundHandler.THREAD_CONS_NAME)) {
+            logger.info("      REMOVE from map {} key {} removed value {}", label, formatKey(key),
+                    value == null ? "null" : value.toString());
+        }
     }
 
     public static <K, V> void logMapGetSize(@NonNull final String label, final long size) {
-        logger.debug("GET_SIZE on map {} size {}", label, size);
+        if (logger.isDebugEnabled() && Thread.currentThread().getName().equals(ConsensusRoundHandler.THREAD_CONS_NAME)) {
+            logger.debug("      GET_SIZE on map {} size {}", label, size);
+        }
     }
 
     public static <K, V> void logMapGet(@NonNull final String label, @NonNull final K key,
                                         @Nullable final V value) {
-        logger.debug("GET on map {} key {} value {}", label, formatKey(key),
-                value == null ? "null" : value.toString());
+        if (logger.isDebugEnabled() && Thread.currentThread().getName().equals(ConsensusRoundHandler.THREAD_CONS_NAME)) {
+            logger.debug("      GET on map {} key {} value {}", label, formatKey(key),
+                    value == null ? "null" : value.toString());
+        }
     }
 
     public static <K, V> void logMapGetForModify(@NonNull final String label, @NonNull final K key,
                                         @Nullable final V value) {
-        logger.debug("GET_FOR_MODIFY on map {} key {} value {}", label, formatKey(key),
-                value == null ? "null" : value.toString());
+        if (logger.isDebugEnabled() && Thread.currentThread().getName().equals(ConsensusRoundHandler.THREAD_CONS_NAME)) {
+            logger.debug("      GET_FOR_MODIFY on map {} key {} value {}", label, formatKey(key),
+                    value == null ? "null" : value.toString());
+        }
     }
 
     public static <K> void logMapIterate(@NonNull final String label, @NonNull final Set<InMemoryKey<K>> keySet) {
-        if (logger.isDebugEnabled()) {
+        if (logger.isDebugEnabled() && Thread.currentThread().getName().equals(ConsensusRoundHandler.THREAD_CONS_NAME)) {
             final long size = keySet.size();
             if (size == 0) {
-                logger.debug("ITERATE map {} size 0 keys:EMPTY", label);
+                logger.debug("      ITERATE map {} size 0 keys:EMPTY", label);
                 return;
             } else {
-                logger.debug("ITERATE map {} size {} keys:\n{}", label, size,
+                logger.debug("      ITERATE map {} size {} keys:\n{}", label, size,
                         keySet.stream()
                                 .map(InMemoryKey::key)
                                 .map(TransactionStateLogger::formatKey)
@@ -221,10 +254,10 @@ public final class TransactionStateLogger {
                     Spliterator.SIZED & Spliterator.ORDERED);
             final long size = virtualMap.size();
             if (size == 0) {
-                logger.debug("ITERATE map {} size 0 keys:EMPTY", label);
+                logger.debug("      ITERATE map {} size 0 keys:EMPTY", label);
                 return;
             } else {
-                logger.debug("ITERATE map {} size {} keys:\n{}", label, size,
+                logger.debug("      ITERATE map {} size {} keys:\n{}", label, size,
                         StreamSupport.stream(spliterator, false)
                                 .map(merkleNode -> {
                                     if (merkleNode instanceof VirtualLeafNode<?, ?> leaf) {
@@ -241,6 +274,13 @@ public final class TransactionStateLogger {
         }
     }
 
+    /**
+     * Format entity id keys in form 0.0.123 rather than default toString() long form.
+     *
+     * @param key The key to format
+     * @return The formatted key
+     * @param <K> The type of the key
+     */
     public static <K> String formatKey(@Nullable final K key) {
         if (key == null) {
             return "null";
