@@ -28,9 +28,11 @@ import java.time.Instant;
 public interface NetworkUtilizationManager {
     void trackTxn(@NonNull final TransactionInfo txnInfo, Instant consensusTime, HederaState state);
 
+    void trackFeePayments(Instant consensusNow, HederaState state);
+
     boolean wasLastTxnGasThrottled();
 
-    void trackFeePayments(Instant consensusNow, HederaState state);
+    void leakUnusedGasPreviouslyReserved(@NonNull final TransactionInfo txnInfo, long value);
 
     void resetFrom(HederaState state);
 

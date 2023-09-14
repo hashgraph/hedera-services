@@ -23,6 +23,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.SAME_NODE;
+import static com.hedera.node.app.throttle.HandleThrottleAccumulator.isGasThrottled;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.NODE_DUE_DILIGENCE_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE_HANDLE_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
@@ -30,6 +31,7 @@ import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Transaction;
@@ -37,6 +39,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeAccumulatorImpl;
 import com.hedera.node.app.fees.FeeManager;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
@@ -73,6 +76,7 @@ import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfiguration;
+import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.system.Round;
@@ -372,17 +376,17 @@ public class HandleWorkflow {
                     dispatcher.dispatchHandle(context);
                     recordBuilder.status(SUCCESS);
 
-                    // TODO: after transaction is successfully handled update the gas throttle by leaking the unused gas
-                    //                    if (isGasThrottled(op) && txnCtx.hasContractResult()) {
-                    //                        final var gasUsed = txnCtx.getGasUsedForContractTxn();
-                    //                        gasUsedThisConsSec += gasUsed;
-                    //                        if (dynamicProperties.shouldThrottleByGas()) {
-                    //                            final var excessAmount = txnCtx.accessor().getGasLimitForContractTx()
-                    // - gasUsed;
-                    //                            handleThrottling.leakUnusedGasPreviouslyReserved(txnCtx.accessor(),
-                    // excessAmount);
-                    //                        }
-                    //                                        }
+                    // After transaction is successfully handled update the gas throttle by leaking the unused gas
+                    if (isGasThrottled(transactionInfo.functionality()) && recordBuilder.hasContractResult()) {
+                        final var contractsConfig = configuration.getConfigData(ContractsConfig.class);
+                        if (contractsConfig.throttleThrottleByGas()) {
+                            final var gasUsed = recordBuilder.getGasUsedForContractTxn();
+                            final var gasLimitForContractTx =
+                                    getGasLimitForContractTx(txBody, transactionInfo.functionality());
+                            final var excessAmount = gasLimitForContractTx - gasUsed;
+                            networkUtilizationManager.leakUnusedGasPreviouslyReserved(transactionInfo, excessAmount);
+                        }
+                    }
 
                     networkUtilizationManager.saveTo(state);
 
@@ -428,6 +432,17 @@ public class HandleWorkflow {
         final var serviceApiFactory = new ServiceApiFactory(stack, configuration);
         final var tokenApi = serviceApiFactory.getApi(TokenServiceApi.class);
         return new FeeAccumulatorImpl(tokenApi, recordBuilder);
+    }
+
+    private static long getGasLimitForContractTx(final TransactionBody txnBody, final HederaFunctionality function) {
+        return switch (function) {
+            case CONTRACT_CREATE -> txnBody.contractCreateInstance().gas();
+            case CONTRACT_CALL -> txnBody.contractCall().gas();
+            case ETHEREUM_TRANSACTION -> EthTxData.populateEthTxData(
+                            txnBody.ethereumTransaction().ethereumData().toByteArray())
+                    .gasLimit();
+            default -> 0L;
+        };
     }
 
     private ValidationResult validate(

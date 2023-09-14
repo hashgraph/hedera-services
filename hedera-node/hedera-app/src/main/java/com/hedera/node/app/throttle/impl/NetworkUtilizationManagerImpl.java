@@ -194,4 +194,9 @@ public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager 
     public boolean wasLastTxnGasThrottled() {
         return handleThrottling.wasLastTxnGasThrottled();
     }
+
+    @Override
+    public void leakUnusedGasPreviouslyReserved(@NonNull final TransactionInfo txnInfo, long value) {
+        handleThrottling.leakUnusedGasPreviouslyReserved(txnInfo, value);
+    }
 }

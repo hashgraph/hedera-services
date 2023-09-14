@@ -143,7 +143,13 @@ public class HandleThrottleAccumulator {
         return false;
     }
 
-    public void leakUnusedGasPreviouslyReserved(long value) {
+    public void leakUnusedGasPreviouslyReserved(@NonNull final TransactionInfo txnInfo, long value) {
+        final var configuration = configProvider.getConfiguration();
+        final var payer = txnInfo.txBody().transactionID().accountID();
+        if (throttleExempt(payer, configuration)) {
+            return;
+        }
+
         gasThrottle.leakUnusedGasPreviouslyReserved(value);
     }
 

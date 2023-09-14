@@ -139,6 +139,7 @@ public class SingleTransactionRecordBuilderImpl
     // While the fee is sent to the underlying builder all the time, it is also cached here because, as of today,
     // there is no way to get the transaction fee from the PBJ object.
     private long transactionFee;
+    private ContractFunctionResult contractFunctionResult;
 
     /**
      * Creates new transaction record builder.
@@ -329,6 +330,7 @@ public class SingleTransactionRecordBuilderImpl
     public SingleTransactionRecordBuilderImpl contractCallResult(
             @Nullable final ContractFunctionResult contractCallResult) {
         transactionRecordBuilder.contractCallResult(contractCallResult);
+        this.contractFunctionResult = contractCallResult;
         return this;
     }
 
@@ -343,6 +345,7 @@ public class SingleTransactionRecordBuilderImpl
     public SingleTransactionRecordBuilderImpl contractCreateResult(
             @Nullable ContractFunctionResult contractCreateResult) {
         transactionRecordBuilder.contractCreateResult(contractCreateResult);
+        this.contractFunctionResult = contractCreateResult;
         return this;
     }
 
@@ -584,6 +587,19 @@ public class SingleTransactionRecordBuilderImpl
     @NonNull
     public ResponseCodeEnum status() {
         return status;
+    }
+
+    /**
+     * Returns if the builder has a ContractFunctionResult set.
+     *
+     * @return the receipt status
+     */
+    public boolean hasContractResult() {
+        return this.contractFunctionResult != null;
+    }
+
+    public long getGasUsedForContractTxn() {
+        return this.contractFunctionResult.gasUsed();
     }
 
     /**
