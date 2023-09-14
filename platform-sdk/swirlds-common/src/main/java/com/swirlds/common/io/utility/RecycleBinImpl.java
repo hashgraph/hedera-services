@@ -132,7 +132,8 @@ public class RecycleBinImpl implements RecycleBin, Startable, Stoppable {
     @Override
     public void recycle(@NonNull final Path path) throws IOException {
         if (!Files.exists(path)) {
-            logger.warn(EXCEPTION.getMarker(), "Cannot recycle non-existent file: {}", path);
+            // FUTURE WORK: https://github.com/hashgraph/hedera-services/issues/8621
+            logger.warn(STARTUP.getMarker(), "Cannot recycle non-existent file: {}", path);
             return;
         }
 
