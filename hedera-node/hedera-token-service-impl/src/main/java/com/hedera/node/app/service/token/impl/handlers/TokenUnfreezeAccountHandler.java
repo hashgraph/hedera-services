@@ -112,11 +112,9 @@ public class TokenUnfreezeAccountHandler implements TransactionHandler {
             @NonNull final ReadableTokenStore tokenStore,
             @NonNull final WritableTokenRelationStore tokenRelStore)
             throws HandleException {
-        // Check that the token exists
+        // Check that the token meta exists
         final var tokenId = op.tokenOrElse(TokenID.DEFAULT);
         final var tokenMeta = tokenStore.getTokenMeta(tokenId);
-        final var token = tokenStore.get(tokenId);
-
         validateTrue(tokenMeta != null, INVALID_TOKEN_ID);
 
         // Check that the token has a freeze key
@@ -131,10 +129,11 @@ public class TokenUnfreezeAccountHandler implements TransactionHandler {
         final var tokenRel = tokenRelStore.getForModify(accountId, tokenId);
         validateTrue(tokenRel != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
 
-        if (token != null) {
-            // Check that token is not deleted
-            validateFalse(token.deleted(), TOKEN_WAS_DELETED);
-        }
+        // Check that the token itself exists and is valid
+        final var token = tokenStore.get(tokenId);
+        validateTrue(token != null, INVALID_TOKEN_ID);
+        validateFalse(token.deleted(), TOKEN_WAS_DELETED);
+
         // Return the token relation
         return tokenRel;
     }
