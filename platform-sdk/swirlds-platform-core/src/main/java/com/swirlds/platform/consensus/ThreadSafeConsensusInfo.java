@@ -120,9 +120,8 @@ public class ThreadSafeConsensusInfo implements GraphGenerations, RoundNumberPro
         }
         long newMaxRoundGeneration = info.minimumGeneration();
 
-        // 13 May 2021
-        // Guarantee that the round generation is non-decreasing. When we have a local events file,
-        // this condition will be implicit, so this clause will be removed.
+        // Guarantee that the round generation is non-decreasing.
+        // Once we remove support for states with events, this can be removed
         newMaxRoundGeneration = Math.max(newMaxRoundGeneration, maxRoundGeneration);
 
         maxRoundGeneration = newMaxRoundGeneration;
@@ -162,9 +161,9 @@ public class ThreadSafeConsensusInfo implements GraphGenerations, RoundNumberPro
 
         long newMinRoundGeneration = info.minimumGeneration();
 
-        // 13 May 2021
-        // Guarantee that the round generation is non-decreasing. When we have a local events file,
-        // this condition will be implicit, so this clause will be removed.
+
+        // Guarantee that the round generation is non-decreasing.
+        // Once we remove support for states with events, this can be removed
         newMinRoundGeneration = Math.max(newMinRoundGeneration, minRoundGeneration);
 
         minRoundGeneration = newMinRoundGeneration;

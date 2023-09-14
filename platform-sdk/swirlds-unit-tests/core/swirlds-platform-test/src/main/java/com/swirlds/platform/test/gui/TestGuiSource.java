@@ -33,6 +33,8 @@ import com.swirlds.platform.test.fixtures.event.source.EventSource;
 import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
 import com.swirlds.test.framework.ResourceLoader;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.awt.FlowLayout;
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -61,11 +63,12 @@ public class TestGuiSource {
         guiSource = new FinalShadowgraphGuiSource(intake.getShadowGraph(), graphGenerator.getAddressBook());
     }
 
-    public TestGuiSource(final GraphGenerator<?> graphGenerator, final TestIntake intake) {
+    public TestGuiSource(
+            @NonNull final GraphGenerator<?> graphGenerator,
+            @NonNull final TestIntake intake) {
         this.graphGenerator = graphGenerator;
         this.intake = intake;
         this.guiSource = new FinalShadowgraphGuiSource(intake.getShadowGraph(), graphGenerator.getAddressBook());
-        ;
     }
 
     public void runGui() {
@@ -76,7 +79,7 @@ public class TestGuiSource {
         intake.addEvents(graphGenerator.generateEvents(numEvents));
     }
 
-    public JPanel controls() {
+    public @NonNull JPanel controls() {
 
         // Fame decided below
         final JLabel fameDecidedBelow = new JLabel("N/A");
@@ -165,7 +168,7 @@ public class TestGuiSource {
         return controls;
     }
 
-    public static List<EventSource<?>> generateSources(final int numNetworkNodes) {
+    public static @NonNull List<EventSource<?>> generateSources(final int numNetworkNodes) {
         final List<EventSource<?>> list = new LinkedList<>();
         for (long i = 0; i < numNetworkNodes; i++) {
             list.add(new StandardEventSource(true));

@@ -129,7 +129,7 @@ public final class SignedStateFileReader {
      * @throws IOException
      * 		if there is any problems with reading from a file
      */
-    public static DeserializedSignedState readStateFile(
+    public static @NonNull DeserializedSignedState readStateFile(
             @NonNull final PlatformContext platformContext, @NonNull final Path stateFile) throws IOException {
 
         Objects.requireNonNull(platformContext);
@@ -167,11 +167,12 @@ public final class SignedStateFileReader {
     /**
      * Read only the signed state from a file, do not read the hash and signatures
      *
+     * @param platformContext the platform context
      * @param stateFile the file to read from
      * @return the signed state read
      * @throws IOException if any problem occurs while reading
      */
-    public static SignedState readSignedStateOnly(
+    public static @NonNull SignedState readSignedStateOnly(
             @NonNull final PlatformContext platformContext, @NonNull final Path stateFile) throws IOException {
         checkSignedStatePath(stateFile);
 

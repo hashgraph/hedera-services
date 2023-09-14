@@ -37,7 +37,7 @@ import com.swirlds.platform.state.signed.SignedStateFileReader;
 import com.swirlds.platform.test.consensus.framework.ConsensusTestOrchestrator;
 import com.swirlds.platform.test.consensus.framework.OrchestratorBuilder;
 import com.swirlds.platform.test.consensus.framework.TestInput;
-import com.swirlds.platform.test.consensus.framework.Util;
+import com.swirlds.platform.test.consensus.framework.ConsensusTestUtils;
 import com.swirlds.platform.test.consensus.framework.validation.EventRatioValidation;
 import com.swirlds.platform.test.consensus.framework.validation.Validations;
 import com.swirlds.platform.test.event.emitter.PriorityEventEmitter;
@@ -169,7 +169,7 @@ public final class ConsensusTestDefinitions {
                 OrchestratorBuilder.builder().setTestInput(input).build();
         final List<List<Double>> fullyConnected = createBalancedOtherParentMatrix(input.numberOfNodes());
         final List<List<Double>> partitioned = createPartitionedOtherParentAffinityMatrix(
-                input.numberOfNodes(), Util.getStrongMinorityNodes(orchestrator.getWeights()));
+                input.numberOfNodes(), ConsensusTestUtils.getStrongMinorityNodes(orchestrator.getWeights()));
 
         //
         // Phase 1
@@ -225,7 +225,7 @@ public final class ConsensusTestDefinitions {
         final ConsensusTestOrchestrator orchestrator =
                 OrchestratorBuilder.builder().setTestInput(input).build();
         final List<List<Double>> fullyConnected = createBalancedOtherParentMatrix(input.numberOfNodes());
-        final Set<Integer> partitionedNodes = Util.getSubStrongMinorityNodes(orchestrator.getWeights());
+        final Set<Integer> partitionedNodes = ConsensusTestUtils.getSubStrongMinorityNodes(orchestrator.getWeights());
         final int numPartitionedNodes = partitionedNodes.size();
         // Less than a strong minority of nodes' weigh are partitioned from the network
         final List<List<Double>> partitioned =
@@ -373,7 +373,7 @@ public final class ConsensusTestDefinitions {
         // Test setup
         final ConsensusTestOrchestrator orchestrator =
                 OrchestratorBuilder.builder().setTestInput(input).build();
-        final Set<Integer> quorumNodeIds = Util.getStrongMinorityNodes(orchestrator.getWeights());
+        final Set<Integer> quorumNodeIds = ConsensusTestUtils.getStrongMinorityNodes(orchestrator.getWeights());
 
         //
         // Phase 1
@@ -420,7 +420,7 @@ public final class ConsensusTestDefinitions {
         // Test setup
         final ConsensusTestOrchestrator orchestrator =
                 OrchestratorBuilder.builder().setTestInput(input).build();
-        final Set<Integer> subQuorumNodesIds = Util.getSubStrongMinorityNodes(orchestrator.getWeights());
+        final Set<Integer> subQuorumNodesIds = ConsensusTestUtils.getSubStrongMinorityNodes(orchestrator.getWeights());
 
         //
         // Phase 1

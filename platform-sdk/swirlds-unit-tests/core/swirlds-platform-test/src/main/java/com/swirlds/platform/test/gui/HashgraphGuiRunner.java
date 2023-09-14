@@ -18,6 +18,9 @@ package com.swirlds.platform.test.gui;
 
 import com.swirlds.gui.hashgraph.HashgraphGuiSource;
 import com.swirlds.platform.gui.hashgraph.HashgraphGui;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.awt.BorderLayout;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
@@ -29,17 +32,15 @@ import javax.swing.JFrame;
 public final class HashgraphGuiRunner {
     private HashgraphGuiRunner() {}
 
-    public static void runHashgraphGui(final HashgraphGuiSource guiSource) {
-        runHashgraphGui(guiSource, null);
-    }
-
     /**
      * Open a {@link HashgraphGui} window that draws data from the source provided
      *
      * @param guiSource the source for the GUI
      * @param additionalControls additional controls that will be added to the bottom of the screen
      */
-    public static void runHashgraphGui(final HashgraphGuiSource guiSource, final JComponent additionalControls) {
+    public static void runHashgraphGui(
+            @NonNull final HashgraphGuiSource guiSource,
+            @Nullable final JComponent additionalControls) {
         final JFrame frame = new JFrame();
         final CloseDetector closeDetector = new CloseDetector();
         frame.addWindowListener(closeDetector);

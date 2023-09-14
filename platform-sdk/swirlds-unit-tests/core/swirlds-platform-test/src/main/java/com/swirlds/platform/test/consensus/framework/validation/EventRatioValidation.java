@@ -20,6 +20,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.consensus.framework.ConsensusOutput;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.util.List;
 
 public class EventRatioValidation implements ConsensusOutputValidation {
@@ -52,11 +54,11 @@ public class EventRatioValidation implements ConsensusOutputValidation {
         this.maximumStaleRatio = maximumStaleRatio;
     }
 
-    public static EventRatioValidation blank() {
+    public static @NonNull EventRatioValidation blank() {
         return new EventRatioValidation(0d, Double.MAX_VALUE, 0d, Double.MAX_VALUE);
     }
 
-    public static EventRatioValidation standard() {
+    public static @NonNull EventRatioValidation standard() {
         return new EventRatioValidation(0.8, 1.0, 0.0, 0.01);
     }
 
@@ -64,7 +66,7 @@ public class EventRatioValidation implements ConsensusOutputValidation {
      * Set the minimum fraction of events (out of 1.0) that are expected to have reached consensus
      * at the end of the sequence. Default 0.8.
      */
-    public EventRatioValidation setMinimumConsensusRatio(final double expectedConsensusRatio) {
+    public @NonNull EventRatioValidation setMinimumConsensusRatio(final double expectedConsensusRatio) {
         this.minimumConsensusRatio = expectedConsensusRatio;
         return this;
     }
@@ -73,7 +75,7 @@ public class EventRatioValidation implements ConsensusOutputValidation {
      * Set the maximum fraction of events (out of 1.0) that are expected to have reached consensus
      * at the end of the sequence. Default 1.0.
      */
-    public EventRatioValidation setMaximumConsensusRatio(final double maximumConsensusRatio) {
+    public @NonNull EventRatioValidation setMaximumConsensusRatio(final double maximumConsensusRatio) {
         this.maximumConsensusRatio = maximumConsensusRatio;
         return this;
     }
@@ -83,18 +85,18 @@ public class EventRatioValidation implements ConsensusOutputValidation {
      *
      * @return this
      */
-    public EventRatioValidation setMinimumStaleRatio(final double minimumStaleRatio) {
+    public @NonNull EventRatioValidation setMinimumStaleRatio(final double minimumStaleRatio) {
         this.minimumStaleRatio = minimumStaleRatio;
         return this;
     }
 
     /** Set the maximum ratio of expected stale events. Default 0.01. */
-    public EventRatioValidation setMaximumStaleRatio(final double maximumStaleRatio) {
+    public @NonNull EventRatioValidation setMaximumStaleRatio(final double maximumStaleRatio) {
         this.maximumStaleRatio = maximumStaleRatio;
         return this;
     }
 
-    public void validate(final ConsensusOutput output1, final ConsensusOutput ignored) {
+    public void validate(@NonNull final ConsensusOutput output1, @NonNull final ConsensusOutput ignored) {
         // For each statistic we only need to check one list since other validators can verify them
         // to be identical.
         final List<EventImpl> allEvents1 = output1.getAddedEvents();

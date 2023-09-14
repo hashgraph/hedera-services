@@ -45,6 +45,9 @@ import com.swirlds.platform.test.consensus.framework.ConsensusOutput;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.List;
@@ -58,22 +61,33 @@ public class TestIntake implements LoadableFromSignedState {
     private final ConsensusOutput output;
     private int numEventsAdded = 0;
 
-    public TestIntake(final AddressBook ab) {
+    /**
+     * See {@link #TestIntake(AddressBook, Time, ConsensusConfig)}
+     */
+    public TestIntake(@NonNull final AddressBook ab) {
         this(ab, Time.getCurrent());
     }
 
-    public TestIntake(final AddressBook ab, final Time time) {
+    /**
+     * See {@link #TestIntake(AddressBook, Time, ConsensusConfig)}
+     */
+    public TestIntake(@NonNull final AddressBook ab, @NonNull final Time time) {
         this(ab, time, ConfigurationHolder.getConfigData(ConsensusConfig.class));
     }
 
-    public TestIntake(final AddressBook ab, final ConsensusConfig consensusConfig) {
+    /**
+     * See {@link #TestIntake(AddressBook, Time, ConsensusConfig)}
+     */
+    public TestIntake(@NonNull final AddressBook ab, @NonNull final ConsensusConfig consensusConfig) {
         this(ab, Time.getCurrent(), consensusConfig);
     }
 
     /**
      * @param ab the address book used by this intake
+     * @param time the time used by this intake
+     * @param consensusConfig the consensus config used by this intake
      */
-    public TestIntake(final AddressBook ab, final Time time, final ConsensusConfig consensusConfig) {
+    public TestIntake(@NonNull final AddressBook ab, @NonNull final Time time, @NonNull final ConsensusConfig consensusConfig) {
         output = new ConsensusOutput(time);
         consensus = new ConsensusImpl(consensusConfig, ConsensusUtils.NOOP_CONSENSUS_METRICS, ab);
         shadowGraph = new ShadowGraph(mock(SyncMetrics.class));
@@ -108,7 +122,7 @@ public class TestIntake implements LoadableFromSignedState {
      *
      * @param event the event to add
      */
-    public void addEvent(final GossipEvent event) {
+    public void addEvent(@NonNull final GossipEvent event) {
         intake.addUnlinkedEvent(event);
         numEventsAdded++;
     }
@@ -119,20 +133,20 @@ public class TestIntake implements LoadableFromSignedState {
      * <p>Note: this event won't be the one inserted, intake will create a new instance that will
      * wrap the {@link com.swirlds.common.system.events.BaseEvent}
      */
-    public void addEvent(final EventImpl event) {
+    public void addEvent(@NonNull final EventImpl event) {
         intake.addUnlinkedEvent(event.getBaseEvent());
         numEventsAdded++;
     }
 
     /** Same as {@link #addEvent(GossipEvent)} but for a list of events */
-    public void addEvents(final List<IndexedEvent> events) {
+    public void addEvents(@NonNull final List<IndexedEvent> events) {
         for (final IndexedEvent event : events) {
             addEvent(event.getBaseEvent());
         }
     }
 
     /** Same as {@link #addEvent(GossipEvent)} but skips the linking and inserts this instance */
-    public void addLinkedEvent(final EventImpl event) {
+    public void addLinkedEvent(@NonNull final EventImpl event) {
         intake.addEvent(event);
         numEventsAdded++;
     }
@@ -140,50 +154,36 @@ public class TestIntake implements LoadableFromSignedState {
     /**
      * @return the consensus used by this intake
      */
-    public Consensus getConsensus() {
+    public @NonNull Consensus getConsensus() {
         return consensus;
     }
 
     /**
      * @return the shadowgraph used by this intake
      */
-    public ShadowGraph getShadowGraph() {
+    public @NonNull ShadowGraph getShadowGraph() {
         return shadowGraph;
-    }
-
-    /**
-     * @return a queue of all events that have been marked as stale
-     */
-    public Deque<EventImpl> getStaleEvents() {
-        return output.getStaleEvents();
     }
 
     /**
      * @return a queue of all rounds that have reached consensus
      */
-    public Deque<ConsensusRound> getConsensusRounds() {
+    public @NonNull Deque<ConsensusRound> getConsensusRounds() {
         return output.getConsensusRounds();
     }
 
-    public ConsensusRound getLatestRound() {
+    public @Nullable ConsensusRound getLatestRound() {
         return output.getConsensusRounds().pollLast();
     }
 
-    /** prints the number of events in each round that reached consensus */
-    public void printRoundSizes() {
-        for (final ConsensusRound round : getConsensusRounds()) {
-            System.out.printf("%s in round %s%n", round.getNumEvents(), round.getRoundNum());
-        }
-    }
-
     @Override
-    public void loadFromSignedState(final SignedState signedState) {
+    public void loadFromSignedState(@NonNull final SignedState signedState) {
         consensus.loadFromSignedState(signedState);
         shadowGraph.clear();
         shadowGraph.initFromEvents(Arrays.asList(signedState.getEvents()), consensus.getMinRoundGeneration());
     }
 
-    public void loadSnapshot(final ConsensusSnapshot snapshot) {
+    public void loadSnapshot(@NonNull final ConsensusSnapshot snapshot) {
         consensus.loadSnapshot(snapshot);
         linker.updateGenerations(consensus);
         shadowGraph.clear();
@@ -194,7 +194,7 @@ public class TestIntake implements LoadableFromSignedState {
         return numEventsAdded;
     }
 
-    public ConsensusOutput getOutput() {
+    public @NonNull ConsensusOutput getOutput() {
         return output;
     }
 

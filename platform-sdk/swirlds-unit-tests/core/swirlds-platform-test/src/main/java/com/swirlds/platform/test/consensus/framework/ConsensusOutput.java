@@ -23,6 +23,8 @@ import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.ConsensusRoundObserver;
 import com.swirlds.platform.observers.EventAddedObserver;
 import com.swirlds.platform.observers.StaleEventObserver;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedList;
@@ -38,7 +40,11 @@ public class ConsensusOutput implements EventAddedObserver, ConsensusRoundObserv
     private final LinkedList<EventImpl> addedEvents;
     private final LinkedList<EventImpl> staleEvents;
 
-    public ConsensusOutput(final Time time) {
+    /**
+     * Creates a new instance.
+     * @param time the time to use for marking events
+     */
+    public ConsensusOutput(@NonNull final Time time) {
         this.time = time;
         addedEvents = new LinkedList<>();
         consensusRounds = new LinkedList<>();
@@ -46,12 +52,12 @@ public class ConsensusOutput implements EventAddedObserver, ConsensusRoundObserv
     }
 
     @Override
-    public void eventAdded(final EventImpl event) {
+    public void eventAdded(@NonNull final EventImpl event) {
         addedEvents.add(event);
     }
 
     @Override
-    public void consensusRound(final ConsensusRound consensusRound) {
+    public void consensusRound(@NonNull final ConsensusRound consensusRound) {
         for (final EventImpl event : consensusRound.getConsensusEvents()) {
             // this a workaround until Consensus starts using a clock that is provided
             event.setReachedConsTimestamp(time.now());
@@ -60,29 +66,29 @@ public class ConsensusOutput implements EventAddedObserver, ConsensusRoundObserv
     }
 
     @Override
-    public void staleEvent(final EventImpl event) {
+    public void staleEvent(@NonNull final EventImpl event) {
         staleEvents.add(event);
     }
 
     /**
      * @return a queue of all events that have been marked as stale
      */
-    public LinkedList<EventImpl> getStaleEvents() {
+    public @NonNull LinkedList<EventImpl> getStaleEvents() {
         return staleEvents;
     }
 
     /**
      * @return a queue of all rounds that have reached consensus
      */
-    public LinkedList<ConsensusRound> getConsensusRounds() {
+    public @NonNull LinkedList<ConsensusRound> getConsensusRounds() {
         return consensusRounds;
     }
 
-    public LinkedList<EventImpl> getAddedEvents() {
+    public @NonNull LinkedList<EventImpl> getAddedEvents() {
         return addedEvents;
     }
 
-    public List<EventImpl> sortedAddedEvents() {
+    public @NonNull List<EventImpl> sortedAddedEvents() {
         final List<EventImpl> sortedEvents = new ArrayList<>(addedEvents);
         sortedEvents.sort(Comparator.comparingLong(EventImpl::getGeneration)
                 .thenComparingLong(e -> e.getCreatorId().id())

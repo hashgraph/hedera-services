@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.test.consensus.framework.validation;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 import static com.swirlds.platform.test.consensus.framework.validation.Validations.ValidationType.CONSENSUS_EVENTS;
 import static com.swirlds.platform.test.consensus.framework.validation.Validations.ValidationType.CONSENSUS_TIMESTAMPS;
 import static com.swirlds.platform.test.consensus.framework.validation.Validations.ValidationType.DIFFERENT_ORDER;
@@ -33,21 +35,21 @@ public class Validations {
             CONSENSUS_EVENTS, ConsensusRoundValidation::validateConsensusRounds,
             CONSENSUS_TIMESTAMPS, TimestampChecker::validateConsensusTimestamps));
 
-    public static Validations standard() {
+    public static @NonNull Validations standard() {
         return new Validations();
     }
 
-    public Validations remove(final ValidationType type) {
+    public @NonNull Validations remove(final ValidationType type) {
         map.remove(type);
         return this;
     }
 
-    public Validations ratios(final EventRatioValidation ratioValidation) {
+    public @NonNull Validations ratios(@NonNull final EventRatioValidation ratioValidation) {
         map.put(RATIOS, ratioValidation);
         return this;
     }
 
-    public List<ConsensusOutputValidation> getList() {
+    public @NonNull List<ConsensusOutputValidation> getList() {
         return map.values().stream().toList();
     }
 

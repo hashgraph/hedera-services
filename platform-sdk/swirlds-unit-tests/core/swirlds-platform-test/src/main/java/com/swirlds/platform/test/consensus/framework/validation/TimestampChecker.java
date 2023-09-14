@@ -19,10 +19,13 @@ package com.swirlds.platform.test.consensus.framework.validation;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.consensus.framework.ConsensusOutput;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.junit.jupiter.api.Assertions;
 
 public class TimestampChecker {
-    public static void validateConsensusTimestamps(final ConsensusOutput output1, final ConsensusOutput ignored) {
+    public static void validateConsensusTimestamps(
+            @NonNull final ConsensusOutput output1,
+            @NonNull final ConsensusOutput ignored) {
         EventImpl previousConsensusEvent = null;
 
         for (final ConsensusRound round : output1.getConsensusRounds()) {

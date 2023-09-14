@@ -27,6 +27,8 @@ import com.swirlds.platform.test.event.emitter.ShuffledEventEmitter;
 import com.swirlds.platform.test.event.source.EventSourceFactory;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.EventSource;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -53,17 +55,17 @@ public class OrchestratorBuilder {
 
     private EventEmitterGenerator node2EventEmitterGenerator = ShuffledEventEmitter::new;
 
-    public static OrchestratorBuilder builder() {
+    public static @NonNull OrchestratorBuilder builder() {
         return new OrchestratorBuilder();
     }
 
-    public OrchestratorBuilder setEventSourceBuilder(
-            final Function<List<Long>, List<EventSource<?>>> eventSourceBuilder) {
+    public @NonNull OrchestratorBuilder setEventSourceBuilder(
+            @NonNull final Function<List<Long>, List<EventSource<?>>> eventSourceBuilder) {
         this.eventSourceBuilder = eventSourceBuilder;
         return this;
     }
 
-    public OrchestratorBuilder setTestInput(final TestInput testInput) {
+    public @NonNull OrchestratorBuilder setTestInput(@NonNull final TestInput testInput) {
         numberOfNodes = testInput.numberOfNodes();
         weightGenerator = testInput.weightGenerator();
         seed = testInput.seed();
@@ -71,22 +73,22 @@ public class OrchestratorBuilder {
         return this;
     }
 
-    public OrchestratorBuilder setEventSourceConfigurator(final Consumer<EventSource<?>> eventSourceConfigurator) {
+    public @NonNull OrchestratorBuilder setEventSourceConfigurator(@NonNull final Consumer<EventSource<?>> eventSourceConfigurator) {
         this.eventSourceConfigurator = eventSourceConfigurator;
         return this;
     }
 
-    public OrchestratorBuilder setNode1EventEmitterGenerator(final EventEmitterGenerator node1EventEmitterGenerator) {
+    public @NonNull OrchestratorBuilder setNode1EventEmitterGenerator(@NonNull final EventEmitterGenerator node1EventEmitterGenerator) {
         this.node1EventEmitterGenerator = node1EventEmitterGenerator;
         return this;
     }
 
-    public OrchestratorBuilder setNode2EventEmitterGenerator(final EventEmitterGenerator node2EventEmitterGenerator) {
+    public @NonNull OrchestratorBuilder setNode2EventEmitterGenerator(@NonNull final EventEmitterGenerator node2EventEmitterGenerator) {
         this.node2EventEmitterGenerator = node2EventEmitterGenerator;
         return this;
     }
 
-    public ConsensusTestOrchestrator build() {
+    public @NonNull ConsensusTestOrchestrator build() {
         final ResettableRandom random = RandomUtils.initRandom(seed, false);
         final long weightSeed = random.nextLong();
         final long graphSeed = random.nextLong();

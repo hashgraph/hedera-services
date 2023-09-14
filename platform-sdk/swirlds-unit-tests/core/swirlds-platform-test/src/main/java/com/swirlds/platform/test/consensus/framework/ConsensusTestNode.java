@@ -24,6 +24,8 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.test.consensus.ConsensusUtils;
 import com.swirlds.platform.test.consensus.TestIntake;
 import com.swirlds.platform.test.event.emitter.EventEmitter;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.util.Objects;
 import java.util.Random;
 
@@ -37,7 +39,13 @@ public class ConsensusTestNode {
 
     private final Random random;
 
-    public ConsensusTestNode(final EventEmitter<?> eventEmitter, final TestIntake intake) {
+    /**
+     * Creates a new instance.
+     *
+     * @param eventEmitter the emitter of events
+     * @param intake the instance to apply events to
+     */
+    public ConsensusTestNode(@NonNull final EventEmitter<?> eventEmitter, @NonNull final TestIntake intake) {
         this.eventEmitter = eventEmitter;
         this.intake = intake;
         this.random = new Random();
@@ -48,7 +56,7 @@ public class ConsensusTestNode {
      *
      * @param eventEmitter the emitter of events
      */
-    public static ConsensusTestNode genesisContext(final EventEmitter<?> eventEmitter) {
+    public static @NonNull ConsensusTestNode genesisContext(@NonNull final EventEmitter<?> eventEmitter) {
         return new ConsensusTestNode(
                 eventEmitter, new TestIntake(eventEmitter.getGraphGenerator().getAddressBook()));
     }
@@ -70,7 +78,7 @@ public class ConsensusTestNode {
      *
      * @return a new {@link ConsensusTestNode}
      */
-    public ConsensusTestNode reconnect() {
+    public @NonNull ConsensusTestNode reconnect() {
         // create a new context
         final EventEmitter<?> newEmitter = eventEmitter.cleanCopy(random.nextLong());
         newEmitter.reset();
@@ -86,7 +94,7 @@ public class ConsensusTestNode {
         return consensusTestNode;
     }
 
-    public void loadSignedState(final SignedState signedState) {
+    public void loadSignedState(@NonNull final SignedState signedState) {
         eventEmitter.reset();
         intake.reset();
         ConsensusUtils.loadEventsIntoGenerator(signedState, eventEmitter.getGraphGenerator(), random);
@@ -107,29 +115,29 @@ public class ConsensusTestNode {
     /**
      * @return the event emitter that produces events
      */
-    public EventEmitter<?> getEventEmitter() {
+    public @NonNull EventEmitter<?> getEventEmitter() {
         return eventEmitter;
     }
 
     /**
      * @return the consensus instance
      */
-    public Consensus getConsensus() {
+    public @NonNull Consensus getConsensus() {
         return intake.getConsensus();
     }
 
     /**
      * @return the output of the consensus instance
      */
-    public ConsensusOutput getOutput() {
+    public @NonNull ConsensusOutput getOutput() {
         return intake.getOutput();
     }
 
-    public TestIntake getIntake() {
+    public @NonNull TestIntake getIntake() {
         return intake;
     }
 
-    public Random getRandom() {
+    public @NonNull Random getRandom() {
         return random;
     }
 }

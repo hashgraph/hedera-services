@@ -17,20 +17,22 @@
 package com.swirlds.platform.test.consensus.framework;
 
 import com.swirlds.common.utility.Threshold;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public class Util {
+public class ConsensusTestUtils {
     /**
      * Get a set of node ids such that their stake is at least a strong minority but not a super
      * majority. Each group of nodes (the partitioned node and non-partitions nodes) has a strong
      * minority.
      *
      * @param nodeStakes the stakes of each node in the network
-     * @return the list of node ids
+     * @return the set of node ids
      */
-    public static Set<Integer> getStrongMinorityNodes(final List<Long> nodeStakes) {
+    public static @NonNull Set<Integer> getStrongMinorityNodes(@NonNull final List<Long> nodeStakes) {
         final Set<Integer> partitionedNodes = new HashSet<>();
         final long totalStake = nodeStakes.stream().reduce(0L, Long::sum);
         long partitionedStake = 0L;
@@ -60,9 +62,9 @@ public class Util {
      * returned set will have a super majority and can continue to reach consensus.
      *
      * @param nodeStakes the stakes of each node in the network
-     * @return the list of node ids
+     * @return the set of node ids
      */
-    public static Set<Integer> getSubStrongMinorityNodes(final List<Long> nodeStakes) {
+    public static @NonNull Set<Integer> getSubStrongMinorityNodes(@NonNull final List<Long> nodeStakes) {
         final Set<Integer> partitionedNodes = new HashSet<>();
         final long totalStake = nodeStakes.stream().reduce(0L, Long::sum);
         long partitionedStake = 0L;

@@ -17,9 +17,10 @@
 package com.swirlds.platform.test.consensus.framework;
 
 import com.swirlds.common.test.fixtures.WeightGenerator;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
-public record TestInput(int numberOfNodes, WeightGenerator weightGenerator, long seed, int eventsToGenerate) {
-    public TestInput setNumberOfNodes(int numberOfNodes) {
+public record TestInput(int numberOfNodes, @NonNull WeightGenerator weightGenerator, long seed, int eventsToGenerate) {
+    public @NonNull TestInput setNumberOfNodes(int numberOfNodes) {
         return new TestInput(numberOfNodes, weightGenerator, seed, eventsToGenerate);
     }
 }

@@ -23,6 +23,8 @@ import com.swirlds.platform.test.consensus.framework.ConsensusOutput;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.junit.jupiter.api.Assertions;
 
 @SuppressWarnings("unused") // issue tracked #6998
@@ -34,7 +36,9 @@ public class NoEventsLost {
      * Validates that all ancient events are either stale or consensus, but not both. Non-ancient events could be
      * neither, so they are not checked.
      */
-    public static void validateNoEventsAreLost(final ConsensusOutput output, final ConsensusOutput ignored) {
+    public static void validateNoEventsAreLost(
+            @NonNull final ConsensusOutput output,
+            @NonNull final ConsensusOutput ignored) {
         final Map<Hash, EventImpl> stale =
                 output.getStaleEvents().stream().collect(Collectors.toMap(EventImpl::getBaseHash, e -> e));
         final Map<Hash, EventImpl> cons = output.getConsensusRounds().stream()

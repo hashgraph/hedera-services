@@ -20,13 +20,17 @@ import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.consensus.framework.ConsensusOutput;
 import java.util.List;
 import java.util.Objects;
+
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.junit.jupiter.api.Assertions;
 
 public class InputEventsValidation {
     /**
      * Validate that the events are added in a different order
      */
-    public static void validateEventsAreInDifferentOrder(final ConsensusOutput output1, final ConsensusOutput output2) {
+    public static void validateEventsAreInDifferentOrder(
+            @NonNull final ConsensusOutput output1,
+            @NonNull final ConsensusOutput output2) {
         assertBaseEventLists(
                 "Verifying input events are not equal", output1.getAddedEvents(), output2.getAddedEvents(), false);
     }
@@ -35,7 +39,9 @@ public class InputEventsValidation {
      * Verify that ALL base events fed into consensus are exactly identical this will check only pre-consensus data, for
      * non-consensus events, the consensus data does not have to match
      */
-    public static void validateInputsAreTheSame(final ConsensusOutput output1, final ConsensusOutput output2) {
+    public static void validateInputsAreTheSame(
+            @NonNull final ConsensusOutput output1,
+            @NonNull final ConsensusOutput output2) {
         assertBaseEventLists(
                 "Verifying sorted input events are equal",
                 output1.sortedAddedEvents(),
@@ -53,7 +59,10 @@ public class InputEventsValidation {
      * @param shouldBeEqual true if we expect lists have equal events, false if we expect unequal
      */
     private static void assertBaseEventLists(
-            final String description, final List<EventImpl> l1, final List<EventImpl> l2, final boolean shouldBeEqual) {
+            @NonNull final String description,
+            @NonNull final List<EventImpl> l1,
+            @NonNull final List<EventImpl> l2,
+            final boolean shouldBeEqual) {
 
         if (l1.size() != l2.size()) {
             Assertions.fail(String.format("Length of event lists are unequal: %d vs %d", l1.size(), l2.size()));
@@ -86,23 +95,6 @@ public class InputEventsValidation {
             // events are not expected to be equal, but we have gone through the whole list without finding a mismatch
             Assertions.fail(
                     String.format("Events are added in exactly the same order. Number of events: %d", l1.size()));
-        }
-    }
-
-    /**
-     * Assert that base events are equal. This does not check any consensus data, only
-     * pre-consensus. If they are not equal then cause the test to fail and print a meaningful error
-     * message.
-     *
-     * @param description a string that is printed if the events are unequal
-     * @param e1 the first event
-     * @param e2 the second event
-     */
-    public static void assertBaseEvents(final String description, final EventImpl e1, final EventImpl e2) {
-        if (!Objects.equals(e1.getBaseEvent(), e2.getBaseEvent())) {
-            final String sb =
-                    description + "\n" + "Events are not equal:\n" + "Event 1: " + e1 + "\n" + "Event 2: " + e2 + "\n";
-            Assertions.fail(sb);
         }
     }
 }

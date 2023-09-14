@@ -18,6 +18,8 @@ package com.swirlds.platform.test.consensus;
 
 import com.swirlds.platform.test.consensus.framework.TestInput;
 import java.util.Random;
+
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.junit.jupiter.api.function.ThrowingConsumer;
 
 public class ConsensusTestRunner {
@@ -26,21 +28,21 @@ public class ConsensusTestRunner {
     private int iterations = 1;
     private int eventsToGenerate = 10_000;
 
-    public static ConsensusTestRunner create() {
+    public static @NonNull ConsensusTestRunner create() {
         return new ConsensusTestRunner();
     }
 
-    public ConsensusTestRunner setParams(final ConsensusTestParams params) {
+    public @NonNull ConsensusTestRunner setParams(@NonNull final ConsensusTestParams params) {
         this.params = params;
         return this;
     }
 
-    public ConsensusTestRunner setTest(final ThrowingConsumer<TestInput> test) {
+    public @NonNull ConsensusTestRunner setTest(@NonNull final ThrowingConsumer<TestInput> test) {
         this.test = test;
         return this;
     }
 
-    public ConsensusTestRunner setIterations(final int iterations) {
+    public @NonNull ConsensusTestRunner setIterations(final int iterations) {
         this.iterations = iterations;
         return this;
     }
@@ -58,7 +60,7 @@ public class ConsensusTestRunner {
                 System.out.println("Running seed: " + seed);
                 test.accept(new TestInput(params.numNodes(), params.weightGenerator(), seed, eventsToGenerate));
             }
-        } catch (Throwable e) {
+        } catch (final Throwable e) {
             throw new RuntimeException(e);
         }
     }
