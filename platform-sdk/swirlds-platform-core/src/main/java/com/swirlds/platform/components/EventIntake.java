@@ -235,10 +235,8 @@ public class EventIntake {
             }
             stats.doneIntakeAddEvent();
         } finally {
-            if (intakePipelineManager != null) {
-                intakePipelineManager.eventThroughIntakePipeline(
-                        event.getBaseEvent().getSenderNodeId());
-            }
+            intakePipelineManager.eventThroughIntakePipeline(
+                    event.getBaseEvent().getSenderNodeId());
         }
     }
 

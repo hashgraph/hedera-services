@@ -421,11 +421,7 @@ public class SyncGossip extends AbstractGossip {
     @Override
     public void resume() {
         throwIfNotInPhase(LifecyclePhase.STARTED);
-
-        if (intakePipelineManager != null) {
-            intakePipelineManager.reset();
-        }
-
+        intakePipelineManager.reset();
         gossipHalted.set(false);
     }
 }

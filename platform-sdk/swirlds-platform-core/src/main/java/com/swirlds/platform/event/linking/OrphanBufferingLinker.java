@@ -101,10 +101,8 @@ public class OrphanBufferingLinker extends AbstractEventLinker {
         logger.error(LogMarker.EXCEPTION.getMarker(), "Purging an orphan: {}", orphan.getChild());
 
         // notify the intake monitor that this orphan event was purged, and thus is done traversing the intake pipeline
-        if (intakePipelineManager != null) {
-            intakePipelineManager.eventThroughIntakePipeline(
-                    orphan.getChild().getBaseEvent().getSenderNodeId());
-        }
+        intakePipelineManager.eventThroughIntakePipeline(
+                orphan.getChild().getBaseEvent().getSenderNodeId());
     }
 
     /**
