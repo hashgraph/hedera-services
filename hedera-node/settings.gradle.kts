@@ -82,7 +82,7 @@ fun include(name: String, path: String) {
 // The HAPI API version to use for Protobuf sources. This can be a tag or branch
 // name from the hedera-protobufs GIT repo.
 val hapiProtoVersion = "0.43.0-rc-SNAPSHOT"
-val hapiProtoBranchOrTag = "revert-nft-token-id-case" // hapiProtoVersion
+val hapiProtoCommit = "adf878895af821f17acf93ebc503d80cd5b09f9a";
 
 gitRepositories {
     checkoutsDirectory.set(File(rootDir, "hapi"))
@@ -91,7 +91,7 @@ gitRepositories {
     include("hedera-protobufs") {
         uri.set("https://github.com/hashgraph/hedera-protobufs.git")
         // HAPI repo version
-        tag.set(hapiProtoBranchOrTag)
+        commit.set(hapiProtoCommit)
         // do not load project from repo
         autoInclude.set(false)
     }
