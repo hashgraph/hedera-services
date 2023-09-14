@@ -29,7 +29,6 @@ import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
-import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -87,7 +86,7 @@ public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
         final var tokenId = op.tokenOrThrow();
         final var accountId = op.accountOrElse(AccountID.DEFAULT);
         final var tokenRelStore = handleContext.writableStore(WritableTokenRelationStore.class);
-        final var tokenStore = handleContext.writableStore(WritableTokenStore.class);
+        final var tokenStore = handleContext.readableStore(ReadableTokenStore.class);
         final var tokenRel = validateSemantics(accountId, tokenId, tokenRelStore, tokenStore);
 
         final var tokenRelBuilder = tokenRel.copyBuilder();
@@ -120,7 +119,7 @@ public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
             @NonNull final AccountID accountId,
             @NonNull final TokenID tokenId,
             @NonNull final WritableTokenRelationStore tokenRelStore,
-            @NonNull final WritableTokenStore tokenStore)
+            @NonNull final ReadableTokenStore tokenStore)
             throws HandleException {
         final var token = TokenHandlerHelper.getIfUsable(tokenId, tokenStore);
         final var tokenRel = tokenRelStore.getForModify(accountId, token.tokenId());
