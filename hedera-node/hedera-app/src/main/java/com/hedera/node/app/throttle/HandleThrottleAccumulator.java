@@ -191,17 +191,6 @@ public class HandleThrottleAccumulator {
             return false;
         }
 
-        // TODO: probably not best to recreate the gasThrottle for every txn, we can do it similar to mono which is when
-        // the config is updated
-        long capacity;
-        final var contractsConfig = configuration.getConfigData(ContractsConfig.class);
-        if (contractsConfig.throttleThrottleByGas() && contractsConfig.maxGasPerSec() == 0) {
-            log.warn("Consensus gas throttling enabled, but limited to 0 gas/sec");
-        }
-
-        capacity = contractsConfig.maxGasPerSec();
-        gasThrottle = new GasLimitDeterministicThrottle(capacity);
-
         // TODO: in mono we pass: () -> getSpanMapAccessor().getEthTxDataMeta(this) as 3rd param to
         // getGasLimitForContractTx as third param, should we do something similar here?
         final var txGasLimit = getGasLimitForContractTx(txnInfo.txBody(), txnInfo.functionality());
@@ -454,6 +443,28 @@ public class HandleThrottleAccumulator {
         activeThrottles = newActiveThrottles;
 
         logResolvedDefinitions(CAPACITY_SPLIT);
+    }
+
+    public void applyGasConfig() {
+        long capacity;
+
+        final var configuration = configProvider.getConfiguration();
+        final var contractsConfig = configuration.getConfigData(ContractsConfig.class);
+        if (contractsConfig.throttleThrottleByGas() && contractsConfig.maxGasPerSec() == 0) {
+            log.warn("Consensus gas throttling enabled, but limited to 0 gas/sec");
+            return;
+        } else {
+            capacity = contractsConfig.maxGasPerSec();
+        }
+
+        gasThrottle = new GasLimitDeterministicThrottle(capacity);
+
+        final var configDesc = "Resolved consensus gas throttle -\n  "
+                + gasThrottle.capacity()
+                + " gas/sec (throttling "
+                + (contractsConfig.throttleThrottleByGas() ? "ON" : "OFF")
+                + ")";
+        log.info(configDesc);
     }
 
     private ThrottleGroup<HederaFunctionality> hapiGroupFromPbj(
