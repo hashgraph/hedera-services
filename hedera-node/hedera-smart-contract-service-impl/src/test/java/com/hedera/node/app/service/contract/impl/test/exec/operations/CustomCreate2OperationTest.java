@@ -24,12 +24,19 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomCreate2Operation;
+import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldUpdater;
+import java.lang.reflect.Field;
+import java.util.Deque;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
 import org.apache.tuweni.units.bigints.UInt256;
+import org.hyperledger.besu.collections.undo.UndoSet;
+import org.hyperledger.besu.collections.undo.UndoTable;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.frame.TxValues;
 import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.operation.Operation;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,6 +50,21 @@ class CustomCreate2OperationTest extends CreateOperationTestBase {
 
     @Mock
     private FeatureFlags featureFlags;
+
+    @Mock
+    private HederaEvmWorldUpdater updater;
+
+    @Mock
+    private TxValues txValues;
+
+    @Mock
+    private UndoTable<Address, Bytes32, Bytes32> undoTable;
+
+    @Mock
+    private Deque<MessageFrame> messageFrameStack;
+
+    @Mock
+    private UndoSet<Address> warmedUpAddresses;
 
     private CustomCreate2Operation subject;
 
@@ -77,9 +99,9 @@ class CustomCreate2OperationTest extends CreateOperationTestBase {
     }
 
     @Test
-    void finalizesHollowAccountWhenPendingContractIsHollowAccountAndLazyCreationEnabled() {
+    void finalizesHollowAccountWhenPendingContractIsHollowAccountAndLazyCreationEnabled()
+            throws NoSuchFieldException, IllegalAccessException {
         final var frameCaptor = ArgumentCaptor.forClass(MessageFrame.class);
-        givenBuilderPrereqs();
         givenSpawnPrereqs(4);
         given(gasCalculator.create2OperationGasCost(frame)).willReturn(GAS_COST);
         given(frame.getStackItem(0)).willReturn(Bytes.ofUnsignedLong(VALUE));
@@ -89,12 +111,25 @@ class CustomCreate2OperationTest extends CreateOperationTestBase {
         given(worldUpdater.isHollowAccount(EIP_1014_ADDRESS)).willReturn(true);
         given(featureFlags.isImplicitCreationEnabled(frame)).willReturn(true);
 
+        given(txValues.transientStorage()).willReturn(undoTable);
+        given(txValues.messageFrameStack()).willReturn(messageFrameStack);
+        given(txValues.warmedUpAddresses()).willReturn(warmedUpAddresses);
+        given(undoTable.mark()).willReturn(1L);
+
+        final Field worldUdaterField = MessageFrame.class.getDeclaredField("worldUpdater");
+        worldUdaterField.setAccessible(true);
+        worldUdaterField.set(frame, updater);
+
+        final Field txValuesField = MessageFrame.class.getDeclaredField("txValues");
+        txValuesField.setAccessible(true);
+        txValuesField.set(frame, txValues);
+
         final var expected = new Operation.OperationResult(GAS_COST, null);
         assertSameResult(expected, subject.execute(frame, evm));
 
         verify(worldUpdater).setupInternalAliasedCreate(RECIEVER_ADDRESS, EIP_1014_ADDRESS);
 
-        verify(stack).addFirst(frameCaptor.capture());
+        verify(messageFrameStack).addFirst(frameCaptor.capture());
         final var childFrame = frameCaptor.getValue();
         childFrame.setState(MessageFrame.State.COMPLETED_SUCCESS);
         childFrame.notifyCompletion();
