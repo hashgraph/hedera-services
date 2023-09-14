@@ -38,9 +38,6 @@ public class MiscCryptoUtils {
         return new Keccak.Digest256().digest(msg);
     }
 
-    private static final LongByReference OUTPUT_LENGTH_65 = new LongByReference(65);
-    private static final LongByReference OUTPUT_LENGTH_33 = new LongByReference(33);
-
     // Thread local caches to avoid allocating memory for each verification. They will leak memory for each thread used
     // for verification but only just over 100 bytes to totally worth it.
     private static final ThreadLocal<LibSecp256k1.secp256k1_pubkey> PUB_KEY_CACHE =
@@ -53,6 +50,8 @@ public class MiscCryptoUtils {
             });
     private static final ThreadLocal<ByteBuffer> UNCOMPRESSED_PUBLIC_KEY_BYTEBUFFER_CACHE =
             ThreadLocal.withInitial(() -> ByteBuffer.allocate(65));
+    private static final ThreadLocal<LongByReference> LENGTH_CACHE =
+            ThreadLocal.withInitial(LongByReference::new);
 
     /**
      * Given a 33-byte compressed ECDSA(secp256k1) public key, returns the uncompressed key as a
@@ -72,10 +71,12 @@ public class MiscCryptoUtils {
                 compressedKey.length);
         if (keyParseResult != 1) throw new RuntimeException("Failed to parse public key");
         final ByteBuffer outputBuffer = UNCOMPRESSED_PUBLIC_KEY_BYTEBUFFER_CACHE.get();
+        final LongByReference outputLength = LENGTH_CACHE.get();
+        outputLength.setValue(65);
         final int keySerializeResult = LibSecp256k1.secp256k1_ec_pubkey_serialize(
                 LibSecp256k1.CONTEXT,
                 outputBuffer,
-                OUTPUT_LENGTH_65,
+                outputLength,
                 pubkey,
                 LibSecp256k1.SECP256K1_EC_UNCOMPRESSED);
         if (keySerializeResult != 1) throw new RuntimeException("Failed to serialize public key");
@@ -107,10 +108,12 @@ public class MiscCryptoUtils {
         if (keyParseResult != 1) throw new RuntimeException("Failed to parse public key");
         // serialize public key to compressed format
         final ByteBuffer outputBuffer = ByteBuffer.allocate(33);
+        final LongByReference outputLength = LENGTH_CACHE.get();
+        outputLength.setValue(33);
         final int keySerializeResult = LibSecp256k1.secp256k1_ec_pubkey_serialize(
                 LibSecp256k1.CONTEXT,
                 outputBuffer,
-                OUTPUT_LENGTH_33,
+                outputLength,
                 pubkey,
                 LibSecp256k1.SECP256K1_EC_COMPRESSED);
         if (keySerializeResult != 1) throw new RuntimeException("Failed to serialize public key");
