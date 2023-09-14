@@ -193,6 +193,7 @@ public class CryptoDeleteSuite extends HapiSuite {
                         .hasKnownStatus(ACCOUNT_DELETED));
     }
 
+    @HapiTest
     private HapiSpec cannotDeleteAccountWithSameBeneficiary() {
         return defaultHapiSpec("CannotDeleteAccountWithSameBeneficiary")
                 .given(cryptoCreate(ACCOUNT_TO_BE_DELETED))

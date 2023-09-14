@@ -68,7 +68,7 @@ public class FreezeUpgradeActions {
 
     public void externalizeFreezeIfUpgradePending() {
         // @todo('Issue #6201'): call networkCtx.hasPreparedUpgrade()
-        // final var isUpgradePrepared = networkCtx.hasPreparedUpgrade();
+        // final var isUpgradePrepared = networkCtx.hasPreparedUpgrade()
         final boolean isUpgradePrepared = true;
 
         if (isUpgradePrepared) {

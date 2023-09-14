@@ -25,7 +25,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttemptFactory;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallFactory;
 import java.nio.ByteBuffer;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
@@ -46,7 +46,7 @@ class HtsSystemContractTest {
     private MessageFrame frame;
 
     @Mock
-    private HtsCallAttemptFactory attemptFactory;
+    private HtsCallFactory attemptFactory;
 
     @Mock
     private GasCalculator gasCalculator;
@@ -73,6 +73,16 @@ class HtsSystemContractTest {
         given(attemptFactory.createCallFrom(Bytes.EMPTY, frame)).willThrow(RuntimeException.class);
 
         final var expected = haltResult(ExceptionalHaltReason.INVALID_OPERATION, frame.getRemainingGas());
+        final var result = subject.computeFully(Bytes.EMPTY, frame);
+        assertSamePrecompileResult(expected, result);
+    }
+
+    @Test
+    void internalErrorAttemptHaltsAndConsumesRemainingGas() {
+        givenValidCallAttempt();
+        given(call.execute()).willThrow(RuntimeException.class);
+
+        final var expected = haltResult(ExceptionalHaltReason.PRECOMPILE_ERROR, frame.getRemainingGas());
         final var result = subject.computeFully(Bytes.EMPTY, frame);
         assertSamePrecompileResult(expected, result);
     }

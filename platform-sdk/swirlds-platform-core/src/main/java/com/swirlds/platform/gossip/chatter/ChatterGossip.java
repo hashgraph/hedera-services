@@ -293,7 +293,8 @@ public class ChatterGossip extends AbstractGossip {
                                             reconnectController,
                                             new DefaultSignedStateValidator(platformContext),
                                             fallenBehindManager,
-                                            platformContext.getConfiguration()),
+                                            platformContext.getConfiguration(),
+                                            time),
                                     new ChatterSyncProtocol(
                                             otherId,
                                             chatterPeer.communicationState(),

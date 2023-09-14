@@ -16,60 +16,83 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts;
 
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt.REDIRECT_FOR_TOKEN;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.balanceof.BalanceOfCall.BALANCE_OF;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.balanceof.BalanceOfTranslator.BALANCE_OF;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN_ID;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_ACCOUNT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_LONG_ZERO_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.asHeadlongAddress;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.bytesForRedirect;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttemptFactory;
+import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAddressChecks;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallFactory;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.SyntheticIds;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.balanceof.BalanceOfCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.balanceof.BalanceOfTranslator;
+import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
-import org.apache.tuweni.bytes.Bytes;
+import java.util.ArrayDeque;
+import java.util.Collections;
+import java.util.Deque;
+import java.util.List;
 import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
-@ExtendWith(MockitoExtension.class)
-class HtsCallAttemptFactoryTest extends HtsCallTestBase {
+class HtsCallFactoryTest extends HtsCallTestBase {
+    private static final List<HtsCallTranslator> NO_TRANSLATORS = Collections.emptyList();
+
+    @Mock
+    private HtsCallAddressChecks addressChecks;
+
+    @Mock
+    private VerificationStrategies verificationStrategies;
+
+    @Mock
+    private AddressIdConverter idConverter;
+
+    @Mock
+    private SyntheticIds syntheticIds;
+
     @Mock
     private MessageFrame frame;
 
     @Mock
+    private MessageFrame initialFrame;
+
+    private Deque<MessageFrame> stack = new ArrayDeque<>();
+
+    @Mock
     private ProxyWorldUpdater updater;
 
-    private final HtsCallAttemptFactory subject = new HtsCallAttemptFactory();
+    private HtsCallFactory subject;
 
-    @Test
-    void instantiatesAttemptWithInContextEnhancement() {
-        given(frame.getWorldUpdater()).willReturn(updater);
-        given(updater.enhancement()).willReturn(mockEnhancement());
-        given(nativeOperations.getToken(NON_SYSTEM_ACCOUNT_ID.accountNumOrThrow()))
-                .willReturn(FUNGIBLE_TOKEN);
-
-        final var attempt = subject.createFrom(
-                Bytes.wrap(REDIRECT_FOR_TOKEN
-                        .encodeCallWithArgs(asHeadlongAddress(NON_SYSTEM_LONG_ZERO_ADDRESS), BALANCE_OF.selector())
-                        .array()),
-                frame);
-
-        assertSame(FUNGIBLE_TOKEN, attempt.redirectToken());
+    @BeforeEach
+    void setUp() {
+        subject = new HtsCallFactory(
+                syntheticIds, addressChecks, verificationStrategies, List.of(new BalanceOfTranslator()));
     }
 
     @Test
-    void instantiatesCallWithInContextEnhancement() {
+    void instantiatesCallWithInContextEnhancementAndDelegateCallInfo() {
+        given(initialFrame.getContextVariable(FrameUtils.CONFIG_CONTEXT_VARIABLE))
+                .willReturn(DEFAULT_CONFIG);
+        stack.push(initialFrame);
+        stack.addFirst(frame);
+        given(frame.getMessageFrameStack()).willReturn(stack);
         given(frame.getWorldUpdater()).willReturn(updater);
         given(updater.enhancement()).willReturn(mockEnhancement());
         given(nativeOperations.getToken(FUNGIBLE_TOKEN_ID.tokenNum())).willReturn(FUNGIBLE_TOKEN);
         given(frame.getSenderAddress()).willReturn(EIP_1014_ADDRESS);
+        given(addressChecks.hasParentDelegateCall(frame)).willReturn(true);
+        given(syntheticIds.converterFor(nativeOperations)).willReturn(idConverter);
 
         final var input = bytesForRedirect(
                 BALANCE_OF.encodeCallWithArgs(asHeadlongAddress(NON_SYSTEM_LONG_ZERO_ADDRESS)), FUNGIBLE_TOKEN_ID);

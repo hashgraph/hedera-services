@@ -35,7 +35,6 @@ testModuleInfo {
     requires("org.apache.logging.log4j.core")
     requires("org.assertj.core")
     requires("org.hamcrest")
-    requires("org.hyperledger.besu.plugin.api")
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")
     requires("org.junitpioneer")
