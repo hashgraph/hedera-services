@@ -90,10 +90,11 @@ public class ServicesMain implements SwirldMain {
     public static void main(final String... args) throws Exception {
         BootstrapUtils.setupConstructableRegistry();
         final var registry = ConstructableRegistry.getInstance();
-        new SwirldsPlatformBuilder()
-                .withName("Hedera")
-                .withMain(() -> new Hedera(registry))
-                .withNodeId(args != null && args.length > 0 ? Integer.parseInt(args[0]) : 0)
-                .buildAndStart();
+
+        // TODO create a method to help with this
+        // args != null && args.length > 0 ? Integer.parseInt(args[0]) : 0
+        final NodeId selfId = new NodeId(0);
+
+        new SwirldsPlatformBuilder(new Hedera(registry), selfId).build(true);
     }
 }

@@ -21,6 +21,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.hedera.node.app.Hedera;
 import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.SwirldsPlatformBuilder;
 import com.swirlds.platform.util.BootstrapUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -112,13 +113,13 @@ public class InProcessHapiTestNode implements HapiTestNode {
      */
     public static final class WorkerThread extends Thread {
         private Hedera hedera;
-        private final long nodeId;
+        private final NodeId selfId;
         private final int grpcPort;
         private final Path workingDir;
 
-        public WorkerThread(Path workingDir, long nodeId, int grpcPort) {
+        public WorkerThread(Path workingDir, long selfId, int grpcPort) {
             this.workingDir = workingDir;
-            this.nodeId = nodeId;
+            this.selfId = new NodeId(selfId);
             this.grpcPort = grpcPort;
         }
 
@@ -130,8 +131,8 @@ public class InProcessHapiTestNode implements HapiTestNode {
         public void run() {
             BootstrapUtils.setupConstructableRegistry();
             final var cr = ConstructableRegistry.getInstance();
-            new SwirldsPlatformBuilder()
-                    .withNodeId(nodeId)
+            hedera = new Hedera(cr);
+            new SwirldsPlatformBuilder(hedera, selfId)
                     .withConfigValue("paths.configPath", path("config.txt"))
                     .withConfigValue("paths.settingsPath", path("settings.txt"))
                     .withConfigValue("paths.settingsUsedDir", path("."))
@@ -142,12 +143,7 @@ public class InProcessHapiTestNode implements HapiTestNode {
                     .withConfigValue("state.savedStateDirectory", path("data/saved"))
                     .withConfigValue("loadKeysFromPfxFiles", false)
                     .withConfigValue("grpc.port", grpcPort)
-                    .withMain(() -> {
-                        final var h = new Hedera(cr);
-                        hedera = h;
-                        return h;
-                    })
-                    .buildAndStart();
+                    .build(true);
         }
 
         private String path(String path) {
