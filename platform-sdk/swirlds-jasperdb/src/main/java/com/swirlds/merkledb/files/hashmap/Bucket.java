@@ -305,24 +305,6 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
         buffer.putInt(initialPos + Integer.BYTES, serializedSize);
     }
 
-    public static long extractKey(final BufferedData bucketBytes) {
-        // don't mess up with original buffer
-        final BufferedData in = bucketBytes.slice(bucketBytes.position(), bucketBytes.limit());
-        while (in.hasRemaining()) {
-            final int tag = in.readVarInt(false);
-            final int number = tag >> TAG_FIELD_OFFSET;
-            if (number == FIELD_BUCKET_INDEX.number()) {
-                return in.readVarInt(false);
-            } else if (number == FIELD_BUCKET_ENTRIES.number()) {
-                final int entryBytesSize = in.readVarInt(false);
-                in.skip(entryBytesSize);
-            } else {
-                throw new IllegalArgumentException("Unknown bucket field: " + number);
-            }
-        }
-        return 0; // default value
-    }
-
     // =================================================================================================================
     // Private API
 

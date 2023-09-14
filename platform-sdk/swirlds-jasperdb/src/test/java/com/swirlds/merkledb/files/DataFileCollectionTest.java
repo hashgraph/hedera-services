@@ -250,8 +250,8 @@ class DataFileCollectionTest {
     @EnumSource(FilesTestType.class)
     void closeAndReopen(final FilesTestType testType) throws Exception {
         final AtomicInteger numKeysRead = new AtomicInteger();
-        final DataFileCollection.LoadedDataCallback testCallback =
-                (key, dataLoc, buffer) -> numKeysRead.incrementAndGet();
+        final DataFileCollection.LoadedDataCallback<long[]> testCallback =
+                (dataLoc, data) -> numKeysRead.incrementAndGet();
         final DataFileCollection<long[]> fileCollection = fileCollectionMap.get(testType);
         assertEquals(new KeyRange(0, 1000), fileCollection.getValidKeyRange(), "Should still have the valid range");
         fileCollection.close();
@@ -302,8 +302,8 @@ class DataFileCollectionTest {
     @EnumSource(FilesTestType.class)
     void closeAndReopenInSlowModeForMerging(final FilesTestType testType) throws Exception {
         final AtomicInteger numKeysRead = new AtomicInteger();
-        final DataFileCollection.LoadedDataCallback testCallback =
-                (key, dataLoc, buffer) -> numKeysRead.incrementAndGet();
+        final DataFileCollection.LoadedDataCallback<long[]> testCallback =
+                (dataLoc, data) -> numKeysRead.incrementAndGet();
         final DataFileCollection<long[]> fileCollection = fileCollectionMap.get(testType);
         fileCollection.close();
         assertDoesNotThrow(
@@ -770,12 +770,13 @@ class DataFileCollectionTest {
                         + "MB");
     }
 
-    private static class LoadedDataCallbackImpl implements DataFileCollection.LoadedDataCallback {
+    private static class LoadedDataCallbackImpl implements DataFileCollection.LoadedDataCallback<long[]> {
         public final Map<Long, Long> dataLocationMap = new HashMap<>();
-        public final Map<Long, Object> dataValueMap = new HashMap<>();
+        public final Map<Long, long[]> dataValueMap = new HashMap<>();
 
         @Override
-        public void newIndexEntry(final long key, final long dataLocation, final Object dataValue) {
+        public void newIndexEntry(final long dataLocation, final long[] dataValue) {
+            final long key = dataValue[0];
             dataLocationMap.put(key, dataLocation);
             dataValueMap.put(key, dataValue);
         }

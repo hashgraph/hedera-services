@@ -141,9 +141,4 @@ public class BucketSerializer<K extends VirtualKey> implements DataItemSerialize
         bucket.readFrom(buffer);
         return bucket;
     }
-
-    @Override
-    public long extractKey(final BufferedData dataItemData) {
-        return Bucket.extractKey(dataItemData);
-    }
 }

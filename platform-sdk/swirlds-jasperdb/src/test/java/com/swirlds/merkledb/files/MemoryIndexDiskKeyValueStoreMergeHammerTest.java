@@ -110,7 +110,7 @@ class MemoryIndexDiskKeyValueStoreMergeHammerTest {
                 "megaMergeHammerTest",
                 null,
                 serializer,
-                (key, dataLocation, dataValue) -> {},
+                (dataLocation, dataValue) -> {},
                 new LongListOffHeap());
 
         // This is just a nice little output that you can copy and paste to watch the database

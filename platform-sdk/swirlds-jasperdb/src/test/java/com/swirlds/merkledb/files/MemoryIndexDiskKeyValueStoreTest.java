@@ -320,8 +320,10 @@ class MemoryIndexDiskKeyValueStoreTest {
         index1.close();
 
         final LongListHeap index3 = new LongListHeap();
+        final DataFileCollection.LoadedDataCallback<long[]> loadedCallback =
+                (dataLocation, dataValue) -> index3.put(dataValue[0], dataLocation);
         final MemoryIndexDiskKeyValueStore<long[]> store3 = new MemoryIndexDiskKeyValueStore<>(
-                tempDir, "store_name", "store:name", new ExampleFixedSizeDataSerializer(), null, index3);
+                tempDir, "store_name", "store:name", new ExampleFixedSizeDataSerializer(), loadedCallback, index3);
         checkRange(testType, store3, 0, 100, 11);
         assertNull(store3.get(101));
         store3.close();

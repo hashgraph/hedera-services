@@ -265,8 +265,8 @@ class DataFileJdbLowLevelTest {
         });
         // some additional asserts to increase DataFileReader's coverage.
         DataFileReader<long[]> secondReader = new DataFileReaderJdb<>(dataFile, testType.dataItemSerializer);
-        DataFileIterator firstIterator = dataFileReader.createIterator();
-        DataFileIterator secondIterator = secondReader.createIterator();
+        DataFileIterator<long[]> firstIterator = dataFileReader.createIterator();
+        DataFileIterator<long[]> secondIterator = secondReader.createIterator();
         assertEquals(firstIterator.getMetadata(), secondIterator.getMetadata(), "unexpected metadata");
         assertEquals(
                 firstIterator.getMetadata().hashCode(),
@@ -296,18 +296,16 @@ class DataFileJdbLowLevelTest {
         final var dataFile = dataFileMap.get(testType);
         final var dataFileMetadata = dataFileMetadataMap.get(testType);
         final var listOfDataItemLocations = listOfDataItemLocationsMap.get(testType);
-        DataFileIteratorJdb fileIterator =
-                new DataFileIteratorJdb(dataFile, dataFileMetadata, testType.dataItemSerializer);
+        DataFileIteratorJdb<long[]> fileIterator =
+                new DataFileIteratorJdb<>(dataFile, dataFileMetadata, testType.dataItemSerializer);
         int i = 0;
         while (fileIterator.next()) {
             assertEquals(
                     listOfDataItemLocations.get(i),
                     fileIterator.getDataItemDataLocation(),
                     "unexpected data items data location");
-            assertEquals(i, fileIterator.getDataItemKey(), "unexpected data items key");
-            ByteBuffer data = fileIterator.getDataItemData();
-            assertEquals(data.remaining(), fileIterator.getDataItemSize());
-            long[] dataItem = testType.dataItemSerializer.deserialize(data, 0);
+            long[] dataItem = fileIterator.getDataItemData();
+            assertEquals(i, dataItem[0], "unexpected data items key");
             checkItem(testType, i, dataItem);
             i++;
         }
@@ -326,12 +324,12 @@ class DataFileJdbLowLevelTest {
 
         final var dataFile = dataFileMap.get(testType);
         final var dataFileMetadata = dataFileMetadataMap.get(testType);
-        DataFileIteratorJdb fileIterator =
-                new DataFileIteratorJdb(dataFile, dataFileMetadata, testType.dataItemSerializer);
+        DataFileIteratorJdb<long[]> fileIterator =
+                new DataFileIteratorJdb<>(dataFile, dataFileMetadata, testType.dataItemSerializer);
         final LongArrayList newDataLocations = new LongArrayList(1000);
         while (fileIterator.next()) {
-            final ByteBuffer itemData = fileIterator.getDataItemData();
-            newDataLocations.add(newDataFileWriter.writeCopiedDataItem(itemData));
+            final long[] itemData = fileIterator.getDataItemData();
+            newDataLocations.add(newDataFileWriter.storeDataItem(itemData));
         }
         newDataFileWriter.finishWriting();
         final var newDataFileMetadata = newDataFileWriter.getMetadata();

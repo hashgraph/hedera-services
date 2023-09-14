@@ -24,11 +24,12 @@ import java.nio.file.Path;
  * loop and you can then read the data items info for current item with getDataItemsKey, getDataItemsDataLocation and
  * getDataItemData.
  *
- * It is designed to be used from a single thread.
+ * <p>It is designed to be used from a single thread.
  *
+ * @param <D> data item type
  * @see DataFileWriter for definition of file structure
  */
-public interface DataFileIterator extends AutoCloseable {
+public interface DataFileIterator<D> extends AutoCloseable {
 
     /**
      * Get the path for the data file.
@@ -58,7 +59,7 @@ public interface DataFileIterator extends AutoCloseable {
      * @return buffer containing the key and value data. This will return null if the iterator has
      * 		been closed, or if the iterator is in the before-first or after-last states.
      */
-    Object getDataItemData() throws IOException;
+    D getDataItemData() throws IOException;
 
     /**
      * Get the data location (file + offset) for the current data item.
@@ -67,21 +68,6 @@ public interface DataFileIterator extends AutoCloseable {
      */
     long getDataItemDataLocation();
 
-    /**
-     * Get the size of the current data item, in bytes.
-     *
-     * @return current data item size
-     */
-    int getDataItemSize();
-
-    /**
-     * Get current dataItems key.
-     *
-     * @return the key for current dataItem
-     */
-    long getDataItemKey();
-
-    /** {@inheritDoc} */
     @Override
-    void close() throws IOException;
+    void close() throws IOException; // Override to throw IOException rather than generic Exception
 }

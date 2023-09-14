@@ -35,12 +35,12 @@ import java.util.Objects;
  * loop and you can then read the data items info for current item with getDataItemsKey, getDataItemsDataLocation and
  * getDataItemData.
  *
- * It is designed to be used from a single thread.
+ * <p>It is designed to be used from a single thread.
  *
+ * @param <D> data item type
  * @see DataFileWriter for definition of file structure
  */
-@SuppressWarnings("rawtypes")
-public final class DataFileIteratorJdb implements DataFileIterator {
+public final class DataFileIteratorJdb<D> implements DataFileIterator<D> {
     /**
      * Since {@code com.swirlds.platform.Browser} populates settings, and it is loaded before any
      * application classes that might instantiate a data source, the {@link ConfigurationHolder}
@@ -55,7 +55,7 @@ public final class DataFileIteratorJdb implements DataFileIterator {
     /** The path to the file we are iterating over */
     private final Path path;
     /** The serializer used for reading data from the file */
-    private final DataItemSerializer dataItemSerializer;
+    private final DataItemSerializer<D> dataItemSerializer;
     /** Taken from the dataItemSerializer, this is the size of the header of each data item */
     private final int headerSize;
 
@@ -85,7 +85,7 @@ public final class DataFileIteratorJdb implements DataFileIterator {
      * 		if there was a problem creating a new InputStream on the file at path
      */
     public DataFileIteratorJdb(
-            final Path path, final DataFileMetadata metadata, final DataItemSerializer dataItemSerializer)
+            final Path path, final DataFileMetadata metadata, final DataItemSerializer<D> dataItemSerializer)
             throws IOException {
         this.path = path;
         this.metadata = metadata;
@@ -163,8 +163,9 @@ public final class DataFileIteratorJdb implements DataFileIterator {
      * {@inheritDoc}
      */
     @Override
-    public ByteBuffer getDataItemData() throws IOException {
-        return fillBuffer(currentDataItemSize);
+    public D getDataItemData() throws IOException {
+        final ByteBuffer dataItemBuffer = fillBuffer(currentDataItemSize);
+        return dataItemSerializer.deserialize(dataItemBuffer, metadata.getSerializationVersion());
     }
 
     /**
@@ -175,21 +176,6 @@ public final class DataFileIteratorJdb implements DataFileIterator {
     @Override
     public long getDataItemDataLocation() {
         return DataFileCommon.dataLocation(metadata.getIndex(), currentDataItemFilePosition);
-    }
-
-    @Override
-    public int getDataItemSize() {
-        return currentDataItemSize;
-    }
-
-    /**
-     * Get current dataItems key.
-     *
-     * @return the key for current dataItem
-     */
-    @Override
-    public long getDataItemKey() {
-        return currentDataItemHeader.getKey();
     }
 
     /** toString for debugging */
@@ -216,7 +202,7 @@ public final class DataFileIteratorJdb implements DataFileIterator {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        final DataFileIterator that = (DataFileIterator) o;
+        final DataFileIterator<?> that = (DataFileIterator<?>) o;
         return path.equals(that.getPath()) && metadata.equals(that.getMetadata());
     }
 

@@ -27,7 +27,6 @@ import java.nio.file.Path;
  *
  * @param <D> Data item type
  */
-@SuppressWarnings({"DuplicatedCode", "NullableProblems"})
 public interface DataFileReader<D> extends AutoCloseable, Comparable<DataFileReader<D>>, IndexedObject {
 
     DataFileType getFileType();
@@ -70,7 +69,7 @@ public interface DataFileReader<D> extends AutoCloseable, Comparable<DataFileRea
      * @return new data item iterator
      * @throws IOException if there was a problem creating a new DataFileIterator
      */
-    DataFileIterator createIterator() throws IOException;
+    DataFileIterator<D> createIterator() throws IOException;
 
     /**
      * Read data item bytes from file at dataLocation and deserialize them into the Java object, if
@@ -88,7 +87,7 @@ public interface DataFileReader<D> extends AutoCloseable, Comparable<DataFileRea
      * Reads raw data item bytes for the item at the given location. This raw data can be used
      * to fast copy item contents from a file reader to a compatible file writer.
      *
-     * This method may return null. In this case, to copy the item, it must be read and deserialized
+     * <p>This method may return null. In this case, to copy the item, it must be read and deserialized
      * using {@link #readDataItem(long)} and then written using {@link DataFileWriter#storeDataItem(Object)}.
      *
      * @param dataLocation data item location (file index + offset)
@@ -112,7 +111,6 @@ public interface DataFileReader<D> extends AutoCloseable, Comparable<DataFileRea
      */
     boolean isOpen();
 
-    /** {@inheritDoc} */
     @Override
-    void close() throws IOException;
+    void close() throws IOException; // Override to throw IOException rather than generic Exception
 }

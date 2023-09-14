@@ -217,7 +217,7 @@ public class DataFileCollection<D> implements Snapshotable {
             final Path storeDir,
             final String storeName,
             final DataItemSerializer<D> dataItemSerializer,
-            final LoadedDataCallback loadedDataCallback)
+            final LoadedDataCallback<D> loadedDataCallback)
             throws IOException {
         this(
                 storeDir,
@@ -250,7 +250,7 @@ public class DataFileCollection<D> implements Snapshotable {
             final String storeName,
             final String legacyStoreName,
             final DataItemSerializer<D> dataItemSerializer,
-            final LoadedDataCallback loadedDataCallback)
+            final LoadedDataCallback<D> loadedDataCallback)
             throws IOException {
         this(
                 storeDir,
@@ -286,7 +286,7 @@ public class DataFileCollection<D> implements Snapshotable {
             final String storeName,
             final String legacyStoreName,
             final DataItemSerializer<D> dataItemSerializer,
-            final LoadedDataCallback loadedDataCallback,
+            final LoadedDataCallback<D> loadedDataCallback,
             final Function<List<DataFileReader<D>>, ImmutableIndexedObjectList<DataFileReader<D>>>
                     indexedObjectListConstructor)
             throws IOException {
@@ -857,12 +857,14 @@ public class DataFileCollection<D> implements Snapshotable {
 
     /**
      * Simple callback class during reading an existing set of files during startup, so that indexes
-     * can be built
+     * can be built.
+     *
+     * @param <D> data item type
      */
     @FunctionalInterface
-    public interface LoadedDataCallback {
-        /** Add an index entry for the given key and data location and value */
-        void newIndexEntry(long key, long dataLocation, Object dataValue);
+    public interface LoadedDataCallback<D> {
+        /** Add an index entry for the given data location and value */
+        void newIndexEntry(long dataLocation, @NonNull D dataValue);
     }
 
     // =================================================================================================================
@@ -959,7 +961,7 @@ public class DataFileCollection<D> implements Snapshotable {
         }
     }
 
-    private boolean tryLoadFromExistingStore(final LoadedDataCallback loadedDataCallback) throws IOException {
+    private boolean tryLoadFromExistingStore(final LoadedDataCallback<D> loadedDataCallback) throws IOException {
         if (!Files.isDirectory(storeDir)) {
             throw new IOException("Tried to initialize DataFileCollection with a storage "
                     + "directory that is not a directory. ["
@@ -1003,7 +1005,8 @@ public class DataFileCollection<D> implements Snapshotable {
     }
 
     private void loadFromExistingFiles(
-            final DataFileReader<D>[] dataFileReaders, final LoadedDataCallback loadedDataCallback) throws IOException {
+            final DataFileReader<D>[] dataFileReaders, final LoadedDataCallback<D> loadedDataCallback)
+            throws IOException {
         logger.info(
                 MERKLE_DB.getMarker(),
                 "Loading existing set of [{}] data files for DataFileCollection [{}]",
@@ -1046,12 +1049,10 @@ public class DataFileCollection<D> implements Snapshotable {
         if (loadedDataCallback != null) {
             // now iterate over every file and every key
             for (final DataFileReader<D> reader : dataFileReaders) {
-                try (final DataFileIterator iterator = reader.createIterator()) {
+                try (final DataFileIterator<D> iterator = reader.createIterator()) {
                     while (iterator.next()) {
                         loadedDataCallback.newIndexEntry(
-                                iterator.getDataItemKey(),
-                                iterator.getDataItemDataLocation(),
-                                iterator.getDataItemData());
+                                iterator.getDataItemDataLocation(), iterator.getDataItemData());
                     }
                 }
             }

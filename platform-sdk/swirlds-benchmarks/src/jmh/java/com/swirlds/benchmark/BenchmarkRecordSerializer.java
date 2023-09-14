@@ -18,7 +18,6 @@ package com.swirlds.benchmark;
 
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
-import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.serialize.DataItemHeader;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
 import java.io.IOException;
@@ -66,10 +65,5 @@ public class BenchmarkRecordSerializer implements DataItemSerializer<BenchmarkRe
     @Override
     public BenchmarkRecord deserialize(ByteBuffer buffer, long dataVersion) throws IOException {
         throw new UnsupportedOperationException("Not implemented");
-    }
-
-    @Override
-    public long extractKey(BufferedData dataItemData) {
-        return dataItemData.getLong(0);
     }
 }

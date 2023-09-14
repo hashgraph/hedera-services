@@ -233,42 +233,6 @@ class BucketTest {
         assertEquals(bucket3.toString(), bucket.toString(), "Expect bucket toStrings to match");
     }
 
-    @ParameterizedTest
-    @EnumSource(KeyType.class)
-    @DisplayName("Bucket serializer can extract bucket index from buffer data")
-    void testExtractBucketIndex(KeyType keyType) throws IOException {
-        // create some keys to test with
-        final VirtualLongKey[] keys = new VirtualLongKey[4];
-        for (int i = 0; i < keys.length; i++) {
-            keys[i] = keyType.keyConstructor.apply((long) (i + 10));
-        }
-
-        // create a bucket
-        final Bucket<VirtualLongKey> bucket = new Bucket<>(keyType.keySerializer);
-        final BucketSerializer<VirtualLongKey> bucketSerializer = new BucketSerializer<>(keyType.keySerializer);
-        int bucketSize = bucket.sizeInBytes();
-        BufferedData buf = BufferedData.allocate(bucketSize);
-        bucket.writeTo(buf);
-        buf.reset();
-        assertEquals(0, bucketSerializer.extractKey(buf), "Bucket index should be 0");
-
-        // now check with a different index
-        bucket.setBucketIndex(99);
-        bucketSize = bucket.sizeInBytes();
-        buf = BufferedData.allocate(bucketSize);
-        bucket.writeTo(buf);
-        buf.reset();
-        assertEquals(99, bucketSerializer.extractKey(buf), "Bucket index should be 99");
-
-        // and now some large value
-        bucket.setBucketIndex(123465);
-        bucketSize = bucket.sizeInBytes();
-        buf = BufferedData.allocate(bucketSize);
-        bucket.writeTo(buf);
-        buf.reset();
-        assertEquals(123465, bucketSerializer.extractKey(buf), "Bucket index should be 123465");
-    }
-
     @Test
     void toStringAsExpectedForBucket() {
         final ExampleLongKeyFixedSize.Serializer keySerializer = new ExampleLongKeyFixedSize.Serializer();

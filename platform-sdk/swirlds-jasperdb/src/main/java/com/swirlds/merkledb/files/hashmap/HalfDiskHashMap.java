@@ -177,7 +177,7 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
         // create bucket serializer
         this.bucketSerializer = new BucketSerializer<>(keySerializer);
         // load or create new
-        LoadedDataCallback loadedDataCallback;
+        LoadedDataCallback<Bucket<K>> loadedDataCallback;
         if (Files.exists(storeDir)) {
             // load metadata
             Path metaDataFile = storeDir.resolve(storeName + METADATA_FILENAME_SUFFIX);
@@ -223,7 +223,7 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
                 bucketIndexToBucketLocation =
                         preferDiskBasedIndex ? new LongListDisk(indexFile) : new LongListOffHeap();
                 loadedDataCallback =
-                        (key, dataLocation, dataValue) -> bucketIndexToBucketLocation.put(key, dataLocation);
+                        (dataLocation, bucket) -> bucketIndexToBucketLocation.put(bucket.getBucketIndex(), dataLocation);
             }
         } else {
             // create store dir

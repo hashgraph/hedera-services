@@ -80,9 +80,4 @@ public class ExampleFixedSizeDataSerializer implements DataItemSerializer<long[]
     public long[] deserialize(ByteBuffer buffer, long dataVersion) throws IOException {
         return new long[] {buffer.getLong(), buffer.getLong()};
     }
-
-    @Override
-    public long extractKey(BufferedData dataItemData) {
-        return dataItemData.getLong(0);
-    }
 }

@@ -174,10 +174,5 @@ public class DataFileReaderHammerTest {
         public byte[] deserialize(ByteBuffer buffer, long dataVersion) throws IOException {
             throw new UnsupportedOperationException("Not implemented");
         }
-
-        @Override
-        public long extractKey(BufferedData dataItemData) {
-            return 0;
-        }
     }
 }

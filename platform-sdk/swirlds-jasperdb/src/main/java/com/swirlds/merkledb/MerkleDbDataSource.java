@@ -24,8 +24,8 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.MERKLE_DB;
 import static com.swirlds.merkledb.KeyRange.INVALID_KEY_RANGE;
 import static com.swirlds.merkledb.MerkleDb.MERKLEDB_COMPONENT;
+import static com.swirlds.merkledb.files.DataFileCollection.LoadedDataCallback;
 
-import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.DigestType;
@@ -40,7 +40,6 @@ import com.swirlds.merkledb.collections.LongList;
 import com.swirlds.merkledb.collections.LongListDisk;
 import com.swirlds.merkledb.collections.LongListOffHeap;
 import com.swirlds.merkledb.config.MerkleDbConfig;
-import com.swirlds.merkledb.files.DataFileCollection;
 import com.swirlds.merkledb.files.DataFileCommon;
 import com.swirlds.merkledb.files.DataFileReader;
 import com.swirlds.merkledb.files.MemoryIndexDiskKeyValueStore;
@@ -63,7 +62,6 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -345,43 +343,34 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
         }
         // internal node hashes store, on disk
         hasDiskStoreForHashes = tableConfig.getHashesRamToDiskThreshold() < Long.MAX_VALUE;
-        hashStoreDisk = hasDiskStoreForHashes
-                ? new MemoryIndexDiskKeyValueStore<>(
-                        dbPaths.hashStoreDiskDirectory,
-                        tableName + "_internalhashes",
-                        tableName + ":internalHashes",
-                        virtualHashRecordSerializer,
-                        null,
-                        pathToDiskLocationInternalNodes)
-                : null;
+        if (hasDiskStoreForHashes) {
+            final boolean hashIndexEmpty = pathToDiskLocationInternalNodes.size() == 0;
+            final LoadedDataCallback<VirtualHashRecord> hashRecordLoadedCallback;
+            if (hashIndexEmpty) {
+                hashRecordLoadedCallback = (dataLocation, hashRecord) ->
+                        pathToDiskLocationInternalNodes.put(hashRecord.path(), dataLocation);
+            } else {
+                hashRecordLoadedCallback = null;
+            }
+            hashStoreDisk = new MemoryIndexDiskKeyValueStore<>(
+                    dbPaths.hashStoreDiskDirectory,
+                    tableName + "_internalhashes",
+                    tableName + ":internalHashes",
+                    virtualHashRecordSerializer,
+                    hashRecordLoadedCallback,
+                    pathToDiskLocationInternalNodes);
+        } else {
+            hashStoreDisk = null;
+        }
 
         // key to path store
-        final DataFileCollection.LoadedDataCallback loadedDataCallback;
         if (tableConfig.getKeySerializer().getIndexType() == KeyIndexType.SEQUENTIAL_INCREMENTING_LONGS) {
             isLongKeyMode = true;
             objectKeyToPath = null;
             if (Files.exists(dbPaths.longKeyToPathFile)) {
                 longKeyToPath = new LongListOffHeap(dbPaths.longKeyToPathFile);
-                // we do not need callback longKeyToPath was written to disk, so we can load it
-                // directly
-                loadedDataCallback = null;
             } else {
                 longKeyToPath = new LongListOffHeap();
-                loadedDataCallback = (path, dataLocation, keyValueData) -> {
-                    // read key from keyValueData, as we are in isLongKeyMode mode then
-                    // the key is a single long
-                    final long key;
-                    // This is ugly, but hopefully we'll be able to drop this code altogether soon
-                    if (keyValueData instanceof BufferedData keyValueBufferedData) {
-                        key = keyValueBufferedData.getLong(0);
-                    } else if (keyValueData instanceof ByteBuffer keyValueByteBuffer) {
-                        key = keyValueByteBuffer.getLong(0);
-                    } else {
-                        throw new RuntimeException("Unknown keyValueData type");
-                    }
-                    // update index
-                    longKeyToPath.put(key, path);
-                };
             }
         } else {
             isLongKeyMode = false;
@@ -394,17 +383,32 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                     tableName + ":objectKeyToPath",
                     tableConfig.isPreferDiskBasedIndices());
             objectKeyToPath.printStats();
-            // we do not need callback as HalfDiskHashMap loads its own data from disk
-            loadedDataCallback = null;
         }
-
+        final LoadedDataCallback<VirtualLeafRecord<K, V>> leafRecordLoadedCallback;
+        final boolean needRestoreLongKeyToPath = (longKeyToPath != null) && (longKeyToPath.size() == 0);
+        final boolean needRestorePathToDiskLocationLeafNodes = pathToDiskLocationLeafNodes.size() == 0;
+        if (needRestoreLongKeyToPath || needRestorePathToDiskLocationLeafNodes) {
+            leafRecordLoadedCallback = (dataLocation, leafRecord) -> {
+                final long path = leafRecord.getPath();
+                if (needRestoreLongKeyToPath) {
+                    // This is a "long" key mode, so keys are known to implement VirtualLongKey
+                    final long key = ((VirtualLongKey) leafRecord.getKey()).getKeyAsLong();
+                    longKeyToPath.put(key, path);
+                }
+                if (needRestorePathToDiskLocationLeafNodes) {
+                    pathToDiskLocationLeafNodes.put(path, dataLocation);
+                }
+            };
+        } else {
+            leafRecordLoadedCallback = null;
+        }
         // Create path to key/value store, this will create new or load if files exist
         pathToKeyValue = new MemoryIndexDiskKeyValueStore<>(
                 dbPaths.pathToKeyValueDirectory,
                 tableName + "_pathtohashkeyvalue",
                 tableName + ":pathToHashKeyValue",
                 leafRecordSerializer,
-                loadedDataCallback,
+                leafRecordLoadedCallback,
                 pathToDiskLocationLeafNodes);
 
         // Leaf records cache

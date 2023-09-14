@@ -24,7 +24,7 @@ import java.nio.file.Path;
  * be variable or fixed size and is considered as a black box. All access to contents of the data
  * item is done via the DataItemSerializer.
  *
- * <b>This is designed to be used from a single thread.</b>
+ * <p><b>This is designed to be used from a single thread.</b>
  *
  * @param <D> Data item type
  */
@@ -43,10 +43,14 @@ public interface DataFileWriter<D> {
     DataFileMetadata getMetadata();
 
     /**
-     * Write a data item copied from another file like during merge.
+     * Write a data item copied from another file like during merge. If this writer doesn't support
+     * the provided raw data item type, this method should return null to indicate that the item
+     * needs to be fully deserialized and then serialized to the target file rather than copied as
+     * raw bytes.
      *
      * @param dataItemBytes a buffer containing the item's data
      * @return New data location in this file where it was written
+     * @throws IllegalArgumentException If this writer doesn't support the given raw item bytes type
      * @throws IOException If there was a problem writing the data item
      */
     long writeCopiedDataItem(final Object dataItemBytes) throws IOException;

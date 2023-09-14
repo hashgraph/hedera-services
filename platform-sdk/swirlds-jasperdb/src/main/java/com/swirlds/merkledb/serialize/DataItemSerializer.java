@@ -16,7 +16,6 @@
 
 package com.swirlds.merkledb.serialize;
 
-import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import java.nio.ByteBuffer;
 
 public interface DataItemSerializer<D> extends BaseSerializer<D> {
@@ -37,6 +36,4 @@ public interface DataItemSerializer<D> extends BaseSerializer<D> {
      */
     @Deprecated(forRemoval = true)
     DataItemHeader deserializeHeader(ByteBuffer buffer);
-
-    long extractKey(BufferedData dataItemData);
 }

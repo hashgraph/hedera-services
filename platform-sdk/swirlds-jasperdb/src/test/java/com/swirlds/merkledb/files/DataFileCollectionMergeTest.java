@@ -138,7 +138,7 @@ class DataFileCollectionMergeTest {
         final var itr = dataFileReader.createIterator();
         prevKey = -1;
         while (itr.next()) {
-            final long key = itr.getDataItemKey();
+            final long key = itr.getDataItemData()[0];
             assertTrue(key > prevKey, "Keys must be sorted in ascending order");
             assertTrue(key >= 5, "We should not update below firstLeafPath");
             prevKey = key;
@@ -219,8 +219,8 @@ class DataFileCollectionMergeTest {
                 snapshot,
                 "testDoubleMerge",
                 new ExampleFixedSizeDataSerializer(),
-                (key, dataLocation, dataValue) ->
-                        index2[(int) key] = DataFileCommon.dataLocationToString(dataLocation));
+                (dataLocation, dataValue) ->
+                        index2[(int) dataValue[0]] = DataFileCommon.dataLocationToString(dataLocation));
 
         // Merge all files with redundant records
         final List<DataFileReader<long[]>> filesToMerge = store2.getAllCompletedFiles();
@@ -382,7 +382,7 @@ class DataFileCollectionMergeTest {
                     testDir,
                     "testRestore",
                     new ExampleFixedSizeDataSerializer(),
-                    (key, dataLocation, dataValue) -> reindex.set((int) key, dataLocation));
+                    (dataLocation, dataValue) -> reindex.set((int) dataValue[0], dataLocation));
 
             // Validate the result
             try {

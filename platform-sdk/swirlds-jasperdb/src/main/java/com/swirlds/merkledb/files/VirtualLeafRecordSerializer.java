@@ -260,11 +260,6 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends Virtual
         return new VirtualLeafRecord<>(path, key, value);
     }
 
-    @Override
-    public long extractKey(final BufferedData dataItemData) {
-        return dataItemData.getLong(0);
-    }
-
     /** {@inheritDoc} */
     @Override
     public boolean equals(final Object obj) {

@@ -49,7 +49,7 @@ public class KeyValueStoreBench extends BaseBench {
                 "mergeBench",
                 null,
                 new BenchmarkRecordSerializer(),
-                (key, dataLocation, dataValue) -> {},
+                (dataLocation, dataValue) -> {},
                 new LongListOffHeap());
         System.out.println();
 

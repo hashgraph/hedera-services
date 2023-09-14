@@ -44,12 +44,11 @@ import java.util.Objects;
  * loop and you can then read the data items info for current item with getDataItemsKey, getDataItemsDataLocation and
  * getDataItemData.
  *
- * It is designed to be used from a single thread.
+ * <p>It is designed to be used from a single thread.
  *
  * @see DataFileWriter for definition of file structure
  */
-@SuppressWarnings("rawtypes")
-public final class DataFileIteratorPbj implements DataFileIterator {
+public final class DataFileIteratorPbj<D> implements DataFileIterator<D> {
     /**
      * Since {@code com.swirlds.platform.Browser} populates settings, and it is loaded before any
      * application classes that might instantiate a data source, the {@link ConfigurationHolder}
@@ -66,7 +65,7 @@ public final class DataFileIteratorPbj implements DataFileIterator {
     /** The path to the file we are iterating over */
     private final Path path;
     /** The serializer used for reading data from the file */
-    private final DataItemSerializer dataItemSerializer;
+    private final DataItemSerializer<D> dataItemSerializer;
 
     /** Buffer that is reused for reading each data item */
     private BufferedData dataItemBuffer;
@@ -74,8 +73,6 @@ public final class DataFileIteratorPbj implements DataFileIterator {
     private long currentDataItem = -1;
     /** The offset in bytes from start of file to the beginning of the current item. */
     private long currentDataItemFilePosition = 0;
-    /** The size in bytes of the current data item */
-    private int currentDataItemSize = 0;
     /** True if this iterator has been closed */
     private boolean closed = false;
 
@@ -90,7 +87,7 @@ public final class DataFileIteratorPbj implements DataFileIterator {
      * 		if there was a problem creating a new InputStream on the file at path
      */
     public DataFileIteratorPbj(
-            final Path path, final DataFileMetadata metadata, final DataItemSerializer dataItemSerializer)
+            final Path path, final DataFileMetadata metadata, final DataItemSerializer<D> dataItemSerializer)
             throws IOException {
         this.path = path;
         this.metadata = metadata;
@@ -155,7 +152,7 @@ public final class DataFileIteratorPbj implements DataFileIterator {
             final int tag = in.readVarInt(false);
             final int number = tag >> TAG_FIELD_OFFSET;
             if (number == FIELD_DATAFILE_ITEMS.number()) {
-                currentDataItemSize = in.readVarInt(false);
+                final int currentDataItemSize = in.readVarInt(false);
                 dataItemBuffer = fillBuffer(currentDataItemSize);
                 currentDataItem++;
                 return true;
@@ -185,8 +182,8 @@ public final class DataFileIteratorPbj implements DataFileIterator {
      * 		been closed, or if the iterator is in the before-first or after-last states.
      */
     @Override
-    public BufferedData getDataItemData() {
-        return dataItemBuffer;
+    public D getDataItemData() {
+        return dataItemSerializer.deserialize(dataItemBuffer);
     }
 
     /**
@@ -197,22 +194,6 @@ public final class DataFileIteratorPbj implements DataFileIterator {
     @Override
     public long getDataItemDataLocation() {
         return DataFileCommon.dataLocation(metadata.getIndex(), currentDataItemFilePosition);
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public int getDataItemSize() {
-        return currentDataItemSize;
-    }
-
-    /**
-     * Get current dataItems key.
-     *
-     * @return the key for current dataItem
-     */
-    @Override
-    public long getDataItemKey() {
-        return dataItemSerializer.extractKey(dataItemBuffer);
     }
 
     /** toString for debugging */
@@ -238,7 +219,7 @@ public final class DataFileIteratorPbj implements DataFileIterator {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        final DataFileIterator that = (DataFileIterator) o;
+        final DataFileIterator<?> that = (DataFileIterator<?>) o;
         return path.equals(that.getPath()) && metadata.equals(that.getMetadata());
     }
 

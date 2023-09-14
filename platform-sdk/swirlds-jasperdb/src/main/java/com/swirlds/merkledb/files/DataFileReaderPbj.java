@@ -213,8 +213,8 @@ public class DataFileReaderPbj<D> implements DataFileReader<D> {
      * @throws IOException if there was a problem creating a new DataFileIterator
      */
     @Override
-    public DataFileIterator createIterator() throws IOException {
-        return new DataFileIteratorPbj(path, metadata, dataItemSerializer);
+    public DataFileIterator<D> createIterator() throws IOException {
+        return new DataFileIteratorPbj<>(path, metadata, dataItemSerializer);
     }
 
     /**

@@ -113,31 +113,16 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
             final String storeName,
             final String legacyStoreName,
             final DataItemSerializer<D> dataItemSerializer,
-            final LoadedDataCallback loadedDataCallback,
+            final LoadedDataCallback<D> loadedDataCallback,
             final LongList keyToDiskLocationIndex)
             throws IOException {
         this.storeName = storeName;
         index = keyToDiskLocationIndex;
-        final boolean indexIsEmpty = keyToDiskLocationIndex.size() == 0;
         // create store dir
         Files.createDirectories(storeDir);
-        // rebuild index as well as calling user's loadedDataCallback if needed
-        final LoadedDataCallback combinedLoadedDataCallback;
-        if (!indexIsEmpty && loadedDataCallback == null) {
-            combinedLoadedDataCallback = null;
-        } else {
-            combinedLoadedDataCallback = (key, dataLocation, dataValue) -> {
-                if (indexIsEmpty) {
-                    index.put(key, dataLocation);
-                }
-                if (loadedDataCallback != null) {
-                    loadedDataCallback.newIndexEntry(key, dataLocation, dataValue);
-                }
-            };
-        }
         // create file collection
-        fileCollection = new DataFileCollection<>(
-                storeDir, storeName, legacyStoreName, dataItemSerializer, combinedLoadedDataCallback);
+        fileCollection =
+                new DataFileCollection<>(storeDir, storeName, legacyStoreName, dataItemSerializer, loadedDataCallback);
         // no limits for the keys on init
         minValidKey = new AtomicLong(0);
         maxValidKey = new AtomicLong(Long.MAX_VALUE);

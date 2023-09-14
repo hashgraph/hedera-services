@@ -72,8 +72,8 @@ public class DataFileReaderJdb<D> extends DataFileReaderPbj<D> {
      *
      * @return new data item iterator
      */
-    public DataFileIterator createIterator() throws IOException {
-        return new DataFileIteratorJdb(path, metadata, dataItemSerializer);
+    public DataFileIterator<D> createIterator() throws IOException {
+        return new DataFileIteratorJdb<>(path, metadata, dataItemSerializer);
     }
 
     /**

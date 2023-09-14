@@ -199,11 +199,6 @@ public final class VirtualHashRecordSerializer implements DataItemSerializer<Vir
         return new VirtualHashRecord(path, newHash);
     }
 
-    @Override
-    public long extractKey(BufferedData dataItemData) {
-        return dataItemData.getLong(0);
-    }
-
     /** {@inheritDoc} */
     @Override
     public boolean equals(final Object o) {
