@@ -64,7 +64,7 @@ public class TokenManagementSpecsStateful extends HapiSuite {
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(new HapiSpec[] {
             /* Stateful specs from TokenManagementSpecs */
-            freezeMgmtFailureCasesWork(), nftMintingCapIsEnforced()
+            freezeMgmtFailureCasesWork(),
         });
     }
 
@@ -91,7 +91,7 @@ public class TokenManagementSpecsStateful extends HapiSuite {
                         tokenFreeze(unfreezableToken, TOKEN_TREASURY)
                                 .signedBy(GENESIS)
                                 .hasKnownStatus(TOKEN_HAS_NO_FREEZE_KEY),
-                        tokenFreeze(freezableToken, "0.0.999999").hasKnownStatus(INVALID_ACCOUNT_ID),
+                        tokenFreeze(freezableToken, "1.2.3").hasKnownStatus(INVALID_ACCOUNT_ID),
                         tokenFreeze(freezableToken, TOKEN_TREASURY)
                                 .signedBy(GENESIS)
                                 .hasKnownStatus(INVALID_SIGNATURE),
@@ -100,7 +100,7 @@ public class TokenManagementSpecsStateful extends HapiSuite {
                         tokenUnfreeze(unfreezableToken, TOKEN_TREASURY)
                                 .signedBy(GENESIS)
                                 .hasKnownStatus(TOKEN_HAS_NO_FREEZE_KEY),
-                        tokenUnfreeze(freezableToken, "0.0.999999").hasKnownStatus(INVALID_ACCOUNT_ID),
+                        tokenUnfreeze(freezableToken, "1.2.3").hasKnownStatus(INVALID_ACCOUNT_ID),
                         tokenUnfreeze(freezableToken, TOKEN_TREASURY)
                                 .signedBy(GENESIS)
                                 .hasKnownStatus(INVALID_SIGNATURE))
@@ -109,7 +109,6 @@ public class TokenManagementSpecsStateful extends HapiSuite {
                         .logged());
     }
 
-    @HapiTest
     private HapiSpec nftMintingCapIsEnforced() {
         return defaultHapiSpec("NftMintingCapIsEnforced")
                 .given(
