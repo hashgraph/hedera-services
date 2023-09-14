@@ -99,13 +99,12 @@ public class EndOfStakingPeriodUpdater {
 
         final var nodeIds = stakingInfoStore.getAll();
         final var totalStakedRewardStart = stakingRewardsStore.totalStakeRewardStart();
-        final var rewardRate =
-                rewardRateForEndingPeriod(totalStakedRewardStart, accountStore, stakingRewardsStore, stakingConfig);
-        // The tinybars earned per hbar for stakers who were staked to a node whose total stakedRewardStart for the
-        // ending period was in the range [minStake, maxStake]
-        final var perHbarRate = totalStakedRewardStart < HBARS_TO_TINYBARS
-                ? 0
-                : rewardRate / (totalStakedRewardStart / HBARS_TO_TINYBARS);
+        final var rewardRate = perHbarRewardRateForEndingPeriod(
+                totalStakedRewardStart, accountStore, stakingRewardsStore, stakingConfig);
+        // The tinybars earned per hbar for stakers who were staked to a node whose total
+        // stakedRewardStart for the ending period was in the range [minStake, maxStake]
+        // plus a boundary-case check for zero whole hbars staked
+        final var perHbarRate = totalStakedRewardStart < HBARS_TO_TINYBARS ? 0 : rewardRate;
         log.info(
                 "The reward rate for the period was {} tb ({} tb/hbar for nodes with in-range stake, given {} total stake reward start)",
                 rewardRate,
@@ -126,7 +125,7 @@ public class EndOfStakingPeriodUpdater {
             final var newRewardSumHistory = calculateRewardSumHistory(
                     currStakingInfo,
                     perHbarRate,
-                    stakingConfig.maxDailyStakeRewardThPerH(),
+                    stakingConfig.perHbarRewardRate(),
                     stakingConfig.requireMinStakeToReward());
             final var newPendingRewardRate = newRewardSumHistory.pendingRewardRate();
             currStakingInfo = currStakingInfo
@@ -223,7 +222,11 @@ public class EndOfStakingPeriodUpdater {
 
         // Submit a synthetic node stake update transaction
         final var syntheticNodeStakeUpdateTxn = newNodeStakeUpdateBuilder(
-                lastInstantOfPreviousPeriodFor(consensusTime), finalNodeStakes, stakingConfig);
+                lastInstantOfPreviousPeriodFor(consensusTime),
+                finalNodeStakes,
+                stakingConfig,
+                totalStakedRewardStart,
+                perHbarRate);
         log.info("Exporting:\n{}", finalNodeStakes);
 
         final var nodeStakeUpdateBuilder = context.addPrecedingChildRecordBuilder(NodeStakeUpdateRecordBuilder.class);
@@ -328,7 +331,7 @@ public class EndOfStakingPeriodUpdater {
      * @param stakedToReward the amount of hbars staked to reward at the start of the ending period
      * @return the effective per-hbar reward rate for the period
      */
-    private long rewardRateForEndingPeriod(
+    private long perHbarRewardRateForEndingPeriod(
             final long stakedToReward,
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final ReadableNetworkStakingRewardsStore networkRewardsStore,
@@ -338,20 +341,53 @@ public class EndOfStakingPeriodUpdater {
 
         final var thresholdBalance = stakingConfig.rewardBalanceThreshold();
         // A number proportional to the unreserved balance, from 0 for empty, up to 1 at the threshold
-        final var balanceRatio = thresholdBalance > 0L
+        final var balanceRatio = ratioOf(unreservedBalance, thresholdBalance);
+
+        return rescaledPerHbarRewardRate(
+                balanceRatio, stakedToReward, stakingConfig.perHbarRewardRate(), stakingConfig.maxStakeRewarded());
+    }
+
+    /**
+     * Given the {@code 0.0.800} unreserved balance and its threshold setting, returns the ratio of the balance to the
+     * threshold, from 0 for empty, up to 1 at the threshold.
+     *
+     * @param unreservedBalance the balance in {@code 0.0.800} minus the pending rewards
+     * @param thresholdBalance  the threshold balance setting
+     * @return the ratio of the balance to the threshold, from 0 for empty, up to 1 at the threshold
+     */
+    private BigDecimal ratioOf(final long unreservedBalance, final long thresholdBalance) {
+        return thresholdBalance > 0L
                 ? BigDecimal.valueOf(Math.min(unreservedBalance, thresholdBalance))
                         .divide(BigDecimal.valueOf(thresholdBalance), MATH_CONTEXT)
                 : BigDecimal.ONE;
+    }
 
-        // When the rewards account has a high balance, and less than maxStakeRewarded is staked for reward, then
-        // effectiveRewardRate == rewardRate. But as the balance drops or the staking increases, then it can be the case
-        // that effectiveRewardRate < rewardRate
-        return BigDecimal.valueOf(stakingConfig.rewardRate())
+    /**
+     * Given the {@code 0.0.800} balance ratio relative to the threshold, the amount that was staked to reward at the
+     * start of the period that is now ending, and the maximum amount of tinybars to pay as staking rewards in the
+     * period, returns the effective per-hbar reward rate for the period.
+     *
+     * @param balanceRatio   the ratio of the {@code 0.0.800} balance to the threshold
+     * @param stakedToReward the amount of hbars staked to reward at the start of the ending period
+     * @param maxRewardRate  the maximum amount of tinybars to pay per hbar reward
+     * @param maxStakeRewarded the maximum amount of stake that can be rewarded
+     * @return the effective per-hbar reward rate for the period
+     */
+    @VisibleForTesting
+    long rescaledPerHbarRewardRate(
+            @NonNull final BigDecimal balanceRatio,
+            final long stakedToReward,
+            final long maxRewardRate,
+            final long maxStakeRewarded) {
+        // When 0.0.800 has a high balance, and less than maxStakeRewarded is staked for reward, then
+        // effectiveRewardRate == rewardRate. But as the balance drops or the staking increases, then
+        // it can be the case that effectiveRewardRate < rewardRate
+        return BigDecimal.valueOf(maxRewardRate)
                 .multiply(balanceRatio.multiply(BigDecimal.valueOf(2).subtract(balanceRatio)))
                 .multiply(
-                        stakingConfig.maxStakeRewarded() >= stakedToReward
+                        maxStakeRewarded >= stakedToReward
                                 ? BigDecimal.ONE
-                                : BigDecimal.valueOf(stakingConfig.maxStakeRewarded())
+                                : BigDecimal.valueOf(maxStakeRewarded)
                                         .divide(BigDecimal.valueOf(stakedToReward), MATH_CONTEXT))
                 .longValue();
     }
@@ -381,15 +417,26 @@ public class EndOfStakingPeriodUpdater {
                 .build();
     }
 
+    /**
+     * Given information about node stakes and staking reward rates for an ending period, initializes a
+     * transaction builder with a {@link NodeStakeUpdateTransactionBody} that summarizes this information.
+     *
+     * @param stakingPeriodEnd the last nanosecond of the staking period being described
+     * @param nodeStakes the stakes of each node at the end of the just-ending period
+     * @param stakingConfig the staking configuration of the network at period end
+     * @param totalStakedRewardStart the total staked reward at the start of the period
+     * @param maxPerHbarRewardRate the maximum reward rate per hbar for the period (per HIP-782)
+     * @return the transaction builder with the {@code NodeStakeUpdateTransactionBody} set
+     */
     private static TransactionBody.Builder newNodeStakeUpdateBuilder(
             final com.hedera.hapi.node.base.Timestamp stakingPeriodEnd,
-            final List<NodeStake> newNodeStakes,
-            final StakingConfig stakingConfig) {
-        final var stakingRewardRate = stakingConfig.rewardRate();
+            final List<NodeStake> nodeStakes,
+            final StakingConfig stakingConfig,
+            final long totalStakedRewardStart,
+            final long maxPerHbarRewardRate) {
         final var threshold = stakingConfig.startThreshold();
         final var stakingPeriod = stakingConfig.periodMins();
         final var stakingPeriodsStored = stakingConfig.rewardHistoryNumStoredPeriods();
-        final var maxStakingRewardRateThPerH = stakingConfig.maxDailyStakeRewardThPerH();
 
         final var nodeRewardFeeFraction = com.hedera.hapi.node.base.Fraction.newBuilder()
                 .numerator(stakingConfig.feesNodeRewardPercentage())
@@ -400,18 +447,19 @@ public class EndOfStakingPeriodUpdater {
                 .denominator(100L)
                 .build();
 
+        final var maxPeriodRewardRate = maxPerHbarRewardRate * (totalStakedRewardStart / HBARS_TO_TINYBARS);
         final var txnBody = NodeStakeUpdateTransactionBody.newBuilder()
                 .endOfStakingPeriod(stakingPeriodEnd)
-                .nodeStake(newNodeStakes)
-                .maxStakingRewardRatePerHbar(maxStakingRewardRateThPerH)
+                .nodeStake(nodeStakes)
+                .maxStakingRewardRatePerHbar(maxPerHbarRewardRate)
                 .nodeRewardFeeFraction(nodeRewardFeeFraction)
                 .stakingPeriodsStored(stakingPeriodsStored)
                 .stakingPeriod(stakingPeriod)
                 .stakingRewardFeeFraction(stakingRewardFeeFraction)
                 .stakingStartThreshold(threshold)
-                .stakingRewardRate(stakingRewardRate)
+                .stakingRewardRate(maxPeriodRewardRate)
                 .build();
 
-        return com.hedera.hapi.node.transaction.TransactionBody.newBuilder().nodeStakeUpdate(txnBody);
+        return TransactionBody.newBuilder().nodeStakeUpdate(txnBody);
     }
 }
