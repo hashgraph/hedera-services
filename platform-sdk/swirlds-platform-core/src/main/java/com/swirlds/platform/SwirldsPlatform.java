@@ -53,7 +53,6 @@ import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SoftwareVersion;
-import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
@@ -69,7 +68,6 @@ import com.swirlds.common.system.transaction.internal.SystemTransaction;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
-import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.common.utility.Clearable;
@@ -296,8 +294,6 @@ public class SwirldsPlatform implements Platform, Startable {
      */
     private final AtomicLong latestReconnectRound = new AtomicLong(NO_ROUND);
 
-    private final SwirldMain appMain; // TODO
-
     /**
      * the browser gives the Platform what app to run. There can be multiple Platforms on one computer.
      *
@@ -313,7 +309,6 @@ public class SwirldsPlatform implements Platform, Startable {
      * @param initialState             the initial state of the platform
      * @param previousAddressBook      the address book used before the restart, or null if this is the first one ever
      * @param emergencyRecoveryManager used in emergency recovery.
-     * @param appMain TODO
      */
     SwirldsPlatform(
             @NonNull final PlatformContext platformContext,
@@ -326,10 +321,8 @@ public class SwirldsPlatform implements Platform, Startable {
             @NonNull final boolean softwareUpgrade,
             @NonNull final SignedState initialState,
             @Nullable final AddressBook previousAddressBook,
-            @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
-            @NonNull final SwirldMain appMain) {
+            @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
 
-        this.appMain = Objects.requireNonNull(appMain);
         this.platformContext = Objects.requireNonNull(platformContext, "platformContext");
         final Time time = Time.getCurrent();
 
@@ -372,7 +365,7 @@ public class SwirldsPlatform implements Platform, Startable {
 
         registerAddressBookMetrics(metrics, currentAddressBook, selfId);
 
-        this.recycleBin = Objects.requireNonNull(recycleBin);
+        this.recycleBin = components.add(Objects.requireNonNull(recycleBin));
 
         this.consensusMetrics = new ConsensusMetricsImpl(this.selfId, metrics);
 
@@ -1034,8 +1027,8 @@ public class SwirldsPlatform implements Platform, Startable {
     /**
      * Build the preconsensus event file manager.
      *
-     * @param startingRound            the round number of the initial state being loaded into the system
-     * @param softwareUpgrade          whether or not this node is starting up after a software upgrade
+     * @param startingRound   the round number of the initial state being loaded into the system
+     * @param softwareUpgrade whether or not this node is starting up after a software upgrade
      */
     @NonNull
     private PreconsensusEventFileManager buildPreconsensusEventFileManager(
@@ -1087,16 +1080,6 @@ public class SwirldsPlatform implements Platform, Startable {
         replayPreconsensusEvents();
         configureStartupEventFreeze();
         gossip.start();
-
-        // TODO
-        appMain.init(this, selfId);
-        new ThreadConfiguration(getStaticThreadManager())
-                .setNodeId(selfId)
-                .setComponent("app")
-                .setThreadName("appMain")
-                .setRunnable(appMain)
-                .setDaemon(false)
-                .build(true);
     }
 
     /**

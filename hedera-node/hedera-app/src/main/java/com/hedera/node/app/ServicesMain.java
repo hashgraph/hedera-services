@@ -24,6 +24,7 @@ import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
+import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.SwirldsPlatformBuilder;
 import com.swirlds.platform.util.BootstrapUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -95,6 +96,12 @@ public class ServicesMain implements SwirldMain {
         // args != null && args.length > 0 ? Integer.parseInt(args[0]) : 0
         final NodeId selfId = new NodeId(0);
 
-        new SwirldsPlatformBuilder(new Hedera(registry), selfId).build(true);
+        final Hedera hedera = new Hedera(registry);
+        final SwirldsPlatform platform = new SwirldsPlatformBuilder(
+                        "com.hedera.services.ServicesMain", hedera.getSoftwareVersion(), hedera::newState, selfId)
+                .build();
+        hedera.init(platform, selfId);
+        platform.start();
+        hedera.run();
     }
 }

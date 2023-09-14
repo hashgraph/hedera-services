@@ -16,8 +16,10 @@
 
 package com.swirlds.platform;
 
+import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.addPlatforms;
+import static com.swirlds.platform.gui.internal.BrowserWindowManager.getStateHierarchy;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.moveBrowserWindowToFront;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.setStateHierarchy;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.showBrowserWindow;
@@ -36,14 +38,20 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SystemExitCode;
 import com.swirlds.common.system.SystemExitUtils;
+import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.gui.model.GuiModel;
+import com.swirlds.gui.model.InfoApp;
+import com.swirlds.gui.model.InfoMember;
+import com.swirlds.gui.model.InfoSwirld;
 import com.swirlds.platform.config.internal.PlatformConfigUtils;
 import com.swirlds.platform.crypto.CryptoConstants;
 import com.swirlds.platform.gui.internal.StateHierarchy;
 import com.swirlds.platform.util.BootstrapUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -102,7 +110,7 @@ public class Browser {
      * Launch the browser with the command line arguments already parsed
      *
      * @param commandLineArgs the parsed command line arguments
-     * @param pcesRecovery if true, the platform will be started in PCES recovery mode
+     * @param pcesRecovery    if true, the platform will be started in PCES recovery mode
      */
     public static void launch(@NonNull final CommandLineArgs commandLineArgs, final boolean pcesRecovery) {
         if (STARTED.getAndSet(true)) {
@@ -122,7 +130,7 @@ public class Browser {
 
         try {
             launchUnhandled(commandLineArgs, pcesRecovery);
-        } catch (final Exception e) {
+        } catch (final Throwable e) {
             logger.error(EXCEPTION.getMarker(), "Unable to start Browser", e);
             throw new RuntimeException("Unable to start Browser", e);
         }
@@ -132,7 +140,7 @@ public class Browser {
      * Launch the browser but do not handle any exceptions
      *
      * @param commandLineArgs the parsed command line arguments
-     * @param pcesRecovery if true, the platform will be started in PCES recovery mode
+     * @param pcesRecovery    if true, the platform will be started in PCES recovery mode
      */
     private static void launchUnhandled(@NonNull final CommandLineArgs commandLineArgs, final boolean pcesRecovery)
             throws Exception {
@@ -156,19 +164,28 @@ public class Browser {
         final Configuration configuration = BootstrapUtils.loadConfig(pathsConfig, appMains);
         PlatformConfigUtils.checkConfiguration(configuration);
 
-        //        ConfigurationHolder.getInstance().setConfiguration(configuration);
-        //        CryptographyHolder.reset();
-
         setupBrowserWindow();
         setStateHierarchy(new StateHierarchy(null));
         appDefinition.setSwirldId(new byte[CryptoConstants.HASH_SIZE_BYTES]);
 
+        final InfoApp infoApp = getStateHierarchy().getInfoApp(appDefinition.getApplicationName());
+        final InfoSwirld infoSwirld = new InfoSwirld(infoApp, appDefinition.getSwirldId());
+
         final Map<NodeId, SwirldsPlatform> platforms = new HashMap<>();
-        for (final NodeId nodeId : nodesToRun) {
+        for (int index = 0; index < nodesToRun.size(); index++) {
+            final NodeId nodeId = nodesToRun.get(index);
             final SwirldMain appMain = appMains.get(nodeId);
 
-            final SwirldsPlatform platform = new SwirldsPlatformBuilder(appMain, nodeId).build();
+            final SwirldsPlatform platform = new SwirldsPlatformBuilder(
+                            appMain.getClass().getName(), appMain.getSoftwareVersion(), appMain::newState, nodeId)
+                    .build();
             platforms.put(nodeId, platform);
+
+            new InfoMember(infoSwirld, platform);
+
+            GuiModel.getInstance().setPlatformName(nodeId, "Node " + nodeId.id());
+            GuiModel.getInstance().setSwirldId(nodeId, appDefinition.getSwirldId());
+            GuiModel.getInstance().setInstanceNumber(nodeId, index);
         }
 
         addPlatforms(platforms.values());
@@ -181,9 +198,61 @@ public class Browser {
             SystemExitUtils.exitSystem(SystemExitCode.NO_ERROR, "PCES recovery done");
         }
 
-        platforms.values().forEach(SwirldsPlatform::start);
+        startPlatforms(new ArrayList<>(platforms.values()), appMains);
 
         showBrowserWindow(null);
         moveBrowserWindowToFront();
+    }
+
+    /**
+     * Start all local platforms.
+     *
+     * @param platforms the platforms to start
+     */
+    private static void startPlatforms(
+            @NonNull final List<SwirldsPlatform> platforms, @NonNull final Map<NodeId, SwirldMain> appMains) {
+
+        if (platforms.size() == 1) {
+            // Single platform, start it in the current thread
+            startPlatform(platforms.get(0), appMains.get(platforms.get(0).getSelfId()));
+            return;
+        }
+
+        // We are starting multiple platforms, start them in separate threads.
+        final List<Thread> startThreads = new ArrayList<>();
+        for (final SwirldsPlatform platform : platforms) {
+            final Thread thread = new ThreadConfiguration(getStaticThreadManager())
+                    .setThreadName("start-node-" + platform.getSelfId().id())
+                    .setRunnable(() -> startPlatform(platform, appMains.get(platform.getSelfId())))
+                    .build(true);
+            startThreads.add(thread);
+        }
+
+        for (Thread startThread : startThreads) {
+            try {
+                startThread.join();
+            } catch (final InterruptedException e) {
+                logger.error(EXCEPTION.getMarker(), "Interrupted while waiting for platform to start", e);
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
+
+    /**
+     * Start a platform and its associated app.
+     *
+     * @param platform the platform to start
+     * @param appMain  the app to start
+     */
+    private static void startPlatform(@NonNull final SwirldsPlatform platform, @NonNull final SwirldMain appMain) {
+        appMain.init(platform, platform.getSelfId());
+        platform.start();
+        new ThreadConfiguration(getStaticThreadManager())
+                .setNodeId(platform.getSelfId())
+                .setComponent("app")
+                .setThreadName("appMain")
+                .setRunnable(appMain)
+                .setDaemon(false)
+                .build(true);
     }
 }

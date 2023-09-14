@@ -45,7 +45,7 @@ import com.swirlds.common.metrics.platform.DefaultMetricsProvider;
 import com.swirlds.common.startup.Log4jSetup;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
-import com.swirlds.common.system.SwirldMain;
+import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
@@ -69,6 +69,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -87,10 +88,12 @@ public final class SwirldsPlatformBuilder {
             //////////////////////""";
     // @formatter:on
 
+    private final String appName;
+    private final SoftwareVersion softwareVersion;
+    private final Supplier<SwirldState> genesisStateBuilder;
     private final NodeId selfId;
-    private final SwirldMain appMain;
 
-    private String swirldName = "Unspecified";
+    private String swirldName = "Unspecified"; // TODO!!! parse this from config.txt
 
     private final ConfigurationBuilder configBuilder;
     private final ConfigurationBuilder bootstrapConfigBuilder;
@@ -107,12 +110,21 @@ public final class SwirldsPlatformBuilder {
     /**
      * Create a new platform builder.
      *
-     * @param appMain the main class of the application
-     * @param selfId  the ID of this node
+     * @param appName             the name of the application, currently used for deciding where to store states on
+     *                            disk
+     * @param selfId              the ID of this node
+     * @param softwareVersion     the software version of the application
+     * @param genesisStateBuilder a supplier that will be called to create the genesis state, if necessary
      */
-    public SwirldsPlatformBuilder(@NonNull final SwirldMain appMain, @NonNull final NodeId selfId) {
+    public SwirldsPlatformBuilder(
+            @NonNull final String appName,
+            @NonNull final SoftwareVersion softwareVersion,
+            @NonNull final Supplier<SwirldState> genesisStateBuilder,
+            @NonNull final NodeId selfId) {
 
-        this.appMain = Objects.requireNonNull(appMain);
+        this.appName = Objects.requireNonNull(appName);
+        this.softwareVersion = Objects.requireNonNull(softwareVersion);
+        this.genesisStateBuilder = Objects.requireNonNull(genesisStateBuilder);
         this.selfId = Objects.requireNonNull(selfId);
 
         configBuilder =
@@ -301,9 +313,6 @@ public final class SwirldsPlatformBuilder {
         legacyConfig.appConfig().ifPresent(c -> ParameterProvider.getInstance().setParameters(c.params()));
         final AddressBook configAddressBook = legacyConfig.getAddressBook();
 
-        // TODO
-        //        // Determine which nodes to run locally
-        //        final List<NodeId> nodesToRun = getNodesToRun(configAddressBook, Set.of(selfId));
         checkNodesToRun(List.of(selfId));
 
         final Map<NodeId, Crypto> crypto = initNodeSecurity(configAddressBook, configuration);
@@ -314,7 +323,6 @@ public final class SwirldsPlatformBuilder {
 
         final RecycleBinImpl recycleBin = rethrowIO(() -> new RecycleBinImpl(
                 configuration, platformContext.getMetrics(), getStaticThreadManager(), Time.getCurrent(), selfId));
-        recycleBin.start(); // TODO this should not start here!
 
         // We can't send a "real" dispatch, since the dispatcher will not have been started by the
         // time this class is used.
@@ -323,23 +331,27 @@ public final class SwirldsPlatformBuilder {
         final EmergencyRecoveryManager emergencyRecoveryManager = new EmergencyRecoveryManager(
                 stateConfig, new Shutdown()::shutdown, basicConfig.getEmergencyRecoveryFileLoadDir());
 
-        SwirldsPlatform platform;
         try (final ReservedSignedState initialState = getInitialState(
                 platformContext,
                 recycleBin,
-                appMain,
-                appMain.getClass().getName(),
+                softwareVersion,
+                genesisStateBuilder,
+                appName,
                 swirldName,
                 selfId,
                 configAddressBook,
                 emergencyRecoveryManager)) {
 
-            final SoftwareVersion appVersion = appMain.getSoftwareVersion();
-            final boolean softwareUpgrade = detectSoftwareUpgrade(appVersion, initialState.get());
+            final boolean softwareUpgrade = detectSoftwareUpgrade(softwareVersion, initialState.get());
 
             // Initialize the address book from the configuration and platform saved state.
             final AddressBookInitializer addressBookInitializer = new AddressBookInitializer(
-                    selfId, appVersion, softwareUpgrade, initialState.get(), configAddressBook.copy(), platformContext);
+                    selfId,
+                    softwareVersion,
+                    softwareUpgrade,
+                    initialState.get(),
+                    configAddressBook.copy(),
+                    platformContext);
 
             if (!initialState.get().isGenesisState()) {
                 final State state = initialState.get().getState();
@@ -351,33 +363,32 @@ public final class SwirldsPlatformBuilder {
                                 addressBookInitializer.getCurrentAddressBook().copy());
             }
 
-            platform = new SwirldsPlatform(
+            final SwirldsPlatform platform = new SwirldsPlatform(
                     platformContext,
                     crypto.get(selfId),
                     recycleBin,
                     selfId,
-                    appMain.getClass().getName(),
+                    appName,
                     swirldName,
-                    appVersion,
+                    softwareVersion,
                     softwareUpgrade,
                     initialState.get(),
                     addressBookInitializer.getPreviousAddressBook(),
-                    emergencyRecoveryManager,
-                    appMain);
+                    emergencyRecoveryManager);
+
+            if (firstTimeSetup) {
+                MetricsDocUtils.writeMetricsDocumentToFile(globalMetrics, getPlatforms(), configuration);
+                metricsProvider.start();
+            }
+
+            if (start) {
+                platform.start();
+            }
+
+            return platform;
 
         } catch (final SignedStateLoadingException e) {
             throw new RuntimeException("unable to load state from disk", e);
         }
-
-        if (firstTimeSetup) {
-            MetricsDocUtils.writeMetricsDocumentToFile(globalMetrics, getPlatforms(), configuration);
-            metricsProvider.start();
-        }
-
-        if (start) {
-            platform.start();
-        }
-
-        return platform;
     }
 }
