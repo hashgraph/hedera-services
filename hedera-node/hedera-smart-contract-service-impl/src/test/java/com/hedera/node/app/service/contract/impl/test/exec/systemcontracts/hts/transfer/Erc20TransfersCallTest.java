@@ -17,8 +17,9 @@
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.transfer;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc20TransfersCall.ERC_20_TRANSFER;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc20TransfersCall.ERC_20_TRANSFER_FROM;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc20TransfersTranslator.ERC_20_TRANSFER;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc20TransfersTranslator.ERC_20_TRANSFER_FROM;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_ACCOUNT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.B_NEW_ACCOUNT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
@@ -64,6 +65,24 @@ class Erc20TransfersCallTest extends HtsCallTestBase {
     private CryptoTransferRecordBuilder recordBuilder;
 
     private Erc20TransfersCall subject;
+
+    @Test
+    void revertsOnMissingToken() {
+        subject = new Erc20TransfersCall(
+                mockEnhancement(),
+                1234,
+                null,
+                TO_ADDRESS,
+                null,
+                verificationStrategy,
+                FRAME_SENDER_ADDRESS,
+                addressIdConverter);
+
+        final var result = subject.execute().fullResult().result();
+
+        assertEquals(MessageFrame.State.REVERT, result.getState());
+        assertEquals(Bytes.wrap(INVALID_TOKEN_ID.protoName().getBytes()), result.getOutput());
+    }
 
     @Test
     void transferHappyPathSucceedsWithTrue() {

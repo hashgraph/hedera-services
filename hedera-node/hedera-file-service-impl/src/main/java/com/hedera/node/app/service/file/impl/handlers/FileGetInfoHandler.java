@@ -50,6 +50,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.CryptographyHolder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -119,7 +120,7 @@ public class FileGetInfoHandler extends FileQueryBase {
             try {
                 optionalInfo = infoForFile(file, fileStore, ledgerConfig, upgradeFileStore, fileServiceConfig);
             } catch (IOException e) {
-                throw new RuntimeException("Unable to read file contents", e);
+                throw new UncheckedIOException("Unable to read file contents", e);
             }
 
             if (optionalInfo.isEmpty()) {
@@ -141,6 +142,7 @@ public class FileGetInfoHandler extends FileQueryBase {
      * @param ledgerConfig
      * @return the information about the file
      */
+    @SuppressWarnings("java:S5738") // Suppress the warning that we are using deprecated class(CryptographyHolder)
     private Optional<FileInfo> infoForFile(
             @NonNull final FileID fileID,
             @NonNull final ReadableFileStore fileStore,

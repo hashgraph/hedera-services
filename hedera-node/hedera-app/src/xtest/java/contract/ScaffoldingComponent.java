@@ -22,6 +22,8 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
+import com.hedera.node.app.service.contract.impl.exec.processors.HtsTranslatorsModule;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsCallTranslator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -34,6 +36,7 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.config.api.Configuration;
 import dagger.BindsInstance;
 import dagger.Component;
+import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import javax.inject.Inject;
@@ -62,11 +65,7 @@ import javax.inject.Singleton;
  * {@link ScaffoldingModule}.
  */
 @Singleton
-@Component(
-        modules = {
-            HandlersInjectionModule.class,
-            ScaffoldingModule.class,
-        })
+@Component(modules = {HandlersInjectionModule.class, ScaffoldingModule.class, HtsTranslatorsModule.class})
 public interface ScaffoldingComponent {
     @Component.Factory
     interface Factory {
@@ -86,4 +85,6 @@ public interface ScaffoldingComponent {
     FeeManager feeManager();
 
     ExchangeRateManager exchangeRateManager();
+
+    List<HtsCallTranslator> callTranslators();
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.isoperator;
+package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.isapprovedforall;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -33,12 +33,10 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractTokenViewCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Arrays;
 import java.util.Optional;
 
 /**
@@ -67,7 +65,6 @@ public class IsApprovedForAllCall extends AbstractTokenViewCall {
     @Override
     protected @NonNull HederaSystemContract.FullResult resultOfViewingToken(@NonNull final Token token) {
         requireNonNull(token);
-
         // TODO - gas calculation
         if (token.tokenType() != TokenType.NON_FUNGIBLE_UNIQUE) {
             return revertResult(INVALID_TOKEN_ID, 0L);
@@ -87,28 +84,6 @@ public class IsApprovedForAllCall extends AbstractTokenViewCall {
                     token.tokenIdOrThrow());
         }
         return successResult(IS_APPROVED_FOR_ALL.getOutputs().encodeElements(verdict), 0L);
-    }
-
-    /**
-     * Indicates if the given {@code selector} is a selector for {@link IsApprovedForAllCall}.
-     *
-     * @param selector the selector to check
-     * @return {@code true} if the given {@code selector} is a selector for {@link IsApprovedForAllCall}
-     */
-    public static boolean matches(@NonNull final byte[] selector) {
-        requireNonNull(selector);
-        return Arrays.equals(selector, IS_APPROVED_FOR_ALL.selector());
-    }
-
-    /**
-     * Constructs a {@link IsApprovedForAllCall} from the given {@code attempt}.
-     *
-     * @param attempt the attempt to construct from
-     * @return the constructed {@link IsApprovedForAllCall}
-     */
-    public static IsApprovedForAllCall from(@NonNull final HtsCallAttempt attempt) {
-        final var args = IS_APPROVED_FOR_ALL.decodeCall(attempt.input().toArrayUnsafe());
-        return new IsApprovedForAllCall(attempt.enhancement(), attempt.redirectToken(), args.get(0), args.get(1));
     }
 
     private boolean operatorMatches(

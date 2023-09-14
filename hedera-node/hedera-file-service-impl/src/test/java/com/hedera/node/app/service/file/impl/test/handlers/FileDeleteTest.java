@@ -162,14 +162,13 @@ class FileDeleteTest extends FileTestBase {
 
         subject.preHandle(realPreContext);
 
-        assertThat(realPreContext.requiredNonPayerKeys().size()).isGreaterThan(0);
-        assertThat(1).isEqualTo(realPreContext.requiredNonPayerKeys().size());
-        assertThat(1)
-                .isEqualTo(realPreContext
+        assertThat(realPreContext.requiredNonPayerKeys().size()).isEqualTo(1);
+        assertThat(realPreContext
                         .requiredNonPayerKeys()
                         .toArray(Key[]::new)[0]
                         .thresholdKey()
-                        .threshold());
+                        .threshold())
+                .isEqualTo(1);
     }
 
     @Test
@@ -228,7 +227,7 @@ class FileDeleteTest extends FileTestBase {
 
         assertTrue(changedFile.isPresent());
         assertTrue(changedFile.get().deleted());
-        assertEquals(changedFile.get().contents(), Bytes.EMPTY);
+        assertEquals(Bytes.EMPTY, changedFile.get().contents());
     }
 
     @Test

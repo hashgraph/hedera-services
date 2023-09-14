@@ -17,19 +17,19 @@
 package contract;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc20TransfersCall.ERC_20_TRANSFER;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc20TransfersCall.ERC_20_TRANSFER_FROM;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc20TransfersTranslator.ERC_20_TRANSFER;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc20TransfersTranslator.ERC_20_TRANSFER_FROM;
 import static contract.HtsErc721TransferXTestConstants.APPROVED_ADDRESS;
 import static contract.HtsErc721TransferXTestConstants.APPROVED_BESU_ADDRESS;
 import static contract.HtsErc721TransferXTestConstants.APPROVED_ID;
-import static contract.HtsErc721TransferXTestConstants.OWNER_ADDRESS;
-import static contract.HtsErc721TransferXTestConstants.OWNER_BESU_ADDRESS;
-import static contract.HtsErc721TransferXTestConstants.OWNER_HEADLONG_ADDRESS;
-import static contract.HtsErc721TransferXTestConstants.OWNER_ID;
 import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_ADDRESS;
 import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_BESU_ADDRESS;
 import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_ID;
 import static contract.XTestConstants.ERC20_TOKEN_ID;
+import static contract.XTestConstants.OWNER_ADDRESS;
+import static contract.XTestConstants.OWNER_BESU_ADDRESS;
+import static contract.XTestConstants.OWNER_HEADLONG_ADDRESS;
+import static contract.XTestConstants.OWNER_ID;
 import static contract.XTestConstants.RECEIVER_HEADLONG_ADDRESS;
 import static contract.XTestConstants.RECEIVER_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
