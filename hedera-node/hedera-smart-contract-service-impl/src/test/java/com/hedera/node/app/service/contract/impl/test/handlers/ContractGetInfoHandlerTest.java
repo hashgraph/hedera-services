@@ -14,27 +14,12 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.mint;
+package com.hedera.node.app.service.contract.impl.test.handlers;
 
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.BDDMockito.given;
 
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.mint.MintCall;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class MintCallTest {
-    @Mock
-    private HtsCallAttempt attempt;
-
-    @Test
-    void missingCallIfUnmatchedSelector() {
-        given(attempt.selector()).willReturn(new byte[4]);
-        assertNull(MintCall.from(attempt, EIP_1014_ADDRESS));
-    }
-}
+class ContractGetInfoHandlerTest {}

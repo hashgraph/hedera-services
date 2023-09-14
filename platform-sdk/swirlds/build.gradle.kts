@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-plugins { id("com.hedera.hashgraph.application") }
+plugins {
+    id("com.hedera.hashgraph.application")
+    id("com.hedera.hashgraph.mock-release-tasks")
+}
 
 mainModuleInfo {
     runtimeOnly("com.swirlds.platform.core")

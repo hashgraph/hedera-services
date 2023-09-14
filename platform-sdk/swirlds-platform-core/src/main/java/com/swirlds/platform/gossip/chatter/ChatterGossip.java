@@ -208,7 +208,10 @@ public class ChatterGossip extends AbstractGossip {
                 networkMetrics::recordPingTime,
                 platformContext.getMetrics());
 
-        reconnectController = new ReconnectController(threadManager, reconnectHelper, this::resume);
+        final ReconnectConfig reconnectConfig =
+                platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
+
+        reconnectController = new ReconnectController(reconnectConfig, threadManager, reconnectHelper, this::resume);
 
         // first create all instances because of thread safety
         for (final NodeId otherId : topology.getNeighbors()) {
@@ -248,9 +251,6 @@ public class ChatterGossip extends AbstractGossip {
                         // wait for any intake event currently being processed to finish
                         intakeCycle.waitForCurrentSequenceEnd();
                     });
-
-            final ReconnectConfig reconnectConfig =
-                    platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
 
             chatterThreads.add(new StoppableThreadConfiguration<>(threadManager)
                     .setPriority(Thread.NORM_PRIORITY)

@@ -20,9 +20,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static contract.HtsErc721TransferXTestConstants.APPROVED_ADDRESS;
 import static contract.HtsErc721TransferXTestConstants.APPROVED_HEADLONG_ADDRESS;
 import static contract.HtsErc721TransferXTestConstants.APPROVED_ID;
-import static contract.HtsErc721TransferXTestConstants.OWNER_ADDRESS;
-import static contract.HtsErc721TransferXTestConstants.OWNER_HEADLONG_ADDRESS;
-import static contract.HtsErc721TransferXTestConstants.OWNER_ID;
 import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_ID;
 import static contract.MiscClassicTransfersXTestConstants.INITIAL_OWNER_FUNGIBLE_BALANCE;
 import static contract.MiscClassicTransfersXTestConstants.INITIAL_RECEIVER_AUTO_ASSOCIATIONS;
@@ -32,6 +29,9 @@ import static contract.XTestConstants.ERC20_TOKEN_ADDRESS;
 import static contract.XTestConstants.ERC20_TOKEN_ID;
 import static contract.XTestConstants.ERC721_TOKEN_ADDRESS;
 import static contract.XTestConstants.ERC721_TOKEN_ID;
+import static contract.XTestConstants.OWNER_ADDRESS;
+import static contract.XTestConstants.OWNER_HEADLONG_ADDRESS;
+import static contract.XTestConstants.OWNER_ID;
 import static contract.XTestConstants.RECEIVER_HEADLONG_ADDRESS;
 import static contract.XTestConstants.RECEIVER_ID;
 import static contract.XTestConstants.SENDER_ADDRESS;
@@ -43,6 +43,7 @@ import static contract.XTestConstants.SN_1234_METADATA;
 import static contract.XTestConstants.SN_2345;
 import static contract.XTestConstants.SN_2345_METADATA;
 import static contract.XTestConstants.SN_3456;
+import static contract.XTestConstants.SN_3456_METADATA;
 import static contract.XTestConstants.addErc20Relation;
 import static contract.XTestConstants.addErc721Relation;
 import static java.util.Objects.requireNonNull;
@@ -59,7 +60,8 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersTranslator;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
@@ -80,20 +82,19 @@ public class MiscClassicTransfersXTest extends AbstractContractXTest {
         // Unassociated account can receive a NFT since it has open auto-association slots
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
-                Bytes.wrap(ClassicTransfersCall.TRANSFER_NFT
+                Bytes.wrap(ClassicTransfersTranslator.TRANSFER_NFT
                         .encodeCallWithArgs(
                                 XTestConstants.ERC721_TOKEN_ADDRESS,
                                 OWNER_HEADLONG_ADDRESS,
                                 RECEIVER_HEADLONG_ADDRESS,
                                 SN_1234.serialNumber())
                         .array()),
-                output -> assertEquals(
-                        Bytes.wrap(ClassicTransfersCall.encodedStatus(SUCCESS).array()), output));
+                output -> assertEquals(Bytes.wrap(ReturnTypes.encodedRc(SUCCESS).array()), output));
         // Fungible transfer to an available alias can auto-create an account, while also
         // transferring a second NFT to same receiver as in the first call
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
-                Bytes.wrap(ClassicTransfersCall.CRYPTO_TRANSFER
+                Bytes.wrap(ClassicTransfersTranslator.CRYPTO_TRANSFER
                         .encodeCallWithArgs(new Object[] {
                             new Tuple[] {
                                 Tuple.of(
@@ -109,8 +110,7 @@ public class MiscClassicTransfersXTest extends AbstractContractXTest {
                             }
                         })
                         .array()),
-                output -> assertEquals(
-                        Bytes.wrap(ClassicTransfersCall.encodedStatus(SUCCESS).array()), output));
+                output -> assertEquals(Bytes.wrap(ReturnTypes.encodedRc(SUCCESS).array()), output));
     }
 
     @Override
@@ -205,7 +205,7 @@ public class MiscClassicTransfersXTest extends AbstractContractXTest {
                 Nft.newBuilder()
                         .nftId(SN_3456)
                         .ownerId(OWNER_ID)
-                        .metadata(SN_2345_METADATA)
+                        .metadata(SN_3456_METADATA)
                         .build());
         return nfts;
     }

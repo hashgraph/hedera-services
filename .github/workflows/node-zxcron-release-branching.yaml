@@ -45,7 +45,7 @@ jobs:
 
       - name: Read Trigger Time
         id: time
-        uses: mikefarah/yq@dd6cf3df146f3e2c0f8c765a6ef9e35780ad8cc1
+        uses: mikefarah/yq@6609ed76ecb69f9d8254345292d90ea72f641715 # v4.35.1
         with:
           cmd: yq '.release.branching.execution.time' '${{ env.WORKFLOW_CONFIG_FILE }}'
 
@@ -112,7 +112,7 @@ jobs:
 
       - name: Create Branch
         id: branch
-        uses: peterjgrainger/action-create-branch@64aa569aea81305305c6e92bd236d8c427debff8 # v2.4.0
+        uses: peterjgrainger/action-create-branch@08259812c8ebdbf1973747f9297e332fa078d3c1 # v2.4.0
         with:
           branch: refs/heads/${{ needs.check-branch.outputs.branch-name }}
 
@@ -212,7 +212,7 @@ jobs:
           printf "## Dispatch Payload\n\`\`\`json\n%s\n\`\`\`\n" "$(jq '.' <<<"${REQ_JSON}")" >>"${GITHUB_STEP_SUMMARY}"
 
       - name: Repository Dispatch
-        uses: peter-evans/repository-dispatch@26b39ed245ab8f31526069329e112ab2fb224588 # v2.1.1
+        uses: peter-evans/repository-dispatch@bf47d102fdb849e755b0b0023ea3e81a44b6f570 # v2.1.2
         with:
           token: ${{ secrets.GH_ACCESS_TOKEN }}
           repository: hashgraph/hedera-internal-workflows

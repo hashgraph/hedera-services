@@ -44,6 +44,7 @@ import com.hedera.hapi.node.file.FileInfo;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
+import com.hedera.node.app.hapi.fees.usage.file.FileOpsUsage;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.ReadableUpgradeFileStore;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
@@ -64,11 +65,14 @@ class FileGetInfoTest extends FileTestBase {
     @Mock(strictness = LENIENT)
     private QueryContext context;
 
+    @Mock
+    private FileOpsUsage fileOpsUsage;
+
     private FileGetInfoHandler subject;
 
     @BeforeEach
     void setUp() {
-        subject = new FileGetInfoHandler();
+        subject = new FileGetInfoHandler(fileOpsUsage);
         final var configuration = HederaTestConfigBuilder.createConfig();
         lenient().when(context.configuration()).thenReturn(configuration);
     }
