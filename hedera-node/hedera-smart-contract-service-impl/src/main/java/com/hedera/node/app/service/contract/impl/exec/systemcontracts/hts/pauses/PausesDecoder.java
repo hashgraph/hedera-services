@@ -49,6 +49,12 @@ public class PausesDecoder {
         return TransactionBody.newBuilder().tokenPause(pause(call.get(0))).build();
     }
 
+    private TokenPauseTransactionBody pause(@NonNull final Address tokenAddress) {
+        return TokenPauseTransactionBody.newBuilder()
+                .token(asTokenId(tokenAddress))
+                .build();
+    }
+
     /**
      * Decodes the given {@code attempt} into a {@link TransactionBody} for an unpause function call.
      *
@@ -58,12 +64,6 @@ public class PausesDecoder {
     public TransactionBody decodeUnpause(@NonNull final HtsCallAttempt attempt) {
         final var call = PausesTranslator.UNPAUSE.decodeCall(attempt.inputBytes());
         return TransactionBody.newBuilder().tokenUnpause(unpause(call.get(0))).build();
-    }
-
-    private TokenPauseTransactionBody pause(@NonNull final Address tokenAddress) {
-        return TokenPauseTransactionBody.newBuilder()
-                .token(asTokenId(tokenAddress))
-                .build();
     }
 
     private TokenUnpauseTransactionBody unpause(@NonNull final Address tokenAddress) {

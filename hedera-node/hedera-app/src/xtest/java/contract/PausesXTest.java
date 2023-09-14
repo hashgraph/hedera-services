@@ -16,7 +16,6 @@
 
 package contract;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static contract.HtsErc721TransferXTestConstants.APPROVED_ID;
 import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_ID;
@@ -39,6 +38,7 @@ import static contract.XTestConstants.SN_1234_METADATA;
 import static contract.XTestConstants.SN_2345;
 import static contract.XTestConstants.SN_2345_METADATA;
 import static contract.XTestConstants.addErc721Relation;
+import static contract.XTestConstants.assertSuccess;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -81,7 +81,7 @@ public class PausesXTest extends AbstractContractXTest {
                                 RECEIVER_HEADLONG_ADDRESS,
                                 SN_1234.serialNumber())
                         .array()),
-                output -> assertEquals(Bytes.wrap(ReturnTypes.encodedRc(SUCCESS).array()), output));
+                assertSuccess());
 
         // PAUSE
         runHtsCallAndExpectOnSuccess(
@@ -89,7 +89,7 @@ public class PausesXTest extends AbstractContractXTest {
                 Bytes.wrap(PausesTranslator.PAUSE
                         .encodeCallWithArgs(ERC721_TOKEN_ADDRESS)
                         .array()),
-                output -> assertEquals(Bytes.wrap(ReturnTypes.encodedRc(SUCCESS).array()), output));
+                assertSuccess());
 
         // Transfer series 2345 of ERC721_TOKEN to RECEIVER - should fail with TOKEN_IS_PAUSED
         runHtsCallAndExpectOnSuccess(
@@ -110,7 +110,7 @@ public class PausesXTest extends AbstractContractXTest {
                 Bytes.wrap(PausesTranslator.UNPAUSE
                         .encodeCallWithArgs(ERC721_TOKEN_ADDRESS)
                         .array()),
-                output -> assertEquals(Bytes.wrap(ReturnTypes.encodedRc(SUCCESS).array()), output));
+                assertSuccess());
 
         // Transfer series 2345 of ERC721_TOKEN to RECEIVER - should succeed now.
         runHtsCallAndExpectOnSuccess(
@@ -122,7 +122,7 @@ public class PausesXTest extends AbstractContractXTest {
                                 RECEIVER_HEADLONG_ADDRESS,
                                 SN_2345.serialNumber())
                         .array()),
-                output -> assertEquals(Bytes.wrap(ReturnTypes.encodedRc(SUCCESS).array()), output));
+                assertSuccess());
     }
 
     @Override
