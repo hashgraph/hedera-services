@@ -111,6 +111,7 @@ public class SystemFileUpdateFacility {
                 exchangeRateManager.update(FileUtilities.getFileContent(state, fileID));
             } else if (fileNum == config.networkProperties()) {
                 configProvider.update(FileUtilities.getFileContent(state, fileID));
+                handleThrottleAccumulator.applyGasConfig();
 
                 // Updating the multiplier source to use the new gas throttle
                 // values that are coming from the network properties
