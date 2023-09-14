@@ -213,20 +213,27 @@ public class EndOfStakingPeriodUpdater {
                 .totalStakedRewardStart(newTotalStakedRewardStart)
                 .totalStakedStart(newTotalStakedStart);
         stakingRewardsStore.put(newNetworkStakingRewards.build());
+        final long rewardAccountBalance = getRewardsBalance(accountStore);
         log.info(
                 "Total stake start is now {} ({} rewarded), pending rewards are {} vs 0.0.800" + " balance {}",
                 newTotalStakedStart,
                 newTotalStakedRewardStart,
                 stakingRewardsStore.pendingRewards(),
-                getRewardsBalance(accountStore));
+                rewardAccountBalance);
 
         // Submit a synthetic node stake update transaction
+        final long reservedStakingRewards = stakingRewardsStore.pendingRewards();
+        final long unreservedStakingRewardBalance = rewardAccountBalance - reservedStakingRewards;
         final var syntheticNodeStakeUpdateTxn = newNodeStakeUpdateBuilder(
                 lastInstantOfPreviousPeriodFor(consensusTime),
                 finalNodeStakes,
                 stakingConfig,
                 totalStakedRewardStart,
-                perHbarRate);
+                perHbarRate,
+                reservedStakingRewards,
+                unreservedStakingRewardBalance,
+                stakingConfig.rewardBalanceThreshold(),
+                stakingConfig.maxStakeRewarded());
         log.info("Exporting:\n{}", finalNodeStakes);
 
         final var nodeStakeUpdateBuilder = context.addPrecedingChildRecordBuilder(NodeStakeUpdateRecordBuilder.class);
@@ -237,6 +244,7 @@ public class EndOfStakingPeriodUpdater {
 
     /**
      * Scales up the weight of the node to the range [minStake, maxStakeOfAllNodes] from the consensus weight range [0, sumOfConsensusWeights].
+     *
      * @param weight weight of the node
      * @param newMinStake min stake of the node
      * @param newMaxStake real max stake of all nodes computed by taking max(stakeOfNode1, stakeOfNode2, ...)
@@ -289,6 +297,7 @@ public class EndOfStakingPeriodUpdater {
      * If stake is less than minStake the weight of a node A will be 0. If stake is greater than minStake, the weight of a node A
      * will be computed so that every node above minStake has weight at least 1; but any node that has staked at least 1
      * out of every 250 whole hbars staked will have weight >= 2.
+     *
      * @param stake the stake of current node, includes stake rewarded and non-rewarded
      * @param totalStakeOfAllNodes the total stake of all nodes at the start of new period
      * @return calculated consensus weight of the node
@@ -352,7 +361,7 @@ public class EndOfStakingPeriodUpdater {
      * threshold, from 0 for empty, up to 1 at the threshold.
      *
      * @param unreservedBalance the balance in {@code 0.0.800} minus the pending rewards
-     * @param thresholdBalance  the threshold balance setting
+     * @param thresholdBalance the threshold balance setting
      * @return the ratio of the balance to the threshold, from 0 for empty, up to 1 at the threshold
      */
     private BigDecimal ratioOf(final long unreservedBalance, final long thresholdBalance) {
@@ -367,9 +376,9 @@ public class EndOfStakingPeriodUpdater {
      * start of the period that is now ending, and the maximum amount of tinybars to pay as staking rewards in the
      * period, returns the effective per-hbar reward rate for the period.
      *
-     * @param balanceRatio   the ratio of the {@code 0.0.800} balance to the threshold
+     * @param balanceRatio the ratio of the {@code 0.0.800} balance to the threshold
      * @param stakedToReward the amount of hbars staked to reward at the start of the ending period
-     * @param maxRewardRate  the maximum amount of tinybars to pay per hbar reward
+     * @param maxRewardRate the maximum amount of tinybars to pay per hbar reward
      * @param maxStakeRewarded the maximum amount of stake that can be rewarded
      * @return the effective per-hbar reward rate for the period
      */
@@ -426,6 +435,10 @@ public class EndOfStakingPeriodUpdater {
      * @param stakingConfig the staking configuration of the network at period end
      * @param totalStakedRewardStart the total staked reward at the start of the period
      * @param maxPerHbarRewardRate the maximum reward rate per hbar for the period (per HIP-782)
+     * @param reservedStakingRewards the total amount of staking rewards reserved in the 0.0.800 balance
+     * @param unreservedStakingRewardBalance the remaining "unreserved" part of the 0.0.800 balance
+     * @param rewardBalanceThreshold the 0.0.800 balance threshold at which the max reward rate is attainable
+     * @param maxStakeRewarded the maximum stake that can be rewarded at the max reward rate
      * @return the transaction builder with the {@code NodeStakeUpdateTransactionBody} set
      */
     private static TransactionBody.Builder newNodeStakeUpdateBuilder(
@@ -433,7 +446,11 @@ public class EndOfStakingPeriodUpdater {
             final List<NodeStake> nodeStakes,
             final StakingConfig stakingConfig,
             final long totalStakedRewardStart,
-            final long maxPerHbarRewardRate) {
+            final long maxPerHbarRewardRate,
+            final long reservedStakingRewards,
+            final long unreservedStakingRewardBalance,
+            final long rewardBalanceThreshold,
+            final long maxStakeRewarded) {
         final var threshold = stakingConfig.startThreshold();
         final var stakingPeriod = stakingConfig.periodMins();
         final var stakingPeriodsStored = stakingConfig.rewardHistoryNumStoredPeriods();
@@ -447,7 +464,8 @@ public class EndOfStakingPeriodUpdater {
                 .denominator(100L)
                 .build();
 
-        final var maxPeriodRewardRate = maxPerHbarRewardRate * (totalStakedRewardStart / HBARS_TO_TINYBARS);
+        final var hbarsStakedToReward = (totalStakedRewardStart / HBARS_TO_TINYBARS);
+        final var maxTotalReward = maxPerHbarRewardRate * hbarsStakedToReward;
         final var txnBody = NodeStakeUpdateTransactionBody.newBuilder()
                 .endOfStakingPeriod(stakingPeriodEnd)
                 .nodeStake(nodeStakes)
@@ -457,7 +475,13 @@ public class EndOfStakingPeriodUpdater {
                 .stakingPeriod(stakingPeriod)
                 .stakingRewardFeeFraction(stakingRewardFeeFraction)
                 .stakingStartThreshold(threshold)
-                .stakingRewardRate(maxPeriodRewardRate)
+                // Deprecated field but keep it for backward compatibility at the moment
+                .stakingRewardRate(maxTotalReward)
+                .maxTotalReward(maxTotalReward)
+                .reservedStakingRewards(reservedStakingRewards)
+                .unreservedStakingRewardBalance(unreservedStakingRewardBalance)
+                .rewardBalanceThreshold(rewardBalanceThreshold)
+                .maxStakeRewarded(maxStakeRewarded)
                 .build();
 
         return TransactionBody.newBuilder().nodeStakeUpdate(txnBody);
