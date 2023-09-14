@@ -131,8 +131,10 @@ public class TokenUnfreezeAccountHandler implements TransactionHandler {
         final var tokenRel = tokenRelStore.getForModify(accountId, tokenId);
         validateTrue(tokenRel != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
 
-        // Check that token is not deleted
-        validateFalse(token != null && token.deleted(), TOKEN_WAS_DELETED);
+        if (token != null) {
+            // Check that token is not deleted
+            validateFalse(token.deleted(), TOKEN_WAS_DELETED);
+        }
         // Return the token relation
         return tokenRel;
     }
