@@ -21,7 +21,6 @@ import java.util.Random;
 import org.junit.jupiter.api.function.ThrowingConsumer;
 
 public class ConsensusTestRunner {
-    private String description;
     private ConsensusTestParams params;
     private ThrowingConsumer<TestInput> test;
     private int iterations = 1;
@@ -47,7 +46,6 @@ public class ConsensusTestRunner {
     }
 
     public void run() {
-        // TODO print description
         try {
             for (final long seed : params.seeds()) {
                 System.out.println("Running seed: " + seed);

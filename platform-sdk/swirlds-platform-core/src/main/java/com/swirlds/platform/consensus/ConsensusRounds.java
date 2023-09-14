@@ -39,7 +39,7 @@ public class ConsensusRounds {
     private final ConsensusConfig config;
     /** stores the minimum generation for all decided and non-expired rounds */
     private final SequentialRingBuffer<MinGenInfo> minGenStorage;
-    /** the only address book currently, until address book changes are implemented */
+    /** the only address book currently in use, until address book changes are implemented */
     private final AddressBook addressBook;
     /** The maximum round created of all the known witnesses */
     private long maxRoundCreated = ConsensusConstants.ROUND_UNDEFINED;

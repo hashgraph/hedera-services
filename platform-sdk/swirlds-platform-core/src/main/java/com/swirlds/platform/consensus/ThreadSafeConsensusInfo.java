@@ -81,11 +81,11 @@ public class ThreadSafeConsensusInfo implements GraphGenerations, RoundNumberPro
     }
 
     /**
-     * Update all the information stored
+     * Update all round and generation information.
      *
      * @param fameDecidedBelow the latest round which has not had its fame decided
      */
-    public void update(final long fameDecidedBelow) {
+    public void updateRoundGenerations(final long fameDecidedBelow) {
         this.fameDecidedBelow = fameDecidedBelow;
         this.maxRound = storage.maxIndex();
         this.minRound = storage.minIndex();

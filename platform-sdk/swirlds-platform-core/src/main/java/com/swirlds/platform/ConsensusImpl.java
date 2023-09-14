@@ -176,7 +176,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
      * if consensus is not starting from genesis, this instance is used to accurately calculate the
      * round for events
      */
-    private InitJudges initJudges;
+    private InitJudges initJudges = null;
     /**
      * Migration mode is used to migrate from an old state which saves consensus events and does
      * not have judge hashes. Since we don't have the judge hashes, we can't calculate the round
@@ -223,7 +223,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
 
         // create all the rounds that we have events for
         rounds.loadFromMinGen(platformData.getMinGenInfo());
-        update(rounds.getFameDecidedBelow());
+        updateRoundGenerations(rounds.getFameDecidedBelow());
 
         for (final EventImpl event : platformData.getEvents()) {
             event.setRoundCreated(
@@ -260,7 +260,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         reset();
         initJudges = new InitJudges(snapshot.round(), new HashSet<>(snapshot.judgeHashes()));
         rounds.loadFromMinGen(snapshot.minGens());
-        update(rounds.getFameDecidedBelow());
+        updateRoundGenerations(rounds.getFameDecidedBelow());
         numConsensus = snapshot.nextConsensusNumber();
         lastConsensusTime = snapshot.consensusTimestamp();
     }
@@ -272,7 +272,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         numConsensus = 0;
         lastConsensusTime = null;
         initJudges = null;
-        update(rounds.getFameDecidedBelow());
+        updateRoundGenerations(rounds.getFameDecidedBelow());
     }
 
     /**
@@ -679,7 +679,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         rounds.currentElectionDecided();
 
         // this updates the thread-safe values
-        this.update(rounds.getFameDecidedBelow());
+        this.updateRoundGenerations(rounds.getFameDecidedBelow());
 
         // all events that reach consensus during this method call, in consensus order
         final List<EventImpl> consensusEvents =

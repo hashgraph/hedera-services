@@ -40,11 +40,12 @@ public class AncestorSearch {
     }
 
     /**
-     * The set of ancestors of the given event (the root of the search) for which valid is true.
+     * Gets an iterator over the set of ancestors of the given event (the root of the search) for which valid is true.
      * This will not include a valid ancestor that is only reachable through invalid ancestors.
      *
      * @param root the root event whose ancestors should be searched
      * @param valid do a depth-first search, but backtrack from any event e where valid(e)==false
+     * @return an iterator over all valid ancestors of the root
      */
     public @NonNull AncestorIterator search(@NonNull final EventImpl root, @NonNull final Predicate<EventImpl> valid) {
         iterator.search(root, valid);
@@ -52,7 +53,7 @@ public class AncestorSearch {
     }
 
     /**
-     * Finds events that ancestors to all the supplied events. It will only traverse valid events,
+     * Finds events that are ancestors to all the supplied events. It will only traverse valid events,
      * where valid is defined by the predicate supplied. This method will also populate {@link
      * EventImpl#getRecTimes()} for the events returned.
      *

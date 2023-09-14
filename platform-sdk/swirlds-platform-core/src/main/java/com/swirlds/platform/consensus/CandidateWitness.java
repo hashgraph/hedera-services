@@ -24,7 +24,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-/** A wrapper for a witness which holds additional metadata while an election is ongoing */
+/** A wrapper for a witness which holds additional metadata while an election to decide its fame is ongoing */
 public final class CandidateWitness {
     private static final Logger logger = LogManager.getLogger(CandidateWitness.class);
     private final EventImpl witness;
@@ -99,7 +99,7 @@ public final class CandidateWitness {
 
         logger.info(
                 CONSENSUS_VOTING.getMarker(),
-                "Fame decided for {}, round {} unknown fame: {} ",
+                "Fame decided for {}, election round {} unknown fame: {} ",
                 witness,
                 witness.getRoundCreated(),
                 numUnknownFame.get());

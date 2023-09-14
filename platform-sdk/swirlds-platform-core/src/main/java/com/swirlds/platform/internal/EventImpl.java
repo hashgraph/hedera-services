@@ -85,7 +85,12 @@ public class EventImpl extends EventMetadata
     private GossipEvent baseEvent;
     /** Consensus data calculated for an event */
     private ConsensusData consensusData;
-    /** The consensus hash of this event */
+    /**
+     * The consensus hash of this event. This hash includes all information for an event that was a result of it
+     * reaching consensus. So the hash includes the consensus timestamp, the consensus order and other consensus info.
+     * This hash should not be confused with the hash of the base event which is calculated before consensus is reached,
+     * right after the event is created.
+     */
     private Hash hash = null;
 
     private RunningHash runningHash;

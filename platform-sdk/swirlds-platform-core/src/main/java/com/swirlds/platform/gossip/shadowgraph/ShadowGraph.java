@@ -183,7 +183,7 @@ public class ShadowGraph implements Clearable {
      * Define the starting generation for the shadowgraph, it will not keep any events older than this
      * @param generation the starting generation
      */
-    public void startFromGeneration(final long generation) {
+    public synchronized void startFromGeneration(final long generation) {
         expireBelow = generation;
         oldestGeneration = generation;
         logger.info(STARTUP.getMarker(), "Shadow graph starting from generation {}", generation);

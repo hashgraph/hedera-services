@@ -18,6 +18,7 @@ package com.swirlds.platform.consensus;
 
 import static com.swirlds.logging.LogMarker.CONSENSUS_VOTING;
 
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.utility.IntReference;
 import com.swirlds.platform.Utilities;
 import com.swirlds.platform.event.EventConstants;
@@ -66,11 +67,14 @@ public class ElectionRound {
      * @param round the round to set to
      */
     public void setRound(final long round) {
+        if (this.round != ConsensusConstants.ROUND_FIRST) {
+            throw new IllegalStateException("We should not set the election round on an instance that has not been reset");
+        }
         this.round = round;
     }
 
     /**
-     * A new witness is being added to the current election
+     * A new witness is being added to the current election round
      *
      * @param witness the witness being added
      */
@@ -95,7 +99,8 @@ public class ElectionRound {
     }
 
     /**
-     * @return true if fame has been decided for all witnesses in this round
+     * @return true if fame has been decided for all witnesses in this round. A round must have witnesses, so if no
+     * witnesses have been added to this round yet, it cannot be decided, thus it will return false.
      */
     public boolean isDecided() {
         return numUnknownFame.equalsInt(0) && !elections.isEmpty();
@@ -128,13 +133,15 @@ public class ElectionRound {
         if (!isDecided()) {
             throw new IllegalStateException("Cannot find all judges if the round has not been decided yet");
         }
-        final Map<Long, EventImpl> uniqueFamous = new HashMap<>();
+        // This map is keyed by node id, and ensures that each creator has only a single famous witness even if that
+        // creator branched
+        final Map<NodeId, EventImpl> uniqueFamous = new HashMap<>();
         for (final CandidateWitness election : elections) {
             if (!election.isFamous()) {
                 continue;
             }
             uniqueFamous.merge(
-                    election.getWitness().getCreatorId().id(), election.getWitness(), ElectionRound::uniqueFamous);
+                    election.getWitness().getCreatorId(), election.getWitness(), ElectionRound::uniqueFamous);
         }
         final List<EventImpl> allJudges = new ArrayList<>(uniqueFamous.values());
         allJudges.sort(Comparator.comparingLong(e -> e.getCreatorId().id()));

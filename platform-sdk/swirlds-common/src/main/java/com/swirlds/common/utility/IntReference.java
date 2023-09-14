@@ -18,7 +18,10 @@ package com.swirlds.common.utility;
 
 import java.util.Objects;
 
-/** An object wrapper for an int that allows it to mutate, unlike {@link Integer}. */
+/**
+ * An object wrapper for an int that allows it to mutate, unlike {@link Integer}. Similar to {@link ValueReference} but
+ * for a primitive int with increment decrement functions included.
+ */
 public class IntReference {
     /** the int value */
     private int value;
@@ -77,5 +80,12 @@ public class IntReference {
     @Override
     public int hashCode() {
         return Objects.hash(value);
+    }
+
+    @Override
+    public String toString() {
+        return "IntReference{" +
+                "value=" + value +
+                '}';
     }
 }

@@ -76,7 +76,7 @@ public class ConsensusSnapshot implements SelfSerializable {
     }
 
     @Override
-    public void serialize(final SerializableDataOutputStream out) throws IOException {
+    public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
         out.writeLong(round);
         out.writeSerializableList(judgeHashes, false, true);
         MinGenInfo.serializeList(minGens, out);
@@ -85,7 +85,7 @@ public class ConsensusSnapshot implements SelfSerializable {
     }
 
     @Override
-    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
+    public void deserialize(@NonNull final SerializableDataInputStream in, final int version) throws IOException {
         round = in.readLong();
         judgeHashes = in.readSerializableList(MAX_JUDGES, false, Hash::new);
         minGens = MinGenInfo.deserializeList(in);
