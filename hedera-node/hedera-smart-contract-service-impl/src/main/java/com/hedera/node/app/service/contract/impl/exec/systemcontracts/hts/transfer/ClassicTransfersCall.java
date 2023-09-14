@@ -18,32 +18,20 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.trans
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.revertResult;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ApprovalSwitchHelper.APPROVAL_SWITCH_HELPER;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.SystemAccountCreditScreen.SYSTEM_ACCOUNT_CREDIT_SCREEN;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asHeadlongAddress;
 import static java.util.Objects.requireNonNull;
 
-import com.esaulpaugh.headlong.abi.Function;
-import com.esaulpaugh.headlong.abi.TupleType;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.config.data.ContractsConfig;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 /**
@@ -62,35 +50,6 @@ import java.util.Arrays;
  * But the basic pattern of constructing and dispatching a synthetic {@link CryptoTransferTransactionBody} remains.
  */
 public class ClassicTransfersCall extends AbstractHtsCall {
-    public static final Function CRYPTO_TRANSFER =
-            new Function("cryptoTransfer((address,(address,int64)[],(address,address,int64)[])[])", ReturnTypes.INT_64);
-    public static final Function CRYPTO_TRANSFER_V2 = new Function(
-            "cryptoTransfer(((address,int64,bool)[]),(address,(address,int64,bool)[],(address,address,int64,bool)[])[])",
-            ReturnTypes.INT_64);
-    public static final Function TRANSFER_TOKENS =
-            new Function("transferTokens(address,address[],int64[])", ReturnTypes.INT_64);
-    public static final Function TRANSFER_TOKEN =
-            new Function("transferToken(address,address,address,int64)", ReturnTypes.INT_64);
-    public static final Function TRANSFER_NFTS =
-            new Function("transferNFTs(address,address[],address[],int64[])", ReturnTypes.INT_64);
-    public static final Function TRANSFER_NFT =
-            new Function("transferNFT(address,address,address,int64)", ReturnTypes.INT_64);
-    public static final Function HRC_TRANSFER_FROM =
-            new Function("transferFrom(address,address,address,uint256)", ReturnTypes.INT_64);
-    public static final Function HRC_TRANSFER_NFT_FROM =
-            new Function("transferFromNFT(address,address,address,uint256)", ReturnTypes.INT_64);
-
-    /**
-     * Encodes the given {@code status} as a return value for a classic transfer call.
-     *
-     * @param status the status to encode
-     * @return the encoded status
-     */
-    public static ByteBuffer encodedStatus(@NonNull final ResponseCodeEnum status) {
-        return OUTPUT_ENCODER.encodeElements((long) status.protoOrdinal());
-    }
-
-    private static final TupleType OUTPUT_ENCODER = TupleType.parse(ReturnTypes.INT_64);
 
     private final byte[] selector;
     private final AccountID spenderId;
@@ -134,11 +93,11 @@ public class ClassicTransfersCall extends AbstractHtsCall {
         // TODO - gas calculation
         if (systemAccountCreditScreen.creditsToSystemAccount(syntheticTransfer.cryptoTransferOrThrow())) {
             // TODO - externalize the invalid synthetic transfer without dispatching it
-            return gasOnly(revertResult(INVALID_RECEIVING_NODE_ACCOUNT, 0L));
+            return reversionWith(INVALID_RECEIVING_NODE_ACCOUNT, 0L);
         }
         if (executionIsNotSupported()) {
             // TODO - externalize the unsupported synthetic transfer without dispatching it
-            return completionWith(NOT_SUPPORTED);
+            return completionWith(NOT_SUPPORTED, 0L);
         }
         final var transferToDispatch = shouldRetryWithApprovals()
                 ? syntheticTransfer
@@ -152,104 +111,15 @@ public class ClassicTransfersCall extends AbstractHtsCall {
                 : syntheticTransfer;
         final var recordBuilder = systemContractOperations()
                 .dispatch(transferToDispatch, verificationStrategy, spenderId, CryptoTransferRecordBuilder.class);
-        return completionWith(standardized(recordBuilder.status()));
+        return completionWith(recordBuilder.status(), 0L);
     }
 
     private boolean shouldRetryWithApprovals() {
         return approvalSwitchHelper != null;
     }
 
-    private PricedResult completionWith(@NonNull final ResponseCodeEnum status) {
-        return gasOnly(successResult(encodedStatus(status), 0L));
-    }
-
     private boolean executionIsNotSupported() {
-        return Arrays.equals(selector, CRYPTO_TRANSFER_V2.selector())
+        return Arrays.equals(selector, ClassicTransfersTranslator.CRYPTO_TRANSFER_V2.selector())
                 && !configuration.getConfigData(ContractsConfig.class).precompileAtomicCryptoTransferEnabled();
-    }
-
-    /**
-     * Indicates if the given call attempt is for {@link ClassicTransfersCall}.
-     *
-     * @param attempt the attempt to check
-     * @return {@code true} if the given {@code selector} is a selector for {@link ClassicTransfersCall}
-     */
-    public static boolean matches(@NonNull final HtsCallAttempt attempt) {
-        requireNonNull(attempt);
-        return !attempt.isTokenRedirect()
-                && (Arrays.equals(attempt.selector(), CRYPTO_TRANSFER.selector())
-                        || Arrays.equals(attempt.selector(), CRYPTO_TRANSFER_V2.selector())
-                        || Arrays.equals(attempt.selector(), TRANSFER_TOKENS.selector())
-                        || Arrays.equals(attempt.selector(), TRANSFER_TOKEN.selector())
-                        || Arrays.equals(attempt.selector(), TRANSFER_NFTS.selector())
-                        || Arrays.equals(attempt.selector(), TRANSFER_NFT.selector())
-                        || Arrays.equals(attempt.selector(), HRC_TRANSFER_FROM.selector())
-                        || Arrays.equals(attempt.selector(), HRC_TRANSFER_NFT_FROM.selector()));
-    }
-
-    /**
-     * Creates a {@link ClassicTransfersCall} from the given {@code attempt} and {@code senderAddress}.
-     *
-     * @param attempt         the attempt to create a {@link ClassicTransfersCall} from
-     * @param sender          the address of the sender
-     * @param onlyDelegatable whether the sender needs delegatable contract keys
-     * @return a {@link ClassicTransfersCall} if the given {@code attempt} is a valid {@link ClassicTransfersCall}, otherwise {@code null}
-     */
-    public static ClassicTransfersCall from(
-            @NonNull final HtsCallAttempt attempt,
-            @NonNull final org.hyperledger.besu.datatypes.Address sender,
-            final boolean onlyDelegatable) {
-        requireNonNull(attempt);
-        requireNonNull(sender);
-        final var selector = attempt.selector();
-        return new ClassicTransfersCall(
-                attempt.enhancement(),
-                selector,
-                attempt.addressIdConverter().convert(asHeadlongAddress(sender.toArrayUnsafe())),
-                nominalBodyFor(attempt),
-                attempt.configuration(),
-                isClassicCall(selector) ? APPROVAL_SWITCH_HELPER : null,
-                attempt.verificationStrategies()
-                        .activatingOnlyContractKeysFor(sender, onlyDelegatable, attempt.nativeOperations()),
-                SYSTEM_ACCOUNT_CREDIT_SCREEN);
-    }
-
-    private static boolean isClassicCall(@NonNull final byte[] selector) {
-        return Arrays.equals(selector, CRYPTO_TRANSFER.selector())
-                || Arrays.equals(selector, TRANSFER_TOKENS.selector())
-                || Arrays.equals(selector, TRANSFER_TOKEN.selector())
-                || Arrays.equals(selector, TRANSFER_NFTS.selector())
-                || Arrays.equals(selector, TRANSFER_NFT.selector());
-    }
-
-    private static TransactionBody nominalBodyFor(@NonNull final HtsCallAttempt attempt) {
-        if (Arrays.equals(attempt.selector(), CRYPTO_TRANSFER.selector())) {
-            return attempt.decodingStrategies()
-                    .decodeCryptoTransfer(attempt.input().toArrayUnsafe(), attempt.addressIdConverter());
-        } else if (Arrays.equals(attempt.selector(), CRYPTO_TRANSFER_V2.selector())) {
-            return attempt.decodingStrategies()
-                    .decodeCryptoTransferV2(attempt.input().toArrayUnsafe(), attempt.addressIdConverter());
-        } else if (Arrays.equals(attempt.selector(), TRANSFER_TOKENS.selector())) {
-            return attempt.decodingStrategies()
-                    .decodeTransferTokens(attempt.input().toArrayUnsafe(), attempt.addressIdConverter());
-        } else if (Arrays.equals(attempt.selector(), TRANSFER_TOKEN.selector())) {
-            return attempt.decodingStrategies()
-                    .decodeTransferToken(attempt.input().toArrayUnsafe(), attempt.addressIdConverter());
-        } else if (Arrays.equals(attempt.selector(), TRANSFER_NFTS.selector())) {
-            return attempt.decodingStrategies()
-                    .decodeTransferNfts(attempt.input().toArrayUnsafe(), attempt.addressIdConverter());
-        } else if (Arrays.equals(attempt.selector(), TRANSFER_NFT.selector())) {
-            return attempt.decodingStrategies()
-                    .decodeTransferNft(attempt.input().toArrayUnsafe(), attempt.addressIdConverter());
-        } else if (Arrays.equals(attempt.selector(), HRC_TRANSFER_FROM.selector())) {
-            return attempt.decodingStrategies()
-                    .decodeHrcTransferFrom(attempt.input().toArrayUnsafe(), attempt.addressIdConverter());
-        } else if (Arrays.equals(attempt.selector(), HRC_TRANSFER_NFT_FROM.selector())) {
-            return attempt.decodingStrategies()
-                    .decodeHrcTransferNftFrom(attempt.input().toArrayUnsafe(), attempt.addressIdConverter());
-        } else {
-            throw new IllegalArgumentException(
-                    "Selector " + CommonUtils.hex(attempt.selector()) + "is not a classic transfer");
-        }
     }
 }

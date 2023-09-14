@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.cli.utility;
+package com.swirlds.cli.logging;
 
 import com.swirlds.common.formatting.TextEffect;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -35,6 +35,8 @@ public class PlatformStatusLog implements FormattableString {
     public static final String PLATFORM_STATUS_LOG_LINE_REGEX = "(.*spent )(.*)( in )(.*)(\\. Now in )([A-Z_]+)(.*)";
 
     public static final TextEffect STATUS_COLOR = TextEffect.BRIGHT_PURPLE;
+
+    public static final String STATUS_HTML_CLASS = "status-detail";
 
     /**
      * The full original string
@@ -152,6 +154,18 @@ public class PlatformStatusLog implements FormattableString {
     @NonNull
     @Override
     public String generateHtmlString() {
-        throw new UnsupportedOperationException("FUTURE WORK");
+        return platformSpent
+                + new HtmlTagFactory("span", duration)
+                        .addClass(STATUS_HTML_CLASS)
+                        .generateTag()
+                + in
+                + new HtmlTagFactory("span", previousStatus)
+                        .addClass(STATUS_HTML_CLASS)
+                        .generateTag()
+                + nowIn
+                + new HtmlTagFactory("span", newStatus)
+                        .addClass(STATUS_HTML_CLASS)
+                        .generateTag();
+        // intentionally skip writing the remainder of the log. it is duplicate data
     }
 }

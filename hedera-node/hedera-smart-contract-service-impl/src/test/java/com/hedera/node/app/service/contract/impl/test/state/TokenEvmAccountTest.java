@@ -126,8 +126,9 @@ class TokenEvmAccountTest {
 
     @Test
     void doesNotSupportMutators() {
+        final var code = pbjToTuweniBytes(SOME_PRETEND_CODE);
         assertThrows(UnsupportedOperationException.class, () -> subject.setNonce(1234));
-        assertThrows(UnsupportedOperationException.class, () -> subject.setCode(pbjToTuweniBytes(SOME_PRETEND_CODE)));
+        assertThrows(UnsupportedOperationException.class, () -> subject.setCode(code));
         assertThrows(UnsupportedOperationException.class, () -> subject.setStorageValue(UInt256.ONE, UInt256.ONE));
         assertThrows(UnsupportedOperationException.class, subject::clearStorage);
         assertThrows(UnsupportedOperationException.class, subject::getUpdatedStorage);

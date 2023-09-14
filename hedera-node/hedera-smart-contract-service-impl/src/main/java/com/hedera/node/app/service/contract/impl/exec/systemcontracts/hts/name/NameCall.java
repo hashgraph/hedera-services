@@ -19,12 +19,10 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.name;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
 import static java.util.Objects.requireNonNull;
 
-import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractTokenViewCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -34,7 +32,6 @@ import java.util.Arrays;
  * Implements the token redirect {@code name()} call of the HTS system contract.
  */
 public class NameCall extends AbstractTokenViewCall {
-    public static final Function NAME = new Function("name()", ReturnTypes.STRING);
 
     public NameCall(@NonNull final HederaWorldUpdater.Enhancement enhancement, @Nullable final Token token) {
         super(enhancement, token);
@@ -45,7 +42,7 @@ public class NameCall extends AbstractTokenViewCall {
      */
     @Override
     protected @NonNull HederaSystemContract.FullResult resultOfViewingToken(@NonNull Token token) {
-        final var output = NAME.getOutputs().encodeElements(token.name());
+        final var output = NameTranslator.NAME.getOutputs().encodeElements(token.name());
         return successResult(output, 0L);
     }
 
@@ -57,7 +54,7 @@ public class NameCall extends AbstractTokenViewCall {
      */
     public static boolean matches(@NonNull final byte[] selector) {
         requireNonNull(selector);
-        return Arrays.equals(selector, NAME.selector());
+        return Arrays.equals(selector, NameTranslator.NAME.selector());
     }
 
     /**

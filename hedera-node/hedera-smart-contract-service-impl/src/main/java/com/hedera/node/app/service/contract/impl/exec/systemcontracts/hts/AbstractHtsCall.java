@@ -18,6 +18,9 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.revertResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -44,7 +47,15 @@ public abstract class AbstractHtsCall implements HtsCall {
         return enhancement.systemOperations();
     }
 
-    protected ResponseCodeEnum standardized(@NonNull final ResponseCodeEnum status) {
+    protected PricedResult completionWith(@NonNull final ResponseCodeEnum status, final long gasRequirement) {
+        return gasOnly(successResult(ReturnTypes.encodedRc(standardized(status)), gasRequirement));
+    }
+
+    protected PricedResult reversionWith(@NonNull final ResponseCodeEnum status, final long gasRequirement) {
+        return gasOnly(revertResult(standardized(status), gasRequirement));
+    }
+
+    private ResponseCodeEnum standardized(@NonNull final ResponseCodeEnum status) {
         return requireNonNull(status) == INVALID_SIGNATURE ? INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE : status;
     }
 }

@@ -14,10 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
-
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.explicitFromHeadlong;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
+package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
@@ -29,20 +26,18 @@ import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
+import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.function.Function;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-/**
- * Encapsulates some strategies of decoding ABI calls, extracted here to ease unit testing.
- */
 @Singleton
-public class DecodingStrategies {
+public class ClassicTransfersDecoder {
     @Inject
-    public DecodingStrategies() {
+    public ClassicTransfersDecoder() {
         // Dagger2
     }
 
@@ -66,27 +61,27 @@ public class DecodingStrategies {
     }
 
     /**
-     * Decodes a call to {@link ClassicTransfersCall#CRYPTO_TRANSFER} into a synthetic {@link TransactionBody}.
+     * Decodes a call to {@link ClassicTransfersTranslator#CRYPTO_TRANSFER} into a synthetic {@link TransactionBody}.
      *
      * @param encoded the encoded call
      * @return the synthetic transaction body
      */
     public TransactionBody decodeCryptoTransfer(
             @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
-        final var call = ClassicTransfersCall.CRYPTO_TRANSFER.decodeCall(encoded);
+        final var call = ClassicTransfersTranslator.CRYPTO_TRANSFER.decodeCall(encoded);
         return bodyOf(tokenTransfers(convertTokenTransfers(
                 call.get(0), this::convertingAdjustments, this::convertingOwnershipChanges, addressIdConverter)));
     }
 
     /**
-     * Decodes a call to {@link ClassicTransfersCall#CRYPTO_TRANSFER_V2} into a synthetic {@link TransactionBody}.
+     * Decodes a call to {@link ClassicTransfersTranslator#CRYPTO_TRANSFER_V2} into a synthetic {@link TransactionBody}.
      *
      * @param encoded the encoded call
      * @return the synthetic transaction body
      */
     public TransactionBody decodeCryptoTransferV2(
             @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
-        final var call = ClassicTransfersCall.CRYPTO_TRANSFER_V2.decodeCall(encoded);
+        final var call = ClassicTransfersTranslator.CRYPTO_TRANSFER_V2.decodeCall(encoded);
         return bodyOf(tokenTransfers(convertTokenTransfers(
                         call.get(1),
                         this::convertingMaybeApprovedAdjustments,
@@ -96,28 +91,28 @@ public class DecodingStrategies {
     }
 
     /**
-     * Decodes a call to {@link ClassicTransfersCall#TRANSFER_TOKENS} into a synthetic {@link TransactionBody}.
+     * Decodes a call to {@link ClassicTransfersTranslator#TRANSFER_TOKENS} into a synthetic {@link TransactionBody}.
      *
      * @param encoded the encoded call
      * @return the synthetic transaction body
      */
     public TransactionBody decodeTransferTokens(
             @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
-        final var call = ClassicTransfersCall.TRANSFER_TOKENS.decodeCall(encoded);
+        final var call = ClassicTransfersTranslator.TRANSFER_TOKENS.decodeCall(encoded);
         return bodyOf(tokenTransfers(convertingAdjustments(call.get(0), call.get(1), call.get(2), addressIdConverter)));
     }
 
     /**
-     * Decodes a call to {@link ClassicTransfersCall#TRANSFER_TOKEN} into a synthetic {@link TransactionBody}.
+     * Decodes a call to {@link ClassicTransfersTranslator#TRANSFER_TOKEN} into a synthetic {@link TransactionBody}.
      *
      * @param encoded the encoded call
      * @return the synthetic transaction body
      */
     public TransactionBody decodeTransferToken(
             @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
-        final var call = ClassicTransfersCall.TRANSFER_TOKEN.decodeCall(encoded);
+        final var call = ClassicTransfersTranslator.TRANSFER_TOKEN.decodeCall(encoded);
         return bodyOf(tokenTransfers(sendingUnitsFromTo(
-                asTokenId(call.get(0)),
+                ConversionUtils.asTokenId(call.get(0)),
                 addressIdConverter.convert(call.get(1)),
                 addressIdConverter.convertCredit(call.get(2)),
                 call.get(3),
@@ -125,14 +120,14 @@ public class DecodingStrategies {
     }
 
     /**
-     * Decodes a call to {@link ClassicTransfersCall#TRANSFER_NFTS} into a synthetic {@link TransactionBody}.
+     * Decodes a call to {@link ClassicTransfersTranslator#TRANSFER_NFTS} into a synthetic {@link TransactionBody}.
      *
      * @param encoded the encoded call
      * @return the synthetic transaction body
      */
     public TransactionBody decodeTransferNfts(
             @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
-        final var call = ClassicTransfersCall.TRANSFER_NFTS.decodeCall(encoded);
+        final var call = ClassicTransfersTranslator.TRANSFER_NFTS.decodeCall(encoded);
         final Address[] from = call.get(1);
         final Address[] to = call.get(2);
         final long[] serialNo = call.get(3);
@@ -148,20 +143,20 @@ public class DecodingStrategies {
                     serialNo[i],
                     IsApproval.FALSE);
         }
-        return bodyOf(tokenTransfers(changingOwners(asTokenId(call.get(0)), ownershipChanges)));
+        return bodyOf(tokenTransfers(changingOwners(ConversionUtils.asTokenId(call.get(0)), ownershipChanges)));
     }
 
     /**
-     * Decodes a call to {@link ClassicTransfersCall#TRANSFER_NFT} into a synthetic {@link TransactionBody}.
+     * Decodes a call to {@link ClassicTransfersTranslator#TRANSFER_NFT} into a synthetic {@link TransactionBody}.
      *
      * @param encoded the encoded call
      * @return the synthetic transaction body
      */
     public TransactionBody decodeTransferNft(
             @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
-        final var call = ClassicTransfersCall.TRANSFER_NFT.decodeCall(encoded);
+        final var call = ClassicTransfersTranslator.TRANSFER_NFT.decodeCall(encoded);
         return bodyOf(tokenTransfers(changingOwner(
-                asTokenId(call.get(0)),
+                ConversionUtils.asTokenId(call.get(0)),
                 addressIdConverter.convert(call.get(1)),
                 addressIdConverter.convertCredit(call.get(2)),
                 call.get(3),
@@ -169,16 +164,16 @@ public class DecodingStrategies {
     }
 
     /**
-     * Decodes a call to {@link ClassicTransfersCall#HRC_TRANSFER_FROM} into a synthetic {@link TransactionBody}.
+     * Decodes a call to {@link ClassicTransfersTranslator#TRANSFER_FROM} into a synthetic {@link TransactionBody}.
      *
      * @param encoded the encoded call
      * @return the synthetic transaction body
      */
     public TransactionBody decodeHrcTransferFrom(
             @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
-        final var call = ClassicTransfersCall.HRC_TRANSFER_FROM.decodeCall(encoded);
+        final var call = ClassicTransfersTranslator.TRANSFER_FROM.decodeCall(encoded);
         return bodyOf(tokenTransfers(sendingUnitsFromTo(
-                asTokenId(call.get(0)),
+                ConversionUtils.asTokenId(call.get(0)),
                 addressIdConverter.convert(call.get(1)),
                 addressIdConverter.convertCredit(call.get(2)),
                 exactLongValueOrThrow(call.get(3)),
@@ -186,16 +181,16 @@ public class DecodingStrategies {
     }
 
     /**
-     * Decodes a call to {@link ClassicTransfersCall#HRC_TRANSFER_NFT_FROM} into a synthetic {@link TransactionBody}.
+     * Decodes a call to {@link ClassicTransfersTranslator#TRANSFER_NFT_FROM} into a synthetic {@link TransactionBody}.
      *
      * @param encoded the encoded call
      * @return the synthetic transaction body
      */
     public TransactionBody decodeHrcTransferNftFrom(
             @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
-        final var call = ClassicTransfersCall.HRC_TRANSFER_NFT_FROM.decodeCall(encoded);
+        final var call = ClassicTransfersTranslator.TRANSFER_NFT_FROM.decodeCall(encoded);
         return bodyOf(tokenTransfers(changingOwner(
-                asTokenId(call.get(0)),
+                ConversionUtils.asTokenId(call.get(0)),
                 addressIdConverter.convert(call.get(1)),
                 addressIdConverter.convertCredit(call.get(2)),
                 exactLongValueOrThrow(call.get(3)),
@@ -340,7 +335,7 @@ public class DecodingStrategies {
             @NonNull final Address token,
             @NonNull final Tuple[] adjustments,
             @NonNull final Function<Tuple, AccountAmount> adjustmentFn) {
-        final var tokenId = asTokenId(token);
+        final var tokenId = ConversionUtils.asTokenId(token);
         final var unitAdjustments = new AccountAmount[adjustments.length];
         for (int i = 0; i < unitAdjustments.length; i++) {
             unitAdjustments[i] = adjustmentFn.apply(adjustments[i]);
@@ -352,7 +347,7 @@ public class DecodingStrategies {
             @NonNull final Address token,
             @NonNull final Tuple[] ownershipChanges,
             @NonNull final AddressIdConverter addressIdConverter) {
-        final var tokenId = asTokenId(token);
+        final var tokenId = ConversionUtils.asTokenId(token);
         final var nftTransfers = new NftTransfer[ownershipChanges.length];
         for (int i = 0; i < ownershipChanges.length; i++) {
             nftTransfers[i] = nftTransfer(
@@ -382,7 +377,7 @@ public class DecodingStrategies {
             @NonNull final Address token,
             @NonNull final Tuple[] ownershipChanges,
             @NonNull final Function<Tuple, NftTransfer> ownershipChangeFn) {
-        final var tokenId = asTokenId(token);
+        final var tokenId = ConversionUtils.asTokenId(token);
         final var nftTransfers = new NftTransfer[ownershipChanges.length];
         for (int i = 0; i < ownershipChanges.length; i++) {
             nftTransfers[i] = ownershipChangeFn.apply(ownershipChanges[i]);
@@ -395,7 +390,7 @@ public class DecodingStrategies {
             @NonNull final Address[] party,
             @NonNull final long[] amount,
             @NonNull final AddressIdConverter addressIdConverter) {
-        final var tokenId = asTokenId(token);
+        final var tokenId = ConversionUtils.asTokenId(token);
         if (party.length != amount.length) {
             throw new IllegalArgumentException(
                     "Mismatched argument arrays (# party=" + party.length + ", # amount=" + amount.length + ")");
@@ -407,14 +402,6 @@ public class DecodingStrategies {
                     : debit(addressIdConverter.convert(party[i]), -amount[i], IsApproval.FALSE);
         }
         return adjustingUnits(tokenId, unitAdjustments);
-    }
-
-    private TokenID asTokenId(@NonNull final Address address) {
-        // Mono-service ignores the shard and realm, c.f. DecodingFacade#convertAddressBytesToTokenID(),
-        // so we continue to do that here; might want to revisit this later
-        return TokenID.newBuilder()
-                .tokenNum(numberOfLongZero(explicitFromHeadlong(address)))
-                .build();
     }
 
     private AccountAmount asMaybeApprovedAdjustment(

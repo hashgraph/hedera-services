@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.cli.utility;
+package com.swirlds.cli.logging;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -40,6 +40,8 @@ public interface FormattableString {
 
     /**
      * Generate a string with HTML formatting
+     * <p>
+     * This method must return a string that is safe to be inserted into an HTML document
      *
      * @return the string with HTML formatting
      */

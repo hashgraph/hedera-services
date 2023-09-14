@@ -19,6 +19,7 @@ package com.hedera.node.app.service.consensus.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_ACCOUNT_NOT_ALLOWED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.service.consensus.impl.codecs.ConsensusServiceStateTranslator.pbjToState;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
@@ -44,21 +45,19 @@ import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * This class contains all workflow-related functionality regarding {@link HederaFunctionality#CONSENSUS_UPDATE_TOPIC}.
  */
 @Singleton
 public class ConsensusUpdateTopicHandler implements TransactionHandler {
-    private static final Logger logger = LogManager.getLogger(ConsensusUpdateTopicHandler.class);
 
     @Inject
     public ConsensusUpdateTopicHandler() {
@@ -130,7 +129,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
                 return new UpdateTopicResourceUsage()
                         .usageGivenExplicit(fromPbj(handleContext.body()), sigValueObj, pbjToState(topic));
             } catch (InvalidTxBodyException e) {
-                throw new RuntimeException(e);
+                throw new HandleException(INVALID_TRANSACTION_BODY);
             }
         });
 

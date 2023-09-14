@@ -24,6 +24,9 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.math.BigInteger;
 import java.util.Map;
 
+/**
+ * Constants used in the {@link AssortedOpsXTest}, extracted here to improve readability of that file.
+ */
 public class AssortedOpsXTestConstants {
     static final long NEXT_ENTITY_NUM = 1004L;
     static final long ONE_HBAR = 100_000_000L;
