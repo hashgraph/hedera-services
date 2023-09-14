@@ -129,7 +129,7 @@ public class EventIntake {
         this.stats = Objects.requireNonNull(stats);
         this.shadowGraph = Objects.requireNonNull(shadowGraph);
         this.prehandleEvent = Objects.requireNonNull(prehandleEvent);
-        this.intakePipelineManager = Objects.requireNonNull(intakePipelineManager);
+        this.intakePipelineManager = intakePipelineManager;
 
         final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
         final Supplier<Integer> prehandlePoolSize;
