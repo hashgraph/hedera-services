@@ -64,7 +64,6 @@ import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
-import com.hedera.node.app.spi.workflows.QueryHandler;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.workflows.TransactionInfo;
@@ -428,30 +427,6 @@ class QueryWorkflowImplTest extends AppTestBase {
                 .hasFieldOrPropertyWithValue("status", Status.INVALID_ARGUMENT);
         verify(opCounters, never()).countReceived(any());
         verify(opCounters, never()).countAnswered(any());
-    }
-
-    @Test
-    void testMissingHeaderFails(@Mock QueryHandler localHandler, @Mock QueryDispatcher localDispatcher) {
-        // given
-        when(localDispatcher.getHandler(query)).thenReturn(localHandler);
-        final var responseBuffer = newEmptyBuffer();
-        workflow = new QueryWorkflowImpl(
-                stateAccessor,
-                throttleAccumulator,
-                submissionManager,
-                queryChecker,
-                ingestChecker,
-                localDispatcher,
-                queryParser,
-                configProvider,
-                recordCache,
-                authorizer,
-                exchangeRateManager);
-
-        // then
-        assertThatThrownBy(() -> workflow.handleQuery(requestBuffer, responseBuffer))
-                .isInstanceOf(StatusRuntimeException.class)
-                .hasFieldOrPropertyWithValue("status", Status.INVALID_ARGUMENT);
     }
 
     @Test

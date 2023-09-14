@@ -26,6 +26,7 @@ import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER_STATE_PROOF;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ResponseHeader;
 import com.hedera.hapi.node.base.ResponseType;
@@ -144,9 +145,9 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         final var function = functionOf(query);
 
         final var handler = dispatcher.getHandler(query);
-        final var queryHeader = handler.extractHeader(query);
+        var queryHeader = handler.extractHeader(query);
         if (queryHeader == null) {
-            throw new StatusRuntimeException(Status.INVALID_ARGUMENT);
+            queryHeader = QueryHeader.DEFAULT;
         }
         final ResponseType responseType = queryHeader.responseType();
         logger.debug("Started answering a {} query of type {}", function, responseType);

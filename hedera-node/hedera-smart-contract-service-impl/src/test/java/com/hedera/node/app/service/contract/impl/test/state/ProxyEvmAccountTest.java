@@ -162,7 +162,8 @@ class ProxyEvmAccountTest {
 
     @Test
     void doesNotSupportDirectBalanceMutation() {
-        assertThrows(UnsupportedOperationException.class, () -> subject.setBalance(Wei.of(123)));
+        final var balance = Wei.of(123);
+        assertThrows(UnsupportedOperationException.class, () -> subject.setBalance(balance));
     }
 
     @Test

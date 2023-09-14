@@ -48,6 +48,8 @@ public class ContractGetRecordsHandler extends PaidQueryHandler {
     }
 
     @Override
+    // Suppress the warning that we are using deprecated class(ContractGetRecordsResponse)
+    @SuppressWarnings("java:S1874")
     public Response createEmptyResponse(@NonNull final ResponseHeader header) {
         requireNonNull(header);
         final var response = ContractGetRecordsResponse.newBuilder().header(header);

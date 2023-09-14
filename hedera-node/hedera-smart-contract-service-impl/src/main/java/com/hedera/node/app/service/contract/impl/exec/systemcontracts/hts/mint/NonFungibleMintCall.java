@@ -25,6 +25,9 @@ public class NonFungibleMintCall extends AbstractHtsCall implements MintCall {
         super(enhancement);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public @NonNull PricedResult execute() {
         throw new AssertionError("Not implemented");

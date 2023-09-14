@@ -22,27 +22,21 @@ import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
+import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsCallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.balanceof.BalanceOfCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.decimals.DecimalsCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.isoperator.IsApprovedForAllCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.mint.MintCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.name.NameCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ownerof.OwnerOfCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.symbol.SymbolCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokenuri.TokenUriCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.totalsupply.TotalSupplyCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc20TransfersCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc721TransferFromCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
+import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
@@ -58,30 +52,38 @@ public class HtsCallAttempt {
     private final byte[] selector;
     private final Bytes input;
     private final boolean isRedirect;
+    private final AccountID senderId;
+    private final Address senderAddress;
+    private final boolean onlyDelegatableContractKeysActive;
 
     @Nullable
     private final Token redirectToken;
 
     private final HederaWorldUpdater.Enhancement enhancement;
     private final Configuration configuration;
-    private final DecodingStrategies decodingStrategies;
     private final AddressIdConverter addressIdConverter;
     private final VerificationStrategies verificationStrategies;
+    private final List<HtsCallTranslator> callTranslators;
 
     public HtsCallAttempt(
             @NonNull final Bytes input,
+            @NonNull final Address senderAddress,
+            boolean onlyDelegatableContractKeysActive,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             @NonNull final Configuration configuration,
-            @NonNull final DecodingStrategies decodingStrategies,
             @NonNull final AddressIdConverter addressIdConverter,
-            @NonNull final VerificationStrategies verificationStrategies) {
-        this.configuration = configuration;
-        this.addressIdConverter = addressIdConverter;
+            @NonNull final VerificationStrategies verificationStrategies,
+            @NonNull final List<HtsCallTranslator> callTranslators) {
         requireNonNull(input);
-        this.isRedirect = isRedirect(input.toArrayUnsafe());
+        this.callTranslators = requireNonNull(callTranslators);
+        this.senderAddress = requireNonNull(senderAddress);
+        this.configuration = requireNonNull(configuration);
+        this.addressIdConverter = requireNonNull(addressIdConverter);
         this.enhancement = requireNonNull(enhancement);
-        this.decodingStrategies = requireNonNull(decodingStrategies);
         this.verificationStrategies = requireNonNull(verificationStrategies);
+        this.onlyDelegatableContractKeysActive = onlyDelegatableContractKeysActive;
+
+        this.isRedirect = isRedirect(input.toArrayUnsafe());
         if (this.isRedirect) {
             Tuple abiCall = null;
             try {
@@ -104,6 +106,18 @@ public class HtsCallAttempt {
             this.input = input;
         }
         this.selector = this.input.slice(0, 4).toArrayUnsafe();
+        this.senderId = addressIdConverter.convertSender(senderAddress);
+    }
+
+    /**
+     * Returns the default verification strategy for this call (i.e., the strategy that treats only
+     * contract id and delegatable contract id keys as active when they match the call's sender address).
+     *
+     * @return the default verification strategy for this call
+     */
+    public @NonNull VerificationStrategy defaultVerificationStrategy() {
+        return verificationStrategies.activatingOnlyContractKeysFor(
+                senderAddress, onlyDelegatableContractKeysActive, enhancement.nativeOperations());
     }
 
     /**
@@ -179,40 +193,43 @@ public class HtsCallAttempt {
      *   <li>[ ] UPDATE_TOKEN_EXPIRY (UpdateTokenExpiryInfoPrecompile)</li>
      *   <li>[ ] UPDATE_TOKEN (TokenUpdatePrecompile)</li>
      * </ul>
-     *
-     * @param senderAddress          the address of the sender of the call
-     * @param needingDelegatableKeys whether the sender needs delegatable contract keys to be authorized
-     * @return the call, or null if it couldn't be translated
+     * @return the executable call, or null if this attempt can't be translated to one
      */
-    public @Nullable HtsCall asCallFrom(@NonNull final Address senderAddress, final boolean needingDelegatableKeys) {
-        requireNonNull(senderAddress);
-        if (Erc721TransferFromCall.matches(this)) {
-            return Erc721TransferFromCall.from(this, senderAddress, needingDelegatableKeys);
-        } else if (Erc20TransfersCall.matches(this)) {
-            return Erc20TransfersCall.from(this, senderAddress, needingDelegatableKeys);
-        } else if (ClassicTransfersCall.matches(this)) {
-            return ClassicTransfersCall.from(this, senderAddress, needingDelegatableKeys);
-        } else if (MintCall.matches(selector)) {
-            return MintCall.from(this, senderAddress);
-        } else if (BalanceOfCall.matches(selector)) {
-            return BalanceOfCall.from(this);
-        } else if (IsApprovedForAllCall.matches(selector)) {
-            return IsApprovedForAllCall.from(this);
-        } else if (TotalSupplyCall.matches(selector)) {
-            return TotalSupplyCall.from(this);
-        } else if (NameCall.matches(selector)) {
-            return NameCall.from(this);
-        } else if (SymbolCall.matches(selector)) {
-            return SymbolCall.from(this);
-        } else if (OwnerOfCall.matches(selector)) {
-            return OwnerOfCall.from(this);
-        } else if (TokenUriCall.matches(selector)) {
-            return TokenUriCall.from(this);
-        } else if (DecimalsCall.matches(selector)) {
-            return DecimalsCall.from(this);
-        } else {
-            return null;
+    public @Nullable HtsCall asExecutableCall() {
+        for (final var translator : callTranslators) {
+            final var call = translator.translateCallAttempt(this);
+            if (call != null) {
+                return call;
+            }
         }
+        return null;
+    }
+
+    /**
+     * Returns the ID of the sender of this call.
+     *
+     * @return the ID of the sender of this call
+     */
+    public @NonNull AccountID senderId() {
+        return senderId;
+    }
+
+    /**
+     * Returns the address of the sender of this call.
+     *
+     * @return the address of the sender of this call
+     */
+    public @NonNull Address senderAddress() {
+        return senderAddress;
+    }
+
+    /**
+     * Returns whether only delegatable contract keys are active for this call.
+     *
+     * @return whether only delegatable contract keys are active for this call
+     */
+    public boolean onlyDelegatableContractKeysActive() {
+        return onlyDelegatableContractKeysActive;
     }
 
     /**
@@ -231,15 +248,6 @@ public class HtsCallAttempt {
      */
     public Configuration configuration() {
         return configuration;
-    }
-
-    /**
-     * Returns the decoding strategies for this call.
-     *
-     * @return the decoding strategies for this call
-     */
-    public DecodingStrategies decodingStrategies() {
-        return decodingStrategies;
     }
 
     /**
@@ -282,6 +290,16 @@ public class HtsCallAttempt {
     }
 
     /**
+     * Returns the raw byte array input of this call.
+     *
+     * @return the raw input of this call
+     * @throws IllegalStateException if this is not a valid call
+     */
+    public byte[] inputBytes() {
+        return input.toArrayUnsafe();
+    }
+
+    /**
      * Returns the token that is the target of this redirect, if it existed.
      *
      * @return the token that is the target of this redirect, or null if it didn't exist
@@ -292,6 +310,32 @@ public class HtsCallAttempt {
             throw new IllegalStateException("Not a token redirect");
         }
         return redirectToken;
+    }
+
+    /**
+     * Returns the id of the token that is the target of this redirect, if it existed.
+     *
+     * @return the id of the token that is the target of this redirect, or null if it didn't exist
+     * @throws IllegalStateException if this is not a token redirect
+     */
+    public @Nullable TokenID redirectTokenId() {
+        if (!isRedirect) {
+            throw new IllegalStateException("Not a token redirect");
+        }
+        return redirectToken == null ? null : redirectToken.tokenId();
+    }
+
+    /**
+     * Returns the type of the token that is the target of this redirect, if it existed.
+     *
+     * @return the type of the token that is the target of this redirect, or null if it didn't exist
+     * @throws IllegalStateException if this is not a token redirect
+     */
+    public @Nullable TokenType redirectTokenType() {
+        if (!isRedirect) {
+            throw new IllegalStateException("Not a token redirect");
+        }
+        return redirectToken == null ? null : redirectToken.tokenType();
     }
 
     /**

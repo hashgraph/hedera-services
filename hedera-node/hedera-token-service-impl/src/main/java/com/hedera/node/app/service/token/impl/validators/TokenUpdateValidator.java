@@ -80,6 +80,13 @@ public class TokenUpdateValidator {
                 op.hasFeeScheduleKey(), op.feeScheduleKey(),
                 op.hasPauseKey(), op.pauseKey());
 
+        // Check whether there is change on the following properties in the transaction body
+        // If no change occurred, no need to change them or validate them
+        if (!(op.hasExpiry() || op.hasAutoRenewPeriod() || op.hasAutoRenewAccount())) {
+            return new ValidationResult(
+                    token,
+                    new ExpiryMeta(token.expirationSecond(), token.autoRenewSeconds(), token.autoRenewAccountId()));
+        }
         final var resolvedExpiryMeta = resolveExpiry(token, op, context.expiryValidator());
         validateNewAndExistingAutoRenewAccount(
                 resolvedExpiryMeta.autoRenewAccountId(),

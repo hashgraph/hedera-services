@@ -14,22 +14,23 @@
  * limitations under the License.
  */
 
-package com.swirlds.cli.utility;
+import com.hedera.hashgraph.gradlebuild.lifecycle.configureLifecycleTask
 
-/**
- * Format types that logs can be in
- */
-public enum LogOutputFormat {
-    /**
-     * Plain text formatting
-     */
-    PLAINTEXT,
-    /**
-     * Formatting for ANSI terminals
-     */
-    ANSI,
-    /**
-     * HTML formatting
-     */
-    HTML
+plugins {
+    id("com.hedera.hashgraph.root")
+    id("com.hedera.hashgraph.mock-release-tasks")
 }
+
+configureLifecycleTask("releaseMavenCentral")
+
+configureLifecycleTask("releaseMavenCentralSnapshot")
+
+configureLifecycleTask("releaseDevelopSnapshot")
+
+configureLifecycleTask("releaseDevelopDailySnapshot")
+
+configureLifecycleTask("releaseDevelopCommit")
+
+configureLifecycleTask("releaseAdhocCommit")
+
+configureLifecycleTask("releasePrereleaseChannel")
