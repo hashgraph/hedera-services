@@ -82,7 +82,7 @@ fun include(name: String, path: String) {
 // The HAPI API version to use for Protobuf sources. This can be a tag or branch
 // name from the hedera-protobufs GIT repo.
 val hapiProtoVersion = "0.43.0-rc-SNAPSHOT"
-val hapiProtoCommit = "adf878895af821f17acf93ebc503d80cd5b09f9a";
+val hapiProtoCommit = "adf878895af821f17acf93ebc503d80cd5b09f9a"
 
 gitRepositories {
     checkoutsDirectory.set(File(rootDir, "hapi"))
