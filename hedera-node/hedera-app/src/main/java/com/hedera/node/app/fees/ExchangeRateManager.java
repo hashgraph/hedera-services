@@ -19,6 +19,7 @@ package com.hedera.node.app.fees;
 import static java.math.BigInteger.valueOf;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.ExchangeRate;
@@ -28,11 +29,13 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.util.FileUtilities;
 import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.RatesConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.math.BigInteger;
@@ -47,7 +50,7 @@ import javax.inject.Singleton;
  * <p>All fees in Hedera are based on the exchange rate between HBAR and USD. Fees are paid in HBAR, but based on the
  * current USD price of the HBAR. The "ERT", exchange rate tool, is responsible for tracking the exchange rate of
  * various exchanges, and updating the {@link ExchangeRateSet} on a periodic basis. Currently, this is in a special
- * file, but could be from any other source. The encoded {@link Bytes} are passed to the {@link #update(Bytes)} method.
+ * file, but could be from any other source. The encoded {@link Bytes} are passed to the {@link #updateViaTransaction(Bytes, AccountID)} method.
  * This <strong>MUST</strong> be done on the same thread that this manager is used by -- the manager is not threadsafe.
  *
  * <p>The {@link ExchangeRateSet} has two rates -- a "current" rate and the "next" rate. Each rate has an expiration
@@ -83,7 +86,8 @@ public final class ExchangeRateManager {
                 .get();
         if (midnightRates != ExchangeRateSet.DEFAULT) {
             // midnightRates were found in state, a regular update is sufficient
-            update(bytes);
+            //
+            systemUpdate(bytes);
         }
 
         // If midnightRates were not found in state, we initialize them from the file
@@ -100,9 +104,19 @@ public final class ExchangeRateManager {
     /**
      * Updates the exchange rate information. MUST BE CALLED on the handle thread!
      *
-     * @param bytes The protobuf encoded {@link ExchangeRateSet}.
+     * @param bytes   The protobuf encoded {@link ExchangeRateSet}.
+     * @param payerId   The payer of the transaction that triggered this update.
      */
-    public void update(@NonNull final Bytes bytes) {
+    public void updateViaTransaction(@NonNull final Bytes bytes, @NonNull AccountID payerId) {
+        requireNonNull(payerId, "payerId must not be null");
+        internalUpdate(bytes, payerId);
+    }
+
+    public void systemUpdate(@NonNull final Bytes bytes) {
+        internalUpdate(bytes, null);
+    }
+
+    private void internalUpdate(@NonNull final Bytes bytes, @Nullable AccountID payerId) {
         requireNonNull(bytes, "bytes must not be null");
 
         // Parse the exchange rate file. If we cannot parse it, we just continue with whatever our previous rate was.
@@ -112,6 +126,7 @@ public final class ExchangeRateManager {
         } catch (final IOException e) {
             throw new HandleException(ResponseCodeEnum.INVALID_EXCHANGE_RATE_FILE);
         }
+        System.out.println("proposed rates1 " + proposedRates);
 
         // Validate mandatory fields
         if (!(proposedRates.hasCurrentRate()
@@ -119,18 +134,33 @@ public final class ExchangeRateManager {
                 && proposedRates.hasNextRate())) {
             throw new HandleException(ResponseCodeEnum.INVALID_EXCHANGE_RATE_FILE);
         }
+        System.out.println("proposed rates2 " + proposedRates);
 
         // Check bounds
-        // TODO: This check needs to be skipped if payer is SysAdmin or Treasury
         final var ratesConfig = configProvider.getConfiguration().getConfigData(RatesConfig.class);
-        final var limitPercent = ratesConfig.intradayChangeLimitPercent();
-        if (!isNormalIntradayChange(midnightRates, proposedRates, limitPercent)) {
-            throw new HandleException(ResponseCodeEnum.EXCHANGE_RATE_CHANGE_LIMIT_EXCEEDED);
+        final var accountsConfig = configProvider.getConfiguration().getConfigData(AccountsConfig.class);
+        final var isSuperUser = isSuperUser(payerId, accountsConfig);
+
+        if (!isSuperUser) {
+            final var limitPercent = ratesConfig.intradayChangeLimitPercent();
+            if (!isNormalIntradayChange(midnightRates, proposedRates, limitPercent)) {
+                throw new HandleException(ResponseCodeEnum.EXCHANGE_RATE_CHANGE_LIMIT_EXCEEDED);
+            }
         }
 
         // Update the current ExchangeRateInfo and eventually the midnightRates
         this.currentExchangeRateInfo = new ExchangeRateInfoImpl(proposedRates);
-        // TODO: If payer is SysAdmin also update the midnightRates
+        // TODO: save the mignightRates in state only
+        if (isSuperUser) {
+            midnightRates = proposedRates;
+        }
+    }
+
+    private boolean isSuperUser(@NonNull final AccountID accountID, AccountsConfig accountsConfig) {
+        if (accountID == null) return true;
+        if (!accountID.hasAccountNum()) return false;
+        long num = accountID.accountNumOrThrow();
+        return num == accountsConfig.treasury() || num == accountsConfig.systemAdmin();
     }
 
     public void updateMidnightRates(@NonNull final HederaState state) {
