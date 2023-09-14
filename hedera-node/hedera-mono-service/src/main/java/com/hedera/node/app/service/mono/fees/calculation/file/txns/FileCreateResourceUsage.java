@@ -47,4 +47,9 @@ public class FileCreateResourceUsage implements TxnResourceUsageEstimator {
         final var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
         return fileOpsUsage.fileCreateUsage(txn, sigUsage);
     }
+
+    public FeeData usageGiven(final TransactionBody txn, final SigValueObj svo) {
+        final var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
+        return fileOpsUsage.fileCreateUsage(txn, sigUsage);
+    }
 }
