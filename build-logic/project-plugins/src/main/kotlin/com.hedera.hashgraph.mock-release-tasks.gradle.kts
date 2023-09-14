@@ -14,23 +14,18 @@
  * limitations under the License.
  */
 
-import com.hedera.hashgraph.gradlebuild.lifecycle.configureLifecycleTask
+import com.hedera.hashgraph.gradlebuild.lifecycle.registerLifecycleTask
 
-plugins {
-    id("com.hedera.hashgraph.root")
-    id("com.hedera.hashgraph.mock-release-tasks")
-}
+registerLifecycleTask("releaseDevelopSnapshot", "release")
 
-configureLifecycleTask("releaseMavenCentral")
+registerLifecycleTask("releaseDevelopDailySnapshot", "release")
 
-configureLifecycleTask("releaseMavenCentralSnapshot")
+registerLifecycleTask("releaseDevelopCommit", "release")
 
-configureLifecycleTask("releaseDevelopSnapshot")
+registerLifecycleTask("releaseAdhocCommit", "release")
 
-configureLifecycleTask("releaseDevelopDailySnapshot")
+registerLifecycleTask("releasePrereleaseChannel", "release")
 
-configureLifecycleTask("releaseDevelopCommit")
+registerLifecycleTask("releaseMavenCentral", "release")
 
-configureLifecycleTask("releaseAdhocCommit")
-
-configureLifecycleTask("releasePrereleaseChannel")
+registerLifecycleTask("releaseMavenCentralSnapshot", "release")
