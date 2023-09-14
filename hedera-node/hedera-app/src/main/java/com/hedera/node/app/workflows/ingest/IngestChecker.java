@@ -46,6 +46,7 @@ import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.HashSet;
@@ -125,11 +126,14 @@ public final class IngestChecker {
     /**
      * Runs all the ingest checks on a {@link Transaction}
      *
+     * @param state the {@link HederaState} to use
      * @param tx the {@link Transaction} to check
+     * @param configuration the {@link Configuration} to use
      * @return the {@link TransactionInfo} with the extracted information
      * @throws PreCheckException if a check fails
      */
-    public TransactionInfo runAllChecks(@NonNull final HederaState state, @NonNull final Transaction tx)
+    public TransactionInfo runAllChecks(
+            @NonNull final HederaState state, @NonNull final Transaction tx, @NonNull final Configuration configuration)
             throws PreCheckException {
         // During ingest we approximate consensus time with wall clock time
         final var consensusTime = Instant.now();
@@ -177,7 +181,7 @@ public final class IngestChecker {
 
         // 6. Check account balance
         final FeeContext feeContext =
-                new FeeContextImpl(consensusTime, txInfo, payerKey, feeManager, storeFactory, null);
+                new FeeContextImpl(consensusTime, txInfo, payerKey, feeManager, storeFactory, configuration);
         final var fees = dispatcher.dispatchComputeFees(feeContext);
         solvencyPreCheck.checkSolvency(txInfo, payer, fees.totalWithoutServiceFee());
 

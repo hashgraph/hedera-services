@@ -174,9 +174,10 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             TransactionBody txBody = null;
             if (paymentRequired) {
                 allegedPayment = queryHeader.paymentOrThrow();
+                final var configuration = configProvider.getConfiguration();
 
                 // 4.i Ingest checks
-                final var transactionInfo = ingestChecker.runAllChecks(state, allegedPayment);
+                final var transactionInfo = ingestChecker.runAllChecks(state, allegedPayment, configuration);
                 txBody = transactionInfo.txBody();
 
                 // get payer
@@ -185,7 +186,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                         state,
                         storeFactory,
                         query,
-                        configProvider.getConfiguration(),
+                        configuration,
                         recordCache,
                         exchangeRateManager,
                         payerID);
