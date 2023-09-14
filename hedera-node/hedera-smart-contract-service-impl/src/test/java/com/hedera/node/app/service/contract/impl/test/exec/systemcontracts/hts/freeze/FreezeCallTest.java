@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.freeze;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_ACCOUNT_ID;
@@ -24,6 +26,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_101
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN_HEADLONG_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.asBytesResult;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.asHeadlongAddress;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmAddress;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -31,6 +34,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.TupleType;
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
@@ -104,6 +108,58 @@ class FreezeCallTest extends HtsCallTestBase {
         assertEquals(State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
                 asBytesResult(INT64_ENCODER.encodeElements((long) TOKEN_NOT_ASSOCIATED_TO_ACCOUNT.protoOrdinal())),
+                result.getOutput());
+    }
+
+    @Test
+    void failsWithInvalidAccount() {
+        final var INVALID_ACCOUNT = AccountID.newBuilder().accountNum(888888L).build();
+        subject = new FreezeCall(
+                mockEnhancement(),
+                addressIdConverter,
+                verificationStrategy,
+                INVALID_ACCOUNT,
+                FUNGIBLE_TOKEN_HEADLONG_ADDRESS,
+                OWNER);
+
+        given(systemContractOperations.dispatch(
+                any(TransactionBody.class),
+                eq(verificationStrategy),
+                eq(INVALID_ACCOUNT),
+                eq(SingleTransactionRecordBuilder.class)))
+                .willReturn(recordBuilder);
+        given(recordBuilder.status()).willReturn(INVALID_ACCOUNT_ID);
+
+        final var result = subject.execute().fullResult().result();
+        assertEquals(State.COMPLETED_SUCCESS, result.getState());
+        assertEquals(
+                asBytesResult(INT64_ENCODER.encodeElements((long) INVALID_ACCOUNT_ID.protoOrdinal())),
+                result.getOutput());
+    }
+
+    @Test
+    void failsWithInvalidToken() {
+        final var INVALID_TOKEN = asHeadlongAddress(asEvmAddress(8888L));
+        subject = new FreezeCall(
+                mockEnhancement(),
+                addressIdConverter,
+                verificationStrategy,
+                A_NEW_ACCOUNT_ID,
+                INVALID_TOKEN,
+                OWNER);
+
+        given(systemContractOperations.dispatch(
+                any(TransactionBody.class),
+                eq(verificationStrategy),
+                eq(A_NEW_ACCOUNT_ID),
+                eq(SingleTransactionRecordBuilder.class)))
+                .willReturn(recordBuilder);
+        given(recordBuilder.status()).willReturn(INVALID_TOKEN_ID);
+
+        final var result = subject.execute().fullResult().result();
+        assertEquals(State.COMPLETED_SUCCESS, result.getState());
+        assertEquals(
+                asBytesResult(INT64_ENCODER.encodeElements((long) INVALID_TOKEN_ID.protoOrdinal())),
                 result.getOutput());
     }
 }
