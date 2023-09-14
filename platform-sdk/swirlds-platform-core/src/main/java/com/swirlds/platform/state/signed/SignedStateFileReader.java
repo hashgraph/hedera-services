@@ -182,7 +182,8 @@ public final class SignedStateFileReader {
                     return new SignedState(
                             platformContext,
                             in.readMerkleTree(stateFile.getParent(), MAX_MERKLE_NODES_IN_STATE),
-                            "SignedStateFileReader.readSignedStateOnly()");
+                            "SignedStateFileReader.readSignedStateOnly()",
+                            false);
                 });
     }
 

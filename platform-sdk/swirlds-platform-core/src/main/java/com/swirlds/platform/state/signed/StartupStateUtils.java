@@ -448,21 +448,6 @@ public final class StartupStateUtils {
                     STARTUP.getMarker(),
                     "Loaded state is not in the correct hash epoch, "
                             + "this node will need to receive a state through an emergency reconnect.");
-
-            // Due to a bug in the way we handle events in state, we need to clear this state's events.
-            // This doesn't cause problems since we are just using this state to make reconnect faster.
-            logger.warn(STARTUP.getMarker(), "Removing events from state. This will alter the state's hash.");
-            final State stateNode = state.get().getState();
-            final PlatformState platformState = stateNode.getPlatformState();
-            final PlatformData platformData = platformState.getPlatformData();
-            platformData.setEvents(new EventImpl[0]);
-
-            // Fix the state's hash
-            platformData.invalidateHash();
-            platformState.invalidateHash();
-            stateNode.invalidateHash();
-            MerkleCryptoFactory.getInstance().digestTreeSync(stateNode);
-
             return state;
         }
     }

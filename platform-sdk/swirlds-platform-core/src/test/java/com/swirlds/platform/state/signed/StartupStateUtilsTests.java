@@ -134,29 +134,9 @@ class StartupStateUtilsTests {
             final boolean corrupted)
             throws IOException {
 
-        final EventImpl[] events = new EventImpl[random.nextInt(1, 10)];
-        for (int i = 0; i < events.length; i++) {
-            final BaseEventHashedData hashedData = new BaseEventHashedData(
-                    new BasicSoftwareVersion(1),
-                    new NodeId(random.nextInt(1, 10)),
-                    random.nextInt(1, 1000),
-                    random.nextInt(1, 1000),
-                    randomHash(random),
-                    randomHash(random),
-                    randomInstant(random),
-                    new ConsensusTransactionImpl[0]);
-            final BaseEventUnhashedData unhashedData =
-                    new BaseEventUnhashedData(new NodeId(random.nextInt(1, 10)), new byte[0]);
-            final EventImpl event = new EventImpl(hashedData, unhashedData);
-            platformContext.getCryptography().digestSync(hashedData);
-            platformContext.getCryptography().digestSync(event);
-            events[i] = event;
-        }
-
         final SignedState signedState = new RandomSignedStateGenerator(random)
                 .setRound(round)
                 .setEpoch(epoch)
-                .setEvents(events)
                 .build();
 
         final Path savedStateDirectory = getSignedStateDirectory(mainClassName, selfId, swirldName, round);
