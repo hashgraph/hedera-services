@@ -39,6 +39,7 @@ import org.apache.tuweni.units.bigints.UInt256;
 /** Representation of a 256bit unsigned int, stored internally as a big-endian byte array. */
 @SuppressWarnings({"PointlessBitwiseExpression", "unused"})
 public class IterableContractValue implements VirtualValue {
+
     public static final int ITERABLE_VERSION = 2;
 
     public static final int NON_ITERABLE_SERIALIZED_SIZE = 32;
@@ -392,8 +393,8 @@ public class IterableContractValue implements VirtualValue {
         serializePossiblyMissingKeyToBuffer(nextUint256Key, nextUint256KeyNonZeroBytes, out);
     }
 
-    @Override
-    public void serialize(final ByteBuffer out) throws IOException {
+    @Deprecated
+    void serialize(final ByteBuffer out) {
         out.put(uint256Value);
         serializePossiblyMissingKeyToBuffer(prevUint256Key, prevUint256KeyNonZeroBytes, out);
         serializePossiblyMissingKeyToBuffer(nextUint256Key, nextUint256KeyNonZeroBytes, out);
@@ -417,8 +418,8 @@ public class IterableContractValue implements VirtualValue {
         deserializeKeys(in, ReadableSequentialData::readByte);
     }
 
-    @Override
-    public void deserialize(final ByteBuffer buffer, final int version) throws IOException {
+    @Deprecated
+    void deserialize(final ByteBuffer buffer, final int version) {
         if (isImmutable) {
             throw new IllegalStateException(IMMUTABLE_CONTRACT_VALUE_MANIPULATION_ERROR);
         }

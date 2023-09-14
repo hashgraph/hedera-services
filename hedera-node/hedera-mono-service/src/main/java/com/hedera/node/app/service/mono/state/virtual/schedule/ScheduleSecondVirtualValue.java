@@ -19,8 +19,8 @@ package com.hedera.node.app.service.mono.state.virtual.schedule;
 import com.google.common.base.MoreObjects;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.state.virtual.temporal.SecondSinceEpocVirtualKey;
-import com.hedera.node.app.service.mono.state.virtual.utils.CheckedConsumerE;
-import com.hedera.node.app.service.mono.state.virtual.utils.CheckedSupplierE;
+import com.hedera.node.app.service.mono.state.virtual.utils.ThrowingConsumer;
+import com.hedera.node.app.service.mono.state.virtual.utils.ThrowingSupplier;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -121,7 +121,7 @@ public class ScheduleSecondVirtualValue extends PartialMerkleLeaf
     }
 
     private <E extends Exception> void serializeTo(
-            final CheckedConsumerE<Integer, E> writeIntFn, final CheckedConsumerE<Long, E> writeLongFn) throws E {
+            final ThrowingConsumer<Integer, E> writeIntFn, final ThrowingConsumer<Long, E> writeLongFn) throws E {
         writeIntFn.accept(ids.size());
         for (var e : ids.entrySet()) {
             writeIntFn.accept(e.getValue().size());
@@ -143,13 +143,13 @@ public class ScheduleSecondVirtualValue extends PartialMerkleLeaf
         serializeTo(out::writeInt, out::writeLong);
     }
 
-    @Override
-    public void serialize(ByteBuffer buffer) throws IOException {
+    @Deprecated
+    void serialize(ByteBuffer buffer) {
         serializeTo(buffer::putInt, buffer::putLong);
     }
 
     private <E extends Exception> void deserializeFrom(
-            final CheckedSupplierE<Integer, E> readIntFn, final CheckedSupplierE<Long, E> readLongFn) throws E {
+            final ThrowingSupplier<Integer, E> readIntFn, final ThrowingSupplier<Long, E> readLongFn) throws E {
         int s = readIntFn.get();
         ids.clear();
         for (int x = 0; x < s; ++x) {
@@ -174,8 +174,8 @@ public class ScheduleSecondVirtualValue extends PartialMerkleLeaf
         deserializeFrom(in::readInt, in::readLong);
     }
 
-    @Override
-    public void deserialize(ByteBuffer buffer, int version) throws IOException {
+    @Deprecated
+    void deserialize(ByteBuffer buffer, int version) {
         deserializeFrom(buffer::getInt, buffer::getLong);
     }
 

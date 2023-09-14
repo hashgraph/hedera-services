@@ -81,25 +81,6 @@ public final class TestValue implements VirtualValue {
     }
 
     @Override
-    public void serialize(ByteBuffer buffer) throws IOException {
-        final byte[] data = CommonUtils.getNormalisedStringBytes(this.s);
-        buffer.putInt(data.length);
-        buffer.put(data);
-    }
-
-    @Override
-    public void deserialize(ByteBuffer buffer, int version) throws IOException {
-        final int length = buffer.getInt();
-        if (length > 1024) {
-            throw new IOException("Bad data from buffer for string length. Value: " + length);
-        }
-
-        final byte[] data = new byte[length];
-        buffer.get(data, 0, length);
-        this.s = CommonUtils.getNormalisedStringFromBytes(data);
-    }
-
-    @Override
     public TestValue copy() {
         return new TestValue(s);
     }

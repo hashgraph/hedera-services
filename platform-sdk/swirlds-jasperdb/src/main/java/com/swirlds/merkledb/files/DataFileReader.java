@@ -111,6 +111,9 @@ public interface DataFileReader<D> extends AutoCloseable, Comparable<DataFileRea
      */
     boolean isOpen();
 
+    /**
+     * Close this data file, it can not be used once closed.
+     */
     @Override
     void close() throws IOException; // Override to throw IOException rather than generic Exception
 }

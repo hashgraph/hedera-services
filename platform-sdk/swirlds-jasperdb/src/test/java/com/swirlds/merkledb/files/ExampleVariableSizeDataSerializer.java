@@ -60,13 +60,11 @@ public class ExampleVariableSizeDataSerializer implements DataItemSerializer<lon
     }
 
     @Override
-    @Deprecated(forRemoval = true)
     public int getHeaderSize() {
         return Long.BYTES * 2;
     }
 
     @Override
-    @Deprecated(forRemoval = true)
     public DataItemHeader deserializeHeader(ByteBuffer buffer) {
         return new DataItemHeader((int) buffer.getLong(), buffer.getLong());
     }
@@ -81,7 +79,6 @@ public class ExampleVariableSizeDataSerializer implements DataItemSerializer<lon
     }
 
     @Override
-    @Deprecated(forRemoval = true)
     public void serialize(long[] data, ByteBuffer buffer) throws IOException {
         int dataSizeBytes = Long.BYTES + (Long.BYTES * data.length); // Size + data
         buffer.putLong(dataSizeBytes);
@@ -103,7 +100,6 @@ public class ExampleVariableSizeDataSerializer implements DataItemSerializer<lon
     }
 
     @Override
-    @Deprecated(forRemoval = true)
     public long[] deserialize(ByteBuffer buffer, long dataVersion) throws IOException {
         int dataSize = (int) buffer.getLong(); // int stored as long
         int repeats = (dataSize - Long.BYTES) / Long.BYTES;

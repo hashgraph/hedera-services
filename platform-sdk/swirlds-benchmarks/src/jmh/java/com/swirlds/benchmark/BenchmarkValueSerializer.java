@@ -65,8 +65,8 @@ public class BenchmarkValueSerializer implements ValueSerializer<BenchmarkValue>
     }
 
     @Override
-    @Deprecated(forRemoval = true)
-    public void serialize(BenchmarkValue data, ByteBuffer buffer) throws IOException {
+    @Deprecated
+    public void serialize(BenchmarkValue data, ByteBuffer buffer) {
         data.serialize(buffer);
     }
 
@@ -78,8 +78,8 @@ public class BenchmarkValueSerializer implements ValueSerializer<BenchmarkValue>
     }
 
     @Override
-    @Deprecated(forRemoval = true)
-    public BenchmarkValue deserialize(ByteBuffer buffer, long dataVersion) throws IOException {
+    @Deprecated
+    public BenchmarkValue deserialize(ByteBuffer buffer, long dataVersion) {
         final BenchmarkValue value = new BenchmarkValue();
         value.deserialize(buffer, (int) dataVersion);
         return value;

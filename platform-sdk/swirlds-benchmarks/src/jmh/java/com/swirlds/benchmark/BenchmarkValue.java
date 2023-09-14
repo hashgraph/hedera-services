@@ -90,8 +90,8 @@ public class BenchmarkValue implements VirtualValue {
         out.writeBytes(valueBytes);
     }
 
-    @Override
-    public void serialize(ByteBuffer buffer) throws IOException {
+    @Deprecated
+    void serialize(ByteBuffer buffer) {
         buffer.putInt(valueBytes.length);
         buffer.put(valueBytes);
     }
@@ -112,8 +112,8 @@ public class BenchmarkValue implements VirtualValue {
         }
     }
 
-    @Override
-    public void deserialize(ByteBuffer buffer, int dataVersion) throws IOException {
+    @Deprecated
+    void deserialize(ByteBuffer buffer, int dataVersion) {
         assert dataVersion == getVersion() : "dataVersion=" + dataVersion + " != getVersion()=" + getVersion();
         int n = buffer.getInt();
         valueBytes = new byte[n];

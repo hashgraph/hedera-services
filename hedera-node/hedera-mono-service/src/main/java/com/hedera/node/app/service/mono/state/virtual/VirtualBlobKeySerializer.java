@@ -69,6 +69,7 @@ public class VirtualBlobKeySerializer implements KeySerializer<VirtualBlobKey> {
     }
 
     @Override
+    @Deprecated
     public void serialize(final VirtualBlobKey key, final ByteBuffer buffer) throws IOException {
         Objects.requireNonNull(key);
         Objects.requireNonNull(buffer);
@@ -84,6 +85,7 @@ public class VirtualBlobKeySerializer implements KeySerializer<VirtualBlobKey> {
     }
 
     @Override
+    @Deprecated
     public VirtualBlobKey deserialize(final ByteBuffer buffer, final long version) throws IOException {
         Objects.requireNonNull(buffer);
         final var key = new VirtualBlobKey();
@@ -99,6 +101,7 @@ public class VirtualBlobKeySerializer implements KeySerializer<VirtualBlobKey> {
     }
 
     @Override
+    @Deprecated
     public boolean equals(final ByteBuffer buffer, final int version, final VirtualBlobKey key) throws IOException {
         Objects.requireNonNull(buffer);
         return key.equalsTo(buffer, version);

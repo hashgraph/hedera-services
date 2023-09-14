@@ -198,15 +198,15 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends Virtual
         // read fields, they may be missing or in any order
         while (in.hasRemaining()) {
             final int tag = in.readVarInt(false);
-            final int number = tag >> TAG_FIELD_OFFSET;
-            if (number == FIELD_LEAFRECORD_PATH.number()) {
+            final int fieldNum = tag >> TAG_FIELD_OFFSET;
+            if (fieldNum == FIELD_LEAFRECORD_PATH.number()) {
                 path = readPath(in);
-            } else if (number == FIELD_LEAFRECORD_KEY.number()) {
+            } else if (fieldNum == FIELD_LEAFRECORD_KEY.number()) {
                 key = readKey(in);
-            } else if (number == FIELD_LEAFRECORD_VALUE.number()) {
+            } else if (fieldNum == FIELD_LEAFRECORD_VALUE.number()) {
                 value = readValue(in);
             } else {
-                throw new IllegalArgumentException("Unknown virtual leaf record field: " + number);
+                throw new IllegalArgumentException("Unknown virtual leaf record field: " + fieldNum);
             }
         }
 

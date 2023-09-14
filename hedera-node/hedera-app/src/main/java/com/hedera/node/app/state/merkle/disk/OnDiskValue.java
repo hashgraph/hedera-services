@@ -27,7 +27,6 @@ import com.swirlds.virtualmap.VirtualValue;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Objects;
 
 /**
@@ -41,8 +40,11 @@ import java.util.Objects;
  * @param <V> The type of the value (business object) held in this merkel data structure
  */
 public class OnDiskValue<V> implements VirtualValue {
+
     @Deprecated(forRemoval = true)
     private static final long CLASS_ID = 0x8837746626372L;
+
+    static final int VERSION = 1;
 
     private final Codec<V> codec;
     private final StateMetadata<?, V> md;
@@ -97,20 +99,10 @@ public class OnDiskValue<V> implements VirtualValue {
         writeToStream(out, codec, value);
     }
 
-    @Override
-    public void serialize(@NonNull final ByteBuffer byteBuffer) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
     /** {@inheritDoc} */
     @Override
     public void deserialize(@NonNull final SerializableDataInputStream in, int ignored) throws IOException {
         value = readFromStream(in, codec);
-    }
-
-    @Override
-    public void deserialize(@NonNull final ByteBuffer byteBuffer, int ignored) throws IOException {
-        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */

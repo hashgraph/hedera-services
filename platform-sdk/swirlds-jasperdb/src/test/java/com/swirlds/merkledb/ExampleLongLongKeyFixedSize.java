@@ -58,18 +58,6 @@ public class ExampleLongLongKeyFixedSize implements VirtualLongKey, FastCopyable
         return hash32(value1, value2);
     }
 
-    @Override
-    public void serialize(final ByteBuffer byteBuffer) {
-        byteBuffer.putLong(value1);
-        byteBuffer.putLong(value2);
-    }
-
-    @Override
-    public void deserialize(final ByteBuffer byteBuffer) {
-        this.value1 = byteBuffer.getLong();
-        this.value2 = byteBuffer.getLong();
-    }
-
     @SuppressWarnings("unchecked")
     public ExampleLongLongKeyFixedSize copy() {
         return new ExampleLongLongKeyFixedSize(this.value1, this.value2);
@@ -168,7 +156,6 @@ public class ExampleLongLongKeyFixedSize implements VirtualLongKey, FastCopyable
          * @return Deserialized data item
          */
         @Override
-        @Deprecated(forRemoval = true)
         public ExampleLongLongKeyFixedSize deserialize(final ByteBuffer buffer, final long dataVersion) {
             final long value1 = buffer.getLong();
             final long value2 = buffer.getLong();
@@ -188,10 +175,8 @@ public class ExampleLongLongKeyFixedSize implements VirtualLongKey, FastCopyable
          *
          * @param data The data item to serialize
          * @param buffer Byte buffer to write to
-         * @return Number of bytes written
          */
         @Override
-        @Deprecated(forRemoval = true)
         public void serialize(final ExampleLongLongKeyFixedSize data, final ByteBuffer buffer) throws IOException {
             buffer.putLong(data.getValue1());
             buffer.putLong(data.getValue2());
@@ -223,7 +208,6 @@ public class ExampleLongLongKeyFixedSize implements VirtualLongKey, FastCopyable
         }
 
         @Override
-        @Deprecated(forRemoval = true)
         public boolean equals(ByteBuffer buffer, int dataVersion, ExampleLongLongKeyFixedSize keyToCompare)
                 throws IOException {
             final long readValue1 = buffer.getLong();

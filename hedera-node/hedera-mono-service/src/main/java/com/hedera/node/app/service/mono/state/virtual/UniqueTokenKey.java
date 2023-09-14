@@ -28,6 +28,7 @@ import java.nio.ByteBuffer;
 
 /** Represents a key for a unique token (NFT). */
 public class UniqueTokenKey implements VirtualKey {
+
     private static final long CLASS_ID = 0x17f77b311f6L;
 
     /** Current version of the encoding scheme. */
@@ -155,8 +156,8 @@ public class UniqueTokenKey implements VirtualKey {
         serializeTo(outputStream::write);
     }
 
-    @Override
-    public void serialize(final ByteBuffer byteBuffer) throws IOException {
+    @Deprecated
+    void serialize(final ByteBuffer byteBuffer) {
         serializeTo(byteBuffer::put);
     }
 
@@ -187,8 +188,8 @@ public class UniqueTokenKey implements VirtualKey {
         deserializeFrom(inputStream::readByte);
     }
 
-    @Override
-    public void deserialize(final ByteBuffer byteBuffer) throws IOException {
+    @Deprecated
+    void deserialize(final ByteBuffer byteBuffer) {
         deserializeFrom(byteBuffer::get);
     }
 

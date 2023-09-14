@@ -61,12 +61,6 @@ public class BenchmarkRecord extends BenchmarkValue {
     }
 
     @Override
-    public void serialize(ByteBuffer buffer) throws IOException {
-        buffer.putLong(path);
-        super.serialize(buffer);
-    }
-
-    @Override
     public void serialize(SerializableDataOutputStream outputStream) throws IOException {
         outputStream.writeLong(path);
         super.serialize(outputStream);
@@ -75,13 +69,6 @@ public class BenchmarkRecord extends BenchmarkValue {
     public void serialize(final WritableSequentialData out) {
         out.writeLong(path);
         super.serialize(out);
-    }
-
-    @Override
-    public void deserialize(ByteBuffer buffer, int dataVersion) throws IOException {
-        assert dataVersion == getVersion() : "dataVersion=" + dataVersion + " != getVersion()=" + getVersion();
-        path = buffer.getLong();
-        super.deserialize(buffer, dataVersion);
     }
 
     public void deserialize(final ReadableSequentialData in) {

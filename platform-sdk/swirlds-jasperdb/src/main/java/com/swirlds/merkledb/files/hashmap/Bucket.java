@@ -251,10 +251,10 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
         int entriesCount = 0;
         while (in.hasRemaining()) {
             final int tag = in.readVarInt(false);
-            final int number = tag >> TAG_FIELD_OFFSET;
-            if (number == FIELD_BUCKET_INDEX.number()) {
+            final int fieldNum = tag >> TAG_FIELD_OFFSET;
+            if (fieldNum == FIELD_BUCKET_INDEX.number()) {
                 bucketIndex.set(in.readVarInt(false));
-            } else if (number == FIELD_BUCKET_ENTRIES.number()) {
+            } else if (fieldNum == FIELD_BUCKET_ENTRIES.number()) {
                 final int entryBytesSize = in.readVarInt(false);
                 final long oldLimit = in.limit();
                 in.limit(in.position() + entryBytesSize);
@@ -262,7 +262,7 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
                 in.limit(oldLimit);
                 entriesCount++;
             } else {
-                throw new IllegalArgumentException("Unknown bucket field: " + number);
+                throw new IllegalArgumentException("Unknown bucket field: " + fieldNum);
             }
         }
 
@@ -378,17 +378,17 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
             // read fields
             while (entryData.hasRemaining()) {
                 final int tag = entryData.readVarInt(false);
-                final int number = tag >> TAG_FIELD_OFFSET;
-                if (number == FIELD_BUCKETENTRY_HASHCODE.number()) {
+                final int fieldNum = tag >> TAG_FIELD_OFFSET;
+                if (fieldNum == FIELD_BUCKETENTRY_HASHCODE.number()) {
                     hashCode = entryData.readVarInt(false);
-                } else if (number == FIELD_BUCKETENTRY_VALUE.number()) {
+                } else if (fieldNum == FIELD_BUCKETENTRY_VALUE.number()) {
                     value = entryData.readVarLong(false);
-                } else if (number == FIELD_BUCKETENTRY_KEYBYTES.number()) {
+                } else if (fieldNum == FIELD_BUCKETENTRY_KEYBYTES.number()) {
                     final int bytesSize = entryData.readVarInt(false);
                     keyBytes = BufferedData.allocate(bytesSize);
                     entryData.readBytes(keyBytes);
                 } else {
-                    throw new IllegalArgumentException("Unknown bucket entry field: " + number);
+                    throw new IllegalArgumentException("Unknown bucket entry field: " + fieldNum);
                 }
             }
 

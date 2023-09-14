@@ -26,6 +26,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 public class VirtualBlobValue implements VirtualValue {
+
     public static final int CURRENT_VERSION = 1;
     static final long CLASS_ID = 0x7eb72381159d8402L;
 
@@ -80,8 +81,8 @@ public class VirtualBlobValue implements VirtualValue {
         out.writeBytes(data);
     }
 
-    @Override
-    public void serialize(ByteBuffer buffer) throws IOException {
+    @Deprecated
+    void serialize(ByteBuffer buffer) {
         buffer.putInt(data.length);
         buffer.put(data);
     }
@@ -97,8 +98,8 @@ public class VirtualBlobValue implements VirtualValue {
         in.readBytes(data);
     }
 
-    @Override
-    public void deserialize(ByteBuffer buffer, int version) throws IOException {
+    @Deprecated
+    void deserialize(ByteBuffer buffer, int version) {
         final var n = buffer.getInt();
         data = new byte[n];
         buffer.get(data);

@@ -77,14 +77,12 @@ public final class ExampleFixedSizeVirtualValue extends ExampleByteArrayVirtualV
         outputStream.write(data);
     }
 
-    @Override
-    public void serialize(final ByteBuffer buffer) {
+    void serialize(final ByteBuffer buffer) {
         buffer.putInt(id);
         buffer.put(data);
     }
 
-    @Override
-    public void deserialize(final ByteBuffer buffer, final int dataVersion) {
+    void deserialize(final ByteBuffer buffer, final int dataVersion) {
         assert dataVersion == getVersion() : "dataVersion=" + dataVersion + " != getVersion()=" + getVersion();
         id = buffer.getInt();
         data = new byte[RANDOM_BYTES];

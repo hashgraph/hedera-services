@@ -54,7 +54,6 @@ public class TestKeySerializer implements KeySerializer<TestKey> {
     }
 
     @Override
-    @Deprecated(forRemoval = true)
     public void serialize(TestKey data, ByteBuffer buffer) {
         data.serialize(buffer);
     }
@@ -67,7 +66,6 @@ public class TestKeySerializer implements KeySerializer<TestKey> {
     }
 
     @Override
-    @Deprecated(forRemoval = true)
     public TestKey deserialize(final ByteBuffer buffer, final long dataVersion) {
         final TestKey key = new TestKey();
         key.deserialize(buffer);
@@ -80,7 +78,6 @@ public class TestKeySerializer implements KeySerializer<TestKey> {
     }
 
     @Override
-    @Deprecated(forRemoval = true)
     public boolean equals(final ByteBuffer buffer, final int dataVersion, final TestKey keyToCompare) {
         return buffer.getLong() == keyToCompare.getKeyAsLong();
     }

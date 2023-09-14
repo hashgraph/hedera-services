@@ -119,28 +119,28 @@ public class DataFileMetadata {
             final ReadableSequentialData in = new ReadableStreamingData(fin);
             while (in.hasRemaining() && !fieldsToRead.isEmpty()) {
                 final int tag = in.readVarInt(false);
-                final int number = tag >> TAG_FIELD_OFFSET;
-                if (number == FIELD_DATAFILE_INDEX.number()) {
+                final int fieldNum = tag >> TAG_FIELD_OFFSET;
+                if (fieldNum == FIELD_DATAFILE_INDEX.number()) {
                     index = in.readVarInt(false);
                     fieldsToRead.remove("index");
-                } else if (number == FIELD_DATAFILE_CREATION_SECONDS.number()) {
+                } else if (fieldNum == FIELD_DATAFILE_CREATION_SECONDS.number()) {
                     creationSeconds = in.readVarLong(false);
                     fieldsToRead.remove("creationSeconds");
-                } else if (number == FIELD_DATAFILE_CREATION_NANOS.number()) {
+                } else if (fieldNum == FIELD_DATAFILE_CREATION_NANOS.number()) {
                     creationNanos = in.readVarInt(false);
                     fieldsToRead.remove("creationNanos");
-                } else if (number == FIELD_DATAFILE_ITEMS_COUNT.number()) {
+                } else if (fieldNum == FIELD_DATAFILE_ITEMS_COUNT.number()) {
                     itemsCount = in.readLong(ByteOrder.LITTLE_ENDIAN);
                     fieldsToRead.remove("itemsCount");
-                } else if (number == FIELD_DATAFILE_ITEM_VERSION.number()) {
+                } else if (fieldNum == FIELD_DATAFILE_ITEM_VERSION.number()) {
                     serializationVersion = in.readVarLong(false);
                     fieldsToRead.remove("serializationVersion");
-                } else if (number == FIELD_DATAFILE_ITEMS.number()) {
+                } else if (fieldNum == FIELD_DATAFILE_ITEMS.number()) {
                     // Just skip it
                     final int size = in.readVarInt(false);
                     in.skip(size);
                 } else {
-                    throw new IllegalArgumentException("Unknown data file field: " + number);
+                    throw new IllegalArgumentException("Unknown data file field: " + fieldNum);
                 }
             }
         }

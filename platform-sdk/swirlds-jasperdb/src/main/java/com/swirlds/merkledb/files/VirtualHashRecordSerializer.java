@@ -158,13 +158,13 @@ public final class VirtualHashRecordSerializer implements DataItemSerializer<Vir
         // read fields, they may be in any order or even missing at all
         while (in.hasRemaining()) {
             final int tag = in.readVarInt(false);
-            final int number = tag >> TAG_FIELD_OFFSET;
-            if (number == FIELD_HASHRECORD_PATH.number()) {
+            final int fieldNum = tag >> TAG_FIELD_OFFSET;
+            if (fieldNum == FIELD_HASHRECORD_PATH.number()) {
                 path = readPath(in);
-            } else if (number == FIELD_HASHRECORD_HASH.number()) {
+            } else if (fieldNum == FIELD_HASHRECORD_HASH.number()) {
                 hash = readHash(in);
             } else {
-                throw new IllegalArgumentException("Unknown virtual hash record field: " + number);
+                throw new IllegalArgumentException("Unknown virtual hash record field: " + fieldNum);
             }
         }
 

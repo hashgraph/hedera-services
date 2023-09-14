@@ -60,9 +60,7 @@ public final class TestKey implements VirtualLongKey {
         out.writeLong(k);
     }
 
-    @Override
-    @Deprecated(forRemoval = true)
-    public void serialize(final ByteBuffer buffer) {
+    void serialize(final ByteBuffer buffer) {
         buffer.putLong(k);
     }
 
@@ -70,9 +68,7 @@ public final class TestKey implements VirtualLongKey {
         k = in.readLong();
     }
 
-    @Override
-    @Deprecated(forRemoval = true)
-    public void deserialize(final ByteBuffer buffer) {
+    void deserialize(final ByteBuffer buffer) {
         k = buffer.getLong();
     }
 

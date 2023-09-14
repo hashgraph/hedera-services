@@ -69,7 +69,8 @@ public class AccountVirtualMapValueSerializer implements ValueSerializer<Account
     }
 
     @Override
-    public AccountVirtualMapValue deserialize(ByteBuffer buffer, long dataVersion) throws IOException {
+    @Deprecated
+    public AccountVirtualMapValue deserialize(ByteBuffer buffer, long dataVersion) {
         final AccountVirtualMapValue value = new AccountVirtualMapValue();
         value.deserialize(buffer, (int) dataVersion);
         return value;

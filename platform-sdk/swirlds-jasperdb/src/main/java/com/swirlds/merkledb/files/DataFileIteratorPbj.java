@@ -150,24 +150,24 @@ public final class DataFileIteratorPbj<D> implements DataFileIterator<D> {
         while (in.hasRemaining()) {
             currentDataItemFilePosition = in.position();
             final int tag = in.readVarInt(false);
-            final int number = tag >> TAG_FIELD_OFFSET;
-            if (number == FIELD_DATAFILE_ITEMS.number()) {
+            final int fieldNum = tag >> TAG_FIELD_OFFSET;
+            if (fieldNum == FIELD_DATAFILE_ITEMS.number()) {
                 final int currentDataItemSize = in.readVarInt(false);
                 dataItemBuffer = fillBuffer(currentDataItemSize);
                 currentDataItem++;
                 return true;
-            } else if (number == FIELD_DATAFILE_INDEX.number()) {
+            } else if (fieldNum == FIELD_DATAFILE_INDEX.number()) {
                 in.readVarInt(false); // skip index
-            } else if (number == FIELD_DATAFILE_CREATION_SECONDS.number()) {
+            } else if (fieldNum == FIELD_DATAFILE_CREATION_SECONDS.number()) {
                 in.readVarLong(false); // skip creation seconds
-            } else if (number == FIELD_DATAFILE_CREATION_NANOS.number()) {
+            } else if (fieldNum == FIELD_DATAFILE_CREATION_NANOS.number()) {
                 in.readVarInt(false); // skip creation nanos
-            } else if (number == FIELD_DATAFILE_ITEMS_COUNT.number()) {
+            } else if (fieldNum == FIELD_DATAFILE_ITEMS_COUNT.number()) {
                 in.readLong(ByteOrder.LITTLE_ENDIAN); // skip items count
-            } else if (number == FIELD_DATAFILE_ITEM_VERSION.number()) {
+            } else if (fieldNum == FIELD_DATAFILE_ITEM_VERSION.number()) {
                 in.readVarLong(false); // skip item serialization version
             } else {
-                throw new IllegalArgumentException("Unknown data file field: " + number);
+                throw new IllegalArgumentException("Unknown data file field: " + fieldNum);
             }
         }
 

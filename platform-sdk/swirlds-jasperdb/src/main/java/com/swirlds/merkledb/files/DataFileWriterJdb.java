@@ -144,10 +144,7 @@ public final class DataFileWriterJdb<D> extends DataFileWriterPbj<D> {
             } catch (final BufferOverflowException t) {
                 // If still a buffer overflow, it means the mapped buffer is smaller than even a single
                 // data item
-                throw new IOException(
-                        "Data item is too large to write to a data file. Increase data file"
-                                + "mapped byte buffer size",
-                        e);
+                throw new IOException(DataFileCommon.ERROR_DATAITEM_TOO_LARGE, e);
             }
         }
         dataItemCount++;
@@ -179,10 +176,7 @@ public final class DataFileWriterJdb<D> extends DataFileWriterPbj<D> {
             } catch (final BufferOverflowException t) {
                 // If still a buffer overflow, it means the mapped buffer is smaller than even a single
                 // data item
-                throw new IOException(
-                        "Data item is too large to write to a data file. Increase data file"
-                                + "mapped byte buffer size",
-                        e);
+                throw new IOException(DataFileCommon.ERROR_DATAITEM_TOO_LARGE, e);
             }
         }
         // increment data item counter

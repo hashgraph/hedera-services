@@ -63,7 +63,8 @@ public final class SmartContractMapValueSerializer implements ValueSerializer<Sm
     }
 
     @Override
-    public void serialize(SmartContractMapValue value, ByteBuffer buffer) throws IOException {
+    @Deprecated
+    public void serialize(SmartContractMapValue value, ByteBuffer buffer) {
         value.serialize(buffer);
     }
 
@@ -75,7 +76,8 @@ public final class SmartContractMapValueSerializer implements ValueSerializer<Sm
     }
 
     @Override
-    public SmartContractMapValue deserialize(ByteBuffer buffer, long dataVersion) throws IOException {
+    @Deprecated
+    public SmartContractMapValue deserialize(ByteBuffer buffer, long dataVersion) {
         final SmartContractMapValue value = new SmartContractMapValue();
         value.deserialize(buffer, (int) dataVersion);
         return value;

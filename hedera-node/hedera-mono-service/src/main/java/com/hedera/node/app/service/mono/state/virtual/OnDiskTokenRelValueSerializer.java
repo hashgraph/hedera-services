@@ -74,7 +74,8 @@ public class OnDiskTokenRelValueSerializer implements ValueSerializer<OnDiskToke
     }
 
     @Override
-    public void serialize(final OnDiskTokenRel value, final ByteBuffer out) throws IOException {
+    @Deprecated
+    public void serialize(final OnDiskTokenRel value, final ByteBuffer out) {
         Objects.requireNonNull(value);
         Objects.requireNonNull(out);
         value.serialize(out);
@@ -91,7 +92,8 @@ public class OnDiskTokenRelValueSerializer implements ValueSerializer<OnDiskToke
     }
 
     @Override
-    public OnDiskTokenRel deserialize(final ByteBuffer buffer, final long version) throws IOException {
+    @Deprecated
+    public OnDiskTokenRel deserialize(final ByteBuffer buffer, final long version) {
         Objects.requireNonNull(buffer);
         final OnDiskTokenRel value = new OnDiskTokenRel();
         value.deserialize(buffer, (int) version);

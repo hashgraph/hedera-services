@@ -65,25 +65,17 @@ public class AccountVirtualMapValueSerializer implements ValueSerializer<Account
         return AccountVirtualMapValue.getSizeInBytes();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void serialize(final AccountVirtualMapValue value, final WritableSequentialData out) {
         value.serialize(out);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public void serialize(AccountVirtualMapValue value, ByteBuffer buffer) throws IOException {
+    @Deprecated
+    public void serialize(AccountVirtualMapValue value, ByteBuffer buffer) {
         value.serialize(buffer);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public AccountVirtualMapValue deserialize(final ReadableSequentialData in) {
         final AccountVirtualMapValue value = new AccountVirtualMapValue();
@@ -91,11 +83,9 @@ public class AccountVirtualMapValueSerializer implements ValueSerializer<Account
         return value;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public AccountVirtualMapValue deserialize(ByteBuffer buffer, long version) throws IOException {
+    @Deprecated
+    public AccountVirtualMapValue deserialize(ByteBuffer buffer, long version) {
         final AccountVirtualMapValue value = new AccountVirtualMapValue();
         value.deserialize(buffer, (int) version);
         return value;

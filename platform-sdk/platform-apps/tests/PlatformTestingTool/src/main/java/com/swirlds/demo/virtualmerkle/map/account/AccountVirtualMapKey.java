@@ -83,12 +83,8 @@ public class AccountVirtualMapKey implements VirtualKey {
         out.writeLong(accountID);
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @Deprecated(forRemoval = true)
-    public void serialize(final ByteBuffer buffer) throws IOException {
+    @Deprecated
+    void serialize(final ByteBuffer buffer) {
         buffer.putLong(realmID);
         buffer.putLong(shardId);
         buffer.putLong(accountID);
@@ -110,27 +106,19 @@ public class AccountVirtualMapKey implements VirtualKey {
         this.accountID = in.readLong();
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @Deprecated(forRemoval = true)
-    public void deserialize(final ByteBuffer buffer) throws IOException {
+    @Deprecated
+    void deserialize(final ByteBuffer buffer) {
         this.realmID = buffer.getLong();
         this.shardId = buffer.getLong();
         this.accountID = buffer.getLong();
-    }
-
-    public boolean equals(final ByteBuffer buffer, final int version) throws IOException {
-        return realmID == buffer.getLong() && shardId == buffer.getLong() && accountID == buffer.getLong();
     }
 
     public boolean equals(final BufferedData buffer) {
         return realmID == buffer.readLong() && shardId == buffer.readLong() && accountID == buffer.readLong();
     }
 
-    @Deprecated(forRemoval = true)
-    public boolean equals(final ByteBuffer buffer) throws IOException {
+    @Deprecated
+    boolean equals(final ByteBuffer buffer, final int version) {
         return realmID == buffer.getLong() && shardId == buffer.getLong() && accountID == buffer.getLong();
     }
 

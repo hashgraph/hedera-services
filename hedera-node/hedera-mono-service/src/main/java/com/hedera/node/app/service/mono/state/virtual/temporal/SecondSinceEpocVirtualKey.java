@@ -73,7 +73,6 @@ public final class SecondSinceEpocVirtualKey implements VirtualLongKey {
         return CURRENT_VERSION;
     }
 
-    /** {@inheritDoc} */
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
         out.writeLong(value);
@@ -83,13 +82,11 @@ public final class SecondSinceEpocVirtualKey implements VirtualLongKey {
         out.writeLong(value);
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public void serialize(final ByteBuffer buffer) throws IOException {
+    @Deprecated
+    void serialize(final ByteBuffer buffer) {
         buffer.putLong(value);
     }
 
-    /** {@inheritDoc} */
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         value = in.readLong();
@@ -99,9 +96,8 @@ public final class SecondSinceEpocVirtualKey implements VirtualLongKey {
         value = in.readLong();
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public void deserialize(final ByteBuffer buffer) throws IOException {
+    @Deprecated
+    void deserialize(final ByteBuffer buffer) {
         value = buffer.getLong();
     }
 
@@ -132,8 +128,8 @@ public final class SecondSinceEpocVirtualKey implements VirtualLongKey {
         return buffer.readLong() == this.value;
     }
 
-    @Deprecated(forRemoval = true)
-    boolean equalsTo(final ByteBuffer buffer, final int version) throws IOException {
+    @Deprecated
+    boolean equalsTo(final ByteBuffer buffer, final int version) {
         return buffer.getLong() == this.value;
     }
 

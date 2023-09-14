@@ -102,11 +102,8 @@ public class AccountVirtualMapValue implements VirtualValue {
         out.writeLong(uid);
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void serialize(final ByteBuffer buffer) throws IOException {
+    @Deprecated
+    void serialize(final ByteBuffer buffer) {
         buffer.putLong(balance);
         buffer.putLong(sendThreshold);
         buffer.putLong(receiveThreshold);
@@ -134,11 +131,8 @@ public class AccountVirtualMapValue implements VirtualValue {
         this.uid = in.readLong();
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void deserialize(final ByteBuffer buffer, final int version) throws IOException {
+    @Deprecated
+    void deserialize(final ByteBuffer buffer, final int version) {
         this.balance = buffer.getLong();
         this.sendThreshold = buffer.getLong();
         this.receiveThreshold = buffer.getLong();

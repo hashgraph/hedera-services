@@ -73,6 +73,7 @@ import com.hedera.test.utils.SerdeUtils;
 import com.swirlds.common.FastCopyable;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.merkledb.serialize.ValueSerializer;
 import com.swirlds.virtualmap.VirtualValue;
 import java.io.File;
 import java.io.IOException;
@@ -132,11 +133,12 @@ public class SerializedForms {
     public static <T extends VirtualValue> void assertSameBufferSerialization(
             final Class<T> type,
             final Function<SeededPropertySource, T> factory,
+            final ValueSerializer<T> valueSerializer,
             final int version,
             final int testCaseNo) {
         final var propertySource = SeededPropertySource.forSerdeTest(version, testCaseNo);
         final var example = factory.apply(propertySource);
-        final var actual = SerdeUtils.serializeToBuffer(example, MAX_SERIALIAZED_LEN);
+        final var actual = SerdeUtils.serializeToBuffer(example, valueSerializer, MAX_SERIALIAZED_LEN);
         final var expected = loadForm(type, version, testCaseNo);
         assertArrayEquals(expected, actual, "Regression in serializing test case #" + testCaseNo);
         assertSameCopySerialization(

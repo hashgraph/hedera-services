@@ -58,7 +58,6 @@ public class TestValueSerializer implements ValueSerializer<TestValue> {
     }
 
     @Override
-    @Deprecated(forRemoval = true)
     public void serialize(TestValue data, ByteBuffer buffer) {
         final String s = data.getValue();
         final byte[] bytes = CommonUtils.getNormalisedStringBytes(s);
@@ -76,7 +75,6 @@ public class TestValueSerializer implements ValueSerializer<TestValue> {
     }
 
     @Override
-    @Deprecated(forRemoval = true)
     public TestValue deserialize(ByteBuffer buffer, long dataVersion) {
         final int length = buffer.getInt();
         final byte[] bytes = new byte[length];

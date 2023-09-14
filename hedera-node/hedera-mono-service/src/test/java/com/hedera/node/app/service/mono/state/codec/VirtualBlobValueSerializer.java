@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.mono.state.virtual.schedule;
+package com.hedera.node.app.service.mono.state.codec;
 
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
@@ -22,18 +22,14 @@ import com.swirlds.merkledb.serialize.ValueSerializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Objects;
 
-public class ScheduleEqualityVirtualValueSerializer implements ValueSerializer<ScheduleEqualityVirtualValue> {
+public class VirtualBlobValueSerializer implements ValueSerializer<VirtualBlobValue> {
 
-    static final long CLASS_ID = 0x218235815b54ea30L;
+    static final long CLASS_ID = 0x7459da78c643abd7L;
 
     static final int CURRENT_VERSION = 1;
 
-    static final int DATA_VERSION = 1;
-
-    // guesstimate of the typical size of a serialized value
-    private static final int TYPICAL_SIZE = 32;
+    static final long DATA_VERSION = 1;
 
     // Serializer info
 
@@ -47,7 +43,7 @@ public class ScheduleEqualityVirtualValueSerializer implements ValueSerializer<S
         return CURRENT_VERSION;
     }
 
-    // Data version
+    // Value info
 
     @Override
     public long getCurrentDataVersion() {
@@ -62,44 +58,28 @@ public class ScheduleEqualityVirtualValueSerializer implements ValueSerializer<S
     }
 
     @Override
-    public int getTypicalSerializedSize() {
-        return TYPICAL_SIZE;
-    }
-
-    @Override
-    public int getSerializedSize(@NonNull ScheduleEqualityVirtualValue value) {
-        return value.serializedSizeInBytes();
-    }
-
-    @Override
-    public void serialize(
-            @NonNull final ScheduleEqualityVirtualValue value, @NonNull final WritableSequentialData out) {
-        Objects.requireNonNull(value);
-        Objects.requireNonNull(out);
+    public void serialize(@NonNull final VirtualBlobValue value, @NonNull final WritableSequentialData out) {
         value.serialize(out);
     }
 
     @Override
-    @Deprecated
-    public void serialize(final ScheduleEqualityVirtualValue value, final ByteBuffer buffer) {
+    public void serialize(final VirtualBlobValue value, final ByteBuffer buffer) {
         value.serialize(buffer);
     }
 
     // Value deserialization
 
     @Override
-    public ScheduleEqualityVirtualValue deserialize(@NonNull final ReadableSequentialData in) {
-        Objects.requireNonNull(in);
-        final var value = new ScheduleEqualityVirtualValue();
+    public VirtualBlobValue deserialize(@NonNull final ReadableSequentialData in) {
+        final var value = new VirtualBlobValue();
         value.deserialize(in);
         return value;
     }
 
     @Override
-    @Deprecated
-    public ScheduleEqualityVirtualValue deserialize(ByteBuffer buffer, long dataVersion) {
-        final var value = new ScheduleEqualityVirtualValue();
-        value.deserialize(buffer, (int) dataVersion);
+    public VirtualBlobValue deserialize(ByteBuffer buffer, long version) throws IOException {
+        final var value = new VirtualBlobValue();
+        value.deserialize(buffer, (int) version);
         return value;
     }
 }

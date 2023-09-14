@@ -65,8 +65,7 @@ public class VirtualBlobKey implements VirtualKey {
         out.writeInt(entityNumCode);
     }
 
-    @Override
-    public void serialize(final ByteBuffer buffer) {
+    void serialize(final ByteBuffer buffer) {
         buffer.put((byte) type.ordinal());
         buffer.putInt(entityNumCode);
     }
@@ -82,8 +81,7 @@ public class VirtualBlobKey implements VirtualKey {
         entityNumCode = in.readInt();
     }
 
-    @Override
-    public void deserialize(final ByteBuffer buffer) {
+    void deserialize(final ByteBuffer buffer) {
         type = BLOB_TYPES[0xff & buffer.get()];
         entityNumCode = buffer.getInt();
     }

@@ -81,8 +81,8 @@ public class VirtualBlobKey implements VirtualKey {
         out.writeInt(entityNumCode);
     }
 
-    @Override
-    public void serialize(final ByteBuffer buffer) throws IOException {
+    @Deprecated
+    void serialize(final ByteBuffer buffer) {
         buffer.put((byte) type.ordinal());
         buffer.putInt(entityNumCode);
     }
@@ -98,8 +98,8 @@ public class VirtualBlobKey implements VirtualKey {
         entityNumCode = in.readInt();
     }
 
-    @Override
-    public void deserialize(final ByteBuffer buffer) throws IOException {
+    @Deprecated
+    void deserialize(final ByteBuffer buffer) {
         type = BLOB_TYPES[0xff & buffer.get()];
         entityNumCode = buffer.getInt();
     }
@@ -160,8 +160,8 @@ public class VirtualBlobKey implements VirtualKey {
         return (type.ordinal() == (0xff & buffer.readByte())) && (entityNumCode == buffer.readInt());
     }
 
-    @Deprecated(forRemoval = true)
-    boolean equalsTo(final ByteBuffer buffer, final int version) throws IOException {
+    @Deprecated
+    boolean equalsTo(final ByteBuffer buffer, final int version) {
         return (type.ordinal() == (0xff & buffer.get())) && (entityNumCode == buffer.getInt());
     }
 }

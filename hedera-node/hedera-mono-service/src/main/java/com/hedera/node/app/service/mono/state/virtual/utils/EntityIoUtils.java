@@ -23,15 +23,15 @@ public final class EntityIoUtils {
 
     public static <E extends Exception> void writeBytes(
             final byte[] data,
-            final CheckedConsumerE<Integer, E> writeIntFn,
-            final CheckedConsumerE<byte[], E> writeBytesFn)
+            final ThrowingConsumer<Integer, E> writeIntFn,
+            final ThrowingConsumer<byte[], E> writeBytesFn)
             throws E {
         writeIntFn.accept(data.length);
         writeBytesFn.accept(data);
     }
 
     public static <E extends Exception> byte[] readBytes(
-            final CheckedSupplierE<Integer, E> readIntFn, final CheckedConsumerE<byte[], E> readBytesFn) throws E {
+            final ThrowingSupplier<Integer, E> readIntFn, final ThrowingConsumer<byte[], E> readBytesFn) throws E {
         final var len = readIntFn.get();
         final var data = new byte[len];
         readBytesFn.accept(data);

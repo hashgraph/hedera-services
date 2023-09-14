@@ -29,7 +29,7 @@ import java.io.IOException;
  * data sources. For example, there is no way to easily get serialized value size in bytes, and there
  * are no methods to serialize / deserialize values to / from byte buffers.
  *
- * Serialization bytes used by value serializers may or may not be identical to bytes used when values
+ * <p>Serialization bytes used by value serializers may or may not be identical to bytes used when values
  * are self-serialized. In many cases value serializers will just delegate serialization to values, just
  * returning the size of serialized byte array. On deserialization, typical implementation is to
  * create a new value object and call its {@link SelfSerializable#deserialize(SerializableDataInputStream, int)}
@@ -40,17 +40,11 @@ import java.io.IOException;
  */
 public interface ValueSerializer<V extends VirtualValue> extends BaseSerializer<V>, SelfSerializable {
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     default void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
         // most value serializers are stateless, so there is nothing to serialize
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     default void deserialize(@NonNull final SerializableDataInputStream in, int version) throws IOException {
         // most value serializers are stateless, so there is nothing to deserialize

@@ -69,7 +69,8 @@ public final class SmartContractByteCodeMapValueSerializer implements ValueSeria
     }
 
     @Override
-    public void serialize(SmartContractByteCodeMapValue value, ByteBuffer buffer) throws IOException {
+    @Deprecated
+    public void serialize(SmartContractByteCodeMapValue value, ByteBuffer buffer) {
         value.serialize(buffer);
     }
 
@@ -81,7 +82,8 @@ public final class SmartContractByteCodeMapValueSerializer implements ValueSeria
     }
 
     @Override
-    public SmartContractByteCodeMapValue deserialize(ByteBuffer buffer, long dataVersion) throws IOException {
+    @Deprecated
+    public SmartContractByteCodeMapValue deserialize(ByteBuffer buffer, long dataVersion) {
         final SmartContractByteCodeMapValue value = new SmartContractByteCodeMapValue();
         value.deserialize(buffer, (int) dataVersion);
         return value;

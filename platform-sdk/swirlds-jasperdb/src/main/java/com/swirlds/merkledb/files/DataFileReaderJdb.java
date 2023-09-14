@@ -65,27 +65,12 @@ public class DataFileReaderJdb<D> extends DataFileReaderPbj<D> {
         return DataFileType.JDB;
     }
 
-    /**
-     * Create an iterator to iterate over the data items in this data file. It opens its own file
-     * handle so can be used in a separate thread. It must therefore be closed when you are finished
-     * with it.
-     *
-     * @return new data item iterator
-     */
+    @Override
     public DataFileIterator<D> createIterator() throws IOException {
         return new DataFileIteratorJdb<>(path, metadata, dataItemSerializer);
     }
 
-    /**
-     * Read data item bytes from file at dataLocation and deserialize them into the Java object, if
-     * requested.
-     *
-     * @param dataLocation The file index combined with the offset for the starting block of the
-     *     data in the file
-     * @return Deserialized data item, or {@code null} if deserialization is not requested
-     * @throws IOException If there was a problem reading from data file
-     * @throws ClosedChannelException if the data file was closed
-     */
+    @Override
     public D readDataItem(final long dataLocation) throws IOException {
         long serializationVersion = metadata.getSerializationVersion();
         final ByteBuffer data = (ByteBuffer) readDataItemBytes(dataLocation);

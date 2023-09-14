@@ -159,21 +159,12 @@ public class DataFileReaderPbj<D> implements DataFileReader<D> {
         return DataFileType.PBJ;
     }
 
-    /**
-     * Returns if this file is completed and ready to be compacted.
-     *
-     * @return if true the file is completed (read only and ready to compact)
-     */
+    @Override
     public boolean isFileCompleted() {
         return fileCompleted.get();
     }
 
-    /**
-     * Marks the reader as completed, so it can be included into future compactions. If the reader
-     * is created for an existing file, it's usually marked as completed immediately. If the reader
-     * is created for a new file, which is still being written in a different thread, it's marked as
-     * completed right after the file is fully written and the writer is closed.
-     */
+    @Override
     public void setFileCompleted() {
         try {
             fileSizeBytes.set(fileChannels.get(0).size());
@@ -184,49 +175,26 @@ public class DataFileReaderPbj<D> implements DataFileReader<D> {
         }
     }
 
-    /**
-     * Get file index, the index is an ordered integer identifying the file in a set of files
-     *
-     * @return this file's index
-     */
     @Override
     public int getIndex() {
         return metadata.getIndex();
     }
 
-    /** Get the files metadata */
+    @Override
     public DataFileMetadata getMetadata() {
         return metadata;
     }
 
-    /** Get the path to this data file */
+    @Override
     public Path getPath() {
         return path;
     }
 
-    /**
-     * Create an iterator to iterate over the data items in this data file. It opens its own file
-     * handle so can be used in a separate thread. It must therefore be closed when you are finished
-     * with it.
-     *
-     * @return new data item iterator
-     * @throws IOException if there was a problem creating a new DataFileIterator
-     */
     @Override
     public DataFileIterator<D> createIterator() throws IOException {
         return new DataFileIteratorPbj<>(path, metadata, dataItemSerializer);
     }
 
-    /**
-     * Read data item bytes from file at dataLocation and deserialize them into the Java object, if
-     * requested.
-     *
-     * @param dataLocation The file index combined with the offset for the starting block of the
-     *     data in the file
-     * @return Deserialized data item, or {@code null} if deserialization is not requested
-     * @throws IOException If there was a problem reading from data file
-     * @throws ClosedChannelException if the data file was closed
-     */
     @Override
     public D readDataItem(final long dataLocation) throws IOException {
         final long byteOffset = DataFileCommon.byteOffsetFromDataLocation(dataLocation);
@@ -240,12 +208,7 @@ public class DataFileReaderPbj<D> implements DataFileReader<D> {
         return read(byteOffset);
     }
 
-    /**
-     * Get the size of this file in bytes. This method should only be called for files available to
-     * merging (compaction), i.e. after they are fully written.
-     *
-     * @return file size in bytes
-     */
+    @Override
     public long getSize() {
         return fileSizeBytes.get();
     }
@@ -294,11 +257,12 @@ public class DataFileReaderPbj<D> implements DataFileReader<D> {
      *
      * @return True if file is open for reading
      */
+    @Override
     public boolean isOpen() {
         return open.get();
     }
 
-    /** Close this data file, it can not be used once closed. */
+    @Override
     public void close() throws IOException {
         open.set(false);
         for (int i = 0; i < MAX_FILE_CHANNELS; i++) {
@@ -357,9 +321,9 @@ public class DataFileReaderPbj<D> implements DataFileReader<D> {
     }
 
     /**
-     * Returns an index of an opened file channel to read data. Opens a new file channel, if
-     * possible, when the number of file channels currently in use is much greater than the number
-     * of opened file channels.
+     * Returns an index of an opened file channel to read data and increments the lease count.
+     * Opens a new file channel, if possible, when the lease count per channel is greater than
+     * {@link #THREADS_PER_FILECHANNEL}.
      *
      * @return An index of a file channel to read data
      * @throws IOException

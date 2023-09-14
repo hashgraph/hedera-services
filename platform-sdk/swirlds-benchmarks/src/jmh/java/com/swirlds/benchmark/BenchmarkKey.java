@@ -60,8 +60,8 @@ public class BenchmarkKey implements VirtualLongKey {
         out.writeBytes(keyBytes);
     }
 
-    @Override
-    public void serialize(ByteBuffer buffer) {
+    @Deprecated
+    void serialize(ByteBuffer buffer) {
         buffer.put(keyBytes);
     }
 
@@ -80,8 +80,8 @@ public class BenchmarkKey implements VirtualLongKey {
         in.readBytes(keyBytes);
     }
 
-    @Override
-    public void deserialize(ByteBuffer buffer) {
+    @Deprecated
+    void deserialize(ByteBuffer buffer) {
         keyBytes = new byte[keySize];
         buffer.get(keyBytes);
     }
@@ -112,7 +112,7 @@ public class BenchmarkKey implements VirtualLongKey {
         return Arrays.equals(this.keyBytes, that.keyBytes);
     }
 
-    public boolean equals(BufferedData buffer) {
+    boolean equals(BufferedData buffer) {
         for (int i = 0; i < keySize; ++i) {
             if (buffer.readByte() != keyBytes[i]) {
                 return false;
@@ -121,8 +121,8 @@ public class BenchmarkKey implements VirtualLongKey {
         return true;
     }
 
-    @Deprecated(forRemoval = true)
-    public boolean equals(ByteBuffer buffer) {
+    @Deprecated
+    boolean equals(ByteBuffer buffer) {
         for (int i = 0; i < keySize; ++i) {
             if (buffer.get() != keyBytes[i]) return false;
         }

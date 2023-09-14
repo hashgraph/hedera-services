@@ -73,6 +73,7 @@ public class ScheduleEqualityVirtualKeySerializer implements KeySerializer<Sched
     }
 
     @Override
+    @Deprecated
     public void serialize(final ScheduleEqualityVirtualKey key, final ByteBuffer buffer) throws IOException {
         key.serialize(buffer);
     }
@@ -88,6 +89,7 @@ public class ScheduleEqualityVirtualKeySerializer implements KeySerializer<Sched
     }
 
     @Override
+    @Deprecated
     public ScheduleEqualityVirtualKey deserialize(final ByteBuffer buffer, final long version) throws IOException {
         final var key = new ScheduleEqualityVirtualKey();
         key.deserialize(buffer);
@@ -102,7 +104,8 @@ public class ScheduleEqualityVirtualKeySerializer implements KeySerializer<Sched
     }
 
     @Override
-    public boolean equals(ByteBuffer buffer, int version, ScheduleEqualityVirtualKey key) throws IOException {
+    @Deprecated
+    public boolean equals(ByteBuffer buffer, int version, ScheduleEqualityVirtualKey key) {
         return key.equalsTo(buffer, version);
     }
 }

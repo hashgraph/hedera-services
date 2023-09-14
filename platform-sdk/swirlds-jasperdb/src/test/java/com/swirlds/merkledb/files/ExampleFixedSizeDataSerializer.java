@@ -46,19 +46,16 @@ public class ExampleFixedSizeDataSerializer implements DataItemSerializer<long[]
     }
 
     @Override
-    @Deprecated(forRemoval = true)
     public int getHeaderSize() {
         return Long.BYTES;
     }
 
     @Override
-    @Deprecated(forRemoval = true)
     public DataItemHeader deserializeHeader(ByteBuffer buffer) {
         return new DataItemHeader(Long.BYTES * 2, buffer.getLong());
     }
 
     @Override
-    @Deprecated(forRemoval = true)
     public void serialize(final long[] data, final ByteBuffer buffer) throws IOException {
         buffer.putLong(data[0]);
         buffer.putLong(data[1]);
@@ -76,7 +73,6 @@ public class ExampleFixedSizeDataSerializer implements DataItemSerializer<long[]
     }
 
     @Override
-    @Deprecated(forRemoval = true)
     public long[] deserialize(ByteBuffer buffer, long dataVersion) throws IOException {
         return new long[] {buffer.getLong(), buffer.getLong()};
     }

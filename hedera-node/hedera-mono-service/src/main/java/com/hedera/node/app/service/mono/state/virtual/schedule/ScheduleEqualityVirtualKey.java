@@ -34,6 +34,7 @@ import java.nio.ByteBuffer;
  * should be moved back to VirtualMap in 0.28.
  */
 public final class ScheduleEqualityVirtualKey implements VirtualLongKey {
+
     static final long CLASS_ID = 0xcd76f4fba3967595L;
     static final int BYTES_IN_SERIALIZED_FORM = 8;
 
@@ -71,7 +72,6 @@ public final class ScheduleEqualityVirtualKey implements VirtualLongKey {
         return CURRENT_VERSION;
     }
 
-    /** {@inheritDoc} */
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
         out.writeLong(value);
@@ -81,13 +81,11 @@ public final class ScheduleEqualityVirtualKey implements VirtualLongKey {
         out.writeLong(value);
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public void serialize(final ByteBuffer buffer) throws IOException {
+    @Deprecated
+    void serialize(final ByteBuffer buffer) {
         buffer.putLong(value);
     }
 
-    /** {@inheritDoc} */
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         value = in.readLong();
@@ -97,9 +95,8 @@ public final class ScheduleEqualityVirtualKey implements VirtualLongKey {
         value = in.readLong();
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public void deserialize(final ByteBuffer buffer) throws IOException {
+    @Deprecated
+    void deserialize(final ByteBuffer buffer) {
         value = buffer.getLong();
     }
 
@@ -130,8 +127,8 @@ public final class ScheduleEqualityVirtualKey implements VirtualLongKey {
         return buffer.readLong() == this.value;
     }
 
-    @Deprecated(forRemoval = true)
-    boolean equalsTo(final ByteBuffer buffer, final int version) throws IOException {
+    @Deprecated
+    boolean equalsTo(final ByteBuffer buffer, final int version) {
         return buffer.getLong() == this.value;
     }
 

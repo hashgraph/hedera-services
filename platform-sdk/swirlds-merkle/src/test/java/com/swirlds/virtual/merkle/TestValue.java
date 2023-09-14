@@ -62,8 +62,7 @@ public final class TestValue implements VirtualValue {
         out.writeNormalisedString(s);
     }
 
-    @Override
-    public void serialize(ByteBuffer buffer) {
+    void serialize(ByteBuffer buffer) {
         final byte[] data = CommonUtils.getNormalisedStringBytes(this.s);
         buffer.putInt(data.length);
         buffer.put(data);
@@ -74,8 +73,7 @@ public final class TestValue implements VirtualValue {
         s = in.readNormalisedString(1024);
     }
 
-    @Override
-    public void deserialize(ByteBuffer buffer, int version) {
+    void deserialize(ByteBuffer buffer, int version) {
         final int length = buffer.getInt();
         if (length > 1024) {
             throw new IllegalStateException("Bad data from buffer for string length. Value: " + length);

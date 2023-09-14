@@ -51,13 +51,11 @@ public final class TestKey implements VirtualLongKey {
         return 1;
     }
 
-    @Override
-    public void serialize(final ByteBuffer buffer) {
+    void serialize(final ByteBuffer buffer) {
         buffer.putLong(k);
     }
 
-    @Override
-    public void deserialize(final ByteBuffer buffer) {
+    void deserialize(final ByteBuffer buffer) {
         k = buffer.getLong();
     }
 

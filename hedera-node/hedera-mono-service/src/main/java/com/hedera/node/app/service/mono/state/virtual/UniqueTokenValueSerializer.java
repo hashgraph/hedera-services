@@ -79,7 +79,8 @@ public class UniqueTokenValueSerializer implements ValueSerializer<UniqueTokenVa
     }
 
     @Override
-    public void serialize(final UniqueTokenValue value, final ByteBuffer out) throws IOException {
+    @Deprecated
+    public void serialize(final UniqueTokenValue value, final ByteBuffer out) {
         Objects.requireNonNull(value);
         Objects.requireNonNull(out);
         value.serialize(out);
@@ -96,7 +97,8 @@ public class UniqueTokenValueSerializer implements ValueSerializer<UniqueTokenVa
     }
 
     @Override
-    public UniqueTokenValue deserialize(final ByteBuffer buffer, final long version) throws IOException {
+    @Deprecated
+    public UniqueTokenValue deserialize(final ByteBuffer buffer, final long version) {
         Objects.requireNonNull(buffer);
         final UniqueTokenValue value = new UniqueTokenValue();
         value.deserialize(buffer, (int) version);

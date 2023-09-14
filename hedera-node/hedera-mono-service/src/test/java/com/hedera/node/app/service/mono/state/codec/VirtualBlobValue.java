@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.mono.state.codec;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualValue;
@@ -69,14 +71,23 @@ public class VirtualBlobValue implements VirtualValue {
         out.writeByteArray(data);
     }
 
-    @Override
-    public void serialize(ByteBuffer buffer) throws IOException {
+    void serialize(final WritableSequentialData out) {
+        out.writeInt(data.length);
+        out.writeBytes(data);
+    }
+
+    void serialize(ByteBuffer buffer) {
         buffer.putInt(data.length);
         buffer.put(data);
     }
 
-    @Override
-    public void deserialize(ByteBuffer buffer, int version) throws IOException {
+    void deserialize(final ReadableSequentialData in) {
+        final var n = in.readInt();
+        data = new byte[n];
+        in.readBytes(data);
+    }
+
+    void deserialize(ByteBuffer buffer, int version) {
         final var n = buffer.getInt();
         data = new byte[n];
         buffer.get(data);

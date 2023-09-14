@@ -34,8 +34,8 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleSchedule;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
-import com.hedera.node.app.service.mono.state.virtual.utils.CheckedConsumerE;
-import com.hedera.node.app.service.mono.state.virtual.utils.CheckedSupplierE;
+import com.hedera.node.app.service.mono.state.virtual.utils.ThrowingConsumer;
+import com.hedera.node.app.service.mono.state.virtual.utils.ThrowingSupplier;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
@@ -322,10 +322,10 @@ public class ScheduleVirtualValue extends PartialMerkleLeaf
     }
 
     private <E extends Exception> void serializeTo(
-            final CheckedConsumerE<Byte, E> writeByteFn,
-            final CheckedConsumerE<Integer, E> writeIntFn,
-            final CheckedConsumerE<Long, E> writeLongFn,
-            final CheckedConsumerE<byte[], E> writeBytesFn)
+            final ThrowingConsumer<Byte, E> writeByteFn,
+            final ThrowingConsumer<Integer, E> writeIntFn,
+            final ThrowingConsumer<Long, E> writeLongFn,
+            final ThrowingConsumer<byte[], E> writeBytesFn)
             throws E {
         writeIntFn.accept(bodyBytes.length);
         writeBytesFn.accept(bodyBytes);
@@ -363,16 +363,16 @@ public class ScheduleVirtualValue extends PartialMerkleLeaf
         serializeTo(out::writeByte, out::writeInt, out::writeLong, out::writeBytes);
     }
 
-    @Override
-    public void serialize(final ByteBuffer buffer) throws IOException {
+    @Deprecated
+    void serialize(final ByteBuffer buffer) {
         serializeTo(buffer::put, buffer::putInt, buffer::putLong, buffer::put);
     }
 
     private <E extends Exception> void deserializeFrom(
-            final CheckedSupplierE<Byte, E> readByteFn,
-            final CheckedSupplierE<Integer, E> readIntFn,
-            final CheckedSupplierE<Long, E> readLongFn,
-            final CheckedConsumerE<byte[], E> readBytesFn)
+            final ThrowingSupplier<Byte, E> readByteFn,
+            final ThrowingSupplier<Integer, E> readIntFn,
+            final ThrowingSupplier<Long, E> readLongFn,
+            final ThrowingConsumer<byte[], E> readBytesFn)
             throws E {
         var n = readIntFn.get();
         bodyBytes = new byte[n];
@@ -411,8 +411,8 @@ public class ScheduleVirtualValue extends PartialMerkleLeaf
         deserializeFrom(in::readByte, in::readInt, in::readLong, in::readBytes);
     }
 
-    @Override
-    public void deserialize(final ByteBuffer buffer, final int version) throws IOException {
+    @Deprecated
+    void deserialize(final ByteBuffer buffer, final int version) {
         deserializeFrom(buffer::get, buffer::getInt, buffer::getLong, buffer::get);
     }
 

@@ -92,18 +92,11 @@ public final class SmartContractByteCodeMapKey implements VirtualLongKey {
         out.writeLong(contractId);
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @Deprecated(forRemoval = true)
-    public void serialize(final ByteBuffer buffer) throws IOException {
+    @Deprecated
+    void serialize(final ByteBuffer buffer) {
         buffer.putLong(contractId);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         contractId = in.readLong();
@@ -113,12 +106,8 @@ public final class SmartContractByteCodeMapKey implements VirtualLongKey {
         contractId = in.readLong();
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @Deprecated(forRemoval = true)
-    public void deserialize(final ByteBuffer buffer) {
+    @Deprecated
+    void deserialize(final ByteBuffer buffer) {
         contractId = buffer.getLong();
     }
 
@@ -137,8 +126,8 @@ public final class SmartContractByteCodeMapKey implements VirtualLongKey {
         return contractId == that.contractId;
     }
 
-    @Deprecated(forRemoval = true)
-    public boolean equals(final ByteBuffer buffer) {
+    @Deprecated
+    boolean equals(final ByteBuffer buffer) {
         return buffer.getLong() == this.contractId;
     }
 

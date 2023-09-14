@@ -467,7 +467,7 @@ public class DataFileCollection<D> implements Snapshotable {
                             newLocation = newFileWriter.writeCopiedDataItem(itemBytes);
                         }
                     }
-                    if (newLocation < 0) {
+                    if (newLocation == -1) {
                         final D item = reader.readDataItem(fileOffset);
                         assert item != null;
                         newLocation = newFileWriter.storeDataItem(item);

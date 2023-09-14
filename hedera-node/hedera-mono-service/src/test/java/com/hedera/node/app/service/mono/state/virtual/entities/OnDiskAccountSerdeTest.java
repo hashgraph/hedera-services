@@ -16,10 +16,13 @@
 
 package com.hedera.node.app.service.mono.state.virtual.entities;
 
+import com.hedera.node.app.service.mono.state.virtual.OnDiskAccountValueSerializer;
 import com.hedera.test.serde.VirtualValueDataTest;
 import com.hedera.test.utils.SeededPropertySource;
+import com.swirlds.merkledb.serialize.ValueSerializer;
 
 public class OnDiskAccountSerdeTest extends VirtualValueDataTest<OnDiskAccount> {
+
     public static final int NUM_ON_DISK_ACCOUNT_TEST_CASES = 3 * MIN_TEST_CASES_PER_VERSION;
 
     @Override
@@ -35,5 +38,10 @@ public class OnDiskAccountSerdeTest extends VirtualValueDataTest<OnDiskAccount> 
     @Override
     protected OnDiskAccount getExpectedObject(final SeededPropertySource propertySource) {
         return propertySource.nextOnDiskAccount();
+    }
+
+    @Override
+    protected ValueSerializer<OnDiskAccount> getSerializer() {
+        return new OnDiskAccountValueSerializer();
     }
 }

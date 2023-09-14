@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.node.app.service.mono.state.virtual.annotations.StateSetter;
 import com.swirlds.base.state.MutabilityException;
+import com.swirlds.merkledb.serialize.ValueSerializer;
 import com.swirlds.virtualmap.VirtualValue;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -36,12 +37,16 @@ import org.junit.jupiter.params.provider.ArgumentsProvider;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 public abstract class VirtualValueDataTest<T extends VirtualValue> extends SelfSerializableDataTest<T> {
+
+    protected abstract ValueSerializer<T> getSerializer();
+
     @ParameterizedTest
     @ArgumentsSource(CurrentVersionArgumentsProvider.class)
     void bufferSerializationHasNoRegressionWithCurrentVersion(final int version, final int testCaseNo) {
         assertSameBufferSerialization(
                 getType(),
                 propertySource -> this.getExpectedObject(propertySource, SERIALIZED_EQUALITY),
+                getSerializer(),
                 version,
                 testCaseNo);
     }
@@ -52,7 +57,7 @@ public abstract class VirtualValueDataTest<T extends VirtualValue> extends SelfS
         final var serializedForm = getSerializedForm(version, testCaseNo);
         final var expectedObject = getExpectedObject(version, testCaseNo, OBJECT_EQUALITY);
 
-        final T actualObject = deserializeFromBuffer(() -> instantiate(getType()), version, serializedForm);
+        final T actualObject = deserializeFromBuffer(version, serializedForm, getSerializer());
 
         customAssertEquals()
                 .ifPresentOrElse(

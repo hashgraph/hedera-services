@@ -49,6 +49,8 @@ public final class OnDiskKey<K> implements VirtualKey {
     @Deprecated(forRemoval = true)
     private static final long CLASS_ID = 0x2929238293892373L;
 
+    static final int VERSION = 1;
+
     /** The metadata */
     private final StateMetadata<K, ?> md;
 
@@ -94,7 +96,7 @@ public final class OnDiskKey<K> implements VirtualKey {
 
     @Override
     public int getVersion() {
-        return 1;
+        return VERSION;
     }
 
     /** Writes the "real" key to the given stream. {@inheritDoc} */
@@ -107,21 +109,11 @@ public final class OnDiskKey<K> implements VirtualKey {
     }
 
     @Override
-    public void serialize(@NonNull final ByteBuffer byteBuffer) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public void deserialize(@NonNull final SerializableDataInputStream in, int ignored) throws IOException {
         assert md != null;
         final Codec<K> codec = md.stateDefinition().keyCodec();
         assert codec != null;
         key = readFromStream(in, codec);
-    }
-
-    @Override
-    public void deserialize(@NonNull final ByteBuffer byteBuffer) throws IOException {
-        throw new UnsupportedOperationException();
     }
 
     @Override

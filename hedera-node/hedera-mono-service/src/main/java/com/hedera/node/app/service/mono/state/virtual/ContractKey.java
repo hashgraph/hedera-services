@@ -42,6 +42,7 @@ import org.apache.tuweni.units.bigints.UInt256;
  * merkle tree for each shard and realm.
  */
 public final class ContractKey implements VirtualKey {
+
     /** The shifts required to deserialize a big-endian contractId with leading zeros omitted */
     private static final int[] BIT_SHIFTS = {0, 8, 16, 24, 32, 40, 48, 56};
     /** The estimated average size for a contract key when serialized */
@@ -186,8 +187,8 @@ public final class ContractKey implements VirtualKey {
         serializePackedBytesToPbj(uint256Key, uint256KeyNonZeroBytes, out);
     }
 
-    @Override
-    public void serialize(final ByteBuffer buffer) throws IOException {
+    @Deprecated
+    void serialize(final ByteBuffer buffer) {
         buffer.put(getContractIdNonZeroBytesAndUint256KeyNonZeroBytes());
         for (int b = contractIdNonZeroBytes - 1; b >= 0; b--) {
             buffer.put((byte) (contractId >> (b * 8)));
@@ -212,8 +213,8 @@ public final class ContractKey implements VirtualKey {
         this.uint256Key = deserializeUint256Key(uint256KeyNonZeroBytes, in, ReadableSequentialData::readByte);
     }
 
-    @Override
-    public void deserialize(final ByteBuffer buf) {
+    @Deprecated
+    void deserialize(final ByteBuffer buf) {
         final byte packedSize = buf.get();
         this.contractIdNonZeroBytes = getContractIdNonZeroBytesFromPacked(packedSize);
         this.uint256KeyNonZeroBytes = getUint256KeyNonZeroBytesFromPacked(packedSize);

@@ -25,7 +25,6 @@ import com.swirlds.merkledb.files.FilesTestType;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.virtualmap.VirtualLongKey;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.Random;
 import org.junit.jupiter.api.Test;
@@ -226,11 +225,6 @@ class HalfDiskHashMapTest {
         @Override
         public long getClassId() {
             return CLASS_ID;
-        }
-
-        @Override
-        public void deserialize(final ByteBuffer byteBuffer) {
-            super.deserialize(byteBuffer);
         }
 
         @Override

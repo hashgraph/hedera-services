@@ -30,6 +30,7 @@ import org.apache.tuweni.units.bigints.UInt256;
 /** Representation of a 256bit unsigned int, stored internally as a big-endian byte array. */
 @SuppressWarnings({"PointlessBitwiseExpression", "unused"})
 public class ContractValue implements VirtualValue {
+
     public static final int MERKLE_VERSION = 1;
     public static final int SERIALIZED_SIZE = 32;
     public static final long RUNTIME_CONSTRUCTABLE_ID = 0xd7c4802f00979857L;
@@ -233,8 +234,8 @@ public class ContractValue implements VirtualValue {
         outputStream.write(this.uint256Value);
     }
 
-    @Override
-    public void serialize(ByteBuffer byteBuffer) throws IOException {
+    @Deprecated
+    void serialize(ByteBuffer byteBuffer) {
         byteBuffer.put(this.uint256Value);
     }
 
@@ -245,8 +246,8 @@ public class ContractValue implements VirtualValue {
         assert lengthRead == SERIALIZED_SIZE;
     }
 
-    @Override
-    public void deserialize(ByteBuffer byteBuffer, int i) throws IOException {
+    @Deprecated
+    void deserialize(ByteBuffer byteBuffer, int i) {
         if (isImmutable) throw new IllegalStateException(IMMUTABLE_CONTRACT_VALUE_MANIPULATION_ERROR);
         byteBuffer.get(this.uint256Value);
     }

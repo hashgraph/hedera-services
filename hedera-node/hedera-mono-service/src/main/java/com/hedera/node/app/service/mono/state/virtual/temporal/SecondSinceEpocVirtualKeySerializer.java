@@ -73,6 +73,7 @@ public class SecondSinceEpocVirtualKeySerializer implements KeySerializer<Second
     }
 
     @Override
+    @Deprecated
     public void serialize(final SecondSinceEpocVirtualKey key, final ByteBuffer buffer) throws IOException {
         key.serialize(buffer);
     }
@@ -87,6 +88,7 @@ public class SecondSinceEpocVirtualKeySerializer implements KeySerializer<Second
     }
 
     @Override
+    @Deprecated
     public SecondSinceEpocVirtualKey deserialize(ByteBuffer buffer, long version) throws IOException {
         final var key = new SecondSinceEpocVirtualKey();
         key.deserialize(buffer);
@@ -101,6 +103,7 @@ public class SecondSinceEpocVirtualKeySerializer implements KeySerializer<Second
     }
 
     @Override
+    @Deprecated
     public boolean equals(ByteBuffer buffer, int version, SecondSinceEpocVirtualKey key) throws IOException {
         return key.equalsTo(buffer, version);
     }

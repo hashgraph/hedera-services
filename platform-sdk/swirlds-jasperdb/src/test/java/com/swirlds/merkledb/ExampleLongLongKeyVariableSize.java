@@ -57,8 +57,7 @@ public class ExampleLongLongKeyVariableSize implements VirtualLongKey {
         return hash32(value1, value2);
     }
 
-    @Override
-    public void serialize(final ByteBuffer byteBuffer) throws IOException {
+    void serialize(final ByteBuffer byteBuffer) {
         final int numOfBytes1 = computeNonZeroBytes(value1);
         final int numOfBytes2 = computeNonZeroBytes(value2);
         byteBuffer.put((byte) numOfBytes1);
@@ -84,8 +83,7 @@ public class ExampleLongLongKeyVariableSize implements VirtualLongKey {
         }
     }
 
-    @Override
-    public void deserialize(final ByteBuffer buffer) throws IOException {
+    void deserialize(final ByteBuffer buffer) {
         byte numOfBytes1 = buffer.get();
         byte numOfBytes2 = buffer.get();
         long value1 = 0;
@@ -299,7 +297,6 @@ public class ExampleLongLongKeyVariableSize implements VirtualLongKey {
          * @return Deserialized data item
          */
         @Override
-        @Deprecated(forRemoval = true)
         public ExampleLongLongKeyVariableSize deserialize(final ByteBuffer buffer, final long dataVersion)
                 throws IOException {
             final ExampleLongLongKeyVariableSize key = new ExampleLongLongKeyVariableSize();
@@ -320,10 +317,8 @@ public class ExampleLongLongKeyVariableSize implements VirtualLongKey {
          *
          * @param data The data item to serialize
          * @param buffer Byte buffer to write to
-         * @return Number of bytes written
          */
         @Override
-        @Deprecated(forRemoval = true)
         public void serialize(final ExampleLongLongKeyVariableSize data, final ByteBuffer buffer) throws IOException {
             data.serialize(buffer);
         }
@@ -371,9 +366,7 @@ public class ExampleLongLongKeyVariableSize implements VirtualLongKey {
         }
 
         @Override
-        @Deprecated(forRemoval = true)
-        public boolean equals(ByteBuffer buffer, int dataVersion, ExampleLongLongKeyVariableSize keyToCompare)
-                throws IOException {
+        public boolean equals(ByteBuffer buffer, int dataVersion, ExampleLongLongKeyVariableSize keyToCompare) {
             byte numOfBytes1 = buffer.get();
             byte numOfBytes2 = buffer.get();
             long value1 = 0;

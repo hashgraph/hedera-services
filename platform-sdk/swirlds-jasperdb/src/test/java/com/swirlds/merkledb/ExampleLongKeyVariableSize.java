@@ -53,8 +53,7 @@ public class ExampleLongKeyVariableSize implements VirtualLongKey {
         return this.hashCode;
     }
 
-    @Override
-    public void serialize(final ByteBuffer byteBuffer) throws IOException {
+    void serialize(final ByteBuffer byteBuffer) {
         final int numOfBytes = computeNonZeroBytes(value);
         byteBuffer.put((byte) numOfBytes);
         for (int b = numOfBytes - 1; b >= 0; b--) {
@@ -84,8 +83,7 @@ public class ExampleLongKeyVariableSize implements VirtualLongKey {
     // 119, -30, 62, -66, 52, -42, -36, 32, 11, 0, -36, 48, 117, 27, -16, -81, 9, 126, -25, -116,
     // -124, 27, 32, -44,
     // 3, -49, 100]
-    @Override
-    public void deserialize(final ByteBuffer buffer) throws IOException {
+    void deserialize(final ByteBuffer buffer) {
         byte numOfBytes = buffer.get();
         long value = 0;
         if (numOfBytes >= 8) value |= ((long) buffer.get() & 255) << 56;
@@ -247,7 +245,6 @@ public class ExampleLongKeyVariableSize implements VirtualLongKey {
          * @return Deserialized data item
          */
         @Override
-        @Deprecated(forRemoval = true)
         public ExampleLongKeyVariableSize deserialize(final ByteBuffer buffer, final long dataVersion)
                 throws IOException {
             final ExampleLongKeyVariableSize key = new ExampleLongKeyVariableSize();
@@ -263,7 +260,6 @@ public class ExampleLongKeyVariableSize implements VirtualLongKey {
         }
 
         @Override
-        @Deprecated(forRemoval = true)
         public void serialize(final ExampleLongKeyVariableSize data, final ByteBuffer buffer) throws IOException {
             data.serialize(buffer);
         }
@@ -301,9 +297,7 @@ public class ExampleLongKeyVariableSize implements VirtualLongKey {
         }
 
         @Override
-        @Deprecated(forRemoval = true)
-        public boolean equals(ByteBuffer buffer, int dataVersion, ExampleLongKeyVariableSize keyToCompare)
-                throws IOException {
+        public boolean equals(ByteBuffer buffer, int dataVersion, ExampleLongKeyVariableSize keyToCompare) {
             byte numOfBytes = buffer.get();
             long value = 0;
             if (numOfBytes >= 8) value |= ((long) buffer.get() & 255) << 56;

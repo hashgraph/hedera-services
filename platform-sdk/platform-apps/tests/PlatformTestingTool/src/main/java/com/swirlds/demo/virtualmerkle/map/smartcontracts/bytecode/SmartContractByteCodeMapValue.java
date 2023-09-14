@@ -133,9 +133,6 @@ public final class SmartContractByteCodeMapValue implements VirtualValue {
         return new SmartContractByteCodeMapValue(this);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
         out.writeByteArray(byteCode);
@@ -146,18 +143,12 @@ public final class SmartContractByteCodeMapValue implements VirtualValue {
         out.writeBytes(byteCode);
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void serialize(final ByteBuffer buffer) throws IOException {
+    @Deprecated
+    void serialize(final ByteBuffer buffer) {
         buffer.putInt(byteCode.length);
         buffer.put(byteCode);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         byteCode = in.readByteArray(MAX_BYTE_CODE_BYTES);
@@ -169,11 +160,8 @@ public final class SmartContractByteCodeMapValue implements VirtualValue {
         in.readBytes(byteCode);
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void deserialize(final ByteBuffer buffer, final int version) throws IOException {
+    @Deprecated
+    void deserialize(final ByteBuffer buffer, final int version) {
         final int len = buffer.getInt();
         byteCode = new byte[len];
         buffer.get(byteCode);

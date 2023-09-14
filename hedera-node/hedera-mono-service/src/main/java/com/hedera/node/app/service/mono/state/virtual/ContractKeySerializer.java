@@ -84,6 +84,7 @@ public class ContractKeySerializer implements KeySerializer<ContractKey> {
     }
 
     @Override
+    @Deprecated
     public void serialize(final ContractKey key, ByteBuffer out) throws IOException {
         Objects.requireNonNull(key);
         Objects.requireNonNull(out);
@@ -101,6 +102,7 @@ public class ContractKeySerializer implements KeySerializer<ContractKey> {
     }
 
     @Override
+    @Deprecated
     public ContractKey deserialize(final ByteBuffer buffer, final long dataVersion) throws IOException {
         Objects.requireNonNull(buffer);
         ContractKey key = new ContractKey();
@@ -114,6 +116,7 @@ public class ContractKeySerializer implements KeySerializer<ContractKey> {
     }
 
     @Override
+    @Deprecated
     public boolean equals(ByteBuffer buf, int version, ContractKey contractKey) throws IOException {
         byte packedSize = buf.get();
         final byte contractIdNonZeroBytes = getContractIdNonZeroBytesFromPacked(packedSize);

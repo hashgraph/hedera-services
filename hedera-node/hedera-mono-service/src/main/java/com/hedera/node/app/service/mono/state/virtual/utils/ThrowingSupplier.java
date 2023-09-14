@@ -16,8 +16,22 @@
 
 package com.hedera.node.app.service.mono.state.virtual.utils;
 
-import java.io.IOException;
+/**
+ * A functional interface that represents a supplier of results. It is similar to
+ * {@link java.util.function.Supplier}, but may throw checked exceptions of the
+ * specified type.
+ *
+ * @param <T> type of results provided by this supplier
+ * @param <E> checked exception type
+ */
+@FunctionalInterface
+public interface ThrowingSupplier<T, E extends Exception> {
 
-public interface CheckedConsumer<T> {
-    void accept(T t) throws IOException;
+    /**
+     * Provides a result.
+     *
+     * @return a result
+     * @throws E if an error occurred
+     */
+    T get() throws E;
 }

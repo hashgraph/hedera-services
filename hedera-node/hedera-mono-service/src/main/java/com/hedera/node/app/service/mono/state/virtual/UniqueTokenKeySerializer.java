@@ -79,7 +79,8 @@ public class UniqueTokenKeySerializer implements KeySerializer<UniqueTokenKey> {
     }
 
     @Override
-    public void serialize(final UniqueTokenKey key, final ByteBuffer buffer) throws IOException {
+    @Deprecated
+    public void serialize(final UniqueTokenKey key, final ByteBuffer buffer) {
         Objects.requireNonNull(key);
         Objects.requireNonNull(buffer);
         key.serializeTo(buffer::put);
@@ -94,7 +95,8 @@ public class UniqueTokenKeySerializer implements KeySerializer<UniqueTokenKey> {
     }
 
     @Override
-    public UniqueTokenKey deserialize(final ByteBuffer buffer, final long dataVersion) throws IOException {
+    @Deprecated
+    public UniqueTokenKey deserialize(final ByteBuffer buffer, final long dataVersion) {
         Objects.requireNonNull(buffer);
         final UniqueTokenKey tokenKey = new UniqueTokenKey();
         tokenKey.deserializeFrom(buffer::get);
@@ -109,7 +111,8 @@ public class UniqueTokenKeySerializer implements KeySerializer<UniqueTokenKey> {
     }
 
     @Override
-    public boolean equals(final ByteBuffer buffer, final int version, final UniqueTokenKey key) throws IOException {
+    @Deprecated
+    public boolean equals(final ByteBuffer buffer, final int version, final UniqueTokenKey key) {
         Objects.requireNonNull(buffer);
         return key.equalsTo(buffer::get);
     }

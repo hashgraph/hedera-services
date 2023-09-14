@@ -17,8 +17,8 @@
 package com.hedera.node.app.service.mono.state.virtual.schedule;
 
 import com.google.common.base.MoreObjects;
-import com.hedera.node.app.service.mono.state.virtual.utils.CheckedConsumerE;
-import com.hedera.node.app.service.mono.state.virtual.utils.CheckedSupplierE;
+import com.hedera.node.app.service.mono.state.virtual.utils.ThrowingConsumer;
+import com.hedera.node.app.service.mono.state.virtual.utils.ThrowingSupplier;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -110,9 +110,9 @@ public class ScheduleEqualityVirtualValue extends PartialMerkleLeaf
     }
 
     private <E extends Exception> void serializeTo(
-            final CheckedConsumerE<Integer, E> writeIntFn,
-            final CheckedConsumerE<Long, E> writeLongFn,
-            final CheckedConsumerE<byte[], E> writeBytesFn)
+            final ThrowingConsumer<Integer, E> writeIntFn,
+            final ThrowingConsumer<Long, E> writeLongFn,
+            final ThrowingConsumer<byte[], E> writeBytesFn)
             throws E {
         writeIntFn.accept(ids.size());
         for (var e : ids.entrySet()) {
@@ -133,15 +133,15 @@ public class ScheduleEqualityVirtualValue extends PartialMerkleLeaf
         serializeTo(out::writeInt, out::writeLong, out::writeBytes);
     }
 
-    @Override
-    public void serialize(final ByteBuffer buffer) throws IOException {
+    @Deprecated
+    void serialize(final ByteBuffer buffer) {
         serializeTo(buffer::putInt, buffer::putLong, buffer::put);
     }
 
     private <E extends Exception> void deserializeFrom(
-            final CheckedSupplierE<Integer, E> readIntFn,
-            final CheckedSupplierE<Long, E> readLongFn,
-            final CheckedConsumerE<byte[], E> readBytesFn)
+            final ThrowingSupplier<Integer, E> readIntFn,
+            final ThrowingSupplier<Long, E> readLongFn,
+            final ThrowingConsumer<byte[], E> readBytesFn)
             throws E {
         final int s = readIntFn.get();
         ids.clear();
@@ -165,8 +165,8 @@ public class ScheduleEqualityVirtualValue extends PartialMerkleLeaf
         deserializeFrom(in::readInt, in::readLong, in::readBytes);
     }
 
-    @Override
-    public void deserialize(ByteBuffer in, int version) throws IOException {
+    @Deprecated
+    void deserialize(ByteBuffer in, int version) {
         deserializeFrom(in::getInt, in::getLong, in::get);
     }
 

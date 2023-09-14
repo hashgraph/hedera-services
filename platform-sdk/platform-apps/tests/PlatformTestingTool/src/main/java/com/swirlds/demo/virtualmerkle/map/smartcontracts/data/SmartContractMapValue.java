@@ -164,9 +164,6 @@ public final class SmartContractMapValue implements VirtualValue {
         return 32;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
         // Raw write is used due to fixed byte count requirement
@@ -177,17 +174,11 @@ public final class SmartContractMapValue implements VirtualValue {
         out.writeBytes(value);
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void serialize(final ByteBuffer buffer) throws IOException {
+    @Deprecated
+    void serialize(final ByteBuffer buffer) {
         buffer.put(value);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         value = new byte[getSizeInBytes()];
@@ -200,11 +191,8 @@ public final class SmartContractMapValue implements VirtualValue {
         in.readBytes(this.value);
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void deserialize(final ByteBuffer buffer, final int version) throws IOException {
+    @Deprecated
+    void deserialize(final ByteBuffer buffer, final int version) {
         buffer.get(this.value, 0, getSizeInBytes());
     }
 

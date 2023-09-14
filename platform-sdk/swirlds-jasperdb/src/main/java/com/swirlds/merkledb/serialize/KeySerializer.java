@@ -29,9 +29,9 @@ import java.nio.ByteBuffer;
  * An interface to serialize keys used in virtual maps. Virtual keys are serializable in themselves,
  * but the corresponding interface, {@link SelfSerializable}, lacks some abilities needed by virtual
  * data sources. For example, there is no way to easily get serialized key size in bytes, and there
- * are no methods to serialize / deserialize keys to / from byte buffers.
+ * are no methods to serialize / deserialize keys to / from byte or PBJ buffers.
  *
- * Serialization bytes used by key serializers may or may not be identical to bytes used when
+ * <p>Serialization bytes used by key serializers may or may not be identical to bytes used when
  * keys are self-serialized. In many cases key serializers will just delegate serialization to keys,
  * just returning the size of serialized byte array. On deserialization, typical implementation is
  * to create a new key object and call its {@link
@@ -64,13 +64,16 @@ public interface KeySerializer<K extends VirtualKey> extends BaseSerializer<K>, 
      * byte that does not match. As this is used in a tight loop in searching a hash map bucket for
      * a match performance is critical.
      *
+     * <p>Deprecation note: this method is only used by MerkleDb, when it checks data in
+     * JDB format. This format will be eventually removed.
+     *
      * @param buffer The buffer to read from and compare to
      * @param dataVersion The serialization version of the data in the buffer
      * @param keyToCompare The key to compare with the data in the file.
      * @return true if the content of the buffer matches this class's data
      * @throws IOException If there was a problem reading from the buffer
      */
-    @Deprecated(forRemoval = true)
+    @Deprecated
     boolean equals(ByteBuffer buffer, int dataVersion, K keyToCompare) throws IOException;
 
     /**
@@ -87,13 +90,11 @@ public interface KeySerializer<K extends VirtualKey> extends BaseSerializer<K>, 
      */
     boolean equals(@NonNull BufferedData buffer, @NonNull K keyToCompare);
 
-    /** {@inheritDoc} */
     @Override
     default void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
         // most key serializers are stateless, so there is nothing to serialize
     }
 
-    /** {@inheritDoc} */
     @Override
     default void deserialize(@NonNull final SerializableDataInputStream in, int version) throws IOException {
         // most key serializers are staless, so there is nothing to deserialize

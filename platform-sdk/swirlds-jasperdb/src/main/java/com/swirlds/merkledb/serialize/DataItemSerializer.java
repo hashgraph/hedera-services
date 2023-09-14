@@ -23,17 +23,23 @@ public interface DataItemSerializer<D> extends BaseSerializer<D> {
     /**
      * Get the number of bytes used for data item header
      *
+     * <p>Deprecation note: this method is only used by MerkleDb, when it deserializes data
+     * from JDB format. This format will be eventually removed.
+     *
      * @return size of header in bytes
      */
-    @Deprecated(forRemoval = true)
+    @Deprecated
     int getHeaderSize();
 
     /**
      * Deserialize data item header from the given byte buffer
      *
+     * <p>Deprecation note: this method is only used by MerkleDb, when it deserializes data
+     * from JDB format. This format will be eventually removed.
+     *
      * @param buffer Buffer to read from
      * @return The read header
      */
-    @Deprecated(forRemoval = true)
+    @Deprecated
     DataItemHeader deserializeHeader(ByteBuffer buffer);
 }

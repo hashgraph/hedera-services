@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 public class EntityNumValue implements VirtualValue {
+
     public static final int CURRENT_VERSION = 1;
     public static final long RUNTIME_CONSTRUCTABLE_ID = 0x2e5eb64ad7cbcfeaL;
     public static final String CANNOT_DESERIALIZE_INTO_AN_IMMUTABLE_ENTITY_NUM_VALUE =
@@ -59,13 +60,13 @@ public class EntityNumValue implements VirtualValue {
         return immutableNum;
     }
 
-    @Override
-    public void serialize(final ByteBuffer byteBuffer) throws IOException {
+    @Deprecated
+    void serialize(final ByteBuffer byteBuffer) {
         byteBuffer.putLong(num);
     }
 
-    @Override
-    public void deserialize(ByteBuffer byteBuffer, int version) throws IOException {
+    @Deprecated
+    void deserialize(ByteBuffer byteBuffer, int version) {
         if (isImmutable) {
             throw new MutabilityException(CANNOT_DESERIALIZE_INTO_AN_IMMUTABLE_ENTITY_NUM_VALUE);
         }

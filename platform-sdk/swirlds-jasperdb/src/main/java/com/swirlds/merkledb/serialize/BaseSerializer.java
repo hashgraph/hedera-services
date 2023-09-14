@@ -54,7 +54,7 @@ public interface BaseSerializer<T> {
      */
     int getSerializedSize();
 
-    @Deprecated(forRemoval = true)
+    @Deprecated
     default int getSerializedSizeForVersion(long version) {
         return getSerializedSize();
     }
@@ -101,10 +101,13 @@ public interface BaseSerializer<T> {
      * Serialize a data item including header to the byte buffer returning the size of the data
      * written. Serialization format must be identical to {@link #deserialize(ByteBuffer, long)}.
      *
+     * <p>Deprecation note: this method is only used by MerkleDb, when it serializes data to
+     * JDB format. This format will be eventually removed.
+     *
      * @param data The data item to serialize
      * @param buffer Output buffer to write to
      */
-    @Deprecated(forRemoval = true)
+    @Deprecated
     void serialize(T data, ByteBuffer buffer) throws IOException;
 
     /**
@@ -119,10 +122,13 @@ public interface BaseSerializer<T> {
     /**
      * Deserialize a data item from a byte buffer, that was written with given data version.
      *
+     * <p>Deprecation note: this method is only used by MerkleDb, when it deserializes data
+     * from JDB format. This format will be eventually removed.
+     *
      * @param buffer The buffer to read from containing the data item including its header
      * @param dataVersion The serialization version the data item was written with
      * @return Deserialized data item
      */
-    @Deprecated(forRemoval = true)
+    @Deprecated
     T deserialize(ByteBuffer buffer, long dataVersion) throws IOException;
 }

@@ -82,15 +82,13 @@ public final class ExampleVariableSizeVirtualValue extends ExampleByteArrayVirtu
         outputStream.write(data);
     }
 
-    @Override
-    public void serialize(final ByteBuffer buffer) {
+    void serialize(final ByteBuffer buffer) {
         buffer.putInt(id);
         buffer.putInt(data.length);
         buffer.put(data);
     }
 
-    @Override
-    public void deserialize(final ByteBuffer buffer, final int dataVersion) {
+    void deserialize(final ByteBuffer buffer, final int dataVersion) {
         assert dataVersion == getVersion() : "dataVersion=" + dataVersion + " != getVersion()=" + getVersion();
         id = buffer.getInt();
         final int dataLength = buffer.getInt();

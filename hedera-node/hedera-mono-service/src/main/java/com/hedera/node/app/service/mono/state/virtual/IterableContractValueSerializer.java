@@ -76,7 +76,8 @@ public class IterableContractValueSerializer implements ValueSerializer<Iterable
     }
 
     @Override
-    public void serialize(final IterableContractValue value, final ByteBuffer buffer) throws IOException {
+    @Deprecated
+    public void serialize(final IterableContractValue value, final ByteBuffer buffer) {
         Objects.requireNonNull(value);
         Objects.requireNonNull(buffer);
         value.serialize(buffer);
@@ -93,7 +94,8 @@ public class IterableContractValueSerializer implements ValueSerializer<Iterable
     }
 
     @Override
-    public IterableContractValue deserialize(final ByteBuffer buffer, final long version) throws IOException {
+    @Deprecated
+    public IterableContractValue deserialize(final ByteBuffer buffer, final long version) {
         Objects.requireNonNull(buffer);
         final IterableContractValue value = new IterableContractValue();
         value.deserialize(buffer, (int) version);

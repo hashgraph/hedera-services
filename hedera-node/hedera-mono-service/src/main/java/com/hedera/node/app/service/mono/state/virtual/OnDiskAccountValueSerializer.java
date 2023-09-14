@@ -80,7 +80,8 @@ public class OnDiskAccountValueSerializer implements ValueSerializer<OnDiskAccou
     }
 
     @Override
-    public void serialize(final OnDiskAccount value, final ByteBuffer buffer) throws IOException {
+    @Deprecated
+    public void serialize(final OnDiskAccount value, final ByteBuffer buffer) {
         Objects.requireNonNull(value);
         Objects.requireNonNull(buffer);
         value.serialize(buffer);
@@ -97,7 +98,8 @@ public class OnDiskAccountValueSerializer implements ValueSerializer<OnDiskAccou
     }
 
     @Override
-    public OnDiskAccount deserialize(final ByteBuffer buffer, final long version) throws IOException {
+    @Deprecated
+    public OnDiskAccount deserialize(final ByteBuffer buffer, final long version) {
         Objects.requireNonNull(buffer);
         final OnDiskAccount value = new OnDiskAccount();
         value.deserialize(buffer, (int) version);

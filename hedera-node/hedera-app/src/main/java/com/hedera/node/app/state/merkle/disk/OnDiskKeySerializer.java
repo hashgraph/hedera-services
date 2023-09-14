@@ -51,6 +51,9 @@ public final class OnDiskKeySerializer<K> implements KeySerializer<OnDiskKey<K>>
     @Deprecated(forRemoval = true)
     private static final long CLASS_ID = 0x9992382838283412L;
 
+    // Serializer version
+    private static final int VERSION = 1;
+
     private final long classId;
     private final Codec<K> codec;
     private final StateMetadata<K, ?> md;
@@ -71,29 +74,25 @@ public final class OnDiskKeySerializer<K> implements KeySerializer<OnDiskKey<K>>
 
     // Serializer info
 
-    /** {@inheritDoc} */
     @Override
     public long getClassId() {
         return classId;
     }
 
-    /** {@inheritDoc} */
     @Override
     public int getVersion() {
-        return 1;
+        return VERSION;
     }
 
     // Key info
 
-    /** {@inheritDoc} */
     @Override
     public long getCurrentDataVersion() {
-        return 1;
+        return OnDiskKey.VERSION;
     }
 
     // Key serialization
 
-    /** {@inheritDoc} */
     @Override
     public int getSerializedSize() {
         // We're going to use variable size keys, always. MerkleDB was designed with
@@ -121,13 +120,11 @@ public final class OnDiskKeySerializer<K> implements KeySerializer<OnDiskKey<K>>
         return VARIABLE_DATA_SIZE;
     }
 
-    /** {@inheritDoc} */
     @Override
     public int getSerializedSize(@NonNull final OnDiskKey<K> key) {
         return codec.measureRecord(key.getKey());
     }
 
-    /** {@inheritDoc} */
     @Override
     public int getTypicalSerializedSize() {
         return TYPICAL_SIZE;
@@ -135,7 +132,6 @@ public final class OnDiskKeySerializer<K> implements KeySerializer<OnDiskKey<K>>
 
     // Key serialization
 
-    /** {@inheritDoc} */
     @Override
     public void serialize(@NonNull final OnDiskKey<K> key, final @NonNull WritableSequentialData out) {
         // Future work: https://github.com/hashgraph/pbj/issues/73
@@ -154,7 +150,6 @@ public final class OnDiskKeySerializer<K> implements KeySerializer<OnDiskKey<K>>
 
     // Key deserialization
 
-    /** {@inheritDoc} */
     @Override
     public OnDiskKey<K> deserialize(@NonNull final ReadableSequentialData in) {
         // Future work: https://github.com/hashgraph/pbj/issues/73
@@ -172,7 +167,6 @@ public final class OnDiskKeySerializer<K> implements KeySerializer<OnDiskKey<K>>
         throw new UnsupportedOperationException();
     }
 
-    /** {@inheritDoc} */
     @Override
     public boolean equals(@NonNull final BufferedData bufferedData, @NonNull final OnDiskKey<K> keyToCompare) {
         // I really don't have a fast path for this. Which is very problematic for performance.
@@ -183,7 +177,7 @@ public final class OnDiskKeySerializer<K> implements KeySerializer<OnDiskKey<K>>
     }
 
     @Override
-    public boolean equals(final ByteBuffer byteBuffer, final int ignored, final OnDiskKey<K> key) throws IOException {
+    public boolean equals(final ByteBuffer byteBuffer, final int ignored, final OnDiskKey<K> key) {
         throw new UnsupportedOperationException();
     }
 }

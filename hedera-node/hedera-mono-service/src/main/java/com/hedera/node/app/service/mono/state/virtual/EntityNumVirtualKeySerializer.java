@@ -76,6 +76,7 @@ public class EntityNumVirtualKeySerializer implements KeySerializer<EntityNumVir
     }
 
     @Override
+    @Deprecated
     public void serialize(final EntityNumVirtualKey key, final ByteBuffer buffer) throws IOException {
         Objects.requireNonNull(key);
         Objects.requireNonNull(buffer);
@@ -91,6 +92,7 @@ public class EntityNumVirtualKeySerializer implements KeySerializer<EntityNumVir
     }
 
     @Override
+    @Deprecated
     public EntityNumVirtualKey deserialize(final ByteBuffer buffer, final long version) throws IOException {
         Objects.requireNonNull(buffer);
         final var key = new EntityNumVirtualKey();
@@ -105,6 +107,7 @@ public class EntityNumVirtualKeySerializer implements KeySerializer<EntityNumVir
     }
 
     @Override
+    @Deprecated
     public boolean equals(ByteBuffer buffer, int version, EntityNumVirtualKey key) throws IOException {
         Objects.requireNonNull(buffer);
         return key.equalsTo(buffer, version);

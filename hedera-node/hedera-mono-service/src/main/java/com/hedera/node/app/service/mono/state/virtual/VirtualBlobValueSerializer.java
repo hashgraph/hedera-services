@@ -79,7 +79,8 @@ public class VirtualBlobValueSerializer implements ValueSerializer<VirtualBlobVa
     }
 
     @Override
-    public void serialize(final VirtualBlobValue value, final ByteBuffer out) throws IOException {
+    @Deprecated
+    public void serialize(final VirtualBlobValue value, final ByteBuffer out) {
         value.serialize(out);
     }
 
@@ -94,7 +95,8 @@ public class VirtualBlobValueSerializer implements ValueSerializer<VirtualBlobVa
     }
 
     @Override
-    public VirtualBlobValue deserialize(final ByteBuffer buffer, final long version) throws IOException {
+    @Deprecated
+    public VirtualBlobValue deserialize(final ByteBuffer buffer, final long version) {
         final VirtualBlobValue value = new VirtualBlobValue();
         value.deserialize(buffer, (int) version);
         return value;

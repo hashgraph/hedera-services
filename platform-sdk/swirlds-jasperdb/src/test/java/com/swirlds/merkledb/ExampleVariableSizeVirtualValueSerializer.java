@@ -73,7 +73,7 @@ public final class ExampleVariableSizeVirtualValueSerializer
     }
 
     @Override
-    public void serialize(ExampleVariableSizeVirtualValue data, ByteBuffer buffer) throws IOException {
+    public void serialize(ExampleVariableSizeVirtualValue data, ByteBuffer buffer) {
         buffer.putInt(data.getId());
         final int dataLength = data.getDataLength();
         buffer.putInt(dataLength);
@@ -90,8 +90,7 @@ public final class ExampleVariableSizeVirtualValueSerializer
     }
 
     @Override
-    public ExampleVariableSizeVirtualValue deserialize(final ByteBuffer buffer, final long dataVersion)
-            throws IOException {
+    public ExampleVariableSizeVirtualValue deserialize(final ByteBuffer buffer, final long dataVersion) {
         assert dataVersion == getCurrentDataVersion();
         final int id = buffer.getInt();
         final int dataLength = buffer.getInt();

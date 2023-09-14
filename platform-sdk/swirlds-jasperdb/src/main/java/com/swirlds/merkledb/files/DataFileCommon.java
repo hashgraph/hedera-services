@@ -135,6 +135,9 @@ public final class DataFileCommon {
     static final FieldDefinition FIELD_DATAFILE_ITEMS =
             new FieldDefinition("items", FieldType.MESSAGE, true, true, false, 11);
 
+    static final String ERROR_DATAITEM_TOO_LARGE =
+            "Data item is too large to write to a data file. Increase data file mapped byte buffer size";
+
     private DataFileCommon() {
         throw new IllegalStateException("Utility class; should not be instantiated.");
     }

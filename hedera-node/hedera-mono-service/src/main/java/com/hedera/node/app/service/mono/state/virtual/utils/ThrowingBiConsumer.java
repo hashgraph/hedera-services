@@ -16,8 +16,23 @@
 
 package com.hedera.node.app.service.mono.state.virtual.utils;
 
-import java.io.IOException;
+/**
+ * A functional interface that represents an action that accepts two arguments and
+ * returns no result. It is similar to {@link java.util.function.BiConsumer}, but
+ * may throw a checked exception.
+ *
+ * @param <T> first argument type
+ * @param <U> second argument type
+ * @param <E> checked exception type
+ */
+public interface ThrowingBiConsumer<T, U, E extends Exception> {
 
-public interface CheckedSupplier<T> {
-    T get() throws IOException;
+    /**
+     * Performs an action on the given arguments.
+     *
+     * @param t the first input argument
+     * @param u the second input argument
+     * @throws E if an error occurred
+     */
+    void accept(T t, U u) throws E;
 }

@@ -79,7 +79,8 @@ public class ScheduleSecondVirtualValueSerializer implements ValueSerializer<Sch
     }
 
     @Override
-    public void serialize(ScheduleSecondVirtualValue value, ByteBuffer byteBuffer) throws IOException {
+    @Deprecated
+    public void serialize(ScheduleSecondVirtualValue value, ByteBuffer byteBuffer) {
         value.serialize(byteBuffer);
     }
 
@@ -94,7 +95,8 @@ public class ScheduleSecondVirtualValueSerializer implements ValueSerializer<Sch
     }
 
     @Override
-    public ScheduleSecondVirtualValue deserialize(ByteBuffer byteBuffer, long dataVersion) throws IOException {
+    @Deprecated
+    public ScheduleSecondVirtualValue deserialize(ByteBuffer byteBuffer, long dataVersion) {
         final var value = new ScheduleSecondVirtualValue();
         value.deserialize(byteBuffer, (int) dataVersion);
         return value;

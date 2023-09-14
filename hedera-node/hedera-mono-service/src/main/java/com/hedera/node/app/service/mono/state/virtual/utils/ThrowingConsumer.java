@@ -16,6 +16,22 @@
 
 package com.hedera.node.app.service.mono.state.virtual.utils;
 
-public interface CheckedConsumer2E<T, U, E extends Exception> {
-    void accept(T t, U u) throws E;
+/**
+ * A functional interface that represents an action that accepts a single argument and
+ * returns no result. It is similar to {@link java.util.function.Consumer}, but may
+ * throw a checked exception.
+ *
+ * @param <T> input type
+ * @param <E> checked exception type
+ */
+@FunctionalInterface
+public interface ThrowingConsumer<T, E extends Exception> {
+
+    /**
+     * Performs an action on the given argument.
+     *
+     * @param t the input argument
+     * @throws E if an error occurred
+     */
+    void accept(T t) throws E;
 }

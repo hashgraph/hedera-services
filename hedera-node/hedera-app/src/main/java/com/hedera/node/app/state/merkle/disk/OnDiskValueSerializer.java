@@ -36,7 +36,7 @@ public final class OnDiskValueSerializer<V> implements ValueSerializer<OnDiskVal
 
     private static final long CLASS_ID = 0x3992113882234886L;
 
-    private static final long DATA_VERSION = 1;
+    private static final int VERSION = 1;
 
     // guesstimate of the typical size of a serialized value
     private static final int TYPICAL_SIZE = 1024;
@@ -59,36 +59,31 @@ public final class OnDiskValueSerializer<V> implements ValueSerializer<OnDiskVal
 
     // Serializer info
 
-    /** {@inheritDoc} */
     @Override
     public long getClassId() {
         // SHOULD NOT ALLOW md TO BE NULL, but ConstructableRegistry has foiled me.
         return md == null ? CLASS_ID : md.onDiskValueSerializerClassId();
     }
 
-    /** {@inheritDoc} */
     @Override
     public int getVersion() {
-        return 1;
+        return VERSION;
     }
 
     // Value info
 
-    /** {@inheritDoc} */
     @Override
     public long getCurrentDataVersion() {
-        return DATA_VERSION;
+        return OnDiskValue.VERSION;
     }
 
     // Value serialization
 
-    /** {@inheritDoc} */
     @Override
     public int getSerializedSize() {
         return VARIABLE_DATA_SIZE;
     }
 
-    /** {@inheritDoc} */
     @Override
     public int getSerializedSize(OnDiskValue<V> value) {
         assert md != null;
@@ -96,13 +91,11 @@ public final class OnDiskValueSerializer<V> implements ValueSerializer<OnDiskVal
         return codec.measureRecord(value.getValue());
     }
 
-    /** {@inheritDoc} */
     @Override
     public int getTypicalSerializedSize() {
         return TYPICAL_SIZE;
     }
 
-    /** {@inheritDoc} */
     @Override
     public void serialize(@NonNull final OnDiskValue<V> value, @NonNull final WritableSequentialData out) {
         assert md != null;
@@ -122,7 +115,6 @@ public final class OnDiskValueSerializer<V> implements ValueSerializer<OnDiskVal
 
     // Value deserialization
 
-    /** {@inheritDoc} */
     @Override
     public OnDiskValue<V> deserialize(@NonNull final ReadableSequentialData in) {
         assert md != null;
