@@ -34,6 +34,7 @@ import com.swirlds.demo.virtualmerkle.map.smartcontracts.bytecode.SmartContractB
 import com.swirlds.demo.virtualmerkle.map.smartcontracts.bytecode.SmartContractByteCodeMapValue;
 import com.swirlds.demo.virtualmerkle.map.smartcontracts.data.SmartContractMapKey;
 import com.swirlds.demo.virtualmerkle.map.smartcontracts.data.SmartContractMapValue;
+import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualValue;
@@ -162,6 +163,9 @@ public class VirtualMerkleLeafHasher<K extends VirtualKey, V extends VirtualValu
         TemporaryFileBuilder.overrideTemporaryFileLocation(classFolder.resolve("tmp"));
 
         for (final Path roundFolder : roundsFolders) {
+            // reset the default instance path to force creation of a new MerkleDB instance
+            // https://github.com/hashgraph/hedera-services/pull/8534
+            MerkleDb.resetDefaultInstancePath();
             Hash accountsHash;
             Hash scHash;
             Hash byteCodeHash;

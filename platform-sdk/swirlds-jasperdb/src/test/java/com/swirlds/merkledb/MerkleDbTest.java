@@ -38,6 +38,7 @@ public class MerkleDbTest {
 
     @BeforeAll
     public static void setup() throws Exception {
+        MerkleDb.resetDefaultInstancePath();
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds.merkledb");
     }
 
