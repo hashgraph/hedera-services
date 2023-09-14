@@ -32,6 +32,8 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
+import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
+import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -76,7 +78,8 @@ public class TokenUnfreezeAccountHandler implements TransactionHandler {
         final var accountStore = context.readableStore(ReadableAccountStore.class);
         final var tokenStore = context.readableStore(ReadableTokenStore.class);
         final var tokenRelStore = context.writableStore(WritableTokenRelationStore.class);
-        final var tokenRel = validateSemantics(op, accountStore, tokenStore, tokenRelStore);
+        final var expiryValidator = context.expiryValidator();
+        final var tokenRel = validateSemantics(op, accountStore, tokenStore, tokenRelStore, expiryValidator);
 
         final var copyBuilder = tokenRel.copyBuilder();
         copyBuilder.frozen(false);
@@ -108,7 +111,8 @@ public class TokenUnfreezeAccountHandler implements TransactionHandler {
             @NonNull final TokenUnfreezeAccountTransactionBody op,
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final ReadableTokenStore tokenStore,
-            @NonNull final WritableTokenRelationStore tokenRelStore)
+            @NonNull final WritableTokenRelationStore tokenRelStore,
+            @NonNull final ExpiryValidator expiryValidator)
             throws HandleException {
         // Check that the token exists
         final var tokenId = op.tokenOrElse(TokenID.DEFAULT);
@@ -119,12 +123,11 @@ public class TokenUnfreezeAccountHandler implements TransactionHandler {
         validateTrue(tokenMeta.hasFreezeKey(), TOKEN_HAS_NO_FREEZE_KEY);
 
         // Check that the account exists
-        final var accountId = op.accountOrElse(AccountID.DEFAULT);
-        final var account = accountStore.getAccountById(accountId);
-        validateTrue(account != null, INVALID_ACCOUNT_ID);
+        final var account =
+                TokenHandlerHelper.getIfUsable(op.accountOrElse(AccountID.DEFAULT), accountStore, expiryValidator, INVALID_ACCOUNT_ID);
 
         // Check that the token is associated to the account
-        final var tokenRel = tokenRelStore.getForModify(accountId, tokenId);
+        final var tokenRel = tokenRelStore.getForModify(account.accountId(), tokenId);
         validateTrue(tokenRel != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
 
         // Return the token relation

@@ -16,9 +16,9 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
-import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -27,8 +27,11 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
+import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
+import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -85,7 +88,9 @@ public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
         final var tokenId = op.tokenOrThrow();
         final var accountId = op.accountOrElse(AccountID.DEFAULT);
         final var tokenRelStore = handleContext.writableStore(WritableTokenRelationStore.class);
-        final var tokenRel = validateSemantics(accountId, tokenId, tokenRelStore);
+        final var accountStore = handleContext.readableStore(ReadableAccountStore.class);
+        final var expiryValidator = handleContext.expiryValidator();
+        final var tokenRel = validateSemantics(accountId, tokenId, tokenRelStore, accountStore, expiryValidator);
 
         final var tokenRelBuilder = tokenRel.copyBuilder();
         tokenRelBuilder.kycGranted(false);
@@ -116,11 +121,13 @@ public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
     private TokenRelation validateSemantics(
             @NonNull final AccountID accountId,
             @NonNull final TokenID tokenId,
-            @NonNull final WritableTokenRelationStore tokenRelStore)
+            @NonNull final WritableTokenRelationStore tokenRelStore,
+            @NonNull final ReadableAccountStore accountStore,
+            @NonNull final ExpiryValidator expiryValidator)
             throws HandleException {
-        final var tokenRel = tokenRelStore.getForModify(accountId, tokenId);
-        validateTrue(tokenRel != null, INVALID_TOKEN_ID);
+        final var account =
+                TokenHandlerHelper.getIfUsable(accountId, accountStore, expiryValidator, INVALID_ACCOUNT_ID);
 
-        return tokenRel;
+        return TokenHandlerHelper.getIfUsable(account.accountId(), tokenId, tokenRelStore);
     }
 }

@@ -18,7 +18,6 @@ package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -26,8 +25,11 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
+import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
+import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -93,7 +95,9 @@ public class TokenGrantKycToAccountHandler implements TransactionHandler {
 
         final var targetTokenId = op.tokenOrThrow();
         final var targetAccountId = op.accountOrThrow();
-        final var tokenRelation = validateSemantics(targetAccountId, targetTokenId, tokenRelStore);
+        final var accountStore = handleContext.readableStore(ReadableAccountStore.class);
+        final var expiryValidator = handleContext.expiryValidator();
+        final var tokenRelation = validateSemantics(targetAccountId, targetTokenId, tokenRelStore, accountStore, expiryValidator);
 
         final var tokenRelBuilder = tokenRelation.copyBuilder();
         tokenRelBuilder.kycGranted(true);
@@ -109,11 +113,13 @@ public class TokenGrantKycToAccountHandler implements TransactionHandler {
     private TokenRelation validateSemantics(
             @NonNull final AccountID accountId,
             @NonNull final TokenID tokenId,
-            @NonNull final WritableTokenRelationStore tokenRelStore)
+            @NonNull final WritableTokenRelationStore tokenRelStore,
+            @NonNull final ReadableAccountStore accountStore,
+            @NonNull final ExpiryValidator expiryValidator)
             throws HandleException {
-        final var tokenRel = tokenRelStore.getForModify(accountId, tokenId);
-        validateTrue(tokenRel != null, INVALID_TOKEN_ID);
+        final var account =
+                TokenHandlerHelper.getIfUsable(accountId, accountStore, expiryValidator, INVALID_ACCOUNT_ID);
 
-        return tokenRel;
+        return TokenHandlerHelper.getIfUsable(account.accountId(), tokenId, tokenRelStore);
     }
 }
