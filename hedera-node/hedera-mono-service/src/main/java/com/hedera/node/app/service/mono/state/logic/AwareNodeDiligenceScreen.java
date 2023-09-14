@@ -18,7 +18,18 @@ package com.hedera.node.app.service.mono.state.logic;
 
 import static com.hedera.node.app.service.mono.txns.diligence.DuplicateClassification.NODE_DUPLICATE;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.readableId;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_DURATION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_START;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_EXPIRED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_HAS_UNKNOWN_FIELDS;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.ledger.backing.BackingStore;
@@ -27,6 +38,9 @@ import com.hedera.node.app.service.mono.txns.diligence.DuplicateClassification;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import java.util.EnumSet;
+import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -34,6 +48,18 @@ import org.apache.logging.log4j.Logger;
 
 @Singleton
 public final class AwareNodeDiligenceScreen {
+    public static final Set<ResponseCodeEnum> DUE_DILIGENCE_FAILURE_STATUSES = EnumSet.of(
+            TRANSACTION_HAS_UNKNOWN_FIELDS,
+            INVALID_NODE_ACCOUNT,
+            ACCOUNT_ID_DOES_NOT_EXIST,
+            PAYER_ACCOUNT_DELETED,
+            INVALID_PAYER_SIGNATURE,
+            DUPLICATE_TRANSACTION,
+            INVALID_TRANSACTION_DURATION,
+            TRANSACTION_EXPIRED,
+            INVALID_TRANSACTION_START,
+            MEMO_TOO_LONG,
+            INVALID_ZERO_BYTE_IN_STRING);
     private static final Logger log = LogManager.getLogger(AwareNodeDiligenceScreen.class);
 
     private static final String WRONG_NODE_LOG_TPL =

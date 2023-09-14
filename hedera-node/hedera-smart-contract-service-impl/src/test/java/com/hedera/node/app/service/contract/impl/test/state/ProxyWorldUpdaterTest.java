@@ -250,7 +250,8 @@ class ProxyWorldUpdaterTest {
 
     @Test
     void cannotCreateWithNonZeroBalance() {
-        assertThrows(IllegalStateException.class, () -> subject.createAccount(NEXT_LONG_ZERO_ADDRESS, 1, Wei.of(123)));
+        final var balance = Wei.of(123);
+        assertThrows(IllegalStateException.class, () -> subject.createAccount(NEXT_LONG_ZERO_ADDRESS, 1, balance));
     }
 
     @Test

@@ -98,6 +98,6 @@ public class CreateOperationTestBase {
         given(worldUpdater.getAccount(RECIEVER_ADDRESS)).willReturn(receiver);
         given(receiver.getMutable()).willReturn(mutableReceiver);
         given(mutableReceiver.getBalance()).willReturn(Wei.of(VALUE));
-        given(frame.getMessageStackDepth()).willReturn(1023);
+        given(frame.getDepth()).willReturn(1023);
     }
 }

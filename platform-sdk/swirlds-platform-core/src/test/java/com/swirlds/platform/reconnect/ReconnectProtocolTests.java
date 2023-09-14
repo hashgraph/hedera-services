@@ -28,6 +28,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.utility.ValueReference;
@@ -137,7 +138,8 @@ public class ReconnectProtocolTests {
                 reconnectController,
                 mock(SignedStateValidator.class),
                 fallenBehindManager,
-                configuration);
+                configuration,
+                Time.getCurrent());
 
         assertEquals(params.shouldInitiate, protocol.shouldInitiate(), "unexpected initiation result");
     }
@@ -173,7 +175,8 @@ public class ReconnectProtocolTests {
                 mock(ReconnectController.class),
                 mock(SignedStateValidator.class),
                 fallenBehindManager,
-                configuration);
+                configuration,
+                Time.getCurrent());
 
         assertEquals(params.shouldAccept(), protocol.shouldAccept(), "unexpected protocol acceptance");
     }
@@ -197,7 +200,8 @@ public class ReconnectProtocolTests {
                 reconnectController,
                 mock(SignedStateValidator.class),
                 fallenBehindManager,
-                configuration);
+                configuration,
+                Time.getCurrent());
 
         // the ReconnectController must be running in order to provide permits
         getStaticThreadManager()
@@ -228,7 +232,8 @@ public class ReconnectProtocolTests {
                 // we don't want the time based throttle to interfere
                 .withValue("reconnect.minimumTimeBetweenReconnects", "0s")
                 .getOrCreateConfig();
-        final ReconnectThrottle reconnectThrottle = new ReconnectThrottle(config.getConfigData(ReconnectConfig.class));
+        final ReconnectThrottle reconnectThrottle =
+                new ReconnectThrottle(config.getConfigData(ReconnectConfig.class), Time.getCurrent());
 
         final NodeId node0 = new NodeId(0L);
         final NodeId node1 = new NodeId(1L);
@@ -243,7 +248,8 @@ public class ReconnectProtocolTests {
                 mock(ReconnectController.class),
                 mock(SignedStateValidator.class),
                 fallenBehindManager,
-                configuration);
+                configuration,
+                Time.getCurrent());
         final SignedState signedState = spy(new RandomSignedStateGenerator().build());
         when(signedState.isComplete()).thenReturn(true);
         final State state = mock(State.class);
@@ -261,7 +267,8 @@ public class ReconnectProtocolTests {
                 mock(ReconnectController.class),
                 mock(SignedStateValidator.class),
                 fallenBehindManager,
-                configuration);
+                configuration,
+                Time.getCurrent());
 
         // pretend we have fallen behind
         when(fallenBehindManager.hasFallenBehind()).thenReturn(true);
@@ -301,7 +308,8 @@ public class ReconnectProtocolTests {
                 reconnectController,
                 mock(SignedStateValidator.class),
                 fallenBehindManager,
-                configuration);
+                configuration,
+                Time.getCurrent());
 
         assertTrue(protocol.shouldInitiate());
         protocol.initiateFailed();
@@ -341,7 +349,8 @@ public class ReconnectProtocolTests {
                 mock(ReconnectController.class),
                 mock(SignedStateValidator.class),
                 fallenBehindManager,
-                configuration);
+                configuration,
+                Time.getCurrent());
 
         assertTrue(protocol.shouldAccept());
         protocol.acceptFailed();
@@ -374,7 +383,8 @@ public class ReconnectProtocolTests {
                 mock(ReconnectController.class),
                 mock(SignedStateValidator.class),
                 fallenBehindManager,
-                configuration);
+                configuration,
+                Time.getCurrent());
 
         assertFalse(protocol.shouldAccept());
     }

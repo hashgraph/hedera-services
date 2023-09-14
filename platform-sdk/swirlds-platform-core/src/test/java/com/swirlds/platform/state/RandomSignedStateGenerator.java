@@ -67,6 +67,7 @@ public class RandomSignedStateGenerator {
     private boolean protectionEnabled = false;
     private Hash stateHash = null;
     private Integer roundsNonAncient = null;
+    private Hash epoch = null;
 
     /**
      * Create a new signed state generator with a random seed.
@@ -112,6 +113,7 @@ public class RandomSignedStateGenerator {
             stateInstance.setSwirldState(swirldState);
             PlatformState platformState = new PlatformState();
             final PlatformData platformData = new PlatformData();
+            platformData.setEpochHash(epoch);
             platformState.setPlatformData(platformData);
             stateInstance.setPlatformState(platformState);
         } else {
@@ -376,6 +378,16 @@ public class RandomSignedStateGenerator {
      */
     public RandomSignedStateGenerator setRoundsNonAncient(final int roundsNonAncient) {
         this.roundsNonAncient = roundsNonAncient;
+        return this;
+    }
+
+    /**
+     * Set the epoch hash.
+     *
+     * @return this object
+     */
+    public RandomSignedStateGenerator setEpoch(Hash epoch) {
+        this.epoch = epoch;
         return this;
     }
 }

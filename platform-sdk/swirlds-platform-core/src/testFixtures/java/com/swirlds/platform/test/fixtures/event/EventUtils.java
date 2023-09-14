@@ -54,7 +54,7 @@ public abstract class EventUtils {
         registry.registerConstructables("com.swirlds.common.*");
         final State stateCopy = MerkleSerializeUtils.serializeDeserialize(dir, signedState.getState());
         final SignedState signedStateCopy =
-                new SignedState(TestPlatformContextBuilder.create().build(), stateCopy, "test");
+                new SignedState(TestPlatformContextBuilder.create().build(), stateCopy, "test", false);
         signedStateCopy.setSigSet(signedState.getSigSet());
         return signedStateCopy;
     }

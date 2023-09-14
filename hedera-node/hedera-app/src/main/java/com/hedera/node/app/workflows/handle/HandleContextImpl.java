@@ -385,7 +385,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     public <T> T dispatchPrecedingTransaction(
             @NonNull final TransactionBody txBody,
             @NonNull final Class<T> recordBuilderClass,
-            @NonNull final Predicate<Key> callback) {
+            @NonNull final Predicate<Key> callback,
+            @NonNull final AccountID syntheticPayer) {
         requireNonNull(txBody, "txBody must not be null");
         requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
         requireNonNull(callback, "callback must not be null");
@@ -404,7 +405,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
 
         // run the transaction
         final var precedingRecordBuilder = recordListBuilder.addPreceding(configuration());
-        dispatchSyntheticTxn(txBody, PRECEDING, precedingRecordBuilder, callback);
+        dispatchSyntheticTxn(syntheticPayer, txBody, PRECEDING, precedingRecordBuilder, callback);
 
         return castRecordBuilder(precedingRecordBuilder, recordBuilderClass);
     }
@@ -414,9 +415,10 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     public <T> T dispatchChildTransaction(
             @NonNull final TransactionBody txBody,
             @NonNull final Class<T> recordBuilderClass,
-            @NonNull final Predicate<Key> callback) {
+            @NonNull final Predicate<Key> callback,
+            @NonNull final AccountID syntheticPayer) {
         final var childRecordBuilder = recordListBuilder.addChild(configuration());
-        return doDispatchChildTransaction(txBody, childRecordBuilder, recordBuilderClass, callback);
+        return doDispatchChildTransaction(syntheticPayer, txBody, childRecordBuilder, recordBuilderClass, callback);
     }
 
     @NonNull
@@ -424,13 +426,15 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     public <T> T dispatchRemovableChildTransaction(
             @NonNull final TransactionBody txBody,
             @NonNull final Class<T> recordBuilderClass,
-            @NonNull final Predicate<Key> callback) {
+            @NonNull final Predicate<Key> callback,
+            @NonNull final AccountID payer) {
         final var childRecordBuilder = recordListBuilder.addRemovableChild(configuration());
-        return doDispatchChildTransaction(txBody, childRecordBuilder, recordBuilderClass, callback);
+        return doDispatchChildTransaction(payer, txBody, childRecordBuilder, recordBuilderClass, callback);
     }
 
     @NonNull
     private <T> T doDispatchChildTransaction(
+            @NonNull final AccountID syntheticPayer,
             @NonNull final TransactionBody txBody,
             @NonNull final SingleTransactionRecordBuilderImpl childRecordBuilder,
             @NonNull final Class<T> recordBuilderClass,
@@ -444,12 +448,13 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         }
 
         // run the child-transaction
-        dispatchSyntheticTxn(txBody, CHILD, childRecordBuilder, callback);
+        dispatchSyntheticTxn(syntheticPayer, txBody, CHILD, childRecordBuilder, callback);
 
         return castRecordBuilder(childRecordBuilder, recordBuilderClass);
     }
 
     private void dispatchSyntheticTxn(
+            @NonNull final AccountID syntheticPayer,
             @NonNull final TransactionBody txBody,
             @NonNull final TransactionCategory childCategory,
             @NonNull final SingleTransactionRecordBuilderImpl childRecordBuilder,
@@ -501,7 +506,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         final var childContext = new HandleContextImpl(
                 txBody,
                 txInfo,
-                payer,
+                syntheticPayer,
                 payerKey,
                 networkInfo,
                 childCategory,

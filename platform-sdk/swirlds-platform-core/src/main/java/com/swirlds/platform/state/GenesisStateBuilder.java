@@ -93,7 +93,7 @@ public final class GenesisStateBuilder {
         state.setSwirldState(swirldState);
         state.setDualState(buildGenesisDualState(basicConfig));
 
-        final SignedState signedState = new SignedState(platformContext, state, "genesis state");
+        final SignedState signedState = new SignedState(platformContext, state, "genesis state", false);
         return signedState.reserve("initial reservation on genesis state");
     }
 }
