@@ -32,14 +32,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-@DisplayName("IntakePipelineManager Tests")
-class IntakePipelineManagerTests {
+@DisplayName("DefaultIntakePipelineManager Tests")
+class DefaultIntakePipelineManagerTests {
     private IntakePipelineManager pipelineManager;
     private Random random;
 
     @BeforeEach
     void setup() {
-        pipelineManager = new IntakePipelineManager();
+        pipelineManager = new DefaultIntakePipelineManager();
         random = RandomUtils.getRandomPrintSeed();
     }
 

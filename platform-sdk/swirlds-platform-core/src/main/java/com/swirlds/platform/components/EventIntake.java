@@ -39,7 +39,6 @@ import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -117,7 +116,7 @@ public class EventIntake {
             @NonNull final IntakeCycleStats stats,
             @NonNull final ShadowGraph shadowGraph,
             @NonNull final Consumer<EventImpl> prehandleEvent,
-            @Nullable final IntakePipelineManager intakePipelineManager) {
+            @NonNull final IntakePipelineManager intakePipelineManager) {
 
         this.time = Objects.requireNonNull(time);
         this.selfId = Objects.requireNonNull(selfId);
@@ -129,7 +128,7 @@ public class EventIntake {
         this.stats = Objects.requireNonNull(stats);
         this.shadowGraph = Objects.requireNonNull(shadowGraph);
         this.prehandleEvent = Objects.requireNonNull(prehandleEvent);
-        this.intakePipelineManager = intakePipelineManager;
+        this.intakePipelineManager = Objects.requireNonNull(intakePipelineManager);
 
         final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
         final Supplier<Integer> prehandlePoolSize;

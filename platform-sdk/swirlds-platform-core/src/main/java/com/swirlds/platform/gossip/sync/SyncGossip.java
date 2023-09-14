@@ -169,7 +169,7 @@ public class SyncGossip extends AbstractGossip {
             @NonNull final EventObserverDispatcher eventObserverDispatcher,
             @NonNull final EventMapper eventMapper,
             @NonNull final EventIntakeMetrics eventIntakeMetrics,
-            @Nullable final IntakePipelineManager intakePipelineManager,
+            @NonNull final IntakePipelineManager intakePipelineManager,
             @NonNull final SyncMetrics syncMetrics,
             @NonNull final EventLinker eventLinker,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
@@ -201,7 +201,7 @@ public class SyncGossip extends AbstractGossip {
         final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
         this.eventIntakeLambda = Objects.requireNonNull(eventIntakeLambda);
 
-        this.intakePipelineManager = intakePipelineManager;
+        this.intakePipelineManager = Objects.requireNonNull(intakePipelineManager);
 
         syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
 

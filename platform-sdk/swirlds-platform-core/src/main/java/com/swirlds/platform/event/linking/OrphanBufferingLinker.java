@@ -27,10 +27,11 @@ import com.swirlds.platform.event.EventDescriptor;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.SignedState;
-import edu.umd.cs.findbugs.annotations.Nullable;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayDeque;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
@@ -65,7 +66,7 @@ public class OrphanBufferingLinker extends AbstractEventLinker {
             final ConsensusConfig config,
             final ParentFinder parentFinder,
             final int futureGenerationLimit,
-            @Nullable final IntakePipelineManager intakePipelineManager) {
+            @NonNull final IntakePipelineManager intakePipelineManager) {
 
         super(config);
         this.parentFinder = parentFinder;
@@ -73,7 +74,7 @@ public class OrphanBufferingLinker extends AbstractEventLinker {
         this.newlyLinkedEvents = new ArrayDeque<>();
         this.orphanMap = new StandardSequenceMap<>(0, futureGenerationLimit, EventDescriptor::getGeneration);
         this.missingParents = new StandardSequenceMap<>(0, futureGenerationLimit, ParentDescriptor::generation);
-        this.intakePipelineManager = intakePipelineManager;
+        this.intakePipelineManager = Objects.requireNonNull(intakePipelineManager);
     }
 
     private static void parentNoLongerMissing(final ChildEvent child, final Hash parentHash, final EventImpl parent) {

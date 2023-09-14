@@ -65,7 +65,9 @@ import com.swirlds.common.system.status.actions.StartedReplayingEventsAction;
 import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import com.swirlds.common.system.transaction.internal.SystemTransaction;
+import com.swirlds.common.threading.DefaultIntakePipelineManager;
 import com.swirlds.common.threading.IntakePipelineManager;
+import com.swirlds.common.threading.NoOpIntakePipelineManager;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
@@ -535,13 +537,11 @@ public class SwirldsPlatform implements Platform, Startable {
 
         final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
 
-        // if a null pipeline manager is passed in to the subsequent objects, then the status of the intake pipeline
-        // will not be considered when deciding whether to sync with a given peer
         final IntakePipelineManager intakePipelineManager;
         if (syncConfig.waitForEventsInIntake()) {
-            intakePipelineManager = new IntakePipelineManager();
+            intakePipelineManager = new DefaultIntakePipelineManager();
         } else {
-            intakePipelineManager = null;
+            intakePipelineManager = new NoOpIntakePipelineManager();
         }
 
         eventLinker = buildEventLinker(time, isDuplicateChecks, intakePipelineManager);
@@ -1019,7 +1019,8 @@ public class SwirldsPlatform implements Platform, Startable {
     private EventLinker buildEventLinker(
             @NonNull final Time time,
             @NonNull final List<Predicate<EventDescriptor>> isDuplicateChecks,
-            @Nullable final IntakePipelineManager intakePipelineManager) {
+            @NonNull final IntakePipelineManager intakePipelineManager) {
+
         Objects.requireNonNull(isDuplicateChecks);
         final ParentFinder parentFinder = new ParentFinder(shadowGraph::hashgraphEvent);
         final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);

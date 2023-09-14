@@ -33,7 +33,6 @@ import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.Connection;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -101,7 +100,7 @@ public class ShadowGraphSynchronizer {
             final Consumer<SyncResult> syncDone,
             final Consumer<GossipEvent> eventHandler,
             final FallenBehindManager fallenBehindManager,
-            @Nullable final IntakePipelineManager intakePipelineManager,
+            @NonNull final IntakePipelineManager intakePipelineManager,
             final ParallelExecutor executor,
             final boolean sendRecInitBytes,
             final InterruptableRunnable executePreFetchTips) {
@@ -112,7 +111,7 @@ public class ShadowGraphSynchronizer {
         this.generationsSupplier = generationsSupplier;
         this.syncDone = syncDone;
         this.fallenBehindManager = fallenBehindManager;
-        this.intakePipelineManager = intakePipelineManager;
+        this.intakePipelineManager = Objects.requireNonNull(intakePipelineManager);
         this.executor = executor;
         this.sendRecInitBytes = sendRecInitBytes;
         this.executePreFetchTips = executePreFetchTips;

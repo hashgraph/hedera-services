@@ -21,6 +21,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.system.NodeId;
 import java.time.Duration;
@@ -36,7 +37,8 @@ class SyncPermitProviderTest {
     @DisplayName("Permits are acquired and released properly")
     void testPermitRelease() {
         final int numPermits = 3;
-        final SyncPermitProvider syncPermitProvider = new SyncPermitProvider(numPermits, null);
+        final SyncPermitProvider syncPermitProvider =
+                new SyncPermitProvider(numPermits, mock(IntakePipelineManager.class));
 
         assertEquals(numPermits, syncPermitProvider.getNumAvailable(), "all permits should be available");
 
@@ -58,7 +60,8 @@ class SyncPermitProviderTest {
     @DisplayName("Once all permits are acquired, further attempts to acquire fail")
     void testAllPermitsAcquired() {
         final int numPermits = 9;
-        final SyncPermitProvider syncPermitProvider = new SyncPermitProvider(numPermits, null);
+        final SyncPermitProvider syncPermitProvider =
+                new SyncPermitProvider(numPermits, mock(IntakePipelineManager.class));
 
         assertEquals(numPermits, syncPermitProvider.getNumAvailable(), "all permits should be available");
 
@@ -88,7 +91,8 @@ class SyncPermitProviderTest {
     @DisplayName("waitForAllSyncsToFinish blocks until all permits are released")
     void testWaitForAllSyncsToFinish() {
         final int numPermits = 3;
-        final SyncPermitProvider syncPermitProvider = new SyncPermitProvider(numPermits, null);
+        final SyncPermitProvider syncPermitProvider =
+                new SyncPermitProvider(numPermits, mock(IntakePipelineManager.class));
 
         // Acquire all the permits
         for (int i = 0; i < numPermits; i++) {
@@ -129,7 +133,7 @@ class SyncPermitProviderTest {
     @Test
     @DisplayName("tryAcquire with unprocessed events")
     void testAcquireWithUnprocessedEvents() {
-        final IntakePipelineManager intakePipelineManager = new IntakePipelineManager();
+        final DefaultIntakePipelineManager intakePipelineManager = new DefaultIntakePipelineManager();
 
         final int numPermits = 3;
         final SyncPermitProvider syncPermitProvider = new SyncPermitProvider(numPermits, intakePipelineManager);

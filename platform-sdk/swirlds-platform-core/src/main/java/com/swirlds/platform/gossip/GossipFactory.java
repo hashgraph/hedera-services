@@ -124,7 +124,7 @@ public final class GossipFactory {
             @NonNull final EventObserverDispatcher eventObserverDispatcher,
             @NonNull final EventMapper eventMapper,
             @NonNull final EventIntakeMetrics eventIntakeMetrics,
-            @Nullable final IntakePipelineManager intakePipelineManager,
+            @NonNull final IntakePipelineManager intakePipelineManager,
             @NonNull final SyncMetrics syncMetrics,
             @NonNull final EventLinker eventLinker,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
@@ -151,6 +151,7 @@ public final class GossipFactory {
         Objects.requireNonNull(eventObserverDispatcher);
         Objects.requireNonNull(eventMapper);
         Objects.requireNonNull(eventIntakeMetrics);
+        Objects.requireNonNull(intakePipelineManager);
         Objects.requireNonNull(syncMetrics);
         Objects.requireNonNull(eventLinker);
         Objects.requireNonNull(statusActionSubmitter);

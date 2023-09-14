@@ -26,12 +26,13 @@ import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.ByteConstants;
 import com.swirlds.platform.network.Connection;
-import edu.umd.cs.findbugs.annotations.Nullable;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -254,7 +255,9 @@ public final class SyncComms {
             final Consumer<GossipEvent> eventHandler,
             final SyncMetrics syncMetrics,
             final CountDownLatch eventReadingDone,
-            @Nullable final IntakePipelineManager intakePipelineManager) {
+            @NonNull final IntakePipelineManager intakePipelineManager) {
+
+        Objects.requireNonNull(intakePipelineManager);
 
         return () -> {
             logger.info(SYNC_INFO.getMarker(), "{} reading events start", conn.getDescription());
@@ -273,9 +276,7 @@ public final class SyncComms {
 
                             gossipEvent.setSenderNodeId(conn.getOtherId());
 
-                            if (intakePipelineManager != null) {
-                                intakePipelineManager.eventAddedToIntakePipeline(conn.getOtherId());
-                            }
+                            intakePipelineManager.eventAddedToIntakePipeline(conn.getOtherId());
 
                             eventHandler.accept(gossipEvent);
                             eventsRead++;

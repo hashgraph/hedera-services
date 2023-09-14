@@ -18,7 +18,7 @@ package com.swirlds.common.threading;
 
 import com.swirlds.common.system.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Objects;
 import java.util.concurrent.Semaphore;
 
 /**
@@ -48,10 +48,10 @@ public class SyncPermitProvider {
      * @param numPermits            the number of concurrent syncs this provider will allow
      * @param intakePipelineManager the manager that keeps track of how many events have been received from each peer
      */
-    public SyncPermitProvider(final int numPermits, @Nullable final IntakePipelineManager intakePipelineManager) {
+    public SyncPermitProvider(final int numPermits, @NonNull final IntakePipelineManager intakePipelineManager) {
         this.numPermits = numPermits;
         this.syncPermits = new Semaphore(numPermits);
-        this.intakePipelineManager = intakePipelineManager;
+        this.intakePipelineManager = Objects.requireNonNull(intakePipelineManager);
     }
 
     /**
@@ -69,11 +69,7 @@ public class SyncPermitProvider {
      * release the permit when used in a try-with-resources block
      */
     public boolean tryAcquire(@NonNull final NodeId peerId) {
-        // if the intake pipeline manager is null, then we behave as if there aren't any unprocessed events
-        final boolean hasUnprocessedEvents =
-                intakePipelineManager != null && intakePipelineManager.hasUnprocessedEvents(peerId);
-
-        return !hasUnprocessedEvents && syncPermits.tryAcquire();
+        return !intakePipelineManager.hasUnprocessedEvents(peerId) && syncPermits.tryAcquire();
     }
 
     /**
