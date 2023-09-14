@@ -454,10 +454,8 @@ class StartupStateUtilsTests {
         loadedState.getState().throwIfDestroyed();
 
         assertEquals(targetState.getRound(), loadedState.getRound());
-        // Events will have been deleted from the state, so the hash will not match
-        assertNotEquals(targetState.getState().getHash(), loadedState.getState().getHash());
-        assertEquals(
-                0, loadedState.getState().getPlatformState().getPlatformData().getEvents().length);
+        assertEquals(targetState.getState().getHash(), loadedState.getState().getHash());
+        assertNull(loadedState.getState().getPlatformState().getPlatformData().getEvents());
 
         // As a sanity check, make sure the consensus timestamp is the same. This is generated randomly, so if this
         // matches then it's a good signal that the correct state was loaded.
@@ -693,8 +691,7 @@ class StartupStateUtilsTests {
 
             assertEquals(latestUncorruptedState.getRound(), loadedState.getRound());
 
-            // Events will have been deleted, hash will not match
-            assertNotEquals(
+            assertEquals(
                     latestUncorruptedState.getState().getHash(),
                     loadedState.getState().getHash());
 
