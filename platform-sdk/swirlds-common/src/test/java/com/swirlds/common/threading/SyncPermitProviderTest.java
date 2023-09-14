@@ -21,13 +21,10 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.system.NodeId;
 import java.time.Duration;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -39,8 +36,7 @@ class SyncPermitProviderTest {
     @DisplayName("Permits are acquired and released properly")
     void testPermitRelease() {
         final int numPermits = 3;
-        final SyncPermitProvider syncPermitProvider =
-                new SyncPermitProvider(numPermits, mock(IntakePipelineManager.class));
+        final SyncPermitProvider syncPermitProvider = new SyncPermitProvider(numPermits, null);
 
         assertEquals(numPermits, syncPermitProvider.getNumAvailable(), "all permits should be available");
 
@@ -62,8 +58,7 @@ class SyncPermitProviderTest {
     @DisplayName("Once all permits are acquired, further attempts to acquire fail")
     void testAllPermitsAcquired() {
         final int numPermits = 9;
-        final SyncPermitProvider syncPermitProvider =
-                new SyncPermitProvider(numPermits, mock(IntakePipelineManager.class));
+        final SyncPermitProvider syncPermitProvider = new SyncPermitProvider(numPermits, null);
 
         assertEquals(numPermits, syncPermitProvider.getNumAvailable(), "all permits should be available");
 
@@ -93,8 +88,7 @@ class SyncPermitProviderTest {
     @DisplayName("waitForAllSyncsToFinish blocks until all permits are released")
     void testWaitForAllSyncsToFinish() {
         final int numPermits = 3;
-        final SyncPermitProvider syncPermitProvider =
-                new SyncPermitProvider(numPermits, mock(IntakePipelineManager.class));
+        final SyncPermitProvider syncPermitProvider = new SyncPermitProvider(numPermits, null);
 
         // Acquire all the permits
         for (int i = 0; i < numPermits; i++) {
@@ -107,8 +101,7 @@ class SyncPermitProviderTest {
         final AtomicBoolean waitComplete = new AtomicBoolean(false);
 
         // Have a separate thread wait for syncs to finish
-        final ExecutorService executorService = Executors.newSingleThreadExecutor();
-        final Future<Void> future = executorService.submit(() -> {
+        Executors.newSingleThreadExecutor().submit(() -> {
             syncPermitProvider.waitForAllSyncsToFinish();
             waitComplete.set(true);
             return null;
@@ -131,5 +124,33 @@ class SyncPermitProviderTest {
                 waitComplete::get,
                 Duration.ofMillis(1000),
                 "waitForAllSyncsToFinish should return after all permits are released");
+    }
+
+    @Test
+    @DisplayName("tryAcquire with unprocessed events")
+    void testAcquireWithUnprocessedEvents() {
+        final IntakePipelineManager intakePipelineManager = new IntakePipelineManager();
+
+        final int numPermits = 3;
+        final SyncPermitProvider syncPermitProvider = new SyncPermitProvider(numPermits, intakePipelineManager);
+
+        assertTrue(syncPermitProvider.tryAcquire(nodeId), "nothing should prevent a permit from being acquired");
+
+        intakePipelineManager.eventAddedToIntakePipeline(nodeId);
+
+        // returning the permit is fine
+        syncPermitProvider.returnPermit();
+
+        assertFalse(
+                syncPermitProvider.tryAcquire(nodeId),
+                "permit should not be able to be acquired with unprocessed event in intake pipeline");
+
+        intakePipelineManager.eventThroughIntakePipeline(nodeId);
+        // an event in the pipeline for a different node shouldn't have any effect
+        intakePipelineManager.eventAddedToIntakePipeline(new NodeId(1));
+
+        assertTrue(
+                syncPermitProvider.tryAcquire(nodeId),
+                "permit should be able to be acquired after event is through intake pipeline");
     }
 }
