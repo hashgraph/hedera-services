@@ -75,7 +75,11 @@ public class IntakePipelineManager {
                             .formatted(eventSender));
         }
 
-        unprocessedEventCounts.get(eventSender).decrementAndGet();
+        if (unprocessedEventCounts.get(eventSender).getAndUpdate(count -> count > 0 ? count - 1 : 0) == 0) {
+            throw new IllegalStateException(
+                    "Event processed from peer %s, but no events from that peer are in the intake pipeline. This shouldn't be possible."
+                            .formatted(eventSender));
+        }
     }
 
     /**
