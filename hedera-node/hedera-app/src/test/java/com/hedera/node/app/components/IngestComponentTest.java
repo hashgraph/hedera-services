@@ -93,8 +93,7 @@ class IngestComponentTest {
                         SemanticVersion.newBuilder().major(2).build()));
 
         final var configProvider = new ConfigProviderImpl(false);
-        final var throttleManager = new ThrottleManager();
-        final var handleThrottling = new HandleThrottleAccumulator(configProvider, throttleManager);
+        final var handleThrottling = new HandleThrottleAccumulator(configProvider);
         final var monoMultiplierSources = new MonoMultiplierSources(
                 new ThrottleMultiplierSource(null, null, null, null, null, null, null),
                 new ThrottleMultiplierSource(null, null, null, null, null, null, null));
@@ -102,6 +101,7 @@ class IngestComponentTest {
         final var exchangeRateManager = new ExchangeRateManager(configProvider);
 
         final var dualState = mock(SwirldDualState.class);
+        final var throttleManager = new ThrottleManager();
         app = DaggerHederaInjectionComponent.builder()
                 .initTrigger(InitTrigger.GENESIS)
                 .platform(platform)

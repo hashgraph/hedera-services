@@ -66,7 +66,6 @@ import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
-import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
@@ -79,19 +78,14 @@ public class HandleThrottleAccumulator {
             EnumSet.of(CONTRACT_CALL_LOCAL, CONTRACT_CALL, CONTRACT_CREATE, ETHEREUM_TRANSACTION);
     private static final int CAPACITY_SPLIT = 1;
     private final ConfigProvider configProvider;
-    private final ThrottleManager throttleManager;
     private EnumMap<HederaFunctionality, ThrottleReqsManager> functionReqs = new EnumMap<>(HederaFunctionality.class);
     private static final int UNKNOWN_NUM_IMPLICIT_CREATIONS = -1;
     private boolean lastTxnWasGasThrottled;
     private GasLimitDeterministicThrottle gasThrottle;
     private List<DeterministicThrottle> activeThrottles = Collections.emptyList();
 
-    @Inject
-    public HandleThrottleAccumulator(
-            @NonNull final ConfigProvider configProvider, @NonNull ThrottleManager throttleManager) {
+    public HandleThrottleAccumulator(@NonNull final ConfigProvider configProvider) {
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
-        this.throttleManager = requireNonNull(throttleManager, "throttleManager must not be null");
-        this.rebuildFor(this.throttleManager.throttleDefinitions());
     }
 
     public boolean shouldThrottle(@NonNull TransactionInfo txnInfo, Instant t, HederaState state) {
@@ -494,10 +488,4 @@ public class HandleThrottleAccumulator {
     public GasLimitDeterministicThrottle gasLimitThrottle() {
         return gasThrottle;
     }
-
-    // TODO: do we need to throttle queries in handle throttle?
-    //    @Override
-    //    public boolean shouldThrottleQuery(@NonNull HederaFunctionality functionality, @NonNull Query query) {
-    //        return false;
-    //    }
 }

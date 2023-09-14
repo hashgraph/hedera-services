@@ -653,7 +653,7 @@ public final class Hedera implements SwirldMain {
         logger.info("Initializing ThrottleManager");
         this.throttleManager = new ThrottleManager();
 
-        this.handleThrottling = new HandleThrottleAccumulator(configProvider, throttleManager);
+        this.handleThrottling = new HandleThrottleAccumulator(configProvider);
         this.monoMultiplierSources = createMultiplierSources();
 
         logger.info("Initializing ExchangeRateManager");
@@ -670,7 +670,7 @@ public final class Hedera implements SwirldMain {
         // from information held in state (especially those in special files).
         initializeFeeManager(state);
         initializeExchangeRateManager(state);
-        initializeThrottleManager(state);
+        initializeThrottles(state);
     }
 
     private MonoMultiplierSources createMultiplierSources() {
@@ -734,7 +734,7 @@ public final class Hedera implements SwirldMain {
         logger.info("Initializing ThrottleManager");
         this.throttleManager = new ThrottleManager();
 
-        this.handleThrottling = new HandleThrottleAccumulator(configProvider, throttleManager);
+        this.handleThrottling = new HandleThrottleAccumulator(configProvider);
         this.monoMultiplierSources = createMultiplierSources();
 
         logger.info("Initializing ExchangeRateManager");
@@ -753,7 +753,7 @@ public final class Hedera implements SwirldMain {
         // from information held in state (especially those in special files).
         initializeFeeManager(state);
         initializeExchangeRateManager(state);
-        initializeThrottleManager(state);
+        initializeThrottles(state);
         // TODO We may need to update the config with the latest version in file 121
     }
 
@@ -848,7 +848,7 @@ public final class Hedera implements SwirldMain {
         logger.info("Exchange rates initialized");
     }
 
-    private void initializeThrottleManager(@NonNull final HederaState state) {
+    private void initializeThrottles(@NonNull final HederaState state) {
         logger.info("Initializing throttles");
         final var filesConfig = configProvider.getConfiguration().getConfigData(FilesConfig.class);
         final var fileNum = filesConfig.throttleDefinitions();
@@ -856,7 +856,10 @@ public final class Hedera implements SwirldMain {
         if (file != null) {
             final var fileData = file.contents();
             daggerApp.throttleManager().update(fileData);
+
+            // Initializing handle throttling
             this.handleThrottling.rebuildFor(daggerApp.throttleManager().throttleDefinitions());
+            this.handleThrottling.applyGasConfig();
 
             // Updating the multiplier source to use the new throttle definitions
             this.monoMultiplierSources.resetExpectations();
