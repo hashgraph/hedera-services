@@ -396,8 +396,9 @@ public class HandleWorkflow {
             @NonNull final ReadableStoreFactory storeFactory,
             @NonNull final Fees fees,
             final long nodeID) {
-        final var payerID = preHandleResult.payer();
+
         final var txInfo = preHandleResult.txInfo();
+        final var payerID = txInfo.payerID();
         final var functionality = txInfo.functionality();
         final var txBody = txInfo.txBody();
 
