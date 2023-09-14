@@ -144,22 +144,27 @@ class IngestWorkflowImplTest extends AppTestBase {
         when(ingestChecker.runAllChecks(state, transaction, configuration)).thenReturn(transactionInfo);
 
         // Create the workflow we are going to test with
-        workflow = new IngestWorkflowImpl(stateAccessor, transactionChecker, ingestChecker, submissionManager,
-                configProvider);
+        workflow = new IngestWorkflowImpl(
+                stateAccessor, transactionChecker, ingestChecker, submissionManager, configProvider);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithInvalidArguments() {
-        assertThatThrownBy(() -> new IngestWorkflowImpl(null, transactionChecker, ingestChecker, submissionManager, configProvider))
+        assertThatThrownBy(() -> new IngestWorkflowImpl(
+                        null, transactionChecker, ingestChecker, submissionManager, configProvider))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new IngestWorkflowImpl(stateAccessor, null, ingestChecker, submissionManager, configProvider))
+        assertThatThrownBy(() ->
+                        new IngestWorkflowImpl(stateAccessor, null, ingestChecker, submissionManager, configProvider))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new IngestWorkflowImpl(stateAccessor, transactionChecker, null, submissionManager, configProvider))
+        assertThatThrownBy(() -> new IngestWorkflowImpl(
+                        stateAccessor, transactionChecker, null, submissionManager, configProvider))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new IngestWorkflowImpl(stateAccessor, transactionChecker, ingestChecker, null, configProvider))
+        assertThatThrownBy(() ->
+                        new IngestWorkflowImpl(stateAccessor, transactionChecker, ingestChecker, null, configProvider))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new IngestWorkflowImpl(stateAccessor, transactionChecker, ingestChecker, submissionManager, null))
+        assertThatThrownBy(() -> new IngestWorkflowImpl(
+                        stateAccessor, transactionChecker, ingestChecker, submissionManager, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -274,7 +279,8 @@ class IngestWorkflowImplTest extends AppTestBase {
         @DisplayName("When ingest checks fail, the transaction should be rejected")
         void testIngestChecksFail(ResponseCodeEnum failureReason) throws PreCheckException, IOException {
             // Given a throttle on CONSENSUS_CREATE_TOPIC transactions (i.e. it is time to throttle)
-            when(ingestChecker.runAllChecks(state, transaction, configuration)).thenThrow(new PreCheckException(failureReason));
+            when(ingestChecker.runAllChecks(state, transaction, configuration))
+                    .thenThrow(new PreCheckException(failureReason));
 
             // When the transaction is submitted
             workflow.submitTransaction(requestBuffer, responseBuffer);

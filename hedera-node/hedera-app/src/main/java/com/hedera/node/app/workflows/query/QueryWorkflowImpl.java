@@ -183,13 +183,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 // get payer
                 final var payerID = transactionInfo.payerID();
                 context = new QueryContextImpl(
-                        state,
-                        storeFactory,
-                        query,
-                        configuration,
-                        recordCache,
-                        exchangeRateManager,
-                        payerID);
+                        state, storeFactory, query, configuration, recordCache, exchangeRateManager, payerID);
 
                 // A super-user does not have to pay for a query and has all permissions
                 if (!authorizer.isSuperUser(payerID)) {
