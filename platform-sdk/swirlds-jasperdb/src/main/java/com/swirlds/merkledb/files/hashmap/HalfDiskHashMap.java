@@ -222,8 +222,8 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
                 // create new index and setup call back to rebuild
                 bucketIndexToBucketLocation =
                         preferDiskBasedIndex ? new LongListDisk(indexFile) : new LongListOffHeap();
-                loadedDataCallback =
-                        (dataLocation, bucket) -> bucketIndexToBucketLocation.put(bucket.getBucketIndex(), dataLocation);
+                loadedDataCallback = (dataLocation, bucket) ->
+                        bucketIndexToBucketLocation.put(bucket.getBucketIndex(), dataLocation);
             }
         } else {
             // create store dir

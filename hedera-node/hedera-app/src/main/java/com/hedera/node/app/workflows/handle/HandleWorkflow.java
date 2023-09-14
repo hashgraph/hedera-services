@@ -45,6 +45,8 @@ import com.hedera.node.app.signature.ExpandedSignaturePair;
 import com.hedera.node.app.signature.SignatureExpander;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.signature.SignatureVerifier;
+import com.hedera.node.app.spi.authorization.Authorizer;
+import com.hedera.node.app.spi.authorization.Authorizer.SystemPrivilege;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.info.NetworkInfo;
@@ -72,6 +74,7 @@ import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.system.Round;
+import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.config.api.Configuration;
@@ -80,6 +83,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
@@ -107,7 +111,9 @@ public class HandleWorkflow {
     private final ExchangeRateManager exchangeRateManager;
     private final ParentRecordFinalizer transactionFinalizer;
     private final SystemFileUpdateFacility systemFileUpdateFacility;
+    private final DualStateUpdateFacility dualStateUpdateFacility;
     private final SolvencyPreCheck solvencyPreCheck;
+    private final Authorizer authorizer;
 
     @Inject
     public HandleWorkflow(
@@ -126,7 +132,9 @@ public class HandleWorkflow {
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final ParentRecordFinalizer transactionFinalizer,
             @NonNull final SystemFileUpdateFacility systemFileUpdateFacility,
-            @NonNull final SolvencyPreCheck solvencyPreCheck) {
+            @NonNull final DualStateUpdateFacility dualStateUpdateFacility,
+            @NonNull final SolvencyPreCheck solvencyPreCheck,
+            @NonNull final Authorizer authorizer) {
         this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow, "preHandleWorkflow must not be null");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
@@ -143,7 +151,10 @@ public class HandleWorkflow {
         this.transactionFinalizer = requireNonNull(transactionFinalizer, "transactionFinalizer must not be null");
         this.systemFileUpdateFacility =
                 requireNonNull(systemFileUpdateFacility, "systemFileUpdateFacility must not be null");
+        this.dualStateUpdateFacility =
+                requireNonNull(dualStateUpdateFacility, "dualStateUpdateFacility must not be null");
         this.solvencyPreCheck = requireNonNull(solvencyPreCheck, "solvencyPreCheck must not be null");
+        this.authorizer = requireNonNull(authorizer, "authorizer must not be null");
     }
 
     /**
@@ -152,7 +163,8 @@ public class HandleWorkflow {
      * @param state the writable {@link HederaState} that this round will work on
      * @param round the next {@link Round} that needs to be processed
      */
-    public void handleRound(@NonNull final HederaState state, @NonNull final Round round) {
+    public void handleRound(
+            @NonNull final HederaState state, @NonNull final SwirldDualState dualState, @NonNull final Round round) {
         // Keep track of whether any user transactions were handled. If so, then we will need to close the round
         // with the block record manager.
         final var userTransactionsHandled = new AtomicBoolean(false);
@@ -177,7 +189,7 @@ public class HandleWorkflow {
                     // skip system transactions
                     if (!platformTxn.isSystem()) {
                         userTransactionsHandled.set(true);
-                        handlePlatformTransaction(state, event, creator, platformTxn);
+                        handlePlatformTransaction(state, dualState, event, creator, platformTxn);
                     }
                 } catch (final Exception e) {
                     logger.fatal(
@@ -199,6 +211,7 @@ public class HandleWorkflow {
 
     private void handlePlatformTransaction(
             @NonNull final HederaState state,
+            @NonNull final SwirldDualState dualState,
             @NonNull final ConsensusEvent platformEvent,
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction platformTxn) {
@@ -207,7 +220,7 @@ public class HandleWorkflow {
         final Instant consensusNow = platformTxn.getConsensusTimestamp();
 
         // handle user transaction
-        handleUserTransaction(consensusNow, state, platformEvent, creator, platformTxn);
+        handleUserTransaction(consensusNow, state, dualState, platformEvent, creator, platformTxn);
 
         // TODO: handle long scheduled transactions
 
@@ -218,6 +231,7 @@ public class HandleWorkflow {
     private void handleUserTransaction(
             @NonNull final Instant consensusNow,
             @NonNull final HederaState state,
+            @NonNull final SwirldDualState dualState,
             @NonNull final ConsensusEvent platformEvent,
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction platformTxn) {
@@ -254,7 +268,7 @@ public class HandleWorkflow {
 
             if (transactionInfo == null) {
                 // FUTURE: Charge node generic penalty, set values in record builder, and remove log statement
-                logger.error("Non-parsable transaction from creator {}", creator);
+                logger.error("Bad transaction from creator {}", creator);
                 return;
             }
 
@@ -285,6 +299,7 @@ public class HandleWorkflow {
 
             // Setup context
             final var context = new HandleContextImpl(
+                    txBody,
                     transactionInfo,
                     payer,
                     preHandleResult.payerKey(),
@@ -301,6 +316,7 @@ public class HandleWorkflow {
                     blockRecordManager,
                     recordCache,
                     feeManager,
+                    exchangeRateManager,
                     consensusNow);
 
             // Calculate the fee
@@ -331,6 +347,9 @@ public class HandleWorkflow {
 
                     // Notify responsible facility if system-file was uploaded
                     systemFileUpdateFacility.handleTxBody(stack, txBody);
+
+                    // Notify if dual state was updated
+                    dualStateUpdateFacility.handleTxBody(stack, dualState, txBody);
 
                 } catch (final HandleException e) {
                     rollback(e.getStatus(), stack, recordListBuilder);
@@ -377,7 +396,10 @@ public class HandleWorkflow {
             @NonNull final ReadableStoreFactory storeFactory,
             @NonNull final Fees fees,
             final long nodeID) {
-        final var txBody = preHandleResult.txInfo().txBody();
+        final var payerID = preHandleResult.payer();
+        final var txInfo = preHandleResult.txInfo();
+        final var functionality = txInfo.functionality();
+        final var txBody = txInfo.txBody();
 
         // Check if pre-handle was successful
         if (preHandleResult.status() != SO_FAR_SO_GOOD) {
@@ -396,6 +418,14 @@ public class HandleWorkflow {
                     DUPLICATE_TRANSACTION);
         }
 
+        // Check the status and solvency of the payer
+        try {
+            final var payer = solvencyPreCheck.getPayerAccount(storeFactory, payerID);
+            solvencyPreCheck.checkSolvency(txInfo, payer, fees.totalWithoutServiceFee());
+        } catch (final PreCheckException e) {
+            return new ValidationResult(NODE_DUE_DILIGENCE_FAILURE, e.responseCode());
+        }
+
         // Check the time box of the transaction
         try {
             checker.checkTimeBox(txBody, consensusNow);
@@ -403,12 +433,18 @@ public class HandleWorkflow {
             return new ValidationResult(PRE_HANDLE_FAILURE, e.responseCode());
         }
 
-        // Check the status and solvency of the payer
-        try {
-            final var payer = solvencyPreCheck.getPayerAccount(storeFactory, preHandleResult.payer());
-            solvencyPreCheck.checkSolvency(preHandleResult.txInfo(), payer, fees.totalWithoutServiceFee());
-        } catch (final PreCheckException e) {
-            return new ValidationResult(NODE_DUE_DILIGENCE_FAILURE, e.responseCode());
+        // Check if the payer has the required permissions
+        if (!authorizer.isAuthorized(payerID, functionality)) {
+            return new ValidationResult(PRE_HANDLE_FAILURE, ResponseCodeEnum.UNAUTHORIZED);
+        }
+
+        // Check if the transaction is privileged and if the payer has the required privileges
+        final var privileges = authorizer.hasPrivilegedAuthorization(payerID, functionality, txBody);
+        if (privileges == SystemPrivilege.UNAUTHORIZED) {
+            return new ValidationResult(PRE_HANDLE_FAILURE, ResponseCodeEnum.AUTHORIZATION_FAILED);
+        }
+        if (privileges == SystemPrivilege.IMPERMISSIBLE) {
+            return new ValidationResult(PRE_HANDLE_FAILURE, ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE);
         }
 
         // Check all signature verifications. This will also wait, if validation is still ongoing.
@@ -417,8 +453,16 @@ public class HandleWorkflow {
             return new ValidationResult(NODE_DUE_DILIGENCE_FAILURE, INVALID_SIGNATURE);
         }
 
+        // verify all the keys
         for (final var key : preHandleResult.requiredKeys()) {
             final var verification = verifier.verificationFor(key);
+            if (verification.failed()) {
+                return new ValidationResult(PRE_HANDLE_FAILURE, INVALID_SIGNATURE);
+            }
+        }
+        // If there are any hollow accounts whose signatures need to be verified, verify them
+        for (final var hollowAccount : preHandleResult.hollowAccounts()) {
+            final var verification = verifier.verificationFor(hollowAccount.alias());
             if (verification.failed()) {
                 return new ValidationResult(PRE_HANDLE_FAILURE, INVALID_SIGNATURE);
             }
@@ -491,6 +535,7 @@ public class HandleWorkflow {
      * any keys need to be added. If so, we trigger the signature verification for the new keys and collect all
      * results.
      */
+    // TODO: Need to re-use expandAndVerifySignatures from PreHandleWorkflowImpl instead of duplicating this code
     @NonNull
     private PreHandleResult addMissingSignatures(
             @NonNull final ReadableStoreFactory storeFactory,
@@ -506,6 +551,16 @@ public class HandleWorkflow {
         final var context = new PreHandleContextImpl(storeFactory, txBody, configuration, dispatcher);
         dispatcher.dispatchPreHandle(context);
 
+        // re-expand keys only if any of the keys have changed
+        final var previousResults = previousResult.verificationResults();
+        final var currentRequiredPayerKeys = context.requiredNonPayerKeys();
+        final var currentOptionalPayerKeys = context.optionalNonPayerKeys();
+        final var anyKeyChanged = haveKeyChanges(previousResults, context);
+        // If none of the keys changed then non need to re-expand all signatures.
+        if (!anyKeyChanged) {
+            return previousResult;
+        }
+
         // prepare signature verification
         final var verifications = new HashMap<Key, SignatureVerificationFuture>();
         final var payerKey = previousResult.payerKey();
@@ -513,8 +568,9 @@ public class HandleWorkflow {
 
         // expand all keys
         final var expanded = new HashSet<ExpandedSignaturePair>();
-        signatureExpander.expand(context.requiredNonPayerKeys(), sigPairs, expanded);
-        signatureExpander.expand(context.optionalNonPayerKeys(), sigPairs, expanded);
+        signatureExpander.expand(sigPairs, expanded);
+        signatureExpander.expand(currentRequiredPayerKeys, sigPairs, expanded);
+        signatureExpander.expand(currentOptionalPayerKeys, sigPairs, expanded);
 
         // remove all keys that were already verified
         for (final var it = expanded.iterator(); it.hasNext(); ) {
@@ -538,8 +594,35 @@ public class HandleWorkflow {
                 previousResult.responseCode(),
                 previousResult.txInfo(),
                 context.requiredNonPayerKeys(),
+                context.requiredHollowAccounts(),
                 verifications,
                 previousResult.innerResult(),
                 previousResult.configVersion());
+    }
+
+    /**
+     * Checks if any of the keys changed from previous result to current result.
+     * Only if keys changed we need to re-expand and re-verify the signatures.
+     * @param previousResults previous result from signature verification
+     * @param context current context
+     * @return true if any of the keys changed
+     */
+    private boolean haveKeyChanges(
+            final Map<Key, SignatureVerificationFuture> previousResults, final PreHandleContextImpl context) {
+        final var currentRequiredNonPayerKeys = context.requiredNonPayerKeys();
+        final var currentOptionalNonPayerKeys = context.optionalNonPayerKeys();
+        final var currentPayerKey = context.payerKey();
+
+        for (final var key : currentRequiredNonPayerKeys) {
+            if (!previousResults.containsKey(key)) {
+                return true;
+            }
+        }
+        for (final var key : currentOptionalNonPayerKeys) {
+            if (!previousResults.containsKey(key)) {
+                return true;
+            }
+        }
+        return !previousResults.containsKey(currentPayerKey);
     }
 }

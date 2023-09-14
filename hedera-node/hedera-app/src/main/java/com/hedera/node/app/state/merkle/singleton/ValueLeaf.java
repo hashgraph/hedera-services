@@ -16,9 +16,12 @@
 
 package com.hedera.node.app.state.merkle.singleton;
 
+import static com.hedera.node.app.state.merkle.StateUtils.readFromStream;
+import static com.hedera.node.app.state.merkle.StateUtils.writeToStream;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.app.state.merkle.StateMetadata;
-import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
-import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
+import com.hedera.pbj.runtime.Codec;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
@@ -26,7 +29,6 @@ import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
-import java.util.Objects;
 
 /**
  * A Merkle leaf that stores an arbitrary value with delegated serialization based on the {@link
@@ -40,6 +42,7 @@ public class ValueLeaf<T> extends PartialMerkleLeaf implements MerkleLeaf {
     private static final long CLASS_ID = 0x65A48B28C563D72EL;
 
     private final StateMetadata<?, T> md;
+    private final Codec<T> codec;
     /** The actual value. For example, it could be an Account or SmartContract. */
     private T val;
 
@@ -49,6 +52,7 @@ public class ValueLeaf<T> extends PartialMerkleLeaf implements MerkleLeaf {
     @Deprecated(forRemoval = true)
     public ValueLeaf() {
         md = null;
+        codec = null;
     }
 
     /**
@@ -58,7 +62,8 @@ public class ValueLeaf<T> extends PartialMerkleLeaf implements MerkleLeaf {
      * @param md The state metadata
      */
     public ValueLeaf(@NonNull final StateMetadata<?, T> md) {
-        this.md = Objects.requireNonNull(md);
+        this.md = requireNonNull(md);
+        this.codec = md.stateDefinition().valueCodec();
     }
 
     /**
@@ -102,8 +107,8 @@ public class ValueLeaf<T> extends PartialMerkleLeaf implements MerkleLeaf {
         if (md == null) {
             throw new IllegalStateException("Metadata is null, meaning this is not a proper object");
         }
-        final var valueSerdes = md.stateDefinition().valueCodec();
-        valueSerdes.write(val, new WritableStreamingData(out));
+
+        writeToStream(out, codec, val);
     }
 
     /** {@inheritDoc} */
@@ -112,8 +117,8 @@ public class ValueLeaf<T> extends PartialMerkleLeaf implements MerkleLeaf {
         if (md == null) {
             throw new IllegalStateException("Metadata is null, meaning this is not a proper object");
         }
-        final var valueSerdes = md.stateDefinition().valueCodec();
-        this.val = valueSerdes.parse(new ReadableStreamingData(in));
+
+        this.val = readFromStream(in, codec);
     }
 
     /**

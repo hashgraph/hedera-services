@@ -18,8 +18,6 @@ package com.swirlds.virtualmap;
 
 import com.swirlds.common.FastCopyable;
 import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.virtualmap.datasource.VirtualDataSource;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
 /**

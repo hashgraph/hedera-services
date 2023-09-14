@@ -21,6 +21,7 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.Prn
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.node.app.service.contract.impl.exec.processors.ProcessorModule;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.ExchangeRateSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.PrngSystemContract;
 import org.hyperledger.besu.datatypes.Address;
@@ -35,16 +36,20 @@ class ProcessorModuleTest {
     private HtsSystemContract htsSystemContract;
 
     @Mock
+    private ExchangeRateSystemContract exchangeRateSystemContract;
+
+    @Mock
     private PrngSystemContract prngSystemContract;
 
     @Test
     void provideHederaSystemContracts() {
-        final var hederaSystemContracts =
-                ProcessorModule.provideHederaSystemContracts(htsSystemContract, prngSystemContract);
+        final var hederaSystemContracts = ProcessorModule.provideHederaSystemContracts(
+                htsSystemContract, exchangeRateSystemContract, prngSystemContract);
         assertThat(hederaSystemContracts)
                 .isNotNull()
-                .hasSize(2)
-                .containsKey(Address.fromHexString(PRNG_PRECOMPILE_ADDRESS))
-                .containsKey(Address.fromHexString(HTS_PRECOMPILE_ADDRESS));
+                .hasSize(3)
+                .containsKey(Address.fromHexString(HTS_PRECOMPILE_ADDRESS))
+                .containsKey(Address.fromHexString(ExchangeRateSystemContract.EXCHANGE_RATE_SYSTEM_CONTRACT_ADDRESS))
+                .containsKey(Address.fromHexString(PRNG_PRECOMPILE_ADDRESS));
     }
 }

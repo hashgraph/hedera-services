@@ -30,6 +30,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
+import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.ResultStatus;
@@ -422,6 +423,15 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
     public void externalizeSystemContractResults(
             @NonNull final ContractFunctionResult result, final ResultStatus status) {
         enhancement.systemOperations().externalizeResult(result, status);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @NonNull
+    public ExchangeRate currentExchangeRate() {
+        return enhancement().systemOperations().currentExchangeRate();
     }
 
     private long getValidatedCreationNumber(

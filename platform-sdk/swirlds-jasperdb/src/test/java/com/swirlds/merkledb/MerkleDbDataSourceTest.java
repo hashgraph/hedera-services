@@ -447,8 +447,7 @@ class MerkleDbDataSourceTest {
         dataSource.saveRecords(
                 count,
                 count * 2,
-                IntStream.range(0, count * 2)
-                        .mapToObj(i -> createVirtualInternalRecord(i, i + 1)),
+                IntStream.range(0, count * 2).mapToObj(i -> createVirtualInternalRecord(i, i + 1)),
                 IntStream.range(count, count * 2)
                         .mapToObj(i -> testType.dataType().createVirtualLeafRecord(i)),
                 Stream.empty());

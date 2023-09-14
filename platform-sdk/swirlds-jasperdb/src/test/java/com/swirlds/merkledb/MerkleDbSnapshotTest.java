@@ -28,6 +28,7 @@ import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.merkledb.serialize.ValueSerializer;
 import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.internal.merkle.VirtualMapState;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import java.nio.file.Files;
@@ -126,7 +127,7 @@ class MerkleDbSnapshotTest {
         }
         lastRoot.set(stateRoot);
 
-        MerkleDb.setDefaultPath(null);
+        MerkleDb.resetDefaultInstancePath();
         final MerkleDataInputStream in =
                 new MerkleDataInputStream(Files.newInputStream(snapshotFile, StandardOpenOption.READ));
         final MerkleInternal restoredStateRoot = in.readMerkleTree(snapshotDir, Integer.MAX_VALUE);
@@ -192,7 +193,7 @@ class MerkleDbSnapshotTest {
         out.writeMerkleTree(snapshotDir, rootToSnapshot.get());
         rootToSnapshot.get().release();
 
-        MerkleDb.setDefaultPath(null);
+        MerkleDb.resetDefaultInstancePath();
         final MerkleDataInputStream in =
                 new MerkleDataInputStream(Files.newInputStream(snapshotFile, StandardOpenOption.READ));
         final MerkleInternal restoredStateRoot = in.readMerkleTree(snapshotDir, Integer.MAX_VALUE);
@@ -201,6 +202,34 @@ class MerkleDbSnapshotTest {
 
         lastRoot.get().release();
         restoredStateRoot.release();
+    }
+
+    /*
+     * This test simulates the following scenario. First, a signed state for round N is selected
+     * to be flushed to disk (periodic snapshot). Before it's done, the node is disconnected from
+     * network and starts a reconnect. Reconnect is successful for a different round M (M > N),
+     * and snapshot for round M is written to disk. Now the node has all signatures for the old
+     * round N, and that old signed state is finally written to disk.
+     */
+    @Test
+    void testSnapshotAfterReconnect() throws Exception {
+        final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig = fixedConfig();
+        final MerkleDbDataSourceBuilder<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dsBuilder =
+                new MerkleDbDataSourceBuilder<>(tableConfig);
+        final VirtualDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> original =
+                dsBuilder.build("vm", false);
+        // Simulate reconnect as a learner
+        final VirtualDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> copy =
+                dsBuilder.copy(original, true);
+
+        final Path snapshotDir = TemporaryFileBuilder.buildTemporaryDirectory("snapshot");
+        dsBuilder.snapshot(snapshotDir, copy);
+
+        final Path oldSnapshotDir = TemporaryFileBuilder.buildTemporaryDirectory("oldSnapshot");
+        Assertions.assertDoesNotThrow(() -> dsBuilder.snapshot(oldSnapshotDir, original));
+
+        original.close();
+        copy.close();
     }
 
     public static class TestInternalNode extends PartialNaryMerkleInternal implements MerkleInternal {

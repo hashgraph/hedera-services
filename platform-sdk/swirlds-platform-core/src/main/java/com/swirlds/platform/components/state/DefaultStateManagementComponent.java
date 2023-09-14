@@ -212,7 +212,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         dispatchBuilder =
                 new DispatchBuilder(platformContext.getConfiguration().getConfigData(DispatchConfiguration.class));
 
-        hashLogger = new HashLogger(threadManager, selfId, stateConfig);
+        hashLogger = new HashLogger(threadManager, stateConfig);
 
         final StateHashedTrigger stateHashedTrigger =
                 dispatchBuilder.getDispatcher(this, StateHashedTrigger.class)::dispatch;
@@ -506,13 +506,8 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         dumpLatestImmutableState(reason, blocking);
     }
 
-    /**
-     * Dump the latest immutable state if it is available.
-     *
-     * @param reason   the reason why the state is being dumped
-     * @param blocking if true then block until the state dump is complete
-     */
-    private void dumpLatestImmutableState(@NonNull final StateToDiskReason reason, final boolean blocking) {
+    @Override
+    public void dumpLatestImmutableState(@NonNull final StateToDiskReason reason, final boolean blocking) {
         Objects.requireNonNull(reason);
 
         try (final ReservedSignedState reservedState = signedStateManager.getLatestImmutableState(

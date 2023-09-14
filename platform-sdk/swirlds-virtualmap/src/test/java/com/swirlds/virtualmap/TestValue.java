@@ -18,9 +18,7 @@ package com.swirlds.virtualmap;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.utility.CommonUtils;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Objects;
 
 public final class TestValue implements VirtualValue {

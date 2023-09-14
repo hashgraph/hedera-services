@@ -18,7 +18,9 @@ package com.hedera.node.app.spi.fees;
 
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 public interface FeeContext {
 
@@ -51,4 +53,12 @@ public interface FeeContext {
      */
     @NonNull
     <T> T readableStore(@NonNull Class<T> storeInterface);
+
+    /**
+     * Returns the current {@link Configuration} for the node.
+     *
+     * @return the {@code Configuration}
+     */
+    @Nullable
+    Configuration configuration();
 }

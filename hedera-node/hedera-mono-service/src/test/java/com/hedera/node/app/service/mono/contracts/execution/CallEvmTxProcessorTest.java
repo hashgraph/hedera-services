@@ -61,13 +61,10 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
 import java.time.Instant;
-import java.util.ArrayDeque;
 import java.util.Collections;
-import java.util.Deque;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import javax.inject.Provider;
 import org.apache.commons.lang3.tuple.Pair;
@@ -92,7 +89,6 @@ import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
-import org.hyperledger.besu.plugin.data.Transaction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -123,9 +119,6 @@ class CallEvmTxProcessorTest {
 
     @Mock
     private Set<Operation> operations;
-
-    @Mock
-    private Transaction transaction;
 
     @Mock
     private HederaWorldState.Updater updater;
@@ -320,7 +313,6 @@ class CallEvmTxProcessorTest {
     @Test
     void missingCodeBecomesEmptyInInitialFrame() {
         MessageFrame.Builder protoFrame = MessageFrame.builder()
-                .messageFrameStack(new ArrayDeque<>())
                 .worldUpdater(updater)
                 .initialGas(1L)
                 .originator(sender.canonicalAddress())
@@ -329,7 +321,6 @@ class CallEvmTxProcessorTest {
                 .value(Wei.ONE)
                 .apparentValue(Wei.ONE)
                 .blockValues(blockValues)
-                .depth(1)
                 .completer(frame -> {})
                 .miningBeneficiary(Address.ZERO)
                 .blockHashLookup(hash -> null);
@@ -507,32 +498,28 @@ class CallEvmTxProcessorTest {
     @Test
     void assertTransactionSenderAndValue() {
         // setup:
-        doReturn(Optional.of(receiver.getId().asEvmAddress())).when(transaction).getTo();
+        final Wei oneWei = Wei.of(1L);
         given(codeCache.getIfPresent(any())).willReturn(CodeV0.EMPTY_CODE);
-        given(transaction.getSender()).willReturn(sender.getId().asEvmAddress());
-        given(transaction.getValue()).willReturn(Wei.of(1L));
         final MessageFrame.Builder commonInitialFrame = MessageFrame.builder()
-                .messageFrameStack(mock(Deque.class))
                 .maxStackSize(MAX_STACK_SIZE)
                 .worldUpdater(mock(WorldUpdater.class))
                 .initialGas(GAS_LIMIT)
                 .originator(sender.getId().asEvmAddress())
                 .gasPrice(Wei.ZERO)
                 .sender(sender.getId().asEvmAddress())
-                .value(Wei.of(transaction.getValue().getAsBigInteger()))
-                .apparentValue(Wei.of(transaction.getValue().getAsBigInteger()))
+                .value(oneWei)
+                .apparentValue(oneWei)
                 .blockValues(mock(BlockValues.class))
-                .depth(0)
                 .completer(__ -> {})
                 .miningBeneficiary(Address.ZERO)
                 .blockHashLookup(h -> null);
         // when:
         MessageFrame buildMessageFrame = callEvmTxProcessor.buildInitialFrame(
-                commonInitialFrame, (Address) transaction.getTo().get(), Bytes.EMPTY, 0L);
+                commonInitialFrame, receiver.getId().asEvmAddress(), Bytes.EMPTY, 0L);
 
         // expect:
-        assertEquals(transaction.getSender(), buildMessageFrame.getSenderAddress());
-        assertEquals(transaction.getValue(), buildMessageFrame.getApparentValue());
+        assertEquals(sender.getId().asEvmAddress(), buildMessageFrame.getSenderAddress());
+        assertEquals(oneWei, buildMessageFrame.getApparentValue());
     }
 
     @Test

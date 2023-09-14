@@ -47,6 +47,10 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
+import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.VersionedConfigImpl;
+import com.hedera.node.config.VersionedConfiguration;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.system.status.PlatformStatus;
@@ -103,6 +107,11 @@ class IngestWorkflowImplTest extends AppTestBase {
     @Mock(strictness = LENIENT)
     SubmissionManager submissionManager;
 
+    @Mock(strictness = LENIENT)
+    private ConfigProvider configProvider;
+
+    private VersionedConfiguration configuration;
+
     @BeforeEach
     void setup() throws PreCheckException {
         // The request buffer, with basically random bytes
@@ -112,6 +121,9 @@ class IngestWorkflowImplTest extends AppTestBase {
                         .accountID(AccountID.newBuilder().accountNum(1001).build())
                         .build())
                 .build();
+
+        configuration = new VersionedConfigImpl(HederaTestConfigBuilder.createConfig(), 1L);
+        when(configProvider.getConfiguration()).thenReturn(configuration);
 
         // The account will have the following state
         // TODO Anything here??
@@ -129,22 +141,30 @@ class IngestWorkflowImplTest extends AppTestBase {
                 SignatureMap.newBuilder().build(),
                 randomBytes(100), // Not used in this test, so random bytes is OK
                 HederaFunctionality.CONSENSUS_CREATE_TOPIC);
-        when(ingestChecker.runAllChecks(state, transaction)).thenReturn(transactionInfo);
+        when(ingestChecker.runAllChecks(state, transaction, configuration)).thenReturn(transactionInfo);
 
         // Create the workflow we are going to test with
-        workflow = new IngestWorkflowImpl(stateAccessor, transactionChecker, ingestChecker, submissionManager);
+        workflow = new IngestWorkflowImpl(
+                stateAccessor, transactionChecker, ingestChecker, submissionManager, configProvider);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithInvalidArguments() {
-        assertThatThrownBy(() -> new IngestWorkflowImpl(null, transactionChecker, ingestChecker, submissionManager))
+        assertThatThrownBy(() -> new IngestWorkflowImpl(
+                        null, transactionChecker, ingestChecker, submissionManager, configProvider))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new IngestWorkflowImpl(stateAccessor, null, ingestChecker, submissionManager))
+        assertThatThrownBy(() ->
+                        new IngestWorkflowImpl(stateAccessor, null, ingestChecker, submissionManager, configProvider))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new IngestWorkflowImpl(stateAccessor, transactionChecker, null, submissionManager))
+        assertThatThrownBy(() -> new IngestWorkflowImpl(
+                        stateAccessor, transactionChecker, null, submissionManager, configProvider))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new IngestWorkflowImpl(stateAccessor, transactionChecker, ingestChecker, null))
+        assertThatThrownBy(() ->
+                        new IngestWorkflowImpl(stateAccessor, transactionChecker, ingestChecker, null, configProvider))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new IngestWorkflowImpl(
+                        stateAccessor, transactionChecker, ingestChecker, submissionManager, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -259,7 +279,8 @@ class IngestWorkflowImplTest extends AppTestBase {
         @DisplayName("When ingest checks fail, the transaction should be rejected")
         void testIngestChecksFail(ResponseCodeEnum failureReason) throws PreCheckException, IOException {
             // Given a throttle on CONSENSUS_CREATE_TOPIC transactions (i.e. it is time to throttle)
-            when(ingestChecker.runAllChecks(state, transaction)).thenThrow(new PreCheckException(failureReason));
+            when(ingestChecker.runAllChecks(state, transaction, configuration))
+                    .thenThrow(new PreCheckException(failureReason));
 
             // When the transaction is submitted
             workflow.submitTransaction(requestBuffer, responseBuffer);
@@ -277,7 +298,7 @@ class IngestWorkflowImplTest extends AppTestBase {
         @DisplayName("If some random exception is thrown from IngestChecker, the exception is bubbled up")
         void randomException() throws PreCheckException {
             // Given a ThrottleAccumulator that will throw a RuntimeException
-            when(ingestChecker.runAllChecks(state, transaction))
+            when(ingestChecker.runAllChecks(state, transaction, configuration))
                     .thenThrow(new RuntimeException("runAllChecks exception"));
 
             // When the transaction is submitted, then the exception is bubbled up

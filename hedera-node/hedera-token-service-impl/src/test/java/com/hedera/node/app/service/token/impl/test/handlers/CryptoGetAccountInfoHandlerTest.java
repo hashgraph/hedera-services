@@ -65,8 +65,6 @@ import com.hedera.node.app.service.token.impl.ReadableStakingInfoStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.handlers.CryptoGetAccountInfoHandler;
-import com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager;
-import com.hedera.node.app.service.token.impl.handlers.staking.StakeRewardCalculatorImpl;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.state.ReadableSingletonState;
@@ -74,13 +72,10 @@ import com.hedera.node.app.spi.state.ReadableSingletonStateBase;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
-import com.hedera.node.config.ConfigProvider;
-import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.config.api.Configuration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -102,11 +97,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
     @Mock
     private ReadableStates readableStates1, readableStates2, readableStates3, readableStates4;
 
-    @Mock
-    private ConfigProvider configProvider;
-
     private CryptoGetAccountInfoHandler subject;
-    private Configuration config;
 
     @Mock
     private StakingNodeInfo stakingNodeInfo;
@@ -114,10 +105,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
     @BeforeEach
     public void setUp() {
         super.setUp();
-        config = HederaTestConfigBuilder.create().getOrCreateConfig();
-        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(config, 1));
-        subject =
-                new CryptoGetAccountInfoHandler(new StakeRewardCalculatorImpl(new StakePeriodManager(configProvider)));
+        subject = new CryptoGetAccountInfoHandler();
     }
 
     @Test
@@ -380,6 +368,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
                 .build();
         setupTokenRelationStore(tokenRelation);
         setupStakingInfoStore();
+        setupStakingRewardsStore();
         setupConfig();
         final var query = createCryptoGetInfoQuery(accountNum);
         when(context.query()).thenReturn(query);

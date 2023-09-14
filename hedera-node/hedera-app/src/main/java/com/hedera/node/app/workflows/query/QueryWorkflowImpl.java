@@ -26,6 +26,7 @@ import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER_STATE_PROOF;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ResponseHeader;
 import com.hedera.hapi.node.base.ResponseType;
@@ -33,11 +34,11 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.authorization.Authorizer;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.UnknownHederaFunctionality;
+import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
@@ -144,9 +145,9 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         final var function = functionOf(query);
 
         final var handler = dispatcher.getHandler(query);
-        final var queryHeader = handler.extractHeader(query);
+        var queryHeader = handler.extractHeader(query);
         if (queryHeader == null) {
-            throw new StatusRuntimeException(Status.INVALID_ARGUMENT);
+            queryHeader = QueryHeader.DEFAULT;
         }
         final ResponseType responseType = queryHeader.responseType();
         logger.debug("Started answering a {} query of type {}", function, responseType);
@@ -173,21 +174,16 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             TransactionBody txBody = null;
             if (paymentRequired) {
                 allegedPayment = queryHeader.paymentOrThrow();
+                final var configuration = configProvider.getConfiguration();
 
                 // 4.i Ingest checks
-                final var transactionInfo = ingestChecker.runAllChecks(state, allegedPayment);
+                final var transactionInfo = ingestChecker.runAllChecks(state, allegedPayment, configuration);
                 txBody = transactionInfo.txBody();
 
                 // get payer
                 final var payerID = transactionInfo.payerID();
                 context = new QueryContextImpl(
-                        state,
-                        storeFactory,
-                        query,
-                        configProvider.getConfiguration(),
-                        recordCache,
-                        exchangeRateManager,
-                        payerID);
+                        state, storeFactory, query, configuration, recordCache, exchangeRateManager, payerID);
 
                 // A super-user does not have to pay for a query and has all permissions
                 if (!authorizer.isSuperUser(payerID)) {

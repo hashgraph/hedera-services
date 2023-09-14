@@ -42,6 +42,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.Platform;
+import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.config.api.Configuration;
 import java.time.InstantSource;
@@ -90,6 +91,7 @@ class IngestComponentTest {
         final var configProvider = new ConfigProviderImpl(false);
         final var throttleManager = new ThrottleManager();
         final var exchangeRateManager = new ExchangeRateManager(configProvider);
+        final var dualState = mock(SwirldDualState.class);
         app = DaggerHederaInjectionComponent.builder()
                 .initTrigger(InitTrigger.GENESIS)
                 .platform(platform)

@@ -18,10 +18,8 @@ package com.swirlds.platform.reconnect;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.virtualmap.VirtualValue;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Objects;
 
 public final class TestValue implements VirtualValue {

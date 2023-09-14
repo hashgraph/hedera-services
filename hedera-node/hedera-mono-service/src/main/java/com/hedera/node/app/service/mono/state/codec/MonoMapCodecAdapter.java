@@ -172,8 +172,8 @@ public class MonoMapCodecAdapter {
         };
     }
 
-    public static <T extends VirtualValue> Codec<T> codecForVirtualValue(final int version,
-            final Supplier<T> factory, final ValueSerializer<T> valueSerializer) {
+    public static <T extends VirtualValue> Codec<T> codecForVirtualValue(
+            final int version, final Supplier<T> factory, final ValueSerializer<T> valueSerializer) {
         return new Codec<>() {
             @NonNull
             @Override
