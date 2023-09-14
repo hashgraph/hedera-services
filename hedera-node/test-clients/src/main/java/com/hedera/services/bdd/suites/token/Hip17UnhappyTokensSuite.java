@@ -249,6 +249,8 @@ public class Hip17UnhappyTokensSuite extends HapiSuite {
     public HapiSpec cannotUpdateNftWhenDeleted() {
         return defaultHapiSpec("cannotUpdateNftWhenDeleted")
                 .given(
+                        fileUpdate(APP_PROPERTIES)
+                                .overridingProps(AutoRenewConfigChoices.propsForAccountAutoRenewOnWith(1, 0L, 2, 2)),
                         cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(NEW_TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(AUTO_RENEW_ACCT).balance(ONE_HUNDRED_HBARS),

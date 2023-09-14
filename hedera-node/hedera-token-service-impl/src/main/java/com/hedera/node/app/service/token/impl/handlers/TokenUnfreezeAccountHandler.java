@@ -20,6 +20,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_WAS_DELETED;
+import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
@@ -113,6 +115,8 @@ public class TokenUnfreezeAccountHandler implements TransactionHandler {
         // Check that the token exists
         final var tokenId = op.tokenOrElse(TokenID.DEFAULT);
         final var tokenMeta = tokenStore.getTokenMeta(tokenId);
+        final var token = tokenStore.get(tokenId);
+
         validateTrue(tokenMeta != null, INVALID_TOKEN_ID);
 
         // Check that the token has a freeze key
@@ -127,6 +131,8 @@ public class TokenUnfreezeAccountHandler implements TransactionHandler {
         final var tokenRel = tokenRelStore.getForModify(accountId, tokenId);
         validateTrue(tokenRel != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
 
+        // Check that token is not deleted
+        validateFalse(token != null && token.deleted(), TOKEN_WAS_DELETED);
         // Return the token relation
         return tokenRel;
     }

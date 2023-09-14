@@ -97,6 +97,10 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
         // validate token exists
         final var token = tokenStore.get(tokenId);
         validateTrue(token != null, INVALID_TOKEN_ID);
+
+        // Check that token is not deleted
+        validateFalse(token.deleted(), TOKEN_WAS_DELETED);
+
         // validate treasury relation exists
         final var treasuryRel = tokenRelStore.get(token.treasuryAccountId(), tokenId);
         validateTrue(treasuryRel != null, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
@@ -201,6 +205,7 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
         final var copyTreasury = treasuryAccount.copyBuilder();
         // Update Token and treasury
         copyToken.lastUsedSerialNumber(currentSerialNumber);
+        copyToken.totalSupply(token.totalSupply() + metadataCount);
         copyTreasury.numberOwnedNfts(treasuryAccount.numberOwnedNfts() + metadataCount);
 
         tokenStore.put(copyToken.build());
