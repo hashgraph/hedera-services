@@ -26,6 +26,11 @@ import java.util.Objects;
  * Base class for {@link ReadableFileStoreImpl} and {@link WritableFileStore}.
  */
 public abstract class FileStore {
+
+    protected FileStore() {
+        // We have only static methods here. There is no need to initialize the class
+    }
+
     /**
      * Convert a {@link File} to a {@link FileMetadata}.
      *

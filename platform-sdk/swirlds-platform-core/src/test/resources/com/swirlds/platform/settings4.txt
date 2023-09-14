@@ -42,7 +42,6 @@ benchmark.csvWriteFrequency, 4000
 benchmark.csvAppend, true
 event.eventIntakeQueueThrottleSize, 2000
 event.eventIntakeQueueSize, 15000
-state.checkSignedStateFromDisk, true
 event.randomEventProbability, 1
 event.staleEventPreventionThreshold, 10
 event.rescueChildlessInverseProbability, 15

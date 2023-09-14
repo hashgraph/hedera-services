@@ -22,8 +22,6 @@ import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldUpdater;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.time.Instant;
-import java.util.ArrayDeque;
-import java.util.Deque;
 import java.util.Map;
 import javax.inject.Provider;
 import org.apache.tuweni.bytes.Bytes;
@@ -127,13 +125,11 @@ public abstract class HederaEvmTxProcessor {
 
         final var blockValues = blockMetaSource.computeBlockValues(gasLimit);
         final var gasAvailable = gasLimit - intrinsicGas;
-        final Deque<MessageFrame> messageFrameStack = new ArrayDeque<>();
 
         final var valueAsWei = Wei.of(value);
         final var stackedUpdater = updater.updater();
         final var senderEvmAddress = sender.canonicalAddress();
         final MessageFrame.Builder commonInitialFrame = MessageFrame.builder()
-                .messageFrameStack(messageFrameStack)
                 .maxStackSize(MAX_STACK_SIZE)
                 .worldUpdater(stackedUpdater)
                 .initialGas(gasAvailable)
@@ -143,7 +139,6 @@ public abstract class HederaEvmTxProcessor {
                 .value(valueAsWei)
                 .apparentValue(valueAsWei)
                 .blockValues(blockValues)
-                .depth(0)
                 .completer(unused -> {})
                 .isStatic(isStatic)
                 .miningBeneficiary(coinbase)
@@ -151,7 +146,7 @@ public abstract class HederaEvmTxProcessor {
                 .contextVariables(Map.of("HederaFunctionality", getFunctionType()));
 
         this.initialFrame = buildInitialFrame(commonInitialFrame, receiver, payload, value);
-        messageFrameStack.addFirst(initialFrame);
+        final var messageFrameStack = initialFrame.getMessageFrameStack();
 
         tracer.init(initialFrame);
 

@@ -24,6 +24,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getFastRecordNotSup
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getStakersNotSupported;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getTokenNftInfosNotSupported;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -51,6 +52,7 @@ public class UnsupportedQueriesRegression extends HapiSuite {
         });
     }
 
+    @HapiTest
     private HapiSpec verifyUnsupportedOps() {
         return defaultHapiSpec("VerifyUnsupportedOps")
                 .given()
