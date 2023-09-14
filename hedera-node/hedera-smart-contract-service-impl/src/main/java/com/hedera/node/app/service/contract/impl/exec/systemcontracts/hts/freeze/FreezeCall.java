@@ -41,7 +41,7 @@ public class FreezeCall extends AbstractHtsCall {
     private final AccountID spender;
 
     // too many parameters
-    protected FreezeCall(
+    public FreezeCall(
             @NonNull final Enhancement enhancement,
             @NonNull final AddressIdConverter addressIdConverter,
             @NonNull final VerificationStrategy verificationStrategy,
