@@ -25,6 +25,7 @@ import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Objects;
@@ -163,6 +164,7 @@ public class GossipEvent implements EventIntakeTask, BaseEvent, ChatterEvent {
      *
      * @return the id of the node that this event was received from
      */
+    @Nullable
     public NodeId getSenderNodeId() {
         return senderNodeId;
     }

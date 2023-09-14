@@ -124,7 +124,7 @@ public final class GossipFactory {
             @NonNull final EventObserverDispatcher eventObserverDispatcher,
             @NonNull final EventMapper eventMapper,
             @NonNull final EventIntakeMetrics eventIntakeMetrics,
-            @NonNull final IntakePipelineManager intakePipelineManager,
+            @Nullable final IntakePipelineManager intakePipelineManager,
             @NonNull final SyncMetrics syncMetrics,
             @NonNull final EventLinker eventLinker,
             @NonNull final StatusActionSubmitter statusActionSubmitter,

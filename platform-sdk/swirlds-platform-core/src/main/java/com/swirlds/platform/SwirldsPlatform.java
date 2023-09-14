@@ -122,6 +122,7 @@ import com.swirlds.platform.gossip.GossipFactory;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphEventObserver;
+import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.gui.GuiPlatformAccessor;
 import com.swirlds.platform.intake.IntakeCycleStats;
 import com.swirlds.platform.internal.EventImpl;
@@ -530,7 +531,16 @@ public class SwirldsPlatform implements Platform, Startable {
         final List<Predicate<EventDescriptor>> isDuplicateChecks = new ArrayList<>();
         isDuplicateChecks.add(d -> shadowGraph.isHashInGraph(d.getHash()));
 
-        final IntakePipelineManager intakePipelineManager = new IntakePipelineManager();
+        final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
+
+        // if a null pipeline manager is passed in to the subsequent objects, then the status of the intake pipeline
+        // will not be considered when deciding whether to sync with a given peer
+        final IntakePipelineManager intakePipelineManager;
+        if (syncConfig.waitForEventsInIntake()) {
+            intakePipelineManager = new IntakePipelineManager();
+        } else {
+            intakePipelineManager = null;
+        }
 
         eventLinker = buildEventLinker(time, isDuplicateChecks, intakePipelineManager);
 

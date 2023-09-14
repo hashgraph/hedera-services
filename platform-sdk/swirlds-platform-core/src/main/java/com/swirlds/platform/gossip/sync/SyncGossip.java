@@ -169,7 +169,7 @@ public class SyncGossip extends AbstractGossip {
             @NonNull final EventObserverDispatcher eventObserverDispatcher,
             @NonNull final EventMapper eventMapper,
             @NonNull final EventIntakeMetrics eventIntakeMetrics,
-            @NonNull final IntakePipelineManager intakePipelineManager,
+            @Nullable final IntakePipelineManager intakePipelineManager,
             @NonNull final SyncMetrics syncMetrics,
             @NonNull final EventLinker eventLinker,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
@@ -201,7 +201,7 @@ public class SyncGossip extends AbstractGossip {
         final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
         this.eventIntakeLambda = Objects.requireNonNull(eventIntakeLambda);
 
-        this.intakePipelineManager = Objects.requireNonNull(intakePipelineManager);
+        this.intakePipelineManager = intakePipelineManager;
 
         syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
 
@@ -413,7 +413,10 @@ public class SyncGossip extends AbstractGossip {
         throwIfNotInPhase(LifecyclePhase.STARTED);
         gossipHalted.set(true);
         syncPermitProvider.waitForAllSyncsToFinish();
-        intakePipelineManager.reset();
+
+        if (intakePipelineManager != null) {
+            intakePipelineManager.reset();
+        }
     }
 
     /**
