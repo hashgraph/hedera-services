@@ -189,7 +189,7 @@ class FileDeleteTest extends FileTestBase {
     void keysDoesntExist() {
         final var txn = newDeleteTxn().fileDeleteOrThrow();
 
-        file = new File(fileId, expirationTime, null, Bytes.wrap(contents), memo, false);
+        file = new File(fileId, expirationTime, null, Bytes.wrap(contents), memo, false, 0L);
 
         writableFileState = writableFileStateWithOneKey();
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
@@ -229,7 +229,7 @@ class FileDeleteTest extends FileTestBase {
     @Test
     @DisplayName("File without keys returns error")
     void noFileKeys() {
-        file = new File(fileId, expirationTime, null, Bytes.wrap(contents), memo, false);
+        file = new File(fileId, expirationTime, null, Bytes.wrap(contents), memo, false, 0L);
         refreshStoresWithCurrentFileInBothReadableAndWritable();
 
         final var txn = newDeleteTxn().fileDeleteOrThrow();
