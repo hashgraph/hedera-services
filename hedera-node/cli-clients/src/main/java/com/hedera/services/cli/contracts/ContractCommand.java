@@ -38,7 +38,7 @@ import picocli.CommandLine.ParentCommand;
 @SubcommandOf(PlatformCli.class)
 public class ContractCommand extends AbstractCommand {
 
-    public static String REPORT_SEPARATOR = "===";
+    public static final String REPORT_SEPARATOR = "===";
 
     @ParentCommand
     PlatformCli parent;

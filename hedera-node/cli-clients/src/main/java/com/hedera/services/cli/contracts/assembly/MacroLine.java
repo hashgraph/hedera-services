@@ -25,7 +25,7 @@ public abstract class MacroLine implements Code {
     final int codeSize;
     final @NonNull String mnemonic;
 
-    public MacroLine(int codeOffset, int codeSize, @NonNull String mnemonic) {
+    protected MacroLine(int codeOffset, int codeSize, @NonNull String mnemonic) {
         Objects.requireNonNull(mnemonic);
         this.codeOffset = codeOffset;
         this.codeSize = codeSize;

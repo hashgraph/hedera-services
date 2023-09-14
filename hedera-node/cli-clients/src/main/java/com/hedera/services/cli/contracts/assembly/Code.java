@@ -23,7 +23,7 @@ import java.util.Objects;
  * A line of _code_ (something with bytes from the contract)
  *
  * <p>A line of _code_ in the disassembly (could be an opcode, maybe a pseudo-op like `DATA`, or
- * maybe a (discovered) macro.
+ * maybe a (discovered) macro).
  */
 public interface Code extends Line {
 

@@ -237,7 +237,7 @@ public class VTableEntryRecognizer extends CodeRecognizer {
         NONE,
         INTERNAL,
         LEAF
-    };
+    }
 
     Kind nodeKind;
 
