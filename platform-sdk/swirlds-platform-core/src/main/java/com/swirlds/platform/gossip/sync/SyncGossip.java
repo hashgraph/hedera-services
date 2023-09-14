@@ -413,10 +413,6 @@ public class SyncGossip extends AbstractGossip {
         throwIfNotInPhase(LifecyclePhase.STARTED);
         gossipHalted.set(true);
         syncPermitProvider.waitForAllSyncsToFinish();
-
-        if (intakePipelineManager != null) {
-            intakePipelineManager.reset();
-        }
     }
 
     /**
@@ -425,6 +421,11 @@ public class SyncGossip extends AbstractGossip {
     @Override
     public void resume() {
         throwIfNotInPhase(LifecyclePhase.STARTED);
+
+        if (intakePipelineManager != null) {
+            intakePipelineManager.reset();
+        }
+
         gossipHalted.set(false);
     }
 }

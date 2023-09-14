@@ -99,9 +99,9 @@ public class IntakePipelineManager {
     }
 
     /**
-     * Reset unprocessed event counts to 0
+     * Reset event counts
      */
     public void reset() {
-        unprocessedEventCounts.values().forEach(atomicInteger -> atomicInteger.set(0));
+        unprocessedEventCounts.clear();
     }
 }
