@@ -842,7 +842,7 @@ public class SwirldsPlatform implements Platform, Startable {
         Objects.requireNonNull(signedState);
 
         consensusRef.get().loadFromSignedState(signedState);
-        
+
         // old states will have events in them that need to be loaded, newer states will not
         if (signedState.getEvents() != null) {
             shadowGraph.initFromEvents(

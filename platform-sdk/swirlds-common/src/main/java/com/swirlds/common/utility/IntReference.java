@@ -84,8 +84,6 @@ public class IntReference {
 
     @Override
     public String toString() {
-        return "IntReference{" +
-                "value=" + value +
-                '}';
+        return "IntReference{" + "value=" + value + '}';
     }
 }

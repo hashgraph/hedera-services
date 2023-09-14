@@ -68,7 +68,8 @@ public class ElectionRound {
      */
     public void setRound(final long round) {
         if (this.round != ConsensusConstants.ROUND_FIRST) {
-            throw new IllegalStateException("We should not set the election round on an instance that has not been reset");
+            throw new IllegalStateException(
+                    "We should not set the election round on an instance that has not been reset");
         }
         this.round = round;
     }
