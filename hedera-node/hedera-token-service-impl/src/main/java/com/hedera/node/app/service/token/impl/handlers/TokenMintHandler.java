@@ -205,7 +205,6 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
         final var copyTreasury = treasuryAccount.copyBuilder();
         // Update Token and treasury
         copyToken.lastUsedSerialNumber(currentSerialNumber);
-        copyToken.totalSupply(token.totalSupply() + metadataCount);
         copyTreasury.numberOwnedNfts(treasuryAccount.numberOwnedNfts() + metadataCount);
 
         tokenStore.put(copyToken.build());
