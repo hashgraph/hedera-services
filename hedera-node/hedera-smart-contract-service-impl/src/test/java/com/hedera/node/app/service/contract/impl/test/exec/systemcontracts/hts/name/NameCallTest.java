@@ -22,6 +22,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.revertO
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.name.NameCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.name.NameTranslator;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -48,7 +49,7 @@ class NameCallTest extends HtsCallTestBase {
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
-                Bytes.wrap(NameCall.NAME
+                Bytes.wrap(NameTranslator.NAME
                         .getOutputs()
                         .encodeElements(FUNGIBLE_TOKEN.name())
                         .array()),

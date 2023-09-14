@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.consensus.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
@@ -80,7 +81,7 @@ public class ConsensusDeleteTopicHandler implements TransactionHandler {
                 final var protoBody = fromPbj(context.body());
                 return ConsensusServiceFeeBuilder.getConsensusDeleteTopicFee(protoBody, sigValueObj);
             } catch (InvalidTxBodyException e) {
-                throw new RuntimeException(e);
+                throw new HandleException(INVALID_TRANSACTION_BODY);
             }
         });
 

@@ -44,6 +44,10 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 /** Provides utility methods for file operations. */
 public class FileServiceUtils {
 
+    private FileServiceUtils() {
+        // Utility class
+    }
+
     /**
      * Validates the content of a file that it is not empty and not above max size 1MB.
      *

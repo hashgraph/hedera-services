@@ -168,7 +168,7 @@ public class HederaTracer implements HederaOperationTracer {
                 messageFrame.getRemainingGas(),
                 messageFrame.getInputData().toArray(),
                 messageFrame.getValue().toLong(),
-                messageFrame.getMessageStackDepth());
+                messageFrame.getDepth());
         final var contractAddress = messageFrame.getContractAddress();
         if (messageFrame.getType() != Type.CONTRACT_CREATION
                 && messageFrame.getWorldUpdater().getAccount(contractAddress) == null) {
@@ -237,8 +237,8 @@ public class HederaTracer implements HederaOperationTracer {
                     // intended call (e.g. the targeted invalid address) and sequence of events leading to the failure
                     // are lost
                     if (action.getCallType().equals(CALL) && exceptionalHaltReason.equals(INVALID_SOLIDITY_ADDRESS)) {
-                        final var syntheticInvalidAction = new SolidityAction(
-                                CALL, frame.getRemainingGas(), null, 0, frame.getMessageStackDepth() + 1);
+                        final var syntheticInvalidAction =
+                                new SolidityAction(CALL, frame.getRemainingGas(), null, 0, frame.getDepth() + 1);
                         syntheticInvalidAction.setCallingContract(
                                 EntityId.fromAddress(asMirrorAddress(frame.getContractAddress(), frame)));
                         syntheticInvalidAction.setTargetedAddress(

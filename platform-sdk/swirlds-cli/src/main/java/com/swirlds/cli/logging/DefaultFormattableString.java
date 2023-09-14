@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.cli.utility;
+package com.swirlds.cli.logging;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -60,6 +60,6 @@ public class DefaultFormattableString implements FormattableString {
     @NonNull
     @Override
     public String generateHtmlString() {
-        return originalString;
+        return LogProcessingUtils.escapeString(originalString);
     }
 }

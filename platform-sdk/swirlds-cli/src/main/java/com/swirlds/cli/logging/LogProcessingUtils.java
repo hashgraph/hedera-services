@@ -14,8 +14,13 @@
  * limitations under the License.
  */
 
-package com.swirlds.cli.utility;
+package com.swirlds.cli.logging;
 
+import static com.swirlds.cli.logging.LogLine.ERROR_LOG_LEVEL_COLOR;
+import static com.swirlds.cli.logging.LogLine.HARMLESS_LOG_LEVEL_COLOR;
+import static com.swirlds.cli.logging.LogLine.WARN_LOG_LEVEL_COLOR;
+
+import com.swirlds.common.formatting.TextEffect;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -30,6 +35,22 @@ public class LogProcessingUtils {
      * Hidden constructor.
      */
     private LogProcessingUtils() {}
+
+    /**
+     * Get the correct color for a given log level.
+     *
+     * @param logLevel the log level
+     * @return the color
+     */
+    @NonNull
+    public static TextEffect getLogLevelColor(@NonNull final String logLevel) {
+        return switch (logLevel) {
+            case "TRACE", "DEBUG", "INFO" -> HARMLESS_LOG_LEVEL_COLOR;
+            case "WARN" -> WARN_LOG_LEVEL_COLOR;
+                // all other log levels are critical
+            default -> ERROR_LOG_LEVEL_COLOR;
+        };
+    }
 
     /**
      * Parse a log timestamp string into an Instant.
@@ -62,5 +83,21 @@ public class LogProcessingUtils {
         } catch (final Exception e) {
             return inputString;
         }
+    }
+
+    /**
+     * Escapes the input string to be HTML safe
+     *
+     * @param inputString the string to escape
+     * @return the escaped string
+     */
+    @NonNull
+    public static String escapeString(@NonNull final String inputString) {
+        return inputString
+                .replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("’", "&#39;");
     }
 }

@@ -39,7 +39,7 @@ spotless {
             */${"\n\n"}
         """
                     .trimIndent(),
-                "(import|plugins|pluginManagement|dependencyResolutionManagement|repositories)"
+                "(import|plugins|pluginManagement|dependencyResolutionManagement|repositories|tasks|allprojects|subprojects)"
             )
             .updateYearWithLatest(true)
     }
