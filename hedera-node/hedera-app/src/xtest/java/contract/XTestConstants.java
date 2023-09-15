@@ -16,10 +16,12 @@
 
 package contract;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asHeadlongAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToBesuAddress;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
@@ -34,9 +36,11 @@ import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.time.Instant;
 import java.util.Map;
+import java.util.function.Consumer;
 import org.hyperledger.besu.datatypes.Address;
 
 /**
@@ -96,6 +100,11 @@ class XTestConstants {
     static final TokenID ERC20_TOKEN_ID = TokenID.newBuilder().tokenNum(1027L).build();
     static final com.esaulpaugh.headlong.abi.Address ERC20_TOKEN_ADDRESS = AbstractContractXTest.asHeadlongAddress(
             asLongZeroAddress(ERC20_TOKEN_ID.tokenNum()).toArray());
+    static final AccountID OWNER_ID = AccountID.newBuilder().accountNum(121212L).build();
+    static final Bytes OWNER_ADDRESS = Bytes.fromHex("a213624b8b83a724438159ba7c0d333a2b6b3990");
+    static final Address OWNER_BESU_ADDRESS = pbjToBesuAddress(OWNER_ADDRESS);
+    static final com.esaulpaugh.headlong.abi.Address OWNER_HEADLONG_ADDRESS =
+            asHeadlongAddress(OWNER_ADDRESS.toByteArray());
 
     public static void addErc721Relation(
             final Map<EntityIDPair, TokenRelation> tokenRelationships, final AccountID accountID, final long balance) {
@@ -125,5 +134,12 @@ class XTestConstants {
                         .balance(balance)
                         .kycGranted(true)
                         .build());
+    }
+
+    public static final org.apache.tuweni.bytes.Bytes SUCCESS_AS_BYTES =
+            org.apache.tuweni.bytes.Bytes.wrap(ReturnTypes.encodedRc(SUCCESS).array());
+
+    public static Consumer<org.apache.tuweni.bytes.Bytes> assertSuccess() {
+        return output -> assertEquals(SUCCESS_AS_BYTES, output);
     }
 }

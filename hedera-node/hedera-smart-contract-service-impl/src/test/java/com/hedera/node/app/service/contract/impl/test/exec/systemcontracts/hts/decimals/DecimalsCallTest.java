@@ -24,6 +24,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.revertO
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.decimals.DecimalsCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.decimals.DecimalsTranslator;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -51,7 +52,7 @@ class DecimalsCallTest extends HtsCallTestBase {
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
-                Bytes.wrap(DecimalsCall.DECIMALS
+                Bytes.wrap(DecimalsTranslator.DECIMALS
                         .getOutputs()
                         .encodeElements(FUNGIBLE_TOKEN.decimals())
                         .array()),
@@ -66,8 +67,10 @@ class DecimalsCallTest extends HtsCallTestBase {
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
-                Bytes.wrap(
-                        DecimalsCall.DECIMALS.getOutputs().encodeElements(0xFF).array()),
+                Bytes.wrap(DecimalsTranslator.DECIMALS
+                        .getOutputs()
+                        .encodeElements(0xFF)
+                        .array()),
                 result.getOutput());
     }
 }

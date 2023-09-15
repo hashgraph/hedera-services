@@ -12,7 +12,6 @@ sync.syncProtocolPermitCount,                  17
 
 merkleDb.iteratorInputBufferBytes,             16777216
 merkleDb.hashesRamToDiskThreshold,             8388608
-state.checkSignedStateFromDisk,                true
 state.saveStatePeriod,                         900
 state.signedStateDisk,                         5
 state.mainClassNameOverride,                   com.hedera.services.ServicesMain

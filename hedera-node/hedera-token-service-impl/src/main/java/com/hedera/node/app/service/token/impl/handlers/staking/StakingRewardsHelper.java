@@ -92,10 +92,11 @@ public class StakingRewardsHelper {
         final var hasBalanceChange = modifiedAccount.tinybarBalance() != originalAccount.tinybarBalance();
         final var hasStakeMetaChanges = (modifiedAccount.declineReward() != originalAccount.declineReward())
                 || (modifiedAccount.stakedId() != originalAccount.stakedId());
-        final var isStakedToNode = originalAccount.hasStakedNodeId() && originalAccount.stakedNodeId() >= 0L;
-        // TODO: Look for all read keys if they are smart contracts
-        return modifiedAccount.smartContract()
-                || (isStakedToNode && (hasStakedToMeUpdate || hasBalanceChange || hasStakeMetaChanges));
+        // We do this for backward compatibility with mono-service
+        // TODO: Also check that the HAPI operation was a ContractCreate/ContractCall/EthereumTransaction
+        final var isCalledContract = modifiedAccount.smartContract();
+        final var isStakedToNode = originalAccount.stakedNodeIdOrElse(-1L) >= 0L;
+        return isStakedToNode && (isCalledContract || hasStakedToMeUpdate || hasBalanceChange || hasStakeMetaChanges);
     }
 
     /**

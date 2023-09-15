@@ -144,6 +144,7 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateManager;
 import com.swirlds.platform.state.signed.SourceOfSignedState;
 import com.swirlds.platform.state.signed.StartupStateUtils;
+import com.swirlds.platform.state.signed.StateToDiskReason;
 import com.swirlds.platform.stats.StatConstructor;
 import com.swirlds.platform.system.Shutdown;
 import com.swirlds.platform.threading.PauseAndLoad;
@@ -158,6 +159,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -403,7 +405,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 epochHash,
                 initialState.getRound());
 
-        preconsensusEventFileManager = buildPreconsensusEventFileManager(softwareUpgrade);
+        preconsensusEventFileManager = buildPreconsensusEventFileManager(initialState.getRound(), softwareUpgrade);
 
         preconsensusEventWriter = components.add(buildPreconsensusEventWriter(preconsensusEventFileManager));
 
@@ -920,7 +922,7 @@ public class SwirldsPlatform implements Platform, Startable {
             consensusRoundHandler.loadDataFromSignedState(signedState, true);
 
             try {
-                preconsensusEventWriter.registerDiscontinuity();
+                preconsensusEventWriter.registerDiscontinuity(signedState.getRound());
                 preconsensusEventWriter.setMinimumGenerationNonAncient(signedState
                         .getState()
                         .getPlatformState()
@@ -1024,12 +1026,17 @@ public class SwirldsPlatform implements Platform, Startable {
 
     /**
      * Build the preconsensus event file manager.
+     *
+     * @param startingRound            the round number of the initial state being loaded into the system
+     * @param softwareUpgrade          whether or not this node is starting up after a software upgrade
      */
     @NonNull
-    private PreconsensusEventFileManager buildPreconsensusEventFileManager(final boolean softwareUpgrade) {
+    private PreconsensusEventFileManager buildPreconsensusEventFileManager(
+            final long startingRound, final boolean softwareUpgrade) {
         try {
             clearPCESOnSoftwareUpgradeIfConfigured(softwareUpgrade);
-            return new PreconsensusEventFileManager(platformContext, Time.getCurrent(), recycleBin, selfId);
+            return new PreconsensusEventFileManager(
+                    platformContext, Time.getCurrent(), recycleBin, selfId, startingRound);
         } catch (final IOException e) {
             throw new UncheckedIOException("unable load preconsensus files", e);
         }
@@ -1063,16 +1070,30 @@ public class SwirldsPlatform implements Platform, Startable {
 
         metrics.start();
 
-        if (tipsetEventCreator != null) {
-            // The event creator is intentionally started before replaying the preconsensus event stream.
-            // This prevents the event creator's intake queue from filling up and blocking. Note that
-            // this component won't actually create events until the platform has the appropriate status.
-            tipsetEventCreator.start();
-        }
+        // The event creator is intentionally started before replaying the preconsensus event stream.
+        // This prevents the event creator's intake queue from filling up and blocking. Note that
+        // this component won't actually create events until the platform has the appropriate status.
+        Optional.of(tipsetEventCreator).ifPresent(Startable::start);
 
         replayPreconsensusEvents();
         configureStartupEventFreeze();
         gossip.start();
+    }
+
+    /**
+     * Performs a PCES recovery:
+     * <ul>
+     *     <li>Starts all components for handling events</li>
+     *     <li>Does not start gossip</li>
+     *     <li>Replays events from PCES, reaches consensus on them and handles them</li>
+     *     <li>Saves the last state produces by this replay to disk</li>
+     * </ul>
+     */
+    public void performPcesRecovery() {
+        components.start();
+        Optional.of(tipsetEventCreator).ifPresent(Startable::start);
+        replayPreconsensusEvents();
+        stateManagementComponent.dumpLatestImmutableState(StateToDiskReason.PCES_RECOVERY_COMPLETE, true);
     }
 
     /**

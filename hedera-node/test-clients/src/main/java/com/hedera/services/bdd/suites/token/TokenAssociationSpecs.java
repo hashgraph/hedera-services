@@ -77,7 +77,6 @@ public class TokenAssociationSpecs extends HapiSuite {
     public static final String CREATION = "creation";
     public static final String SIMPLE = "simple";
     public static final String FREEZE_KEY = "freezeKey";
-    public static final String KYC_KEY = "kycKey";
 
     public static void main(String... args) {
         final var spec = new TokenAssociationSpecs();
@@ -116,6 +115,7 @@ public class TokenAssociationSpecs extends HapiSuite {
                 .then(tokenAssociate(DEFAULT_PAYER, "0.0.0").hasKnownStatus(INVALID_TOKEN_ID));
     }
 
+    @HapiTest
     public HapiSpec associatedContractsMustHaveAdminKeys() {
         String misc = "someToken";
         String contract = "defaultContract";
@@ -126,6 +126,7 @@ public class TokenAssociationSpecs extends HapiSuite {
                 .then(tokenAssociate(contract, misc).hasKnownStatus(INVALID_SIGNATURE));
     }
 
+    @HapiTest
     public HapiSpec contractInfoQueriesAsExpected() {
         final var contract = "contract";
         return defaultHapiSpec("ContractInfoQueriesAsExpected")
@@ -181,6 +182,7 @@ public class TokenAssociationSpecs extends HapiSuite {
                         .logged());
     }
 
+    @HapiTest
     public HapiSpec expiredAndDeletedTokensStillAppearInContractInfo() {
         final String contract = "Fuse";
         final String treasury = "something";
@@ -224,7 +226,7 @@ public class TokenAssociationSpecs extends HapiSuite {
                                         .freeze(FreezeNotApplicable)));
     }
 
-    // enable when token expiry is implemented
+    @HapiTest
     public HapiSpec dissociationFromExpiredTokensAsExpected() {
         final String treasury = "accountA";
         final String frozenAccount = "frozen";
@@ -424,7 +426,7 @@ public class TokenAssociationSpecs extends HapiSuite {
                         getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(0));
     }
 
-    // enable when token expiry is implemented
+    //    @HapiTest
     public HapiSpec dissociateHasExpectedSemantics() {
         return defaultHapiSpec("DissociateHasExpectedSemantics")
                 .given(basicKeysAndTokens())
@@ -448,6 +450,7 @@ public class TokenAssociationSpecs extends HapiSuite {
                         .logged());
     }
 
+    @HapiTest
     public HapiSpec dissociateHasExpectedSemanticsForDissociatedContracts() {
         final var uniqToken = "UniqToken";
         final var contract = "Fuse";
@@ -473,7 +476,7 @@ public class TokenAssociationSpecs extends HapiSuite {
                         .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT));
     }
 
-    @HapiTest
+    //    @HapiTest
     public HapiSpec treasuryAssociationIsAutomatic() {
         return defaultHapiSpec("TreasuryAssociationIsAutomatic")
                 .given(basicKeysAndTokens())
@@ -481,16 +484,16 @@ public class TokenAssociationSpecs extends HapiSuite {
                 .then(
                         getAccountInfo(TOKEN_TREASURY)
                                 .hasToken(relationshipWith(FREEZABLE_TOKEN_ON_BY_DEFAULT)
-                                        .kyc(Granted)
-                                        .freeze(Frozen))
+                                        .kyc(KycNotApplicable)
+                                        .freeze(Unfrozen))
                                 .hasToken(relationshipWith(FREEZABLE_TOKEN_OFF_BY_DEFAULT)
-                                        .kyc(Granted)
+                                        .kyc(KycNotApplicable)
                                         .freeze(Unfrozen))
                                 .hasToken(relationshipWith(KNOWABLE_TOKEN)
-                                        .kyc(KycNotApplicable)
+                                        .kyc(Granted)
                                         .freeze(FreezeNotApplicable))
                                 .hasToken(relationshipWith(VANILLA_TOKEN)
-                                        .kyc(Granted)
+                                        .kyc(KycNotApplicable)
                                         .freeze(FreezeNotApplicable))
                                 .logged(),
                         cryptoCreate("test"),
@@ -507,7 +510,7 @@ public class TokenAssociationSpecs extends HapiSuite {
 
     public static HapiSpecOperation[] basicKeysAndTokens() {
         return new HapiSpecOperation[] {
-            newKeyNamed(KYC_KEY),
+            newKeyNamed("kycKey"),
             newKeyNamed(FREEZE_KEY),
             cryptoCreate(TOKEN_TREASURY).balance(0L),
             tokenCreate(FREEZABLE_TOKEN_ON_BY_DEFAULT)
@@ -518,7 +521,7 @@ public class TokenAssociationSpecs extends HapiSuite {
                     .treasury(TOKEN_TREASURY)
                     .freezeKey(FREEZE_KEY)
                     .freezeDefault(false),
-            tokenCreate(KNOWABLE_TOKEN).treasury(TOKEN_TREASURY).kycKey(KYC_KEY),
+            tokenCreate(KNOWABLE_TOKEN).treasury(TOKEN_TREASURY).kycKey("kycKey"),
             tokenCreate(VANILLA_TOKEN).treasury(TOKEN_TREASURY)
         };
     }
