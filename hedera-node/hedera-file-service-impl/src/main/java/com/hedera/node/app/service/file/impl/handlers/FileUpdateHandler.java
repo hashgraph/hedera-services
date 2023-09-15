@@ -85,7 +85,7 @@ public class FileUpdateHandler implements TransactionHandler {
         preValidate(transactionFileId, fileStore, context, false);
 
         var file = fileStore.getFileLeaf(transactionFileId);
-        if(wantsToMutateNonExpiryField(transactionBody)){
+        if (wantsToMutateNonExpiryField(transactionBody)) {
             validateAndAddRequiredKeys(file, transactionBody.keys(), context);
         }
     }

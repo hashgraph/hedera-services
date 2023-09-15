@@ -1512,7 +1512,8 @@ public final class PbjConverter {
         if (file != null) {
             builder.setFileId(fromPbj(file.fileIdOrThrow()));
             builder.setExpirationSecond(file.expirationSecond());
-            builder.setKeys(pbjToProto(file.keysOrElse(KeyList.DEFAULT), KeyList.class, com.hederahashgraph.api.proto.java.KeyList.class));
+            builder.setKeys(pbjToProto(
+                    file.keysOrElse(KeyList.DEFAULT), KeyList.class, com.hederahashgraph.api.proto.java.KeyList.class));
             builder.setContents(ByteString.copyFrom(file.contents().toByteArray()));
             builder.setMemo(file.memo());
             builder.setDeleted(file.deleted());
