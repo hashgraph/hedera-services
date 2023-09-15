@@ -154,7 +154,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                 autoCreationFailsWithMirrorAddress());
     }
 
-    private HapiSpec resourceLimitExceededRevertsAllRecords() {
+    HapiSpec resourceLimitExceededRevertsAllRecords() {
         final var n = 4; // preceding child record limit is 3
         final var nft = "nft";
         final var nftKey = NFT_KEY;
@@ -204,7 +204,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                 .toArray(HapiSpecOperation[]::new)));
     }
 
-    private HapiSpec autoCreationFailsWithMirrorAddress() {
+    HapiSpec autoCreationFailsWithMirrorAddress() {
         final var nft = "nft";
         final var nftKey = "nftKeyHere";
         final var creationAttempt = CREATION_ATTEMPT;

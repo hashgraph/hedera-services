@@ -118,7 +118,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
         return List.of(smallContractCreate(), contractCreateWithConstructorArgs(), bigContractCreate());
     }
 
-    private HapiSpec badRelayClient() {
+    HapiSpec badRelayClient() {
         final var adminKey = "adminKey";
         final var exploitToken = "exploitToken";
         final var exploitContract = "BadRelayClient";
@@ -186,7 +186,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                         getAliasedAccountInfo(maliciousEOA).has(accountWith().nonce(1L)));
     }
 
-    private HapiSpec relayerFeeAsExpectedIfSenderCoversGas() {
+    HapiSpec relayerFeeAsExpectedIfSenderCoversGas() {
         final var canonicalTxn = "canonical";
 
         return defaultHapiSpec("relayerFeeAsExpectedIfSenderCoversGas")
@@ -217,7 +217,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                         .logged());
     }
 
-    private HapiSpec depositSuccess() {
+    HapiSpec depositSuccess() {
         return defaultHapiSpec("depositSuccess")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
@@ -285,7 +285,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                 .has(accountWith().nonce(3L)));
     }
 
-    private HapiSpec ethereumCallWithCalldataBiggerThanMaxSucceeds() {
+    HapiSpec ethereumCallWithCalldataBiggerThanMaxSucceeds() {
         final var largerThanMaxCalldata = new byte[MAX_CALL_DATA_SIZE + 1];
         return defaultHapiSpec("ethereumCallWithCalldataBiggerThanMaxSucceeds")
                 .given(
@@ -323,7 +323,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                 .has(accountWith().nonce(1L)));
     }
 
-    private HapiSpec createWithSelfDestructInConstructorHasSaneRecord() {
+    HapiSpec createWithSelfDestructInConstructorHasSaneRecord() {
         final var txn = "txn";
         final var selfDestructingContract = "FactorySelfDestructConstructor";
         return defaultHapiSpec("createWithSelfDestructInConstructorHasSaneRecord")
@@ -344,7 +344,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                 .then(childRecordsCheck(txn, SUCCESS, recordWith(), recordWith().hasMirrorIdInReceipt()));
     }
 
-    private HapiSpec smallContractCreate() {
+    HapiSpec smallContractCreate() {
         return defaultHapiSpec("smallContractCreate")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
@@ -387,7 +387,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                 .has(accountWith().nonce(1L)));
     }
 
-    private HapiSpec bigContractCreate() {
+    HapiSpec bigContractCreate() {
         final var contractAdminKey = "contractAdminKey";
         return defaultHapiSpec("bigContractCreate")
                 .given(
@@ -432,7 +432,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                 .has(accountWith().nonce(1L)));
     }
 
-    private HapiSpec contractCreateWithConstructorArgs() {
+    HapiSpec contractCreateWithConstructorArgs() {
         final var contractAdminKey = "contractAdminKey";
         return defaultHapiSpec("contractCreateWithConstructorArgs")
                 .given(
@@ -487,7 +487,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
 
     private static final String SEND_TO = "sendTo";
 
-    private HapiSpec topLevelBurnToZeroAddressReverts() {
+    HapiSpec topLevelBurnToZeroAddressReverts() {
         final var ethBurnAddress = new byte[20];
         return defaultHapiSpec("topLevelBurnToZeroAddressReverts")
                 .given(
@@ -505,7 +505,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                         .hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION));
     }
 
-    private HapiSpec topLevelLazyCreateOfMirrorAddressReverts() {
+    HapiSpec topLevelLazyCreateOfMirrorAddressReverts() {
         final var nonExistentMirrorAddress = Utils.asSolidityAddress(0, 0, 666_666);
         return defaultHapiSpec("topLevelLazyCreateOfMirrorAddressReverts")
                 .given(
@@ -523,7 +523,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                         .hasKnownStatus(INVALID_CONTRACT_ID));
     }
 
-    private HapiSpec topLevelSendToReceiverSigRequiredAccountReverts() {
+    HapiSpec topLevelSendToReceiverSigRequiredAccountReverts() {
         final var receiverSigAccount = "receiverSigAccount";
         final AtomicReference<byte[]> receiverMirrorAddr = new AtomicReference<>();
         final var preCallBalance = "preCallBalance";
@@ -551,7 +551,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                 .then(getAccountBalance(receiverSigAccount).hasTinyBars(changeFromSnapshot(preCallBalance, 0L)));
     }
 
-    private HapiSpec internalBurnToZeroAddressReverts() {
+    HapiSpec internalBurnToZeroAddressReverts() {
         return defaultHapiSpec("internalBurnToZeroAddressReverts")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),

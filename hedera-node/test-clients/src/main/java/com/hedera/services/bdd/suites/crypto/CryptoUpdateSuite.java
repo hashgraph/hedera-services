@@ -132,6 +132,7 @@ public class CryptoUpdateSuite extends HapiSuite {
                 updateStakingFieldsWorks());
     }
 
+    @HapiTest
     private HapiSpec updateStakingFieldsWorks() {
         return defaultHapiSpec("updateStakingFieldsWorks")
                 .given(

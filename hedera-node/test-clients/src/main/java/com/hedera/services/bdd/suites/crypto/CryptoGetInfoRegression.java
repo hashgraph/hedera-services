@@ -276,6 +276,7 @@ public class CryptoGetInfoRegression extends HapiSuite {
                 .then(getAccountInfo(GENESIS).useEmptyTxnAsAnswerPayment().hasAnswerOnlyPrecheck(NOT_SUPPORTED));
     }
 
+    @HapiTest
     private HapiSpec failsForDeletedAccount() {
         return defaultHapiSpec("FailsForDeletedAccount")
                 .given(cryptoCreate("toBeDeleted"))

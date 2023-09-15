@@ -332,6 +332,7 @@ public class ContractCreateSuite extends HapiSuite {
                                 .hasKnownStatus(SUCCESS));
     }
 
+    @HapiTest
     private HapiSpec rejectsInsufficientGas() {
         return defaultHapiSpec("RejectsInsufficientGas")
                 .given(uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
