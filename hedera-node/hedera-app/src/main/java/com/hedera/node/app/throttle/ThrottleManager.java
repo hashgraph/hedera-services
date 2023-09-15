@@ -109,7 +109,7 @@ public class ThrottleManager {
             }
         }
         if (customizedOps.isEmpty() || !expectedOps.equals(EnumSet.copyOf(customizedOps))) {
-            throw new IllegalStateException(ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION.name());
+            throw new IllegalStateException(ResponseCodeEnum.INVALID_TRANSACTION.name());
         }
     }
 
