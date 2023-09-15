@@ -70,7 +70,6 @@ import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldDualState;
-import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.status.PlatformStatus;
@@ -116,7 +115,7 @@ import org.apache.logging.log4j.Logger;
  * infrastructure. It constructs the Dagger dependency tree, and manages the gRPC server, and in all other ways,
  * controls execution of the node. If you want to understand our system, this is a great place to start!
  */
-public final class Hedera implements SwirldMain {
+public final class Hedera {
     private static final Logger logger = LogManager.getLogger(Hedera.class);
     // FUTURE: This should come from configuration, not be hardcoded.
     public static final int MAX_SIGNED_TXN_SIZE = 6144;
@@ -243,14 +242,11 @@ public final class Hedera implements SwirldMain {
     }
 
     /**
-     * {@inheritDoc}
-     *
      * <p>Called immediately after the constructor to get the version of this software. In an upgrade scenario, this
      * version will be greater than the one in the saved state.
      *
      * @return The software version.
      */
-    @Override
     @NonNull
     public SoftwareVersion getSoftwareVersion() {
         return version;
@@ -270,7 +266,6 @@ public final class Hedera implements SwirldMain {
      *
      * @return A new {@link SwirldState} instance.
      */
-    @Override
     @NonNull
     public SwirldState newState() {
         return new MerkleHederaState(this::onPreHandle, this::onHandleConsensusRound, this::onStateInitialized);
@@ -391,14 +386,11 @@ public final class Hedera implements SwirldMain {
     =================================================================================================================*/
 
     /**
-     * {@inheritDoc}
-     *
      * <p>Called <b>AFTER</b> init and migrate have been called on the state (either the new state created from
      * {@link #newState()} or an instance of {@link MerkleHederaState} created by the platform and loaded from the saved
      * state).
      */
     @SuppressWarnings("java:S1181") // catching Throwable instead of Exception when we do a direct System.exit()
-    @Override
     public void init(@NonNull final Platform platform, @NonNull final NodeId nodeId) {
         if (this.platform != platform) {
             throw new IllegalArgumentException("Platform must be the same instance");
@@ -514,13 +506,10 @@ public final class Hedera implements SwirldMain {
     =================================================================================================================*/
 
     /**
-     * {@inheritDoc}
-     *
      * <p>Called by the platform after <b>ALL</b> initialization to start the gRPC servers and begin operation, or by
      * the notification listener when it is time to restart the gRPC server after it had been stopped (such as during
      * reconnect).
      */
-    @Override
     public void run() {
         startGrpcServer();
     }

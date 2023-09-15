@@ -28,6 +28,7 @@ import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.SwirldsPlatformBuilder;
 import com.swirlds.platform.util.BootstrapUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -55,7 +56,31 @@ public class ServicesMain implements SwirldMain {
             delegate = new MonoServicesMain();
         } else {
             logger.info("One or more workflows enabled, using Hedera");
-            delegate = new Hedera(ConstructableRegistry.getInstance());
+            final Hedera hedera = new Hedera(ConstructableRegistry.getInstance());
+
+            delegate = new SwirldMain() {
+                @Override
+                public void init(@NonNull final Platform platform, @NonNull final NodeId selfId) {
+                    hedera.init(platform, selfId);
+                }
+
+                @Override
+                public void run() {
+                    hedera.run();
+                }
+
+                @Override
+                @NonNull
+                public SwirldState newState() {
+                    return hedera.newState();
+                }
+
+                @Override
+                @NonNull
+                public SoftwareVersion getSoftwareVersion() {
+                    return hedera.getSoftwareVersion();
+                }
+            };
         }
     }
 
@@ -84,22 +109,35 @@ public class ServicesMain implements SwirldMain {
     }
 
     /**
+     * Determine this node's ID based on the command line arguments.
+     * @param args The command line arguments
+     * @return The node ID
+     */
+    @NonNull
+    private static NodeId parseSelfId(@Nullable final String... args) {
+        if (args == null || args.length == 0) {
+            return new NodeId(0);
+        }
+        return new NodeId(Integer.parseInt(args[0]));
+    }
+
+    /**
      * Launches the application.
      *
      * @param args First arg, if specified, will be the node ID
      */
-    public static void main(final String... args) throws Exception {
+    public static void main(@Nullable final String... args) throws Exception {
+        final NodeId selfId = parseSelfId(args);
+
         BootstrapUtils.setupConstructableRegistry();
         final var registry = ConstructableRegistry.getInstance();
 
-        // TODO create a method to help with this
-        // args != null && args.length > 0 ? Integer.parseInt(args[0]) : 0
-        final NodeId selfId = new NodeId(0);
-
         final Hedera hedera = new Hedera(registry);
+
         final SwirldsPlatform platform = new SwirldsPlatformBuilder(
                         "com.hedera.services.ServicesMain", hedera.getSoftwareVersion(), hedera::newState, selfId)
                 .build();
+
         hedera.init(platform, selfId);
         platform.start();
         hedera.run();

@@ -190,7 +190,7 @@ public class Browser {
 
         addPlatforms(platforms.values());
 
-        // TODO
+        // FUTURE WORK: PCES recovery not compatible with non-Browser launched apps
         if (pcesRecovery) {
             // PCES recovery is only expected to be done on a single node
             // due to the structure of Browser atm, it makes more sense to enable the feature for multiple platforms

@@ -139,8 +139,7 @@ public class InProcessHapiTestNode implements HapiTestNode {
             hedera = new Hedera(cr);
             final SwirldsPlatformBuilder builder = new SwirldsPlatformBuilder(
                     "com.hedera.services.ServicesMain", hedera.getSoftwareVersion(), hedera::newState, selfId);
-            final SwirldsPlatform platform = builder
-                    .withConfigValue("paths.configPath", path("config.txt"))
+            final SwirldsPlatform platform = builder.withConfigValue("paths.configPath", path("config.txt"))
                     .withConfigValue("paths.settingsPath", path("settings.txt"))
                     .withConfigValue("paths.settingsUsedDir", path("."))
                     .withConfigValue("paths.keysDirPath", path("data/keys"))
