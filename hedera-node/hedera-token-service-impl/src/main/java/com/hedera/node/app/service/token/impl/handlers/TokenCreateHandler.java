@@ -186,6 +186,9 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
             tokenCreateValidator.validateAssociation(entitiesConfig, tokensConfig, collector, newToken, tokenRelStore);
             createAndLinkTokenRels(collector, List.of(newToken), accountStore, tokenRelStore);
         }
+        final var recordBuilder = context.recordBuilder(TokenCreateRecordBuilder.class);
+        final var newRelation = tokenRelStore.get(newToken.treasuryAccountId(), newToken.tokenId());
+        recordBuilder.addAutomaticTokenAssociation(asTokenAssociation(newRelation.tokenId(), newRelation.accountId()));
     }
 
     /**

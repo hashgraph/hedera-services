@@ -21,6 +21,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
@@ -46,6 +47,7 @@ public class CryptoTransferThenFreezeTest extends CryptoTransferLoadTest {
         return List.of(runCryptoTransfers(), freezeAfterTransfers());
     }
 
+    @HapiTest
     private HapiSpec freezeAfterTransfers() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
         return defaultHapiSpec("FreezeAfterTransfers")

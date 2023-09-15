@@ -87,6 +87,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
@@ -219,6 +220,7 @@ public class FileUpdateSuite extends HapiSuite {
                         .logged());
     }
 
+    @HapiTest
     public HapiSpec notTooManyFeeScheduleCanBeCreated() {
         final var denom = "fungible";
         final var token = "token";

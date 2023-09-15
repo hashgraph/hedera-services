@@ -77,6 +77,7 @@ public class TokenDeleteSpecs extends HapiSuite {
                 deletionValidatesRef());
     }
 
+    @HapiTest
     private HapiSpec treasuryBecomesDeletableAfterTokenDelete() {
         return defaultHapiSpec("TreasuryBecomesDeletableAfterTokenDelete")
                 .given(
