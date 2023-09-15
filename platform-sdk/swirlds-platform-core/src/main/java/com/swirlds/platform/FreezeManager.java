@@ -18,8 +18,6 @@ package com.swirlds.platform;
 
 import static com.swirlds.logging.LogMarker.FREEZE;
 
-import com.swirlds.common.system.EventCreationRule;
-import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.platform.state.signed.SignedState;
 import java.nio.file.Path;
 import org.apache.logging.log4j.LogManager;
@@ -28,7 +26,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * The source freeze related information.
  */
-public class FreezeManager implements EventCreationRule {
+public class FreezeManager {
 
     private static final Logger logger = LogManager.getLogger(FreezeManager.class);
 
@@ -150,19 +148,6 @@ public class FreezeManager implements EventCreationRule {
                             + "nodes after a restart. Freezing event creation anyways.",
                     signedState.getRound());
             freezeEventCreation();
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public EventCreationRuleResponse shouldCreateEvent() {
-        // the node should not create event while event creation is frozen
-        if (isEventCreationFrozen()) {
-            return EventCreationRuleResponse.DONT_CREATE;
-        } else {
-            return EventCreationRuleResponse.PASS;
         }
     }
 }

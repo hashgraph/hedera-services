@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.test.event.tipset;
 
-import static com.swirlds.common.system.EventCreationRuleResponse.PASS;
 import static com.swirlds.common.system.UptimeData.NO_ROUND;
 import static com.swirlds.common.system.status.PlatformStatus.ACTIVE;
 import static com.swirlds.common.system.status.PlatformStatus.CHECKING;
@@ -32,10 +31,8 @@ import static org.mockito.Mockito.when;
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.StartUpEventFrozenManager;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.tipset.TipsetEventCreator;
 import com.swirlds.platform.event.tipset.rules.AggregateTipsetEventCreationRules;
@@ -51,7 +48,6 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Supplier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -135,66 +131,9 @@ class TipsetEventCreationRulesTests {
     }
 
     @Test
-    @DisplayName("Blocked by StartUpFrozenManager Test")
-    void blockedByStartUpFrozenManagerTest() {
-        final TransactionPool transactionPool = mock(TransactionPool.class);
-        final Supplier<PlatformStatus> platformStatusSupplier = () -> ACTIVE;
-
-        final AtomicReference<EventCreationRuleResponse> shouldCreateEvent =
-                new AtomicReference<>(EventCreationRuleResponse.DONT_CREATE);
-        final StartUpEventFrozenManager startUpEventFrozenManager = mock(StartUpEventFrozenManager.class);
-        when(startUpEventFrozenManager.shouldCreateEvent()).thenAnswer(invocation -> shouldCreateEvent.get());
-
-        final AtomicInteger eventCreationCount = new AtomicInteger(0);
-        final TipsetEventCreator baseEventCreator = mock(TipsetEventCreator.class);
-        when(baseEventCreator.maybeCreateEvent()).thenAnswer(invocation -> {
-            eventCreationCount.incrementAndGet();
-            return null;
-        });
-
-        final TipsetPlatformStatusRule rule =
-                new TipsetPlatformStatusRule(platformStatusSupplier, transactionPool, startUpEventFrozenManager);
-
-        assertFalse(rule.isEventCreationPermitted());
-
-        shouldCreateEvent.set(PASS);
-
-        assertTrue(rule.isEventCreationPermitted());
-    }
-
-    @Test
-    @DisplayName("Blocked by Freeze Test")
-    void blockedByFreeze() {
-        final Supplier<PlatformStatus> platformStatusSupplier = () -> FREEZING;
-        final StartUpEventFrozenManager startUpEventFrozenManager = mock(StartUpEventFrozenManager.class);
-        when(startUpEventFrozenManager.shouldCreateEvent()).thenAnswer(invocation -> PASS);
-
-        final AtomicInteger numSignatureTransactions = new AtomicInteger(0);
-        final TransactionPool transactionPool = mock(TransactionPool.class);
-        when(transactionPool.hasBufferedSignatureTransactions())
-                .thenAnswer(invocation -> numSignatureTransactions.get() > 0);
-
-        final AtomicInteger eventCreationCount = new AtomicInteger(0);
-        final TipsetEventCreator baseEventCreator = mock(TipsetEventCreator.class);
-        when(baseEventCreator.maybeCreateEvent()).thenAnswer(invocation -> {
-            eventCreationCount.incrementAndGet();
-            return null;
-        });
-
-        final TipsetEventCreationRule rule =
-                new TipsetPlatformStatusRule(platformStatusSupplier, transactionPool, startUpEventFrozenManager);
-
-        assertFalse(rule.isEventCreationPermitted());
-        numSignatureTransactions.set(1);
-        assertTrue(rule.isEventCreationPermitted());
-    }
-
-    @Test
     @DisplayName("Blocked by Status Test")
     void blockedByStatus() {
         final TransactionPool transactionPool = mock(TransactionPool.class);
-        final StartUpEventFrozenManager startUpEventFrozenManager = mock(StartUpEventFrozenManager.class);
-        when(startUpEventFrozenManager.shouldCreateEvent()).thenAnswer(invocation -> PASS);
 
         final AtomicReference<PlatformStatus> status = new AtomicReference<>();
 
@@ -205,8 +144,7 @@ class TipsetEventCreationRulesTests {
             return null;
         });
 
-        final TipsetEventCreationRule rule =
-                new TipsetPlatformStatusRule(status::get, transactionPool, startUpEventFrozenManager);
+        final TipsetEventCreationRule rule = new TipsetPlatformStatusRule(status::get, transactionPool);
 
         for (final PlatformStatus platformStatus : PlatformStatus.values()) {
             if (platformStatus == FREEZING) {
@@ -231,9 +169,6 @@ class TipsetEventCreationRulesTests {
                 TestPlatformContextBuilder.create().build();
 
         final Time time = new FakeTime();
-
-        final StartUpEventFrozenManager startUpEventFrozenManager = mock(StartUpEventFrozenManager.class);
-        when(startUpEventFrozenManager.shouldCreateEvent()).thenAnswer(invocation -> PASS);
 
         final AtomicInteger eventCreationCount = new AtomicInteger(0);
         final TipsetEventCreator baseEventCreator = mock(TipsetEventCreator.class);
@@ -267,9 +202,6 @@ class TipsetEventCreationRulesTests {
                 .build();
 
         final FakeTime time = new FakeTime();
-
-        final StartUpEventFrozenManager startUpEventFrozenManager = mock(StartUpEventFrozenManager.class);
-        when(startUpEventFrozenManager.shouldCreateEvent()).thenAnswer(invocation -> PASS);
 
         final TipsetEventCreationRule rule = new TipsetMaximumRateRule(platformContext, time);
 

@@ -63,7 +63,6 @@ import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
-import java.util.function.BooleanSupplier;
 
 /**
  * Used to construct platform components that use DI
@@ -170,7 +169,6 @@ public final class PlatformConstructor {
             @NonNull final PreconsensusSystemTransactionManager preconsensusSystemTransactionManager,
             @NonNull final ConsensusSystemTransactionManager consensusSystemTransactionManager,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
-            @NonNull final BooleanSupplier inFreezeChecker,
             @NonNull final State initialState,
             @NonNull final SoftwareVersion softwareVersion) {
 
@@ -180,7 +178,6 @@ public final class PlatformConstructor {
         Objects.requireNonNull(preconsensusSystemTransactionManager);
         Objects.requireNonNull(consensusSystemTransactionManager);
         Objects.requireNonNull(statusActionSubmitter);
-        Objects.requireNonNull(inFreezeChecker);
         Objects.requireNonNull(initialState);
         Objects.requireNonNull(softwareVersion);
 
@@ -192,7 +189,6 @@ public final class PlatformConstructor {
                 consensusSystemTransactionManager,
                 new SwirldStateMetrics(platformContext.getMetrics()),
                 statusActionSubmitter,
-                inFreezeChecker,
                 initialState,
                 softwareVersion);
     }

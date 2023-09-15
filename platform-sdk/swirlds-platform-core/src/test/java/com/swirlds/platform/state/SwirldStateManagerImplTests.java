@@ -59,7 +59,6 @@ public class SwirldStateManagerImplTests {
                 mock(ConsensusSystemTransactionManager.class),
                 mock(SwirldStateMetrics.class),
                 mock(StatusActionSubmitter.class),
-                () -> false,
                 initialState,
                 new BasicSoftwareVersion(1));
     }

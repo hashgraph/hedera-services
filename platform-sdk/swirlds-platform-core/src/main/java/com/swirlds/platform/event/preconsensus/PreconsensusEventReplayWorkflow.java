@@ -29,7 +29,6 @@ import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.components.EventTaskDispatcher;
 import com.swirlds.platform.components.state.StateManagementComponent;
-import com.swirlds.platform.event.EventIntakeTask;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -70,7 +69,7 @@ public final class PreconsensusEventReplayWorkflow {
             @NonNull final PreconsensusEventFileManager preconsensusEventFileManager,
             @NonNull final PreconsensusEventWriter preconsensusEventWriter,
             @NonNull final EventTaskDispatcher eventTaskDispatcher,
-            @NonNull final QueueThread<EventIntakeTask> intakeQueue,
+            @NonNull final QueueThread<GossipEvent> intakeQueue,
             @NonNull final ConsensusRoundHandler consensusRoundHandler,
             @NonNull final QueueThread<ReservedSignedState> stateHashSignQueue,
             @NonNull final StateManagementComponent stateManagementComponent,
@@ -126,7 +125,7 @@ public final class PreconsensusEventReplayWorkflow {
      * to complete even after we exhaust all available events from the stream.
      */
     private static void waitForReplayToComplete(
-            @NonNull final QueueThread<EventIntakeTask> intakeQueue,
+            @NonNull final QueueThread<GossipEvent> intakeQueue,
             @NonNull final ConsensusRoundHandler consensusRoundHandler,
             @NonNull final QueueThread<ReservedSignedState> stateHashSignQueue)
             throws InterruptedException {

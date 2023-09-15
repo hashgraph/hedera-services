@@ -623,7 +623,6 @@ class EventFlowTests {
                 consensusSystemTransactionManager,
                 mock(SwirldStateMetrics.class),
                 mock(StatusActionSubmitter.class),
-                () -> false,
                 state,
                 new BasicSoftwareVersion(1));
 

@@ -39,12 +39,6 @@ import com.swirlds.platform.observers.StaleEventObserver;
  */
 public class EventIntakeMetrics implements StaleEventObserver {
 
-    private static final SpeedometerMetric.Config RESCUED_EVENTS_PER_SECOND_CONFIG = new SpeedometerMetric.Config(
-                    INTERNAL_CATEGORY, "rescuedEv/sec")
-            .withDescription("number of events per second generated to prevent stale events")
-            .withFormat(FORMAT_16_2);
-    private final SpeedometerMetric rescuedEventsPerSecond;
-
     private static final SpeedometerMetric.Config DUPLICATE_EVENTS_PER_SECOND_CONFIG = new SpeedometerMetric.Config(
                     INTERNAL_CATEGORY, "dupEv/sec")
             .withDescription("number of events received per second that are already known")
@@ -94,21 +88,12 @@ public class EventIntakeMetrics implements StaleEventObserver {
         CommonUtils.throwArgNull(metrics, "metrics");
         this.time = time;
 
-        rescuedEventsPerSecond = metrics.getOrCreate(RESCUED_EVENTS_PER_SECOND_CONFIG);
         duplicateEventsPerSecond = metrics.getOrCreate(DUPLICATE_EVENTS_PER_SECOND_CONFIG);
         avgDuplicatePercent = metrics.getOrCreate(AVG_DUPLICATE_PERCENT_CONFIG);
         timeFracAdd = metrics.getOrCreate(TIME_FRAC_ADD_CONFIG);
         shouldCreateEvent = metrics.getOrCreate(SHOULD_CREATE_EVENT_CONFIG);
         staleEventsTotal = metrics.getOrCreate(STALE_EVENTS_TOTAL_CONFIG);
         staleEventsPerSecond = metrics.getOrCreate(STALE_EVENTS_PER_SECOND_CONFIG);
-    }
-
-    /**
-     * Update a statistics accumulator whenever this node creates an event with
-     * an other-parent that has no children. (The OP is "rescued".)
-     */
-    public void rescuedEvent() {
-        rescuedEventsPerSecond.cycle();
     }
 
     /**

@@ -32,10 +32,8 @@ import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.Crypto;
 import com.swirlds.platform.FreezeManager;
-import com.swirlds.platform.StartUpEventFrozenManager;
-import com.swirlds.platform.components.EventMapper;
 import com.swirlds.platform.components.state.StateManagementComponent;
-import com.swirlds.platform.event.EventIntakeTask;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.gossip.chatter.ChatterGossip;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
@@ -82,14 +80,11 @@ public final class GossipFactory {
      * @param consensusRef                  a pointer to consensus
      * @param intakeQueue                   the event intake queue
      * @param freezeManager                 handles freezes
-     * @param startUpEventFrozenManager     prevents event creation during startup
      * @param swirldStateManager            manages the mutable state
-     * @param startedFromGenesis            true if this node started from a genesis state
      * @param stateManagementComponent      manages the lifecycle of the state
      * @param eventIntakeLambda             a method that is called when something needs to be added to the event intake
      *                                      queue
      * @param eventObserverDispatcher       the object used to wire event intake
-     * @param eventMapper                   a data structure used to track the most recent event from each node
      * @param eventIntakeMetrics            metrics for event intake
      * @param syncMetrics                   metrics for sync
      * @param eventLinker                   links together events, if chatter is enabled will also buffer orphans
@@ -102,7 +97,7 @@ public final class GossipFactory {
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
             @NonNull final Time time,
-            @NonNull Crypto crypto,
+            @NonNull final Crypto crypto,
             @NonNull final NotificationEngine notificationEngine,
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
@@ -111,15 +106,12 @@ public final class GossipFactory {
             @NonNull final ShadowGraph shadowGraph,
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
             @NonNull final AtomicReference<Consensus> consensusRef,
-            @NonNull final QueueThread<EventIntakeTask> intakeQueue,
+            @NonNull final QueueThread<GossipEvent> intakeQueue,
             @NonNull final FreezeManager freezeManager,
-            @NonNull final StartUpEventFrozenManager startUpEventFrozenManager,
             @NonNull final SwirldStateManager swirldStateManager,
-            final boolean startedFromGenesis,
             @NonNull final StateManagementComponent stateManagementComponent,
-            @NonNull final InterruptableConsumer<EventIntakeTask> eventIntakeLambda,
+            @NonNull final InterruptableConsumer<GossipEvent> eventIntakeLambda,
             @NonNull final EventObserverDispatcher eventObserverDispatcher,
-            @NonNull final EventMapper eventMapper,
             @NonNull final EventIntakeMetrics eventIntakeMetrics,
             @NonNull final SyncMetrics syncMetrics,
             @NonNull final EventLinker eventLinker,
@@ -140,12 +132,10 @@ public final class GossipFactory {
         Objects.requireNonNull(consensusRef);
         Objects.requireNonNull(intakeQueue);
         Objects.requireNonNull(freezeManager);
-        Objects.requireNonNull(startUpEventFrozenManager);
         Objects.requireNonNull(swirldStateManager);
         Objects.requireNonNull(stateManagementComponent);
         Objects.requireNonNull(eventIntakeLambda);
         Objects.requireNonNull(eventObserverDispatcher);
-        Objects.requireNonNull(eventMapper);
         Objects.requireNonNull(eventIntakeMetrics);
         Objects.requireNonNull(syncMetrics);
         Objects.requireNonNull(eventLinker);
@@ -171,15 +161,10 @@ public final class GossipFactory {
                     emergencyRecoveryManager,
                     consensusRef,
                     intakeQueue,
-                    freezeManager,
-                    startUpEventFrozenManager,
                     swirldStateManager,
-                    startedFromGenesis,
                     stateManagementComponent,
                     eventIntakeLambda,
                     eventObserverDispatcher,
-                    eventMapper,
-                    eventIntakeMetrics,
                     syncMetrics,
                     eventLinker,
                     statusActionSubmitter,
@@ -198,14 +183,9 @@ public final class GossipFactory {
                         appVersion,
                         shadowGraph,
                         intakeQueue,
-                        freezeManager,
-                        startUpEventFrozenManager,
                         swirldStateManager,
                         stateManagementComponent,
                         eventIntakeLambda,
-                        eventObserverDispatcher,
-                        eventMapper,
-                        eventIntakeMetrics,
                         syncMetrics,
                         statusActionSubmitter,
                         loadReconnectState,
@@ -226,14 +206,9 @@ public final class GossipFactory {
                         emergencyRecoveryManager,
                         consensusRef,
                         intakeQueue,
-                        freezeManager,
-                        startUpEventFrozenManager,
                         swirldStateManager,
                         stateManagementComponent,
                         eventIntakeLambda,
-                        eventObserverDispatcher,
-                        eventMapper,
-                        eventIntakeMetrics,
                         syncMetrics,
                         eventLinker,
                         statusActionSubmitter,

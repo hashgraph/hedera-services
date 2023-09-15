@@ -36,7 +36,6 @@ import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.platform.components.EventTaskDispatcher;
 import com.swirlds.platform.components.state.StateManagementComponent;
-import com.swirlds.platform.event.EventIntakeTask;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventFileManager;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventMultiFileIterator;
@@ -117,7 +116,7 @@ class PreconsensusEventReplayWorkflowTests {
                 .when(eventTaskDispatcher)
                 .dispatchTask(any());
 
-        final QueueThread<EventIntakeTask> eventIntakeTaskQueueThread = mock(QueueThread.class);
+        final QueueThread<GossipEvent> eventIntakeTaskQueueThread = mock(QueueThread.class);
         doAnswer(invocation -> {
                     assertEquals(TestPhase.FLUSH_INTAKE_QUEUE, phase.get());
                     phase.set(TestPhase.FLUSH_CONSENSUS_ROUND_HANDLER);

@@ -19,7 +19,7 @@ package com.swirlds.platform.gossip;
 import com.swirlds.base.state.Lifecycle;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.utility.Clearable;
-import com.swirlds.platform.event.EventIntakeTask;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.network.ConnectionTracker;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -41,7 +41,7 @@ public interface Gossip extends Clearable, ConnectionTracker, Lifecycle {
      * wrap this function.
      */
     @NonNull
-    InterruptableConsumer<EventIntakeTask> getEventIntakeLambda();
+    InterruptableConsumer<GossipEvent> getEventIntakeLambda();
 
     /**
      * This method is called when the node has finished a reconnect.

@@ -26,7 +26,6 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.platform.Consensus;
-import com.swirlds.platform.event.EventIntakeTask;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphInsertionException;
@@ -51,11 +50,10 @@ import java.util.function.Predicate;
  */
 public class SyncNode {
 
-    private final BlockingQueue<EventIntakeTask> receivedEventQueue;
+    private final BlockingQueue<GossipEvent> receivedEventQueue;
     private final List<IndexedEvent> generatedEvents;
-    private final List<IndexedEvent> discardedEvents;
 
-    private final List<EventIntakeTask> receivedEvents;
+    private final List<GossipEvent> receivedEvents;
 
     private final NodeId nodeId;
 
@@ -68,7 +66,6 @@ public class SyncNode {
     private Connection connection;
     private boolean saveGeneratedEvents;
     private boolean shouldAcceptSync = true;
-    private boolean reconnected = false;
     private boolean sendRecInitBytes = true;
 
     private long oldestGeneration;
@@ -104,7 +101,6 @@ public class SyncNode {
         receivedEventQueue = new LinkedBlockingQueue<>();
         receivedEvents = new ArrayList<>();
         generatedEvents = new LinkedList<>();
-        discardedEvents = new LinkedList<>();
         saveGeneratedEvents = false;
 
         shadowGraph = new ShadowGraph(mock(SyncMetrics.class));
@@ -136,8 +132,7 @@ public class SyncNode {
 
     /**
      * <p>Generates new events using the current seed value provided. Each event is added current {@link
-     * ShadowGraph}'s queue if the provided {@code shouldAddToGraph} predicate passes. Any events that do not
-     * pass the {@code shouldAddToGraph} predicate are added to {@link SyncNode#discardedEvents}. Events that do pass
+     * ShadowGraph}'s queue if the provided {@code shouldAddToGraph} predicate passes. Events that do pass
      * the {@code shouldAddToGraph} predicate are added to {@link SyncNode#generatedEvents}.</p>
      *
      * <p>The {@link SyncNode#eventEmitter} should be setup such that it only generates events that can be added to
@@ -165,8 +160,6 @@ public class SyncNode {
                 if (saveGeneratedEvents) {
                     generatedEvents.add(newEvent);
                 }
-            } else {
-                discardedEvents.add(newEvent);
             }
         }
 
@@ -220,7 +213,6 @@ public class SyncNode {
                 numNodes,
                 mock(SyncMetrics.class),
                 this::getConsensus,
-                r -> {},
                 eventHandler,
                 syncManager,
                 executor,
@@ -262,16 +254,12 @@ public class SyncNode {
         return syncManager;
     }
 
-    public List<EventIntakeTask> getReceivedEvents() {
+    public List<GossipEvent> getReceivedEvents() {
         return receivedEvents;
     }
 
     public List<IndexedEvent> getGeneratedEvents() {
         return generatedEvents;
-    }
-
-    public List<IndexedEvent> getDiscardedEvents() {
-        return discardedEvents;
     }
 
     public void setSaveGeneratedEvents(final boolean saveGeneratedEvents) {
@@ -286,14 +274,6 @@ public class SyncNode {
         this.shouldAcceptSync = canAcceptSync;
     }
 
-    public boolean isReconnected() {
-        return reconnected;
-    }
-
-    public void setReconnected(final boolean reconnected) {
-        this.reconnected = reconnected;
-    }
-
     public Exception getSyncException() {
         return syncException;
     }
@@ -302,20 +282,12 @@ public class SyncNode {
         this.syncException = syncException;
     }
 
-    public void setParallelExecutor(final ParallelExecutor executor) {
-        this.executor = executor;
-    }
-
     public Consensus getConsensus() {
         return consensus;
     }
 
     public long getOldestGeneration() {
         return oldestGeneration;
-    }
-
-    public int getSleepAfterEventReadMillis() {
-        return sleepAfterEventReadMillis.get();
     }
 
     public void setSleepAfterEventReadMillis(final int sleepAfterEventReadMillis) {

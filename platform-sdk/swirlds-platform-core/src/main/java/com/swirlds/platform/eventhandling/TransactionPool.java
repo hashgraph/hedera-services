@@ -18,8 +18,6 @@ package com.swirlds.platform.eventhandling;
 
 import com.swirlds.common.config.TransactionConfig;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.system.EventCreationRule;
-import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
@@ -30,13 +28,12 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
-import java.util.function.BooleanSupplier;
 
 /**
  * Store a list of transactions created by self, both system and non-system, for wrapping in the next event to be
  * created.
  */
-public class TransactionPool implements TransactionSupplier, EventCreationRule {
+public class TransactionPool implements TransactionSupplier {
 
     /**
      * A list of transactions created by this node waiting to be put into a self-event.
@@ -53,11 +50,6 @@ public class TransactionPool implements TransactionSupplier, EventCreationRule {
      * The number of buffered signature transactions waiting to be put into events.
      */
     private int bufferedSignatureTransactionCount = 0;
-
-    /**
-     * Indicates if the system is currently in a freeze.
-     */
-    private final BooleanSupplier inFreeze;
 
     /**
      * The maximum number of bytes of transactions that can be put in an event.
@@ -79,12 +71,10 @@ public class TransactionPool implements TransactionSupplier, EventCreationRule {
      * Creates a new transaction pool for transactions waiting to be put in an event.
      *
      * @param platformContext the platform context
-     * @param inFreeze        Indicates if the system is currently in a freeze
      */
-    public TransactionPool(@NonNull final PlatformContext platformContext, @Nullable final BooleanSupplier inFreeze) {
+    public TransactionPool(@NonNull final PlatformContext platformContext) {
 
         Objects.requireNonNull(platformContext);
-        this.inFreeze = inFreeze;
 
         final TransactionConfig transactionConfig =
                 platformContext.getConfiguration().getConfigData(TransactionConfig.class);
@@ -171,20 +161,6 @@ public class TransactionPool implements TransactionSupplier, EventCreationRule {
      */
     public synchronized boolean hasBufferedSignatureTransactions() {
         return bufferedSignatureTransactionCount > 0;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @SuppressWarnings("ConstantConditions")
-    @NonNull
-    @Override
-    public synchronized EventCreationRuleResponse shouldCreateEvent() {
-        if (hasBufferedSignatureTransactions() && inFreeze.getAsBoolean()) {
-            return EventCreationRuleResponse.CREATE;
-        } else {
-            return EventCreationRuleResponse.PASS;
-        }
     }
 
     /**

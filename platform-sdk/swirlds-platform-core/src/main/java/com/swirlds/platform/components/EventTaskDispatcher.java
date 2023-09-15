@@ -17,32 +17,18 @@
 package com.swirlds.platform.components;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.logging.LogMarker;
-import com.swirlds.platform.event.CreateEventTask;
-import com.swirlds.platform.event.EventIntakeTask;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.event.ValidEvent;
 import com.swirlds.platform.event.validation.EventValidator;
 import com.swirlds.platform.intake.IntakeCycleStats;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
-import java.util.function.Consumer;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
- * This class is responsible for dispatching tasks to the {@link EventCreator} and {@link EventValidator}.
+ * This class is responsible for TODO
  */
-public class EventTaskDispatcher {
-    private static final Logger logger = LogManager.getLogger(EventTaskDispatcher.class);
+public class EventTaskDispatcher { // TODO this class can finally die perhaps
 
     /** An {@link EventValidator} */
     private final EventValidator eventValidator;
-
-    /** Responsible for creating all new events that originate on this node */
-    private final EventCreator eventCreator;
-
-    /** Handles events that are known to be valid */
-    private final Consumer<GossipEvent> validEventHandler;
 
     /**
      * A statistics accumulator for hashgraph-related quantities, used here to record
@@ -60,48 +46,27 @@ public class EventTaskDispatcher {
      * 		provides the wall clock time
      * @param eventValidator
      * 		an event validator
-     * @param eventCreator
-     * 		an event creator
-     * @param validEventHandler
-     * 		handles already validated events
      * @param eventIntakeMetrics
      * 		dispatching metrics
      */
     public EventTaskDispatcher(
             final Time time,
             final EventValidator eventValidator,
-            final EventCreator eventCreator,
-            final Consumer<GossipEvent> validEventHandler,
             final EventIntakeMetrics eventIntakeMetrics,
             final IntakeCycleStats cycleStats) {
         this.time = time;
         this.eventValidator = eventValidator;
-        this.eventCreator = eventCreator;
-        this.validEventHandler = validEventHandler;
         this.eventIntakeMetrics = eventIntakeMetrics;
         this.cycleStats = cycleStats;
     }
 
     /**
-     * Dispatch a single {@code EventIntakeTask} instance. This routine validates
-     * the given task and adds it to the hashgraph via {@code EventIntake.addEvent}
-     *
-     * @param eventIntakeTask
-     * 		A task to be dispatched
+     * TODO
      */
-    public void dispatchTask(final EventIntakeTask eventIntakeTask) {
+    public void dispatchTask(final GossipEvent event) {
         cycleStats.startedIntake();
         final long start = time.nanoTime();
-        // Moving validation to inline model
-        if (eventIntakeTask instanceof GossipEvent task) {
-            eventValidator.validateEvent(task);
-        } else if (eventIntakeTask instanceof ValidEvent task) {
-            validEventHandler.accept(task.event());
-        } else if (eventIntakeTask instanceof CreateEventTask task) {
-            eventCreator.createEvent(task.getOtherId());
-        } else {
-            logger.error(LogMarker.EXCEPTION.getMarker(), "Unknown instance type: {}", eventIntakeTask.getClass());
-        }
+        eventValidator.validateEvent(event);
         eventIntakeMetrics.processedEventTask(start);
         cycleStats.doneIntake();
     }

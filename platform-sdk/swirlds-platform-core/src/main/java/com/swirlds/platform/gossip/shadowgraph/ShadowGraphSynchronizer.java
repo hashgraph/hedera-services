@@ -70,8 +70,6 @@ public class ShadowGraphSynchronizer {
      * so we have to make sure we always get the latest one
      */
     private final Supplier<GraphGenerations> generationsSupplier;
-    /** called to provide the sync result when the sync is done */
-    private final Consumer<SyncResult> syncDone;
     /** consumes events received by the peer */
     private final Consumer<GossipEvent> eventHandler;
     /** manages sync related decisions */
@@ -89,7 +87,6 @@ public class ShadowGraphSynchronizer {
             final int numberOfNodes,
             final SyncMetrics syncMetrics,
             final Supplier<GraphGenerations> generationsSupplier,
-            final Consumer<SyncResult> syncDone,
             final Consumer<GossipEvent> eventHandler,
             final FallenBehindManager fallenBehindManager,
             final ParallelExecutor executor,
@@ -99,7 +96,6 @@ public class ShadowGraphSynchronizer {
         this.numberOfNodes = numberOfNodes;
         this.syncMetrics = syncMetrics;
         this.generationsSupplier = generationsSupplier;
-        this.syncDone = syncDone;
         this.fallenBehindManager = fallenBehindManager;
         this.executor = executor;
         this.sendRecInitBytes = sendRecInitBytes;
@@ -372,7 +368,6 @@ public class ShadowGraphSynchronizer {
     }
 
     private void syncDone(final SyncResult info) {
-        syncDone.accept(info);
         syncMetrics.syncDone(info);
     }
 

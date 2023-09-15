@@ -34,23 +34,6 @@ import com.swirlds.config.api.ConfigProperty;
  *                                          of memory errors, even with the {@link #eventIntakeQueueThrottleSize},
  *                                          because syncs that started before the throttle engages can grow the queue to
  *                                          very large sizes on larger networks.
- * @param randomEventProbability            The probability that after a sync, a node will create an event with a random
- *                                          other parent. The probability is is 1 in X, where X is the value of
- *                                          randomEventProbability. A value of 0 means that a node will not create any
- *                                          random events.
- *                                          <p>
- *                                          This feature is used to get consensus on events with no descendants which
- *                                          are created by nodes who go offline.
- * @param staleEventPreventionThreshold     A setting used to prevent a node from generating events that will probably
- *                                          become stale. This value is multiplied by the address book size and compared
- *                                          to the number of events received in a sync. If
- *                                          ({@code numEventsReceived > staleEventPreventionThreshold *
- *                                          addressBookSize}) then we will not create an event for that sync, to reduce
- *                                          the probability of creating an event that will become stale.
- * @param rescueChildlessInverseProbability The probability that we will create a child for a childless event. The
- *                                          probability is 1 / X, where X is the value of
- *                                          rescueChildlessInverseProbability. A value of 0 means that a node will not
- *                                          create any children for childless events.
  * @param eventStreamQueueCapacity          capacity of the blockingQueue from which we take events and write to
  *                                          EventStream files
  * @param eventsLogPeriod                   period of generating eventStream file
@@ -59,20 +42,15 @@ import com.swirlds.config.api.ConfigProperty;
  * @param asyncPrehandle                    if true then prehandle transactions asynchronously in a thread pool, if
  *                                          false then prehandle happens on the intake thread
  * @param prehandlePoolSize                 the size of the thread pool used for prehandling transactions, if enabled
- * @param forceUseOfOrphanBuffer            if true then orphan buffer is used even if chatter is not enabled
  */
 @ConfigData("event")
 public record EventConfig(
         @ConfigProperty(defaultValue = "1000") int maxEventQueueForCons,
         @ConfigProperty(defaultValue = "1000") int eventIntakeQueueThrottleSize,
         @ConfigProperty(defaultValue = "10000") int eventIntakeQueueSize,
-        @ConfigProperty(defaultValue = "0") int randomEventProbability,
-        @ConfigProperty(defaultValue = "5") int staleEventPreventionThreshold,
-        @ConfigProperty(defaultValue = "10") int rescueChildlessInverseProbability,
         @ConfigProperty(defaultValue = "5000") int eventStreamQueueCapacity,
         @ConfigProperty(defaultValue = "5") long eventsLogPeriod,
         @ConfigProperty(defaultValue = "./eventstreams") String eventsLogDir,
         @ConfigProperty(defaultValue = "true") boolean enableEventStreaming,
         @ConfigProperty(defaultValue = "true") boolean asyncPrehandle,
-        @ConfigProperty(defaultValue = "8") int prehandlePoolSize,
-        @ConfigProperty(defaultValue = "true") boolean forceUseOfOrphanBuffer) {}
+        @ConfigProperty(defaultValue = "8") int prehandlePoolSize) {}

@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.gossip.chatter;
 
-import static com.swirlds.common.utility.CommonUtils.combineConsumers;
 import static com.swirlds.logging.LogMarker.RECONNECT;
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
@@ -46,27 +45,9 @@ import com.swirlds.common.utility.LoggingClearables;
 import com.swirlds.common.utility.PlatformVersion;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.Crypto;
-import com.swirlds.platform.FreezeManager;
 import com.swirlds.platform.PlatformConstructor;
-import com.swirlds.platform.StartUpEventFrozenManager;
-import com.swirlds.platform.components.CriticalQuorum;
-import com.swirlds.platform.components.CriticalQuorumImpl;
-import com.swirlds.platform.components.EventCreationRules;
-import com.swirlds.platform.components.EventMapper;
 import com.swirlds.platform.components.state.StateManagementComponent;
-import com.swirlds.platform.config.ThreadConfig;
-import com.swirlds.platform.crypto.CryptoStatic;
-import com.swirlds.platform.event.EventCreatorThread;
-import com.swirlds.platform.event.EventIntakeTask;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.event.creation.AncientParentsRule;
-import com.swirlds.platform.event.creation.BelowIntCreationRule;
-import com.swirlds.platform.event.creation.ChatterEventCreator;
-import com.swirlds.platform.event.creation.ChatteringRule;
-import com.swirlds.platform.event.creation.LoggingEventCreationRules;
-import com.swirlds.platform.event.creation.OtherParentTracker;
-import com.swirlds.platform.event.creation.StaticCreationRules;
-import com.swirlds.platform.event.intake.ChatterEventMapper;
 import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.gossip.AbstractGossip;
 import com.swirlds.platform.gossip.FallenBehindManagerImpl;
@@ -77,7 +58,6 @@ import com.swirlds.platform.gossip.chatter.protocol.ChatterCore;
 import com.swirlds.platform.gossip.chatter.protocol.peer.PeerInstance;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
-import com.swirlds.platform.metrics.EventIntakeMetrics;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.communication.NegotiationProtocols;
 import com.swirlds.platform.network.communication.NegotiatorThread;
@@ -107,8 +87,7 @@ public class ChatterGossip extends AbstractGossip {
     private final ReconnectController reconnectController;
     private final ChatterCore<GossipEvent> chatterCore;
     private final List<StoppableThread> chatterThreads = new LinkedList<>();
-    private final ChatterEventMapper chatterEventMapper = new ChatterEventMapper();
-    private final SequenceCycle<EventIntakeTask> intakeCycle;
+    private final SequenceCycle<GossipEvent> intakeCycle;
 
     /**
      * Holds a list of objects that need to be cleared when {@link #clear()} is called on this object.
@@ -131,16 +110,11 @@ public class ChatterGossip extends AbstractGossip {
      * @param emergencyRecoveryManager      handles emergency recovery
      * @param consensusRef                  a pointer to consensus
      * @param intakeQueue                   the event intake queue
-     * @param freezeManager                 handles freezes
-     * @param startUpEventFrozenManager     prevents event creation during startup
      * @param swirldStateManager            manages the mutable state
-     * @param startedFromGenesis            true if this node started from a genesis state
      * @param stateManagementComponent      manages the lifecycle of the state
      * @param eventIntakeLambda             a method that is called when something needs to be added to the event intake
      *                                      queue
      * @param eventObserverDispatcher       the object used to wire event intake
-     * @param eventMapper                   a data structure used to track the most recent event from each node
-     * @param eventIntakeMetrics            metrics for event intake
      * @param syncMetrics                   metrics for sync
      * @param eventLinker                   links together events, if chatter is enabled will also buffer orphans
      * @param statusActionSubmitter         enables submitting platform status actions
@@ -151,7 +125,7 @@ public class ChatterGossip extends AbstractGossip {
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
             @NonNull final Time time,
-            @NonNull Crypto crypto,
+            @NonNull final Crypto crypto,
             @NonNull final NotificationEngine notificationEngine,
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
@@ -160,16 +134,11 @@ public class ChatterGossip extends AbstractGossip {
             @NonNull final ShadowGraph shadowGraph,
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
             @NonNull final AtomicReference<Consensus> consensusRef,
-            @NonNull final QueueThread<EventIntakeTask> intakeQueue,
-            @NonNull final FreezeManager freezeManager,
-            @NonNull final StartUpEventFrozenManager startUpEventFrozenManager,
+            @NonNull final QueueThread<GossipEvent> intakeQueue,
             @NonNull final SwirldStateManager swirldStateManager,
-            final boolean startedFromGenesis,
             @NonNull final StateManagementComponent stateManagementComponent,
-            @NonNull final InterruptableConsumer<EventIntakeTask> eventIntakeLambda,
+            @NonNull final InterruptableConsumer<GossipEvent> eventIntakeLambda,
             @NonNull final EventObserverDispatcher eventObserverDispatcher,
-            @NonNull final EventMapper eventMapper,
-            @NonNull final EventIntakeMetrics eventIntakeMetrics,
             @NonNull final SyncMetrics syncMetrics,
             @NonNull final EventLinker eventLinker,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
@@ -184,14 +153,9 @@ public class ChatterGossip extends AbstractGossip {
                 selfId,
                 appVersion,
                 intakeQueue,
-                freezeManager,
-                startUpEventFrozenManager,
                 swirldStateManager,
                 stateManagementComponent,
-                eventMapper,
-                eventIntakeMetrics,
                 syncMetrics,
-                eventObserverDispatcher,
                 statusActionSubmitter,
                 loadReconnectState,
                 clearAllPipelinesForReconnect);
@@ -239,7 +203,6 @@ public class ChatterGossip extends AbstractGossip {
                     addressBook.getSize(),
                     syncMetrics,
                     consensusRef::get,
-                    sr -> {},
                     eventTaskCreator::addEvent,
                     syncManager,
                     shadowgraphExecutor,
@@ -306,68 +269,15 @@ public class ChatterGossip extends AbstractGossip {
         }
 
         thingsToStart.add(() -> chatterThreads.forEach(StoppableThread::start));
-
-        final OtherParentTracker otherParentTracker = new OtherParentTracker();
-        final EventCreationRules eventCreationRules = LoggingEventCreationRules.create(
-                List.of(
-                        startUpEventFrozenManager,
-                        freezeManager,
-                        fallenBehindManager,
-                        new ChatteringRule(
-                                chatterConfig.chatteringCreationThreshold(),
-                                chatterCore.getPeerInstances().stream()
-                                        .map(PeerInstance::communicationState)
-                                        .toList()),
-                        swirldStateManager.getTransactionPool(),
-                        new BelowIntCreationRule(intakeQueue::size, chatterConfig.chatterIntakeThrottle())),
-                List.of(
-                        StaticCreationRules::nullOtherParent,
-                        otherParentTracker,
-                        new AncientParentsRule(consensusRef::get),
-                        criticalQuorum));
-        final ChatterEventCreator chatterEventCreator = new ChatterEventCreator(
-                platformContext,
-                appVersion,
-                selfId,
-                PlatformConstructor.platformSigner(crypto.getKeysAndCerts()),
-                swirldStateManager.getTransactionPool(),
-                combineConsumers(
-                        eventTaskCreator::createdEvent, otherParentTracker::track, chatterEventMapper::mapEvent),
-                chatterEventMapper::getMostRecentEvent,
-                eventCreationRules,
-                CryptographyHolder.get(),
-                Time.getCurrent());
-
-        if (startedFromGenesis) {
-            // if we are starting from genesis, we will create a genesis event, which is the only event that will
-            // ever be created without an other-parent
-            chatterEventCreator.createGenesisEvent();
-        }
-        final ThreadConfig threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
-        final EventCreatorThread eventCreatorThread = new EventCreatorThread(
-                threadManager,
-                threadConfig,
-                selfId,
-                chatterConfig.attemptedChatterEventPerSecond(),
-                addressBook,
-                chatterEventCreator::createEvent,
-                CryptoStatic.getNonDetRandom());
-        thingsToStart.add(eventCreatorThread::start);
-
         eventObserverDispatcher.addObserver(new ChatterNotifier(selfId, chatterCore));
-        eventObserverDispatcher.addObserver(chatterEventMapper);
 
         clearAllInternalPipelines = new LoggingClearables(
                 RECONNECT.getMarker(),
                 List.of(
-                        // chatter event creator needs to be cleared first, because it sends event to intake
-                        Pair.of(eventCreatorThread, "eventCreatorThread"),
                         Pair.of(intakeQueue, "intakeQueue"),
                         // eventLinker is not thread safe, so the intake thread needs to be paused while it's being
                         // cleared
                         Pair.of(new PauseAndClear(intakeQueue, eventLinker), "eventLinker"),
-                        Pair.of(eventMapper, "eventMapper"),
-                        Pair.of(chatterEventMapper, "chatterEventMapper"),
                         Pair.of(shadowGraph, "shadowGraph")));
     }
 
@@ -377,17 +287,6 @@ public class ChatterGossip extends AbstractGossip {
     @Override
     protected boolean unidirectionalConnectionsEnabled() {
         return false;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    @Override
-    protected CriticalQuorum buildCriticalQuorum() {
-        final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
-        return new CriticalQuorumImpl(
-                platformContext.getMetrics(), selfId, addressBook, false, chatterConfig.criticalQuorumSoftening());
     }
 
     /**
@@ -417,7 +316,6 @@ public class ChatterGossip extends AbstractGossip {
      */
     @Override
     public void loadFromSignedState(@NonNull SignedState signedState) {
-        chatterEventMapper.loadFromSignedState(signedState);
         chatterCore.loadFromSignedState(signedState);
     }
 
@@ -426,7 +324,7 @@ public class ChatterGossip extends AbstractGossip {
      */
     @NonNull
     @Override
-    public InterruptableConsumer<EventIntakeTask> getEventIntakeLambda() {
+    public InterruptableConsumer<GossipEvent> getEventIntakeLambda() {
         return intakeCycle;
     }
 
