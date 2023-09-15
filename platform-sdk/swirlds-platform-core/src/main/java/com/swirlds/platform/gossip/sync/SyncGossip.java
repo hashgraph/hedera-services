@@ -173,6 +173,15 @@ public class SyncGossip extends AbstractGossip {
 
         syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
 
+        final Consumer<GossipEvent> newEventConsumer = e -> {
+            try {
+                intakeQueue.put(e);
+            } catch (final InterruptedException ex) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException("interrupted while submitting event to queue", ex);
+            }
+        };
+
         final ParallelExecutor shadowgraphExecutor = PlatformConstructor.parallelExecutor(threadManager);
         thingsToStart.add(shadowgraphExecutor);
         syncShadowgraphSynchronizer = new ShadowGraphSynchronizer(
@@ -181,7 +190,7 @@ public class SyncGossip extends AbstractGossip {
                 addressBook.getSize(),
                 syncMetrics,
                 consensusRef::get,
-                eventTaskCreator::addEvent,
+                newEventConsumer,
                 syncManager,
                 shadowgraphExecutor,
                 // don't send or receive init bytes if running sync as a protocol. the negotiator handles this

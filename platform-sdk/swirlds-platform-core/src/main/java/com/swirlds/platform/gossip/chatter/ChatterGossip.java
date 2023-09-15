@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.gossip.chatter;
 
+import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
 import static com.swirlds.logging.LogMarker.RECONNECT;
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
@@ -177,9 +178,21 @@ public class ChatterGossip extends AbstractGossip {
 
         reconnectController = new ReconnectController(reconnectConfig, threadManager, reconnectHelper, this::resume);
 
+        final Consumer<GossipEvent> newEventConsumer = e -> {
+            try {
+                intakeQueue.put(e);
+            } catch (final InterruptedException ex) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException("interrupted while submitting event to queue", ex);
+            }
+        };
+
         // first create all instances because of thread safety
         for (final NodeId otherId : topology.getNeighbors()) {
-            chatterCore.newPeerInstance(otherId, eventTaskCreator::addEvent);
+            chatterCore.newPeerInstance(
+                    otherId,
+                    e -> abortAndThrowIfInterrupted(
+                            intakeQueue::put, e, "interrupted while adding event to intake queue"));
         }
 
         if (emergencyRecoveryManager.isEmergencyStateRequired()) {
@@ -203,7 +216,7 @@ public class ChatterGossip extends AbstractGossip {
                     addressBook.getSize(),
                     syncMetrics,
                     consensusRef::get,
-                    eventTaskCreator::addEvent,
+                    newEventConsumer,
                     syncManager,
                     shadowgraphExecutor,
                     false,
