@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.threading;
+package com.swirlds.platform.gossip;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;

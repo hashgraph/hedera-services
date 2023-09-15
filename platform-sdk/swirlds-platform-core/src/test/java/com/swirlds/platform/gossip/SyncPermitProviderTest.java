@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.threading;
+package com.swirlds.platform.gossip;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -41,7 +41,7 @@ class SyncPermitProviderTest {
     void testPermitRelease() {
         final int numPermits = 3;
         final SyncPermitProvider syncPermitProvider =
-                new SyncPermitProvider(numPermits, mock(IntakeEventCounter.class));
+                new SyncPermitProvider(numPermits, Mockito.mock(IntakeEventCounter.class));
 
         assertEquals(numPermits, syncPermitProvider.getNumAvailable(), "all permits should be available");
 
@@ -64,7 +64,7 @@ class SyncPermitProviderTest {
     void testAllPermitsAcquired() {
         final int numPermits = 9;
         final SyncPermitProvider syncPermitProvider =
-                new SyncPermitProvider(numPermits, mock(IntakeEventCounter.class));
+                new SyncPermitProvider(numPermits, Mockito.mock(IntakeEventCounter.class));
 
         assertEquals(numPermits, syncPermitProvider.getNumAvailable(), "all permits should be available");
 
@@ -95,7 +95,7 @@ class SyncPermitProviderTest {
     void testWaitForAllSyncsToFinish() {
         final int numPermits = 3;
         final SyncPermitProvider syncPermitProvider =
-                new SyncPermitProvider(numPermits, mock(IntakeEventCounter.class));
+                new SyncPermitProvider(numPermits, Mockito.mock(IntakeEventCounter.class));
 
         // Acquire all the permits
         for (int i = 0; i < numPermits; i++) {

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.threading;
+package com.swirlds.platform.gossip;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
