@@ -323,21 +323,21 @@ class TokenBurnHandlerTest extends ParityTestBase {
                     .has(responseCode(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT));
         }
 
-        @Test
-        void fungibleAmountExceedsBatchSize() {
-            configuration = HederaTestConfigBuilder.create()
-                    .withValue("tokens.nfts.areEnabled", true)
-                    .withValue("tokens.nfts.maxBatchSizeBurn", 1)
-                    .getOrCreateConfig();
-            validator = new TokenSupplyChangeOpsValidator();
-
-            final var txn = newBurnTxn(TOKEN_123, 2);
-            final var context = mockContext(txn);
-
-            Assertions.assertThatThrownBy(() -> subject.handle(context))
-                    .isInstanceOf(HandleException.class)
-                    .has(responseCode(BATCH_SIZE_LIMIT_EXCEEDED));
-        }
+        // @Test removed this test as nfts.maxBatchSizeBurn is not for fungible tokens
+        //        void fungibleAmountExceedsBatchSize() {
+        //            configuration = HederaTestConfigBuilder.create()
+        //                    .withValue("tokens.nfts.areEnabled", true)
+        //                    .withValue("tokens.nfts.maxBatchSizeBurn", 1)
+        //                    .getOrCreateConfig();
+        //            validator = new TokenSupplyChangeOpsValidator();
+        //
+        //            final var txn = newBurnTxn(TOKEN_123, 2);
+        //            final var context = mockContext(txn);
+        //
+        //            Assertions.assertThatThrownBy(() -> subject.handle(context))
+        //                    .isInstanceOf(HandleException.class)
+        //                    .has(responseCode(BATCH_SIZE_LIMIT_EXCEEDED));
+        //        }
 
         @Test
         void fungibleTokenTreasuryAccountDoesntExist() {
