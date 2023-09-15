@@ -79,6 +79,10 @@ public class PhaseTimer<T extends Enum<T>> {
 
         activePhase = builder.getInitialPhase();
         previousTime = time.nanoTime();
+
+        if (fractionMetricsEnabled) {
+            fractionalTimers.get(activePhase).activate();
+        }
     }
 
     /**
