@@ -164,6 +164,7 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
     class HandleTests {
         @Mock
         private WritableTokenRelationStore tokenRelStore;
+
         @Mock
         private ReadableTokenStore readableTokenStore;
 
