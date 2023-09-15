@@ -134,7 +134,6 @@ public final class ExchangeRateManager {
                 && proposedRates.hasNextRate())) {
             throw new HandleException(ResponseCodeEnum.INVALID_EXCHANGE_RATE_FILE);
         }
-        System.out.println("proposed rates2 " + proposedRates);
 
         // Check bounds
         final var ratesConfig = configProvider.getConfiguration().getConfigData(RatesConfig.class);
