@@ -592,9 +592,19 @@ class SyntheticTxnFactoryTest {
         dynamicProperties = new GlobalDynamicProperties(new HederaNumbers(propertySource), propertySource);
         subject = new SyntheticTxnFactory(dynamicProperties);
 
+        final var reservedStakingRewards = 666_666_666_666L;
+        final var unreservedStakingRewardBalance = 777_777_777_777L;
         final var maxScaledRewardRate = 6_849L * 2 / 3;
         final var txnBody = subject.nodeStakeUpdate(
-                timestamp, nodeStakes, propertySource, synthStakeRewardedStart, maxScaledRewardRate);
+                timestamp,
+                nodeStakes,
+                propertySource,
+                synthStakeRewardedStart,
+                maxScaledRewardRate,
+                reservedStakingRewards,
+                unreservedStakingRewardBalance,
+                dynamicProperties.stakingRewardBalanceThreshold(),
+                dynamicProperties.maxStakeRewarded());
 
         assertTrue(txnBody.hasNodeStakeUpdate());
         assertEquals(timestamp, txnBody.getNodeStakeUpdate().getEndOfStakingPeriod());
@@ -613,8 +623,13 @@ class SyntheticTxnFactoryTest {
         assertEquals(
                 100L, txnBody.getNodeStakeUpdate().getStakingRewardFeeFraction().getDenominator());
         assertEquals(25_000_000_000_000_000L, txnBody.getNodeStakeUpdate().getStakingStartThreshold());
-        final var expectedRewardRate = (synthStakeRewardedStart / Units.HBARS_TO_TINYBARS) * maxScaledRewardRate;
-        assertEquals(expectedRewardRate, txnBody.getNodeStakeUpdate().getStakingRewardRate());
+        final var expectedMaxTotalReward = (synthStakeRewardedStart / Units.HBARS_TO_TINYBARS) * maxScaledRewardRate;
+        final var synthUpdate = txnBody.getNodeStakeUpdate();
+        assertEquals(expectedMaxTotalReward, synthUpdate.getStakingRewardRate());
+        assertEquals(expectedMaxTotalReward, synthUpdate.getMaxTotalReward());
+        assertEquals(reservedStakingRewards, synthUpdate.getReservedStakingRewards());
+        assertEquals(dynamicProperties.stakingRewardBalanceThreshold(), synthUpdate.getRewardBalanceThreshold());
+        assertEquals(dynamicProperties.maxStakeRewarded(), synthUpdate.getMaxStakeRewarded());
     }
 
     @Test
