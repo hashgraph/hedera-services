@@ -115,6 +115,7 @@ public class TokenAssociationSpecs extends HapiSuite {
                 .then(tokenAssociate(DEFAULT_PAYER, "0.0.0").hasKnownStatus(INVALID_TOKEN_ID));
     }
 
+    @HapiTest
     public HapiSpec associatedContractsMustHaveAdminKeys() {
         String misc = "someToken";
         String contract = "defaultContract";
@@ -125,6 +126,7 @@ public class TokenAssociationSpecs extends HapiSuite {
                 .then(tokenAssociate(contract, misc).hasKnownStatus(INVALID_SIGNATURE));
     }
 
+    @HapiTest
     public HapiSpec contractInfoQueriesAsExpected() {
         final var contract = "contract";
         return defaultHapiSpec("ContractInfoQueriesAsExpected")
@@ -152,6 +154,7 @@ public class TokenAssociationSpecs extends HapiSuite {
                         .logged());
     }
 
+    @HapiTest
     public HapiSpec accountInfoQueriesAsExpected() {
         final var account = "account";
         return defaultHapiSpec("accountInfoQueriesAsExpected")
@@ -179,6 +182,7 @@ public class TokenAssociationSpecs extends HapiSuite {
                         .logged());
     }
 
+    @HapiTest
     public HapiSpec expiredAndDeletedTokensStillAppearInContractInfo() {
         final String contract = "Fuse";
         final String treasury = "something";
@@ -222,6 +226,7 @@ public class TokenAssociationSpecs extends HapiSuite {
                                         .freeze(FreezeNotApplicable)));
     }
 
+    @HapiTest
     public HapiSpec dissociationFromExpiredTokensAsExpected() {
         final String treasury = "accountA";
         final String frozenAccount = "frozen";
@@ -304,6 +309,7 @@ public class TokenAssociationSpecs extends HapiSuite {
                         tokenDissociate(frozenAccount, expiringToken).hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN));
     }
 
+    @HapiTest
     public HapiSpec canDissociateFromDeletedTokenWithAlreadyDissociatedTreasury() {
         final String aNonTreasuryAcquaintance = "aNonTreasuryAcquaintance";
         final String bNonTreasuryAcquaintance = "bNonTreasuryAcquaintance";
@@ -349,6 +355,7 @@ public class TokenAssociationSpecs extends HapiSuite {
                                                 .including(TBD_TOKEN, aNonTreasuryAcquaintance, -nonZeroXfer / 2))));
     }
 
+    @HapiTest
     public HapiSpec dissociateHasExpectedSemanticsForDeletedTokens() {
         final String tbdUniqToken = "UniqToBeDeleted";
         final String zeroBalanceFrozen = "0bFrozen";
@@ -419,6 +426,7 @@ public class TokenAssociationSpecs extends HapiSuite {
                         getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(0));
     }
 
+    //    @HapiTest
     public HapiSpec dissociateHasExpectedSemantics() {
         return defaultHapiSpec("DissociateHasExpectedSemantics")
                 .given(basicKeysAndTokens())
@@ -442,6 +450,7 @@ public class TokenAssociationSpecs extends HapiSuite {
                         .logged());
     }
 
+    @HapiTest
     public HapiSpec dissociateHasExpectedSemanticsForDissociatedContracts() {
         final var uniqToken = "UniqToken";
         final var contract = "Fuse";
@@ -467,6 +476,7 @@ public class TokenAssociationSpecs extends HapiSuite {
                         .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT));
     }
 
+    //    @HapiTest
     public HapiSpec treasuryAssociationIsAutomatic() {
         return defaultHapiSpec("TreasuryAssociationIsAutomatic")
                 .given(basicKeysAndTokens())

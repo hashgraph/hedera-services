@@ -23,7 +23,9 @@ import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 
 /**
@@ -39,6 +41,7 @@ public class FeeContextImpl implements FeeContext {
     private final Key payerKey;
     private final FeeManager feeManager;
     private final ReadableStoreFactory storeFactory;
+    private final Configuration configuration;
 
     /**
      * Constructor of {@code FeeContextImpl}
@@ -54,12 +57,14 @@ public class FeeContextImpl implements FeeContext {
             @NonNull final TransactionInfo txInfo,
             @NonNull final Key payerKey,
             @NonNull final FeeManager feeManager,
-            @NonNull final ReadableStoreFactory storeFactory) {
+            @NonNull final ReadableStoreFactory storeFactory,
+            @Nullable final Configuration configuration) {
         this.consensusTime = consensusTime;
         this.txInfo = txInfo;
         this.payerKey = payerKey;
         this.feeManager = feeManager;
         this.storeFactory = storeFactory;
+        this.configuration = configuration;
     }
 
     @NonNull
@@ -78,5 +83,11 @@ public class FeeContextImpl implements FeeContext {
     @Override
     public <T> T readableStore(@NonNull Class<T> storeInterface) {
         return storeFactory.getStore(storeInterface);
+    }
+
+    @Override
+    @Nullable
+    public Configuration configuration() {
+        return configuration;
     }
 }
