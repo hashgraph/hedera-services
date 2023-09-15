@@ -28,6 +28,7 @@ import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
+import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -93,7 +94,8 @@ public class TokenGrantKycToAccountHandler implements TransactionHandler {
 
         final var targetTokenId = op.tokenOrThrow();
         final var targetAccountId = op.accountOrThrow();
-        final var tokenRelation = validateSemantics(targetAccountId, targetTokenId, tokenRelStore);
+        final var tokenStore = handleContext.readableStore(ReadableTokenStore.class);
+        final var tokenRelation = validateSemantics(targetAccountId, targetTokenId, tokenRelStore, tokenStore);
 
         final var tokenRelBuilder = tokenRelation.copyBuilder();
         tokenRelBuilder.kycGranted(true);
@@ -109,9 +111,14 @@ public class TokenGrantKycToAccountHandler implements TransactionHandler {
     private TokenRelation validateSemantics(
             @NonNull final AccountID accountId,
             @NonNull final TokenID tokenId,
-            @NonNull final WritableTokenRelationStore tokenRelStore)
+            @NonNull final WritableTokenRelationStore tokenRelStore,
+            @NonNull final ReadableTokenStore tokenStore)
             throws HandleException {
         final var tokenRel = tokenRelStore.getForModify(accountId, tokenId);
+
+        // Validate token is paused or deleted
+        TokenHandlerHelper.getIfUsable(tokenId, tokenStore);
+
         validateTrue(tokenRel != null, INVALID_TOKEN_ID);
 
         return tokenRel;

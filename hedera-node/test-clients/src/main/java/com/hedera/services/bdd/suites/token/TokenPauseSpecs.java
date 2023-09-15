@@ -120,6 +120,7 @@ public final class TokenPauseSpecs extends HapiSuite {
         return true;
     }
 
+    @HapiTest
     private HapiSpec cannotAddPauseKeyViaTokenUpdate() {
         return defaultHapiSpec("CannotAddPauseKeyViaTokenUpdate")
                 .given(newKeyNamed(PAUSE_KEY), newKeyNamed(ADMIN_KEY))
@@ -217,6 +218,7 @@ public final class TokenPauseSpecs extends HapiSuite {
                         getAccountInfo(firstUser).logged());
     }
 
+    // @HapiTest
     private HapiSpec pausedNonFungibleUniqueCannotBeUsed() {
         final String uniqueToken = "nonFungibleUnique";
         final String firstUser = FIRST_USER;
@@ -298,6 +300,7 @@ public final class TokenPauseSpecs extends HapiSuite {
                                 .hasToken(relationshipWith(otherToken).balance(500)));
     }
 
+    @HapiTest
     private HapiSpec pausedFungibleTokenCannotBeUsed() {
         final String token = PRIMARY;
         final String otherToken = SECONDARY;
@@ -377,6 +380,7 @@ public final class TokenPauseSpecs extends HapiSuite {
                                 .hasToken(relationshipWith(otherToken).balance(500)));
     }
 
+    @HapiTest
     private HapiSpec cannotChangePauseStatusIfMissingPauseKey() {
         return defaultHapiSpec("CannotChangePauseStatusIfMissingPauseKey")
                 .given(cryptoCreate(TOKEN_TREASURY))
@@ -406,6 +410,8 @@ public final class TokenPauseSpecs extends HapiSuite {
                                 .hasKnownStatus(ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY));
     }
 
+    // Enable when pause/unpause fees are implemented
+    // @HapiTest
     private HapiSpec basePauseAndUnpauseHaveExpectedPrices() {
         final var expectedBaseFee = 0.001;
         final var token = "token";
