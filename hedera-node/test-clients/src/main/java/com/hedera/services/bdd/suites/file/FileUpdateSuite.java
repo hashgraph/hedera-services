@@ -281,7 +281,8 @@ public class FileUpdateSuite extends HapiSuite {
                 .when(
                         fileUpdate("test").contents(new4k).extendingExpiryBy(0).via("updateTo4"),
                         fileUpdate("test").contents(new2k).extendingExpiryBy(0).via("updateTo2"),
-                        fileUpdate("test").extendingExpiryBy(extension).via("extend"))
+                        fileUpdate("test").extendingExpiryBy(extension).via("extend"),
+                        overriding("maxFileSize", "1024"))
                 .then(UtilVerbs.withOpContext((spec, opLog) -> {
                     final var createOp = getTxnRecord(CREATE_TXN);
                     final var to4kOp = getTxnRecord("updateTo4");
