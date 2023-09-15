@@ -23,8 +23,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbar;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsLoader.protoDefsFromResource;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OPERATION_REPEATED_IN_BUCKET_GROUPS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.THROTTLE_GROUP_HAS_ZERO_OPS_PER_SEC;
 
 import com.hedera.services.bdd.junit.HapiTestSuite;
@@ -54,22 +54,22 @@ public class ThrottleDefValidationSuite extends HapiSuite {
             throttleDefsRejectUnauthorizedPayers(),
             throttleUpdateRejectsMultiGroupAssignment(),
             throttleUpdateWithZeroGroupOpsPerSecFails(),
-            updateWithMissingTokenMintGetsWarning(),
+            updateWithMissingTokenMintFails(),
             ensureDefaultsRestored()
         });
     }
 
     // @HapiTest failing due to charging fees not calculated properly
-    private HapiSpec updateWithMissingTokenMintGetsWarning() {
+    private HapiSpec updateWithMissingTokenMintFails() {
         var missingMintThrottles = protoDefsFromResource("testSystemFiles/throttles-sans-mint.json");
 
-        return defaultHapiSpec("UpdateWithMissingTokenMintGetsWarning")
+        return defaultHapiSpec("updateWithMissingTokenMintFails")
                 .given()
                 .when()
                 .then(fileUpdate(THROTTLE_DEFS)
                         .payingWith(EXCHANGE_RATE_CONTROL)
                         .contents(missingMintThrottles.toByteArray())
-                        .hasKnownStatus(SUCCESS_BUT_MISSING_EXPECTED_OPERATION));
+                        .hasKnownStatus(INVALID_TRANSACTION));
     }
 
     private HapiSpec ensureDefaultsRestored() {
