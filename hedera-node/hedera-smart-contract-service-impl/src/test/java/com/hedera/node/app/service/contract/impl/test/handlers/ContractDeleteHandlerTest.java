@@ -35,7 +35,6 @@ import static org.mockito.Mockito.verify;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractDeleteTransactionBody;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -75,8 +74,9 @@ class ContractDeleteHandlerTest {
     void preHandleRecognizesContractIdKeyAsImmutable() {
         given(preHandleContext.createStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
         given(readableAccountStore.getContractById(VALID_CONTRACT_ADDRESS)).willReturn(TBD_CONTRACT);
-        final var txn =
-                TransactionBody.newBuilder().contractDeleteInstance(deletion(VALID_CONTRACT_ADDRESS, CALLED_EOA_ID)).build();
+        final var txn = TransactionBody.newBuilder()
+                .contractDeleteInstance(deletion(VALID_CONTRACT_ADDRESS, CALLED_EOA_ID))
+                .build();
         given(preHandleContext.body()).willReturn(txn);
 
         final var ex = assertThrows(PreCheckException.class, () -> subject.preHandle(preHandleContext));
@@ -85,9 +85,10 @@ class ContractDeleteHandlerTest {
 
     @Test
     void preHandleRejectsPermanentRemoval() {
-        final var txn =
-                TransactionBody.newBuilder().contractDeleteInstance(ContractDeleteTransactionBody.newBuilder()
-                        .permanentRemoval(true)).build();
+        final var txn = TransactionBody.newBuilder()
+                .contractDeleteInstance(
+                        ContractDeleteTransactionBody.newBuilder().permanentRemoval(true))
+                .build();
         given(preHandleContext.body()).willReturn(txn);
 
         final var ex = assertThrows(PreCheckException.class, () -> subject.preHandle(preHandleContext));
@@ -178,12 +179,11 @@ class ContractDeleteHandlerTest {
         given(context.recordBuilder(ContractDeleteRecordBuilder.class)).willReturn(recordBuilder);
     }
 
-    private static final Account TBD_CONTRACT =
-            Account.newBuilder()
-                    .accountId(CALLED_EOA_ID)
-                    .smartContract(true)
-                    .key(Key.newBuilder().contractID(CALLED_CONTRACT_ID))
-                    .build();
+    private static final Account TBD_CONTRACT = Account.newBuilder()
+            .accountId(CALLED_EOA_ID)
+            .smartContract(true)
+            .key(Key.newBuilder().contractID(CALLED_CONTRACT_ID))
+            .build();
 
     private static final Account OBTAINER_ACCOUNT =
             Account.newBuilder().accountId(A_NEW_ACCOUNT_ID).build();

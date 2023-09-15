@@ -42,7 +42,6 @@ class CustomExceptionalHaltReasonTest {
 
     @Test
     void usesToStringForErrorMessages() {
-        assertEquals(
-                "INVALID_SOLIDITY_ADDRESS", CustomExceptionalHaltReason.errorMessageFor(INVALID_SOLIDITY_ADDRESS));
+        assertEquals("INVALID_SOLIDITY_ADDRESS", CustomExceptionalHaltReason.errorMessageFor(INVALID_SOLIDITY_ADDRESS));
     }
 }

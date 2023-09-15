@@ -69,7 +69,8 @@ public class ContractDeleteHandler implements TransactionHandler {
         // be signed by the admin key.
         context.requireKeyOrThrow(contract.key(), MODIFYING_IMMUTABLE_CONTRACT);
         final var adminKey = contract.keyOrThrow();
-        validateFalsePreCheck(adminKey.hasContractID() || adminKey.hasDelegatableContractId(), MODIFYING_IMMUTABLE_CONTRACT);
+        validateFalsePreCheck(
+                adminKey.hasContractID() || adminKey.hasDelegatableContractId(), MODIFYING_IMMUTABLE_CONTRACT);
         // If there is a transfer account ID, and IF that account has receiverSigRequired set, then the transaction
         // must be signed by that account's key. Same if instead it uses a contract as the transfer target.
         if (op.hasTransferAccountID()) {
