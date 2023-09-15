@@ -480,7 +480,6 @@ public final class BootstrapUtils {
         return nodesToRun;
     }
 
-    // TODO does this need to take a list?
     /**
      * Checks the nodes to run and exits if there are no nodes to run
      *

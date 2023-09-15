@@ -176,9 +176,14 @@ public class Browser {
             final NodeId nodeId = nodesToRun.get(index);
             final SwirldMain appMain = appMains.get(nodeId);
 
-            final SwirldsPlatform platform = new SwirldsPlatformBuilder(
-                            appMain.getClass().getName(), appMain.getSoftwareVersion(), appMain::newState, nodeId)
-                    .build();
+            final SwirldsPlatformBuilder builder = new SwirldsPlatformBuilder(
+                    appMain.getClass().getName(),
+                    appDefinition.getSwirldName(),
+                    appMain.getSoftwareVersion(),
+                    appMain::newState,
+                    nodeId);
+
+            final SwirldsPlatform platform = builder.build();
             platforms.put(nodeId, platform);
 
             new InfoMember(infoSwirld, platform);

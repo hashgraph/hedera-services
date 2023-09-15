@@ -134,9 +134,10 @@ public class ServicesMain implements SwirldMain {
 
         final Hedera hedera = new Hedera(registry);
 
-        final SwirldsPlatform platform = new SwirldsPlatformBuilder(
-                        "com.hedera.services.ServicesMain", hedera.getSoftwareVersion(), hedera::newState, selfId)
-                .build();
+        final SwirldsPlatformBuilder builder = new SwirldsPlatformBuilder(
+                "com.hedera.services.ServicesMain", "TODO", hedera.getSoftwareVersion(), hedera::newState, selfId);
+
+        final SwirldsPlatform platform = builder.build();
 
         hedera.init(platform, selfId);
         platform.start();

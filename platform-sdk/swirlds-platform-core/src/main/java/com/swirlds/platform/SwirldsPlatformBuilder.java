@@ -30,7 +30,6 @@ import static com.swirlds.platform.util.BootstrapUtils.validatePathToConfigTxt;
 import static com.swirlds.platform.util.BootstrapUtils.writeSettingsUsed;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.StartupTime;
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.ConfigUtils;
 import com.swirlds.common.config.PathsConfig;
@@ -79,7 +78,6 @@ public final class SwirldsPlatformBuilder {
 
     private static final String SWIRLDS_PACKAGE = "com.swirlds";
 
-    // TODO extract this constant
     // @formatter:off
     private static final String STARTUP_MESSAGE =
             """
@@ -92,8 +90,7 @@ public final class SwirldsPlatformBuilder {
     private final SoftwareVersion softwareVersion;
     private final Supplier<SwirldState> genesisStateBuilder;
     private final NodeId selfId;
-
-    private String swirldName = "Unspecified"; // TODO!!! parse this from config.txt
+    private final String swirldName;
 
     private final ConfigurationBuilder configBuilder;
     private final ConfigurationBuilder bootstrapConfigBuilder;
@@ -112,17 +109,20 @@ public final class SwirldsPlatformBuilder {
      *
      * @param appName             the name of the application, currently used for deciding where to store states on
      *                            disk
+     * @param swirldName          the name of the swirld, currently used for deciding where to store states on disk
      * @param selfId              the ID of this node
      * @param softwareVersion     the software version of the application
      * @param genesisStateBuilder a supplier that will be called to create the genesis state, if necessary
      */
     public SwirldsPlatformBuilder(
             @NonNull final String appName,
+            @NonNull final String swirldName,
             @NonNull final SoftwareVersion softwareVersion,
             @NonNull final Supplier<SwirldState> genesisStateBuilder,
             @NonNull final NodeId selfId) {
 
         this.appName = Objects.requireNonNull(appName);
+        this.swirldName = Objects.requireNonNull(swirldName);
         this.softwareVersion = Objects.requireNonNull(softwareVersion);
         this.genesisStateBuilder = Objects.requireNonNull(genesisStateBuilder);
         this.selfId = Objects.requireNonNull(selfId);
@@ -130,18 +130,6 @@ public final class SwirldsPlatformBuilder {
         configBuilder =
                 ConfigUtils.scanAndRegisterAllConfigTypes(ConfigurationBuilder.create(), Set.of(SWIRLDS_PACKAGE));
         bootstrapConfigBuilder = ConfigurationBuilder.create().withConfigDataType(PathsConfig.class);
-    }
-
-    /**
-     * Specify the name of the platform. Used for UI only.
-     *
-     * @param name the name of the platform
-     * @return this
-     */
-    @NonNull
-    public SwirldsPlatformBuilder withName(@NonNull final String name) {
-        this.swirldName = name;
-        return this;
     }
 
     /**
@@ -291,9 +279,6 @@ public final class SwirldsPlatformBuilder {
      * @return a new platform instance
      */
     public SwirldsPlatform build(final boolean start) {
-
-        // TODO move this into the platform!
-        StartupTime.markStartupTime();
 
         // Setup the configuration, taking into account overrides from the platform builder
         final Configuration bootstrapConfig = bootstrapConfigBuilder.build();

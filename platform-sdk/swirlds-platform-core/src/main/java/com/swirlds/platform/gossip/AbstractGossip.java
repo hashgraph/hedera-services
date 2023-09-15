@@ -248,7 +248,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
                 clearAllPipelinesForReconnect::run,
                 swirldStateManager::getConsensusState,
                 stateManagementComponent::getLastCompleteRound,
-                new ReconnectLearnerThrottle(selfId, reconnectConfig),
+                new ReconnectLearnerThrottle(time, selfId, reconnectConfig),
                 loadReconnectState,
                 new ReconnectLearnerFactory(
                         platformContext,
