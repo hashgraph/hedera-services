@@ -29,6 +29,7 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.FIRST_TOKE
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_NO_SPECIAL_KEYS;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_FREEZE;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FREEZE_KT;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_WIPE_KT;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -42,14 +43,18 @@ import static org.mockito.Mockito.verify;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.TokenFreezeAccountTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
+import com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler;
+import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenFreezeAccountHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.ParityTestBase;
 import com.hedera.node.app.spi.fixtures.Assertions;
@@ -68,6 +73,18 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class TokenFreezeAccountHandlerTest {
     private static final AccountID ACCOUNT_13257 =
             AccountID.newBuilder().accountNum(13257).build();
+    private static final AccountID TREASURY_ACCOUNT_9876 = BaseCryptoHandler.asAccount(9876);
+    private static final TokenID TOKEN_531 = BaseTokenHandler.asToken(531);
+
+    private Token newToken531() {
+        return Token.newBuilder()
+                .tokenId(TOKEN_531)
+                .tokenType(TokenType.FUNGIBLE_COMMON)
+                .treasuryAccountId(TREASURY_ACCOUNT_9876)
+                .wipeKey(TOKEN_WIPE_KT.asPbjKey())
+                .totalSupply(1000L)
+                .build();
+    }
 
     private TokenFreezeAccountHandler subject;
 
@@ -171,6 +188,7 @@ class TokenFreezeAccountHandlerTest {
         void accountNotPresentInTxnBody() {
             final var pbjToken = toPbj(KNOWN_TOKEN_WITH_FREEZE);
             final var noAcctTxn = newFreezeTxn(pbjToken, null);
+            given(readableTokenStore.get(pbjToken)).willReturn(newToken531());
             given(readableTokenStore.getTokenMeta(pbjToken)).willReturn(tokenMetaWithFreezeKey());
             given(context.body()).willReturn(noAcctTxn);
 
@@ -183,7 +201,7 @@ class TokenFreezeAccountHandlerTest {
         @Test
         void tokenNotFound() {
             final var token = MISSING_TOKEN_12345;
-            given(readableTokenStore.getTokenMeta(token)).willReturn(null);
+            given(readableTokenStore.get(token)).willReturn(null);
             final var txn = newFreezeTxn(token);
             given(context.body()).willReturn(txn);
 
@@ -196,6 +214,7 @@ class TokenFreezeAccountHandlerTest {
         @Test
         void tokenHasNoFreezeKey() {
             final var token = toPbj(KNOWN_TOKEN_NO_SPECIAL_KEYS);
+            given(readableTokenStore.get(token)).willReturn(newToken531());
             given(readableTokenStore.getTokenMeta(token)).willReturn(tokenMetaWithFreezeKey(null));
             final var txn = newFreezeTxn(token);
             given(context.body()).willReturn(txn);
@@ -209,6 +228,7 @@ class TokenFreezeAccountHandlerTest {
         @Test
         void accountNotFound() {
             final var token = toPbj(KNOWN_TOKEN_WITH_FREEZE);
+            given(readableTokenStore.get(token)).willReturn(newToken531());
             given(readableTokenStore.getTokenMeta(token)).willReturn(tokenMetaWithFreezeKey());
             given(readableAccountStore.getAccountById(ACCOUNT_13257)).willReturn(null);
             final var txn = newFreezeTxn(token);
@@ -224,6 +244,7 @@ class TokenFreezeAccountHandlerTest {
         void tokenRelNotFound() throws HandleException {
             final var token = toPbj(KNOWN_TOKEN_WITH_FREEZE);
             final var accountNumber = (long) ACCOUNT_13257.accountNumOrThrow();
+            given(readableTokenStore.get(token)).willReturn(newToken531());
             given(readableTokenStore.getTokenMeta(token)).willReturn(tokenMetaWithFreezeKey());
             given(readableAccountStore.getAccountById(ACCOUNT_13257))
                     .willReturn(Account.newBuilder().accountId(ACCOUNT_13257).build());
@@ -241,6 +262,7 @@ class TokenFreezeAccountHandlerTest {
         void tokenRelFreezeSuccessful() {
             final var token = toPbj(KNOWN_TOKEN_WITH_FREEZE);
             final var accountNumber = (long) ACCOUNT_13257.accountNumOrThrow();
+            given(readableTokenStore.get(token)).willReturn(newToken531());
             given(readableTokenStore.getTokenMeta(token)).willReturn(tokenMetaWithFreezeKey());
             given(readableAccountStore.getAccountById(ACCOUNT_13257))
                     .willReturn(Account.newBuilder().accountId(ACCOUNT_13257).build());

@@ -23,6 +23,7 @@ import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.res
 import static com.hedera.test.factories.scenarios.TokenKycGrantScenarios.VALID_GRANT_WITH_EXTANT_TOKEN;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_KYC;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_KYC_KT;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_WIPE_KT;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -47,6 +48,8 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
+import com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler;
+import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenGrantKycToAccountHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.TokenHandlerTestBase;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
@@ -161,6 +164,21 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
     class HandleTests {
         @Mock
         private WritableTokenRelationStore tokenRelStore;
+        @Mock
+        private ReadableTokenStore readableTokenStore;
+
+        private static final AccountID TREASURY_ACCOUNT_9876 = BaseCryptoHandler.asAccount(9876);
+        private static final TokenID TOKEN_531 = BaseTokenHandler.asToken(531);
+
+        private Token newToken531() {
+            return Token.newBuilder()
+                    .tokenId(TOKEN_531)
+                    .tokenType(TokenType.FUNGIBLE_COMMON)
+                    .treasuryAccountId(TREASURY_ACCOUNT_9876)
+                    .wipeKey(TOKEN_WIPE_KT.asPbjKey())
+                    .totalSupply(1000L)
+                    .build();
+        }
 
         @Mock(strictness = LENIENT)
         private HandleContext handleContext;
@@ -168,6 +186,7 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
         @BeforeEach
         void setup() {
             given(handleContext.writableStore(WritableTokenRelationStore.class)).willReturn(tokenRelStore);
+            given(handleContext.readableStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
         }
 
         @Test
@@ -205,6 +224,7 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
         @Test
         @DisplayName("When getForModify returns empty, should not put or commit")
         void emptyGetForModifyShouldNotPersist() {
+            given(readableTokenStore.get(tokenId)).willReturn(newToken531());
             given(tokenRelStore.getForModify(notNull(), notNull())).willReturn(null);
 
             final var txnBody = newTxnBody(true, true);
@@ -221,6 +241,7 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
         void kycGrantedAndPersisted() {
             final var stateTokenRel =
                     newTokenRelationBuilder().kycGranted(false).build();
+            given(readableTokenStore.get(tokenId)).willReturn(newToken531());
             given(tokenRelStore.getForModify(payerId, tokenId)).willReturn(stateTokenRel);
 
             final var txnBody = newTxnBody(true, true);

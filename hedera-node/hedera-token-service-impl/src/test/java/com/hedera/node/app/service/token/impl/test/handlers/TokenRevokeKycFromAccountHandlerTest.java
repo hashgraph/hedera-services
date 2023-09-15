@@ -30,6 +30,7 @@ import static com.hedera.test.factories.scenarios.TokenKycRevokeScenarios.REVOKE
 import static com.hedera.test.factories.scenarios.TokenKycRevokeScenarios.VALID_REVOKE_WITH_EXTANT_TOKEN;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_KYC_KT;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_WIPE_KT;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
@@ -47,13 +48,17 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.TokenRevokeKycTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
+import com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler;
+import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenRevokeKycFromAccountHandler;
 import com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
@@ -172,9 +177,26 @@ class TokenRevokeKycFromAccountHandlerTest {
         @Mock
         private WritableTokenRelationStore tokenRelStore;
 
+        @Mock
+        private ReadableTokenStore readableTokenStore;
+
+        private static final AccountID TREASURY_ACCOUNT_9876 = BaseCryptoHandler.asAccount(9876);
+        private static final TokenID TOKEN_531 = BaseTokenHandler.asToken(531);
+
+        private Token newToken10() {
+            return Token.newBuilder()
+                    .tokenId(TOKEN_10)
+                    .tokenType(TokenType.FUNGIBLE_COMMON)
+                    .treasuryAccountId(TREASURY_ACCOUNT_9876)
+                    .wipeKey(TOKEN_WIPE_KT.asPbjKey())
+                    .totalSupply(1000L)
+                    .build();
+        }
+
         @BeforeEach
         void setUp() {
             given(handleContext.writableStore(WritableTokenRelationStore.class)).willReturn(tokenRelStore);
+            given(handleContext.readableStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
         }
 
         @Test
@@ -196,6 +218,7 @@ class TokenRevokeKycFromAccountHandlerTest {
         @Test
         @DisplayName("When getForModify returns empty, should not put or commit")
         void emptyGetForModifyShouldNotPersist() {
+            given(readableTokenStore.get(TOKEN_10)).willReturn(newToken10());
             given(tokenRelStore.getForModify(notNull(), notNull())).willReturn(null);
 
             final var txnBody = newTxnBody();
@@ -216,6 +239,7 @@ class TokenRevokeKycFromAccountHandlerTest {
                     .accountId(ACCOUNT_100)
                     .kycGranted(true)
                     .build();
+            given(readableTokenStore.get(TOKEN_10)).willReturn(newToken10());
             given(tokenRelStore.getForModify(ACCOUNT_100, TOKEN_10)).willReturn(stateTokenRel);
 
             final var txnBody = newTxnBody();
