@@ -123,17 +123,14 @@ public interface AccountSummariesApi {
 
     private static void addTokenRelation(
             ArrayList<TokenRelationship> ret, Token token, TokenRelation tokenRelation, TokenID tokenId) {
-
-        boolean isTreasuryAccount = token.treasuryAccountId().equals(tokenRelation.accountId());
-
         TokenFreezeStatus freezeStatus = FREEZE_NOT_APPLICABLE;
         if (token.hasFreezeKey()) {
-            freezeStatus = !isTreasuryAccount && tokenRelation.frozen() ? FROZEN : UNFROZEN;
+            freezeStatus = tokenRelation.frozen() ? FROZEN : UNFROZEN;
         }
 
         TokenKycStatus kycStatus = KYC_NOT_APPLICABLE;
         if (token.hasKycKey()) {
-            kycStatus = isTreasuryAccount || tokenRelation.kycGranted() ? GRANTED : REVOKED;
+            kycStatus = tokenRelation.kycGranted() ? GRANTED : REVOKED;
         }
 
         final var tokenRelationship = TokenRelationship.newBuilder()
