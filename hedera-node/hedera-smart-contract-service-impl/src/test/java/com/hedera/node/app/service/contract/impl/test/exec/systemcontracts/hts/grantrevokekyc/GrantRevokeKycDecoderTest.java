@@ -1,9 +1,11 @@
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.grantrevokekyc;
 
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantrevokekyc.GrantRevokeKycDecoder;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantrevokekyc.GrantRevokeKycTranslator;
@@ -20,6 +22,8 @@ import static org.mockito.BDDMockito.given;
 class GrantRevokeKycDecoderTest {
     @Mock
     private HtsCallAttempt attempt;
+    @Mock
+    private AddressIdConverter addressIdConverter;
 
     private final GrantRevokeKycDecoder subject = new GrantRevokeKycDecoder();
 
@@ -29,6 +33,8 @@ class GrantRevokeKycDecoderTest {
                 .encodeCallWithArgs(FUNGIBLE_TOKEN_HEADLONG_ADDRESS, OWNER_HEADLONG_ADDRESS)
                 .array();
         given(attempt.inputBytes()).willReturn(encoded);
+        given(attempt.addressIdConverter()).willReturn(addressIdConverter);
+        givenConvertible(OWNER_HEADLONG_ADDRESS, OWNER_ID);
 
         final var body = subject.decodeGrantKyc(attempt);
         assertGrantKycPresent(body, FUNGIBLE_TOKEN_ID, OWNER_ID);
@@ -37,9 +43,11 @@ class GrantRevokeKycDecoderTest {
     @Test
     void revokeKycWorks() {
         final var encoded = GrantRevokeKycTranslator.REVOKE_KYC
-                .encodeCallWithArgs(NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS, OWNER_ID)
+                .encodeCallWithArgs(NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS, OWNER_HEADLONG_ADDRESS)
                 .array();
         given(attempt.inputBytes()).willReturn(encoded);
+        given(attempt.addressIdConverter()).willReturn(addressIdConverter);
+        givenConvertible(OWNER_HEADLONG_ADDRESS, OWNER_ID);
 
         final var body = subject.decodeRevokeKyc(attempt);
         assertRevokeKycPresent(body, NON_FUNGIBLE_TOKEN_ID, OWNER_ID);
@@ -55,5 +63,9 @@ class GrantRevokeKycDecoderTest {
         final var grantKyc = body.tokenRevokeKycOrThrow();
         org.assertj.core.api.Assertions.assertThat(grantKyc.token()).isEqualTo(tokenId);
         org.assertj.core.api.Assertions.assertThat(grantKyc.account()).isEqualTo(accountId);
+    }
+
+    private void givenConvertible(@NonNull final Address address, @NonNull final AccountID id) {
+        given(addressIdConverter.convert(address)).willReturn(id);
     }
 }

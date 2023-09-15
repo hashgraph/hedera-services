@@ -6,6 +6,7 @@ import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Arrays;
 
@@ -20,6 +21,7 @@ public class GrantRevokeKycTranslator extends AbstractHtsCallTranslator {
 
     private final GrantRevokeKycDecoder decoder;
 
+    @Inject
     public GrantRevokeKycTranslator(@NonNull GrantRevokeKycDecoder decoder) {
         this.decoder = decoder;
     }
