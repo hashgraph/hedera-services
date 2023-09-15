@@ -25,7 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -87,13 +86,12 @@ class PreconsensusEventReplayWorkflowTests {
         final Iterator<GossipEvent> eventIterator = events.iterator();
 
         final PreconsensusEventFileManager preconsensusEventFileManager = mock(PreconsensusEventFileManager.class);
-        when(preconsensusEventFileManager.getEventIterator(anyLong(), anyBoolean()))
-                .thenAnswer(invocation -> {
-                    final PreconsensusEventMultiFileIterator it = mock(PreconsensusEventMultiFileIterator.class);
-                    when(it.hasNext()).thenAnswer(invocation2 -> eventIterator.hasNext());
-                    when(it.next()).thenAnswer(invocation2 -> eventIterator.next());
-                    return it;
-                });
+        when(preconsensusEventFileManager.getEventIterator(anyLong())).thenAnswer(invocation -> {
+            final PreconsensusEventMultiFileIterator it = mock(PreconsensusEventMultiFileIterator.class);
+            when(it.hasNext()).thenAnswer(invocation2 -> eventIterator.hasNext());
+            when(it.next()).thenAnswer(invocation2 -> eventIterator.next());
+            return it;
+        });
 
         final EventTaskDispatcher eventTaskDispatcher = mock(EventTaskDispatcher.class);
         final AtomicInteger nextIndex = new AtomicInteger(0);
