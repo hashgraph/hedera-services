@@ -158,7 +158,7 @@ public class EthereumSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec sendingLargerBalanceThanAvailableFailsGracefully() {
+    HapiSpec sendingLargerBalanceThanAvailableFailsGracefully() {
         final AtomicReference<Address> tokenCreateContractAddress = new AtomicReference<>();
 
         return defaultHapiSpec("sendingLargerBalanceThanAvailableFailsGracefully")
@@ -201,7 +201,7 @@ public class EthereumSuite extends HapiSuite {
                 }));
     }
 
-    private HapiSpec etx010TransferToCryptoAccountSucceeds() {
+    HapiSpec etx010TransferToCryptoAccountSucceeds() {
         String RECEIVER = "RECEIVER";
         final String aliasBalanceSnapshot = "aliasBalance";
         return defaultHapiSpec("etx010TransferToCryptoAccountSucceeds")
@@ -287,7 +287,7 @@ public class EthereumSuite extends HapiSuite {
     }
 
     @BddTestNameDoesNotMatchMethodName
-    private HapiSpec matrixedPayerRelayerTest(
+    HapiSpec matrixedPayerRelayerTest(
             final boolean success, final long senderGasPrice, final long relayerOffered, final long senderCharged) {
         return defaultHapiSpec("feePaymentMatrix "
                         + (success ? "Success/" : "Failure/")
@@ -339,7 +339,7 @@ public class EthereumSuite extends HapiSuite {
                 }));
     }
 
-    private HapiSpec invalidTxData() {
+    HapiSpec invalidTxData() {
         return defaultHapiSpec("InvalidTxData")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
@@ -363,7 +363,7 @@ public class EthereumSuite extends HapiSuite {
                 .then();
     }
 
-    private HapiSpec etx014ContractCreateInheritsSignerProperties() {
+    HapiSpec etx014ContractCreateInheritsSignerProperties() {
         final AtomicReference<String> contractID = new AtomicReference<>();
         final String MEMO = "memo";
         final String PROXY = "proxy";
@@ -413,7 +413,7 @@ public class EthereumSuite extends HapiSuite {
                                 .memo(MEMO))));
     }
 
-    private HapiSpec etx031InvalidNonceEthereumTxFailsAndChargesRelayer() {
+    HapiSpec etx031InvalidNonceEthereumTxFailsAndChargesRelayer() {
         final var relayerSnapshot = "relayer";
         final var senderSnapshot = "sender";
         return defaultHapiSpec("etx031InvalidNonceEthereumTxFailsAndChargesRelayer")
@@ -454,7 +454,7 @@ public class EthereumSuite extends HapiSuite {
                                 .has(accountWith().nonce(0L)));
     }
 
-    private HapiSpec etx013PrecompileCallFailsWhenSignatureMissingFromBothEthereumAndHederaTxn() {
+    HapiSpec etx013PrecompileCallFailsWhenSignatureMissingFromBothEthereumAndHederaTxn() {
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
         final String fungibleToken = TOKEN;
         final String mintTxn = MINT_TXN;
@@ -504,7 +504,7 @@ public class EthereumSuite extends HapiSuite {
                                 recordWith().status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)));
     }
 
-    private HapiSpec etx009CallsToTokenAddresses() {
+    HapiSpec etx009CallsToTokenAddresses() {
         final AtomicReference<String> tokenNum = new AtomicReference<>();
         final var totalSupply = 50;
 
@@ -551,7 +551,7 @@ public class EthereumSuite extends HapiSuite {
     }
 
     // ETX-011 and ETX-030
-    private HapiSpec originAndSenderAreEthereumSigner() {
+    HapiSpec originAndSenderAreEthereumSigner() {
         return defaultHapiSpec("originAndSenderAreEthereumSigner")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
@@ -594,7 +594,7 @@ public class EthereumSuite extends HapiSuite {
                                 .has(accountWith().nonce(1L)));
     }
 
-    private HapiSpec etx008ContractCreateExecutesWithExpectedRecord() {
+    HapiSpec etx008ContractCreateExecutesWithExpectedRecord() {
         final var txn = "creation";
         final var contract = "Fuse";
 
@@ -670,7 +670,7 @@ public class EthereumSuite extends HapiSuite {
                 .then();
     }
 
-    private HapiSpec etxSvc003ContractGetBytecodeQueryReturnsDeployedCode() {
+    HapiSpec etxSvc003ContractGetBytecodeQueryReturnsDeployedCode() {
         final var txn = "creation";
         final var contract = "EmptyConstructor";
         return HapiSpec.defaultHapiSpec("etxSvc003ContractGetBytecodeQueryReturnsDeployedCode")
@@ -698,7 +698,7 @@ public class EthereumSuite extends HapiSuite {
                 }));
     }
 
-    private HapiSpec directTransferWorksForERC20() {
+    HapiSpec directTransferWorksForERC20() {
         final var tokenSymbol = "FDFGF";
         final var tokenTotalSupply = 5;
         final var tokenTransferAmount = 3;
@@ -751,7 +751,7 @@ public class EthereumSuite extends HapiSuite {
                                                         .withErcFungibleTransferStatus(true)))))));
     }
 
-    private HapiSpec transferHbarsViaEip2930TxSuccessfully() {
+    HapiSpec transferHbarsViaEip2930TxSuccessfully() {
         final String RECEIVER = "RECEIVER";
         final String aliasBalanceSnapshot = "aliasBalance";
         return defaultHapiSpec("transferHbarsViaEip2930TxSuccessfully")
@@ -798,7 +798,7 @@ public class EthereumSuite extends HapiSuite {
                                 .hasTinyBars(changeFromSnapshot(aliasBalanceSnapshot, -FIVE_HBARS)));
     }
 
-    private HapiSpec callToTokenAddressViaEip2930TxSuccessfully() {
+    HapiSpec callToTokenAddressViaEip2930TxSuccessfully() {
         final AtomicReference<String> tokenNum = new AtomicReference<>();
         final var totalSupply = 50;
 
@@ -842,7 +842,7 @@ public class EthereumSuite extends HapiSuite {
                                                 .withTotalSupply(totalSupply)))));
     }
 
-    private HapiSpec transferTokensViaEip2930TxSuccessfully() {
+    HapiSpec transferTokensViaEip2930TxSuccessfully() {
         final var tokenSymbol = "FDFGF";
         final var tokenTotalSupply = 5;
         final var tokenTransferAmount = 3;
