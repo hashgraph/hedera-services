@@ -850,4 +850,35 @@ class TipsetEventCreatorImplTests {
         // address book.
         assertNull(eventCreator.maybeCreateEvent());
     }
+
+    /**
+     * There was once a bug where it was possible to create a self event that was stale at the moment of its creation
+     * time. This test verifies that this is no longer possible.
+     */
+    @Test
+    @DisplayName("No Stale Events At Creation Time Test")
+    void noStaleEventsAtCreationTimeTest() {
+        final Random random = getRandomPrintSeed();
+
+        final int networkSize = 4;
+
+        final AddressBook addressBook = new RandomAddressBookGenerator(random)
+                .setCustomWeightGenerator(x -> 1L)
+                .setSize(networkSize)
+                .build();
+
+        final FakeTime time = new FakeTime();
+
+        final NodeId nodeA = addressBook.getNodeId(0); // self
+
+        final TipsetEventCreator eventCreator =
+                buildEventCreator(random, time, addressBook, nodeA, () -> new ConsensusTransactionImpl[0]);
+
+        eventCreator.setMinimumGenerationNonAncient(100);
+
+        // Since there are no other parents available, the next event created would have a generation of 0
+        // (if event creation were permitted). Since the current minimum generation non ancient is 100,
+        // that event would be stale at the moment of its creation.
+        assertNull(eventCreator.maybeCreateEvent());
+    }
 }
