@@ -129,8 +129,6 @@ public class TokenUnfreezeAccountHandler implements TransactionHandler {
         final var tokenRel = tokenRelStore.getForModify(accountId, tokenId);
         validateTrue(tokenRel != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
 
-        // Check that the token itself exists and is valid
-        var token = TokenHandlerHelper.getIfUsable(tokenId, tokenStore);
         // Return the token relation
         return tokenRel;
     }
