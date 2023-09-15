@@ -26,7 +26,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
-import com.swirlds.common.threading.IntakePipelineManager;
+import com.swirlds.common.threading.IntakeEventCounter;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.components.EventIntake;
 import com.swirlds.platform.event.GossipEvent;
@@ -97,7 +97,7 @@ class OrphanEventsIntakeTest {
                     ConfigurationHolder.getConfigData(ConsensusConfig.class),
                     new ParentFinder(linkedEventMap::get),
                     100_000,
-                    mock(IntakePipelineManager.class));
+                    mock(IntakeEventCounter.class));
 
             final PlatformContext platformContext =
                     TestPlatformContextBuilder.create().build();
@@ -116,7 +116,7 @@ class OrphanEventsIntakeTest {
                     mock(IntakeCycleStats.class),
                     mock(ShadowGraph.class),
                     e -> {},
-                    mock(IntakePipelineManager.class));
+                    mock(IntakeEventCounter.class));
         }
 
         public void generateAndFeed(final int numEvents) {

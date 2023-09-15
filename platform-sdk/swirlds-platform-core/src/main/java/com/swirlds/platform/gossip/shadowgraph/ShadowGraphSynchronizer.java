@@ -20,7 +20,7 @@ import static com.swirlds.logging.LogMarker.SYNC_INFO;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
-import com.swirlds.common.threading.IntakePipelineManager;
+import com.swirlds.common.threading.IntakeEventCounter;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.common.threading.pool.ParallelExecutor;
@@ -82,7 +82,7 @@ public class ShadowGraphSynchronizer {
      * Keeps track of how many events from each peer have been received, but haven't yet made it through the intake
      * pipeline
      */
-    private final IntakePipelineManager intakePipelineManager;
+    private final IntakeEventCounter intakeEventCounter;
 
     /** executes tasks in parallel */
     private final ParallelExecutor executor;
@@ -100,7 +100,7 @@ public class ShadowGraphSynchronizer {
             final Consumer<SyncResult> syncDone,
             final Consumer<GossipEvent> eventHandler,
             final FallenBehindManager fallenBehindManager,
-            @NonNull final IntakePipelineManager intakePipelineManager,
+            @NonNull final IntakeEventCounter intakeEventCounter,
             final ParallelExecutor executor,
             final boolean sendRecInitBytes,
             final InterruptableRunnable executePreFetchTips) {
@@ -111,7 +111,7 @@ public class ShadowGraphSynchronizer {
         this.generationsSupplier = generationsSupplier;
         this.syncDone = syncDone;
         this.fallenBehindManager = fallenBehindManager;
-        this.intakePipelineManager = Objects.requireNonNull(intakePipelineManager);
+        this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
         this.executor = executor;
         this.sendRecInitBytes = sendRecInitBytes;
         this.executePreFetchTips = executePreFetchTips;
@@ -341,7 +341,7 @@ public class ShadowGraphSynchronizer {
         // the writer will set it to true if writing is aborted
         final AtomicBoolean writeAborted = new AtomicBoolean(false);
         final Integer eventsRead = readWriteParallel(
-                SyncComms.phase3Read(conn, eventHandler, syncMetrics, eventReadingDone, intakePipelineManager),
+                SyncComms.phase3Read(conn, eventHandler, syncMetrics, eventReadingDone, intakeEventCounter),
                 SyncComms.phase3Write(conn, sendList, eventReadingDone, writeAborted),
                 conn);
         if (eventsRead < 0 || writeAborted.get()) {

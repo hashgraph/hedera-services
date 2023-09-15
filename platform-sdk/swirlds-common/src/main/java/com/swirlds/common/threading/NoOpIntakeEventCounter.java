@@ -21,9 +21,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
- * A no-op implementation of {@link IntakePipelineManager}.
+ * A no-op implementation of {@link IntakeEventCounter}.
  */
-public class NoOpIntakePipelineManager implements IntakePipelineManager {
+public class NoOpIntakeEventCounter implements IntakeEventCounter {
     /**
      * {@inheritDoc}
      */

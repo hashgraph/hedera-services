@@ -41,7 +41,7 @@ class SyncPermitProviderTest {
     void testPermitRelease() {
         final int numPermits = 3;
         final SyncPermitProvider syncPermitProvider =
-                new SyncPermitProvider(numPermits, mock(IntakePipelineManager.class));
+                new SyncPermitProvider(numPermits, mock(IntakeEventCounter.class));
 
         assertEquals(numPermits, syncPermitProvider.getNumAvailable(), "all permits should be available");
 
@@ -64,7 +64,7 @@ class SyncPermitProviderTest {
     void testAllPermitsAcquired() {
         final int numPermits = 9;
         final SyncPermitProvider syncPermitProvider =
-                new SyncPermitProvider(numPermits, mock(IntakePipelineManager.class));
+                new SyncPermitProvider(numPermits, mock(IntakeEventCounter.class));
 
         assertEquals(numPermits, syncPermitProvider.getNumAvailable(), "all permits should be available");
 
@@ -95,7 +95,7 @@ class SyncPermitProviderTest {
     void testWaitForAllSyncsToFinish() {
         final int numPermits = 3;
         final SyncPermitProvider syncPermitProvider =
-                new SyncPermitProvider(numPermits, mock(IntakePipelineManager.class));
+                new SyncPermitProvider(numPermits, mock(IntakeEventCounter.class));
 
         // Acquire all the permits
         for (int i = 0; i < numPermits; i++) {
@@ -140,14 +140,14 @@ class SyncPermitProviderTest {
 
         final AddressBook addressBook = mock(AddressBook.class);
         Mockito.when(addressBook.getNodeIdSet()).thenReturn(Set.of(nodeId, otherNodeId));
-        final DefaultIntakePipelineManager intakePipelineManager = new DefaultIntakePipelineManager(addressBook);
+        final DefaultIntakeEventCounter intakeEventCounter = new DefaultIntakeEventCounter(addressBook);
 
         final int numPermits = 3;
-        final SyncPermitProvider syncPermitProvider = new SyncPermitProvider(numPermits, intakePipelineManager);
+        final SyncPermitProvider syncPermitProvider = new SyncPermitProvider(numPermits, intakeEventCounter);
 
         assertTrue(syncPermitProvider.tryAcquire(nodeId), "nothing should prevent a permit from being acquired");
 
-        intakePipelineManager.eventAddedToIntakePipeline(nodeId);
+        intakeEventCounter.eventAddedToIntakePipeline(nodeId);
 
         // returning the permit is fine
         syncPermitProvider.returnPermit();
@@ -156,9 +156,9 @@ class SyncPermitProviderTest {
                 syncPermitProvider.tryAcquire(nodeId),
                 "permit should not be able to be acquired with unprocessed event in intake pipeline");
 
-        intakePipelineManager.eventThroughIntakePipeline(nodeId);
+        intakeEventCounter.eventThroughIntakePipeline(nodeId);
         // an event in the pipeline for a different node shouldn't have any effect
-        intakePipelineManager.eventAddedToIntakePipeline(otherNodeId);
+        intakeEventCounter.eventAddedToIntakePipeline(otherNodeId);
 
         assertTrue(
                 syncPermitProvider.tryAcquire(nodeId),

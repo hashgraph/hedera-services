@@ -36,8 +36,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-@DisplayName("DefaultIntakePipelineManager Tests")
-class DefaultIntakePipelineManagerTests {
+@DisplayName("DefaultIntakeEventCounter Tests")
+class DefaultIntakeEventCounterTests {
     private Random random;
 
     @BeforeEach
@@ -45,11 +45,11 @@ class DefaultIntakePipelineManagerTests {
         random = RandomUtils.getRandomPrintSeed();
     }
 
-    private IntakePipelineManager createPipelineManager(@NonNull final Set<NodeId> nodes) {
+    private IntakeEventCounter createIntakeCounter(@NonNull final Set<NodeId> nodes) {
         final AddressBook addressBook = mock(AddressBook.class);
         Mockito.when(addressBook.getNodeIdSet()).thenReturn(nodes);
 
-        return new DefaultIntakePipelineManager(addressBook);
+        return new DefaultIntakeEventCounter(addressBook);
     }
 
     private Set<NodeId> generateNodeIds(final int count) {
@@ -79,15 +79,15 @@ class DefaultIntakePipelineManagerTests {
     }
 
     /**
-     * Performs a number of random of operations on the intake pipeline manager
+     * Performs a number of random of operations on the intake event counter
      *
-     * @param pipelineManager the intake pipeline manager
-     * @param nodeIds         the list of node ids
-     * @param expectedCounts  a structure to track the expected number of unprocessed events for each node id
-     * @param operationCount  the number of operations to perform
+     * @param intakeEventCounter tracks events through the intake pipeline
+     * @param nodeIds            the list of node ids
+     * @param expectedCounts     a structure to track the expected number of unprocessed events for each node id
+     * @param operationCount     the number of operations to perform
      */
     private void performRandomOperations(
-            @NonNull final IntakePipelineManager pipelineManager,
+            @NonNull final IntakeEventCounter intakeEventCounter,
             @NonNull final Set<NodeId> nodeIds,
             @NonNull final Map<NodeId, Long> expectedCounts,
             final int operationCount) {
@@ -98,7 +98,7 @@ class DefaultIntakePipelineManagerTests {
 
             if (random.nextBoolean()) {
                 // add an event to the intake pipeline
-                pipelineManager.eventAddedToIntakePipeline(nodeId);
+                intakeEventCounter.eventAddedToIntakePipeline(nodeId);
 
                 if (nodeId != null) {
                     expectedCounts.put(nodeId, expectedCounts.get(nodeId) + 1);
@@ -106,9 +106,10 @@ class DefaultIntakePipelineManagerTests {
             } else {
                 // remove an event from the intake pipeline
                 if (nodeId != null && expectedCounts.get(nodeId) - 1 < 0) {
-                    assertThrows(IllegalStateException.class, () -> pipelineManager.eventThroughIntakePipeline(nodeId));
+                    assertThrows(
+                            IllegalStateException.class, () -> intakeEventCounter.eventThroughIntakePipeline(nodeId));
                 } else {
-                    pipelineManager.eventThroughIntakePipeline(nodeId);
+                    intakeEventCounter.eventThroughIntakePipeline(nodeId);
 
                     if (nodeId != null) {
                         expectedCounts.put(nodeId, expectedCounts.get(nodeId) - 1);
@@ -121,21 +122,21 @@ class DefaultIntakePipelineManagerTests {
     /**
      * Asserts that the number of unprocessed events for each node id is as expected based on the given map
      *
-     * @param pipelineManager the intake pipeline manager
-     * @param nodeIds         the set of node ids
-     * @param expectedCounts  a map from node id to the expected number of unprocessed events
+     * @param intakeEventCounter tracks events through the intake pipeline
+     * @param nodeIds            the set of node ids
+     * @param expectedCounts     a map from node id to the expected number of unprocessed events
      */
     private void assertValidState(
-            @NonNull final IntakePipelineManager pipelineManager,
+            @NonNull final IntakeEventCounter intakeEventCounter,
             @NonNull final Set<NodeId> nodeIds,
             @NonNull final Map<NodeId, Long> expectedCounts) {
 
         for (final NodeId nodeId : nodeIds) {
             if (nodeId != null) {
                 if (expectedCounts.get(nodeId) == 0) {
-                    assertFalse(pipelineManager.hasUnprocessedEvents(nodeId));
+                    assertFalse(intakeEventCounter.hasUnprocessedEvents(nodeId));
                 } else {
-                    assertTrue(pipelineManager.hasUnprocessedEvents(nodeId));
+                    assertTrue(intakeEventCounter.hasUnprocessedEvents(nodeId));
                 }
             }
         }
@@ -145,24 +146,24 @@ class DefaultIntakePipelineManagerTests {
     @DisplayName("Standard operation")
     void standardOperation() {
         final Set<NodeId> nodeIds = generateNodeIds(50);
-        final IntakePipelineManager pipelineManager = createPipelineManager(nodeIds);
+        final IntakeEventCounter intakeCounter = createIntakeCounter(nodeIds);
         final Map<NodeId, Long> expectedCounts = generateExpectedCountMap(nodeIds);
 
         // add a null node id to test that edge case
         nodeIds.add(null);
 
-        performRandomOperations(pipelineManager, nodeIds, expectedCounts, 10000);
-        assertValidState(pipelineManager, nodeIds, expectedCounts);
+        performRandomOperations(intakeCounter, nodeIds, expectedCounts, 10000);
+        assertValidState(intakeCounter, nodeIds, expectedCounts);
     }
 
     @Test
     @DisplayName("Check unprocessed events for uninitialized manager")
     void unprocessedEventsForUninitializedManager() {
         final Set<NodeId> nodeIds = generateNodeIds(10);
-        final IntakePipelineManager pipelineManager = createPipelineManager(nodeIds);
+        final IntakeEventCounter intakeCounter = createIntakeCounter(nodeIds);
 
         for (final NodeId nodeId : nodeIds) {
-            assertFalse(pipelineManager.hasUnprocessedEvents(nodeId));
+            assertFalse(intakeCounter.hasUnprocessedEvents(nodeId));
         }
     }
 
@@ -170,16 +171,16 @@ class DefaultIntakePipelineManagerTests {
     @DisplayName("Test reset behavior")
     void testReset() {
         final Set<NodeId> nodeIds = generateNodeIds(50);
-        final IntakePipelineManager pipelineManager = createPipelineManager(nodeIds);
+        final IntakeEventCounter intakeCounter = createIntakeCounter(nodeIds);
         final Map<NodeId, Long> expectedCounts = generateExpectedCountMap(nodeIds);
 
-        performRandomOperations(pipelineManager, nodeIds, expectedCounts, 100);
+        performRandomOperations(intakeCounter, nodeIds, expectedCounts, 100);
 
-        assertValidState(pipelineManager, nodeIds, expectedCounts);
-        pipelineManager.reset();
+        assertValidState(intakeCounter, nodeIds, expectedCounts);
+        intakeCounter.reset();
 
         for (final NodeId nodeId : nodeIds) {
-            assertFalse(pipelineManager.hasUnprocessedEvents(nodeId));
+            assertFalse(intakeCounter.hasUnprocessedEvents(nodeId));
         }
     }
 }

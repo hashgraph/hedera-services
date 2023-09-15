@@ -23,7 +23,7 @@ import static org.mockito.Mockito.mock;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.threading.IntakePipelineManager;
+import com.swirlds.common.threading.IntakeEventCounter;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.platform.Consensus;
@@ -224,7 +224,7 @@ public class SyncNode {
                 r -> {},
                 eventHandler,
                 syncManager,
-                mock(IntakePipelineManager.class),
+                mock(IntakeEventCounter.class),
                 executor,
                 sendRecInitBytes,
                 () -> {});

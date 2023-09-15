@@ -37,21 +37,21 @@ public class SyncPermitProvider {
     private final int numPermits;
 
     /**
-     * The manager that keeps track of how many events have been received from each peer, but haven't yet made it
+     * Keeps track of how many events have been received from each peer, but haven't yet made it
      * through the intake pipeline
      */
-    private final IntakePipelineManager intakePipelineManager;
+    private final IntakeEventCounter intakeEventCounter;
 
     /**
      * Creates a new instance with a maximum number of permits
      *
-     * @param numPermits            the number of concurrent syncs this provider will allow
-     * @param intakePipelineManager the manager that keeps track of how many events have been received from each peer
+     * @param numPermits         the number of concurrent syncs this provider will allow
+     * @param intakeEventCounter keeps track of how many events have been received from each peer
      */
-    public SyncPermitProvider(final int numPermits, @NonNull final IntakePipelineManager intakePipelineManager) {
+    public SyncPermitProvider(final int numPermits, @NonNull final IntakeEventCounter intakeEventCounter) {
         this.numPermits = numPermits;
         this.syncPermits = new Semaphore(numPermits);
-        this.intakePipelineManager = Objects.requireNonNull(intakePipelineManager);
+        this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
     }
 
     /**
@@ -69,7 +69,7 @@ public class SyncPermitProvider {
      * release the permit when used in a try-with-resources block
      */
     public boolean tryAcquire(@NonNull final NodeId peerId) {
-        return !intakePipelineManager.hasUnprocessedEvents(peerId) && syncPermits.tryAcquire();
+        return !intakeEventCounter.hasUnprocessedEvents(peerId) && syncPermits.tryAcquire();
     }
 
     /**

@@ -25,7 +25,7 @@ import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.threading.IntakePipelineManager;
+import com.swirlds.common.threading.IntakeEventCounter;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.logging.LogMarker;
 import com.swirlds.platform.Consensus;
@@ -82,7 +82,7 @@ public class EventIntake {
      * Used to track how many events received from each peer have been added to the intake pipeline, but haven't
      * made it through yet
      */
-    private final IntakePipelineManager intakePipelineManager;
+    private final IntakeEventCounter intakeEventCounter;
 
     private final EventIntakeMetrics metrics;
     private final Time time;
@@ -90,19 +90,19 @@ public class EventIntake {
     /**
      * Constructor
      *
-     * @param platformContext       the platform context
-     * @param threadManager         creates new threading resources
-     * @param time                  provides the wall clock time
-     * @param selfId                the ID of this node
-     * @param eventLinker           links events together, holding orphaned events until their parents are found (if
-     *                              operating with the orphan buffer enabled)
-     * @param consensusSupplier     provides the current consensus instance
-     * @param addressBook           the current address book
-     * @param dispatcher            invokes event related callbacks
-     * @param stats                 metrics for event intake
-     * @param shadowGraph           tracks events in the hashgraph
-     * @param prehandleEvent        prehandles transactions in an event
-     * @param intakePipelineManager tracks events as they move through the intake pipeline
+     * @param platformContext    the platform context
+     * @param threadManager      creates new threading resources
+     * @param time               provides the wall clock time
+     * @param selfId             the ID of this node
+     * @param eventLinker        links events together, holding orphaned events until their parents are found (if
+     *                           operating with the orphan buffer enabled)
+     * @param consensusSupplier  provides the current consensus instance
+     * @param addressBook        the current address book
+     * @param dispatcher         invokes event related callbacks
+     * @param stats              metrics for event intake
+     * @param shadowGraph        tracks events in the hashgraph
+     * @param prehandleEvent     prehandles transactions in an event
+     * @param intakeEventCounter tracks events as they move through the intake pipeline
      */
     public EventIntake(
             @NonNull final PlatformContext platformContext,
@@ -116,7 +116,7 @@ public class EventIntake {
             @NonNull final IntakeCycleStats stats,
             @NonNull final ShadowGraph shadowGraph,
             @NonNull final Consumer<EventImpl> prehandleEvent,
-            @NonNull final IntakePipelineManager intakePipelineManager) {
+            @NonNull final IntakeEventCounter intakeEventCounter) {
 
         this.time = Objects.requireNonNull(time);
         this.selfId = Objects.requireNonNull(selfId);
@@ -128,7 +128,7 @@ public class EventIntake {
         this.stats = Objects.requireNonNull(stats);
         this.shadowGraph = Objects.requireNonNull(shadowGraph);
         this.prehandleEvent = Objects.requireNonNull(prehandleEvent);
-        this.intakePipelineManager = Objects.requireNonNull(intakePipelineManager);
+        this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
 
         final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
         final Supplier<Integer> prehandlePoolSize;
@@ -235,8 +235,7 @@ public class EventIntake {
             }
             stats.doneIntakeAddEvent();
         } finally {
-            intakePipelineManager.eventThroughIntakePipeline(
-                    event.getBaseEvent().getSenderNodeId());
+            intakeEventCounter.eventThroughIntakePipeline(event.getBaseEvent().getSenderNodeId());
         }
     }
 

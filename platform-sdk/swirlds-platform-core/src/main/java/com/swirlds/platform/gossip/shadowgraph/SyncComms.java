@@ -19,7 +19,7 @@ package com.swirlds.platform.gossip.shadowgraph;
 import static com.swirlds.logging.LogMarker.SYNC_INFO;
 
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.threading.IntakePipelineManager;
+import com.swirlds.common.threading.IntakeEventCounter;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.SyncException;
 import com.swirlds.platform.internal.EventImpl;
@@ -53,7 +53,9 @@ public final class SyncComms {
      * The maximum time we will allow for phase 3. If phase 3 is not done within this time limit, we will abort the sync
      */
     private static final Duration PHASE3_MAX_DURATION = Duration.ofMinutes(1);
-    /** The value of PHASE3_MAX_DURATION in nanoseconds */
+    /**
+     * The value of PHASE3_MAX_DURATION in nanoseconds
+     */
     private static final long PHASE3_MAX_NANOS = PHASE3_MAX_DURATION.toNanos();
 
     // Prevent instantiations of this static utility class
@@ -171,14 +173,10 @@ public final class SyncComms {
      * supplied, unless it encounters a signed state event in which case it will abort writing and set writeAborted to
      * true.
      *
-     * @param conn
-     * 		the connection to write to
-     * @param events
-     * 		the events to write
-     * @param eventReadingDone
-     * 		used to know when the writing thread is done
-     * @param writeAborted
-     * 		set to true if writing is aborted
+     * @param conn             the connection to write to
+     * @param events           the events to write
+     * @param eventReadingDone used to know when the writing thread is done
+     * @param writeAborted     set to true if writing is aborted
      * @return A {@link Callable} that executes this part of the sync
      */
     public static Callable<Void> phase3Write(
@@ -243,11 +241,11 @@ public final class SyncComms {
      * the supplied eventHandler. The {@link Callable} will return the number of events read, or a negative number if
      * event reading was aborted.
      *
-     * @param conn                  the connection to read from
-     * @param eventHandler          the consumer of received events
-     * @param syncMetrics           tracks event reading metrics
-     * @param eventReadingDone      used to notify the writing thread that reading is done
-     * @param intakePipelineManager used to track how many events sent by each peer are currently in the intake pipeline
+     * @param conn               the connection to read from
+     * @param eventHandler       the consumer of received events
+     * @param syncMetrics        tracks event reading metrics
+     * @param eventReadingDone   used to notify the writing thread that reading is done
+     * @param intakeEventCounter used to track how many events sent by each peer are currently in the intake pipeline
      * @return A {@link Callable} that executes this part of the sync
      */
     public static Callable<Integer> phase3Read(
@@ -255,9 +253,9 @@ public final class SyncComms {
             final Consumer<GossipEvent> eventHandler,
             final SyncMetrics syncMetrics,
             final CountDownLatch eventReadingDone,
-            @NonNull final IntakePipelineManager intakePipelineManager) {
+            @NonNull final IntakeEventCounter intakeEventCounter) {
 
-        Objects.requireNonNull(intakePipelineManager);
+        Objects.requireNonNull(intakeEventCounter);
 
         return () -> {
             logger.info(SYNC_INFO.getMarker(), "{} reading events start", conn.getDescription());
@@ -276,7 +274,7 @@ public final class SyncComms {
 
                             gossipEvent.setSenderNodeId(conn.getOtherId());
 
-                            intakePipelineManager.eventAddedToIntakePipeline(conn.getOtherId());
+                            intakeEventCounter.eventAddedToIntakePipeline(conn.getOtherId());
 
                             eventHandler.accept(gossipEvent);
                             eventsRead++;
@@ -321,10 +319,8 @@ public final class SyncComms {
     /**
      * Checks if the phase 3 maximum time has been exceeded. If it has, it throws an exception.
      *
-     * @param startTime
-     * 		the time at which phase 3 started
-     * @throws SyncTimeoutException
-     * 		thrown if the time is exceeded
+     * @param startTime the time at which phase 3 started
+     * @throws SyncTimeoutException thrown if the time is exceeded
      */
     private static void checkPhase3Time(final long startTime) throws SyncTimeoutException {
         final long phase3Nanos = System.nanoTime() - startTime;

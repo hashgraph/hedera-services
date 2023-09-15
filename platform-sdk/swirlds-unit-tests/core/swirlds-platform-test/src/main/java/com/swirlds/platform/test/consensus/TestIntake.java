@@ -25,7 +25,7 @@ import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.threading.IntakePipelineManager;
+import com.swirlds.common.threading.IntakeEventCounter;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.ConsensusImpl;
 import com.swirlds.platform.components.EventIntake;
@@ -128,7 +128,7 @@ public class TestIntake implements ConsensusRoundObserver, StaleEventObserver, L
                 ConsensusUtils.NOOP_INTAKE_CYCLE_STATS,
                 shadowGraph,
                 e -> {},
-                mock(IntakePipelineManager.class));
+                mock(IntakeEventCounter.class));
     }
 
     /**

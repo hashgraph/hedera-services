@@ -26,24 +26,24 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Default implementation of {@link IntakePipelineManager}.
+ * Default implementation of {@link IntakeEventCounter}.
  * <p>
  * Tracks the number of events from each peer that have been added to the intake pipeline, but haven't yet made it
  * through.
  */
-public class DefaultIntakePipelineManager implements IntakePipelineManager {
+public class DefaultIntakeEventCounter implements IntakeEventCounter {
     /**
      * A map from node id to an atomic integer, which represents the number of events from that peer that have been
      * added to the intake pipeline, but haven't yet made it through.
      */
-    final Map<NodeId, AtomicInteger> unprocessedEventCounts;
+    private final Map<NodeId, AtomicInteger> unprocessedEventCounts;
 
     /**
      * Constructor
      *
      * @param addressBook the address book
      */
-    public DefaultIntakePipelineManager(@NonNull final AddressBook addressBook) {
+    public DefaultIntakeEventCounter(@NonNull final AddressBook addressBook) {
         this.unprocessedEventCounts = new HashMap<>();
 
         for (final NodeId nodeId : addressBook.getNodeIdSet()) {

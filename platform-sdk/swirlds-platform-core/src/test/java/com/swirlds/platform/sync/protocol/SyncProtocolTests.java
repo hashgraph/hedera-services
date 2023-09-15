@@ -26,7 +26,7 @@ import static org.mockito.Mockito.mock;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.threading.IntakePipelineManager;
+import com.swirlds.common.threading.IntakeEventCounter;
 import com.swirlds.common.threading.SyncPermitProvider;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.platform.components.CriticalQuorum;
@@ -66,7 +66,7 @@ class SyncProtocolTests {
         peerId = new NodeId(1);
         shadowGraphSynchronizer = mock(ShadowGraphSynchronizer.class);
         fallenBehindManager = mock(FallenBehindManager.class);
-        permitProvider = new SyncPermitProvider(2, mock(IntakePipelineManager.class));
+        permitProvider = new SyncPermitProvider(2, mock(IntakeEventCounter.class));
         criticalQuorum = mock(CriticalQuorum.class);
         sleepAfterSync = Duration.ofMillis(0);
         syncMetrics = mock(SyncMetrics.class);

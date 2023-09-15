@@ -30,7 +30,7 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.threading.IntakePipelineManager;
+import com.swirlds.common.threading.IntakeEventCounter;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.components.EventIntake;
 import com.swirlds.platform.event.GossipEvent;
@@ -80,7 +80,7 @@ class EventIntakeTest {
                 mock(IntakeCycleStats.class),
                 shadowGraph,
                 e -> {},
-                mock(IntakePipelineManager.class));
+                mock(IntakeEventCounter.class));
 
         final GossipEvent gossipEvent = mock(GossipEvent.class);
         final EventImpl added = mock(EventImpl.class);

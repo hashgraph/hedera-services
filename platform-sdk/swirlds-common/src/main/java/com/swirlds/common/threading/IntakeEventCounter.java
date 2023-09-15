@@ -24,7 +24,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * Keeps track of how many events have been received from each peer, but haven't yet made it through the intake
  * pipeline.
  */
-public interface IntakePipelineManager {
+public interface IntakeEventCounter {
     /**
      * Declare that an event received from a given peer has been put into the event intake pipeline
      *
