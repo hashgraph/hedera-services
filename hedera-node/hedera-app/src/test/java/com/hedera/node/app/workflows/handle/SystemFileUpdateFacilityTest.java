@@ -124,6 +124,9 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
         // given
         final var fileID = FileID.newBuilder().fileNum(121L).build();
         final var txBody = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder()
+                        .accountID(AccountID.newBuilder().accountNum(50L).build())
+                        .build())
                 .fileUpdate(FileUpdateTransactionBody.newBuilder().fileID(fileID));
         files.put(fileID, File.newBuilder().contents(FILE_BYTES).build());
 
@@ -139,6 +142,9 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
         // given
         final var fileID = FileID.newBuilder().fileNum(121L).build();
         final var txBody = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder()
+                        .accountID(AccountID.newBuilder().accountNum(50L).build())
+                        .build())
                 .fileAppend(FileAppendTransactionBody.newBuilder().fileID(fileID));
         files.put(fileID, File.newBuilder().contents(FILE_BYTES).build());
 
@@ -158,6 +164,9 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
         final var fileNum = config.throttleDefinitions();
         final var fileID = FileID.newBuilder().fileNum(fileNum).build();
         final var txBody = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder()
+                        .accountID(AccountID.newBuilder().accountNum(50L).build())
+                        .build())
                 .fileAppend(FileAppendTransactionBody.newBuilder().fileID(fileID));
         files.put(fileID, File.newBuilder().contents(FILE_BYTES).build());
 
