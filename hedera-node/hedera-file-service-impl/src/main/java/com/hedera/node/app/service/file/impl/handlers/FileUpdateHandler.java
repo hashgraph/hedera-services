@@ -85,7 +85,9 @@ public class FileUpdateHandler implements TransactionHandler {
         preValidate(transactionFileId, fileStore, context, false);
 
         var file = fileStore.getFileLeaf(transactionFileId);
-        validateAndAddRequiredKeys(file, transactionBody.keys(), context);
+        if(wantsToMutateNonExpiryField(transactionBody)){
+            validateAndAddRequiredKeys(file, transactionBody.keys(), context);
+        }
     }
 
     @Override
@@ -118,9 +120,11 @@ public class FileUpdateHandler implements TransactionHandler {
 
         // First validate this file is mutable; and the pending mutations are allowed
         // TODO: add or condition for privilege accounts from context
-        validateFalse(file.keys() == null, UNAUTHORIZED);
+        if (wantsToMutateNonExpiryField(fileUpdate)) {
+            validateFalse(file.keys() == null, UNAUTHORIZED);
+            validateMaybeNewMemo(handleContext.attributeValidator(), fileUpdate);
+        }
 
-        validateMaybeNewMemo(handleContext.attributeValidator(), fileUpdate);
         validateAutoRenew(fileUpdate, handleContext);
 
         // Now we apply the mutations to a builder
@@ -212,7 +216,7 @@ public class FileUpdateHandler implements TransactionHandler {
     }
 
     public static boolean wantsToMutateNonExpiryField(@NonNull final FileUpdateTransactionBody op) {
-        return op.hasMemo() || op.hasKeys();
+        return op.hasMemo() || op.hasKeys() || op.contents().length() > 0;
     }
 
     private void validateMaybeNewMemo(

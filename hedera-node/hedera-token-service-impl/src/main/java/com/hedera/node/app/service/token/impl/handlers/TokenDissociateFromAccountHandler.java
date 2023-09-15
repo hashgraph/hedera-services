@@ -69,7 +69,9 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
-        final var op = context.body().tokenDissociateOrThrow();
+        final var trxBody = context.body();
+        final var op = trxBody.tokenDissociateOrThrow();
+        pureChecks(trxBody);
 
         final var target = op.accountOrElse(AccountID.DEFAULT);
 

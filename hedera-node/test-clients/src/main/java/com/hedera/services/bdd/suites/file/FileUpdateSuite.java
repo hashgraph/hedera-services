@@ -225,9 +225,7 @@ public class FileUpdateSuite extends HapiSuite {
         final var denom = "fungible";
         final var token = "token";
         return defaultHapiSpec("OnlyValidCustomFeeScheduleCanBeCreated")
-                .given(fileUpdate(APP_PROPERTIES)
-                        .payingWith(GENESIS)
-                        .overridingProps(Map.of(MAX_CUSTOM_FEES_PROP, "1")))
+                .given(overriding(MAX_CUSTOM_FEES_PROP, "1"))
                 .when(
                         tokenCreate(denom),
                         tokenCreate(token)
@@ -235,11 +233,10 @@ public class FileUpdateSuite extends HapiSuite {
                                 .withCustom(fixedHbarFee(1, DEFAULT_PAYER))
                                 .withCustom(fixedHtsFee(1, denom, DEFAULT_PAYER))
                                 .hasKnownStatus(CUSTOM_FEES_LIST_TOO_LONG))
-                .then(fileUpdate(APP_PROPERTIES)
-                        .payingWith(GENESIS)
-                        .overridingProps(Map.of(MAX_CUSTOM_FEES_PROP, DEFAULT_MAX_CUSTOM_FEES)));
+                .then(overriding(MAX_CUSTOM_FEES_PROP, DEFAULT_MAX_CUSTOM_FEES));
     }
 
+    @HapiTest
     private HapiSpec optimisticSpecialFileUpdate() {
         final var appendsPerBurst = 128;
         final var specialFile = "0.0.159";
@@ -254,6 +251,7 @@ public class FileUpdateSuite extends HapiSuite {
         final var civilian = CIVILIAN;
         return defaultHapiSpec("ApiPermissionsChangeDynamically")
                 .given(
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000L)),
                         cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
                         getFileContents(API_PERMISSIONS).logged(),
                         tokenCreate("poc").payingWith(civilian))
@@ -270,6 +268,7 @@ public class FileUpdateSuite extends HapiSuite {
                         tokenCreate("secondPoc").payingWith(civilian));
     }
 
+    @HapiTest
     private HapiSpec updateFeesCompatibleWithCreates() {
         final long origLifetime = 7_200_000L;
         final long extension = 700_000L;
@@ -282,22 +281,19 @@ public class FileUpdateSuite extends HapiSuite {
                 .when(
                         fileUpdate("test").contents(new4k).extendingExpiryBy(0).via("updateTo4"),
                         fileUpdate("test").contents(new2k).extendingExpiryBy(0).via("updateTo2"),
-                        fileUpdate("test").extendingExpiryBy(extension).via("extend"),
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(ADDRESS_BOOK_CONTROL)
-                                .overridingProps(Map.of("maxFileSize", "1025"))
-                                .via("special"),
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(ADDRESS_BOOK_CONTROL)
-                                .overridingProps(Map.of("maxFileSize", "1024")))
+                        fileUpdate("test").extendingExpiryBy(extension).via("extend"))
                 .then(UtilVerbs.withOpContext((spec, opLog) -> {
                     final var createOp = getTxnRecord(CREATE_TXN);
                     final var to4kOp = getTxnRecord("updateTo4");
                     final var to2kOp = getTxnRecord("updateTo2");
                     final var extensionOp = getTxnRecord("extend");
-                    final var specialOp = getTxnRecord("special");
-                    allRunFor(spec, createOp, to4kOp, to2kOp, extensionOp, specialOp);
+                    allRunFor(spec, createOp, to4kOp, to2kOp, extensionOp);
                     final var createFee = createOp.getResponseRecord().getTransactionFee();
+
+                    assertTrue(createFee > 0);
+                    assertTrue(to4kOp.getResponseRecord().getTransactionFee() > 0);
+                    assertTrue(to2kOp.getResponseRecord().getTransactionFee() > 0);
+                    assertTrue(extensionOp.getResponseRecord().getTransactionFee() > 0);
                     opLog.info("Creation : {} ", createFee);
                     opLog.info(
                             "New 4k   : {} ({})",
@@ -311,10 +307,10 @@ public class FileUpdateSuite extends HapiSuite {
                             "Extension: {} ({})",
                             extensionOp.getResponseRecord().getTransactionFee(),
                             (extensionOp.getResponseRecord().getTransactionFee() - createFee));
-                    opLog.info("Special: {}", specialOp.getResponseRecord().getTransactionFee());
                 }));
     }
 
+    @HapiTest
     private HapiSpec vanillaUpdateSucceeds() {
         final byte[] old4K = randomUtf8Bytes(BYTES_4K);
         final byte[] new4k = randomUtf8Bytes(BYTES_4K);
@@ -334,6 +330,7 @@ public class FileUpdateSuite extends HapiSuite {
                         getFileInfo("test").hasMemo(secondMemo));
     }
 
+    @HapiTest
     private HapiSpec cannotUpdateExpirationPastMaxLifetime() {
         return defaultHapiSpec("CannotUpdateExpirationPastMaxLifetime")
                 .given(fileCreate("test"))
@@ -650,6 +647,7 @@ public class FileUpdateSuite extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
     private HapiSpec messageSubmissionSizeChange() {
         final var defaultMaxBytesAllowed = 1024;
         final var longMessage = TxnUtils.randomUtf8Bytes(defaultMaxBytesAllowed);
@@ -663,21 +661,14 @@ public class FileUpdateSuite extends HapiSuite {
                                 .payingWith(CIVILIAN)
                                 .hasRetryPrecheckFrom(BUSY)
                                 .hasKnownStatus(SUCCESS),
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(GENESIS)
-                                .overridingProps(Map.of(
-                                        "consensus.message.maxBytesAllowed",
-                                        String.valueOf(defaultMaxBytesAllowed - 1))))
+                        overriding("consensus.message.maxBytesAllowed", String.valueOf(defaultMaxBytesAllowed - 1)))
                 .then(
                         submitMessageTo(TEST_TOPIC)
                                 .message(longMessage)
                                 .payingWith(CIVILIAN)
                                 .hasRetryPrecheckFrom(BUSY)
                                 .hasKnownStatus(MESSAGE_SIZE_TOO_LARGE),
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(GENESIS)
-                                .overridingProps(Map.of(
-                                        "consensus.message.maxBytesAllowed", String.valueOf(defaultMaxBytesAllowed))));
+                        overriding("consensus.message.maxBytesAllowed", String.valueOf(defaultMaxBytesAllowed)));
     }
 
     @Override
