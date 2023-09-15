@@ -17,11 +17,13 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.freeze;
 
 import com.esaulpaugh.headlong.abi.Function;
-import com.esaulpaugh.headlong.abi.Tuple;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
 import javax.inject.Inject;
@@ -34,10 +36,11 @@ import javax.inject.Singleton;
 public class FreezeUnfreezeTranslator extends AbstractHtsCallTranslator {
     public static final Function FREEZE = new Function("freezeToken(address,address)", ReturnTypes.INT_64);
     public static final Function UNFREEZE = new Function("unfreezeToken(address,address)", ReturnTypes.INT_64);
+    private final FreezeUnfreezeDecoder decoder;
 
     @Inject
-    public FreezeUnfreezeTranslator() {
-        // Dagger2
+    public FreezeUnfreezeTranslator(@NonNull final FreezeUnfreezeDecoder decoder) {
+        this.decoder = decoder;
     }
 
     /**
@@ -45,8 +48,7 @@ public class FreezeUnfreezeTranslator extends AbstractHtsCallTranslator {
      */
     @Override
     public boolean matches(@NonNull final HtsCallAttempt attempt) {
-        return Arrays.equals(attempt.selector(), FREEZE.selector())
-                || Arrays.equals(attempt.selector(), UNFREEZE.selector());
+        return matchesClassicSelector(attempt.selector());
     }
 
     /**
@@ -54,26 +56,20 @@ public class FreezeUnfreezeTranslator extends AbstractHtsCallTranslator {
      */
     @Override
     public HtsCall callFrom(@NonNull final HtsCallAttempt attempt) {
-        final var selector = attempt.selector();
-        final Tuple call;
-        if (Arrays.equals(selector, FREEZE.selector())) {
-            call = FreezeUnfreezeTranslator.FREEZE.decodeCall(attempt.input().toArrayUnsafe());
-            return new FreezeCall(
-                    attempt.enhancement(),
-                    attempt.addressIdConverter(),
-                    attempt.defaultVerificationStrategy(),
-                    attempt.senderId(),
-                    call.get(0),
-                    call.get(1));
+        return new DispatchForResponseCodeHtsCall<>(
+                attempt, bodyForClassic(attempt), SingleTransactionRecordBuilder.class);
+    }
+
+    private TransactionBody bodyForClassic(@NonNull final HtsCallAttempt attempt) {
+        if (Arrays.equals(attempt.selector(), FREEZE.selector())) {
+            return decoder.decodeFreeze(attempt);
         } else {
-            call = FreezeUnfreezeTranslator.UNFREEZE.decodeCall(attempt.input().toArrayUnsafe());
-            return new UnfreezeCall(
-                    attempt.enhancement(),
-                    attempt.addressIdConverter(),
-                    attempt.defaultVerificationStrategy(),
-                    attempt.senderId(),
-                    call.get(0),
-                    call.get(1));
+            return decoder.decodeUnfreeze(attempt);
         }
+    }
+
+    private static boolean matchesClassicSelector(@NonNull final byte[] selector) {
+        return Arrays.equals(selector, FREEZE.selector())
+                || Arrays.equals(selector, UNFREEZE.selector());
     }
 }
