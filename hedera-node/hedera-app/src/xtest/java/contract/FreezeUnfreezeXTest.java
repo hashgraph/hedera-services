@@ -17,7 +17,6 @@
 package contract;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc20TransfersTranslator.ERC_20_TRANSFER;
 import static contract.AssociationsXTestConstants.A_TOKEN_ADDRESS;
@@ -31,6 +30,7 @@ import static contract.XTestConstants.OWNER_BESU_ADDRESS;
 import static contract.XTestConstants.OWNER_HEADLONG_ADDRESS;
 import static contract.XTestConstants.OWNER_ID;
 import static contract.XTestConstants.RECEIVER_HEADLONG_ADDRESS;
+import static contract.XTestConstants.assertSuccess;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -57,14 +57,14 @@ public class FreezeUnfreezeXTest extends AbstractContractXTest {
                 Bytes.wrap(AssociationsTranslator.ASSOCIATE_ONE
                         .encodeCallWithArgs(OWNER_HEADLONG_ADDRESS, A_TOKEN_ADDRESS)
                         .array()),
-                output -> assertEquals(Bytes.wrap(ReturnTypes.encodedRc(SUCCESS).array()), output));
+                output -> assertSuccess());
         // FREEZE
         runHtsCallAndExpectOnSuccess(
                 OWNER_BESU_ADDRESS,
                 Bytes.wrap(FreezeUnfreezeTranslator.FREEZE
                         .encodeCallWithArgs(A_TOKEN_ADDRESS, OWNER_HEADLONG_ADDRESS)
                         .array()),
-                output -> assertEquals(Bytes.wrap(ReturnTypes.encodedRc(SUCCESS).array()), output));
+                output -> assertSuccess());
         // TRY TRANSFER
         runHtsCallAndExpectRevert(
                 OWNER_BESU_ADDRESS,
@@ -78,7 +78,7 @@ public class FreezeUnfreezeXTest extends AbstractContractXTest {
                 Bytes.wrap(FreezeUnfreezeTranslator.UNFREEZE
                         .encodeCallWithArgs(A_TOKEN_ADDRESS, OWNER_HEADLONG_ADDRESS)
                         .array()),
-                output -> assertEquals(Bytes.wrap(ReturnTypes.encodedRc(SUCCESS).array()), output));
+                output -> assertSuccess());
         // FREEZE NO FREEZE KEY
         runHtsCallAndExpectOnSuccess(
                 OWNER_BESU_ADDRESS,
