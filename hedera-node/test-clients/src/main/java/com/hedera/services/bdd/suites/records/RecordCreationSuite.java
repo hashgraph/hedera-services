@@ -241,6 +241,7 @@ public class RecordCreationSuite extends HapiSuite {
                                 .logged()));
     }
 
+    @HapiTest
     private HapiSpec payerRecordCreationSanityChecks() {
         return defaultHapiSpec("PayerRecordCreationSanityChecks")
                 .given(cryptoCreate(PAYER))

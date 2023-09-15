@@ -142,6 +142,7 @@ public class Hip17UnhappyTokensSuite extends HapiSuite {
                 .then(getTokenNftInfo(NFTdeleted, 1L).hasTokenID(NFTdeleted).hasSerialNum(1L));
     }
 
+    @HapiTest
     private HapiSpec cannotTransferNftWhenDeleted() {
         return defaultHapiSpec("cannotTransferNftWhenDeleted")
                 .given(
@@ -223,6 +224,7 @@ public class Hip17UnhappyTokensSuite extends HapiSuite {
                 .then(tokenDissociate(ANOTHER_USER, NFTdeleted).hasKnownStatus(SUCCESS));
     }
 
+    @HapiTest
     private HapiSpec cannotAssociateNftWhenDeleted() {
         return defaultHapiSpec("cannotAssociateNftWhenDeleted")
                 .given(
@@ -411,6 +413,7 @@ public class Hip17UnhappyTokensSuite extends HapiSuite {
                 .then(wipeTokenAccount(NFTdeleted, ANOTHER_USER, List.of(1L)).hasKnownStatus(TOKEN_WAS_DELETED));
     }
 
+    @HapiTest
     private HapiSpec cannotGetNftInfoWhenExpired() {
         return defaultHapiSpec("cannotGetNftInfoWhenExpired")
                 .given(
@@ -432,6 +435,7 @@ public class Hip17UnhappyTokensSuite extends HapiSuite {
                 .then(getTokenNftInfo(NFTexpired, 1).hasCostAnswerPrecheckFrom(OK));
     }
 
+    @HapiTest
     private HapiSpec cannotGetNftInfoWhenAutoRemoved() {
         return defaultHapiSpec("cannotGetNftInfoWhenAutoRemoved")
                 .given(
@@ -471,6 +475,7 @@ public class Hip17UnhappyTokensSuite extends HapiSuite {
                                 .logged());
     }
 
+    @HapiTest
     private HapiSpec autoRemovalCasesSuiteCleanup() {
         return defaultHapiSpec("AutoRemovalCasesSuiteCleanup")
                 .given()
