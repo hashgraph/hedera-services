@@ -48,6 +48,7 @@ public final class ServicesMain {
      *
      * @return The constructable registry
      */
+    @NonNull
     private static ConstructableRegistry getRegistry() {
         BootstrapUtils.setupConstructableRegistry();
         return ConstructableRegistry.getInstance();
