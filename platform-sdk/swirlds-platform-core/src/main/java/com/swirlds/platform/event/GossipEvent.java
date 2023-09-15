@@ -42,8 +42,7 @@ public class GossipEvent implements EventIntakeTask, BaseEvent, ChatterEvent {
     private long roundCreated = ROUND_CREATED_UNDEFINED;
 
     /**
-     * A reference to the atomic integer which is being used to track how many events received from the peer which sent
-     * this event are currently in the intake pipeline.
+     * A reference to the atomic integer tracking how many events the sender currently has in the intake pipeline.
      * <p>
      * If an event wasn't received through gossip, then this will be null.
      */
@@ -151,10 +150,10 @@ public class GossipEvent implements EventIntakeTask, BaseEvent, ChatterEvent {
     }
 
     /**
-     * Set the intake counter
+     * Perform the necessary actions for this event to be tracked through the intake pipeline.
      *
-     * @param intakeCounter the atomic integer representing the number of events received from the node which sent this
-     *                      event, which are currently in the intake pipeline
+     * @param intakeCounter the atomic integer tracking the number of events received from this sender which are
+     *                      currently in the intake pipeline
      */
     public void enterIntakePipeline(@NonNull final AtomicInteger intakeCounter) {
         this.intakeCounter = Objects.requireNonNull(intakeCounter);
@@ -174,7 +173,7 @@ public class GossipEvent implements EventIntakeTask, BaseEvent, ChatterEvent {
 
         if (intakeCounter.getAndUpdate(count -> count > 0 ? count - 1 : 0) == 0) {
             throw new IllegalStateException(
-                    "Event processed from peer, but the no known events from that peer were in the intake pipeline."
+                    "Event processed from peer, but no known events from that peer were in the intake pipeline."
                             + "This shouldn't be possible.");
         }
     }

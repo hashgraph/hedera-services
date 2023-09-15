@@ -22,28 +22,31 @@ import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 @DisplayName("DefaultIntakeEventCounter Tests")
 class DefaultIntakeEventCounterTests {
-    private IntakeEventCounter createIntakeCounter(@NonNull final Set<NodeId> nodes) {
-        final AddressBook addressBook = mock(AddressBook.class);
-        Mockito.when(addressBook.getNodeIdSet()).thenReturn(nodes);
+    private IntakeEventCounter intakeCounter;
 
-        return new DefaultIntakeEventCounter(addressBook);
+    final NodeId nodeId1 = new NodeId(1);
+    final NodeId nodeId2 = new NodeId(2);
+
+    @BeforeEach
+    void setup() {
+        final AddressBook addressBook = mock(AddressBook.class);
+        Mockito.when(addressBook.getNodeIdSet()).thenReturn(Set.of(nodeId1, nodeId2));
+
+        this.intakeCounter = new DefaultIntakeEventCounter(addressBook);
     }
 
     @Test
     @DisplayName("Test unprocessed events check")
     void unprocessedEvents() {
-        final NodeId nodeId1 = new NodeId(1);
-        final NodeId nodeId2 = new NodeId(2);
-        final IntakeEventCounter intakeCounter = createIntakeCounter(Set.of(nodeId1, nodeId2));
-
+        assertFalse(intakeCounter.hasUnprocessedEvents(nodeId1));
         assertFalse(intakeCounter.hasUnprocessedEvents(nodeId1));
 
         intakeCounter.getPeerCounter(nodeId1).incrementAndGet();
@@ -66,10 +69,6 @@ class DefaultIntakeEventCounterTests {
     @Test
     @DisplayName("Test reset")
     void reset() {
-        final NodeId nodeId1 = new NodeId(1);
-        final NodeId nodeId2 = new NodeId(2);
-        final IntakeEventCounter intakeCounter = createIntakeCounter(Set.of(nodeId1, nodeId2));
-
         intakeCounter.getPeerCounter(nodeId1).incrementAndGet();
         intakeCounter.getPeerCounter(nodeId1).incrementAndGet();
         intakeCounter.getPeerCounter(nodeId2).incrementAndGet();
