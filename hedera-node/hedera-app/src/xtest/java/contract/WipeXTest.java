@@ -106,13 +106,6 @@ public class WipeXTest extends AbstractContractXTest {
     }
 
     @Override
-    protected void assertExpectedAccounts(@NotNull final ReadableKVState<AccountID, Account> accounts) {
-        final var account = accounts.get(OWNER_ID);
-        assertNotNull(account);
-        assertEquals(NUMBER_OWNED_NFTS - 1, account.numberOwnedNfts());
-    }
-
-    @Override
     protected Map<TokenID, Token> initialTokens() {
         final var tokens = new HashMap<TokenID, Token>();
         tokens.put(
@@ -172,5 +165,12 @@ public class WipeXTest extends AbstractContractXTest {
                 UNAUTHORIZED_SPENDER_ID,
                 Account.newBuilder().accountId(UNAUTHORIZED_SPENDER_ID).build());
         return accounts;
+    }
+
+    @Override
+    protected void assertExpectedAccounts(@NotNull final ReadableKVState<AccountID, Account> accounts) {
+        final var account = accounts.get(OWNER_ID);
+        assertNotNull(account);
+        assertEquals(NUMBER_OWNED_NFTS - 1, account.numberOwnedNfts());
     }
 }
