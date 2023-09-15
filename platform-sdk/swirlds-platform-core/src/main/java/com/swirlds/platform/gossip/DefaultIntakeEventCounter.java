@@ -60,6 +60,9 @@ public class DefaultIntakeEventCounter implements IntakeEventCounter {
         return unprocessedEventCounts.get(peer).get() > 0;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @NonNull
     @Override
     public AtomicInteger getPeerCounter(@NonNull NodeId peer) {

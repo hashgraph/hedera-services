@@ -91,8 +91,6 @@ public final class GossipFactory {
      * @param eventObserverDispatcher       the object used to wire event intake
      * @param eventMapper                   a data structure used to track the most recent event from each node
      * @param eventIntakeMetrics            metrics for event intake
-     * @param intakeEventCounter            tracks events received from peers, and events that have made it through
-     *                                      the intake pipeline
      * @param syncMetrics                   metrics for sync
      * @param eventLinker                   links together events, if chatter is enabled will also buffer orphans
      * @param statusActionSubmitter         enables submitting platform status actions
@@ -123,7 +121,6 @@ public final class GossipFactory {
             @NonNull final EventObserverDispatcher eventObserverDispatcher,
             @NonNull final EventMapper eventMapper,
             @NonNull final EventIntakeMetrics eventIntakeMetrics,
-            @NonNull final IntakeEventCounter intakeEventCounter,
             @NonNull final SyncMetrics syncMetrics,
             @NonNull final EventLinker eventLinker,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
@@ -150,7 +147,6 @@ public final class GossipFactory {
         Objects.requireNonNull(eventObserverDispatcher);
         Objects.requireNonNull(eventMapper);
         Objects.requireNonNull(eventIntakeMetrics);
-        Objects.requireNonNull(intakeEventCounter);
         Objects.requireNonNull(syncMetrics);
         Objects.requireNonNull(eventLinker);
         Objects.requireNonNull(statusActionSubmitter);
@@ -238,7 +234,6 @@ public final class GossipFactory {
                         eventObserverDispatcher,
                         eventMapper,
                         eventIntakeMetrics,
-                        intakeEventCounter,
                         syncMetrics,
                         eventLinker,
                         statusActionSubmitter,

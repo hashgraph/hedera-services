@@ -42,8 +42,8 @@ public class GossipEvent implements EventIntakeTask, BaseEvent, ChatterEvent {
     private long roundCreated = ROUND_CREATED_UNDEFINED;
 
     /**
-     * A reference to the atomic integer which is being used to track how many events received from a given peer are
-     * currently in the intake pipeline.
+     * A reference to the atomic integer which is being used to track how many events received from the peer which sent
+     * this event are currently in the intake pipeline.
      * <p>
      * If an event wasn't received through gossip, then this will be null.
      */

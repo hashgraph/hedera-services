@@ -18,6 +18,7 @@ package com.swirlds.platform.gossip;
 
 import com.swirlds.common.system.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -35,12 +36,12 @@ public interface IntakeEventCounter {
     boolean hasUnprocessedEvents(@NonNull final NodeId peer);
 
     /**
-     * Get the counter tracking the number of events the given peer has currently in the intake pipeline
+     * Get the counter tracking the number of events the given peer currently has in the intake pipeline
      *
      * @param peer the peer to get the counter for
      * @return the counter
      */
-    @NonNull
+    @Nullable
     AtomicInteger getPeerCounter(@NonNull final NodeId peer);
 
     /**
