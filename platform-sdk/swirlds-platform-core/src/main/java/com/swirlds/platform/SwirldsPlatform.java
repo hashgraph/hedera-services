@@ -544,7 +544,7 @@ public class SwirldsPlatform implements Platform, Startable {
             intakeEventCounter = new NoOpIntakeEventCounter();
         }
 
-        eventLinker = buildEventLinker(time, isDuplicateChecks, intakeEventCounter);
+        eventLinker = buildEventLinker(time, isDuplicateChecks);
 
         final IntakeCycleStats intakeCycleStats = new IntakeCycleStats(time, metrics);
 
@@ -559,8 +559,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 eventObserverDispatcher,
                 intakeCycleStats,
                 shadowGraph,
-                preConsensusEventHandler::preconsensusEvent,
-                intakeEventCounter);
+                preConsensusEventHandler::preconsensusEvent);
 
         final EventCreator eventCreator = buildEventCreator(eventIntake);
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
@@ -1011,14 +1010,11 @@ public class SwirldsPlatform implements Platform, Startable {
      *
      * @param time               a source of time
      * @param isDuplicateChecks  list of checks for deduplicating events, which this method adds to
-     * @param intakeEventCounter tracks movement of events through the intake pipeline
      * @return a new event linker
      */
     @NonNull
     private EventLinker buildEventLinker(
-            @NonNull final Time time,
-            @NonNull final List<Predicate<EventDescriptor>> isDuplicateChecks,
-            @NonNull final IntakeEventCounter intakeEventCounter) {
+            @NonNull final Time time, @NonNull final List<Predicate<EventDescriptor>> isDuplicateChecks) {
 
         Objects.requireNonNull(isDuplicateChecks);
         final ParentFinder parentFinder = new ParentFinder(shadowGraph::hashgraphEvent);
@@ -1029,8 +1025,7 @@ public class SwirldsPlatform implements Platform, Startable {
             final OrphanBufferingLinker orphanBuffer = new OrphanBufferingLinker(
                     platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
                     parentFinder,
-                    chatterConfig.futureGenerationLimit(),
-                    intakeEventCounter);
+                    chatterConfig.futureGenerationLimit());
             metrics.getOrCreate(
                     new FunctionGauge.Config<>("intake", "numOrphans", Integer.class, orphanBuffer::getNumOrphans)
                             .withDescription("the number of events without parents buffered")

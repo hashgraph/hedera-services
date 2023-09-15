@@ -32,7 +32,6 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.linking.ParentFinder;
-import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphEventObserver;
 import com.swirlds.platform.internal.ConsensusRound;
@@ -127,8 +126,7 @@ public class TestIntake implements ConsensusRoundObserver, StaleEventObserver, L
                 dispatcher,
                 ConsensusUtils.NOOP_INTAKE_CYCLE_STATS,
                 shadowGraph,
-                e -> {},
-                mock(IntakeEventCounter.class));
+                e -> {});
     }
 
     /**

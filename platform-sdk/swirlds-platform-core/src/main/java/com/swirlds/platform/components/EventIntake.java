@@ -32,7 +32,6 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.event.validation.StaticValidators;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
-import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.intake.IntakeCycleStats;
 import com.swirlds.platform.internal.ConsensusRound;
@@ -78,12 +77,6 @@ public class EventIntake {
     private final ExecutorService prehandlePool;
     private final Consumer<EventImpl> prehandleEvent;
 
-    /**
-     * Used to track how many events received from each peer have been added to the intake pipeline, but haven't
-     * made it through yet
-     */
-    private final IntakeEventCounter intakeEventCounter;
-
     private final EventIntakeMetrics metrics;
     private final Time time;
 
@@ -102,7 +95,6 @@ public class EventIntake {
      * @param stats              metrics for event intake
      * @param shadowGraph        tracks events in the hashgraph
      * @param prehandleEvent     prehandles transactions in an event
-     * @param intakeEventCounter tracks events as they move through the intake pipeline
      */
     public EventIntake(
             @NonNull final PlatformContext platformContext,
@@ -115,8 +107,7 @@ public class EventIntake {
             @NonNull final EventObserverDispatcher dispatcher,
             @NonNull final IntakeCycleStats stats,
             @NonNull final ShadowGraph shadowGraph,
-            @NonNull final Consumer<EventImpl> prehandleEvent,
-            @NonNull final IntakeEventCounter intakeEventCounter) {
+            @NonNull final Consumer<EventImpl> prehandleEvent) {
 
         this.time = Objects.requireNonNull(time);
         this.selfId = Objects.requireNonNull(selfId);
@@ -128,7 +119,6 @@ public class EventIntake {
         this.stats = Objects.requireNonNull(stats);
         this.shadowGraph = Objects.requireNonNull(shadowGraph);
         this.prehandleEvent = Objects.requireNonNull(prehandleEvent);
-        this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
 
         final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
         final Supplier<Integer> prehandlePoolSize;
@@ -235,7 +225,7 @@ public class EventIntake {
             }
             stats.doneIntakeAddEvent();
         } finally {
-            intakeEventCounter.eventThroughIntakePipeline(event.getBaseEvent().getSenderNodeId());
+            event.getBaseEvent().exitIntakePipeline();
         }
     }
 

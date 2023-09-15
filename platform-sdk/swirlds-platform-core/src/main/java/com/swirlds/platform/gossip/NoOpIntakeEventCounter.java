@@ -18,7 +18,7 @@ package com.swirlds.platform.gossip;
 
 import com.swirlds.common.system.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A no-op implementation of {@link IntakeEventCounter}.
@@ -28,24 +28,15 @@ public class NoOpIntakeEventCounter implements IntakeEventCounter {
      * {@inheritDoc}
      */
     @Override
-    public void eventAddedToIntakePipeline(@Nullable NodeId eventSender) {
-        // no-op
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void eventThroughIntakePipeline(@Nullable NodeId eventSender) {
-        // no-op
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public boolean hasUnprocessedEvents(@NonNull NodeId peer) {
         return false;
+    }
+
+    @NonNull
+    @Override
+    public AtomicInteger getEventCounter(@NonNull NodeId peer) {
+        // todo
+        return null;
     }
 
     /**

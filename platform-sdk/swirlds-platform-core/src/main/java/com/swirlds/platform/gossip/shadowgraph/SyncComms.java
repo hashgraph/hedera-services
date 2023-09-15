@@ -272,9 +272,7 @@ public final class SyncComms {
                         case ByteConstants.COMM_EVENT_NEXT -> {
                             final GossipEvent gossipEvent = conn.getDis().readEventData();
 
-                            gossipEvent.setSenderNodeId(conn.getOtherId());
-
-                            intakeEventCounter.eventAddedToIntakePipeline(conn.getOtherId());
+                            gossipEvent.enterIntakePipeline(intakeEventCounter.getEventCounter(conn.getOtherId()));
 
                             eventHandler.accept(gossipEvent);
                             eventsRead++;

@@ -24,14 +24,11 @@ import com.swirlds.logging.LogMarker;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.EventDescriptor;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.SignedState;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayDeque;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
@@ -50,23 +47,14 @@ public class OrphanBufferingLinker extends AbstractEventLinker {
     private final SequenceMap<EventDescriptor, ChildEvent> orphanMap;
 
     /**
-     * The intake event counter, so that we can keep track when we purge orphans.
-     */
-    private final IntakeEventCounter intakeEventCounter;
-
-    /**
      * Create a new orphan buffer.
      *
      * @param config                consensus configuration
      * @param parentFinder          responsible for finding parents of an event
      * @param futureGenerationLimit the maximum number of future generations we are willing to store
-     * @param intakeEventCounter    tracks events in the intake pipeline
      */
     public OrphanBufferingLinker(
-            final ConsensusConfig config,
-            final ParentFinder parentFinder,
-            final int futureGenerationLimit,
-            @NonNull final IntakeEventCounter intakeEventCounter) {
+            final ConsensusConfig config, final ParentFinder parentFinder, final int futureGenerationLimit) {
 
         super(config);
         this.parentFinder = parentFinder;
@@ -74,7 +62,6 @@ public class OrphanBufferingLinker extends AbstractEventLinker {
         this.newlyLinkedEvents = new ArrayDeque<>();
         this.orphanMap = new StandardSequenceMap<>(0, futureGenerationLimit, EventDescriptor::getGeneration);
         this.missingParents = new StandardSequenceMap<>(0, futureGenerationLimit, ParentDescriptor::generation);
-        this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
     }
 
     private static void parentNoLongerMissing(final ChildEvent child, final Hash parentHash, final EventImpl parent) {
@@ -98,11 +85,9 @@ public class OrphanBufferingLinker extends AbstractEventLinker {
             return;
         }
         orphan.orphanForever();
-        logger.error(LogMarker.EXCEPTION.getMarker(), "Purging an orphan: {}", orphan.getChild());
+        orphan.getChild().getBaseEvent().exitIntakePipeline();
 
-        // notify the intake monitor that this orphan event was purged, and thus is done traversing the intake pipeline
-        intakeEventCounter.eventThroughIntakePipeline(
-                orphan.getChild().getBaseEvent().getSenderNodeId());
+        logger.error(LogMarker.EXCEPTION.getMarker(), "Purging an orphan: {}", orphan.getChild());
     }
 
     /**
