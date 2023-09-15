@@ -69,7 +69,6 @@ public class FreezeUnfreezeTranslator extends AbstractHtsCallTranslator {
     }
 
     private static boolean matchesClassicSelector(@NonNull final byte[] selector) {
-        return Arrays.equals(selector, FREEZE.selector())
-                || Arrays.equals(selector, UNFREEZE.selector());
+        return Arrays.equals(selector, FREEZE.selector()) || Arrays.equals(selector, UNFREEZE.selector());
     }
 }

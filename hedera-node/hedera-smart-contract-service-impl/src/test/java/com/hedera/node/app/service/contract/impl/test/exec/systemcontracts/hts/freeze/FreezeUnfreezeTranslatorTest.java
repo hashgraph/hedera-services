@@ -35,6 +35,7 @@ class FreezeUnfreezeTranslatorTest {
 
     @Mock
     private HtsCallAttempt attempt;
+
     private final FreezeUnfreezeDecoder decoder = new FreezeUnfreezeDecoder();
     private FreezeUnfreezeTranslator subject;
 
