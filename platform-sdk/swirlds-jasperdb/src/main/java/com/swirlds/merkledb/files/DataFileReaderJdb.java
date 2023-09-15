@@ -36,6 +36,8 @@ import java.nio.file.Path;
 // See https://github.com/hashgraph/hedera-services/issues/8344 for details
 public class DataFileReaderJdb<D> extends DataFileReaderPbj<D> {
 
+    private static final ThreadLocal<ByteBuffer> BUFFER_CACHE = new ThreadLocal<>();
+
     /**
      * Open an existing data file, reading the metadata from the file
      *

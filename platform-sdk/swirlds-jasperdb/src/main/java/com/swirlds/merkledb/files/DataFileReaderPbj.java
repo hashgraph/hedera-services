@@ -74,7 +74,7 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 // https://github.com/hashgraph/hedera-services/issues/8344
 public class DataFileReaderPbj<D> implements DataFileReader<D> {
 
-    protected static final ThreadLocal<ByteBuffer> BUFFER_CACHE = new ThreadLocal<>();
+    private static final ThreadLocal<ByteBuffer> BUFFER_CACHE = new ThreadLocal<>();
     private static final ThreadLocal<BufferedData> BUFFEREDDATA_CACHE = new ThreadLocal<>();
 
     /** Max number of file channels to use for reading */
