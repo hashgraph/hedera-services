@@ -83,18 +83,18 @@ public class EventIntake {
     /**
      * Constructor
      *
-     * @param platformContext    the platform context
-     * @param threadManager      creates new threading resources
-     * @param time               provides the wall clock time
-     * @param selfId             the ID of this node
-     * @param eventLinker        links events together, holding orphaned events until their parents are found (if
-     *                           operating with the orphan buffer enabled)
-     * @param consensusSupplier  provides the current consensus instance
-     * @param addressBook        the current address book
-     * @param dispatcher         invokes event related callbacks
-     * @param stats              metrics for event intake
-     * @param shadowGraph        tracks events in the hashgraph
-     * @param prehandleEvent     prehandles transactions in an event
+     * @param platformContext   the platform context
+     * @param threadManager     creates new threading resources
+     * @param time              provides the wall clock time
+     * @param selfId            the ID of this node
+     * @param eventLinker       links events together, holding orphaned events until their parents are found (if
+     *                          operating with the orphan buffer enabled)
+     * @param consensusSupplier provides the current consensus instance
+     * @param addressBook       the current address book
+     * @param dispatcher        invokes event related callbacks
+     * @param stats             metrics for event intake
+     * @param shadowGraph       tracks events in the hashgraph
+     * @param prehandleEvent    prehandles transactions in an event
      */
     public EventIntake(
             @NonNull final PlatformContext platformContext,

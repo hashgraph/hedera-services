@@ -34,7 +34,7 @@ public class NoOpIntakeEventCounter implements IntakeEventCounter {
 
     @NonNull
     @Override
-    public AtomicInteger getEventCounter(@NonNull NodeId peer) {
+    public AtomicInteger getPeerCounter(@NonNull NodeId peer) {
         // todo
         return null;
     }

@@ -55,7 +55,6 @@ public class OrphanBufferingLinker extends AbstractEventLinker {
      */
     public OrphanBufferingLinker(
             final ConsensusConfig config, final ParentFinder parentFinder, final int futureGenerationLimit) {
-
         super(config);
         this.parentFinder = parentFinder;
         this.eventOutput = new ArrayDeque<>();
@@ -77,7 +76,7 @@ public class OrphanBufferingLinker extends AbstractEventLinker {
         }
     }
 
-    private void orphanPurged(final EventDescriptor key, final ChildEvent orphan) {
+    private static void orphanPurged(final EventDescriptor key, final ChildEvent orphan) {
         // this should never happen. an events parents should become ancient and at that point it will no longer be an
         // orphan
         if (orphan == null) {
@@ -174,7 +173,7 @@ public class OrphanBufferingLinker extends AbstractEventLinker {
         super.updateGenerations(generations);
         missingParents.shiftWindow(generations.getMinGenerationNonAncient(), this::parentPurged);
         // if an orphan becomes ancient, we don't need it anymore
-        orphanMap.shiftWindow(generations.getMinGenerationNonAncient(), this::orphanPurged);
+        orphanMap.shiftWindow(generations.getMinGenerationNonAncient(), OrphanBufferingLinker::orphanPurged);
         processNewlyLinkedEvents();
     }
 

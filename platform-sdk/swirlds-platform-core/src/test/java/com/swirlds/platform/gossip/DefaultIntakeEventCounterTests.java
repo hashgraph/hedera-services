@@ -16,29 +16,20 @@
 
 package com.swirlds.platform.gossip;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.test.fixtures.RandomUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.HashSet;
-import java.util.Random;
 import java.util.Set;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 @DisplayName("DefaultIntakeEventCounter Tests")
 class DefaultIntakeEventCounterTests {
-    private Random random;
-
-    @BeforeEach
-    void setup() {
-        random = RandomUtils.getRandomPrintSeed();
-    }
-
     private IntakeEventCounter createIntakeCounter(@NonNull final Set<NodeId> nodes) {
         final AddressBook addressBook = mock(AddressBook.class);
         Mockito.when(addressBook.getNodeIdSet()).thenReturn(nodes);
@@ -46,29 +37,48 @@ class DefaultIntakeEventCounterTests {
         return new DefaultIntakeEventCounter(addressBook);
     }
 
-    private Set<NodeId> generateNodeIds(final int count) {
-        final Set<NodeId> nodeIds = new HashSet<>();
-        for (int i = 0; i < count; i++) {
-            nodeIds.add(new NodeId(random.nextLong(Long.MAX_VALUE)));
-        }
+    @Test
+    @DisplayName("Test unprocessed events check")
+    void unprocessedEvents() {
+        final NodeId nodeId1 = new NodeId(1);
+        final NodeId nodeId2 = new NodeId(2);
+        final IntakeEventCounter intakeCounter = createIntakeCounter(Set.of(nodeId1, nodeId2));
 
-        return nodeIds;
+        assertFalse(intakeCounter.hasUnprocessedEvents(nodeId1));
+
+        intakeCounter.getPeerCounter(nodeId1).incrementAndGet();
+        assertTrue(intakeCounter.hasUnprocessedEvents(nodeId1));
+        assertFalse(intakeCounter.hasUnprocessedEvents(nodeId2));
+
+        intakeCounter.getPeerCounter(nodeId1).incrementAndGet();
+        assertTrue(intakeCounter.hasUnprocessedEvents(nodeId1));
+        assertFalse(intakeCounter.hasUnprocessedEvents(nodeId2));
+
+        intakeCounter.getPeerCounter(nodeId1).decrementAndGet();
+        assertTrue(intakeCounter.hasUnprocessedEvents(nodeId1));
+        assertFalse(intakeCounter.hasUnprocessedEvents(nodeId2));
+
+        intakeCounter.getPeerCounter(nodeId1).decrementAndGet();
+        assertFalse(intakeCounter.hasUnprocessedEvents(nodeId1));
+        assertFalse(intakeCounter.hasUnprocessedEvents(nodeId2));
     }
 
     @Test
-    @DisplayName("Test reset behavior")
-    void testReset() {
-        //        final Set<NodeId> nodeIds = generateNodeIds(50);
-        //        final IntakeEventCounter intakeCounter = createIntakeCounter(nodeIds);
-        //        final Map<NodeId, Long> expectedCounts = generateExpectedCountMap(nodeIds);
-        //
-        //        performRandomOperations(intakeCounter, nodeIds, expectedCounts, 100);
-        //
-        //        assertValidState(intakeCounter, nodeIds, expectedCounts);
-        //        intakeCounter.reset();
-        //
-        //        for (final NodeId nodeId : nodeIds) {
-        //            assertFalse(intakeCounter.hasUnprocessedEvents(nodeId));
-        //        }
+    @DisplayName("Test reset")
+    void reset() {
+        final NodeId nodeId1 = new NodeId(1);
+        final NodeId nodeId2 = new NodeId(2);
+        final IntakeEventCounter intakeCounter = createIntakeCounter(Set.of(nodeId1, nodeId2));
+
+        intakeCounter.getPeerCounter(nodeId1).incrementAndGet();
+        intakeCounter.getPeerCounter(nodeId1).incrementAndGet();
+        intakeCounter.getPeerCounter(nodeId2).incrementAndGet();
+
+        assertTrue(intakeCounter.hasUnprocessedEvents(nodeId1));
+        assertTrue(intakeCounter.hasUnprocessedEvents(nodeId2));
+
+        intakeCounter.reset();
+        assertFalse(intakeCounter.hasUnprocessedEvents(nodeId1));
+        assertFalse(intakeCounter.hasUnprocessedEvents(nodeId2));
     }
 }

@@ -1007,15 +1007,10 @@ public class SwirldsPlatform implements Platform, Startable {
 
     /**
      * Build the event linker.
-     *
-     * @param time               a source of time
-     * @param isDuplicateChecks  list of checks for deduplicating events, which this method adds to
-     * @return a new event linker
      */
     @NonNull
     private EventLinker buildEventLinker(
             @NonNull final Time time, @NonNull final List<Predicate<EventDescriptor>> isDuplicateChecks) {
-
         Objects.requireNonNull(isDuplicateChecks);
         final ParentFinder parentFinder = new ParentFinder(shadowGraph::hashgraphEvent);
         final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);

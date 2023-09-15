@@ -20,7 +20,6 @@ import static com.swirlds.logging.LogMarker.SYNC_INFO;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.SyncException;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SyncMetrics;
@@ -37,6 +36,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
@@ -241,11 +241,11 @@ public final class SyncComms {
      * the supplied eventHandler. The {@link Callable} will return the number of events read, or a negative number if
      * event reading was aborted.
      *
-     * @param conn               the connection to read from
-     * @param eventHandler       the consumer of received events
-     * @param syncMetrics        tracks event reading metrics
-     * @param eventReadingDone   used to notify the writing thread that reading is done
-     * @param intakeEventCounter used to track how many events sent by each peer are currently in the intake pipeline
+     * @param conn             the connection to read from
+     * @param eventHandler     the consumer of received events
+     * @param syncMetrics      tracks event reading metrics
+     * @param eventReadingDone used to notify the writing thread that reading is done
+     * @param peerEventCounter used to track how many events sent by this peer are currently in the intake pipeline
      * @return A {@link Callable} that executes this part of the sync
      */
     public static Callable<Integer> phase3Read(
@@ -253,9 +253,9 @@ public final class SyncComms {
             final Consumer<GossipEvent> eventHandler,
             final SyncMetrics syncMetrics,
             final CountDownLatch eventReadingDone,
-            @NonNull final IntakeEventCounter intakeEventCounter) {
+            @NonNull final AtomicInteger peerEventCounter) {
 
-        Objects.requireNonNull(intakeEventCounter);
+        Objects.requireNonNull(peerEventCounter);
 
         return () -> {
             logger.info(SYNC_INFO.getMarker(), "{} reading events start", conn.getDescription());
@@ -272,7 +272,7 @@ public final class SyncComms {
                         case ByteConstants.COMM_EVENT_NEXT -> {
                             final GossipEvent gossipEvent = conn.getDis().readEventData();
 
-                            gossipEvent.enterIntakePipeline(intakeEventCounter.getEventCounter(conn.getOtherId()));
+                            gossipEvent.enterIntakePipeline(peerEventCounter);
 
                             eventHandler.accept(gossipEvent);
                             eventsRead++;

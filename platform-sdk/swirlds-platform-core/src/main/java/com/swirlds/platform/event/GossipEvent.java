@@ -42,9 +42,10 @@ public class GossipEvent implements EventIntakeTask, BaseEvent, ChatterEvent {
     private long roundCreated = ROUND_CREATED_UNDEFINED;
 
     /**
-     * A reference to the atomic integer which is being used to track how many events received from a given peer are currently in the intake pipeline.
+     * A reference to the atomic integer which is being used to track how many events received from a given peer are
+     * currently in the intake pipeline.
      * <p>
-     * If a given gossip event wasn't received through gossip, then this will be null.
+     * If an event wasn't received through gossip, then this will be null.
      */
     private AtomicInteger intakeCounter;
 
@@ -152,12 +153,13 @@ public class GossipEvent implements EventIntakeTask, BaseEvent, ChatterEvent {
     /**
      * Set the intake counter
      *
-     * @param intakeCounter the atomic integer representing the number of events received from a given peer that are
-     *                      currently in the intake pipeline
+     * @param intakeCounter the atomic integer representing the number of events received from the node which sent this
+     *                      event, which are currently in the intake pipeline
      */
     public void enterIntakePipeline(@NonNull final AtomicInteger intakeCounter) {
         this.intakeCounter = Objects.requireNonNull(intakeCounter);
 
+        // increment the counter to indicate that this event is now in the intake pipeline
         intakeCounter.incrementAndGet();
     }
 

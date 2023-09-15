@@ -147,7 +147,7 @@ class SyncPermitProviderTest {
 
         assertTrue(syncPermitProvider.tryAcquire(nodeId), "nothing should prevent a permit from being acquired");
 
-        intakeEventCounter.getEventCounter(nodeId).incrementAndGet();
+        intakeEventCounter.getPeerCounter(nodeId).incrementAndGet();
 
         // returning the permit is fine
         syncPermitProvider.returnPermit();
@@ -156,9 +156,9 @@ class SyncPermitProviderTest {
                 syncPermitProvider.tryAcquire(nodeId),
                 "permit should not be able to be acquired with unprocessed event in intake pipeline");
 
-        intakeEventCounter.getEventCounter(nodeId).decrementAndGet();
+        intakeEventCounter.getPeerCounter(nodeId).decrementAndGet();
         // an event in the pipeline for a different node shouldn't have any effect
-        intakeEventCounter.getEventCounter(otherNodeId).incrementAndGet();
+        intakeEventCounter.getPeerCounter(otherNodeId).incrementAndGet();
 
         assertTrue(
                 syncPermitProvider.tryAcquire(nodeId),

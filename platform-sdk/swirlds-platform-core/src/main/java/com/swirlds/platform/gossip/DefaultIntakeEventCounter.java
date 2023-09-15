@@ -62,7 +62,9 @@ public class DefaultIntakeEventCounter implements IntakeEventCounter {
 
     @NonNull
     @Override
-    public AtomicInteger getEventCounter(@NonNull NodeId peer) {
+    public AtomicInteger getPeerCounter(@NonNull NodeId peer) {
+        Objects.requireNonNull(peer);
+
         return unprocessedEventCounts.get(peer);
     }
 

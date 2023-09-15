@@ -41,7 +41,7 @@ public interface IntakeEventCounter {
      * @return the counter
      */
     @NonNull
-    AtomicInteger getEventCounter(@NonNull final NodeId peer);
+    AtomicInteger getPeerCounter(@NonNull final NodeId peer);
 
     /**
      * Reset event counts
