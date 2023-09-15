@@ -43,7 +43,7 @@ import java.util.stream.Stream;
  * will be unable to correctly read files with a different format.
  * </p>
  * <pre>
- * [Instant.toString().replace(":", "+")]-seq[sequence number]-ming[minimum legal generation]-maxg[maximum legal generation].pces
+ * [Instant.toString().replace(":", "+")]-seq[sequence number]-ming[minimum legal generation]-maxg[maximum legal generation]-orgn[origin round].pces
  * </pre>
  * <p>
  * By default, files are stored with the following directory structure. Note that files are not required to be stored
@@ -59,11 +59,6 @@ public final class PreconsensusEventFile implements Comparable<PreconsensusEvent
      * The file extension for standard files. Stands for "PreConsensus Event Stream".
      */
     public static final String EVENT_FILE_EXTENSION = ".pces";
-
-    /**
-     * The file extension used to signal stream discontinuities.
-     */
-    public static final String EVENT_FILE_DISCONTINUITY_EXTENSION = ".pcesD";
 
     /**
      * The character used to separate fields in the file name.
@@ -86,6 +81,16 @@ public final class PreconsensusEventFile implements Comparable<PreconsensusEvent
     public static final String MAXIMUM_GENERATION_PREFIX = "maxg";
 
     /**
+     * Written before the origin round. Improves readability for humans.
+     */
+    public static final String ORIGIN_PREFIX = "orgn";
+
+    /**
+     * The initial capacity of the string builder used to build file names.
+     */
+    private static final int STRING_BUILDER_INITIAL_CAPACITY = 128;
+
+    /**
      * The sequence number of the file. All file sequence numbers are unique. Sequence numbers are allocated in
      * monotonically increasing order.
      */
@@ -102,6 +107,12 @@ public final class PreconsensusEventFile implements Comparable<PreconsensusEvent
     private final long maximumGeneration;
 
     /**
+     * The round number from which an unbroken stream of events has been written. If two sequential files have different
+     * origin rounds, this signals a discontinuity in the stream.
+     */
+    private final long origin;
+
+    /**
      * The timestamp of when the writing of this file began.
      */
     private final Instant timestamp;
@@ -112,29 +123,23 @@ public final class PreconsensusEventFile implements Comparable<PreconsensusEvent
     private final Path path;
 
     /**
-     * If true, this file signals a discontinuity in the stream. Files marking a discontinuity will never contain
-     * events.
-     */
-    private final boolean discontinuity;
-
-    /**
      * Construct a new PreConsensusEventFile.
      *
+     * @param timestamp         the timestamp of when the writing of this file began
      * @param sequenceNumber    the sequence number of the file. All file sequence numbers are unique. Sequence numbers
      *                          are allocated in monotonically increasing order.
      * @param minimumGeneration the minimum generation of events that are permitted to be in this file
      * @param maximumGeneration the maximum generation of events that are permitted to be in this file
-     * @param timestamp         the timestamp of when the writing of this file began
+     * @param origin            the origin of the stream file, signals the round from which the stream is unbroken
      * @param path              the location where this file can be found
-     * @param discontinuity     if true then this file is a placeholder signaling a discontinuity
      */
     private PreconsensusEventFile(
+            @NonNull final Instant timestamp,
             final long sequenceNumber,
             final long minimumGeneration,
             final long maximumGeneration,
-            final @NonNull Instant timestamp,
-            final @NonNull Path path,
-            final boolean discontinuity) {
+            final long origin,
+            @NonNull final Path path) {
 
         if (sequenceNumber < 0) {
             throw new IllegalArgumentException("sequence number " + minimumGeneration + " is negative");
@@ -148,6 +153,10 @@ public final class PreconsensusEventFile implements Comparable<PreconsensusEvent
             throw new IllegalArgumentException("maximum generation " + maximumGeneration + " is negative");
         }
 
+        if (origin < 0) {
+            throw new IllegalArgumentException("origin " + origin + " is negative");
+        }
+
         if (maximumGeneration < minimumGeneration) {
             throw new IllegalArgumentException("maximum generation " + maximumGeneration
                     + " is less than minimum generation " + minimumGeneration);
@@ -156,38 +165,36 @@ public final class PreconsensusEventFile implements Comparable<PreconsensusEvent
         this.sequenceNumber = sequenceNumber;
         this.minimumGeneration = minimumGeneration;
         this.maximumGeneration = maximumGeneration;
+        this.origin = origin;
         this.timestamp = Objects.requireNonNull(timestamp);
         this.path = Objects.requireNonNull(path);
-        this.discontinuity = discontinuity;
     }
 
     /**
      * Create a new event file descriptor.
      *
+     * @param timestamp         the timestamp when this file was created (wall clock time)
      * @param sequenceNumber    the sequence number of the descriptor
      * @param minimumGeneration the minimum event generation permitted to be in this file (inclusive)
      * @param maximumGeneration the maximum event generation permitted to be in this file (inclusive)
-     * @param timestamp         the timestamp when this file was created (wall clock time)
+     * @param origin            the origin round number, i.e. the round after which the stream is unbroken
      * @param rootDirectory     the directory where event stream files are stored
-     * @param discontinuity     if true then this file is a placeholder signaling a discontinuity
      * @return a description of the file
      */
     @NonNull
     public static PreconsensusEventFile of(
+            @NonNull final Instant timestamp,
             final long sequenceNumber,
             final long minimumGeneration,
             final long maximumGeneration,
-            @NonNull final Instant timestamp,
-            @NonNull final Path rootDirectory,
-            final boolean discontinuity) {
+            final long origin,
+            @NonNull final Path rootDirectory) {
 
         final Path parentDirectory = buildParentDirectory(rootDirectory, timestamp);
-        final String fileName =
-                buildFileName(sequenceNumber, minimumGeneration, maximumGeneration, timestamp, discontinuity);
+        final String fileName = buildFileName(timestamp, sequenceNumber, minimumGeneration, maximumGeneration, origin);
         final Path path = parentDirectory.resolve(fileName);
 
-        return new PreconsensusEventFile(
-                sequenceNumber, minimumGeneration, maximumGeneration, timestamp, path, discontinuity);
+        return new PreconsensusEventFile(timestamp, sequenceNumber, minimumGeneration, maximumGeneration, origin, path);
     }
 
     /**
@@ -201,33 +208,27 @@ public final class PreconsensusEventFile implements Comparable<PreconsensusEvent
     public static PreconsensusEventFile of(@NonNull final Path filePath) throws IOException {
         Objects.requireNonNull(filePath, "filePath");
 
-        final boolean discontinuity;
-        if (filePath.toString().endsWith(EVENT_FILE_DISCONTINUITY_EXTENSION)) {
-            discontinuity = true;
-        } else if (filePath.toString().endsWith(EVENT_FILE_EXTENSION)) {
-            discontinuity = false;
-        } else {
+        if (!filePath.toString().endsWith(EVENT_FILE_EXTENSION)) {
             throw new IOException("File " + filePath + " has the wrong type");
         }
 
         final String fileName = filePath.getFileName().toString();
 
-        final String extension = discontinuity ? EVENT_FILE_DISCONTINUITY_EXTENSION : EVENT_FILE_EXTENSION;
-        final String[] elements =
-                fileName.substring(0, fileName.length() - extension.length()).split(EVENT_FILE_SEPARATOR);
+        final String[] elements = fileName.substring(0, fileName.length() - EVENT_FILE_EXTENSION.length())
+                .split(EVENT_FILE_SEPARATOR);
 
-        if (elements.length != 4) {
+        if (elements.length != 5) {
             throw new IOException("Unable to parse fields from " + filePath);
         }
 
         try {
             return new PreconsensusEventFile(
+                    parseSanitizedTimestamp(elements[0]),
                     Long.parseLong(elements[1].replace(SEQUENCE_NUMBER_PREFIX, "")),
                     Long.parseLong(elements[2].replace(MINIMUM_GENERATION_PREFIX, "")),
                     Long.parseLong(elements[3].replace(MAXIMUM_GENERATION_PREFIX, "")),
-                    parseSanitizedTimestamp(elements[0]),
-                    filePath,
-                    discontinuity);
+                    Long.parseLong(elements[4].replace(ORIGIN_PREFIX, "")),
+                    filePath);
         } catch (final DateTimeParseException | IllegalArgumentException ex) {
             throw new IOException("unable to parse " + filePath, ex);
         }
@@ -253,11 +254,19 @@ public final class PreconsensusEventFile implements Comparable<PreconsensusEvent
 
         final Path parentDirectory = path.getParent();
         final String fileName =
-                buildFileName(sequenceNumber, minimumGeneration, maximumGenerationInFile, timestamp, discontinuity);
+                buildFileName(timestamp, sequenceNumber, minimumGeneration, maximumGenerationInFile, origin);
         final Path newPath = parentDirectory.resolve(fileName);
 
         return new PreconsensusEventFile(
-                sequenceNumber, minimumGeneration, maximumGenerationInFile, timestamp, newPath, discontinuity);
+                timestamp, sequenceNumber, minimumGeneration, maximumGenerationInFile, origin, newPath);
+    }
+
+    /**
+     * @return the timestamp when this file was created (wall clock time)
+     */
+    @NonNull
+    public Instant getTimestamp() {
+        return timestamp;
     }
 
     /**
@@ -283,11 +292,15 @@ public final class PreconsensusEventFile implements Comparable<PreconsensusEvent
     }
 
     /**
-     * @return the timestamp when this file was created (wall clock time)
+     * Get the origin of the stream containing this file. A stream's origin is defined as the round number after which
+     * the stream is unbroken. When the origin of two sequential files is different, this signals a discontinuity in the
+     * stream (i.e. the end of one stream and the beginning of another). When replaying events, it is never ok to stream
+     * events from files with different origins.
+     *
+     * @return the origin round number
      */
-    @NonNull
-    public Instant getTimestamp() {
-        return timestamp;
+    public long getOrigin() {
+        return origin;
     }
 
     /**
@@ -296,13 +309,6 @@ public final class PreconsensusEventFile implements Comparable<PreconsensusEvent
     @NonNull
     public Path getPath() {
         return path;
-    }
-
-    /**
-     * @return true if this file is a placeholder signaling a discontinuity
-     */
-    public boolean marksDiscontinuity() {
-        return discontinuity;
     }
 
     /**
@@ -395,32 +401,37 @@ public final class PreconsensusEventFile implements Comparable<PreconsensusEvent
     /**
      * Derive the name for this file.
      *
+     * @param timestamp         the timestamp of when the file was created
      * @param sequenceNumber    the sequence number of the file
      * @param minimumGeneration the minimum generation of events permitted in this file
      * @param maximumGeneration the maximum generation of events permitted in this file
-     * @param timestamp         the timestamp of when the file was created
-     * @param discontinuity     true if this file is a placeholder signaling a discontinuity
+     * @param origin            the origin round number, i.e. the round after which the stream is unbroken
      * @return the file name
      */
     @NonNull
     private static String buildFileName(
+            @NonNull final Instant timestamp,
             final long sequenceNumber,
             final long minimumGeneration,
             final long maximumGeneration,
-            @NonNull final Instant timestamp,
-            final boolean discontinuity) {
+            final long origin) {
 
-        return sanitizeTimestamp(timestamp)
-                + EVENT_FILE_SEPARATOR
-                + SEQUENCE_NUMBER_PREFIX
-                + sequenceNumber
-                + EVENT_FILE_SEPARATOR
-                + MINIMUM_GENERATION_PREFIX
-                + minimumGeneration
-                + EVENT_FILE_SEPARATOR
-                + MAXIMUM_GENERATION_PREFIX
-                + maximumGeneration
-                + (discontinuity ? EVENT_FILE_DISCONTINUITY_EXTENSION : EVENT_FILE_EXTENSION);
+        return new StringBuilder(STRING_BUILDER_INITIAL_CAPACITY)
+                .append(sanitizeTimestamp(timestamp))
+                .append(EVENT_FILE_SEPARATOR)
+                .append(SEQUENCE_NUMBER_PREFIX)
+                .append(sequenceNumber)
+                .append(EVENT_FILE_SEPARATOR)
+                .append(MINIMUM_GENERATION_PREFIX)
+                .append(minimumGeneration)
+                .append(EVENT_FILE_SEPARATOR)
+                .append(MAXIMUM_GENERATION_PREFIX)
+                .append(maximumGeneration)
+                .append(EVENT_FILE_SEPARATOR)
+                .append(ORIGIN_PREFIX)
+                .append(origin)
+                .append(EVENT_FILE_EXTENSION)
+                .toString();
     }
 
     /**
@@ -440,7 +451,7 @@ public final class PreconsensusEventFile implements Comparable<PreconsensusEvent
      * @return true if it is legal for this event to be in the file described by this object
      */
     public boolean canContain(final long generation) {
-        return !discontinuity && generation >= minimumGeneration && generation <= maximumGeneration;
+        return generation >= minimumGeneration && generation <= maximumGeneration;
     }
 
     /**
