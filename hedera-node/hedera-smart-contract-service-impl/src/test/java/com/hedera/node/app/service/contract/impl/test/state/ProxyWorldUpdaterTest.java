@@ -16,9 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test.state;
 
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_RECEIVER_SIGNATURE;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_VALUE_TRANSFER;
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.SELFDESTRUCT_TO_SELF;
 import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
@@ -45,6 +43,7 @@ import static org.mockito.Mockito.verify;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.failure.StandardExceptionalHaltReason;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations;
@@ -400,10 +399,10 @@ class ProxyWorldUpdaterTest {
     @Test
     void delegatesTransfer() {
         given(evmFrameState.tryTransfer(ALTBN128_ADD, SOME_EVM_ADDRESS, 123L, true))
-                .willReturn(Optional.of(INVALID_RECEIVER_SIGNATURE));
+                .willReturn(Optional.of(StandardExceptionalHaltReason.INVALID_SIGNATURE));
         final var maybeHaltReason = subject.tryTransfer(ALTBN128_ADD, SOME_EVM_ADDRESS, 123L, true);
         assertTrue(maybeHaltReason.isPresent());
-        assertEquals(INVALID_RECEIVER_SIGNATURE, maybeHaltReason.get());
+        assertEquals(StandardExceptionalHaltReason.INVALID_SIGNATURE, maybeHaltReason.get());
     }
 
     @Test
@@ -460,7 +459,7 @@ class ProxyWorldUpdaterTest {
 
     @Test
     void delegatesDeletionTrackingAttempt() {
-        final var haltReason = Optional.<ExceptionalHaltReason>of(SELFDESTRUCT_TO_SELF);
+        final var haltReason = Optional.<ExceptionalHaltReason>of(StandardExceptionalHaltReason.SELF_DESTRUCT_TO_SELF);
         given(evmFrameState.tryTrackingDeletion(SOME_EVM_ADDRESS, OTHER_EVM_ADDRESS))
                 .willReturn(haltReason);
         assertSame(haltReason, subject.tryTrackingDeletion(SOME_EVM_ADDRESS, OTHER_EVM_ADDRESS));

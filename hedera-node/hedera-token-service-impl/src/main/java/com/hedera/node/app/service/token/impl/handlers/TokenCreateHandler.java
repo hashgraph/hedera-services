@@ -135,19 +135,20 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         // is set to sentinel value
         associateAccounts(context, newToken, accountStore, tokenRelationStore, feesSetNeedingCollectorAutoAssociation);
 
+        // Since we have associated treasury and needed fee collector accounts in the previous step,
+        // this relation must exist
+        final var treasuryRel = requireNonNull(tokenRelationStore.get(op.treasuryOrThrow(), newTokenId));
         if (op.initialSupply() > 0) {
-            // Since we have associated treasury and needed fee collector accounts in the previous step,
-            // this relation should exist. Mint the provided initial supply of tokens
-            final var treasuryRel = tokenRelationStore.get(op.treasuryOrThrow(), newTokenId);
             // This keeps modified token with minted balance into modifications in token store
             mintFungible(newToken, treasuryRel, op.initialSupply(), true, accountStore, tokenStore, tokenRelationStore);
-
-            final var treasuryAccount = accountStore.get(treasuryRel.accountId());
-            final var copyTreasuryAccount = treasuryAccount.copyBuilder();
-            // We also need to update the Titles count on the copy
-            copyTreasuryAccount.numberTreasuryTitles(treasuryAccount.numberTreasuryTitles() + 1);
-            accountStore.put(copyTreasuryAccount.build());
         }
+        // Increment treasury's title count
+        final var treasuryAccount = requireNonNull(accountStore.getForModify(treasuryRel.accountIdOrThrow()));
+        accountStore.put(treasuryAccount
+                .copyBuilder()
+                .numberTreasuryTitles(treasuryAccount.numberTreasuryTitles() + 1)
+                .build());
+
         // Update record with newly created token id
         final var recordBuilder = context.recordBuilder(TokenCreateRecordBuilder.class);
         recordBuilder.tokenID(newTokenId);

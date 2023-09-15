@@ -16,15 +16,14 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.operations;
 
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_RECEIVER_SIGNATURE;
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.SELFDESTRUCT_TO_SELF;
+import static com.hedera.node.app.service.contract.impl.exec.failure.StandardExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertSameResult;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
-import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
+import com.hedera.node.app.service.contract.impl.exec.failure.StandardExceptionalHaltReason;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomSelfDestructOperation;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import java.util.Optional;
@@ -87,7 +86,7 @@ class CustomSelfDestructOperationTest {
         given(frame.popStackItem()).willReturn(BENEFICIARY);
         given(addressChecks.isSystemAccount(BENEFICIARY)).willReturn(true);
         given(gasCalculator.selfDestructOperationGasCost(null, Wei.ZERO)).willReturn(123L);
-        final var expected = new Operation.OperationResult(123L, CustomExceptionalHaltReason.MISSING_ADDRESS);
+        final var expected = new Operation.OperationResult(123L, INVALID_SOLIDITY_ADDRESS);
         assertSameResult(expected, subject.execute(frame, evm));
     }
 
@@ -98,8 +97,9 @@ class CustomSelfDestructOperationTest {
         given(addressChecks.isPresent(BENEFICIARY, frame)).willReturn(true);
         given(frame.getWorldUpdater()).willReturn(proxyWorldUpdater);
         given(gasCalculator.selfDestructOperationGasCost(null, Wei.ZERO)).willReturn(123L);
-        given(proxyWorldUpdater.tryTrackingDeletion(TBD, BENEFICIARY)).willReturn(Optional.of(SELFDESTRUCT_TO_SELF));
-        final var expected = new Operation.OperationResult(123L, SELFDESTRUCT_TO_SELF);
+        given(proxyWorldUpdater.tryTrackingDeletion(TBD, BENEFICIARY))
+                .willReturn(Optional.of(StandardExceptionalHaltReason.SELF_DESTRUCT_TO_SELF));
+        final var expected = new Operation.OperationResult(123L, StandardExceptionalHaltReason.SELF_DESTRUCT_TO_SELF);
         assertSameResult(expected, subject.execute(frame, evm));
     }
 
@@ -128,8 +128,8 @@ class CustomSelfDestructOperationTest {
         givenRunnableSelfDestruct();
         givenWarmBeneficiaryWithSufficientGas();
         given(proxyWorldUpdater.tryTransfer(TBD, BENEFICIARY, INHERITANCE.toLong(), true))
-                .willReturn(Optional.of(INVALID_RECEIVER_SIGNATURE));
-        final var expected = new Operation.OperationResult(123L, INVALID_RECEIVER_SIGNATURE);
+                .willReturn(Optional.of(StandardExceptionalHaltReason.INVALID_SIGNATURE));
+        final var expected = new Operation.OperationResult(123L, StandardExceptionalHaltReason.INVALID_SIGNATURE);
         assertSameResult(expected, subject.execute(frame, evm));
     }
 

@@ -16,8 +16,17 @@
 
 package com.hedera.node.app.service.token.impl.api;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator.IMMUTABILITY_SENTINEL_KEY;
+import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
+import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -33,7 +42,10 @@ import com.hedera.node.app.service.token.impl.validators.StakingValidator;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.app.spi.validation.EntityType;
+import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
@@ -56,7 +68,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
             Key.newBuilder().contractID(ContractID.newBuilder().contractNum(0)).build();
 
     private final StakingValidator stakingValidator;
-    private final WritableAccountStore store;
+    private final WritableAccountStore accountStore;
     private final AccountID fundingAccountID;
     private final AccountID stakingRewardAccountID;
     private final AccountID nodeRewardAccountID;
@@ -67,7 +79,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
             @NonNull final StakingValidator stakingValidator,
             @NonNull final WritableStates writableStates) {
         requireNonNull(config);
-        this.store = new WritableAccountStore(writableStates);
+        this.accountStore = new WritableAccountStore(writableStates);
         this.stakingValidator = requireNonNull(stakingValidator);
 
         // Determine whether staking is enabled
@@ -117,11 +129,11 @@ public class TokenServiceApiImpl implements TokenServiceApi {
     @Override
     public void markAsContract(@NonNull final AccountID accountId) {
         requireNonNull(accountId);
-        final var accountAsContract = requireNonNull(store.get(accountId))
+        final var accountAsContract = requireNonNull(accountStore.get(accountId))
                 .copyBuilder()
                 .smartContract(true)
                 .build();
-        store.put(accountAsContract);
+        accountStore.put(accountAsContract);
     }
 
     /**
@@ -130,7 +142,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
     @Override
     public void finalizeHollowAccountAsContract(@NonNull final AccountID hollowAccountId, final long initialNonce) {
         requireNonNull(hollowAccountId);
-        final var hollowAccount = requireNonNull(store.get(hollowAccountId));
+        final var hollowAccount = requireNonNull(accountStore.get(hollowAccountId));
         if (!IMMUTABILITY_SENTINEL_KEY.equals(hollowAccount.keyOrThrow())) {
             throw new IllegalArgumentException(
                     "Cannot finalize non-hollow account " + hollowAccountId + " as contract");
@@ -141,7 +153,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
                 .smartContract(true)
                 .ethereumNonce(initialNonce)
                 .build();
-        store.put(accountAsContract);
+        accountStore.put(accountAsContract);
     }
 
     /**
@@ -150,7 +162,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
     @Override
     public void deleteAndMaybeUnaliasContract(@NonNull final ContractID contractId) {
         requireNonNull(contractId);
-        final var contract = requireNonNull(store.getContractById(contractId));
+        final var contract = requireNonNull(accountStore.getContractById(contractId));
 
         final var evmAddress = contract.alias();
         final var usedEvmAddress = contractId.evmAddressOrElse(Bytes.EMPTY);
@@ -161,10 +173,10 @@ public class TokenServiceApiImpl implements TokenServiceApi {
                     evmAddress,
                     usedEvmAddress);
         }
-        maybeRemoveAlias(store, evmAddress);
-        maybeRemoveAlias(store, usedEvmAddress);
+        maybeRemoveAlias(accountStore, evmAddress);
+        maybeRemoveAlias(accountStore, usedEvmAddress);
 
-        store.put(contract.copyBuilder().alias(Bytes.EMPTY).deleted(true).build());
+        accountStore.put(contract.copyBuilder().alias(Bytes.EMPTY).deleted(true).build());
     }
 
     /**
@@ -173,8 +185,8 @@ public class TokenServiceApiImpl implements TokenServiceApi {
     @Override
     public void incrementParentNonce(@NonNull final ContractID parentId) {
         requireNonNull(parentId);
-        final var contract = requireNonNull(store.getContractById(parentId));
-        store.put(contract.copyBuilder()
+        final var contract = requireNonNull(accountStore.getContractById(parentId));
+        accountStore.put(contract.copyBuilder()
                 .ethereumNonce(contract.ethereumNonce() + 1)
                 .build());
     }
@@ -185,8 +197,9 @@ public class TokenServiceApiImpl implements TokenServiceApi {
     @Override
     public void incrementSenderNonce(@NonNull final AccountID senderId) {
         requireNonNull(senderId);
-        final var sender = requireNonNull(store.get(senderId));
-        store.put(sender.copyBuilder().ethereumNonce(sender.ethereumNonce() + 1).build());
+        final var sender = requireNonNull(accountStore.get(senderId));
+        accountStore.put(
+                sender.copyBuilder().ethereumNonce(sender.ethereumNonce() + 1).build());
     }
 
     /**
@@ -195,8 +208,8 @@ public class TokenServiceApiImpl implements TokenServiceApi {
     @Override
     public void setNonce(@NonNull final AccountID accountId, final long nonce) {
         requireNonNull(accountId);
-        final var target = requireNonNull(store.get(accountId));
-        store.put(target.copyBuilder().ethereumNonce(nonce).build());
+        final var target = requireNonNull(accountStore.get(accountId));
+        accountStore.put(target.copyBuilder().ethereumNonce(nonce).build());
     }
 
     /**
@@ -208,8 +221,8 @@ public class TokenServiceApiImpl implements TokenServiceApi {
             throw new IllegalArgumentException(
                     "Cannot transfer negative value (" + amount + " tinybars) from " + fromId + " to " + toId);
         }
-        final var from = requireNonNull(store.get(fromId));
-        final var to = requireNonNull(store.get(toId));
+        final var from = requireNonNull(accountStore.get(fromId));
+        final var to = requireNonNull(accountStore.get(toId));
         if (from.tinybarBalance() < amount) {
             throw new IllegalArgumentException(
                     "Insufficient balance to transfer " + amount + " tinybars from " + fromId + " to " + toId);
@@ -218,10 +231,11 @@ public class TokenServiceApiImpl implements TokenServiceApi {
             throw new IllegalArgumentException(
                     "Overflow on transfer of " + amount + " tinybars from " + fromId + " to " + toId);
         }
-        store.put(from.copyBuilder()
+        accountStore.put(from.copyBuilder()
                 .tinybarBalance(from.tinybarBalance() - amount)
                 .build());
-        store.put(to.copyBuilder().tinybarBalance(to.tinybarBalance() + amount).build());
+        accountStore.put(
+                to.copyBuilder().tinybarBalance(to.tinybarBalance() + amount).build());
     }
 
     /**
@@ -229,7 +243,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
      */
     @Override
     public Set<AccountID> modifiedAccountIds() {
-        return store.modifiedAccountsInState();
+        return accountStore.modifiedAccountsInState();
     }
 
     /**
@@ -237,7 +251,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
      */
     @Override
     public List<ContractNonceInfo> updatedContractNonces() {
-        return store.updatedContractNonces();
+        return accountStore.updatedContractNonces();
     }
 
     /**
@@ -248,7 +262,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
             @NonNull final AccountID accountId, @NonNull final Bytes firstKey, final int netChangeInSlotsUsed) {
         requireNonNull(firstKey);
         requireNonNull(accountId);
-        final var target = requireNonNull(store.get(accountId));
+        final var target = requireNonNull(accountStore.get(accountId));
         if (!target.smartContract()) {
             throw new IllegalArgumentException("Cannot update storage metadata for non-contract " + accountId);
         }
@@ -261,7 +275,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
                     + " for contract "
                     + accountId);
         }
-        store.put(target.copyBuilder()
+        accountStore.put(target.copyBuilder()
                 .firstContractStorageKey(firstKey)
                 .contractKvPairsNumber(newNumKvPairs)
                 .build());
@@ -303,7 +317,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
 
         // Whatever is left over goes to the funding account
         final var fundingAccount = lookupAccount("Funding", fundingAccountID);
-        store.put(fundingAccount
+        accountStore.put(fundingAccount
                 .copyBuilder()
                 .tinybarBalance(fundingAccount.tinybarBalance() + balance)
                 .build());
@@ -328,7 +342,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
         if (currentBalance < amount) {
             throw new HandleException(INSUFFICIENT_PAYER_BALANCE);
         }
-        store.put(payerAccount
+        accountStore.put(payerAccount
                 .copyBuilder()
                 .tinybarBalance(currentBalance - amount)
                 .build());
@@ -345,7 +359,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
     private void payNodeRewardAccount(final long amount) {
         if (amount == 0) return;
         final var nodeAccount = lookupAccount("Node reward", nodeRewardAccountID);
-        store.put(nodeAccount
+        accountStore.put(nodeAccount
                 .copyBuilder()
                 .tinybarBalance(nodeAccount.tinybarBalance() + amount)
                 .build());
@@ -362,7 +376,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
     private void payStakingRewardAccount(final long amount) {
         if (amount == 0) return;
         final var stakingAccount = lookupAccount("Staking reward", stakingRewardAccountID);
-        store.put(stakingAccount
+        accountStore.put(stakingAccount
                 .copyBuilder()
                 .tinybarBalance(stakingAccount.tinybarBalance() + amount)
                 .build());
@@ -378,11 +392,103 @@ public class TokenServiceApiImpl implements TokenServiceApi {
      */
     @NonNull
     private Account lookupAccount(String logName, AccountID id) {
-        var account = store.get(id);
+        var account = accountStore.get(id);
         if (account == null) {
             logger.fatal("{} account {} does not exist", logName, id);
             throw new IllegalStateException(logName + " account does not exist");
         }
         return account;
+    }
+
+    private record InvolvedAccounts(@NonNull Account deletedAccount, @NonNull Account obtainerAccount) {
+        private InvolvedAccounts {
+            requireNonNull(deletedAccount);
+            requireNonNull(obtainerAccount);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void deleteAndTransfer(
+            @NonNull final AccountID deletedId,
+            @NonNull final AccountID obtainerId,
+            @NonNull ExpiryValidator expiryValidator,
+            @NonNull final DeleteCapableTransactionRecordBuilder recordBuilder) {
+        // validate the semantics involving dynamic properties and state.
+        // Gets delete and transfer accounts from state
+        final var deleteAndTransferAccounts = validateSemantics(deletedId, obtainerId, expiryValidator);
+        transferRemainingBalance(expiryValidator, deleteAndTransferAccounts);
+
+        // get the account from account store that has all balance changes
+        // commit the account with deleted flag set to true
+        final var updatedDeleteAccount = requireNonNull(accountStore.getForModify(deletedId));
+        accountStore.put(updatedDeleteAccount.copyBuilder().deleted(true).build());
+
+        // add the transfer account for this deleted account to record builder.
+        // This is needed while computing staking rewards. In the future it will also be added
+        // to the transaction record exported to mirror node.
+        recordBuilder.addBeneficiaryForDeletedAccount(deletedId, obtainerId);
+    }
+
+    private InvolvedAccounts validateSemantics(
+            @NonNull final AccountID deletedId,
+            @NonNull final AccountID obtainerId,
+            @NonNull final ExpiryValidator expiryValidator) {
+        // validate if accounts exist
+        final var deletedAccount = accountStore.get(deletedId);
+        validateTrue(deletedAccount != null, INVALID_ACCOUNT_ID);
+        final var transferAccount = accountStore.get(obtainerId);
+        validateTrue(transferAccount != null, INVALID_TRANSFER_ACCOUNT_ID);
+        // if the account is treasury for any other token, it can't be deleted
+        validateFalse(deletedAccount.numberTreasuryTitles() > 0, ACCOUNT_IS_TREASURY);
+        // checks if accounts are detached
+        final var isExpired = areAccountsDetached(deletedAccount, transferAccount, expiryValidator);
+        validateFalse(isExpired, ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+        // An account can't be deleted if there are any tokens associated with this account
+        validateTrue(deletedAccount.numberPositiveBalances() == 0, TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
+        return new InvolvedAccounts(deletedAccount, transferAccount);
+    }
+
+    private void transferRemainingBalance(
+            @NonNull final ExpiryValidator expiryValidator, @NonNull final InvolvedAccounts involvedAccounts) {
+        final var fromAccount = involvedAccounts.deletedAccount();
+        final var toAccount = involvedAccounts.obtainerAccount();
+        final long newFromBalance = computeNewBalance(expiryValidator, fromAccount, -1 * fromAccount.tinybarBalance());
+        final long newToBalance = computeNewBalance(expiryValidator, toAccount, fromAccount.tinybarBalance());
+        accountStore.put(
+                fromAccount.copyBuilder().tinybarBalance(newFromBalance).build());
+        accountStore.put(toAccount.copyBuilder().tinybarBalance(newToBalance).build());
+    }
+
+    private long computeNewBalance(
+            final ExpiryValidator expiryValidator, final Account account, final long adjustment) {
+        validateTrue(!account.deleted(), ACCOUNT_DELETED);
+        validateTrue(
+                !expiryValidator.isDetached(
+                        EntityType.ACCOUNT, account.expiredAndPendingRemoval(), account.tinybarBalance()),
+                ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+        final long balance = account.tinybarBalance();
+        validateTrue(balance + adjustment >= 0, INSUFFICIENT_ACCOUNT_BALANCE);
+        return balance + adjustment;
+    }
+
+    private boolean areAccountsDetached(
+            @NonNull Account deleteAccount,
+            @NonNull Account transferAccount,
+            @NonNull final ExpiryValidator expiryValidator) {
+        return expiryValidator.isDetached(
+                        getEntityType(deleteAccount),
+                        deleteAccount.expiredAndPendingRemoval(),
+                        deleteAccount.tinybarBalance())
+                || expiryValidator.isDetached(
+                        getEntityType(transferAccount),
+                        transferAccount.expiredAndPendingRemoval(),
+                        transferAccount.tinybarBalance());
+    }
+
+    private EntityType getEntityType(@NonNull final Account account) {
+        return account.smartContract() ? EntityType.CONTRACT : EntityType.ACCOUNT;
     }
 }

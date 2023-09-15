@@ -16,32 +16,57 @@
 
 package com.hedera.node.app.service.contract.impl.exec.failure;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
+
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 
 /**
  * Some {@link ExceptionalHaltReason}s that are not part of the Besu core.
  */
 public enum CustomExceptionalHaltReason implements ExceptionalHaltReason {
+    TOO_MANY_CHILD_RECORDS("CONTRACT_EXECUTION_EXCEPTION", CONTRACT_EXECUTION_EXCEPTION),
+    ACCOUNTS_LIMIT_REACHED("CONTRACT_EXECUTION_EXCEPTION", CONTRACT_EXECUTION_EXCEPTION),
+    INVALID_VALUE_TRANSFER("Value transfer not allowed to system or expired accounts", CONTRACT_EXECUTION_EXCEPTION);
+
     /**
-     * An EVM operation referenced an account that does not exist.
+     * The default status returned for halted contract executions, by tradition.
      */
-    MISSING_ADDRESS("Invalid account reference"),
-    TOKEN_TREASURY_SELFDESTRUCT("Token treasury cannot be deleted"),
-    TOKEN_HOLDER_SELFDESTRUCT("Accounts still holding tokens cannot be deleted"),
-    SELFDESTRUCT_TO_SELF("Selfdestruct must give a different beneficiary"),
-    INVALID_RECEIVER_SIGNATURE("Receiver signature required but not provided"),
-    TOO_MANY_CHILD_RECORDS("Too many child records for available slots"),
-    ACCOUNTS_LIMIT_REACHED("Accounts limit reached"),
-    INVALID_VALUE_TRANSFER("Value transfer not allowed to system or expired accounts");
+    private static final ResponseCodeEnum DEFAULT_STATUS = CONTRACT_EXECUTION_EXCEPTION;
+    /**
+     * The default error message returned for halted contract executions, by tradition.
+     */
+    private static final String DEFAULT_ERROR_MESSAGE = DEFAULT_STATUS.protoName();
 
-    private final String description;
+    private final String errorMessage;
+    private final ResponseCodeEnum status;
 
-    CustomExceptionalHaltReason(final String description) {
-        this.description = description;
+    CustomExceptionalHaltReason(String errorMessage, ResponseCodeEnum status) {
+        this.errorMessage = errorMessage;
+        this.status = status;
     }
 
     @Override
     public String getDescription() {
-        return description;
+        return errorMessage;
+    }
+
+    /**
+     * Returns the error message corresponding to this halt reason.
+     *
+     * @return the error message
+     */
+    public String errorMessage() {
+        return status.protoName();
+    }
+
+    /**
+     * Returns the status code corresponding to this halt reason.
+     *
+     * @return the status code
+     */
+    public ResponseCodeEnum correspondingStatus() {
+        return status;
     }
 }

@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.hevm;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.accessTrackerFor;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
@@ -31,6 +32,7 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
+import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
 import com.hedera.node.app.service.contract.impl.state.RootProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
@@ -40,6 +42,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.log.Log;
 
@@ -50,7 +53,7 @@ public record HederaEvmTransactionResult(
         @Nullable ContractID recipientId,
         @Nullable ContractID recipientEvmAddress,
         @NonNull Bytes output,
-        @Nullable String haltReason,
+        @Nullable ExceptionalHaltReason haltReason,
         @Nullable Bytes revertReason,
         @NonNull List<Log> logs,
         @Nullable ContractStateChanges stateChanges) {
@@ -82,7 +85,7 @@ public record HederaEvmTransactionResult(
     public ContractFunctionResult asProtoResultOf(
             @Nullable final EthTxData ethTxData, @NonNull final RootProxyWorldUpdater updater) {
         if (haltReason != null) {
-            throw new AssertionError("Not implemented");
+            return withMaybeEthFields(asUncommittedFailureResult(haltReason.toString()), ethTxData);
         } else if (revertReason != null) {
             throw new AssertionError("Not implemented");
         } else {
@@ -113,7 +116,11 @@ public record HederaEvmTransactionResult(
      */
     public ResponseCodeEnum finalStatus() {
         if (haltReason != null) {
-            throw new AssertionError("Not implemented");
+            if (haltReason instanceof CustomExceptionalHaltReason customReason) {
+                return customReason.correspondingStatus();
+            } else {
+                return CONTRACT_EXECUTION_EXCEPTION;
+            }
         } else if (revertReason != null) {
             throw new AssertionError("Not implemented");
         } else {
@@ -183,7 +190,7 @@ public record HederaEvmTransactionResult(
                 null,
                 null,
                 Bytes.EMPTY,
-                frame.getExceptionalHaltReason().map(Object::toString).orElse(null),
+                frame.getExceptionalHaltReason().orElse(null),
                 frame.getRevertReason().map(ConversionUtils::tuweniToPbjBytes).orElse(null),
                 Collections.emptyList(),
                 stateReadsFrom(frame));
@@ -225,6 +232,11 @@ public record HederaEvmTransactionResult(
                     .functionParameters(Bytes.wrap(ethTxData.callData()));
         }
         return builder.build();
+    }
+
+    private ContractFunctionResult.Builder asUncommittedFailureResult(@NonNull final String errorMessage) {
+        requireNonNull(errorMessage);
+        return ContractFunctionResult.newBuilder().gasUsed(gasUsed).errorMessage(errorMessage);
     }
 
     private ContractFunctionResult.Builder asSuccessResultForCommitted(@NonNull final RootProxyWorldUpdater updater) {

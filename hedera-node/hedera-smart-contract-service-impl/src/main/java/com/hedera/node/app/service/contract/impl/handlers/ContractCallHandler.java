@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.handlers;
 
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.throwIfUnsuccessful;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -53,8 +54,8 @@ public class ContractCallHandler implements TransactionHandler {
         // Assemble the appropriate top-level record for the result
         context.recordBuilder(ContractCallRecordBuilder.class)
                 .contractCallResult(outcome.result())
-                .contractID(outcome.recipientIdIfCalled())
-                .status(outcome.status());
+                .contractID(outcome.recipientIdIfCalled());
+        throwIfUnsuccessful(outcome.status());
     }
 
     @Override
