@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package contract;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
@@ -52,57 +68,62 @@ public class FreezeUnfreezeXTest extends AbstractContractXTest {
                         .encodeCallWithArgs(OWNER_HEADLONG_ADDRESS, A_TOKEN_ADDRESS)
                         .array()),
                 output -> assertEquals(Bytes.wrap(ReturnTypes.encodedRc(SUCCESS).array()), output));
-        //FREEZE NO FREEZE KEY
+        // FREEZE NO FREEZE KEY
         runHtsCallAndExpectOnSuccess(
                 OWNER_BESU_ADDRESS,
                 Bytes.wrap(FreezeUnfreezeTranslator.FREEZE
                         .encodeCallWithArgs(OWNER_HEADLONG_ADDRESS, B_TOKEN_ADDRESS)
                         .array()),
-                output -> assertEquals(Bytes.wrap(ReturnTypes.encodedRc(TOKEN_HAS_NO_FREEZE_KEY).array()), output));
+                output -> assertEquals(
+                        Bytes.wrap(
+                                ReturnTypes.encodedRc(TOKEN_HAS_NO_FREEZE_KEY).array()),
+                        output));
     }
 
     @Override
     protected Map<ProtoBytes, AccountID> initialAliases() {
-        return new HashMap<>() {{
-            put(ProtoBytes.newBuilder()
-                            .value(OWNER_ADDRESS)
-                            .build(),
-                    OWNER_ID);
-        }};
+        return new HashMap<>() {
+            {
+                put(ProtoBytes.newBuilder().value(OWNER_ADDRESS).build(), OWNER_ID);
+            }
+        };
     }
 
     @Override
     protected Map<AccountID, Account> initialAccounts() {
-        return new HashMap<>() {{
-            put(
-                    OWNER_ID,
-                    Account.newBuilder()
-                            .accountId(OWNER_ID)
-                            .alias(OWNER_ADDRESS)
-                            .tinybarBalance(100_000_000L)
-                            .build());
-        }};
+        return new HashMap<>() {
+            {
+                put(
+                        OWNER_ID,
+                        Account.newBuilder()
+                                .accountId(OWNER_ID)
+                                .alias(OWNER_ADDRESS)
+                                .tinybarBalance(100_000_000L)
+                                .build());
+            }
+        };
     }
 
     @Override
     protected Map<TokenID, Token> initialTokens() {
-        return new HashMap<>() {{
-            put(
-                    A_TOKEN_ID,
-                    Token.newBuilder()
-                            .tokenId(A_TOKEN_ID)
-                            .treasuryAccountId(UNAUTHORIZED_SPENDER_ID)
-                            .tokenType(TokenType.FUNGIBLE_COMMON)
-                            .freezeKey(AN_ED25519_KEY)
-                            .build());
-            put(
-                    B_TOKEN_ID,
-                    Token.newBuilder()
-                            .tokenId(B_TOKEN_ID)
-                            .treasuryAccountId(UNAUTHORIZED_SPENDER_ID)
-                            .tokenType(TokenType.FUNGIBLE_COMMON)
-                            .build());
-        }};
+        return new HashMap<>() {
+            {
+                put(
+                        A_TOKEN_ID,
+                        Token.newBuilder()
+                                .tokenId(A_TOKEN_ID)
+                                .treasuryAccountId(UNAUTHORIZED_SPENDER_ID)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .freezeKey(AN_ED25519_KEY)
+                                .build());
+                put(
+                        B_TOKEN_ID,
+                        Token.newBuilder()
+                                .tokenId(B_TOKEN_ID)
+                                .treasuryAccountId(UNAUTHORIZED_SPENDER_ID)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .build());
+            }
+        };
     }
-
 }
