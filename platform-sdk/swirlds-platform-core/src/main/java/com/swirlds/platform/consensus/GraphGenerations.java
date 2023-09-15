@@ -29,8 +29,25 @@ public interface GraphGenerations {
     long getMaxRoundGeneration();
 
     /**
-     * @return The minimum generation of all the judges that are not ancient. If no judges are ancient, returns
-     *        {@link #FIRST_GENERATION}.
+     * Return the minimum generation of all the famous witnesses that are not in ancient rounds.
+     *
+     * <p>Define gen(R) to be the minimum generation of all the events that were famous witnesses in
+     * round R.
+     *
+     * <p>If round R is the most recent round for which we have decided the fame of all the
+     * witnesses, then any event with a generation less than gen(R - {@code
+     * Settings.state.roundsExpired}) is called an “expired” event. And any non-expired event with a
+     * generation less than gen(R - {@code Settings.state.roundsNonAncient} + 1) is an “ancient”
+     * event. If the event failed to achieve consensus before becoming ancient, then it is “stale”.
+     * So every non-expired event with a generation before gen(R - {@code
+     * Settings.state.roundsNonAncient} + 1) is either stale or consensus, not both.
+     *
+     * <p>Expired events can be removed from memory unless they are needed for an old signed state
+     * that is still being used for something (such as still in the process of being written to
+     * disk).
+     *
+     * @return The minimum generation of all the judges that are not ancient. If no judges are
+     *     ancient, returns {@link #FIRST_GENERATION}.
      */
     long getMinGenerationNonAncient();
 
