@@ -19,13 +19,16 @@ package com.hedera.node.app.workflows.query;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.node.app.fees.ExchangeRateManager;
+import com.hedera.node.app.fees.NoOpFeeCalculator;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.records.impl.BlockRecordInfoImpl;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
+import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.workflows.QueryContext;
@@ -129,5 +132,12 @@ public class QueryContextImpl implements QueryContext {
             exchangeRateInfo = exchangeRateManager.exchangeRateInfo(state);
         }
         return exchangeRateInfo;
+    }
+
+    @NonNull
+    @Override
+    public FeeCalculator feeCalculator(@NonNull SubType subType) {
+        // TODO: issue 8543 - implement fee calculator
+        return new NoOpFeeCalculator();
     }
 }

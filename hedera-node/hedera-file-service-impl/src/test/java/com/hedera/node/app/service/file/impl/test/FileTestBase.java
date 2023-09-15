@@ -279,16 +279,16 @@ public class FileTestBase {
     }
 
     protected void givenValidFile(boolean deleted, boolean withKeys) {
-        file = new File(fileId, expirationTime, withKeys ? keys : null, Bytes.wrap(contents), memo, deleted);
-        fileWithNoKeysAndMemo = new File(fileId, expirationTime, null, Bytes.wrap(contents), null, deleted);
-        fileWithNoContent = new File(fileId, expirationTime, withKeys ? keys : null, null, memo, deleted);
-        fileSystem =
-                new File(fileSystemFileId, expirationTime, withKeys ? keys : null, Bytes.wrap(contents), memo, deleted);
+        file = new File(fileId, expirationTime, withKeys ? keys : null, Bytes.wrap(contents), memo, deleted, 0L);
+        fileWithNoKeysAndMemo = new File(fileId, expirationTime, null, Bytes.wrap(contents), null, deleted, 0L);
+        fileWithNoContent = new File(fileId, expirationTime, withKeys ? keys : null, null, memo, deleted, 0L);
+        fileSystem = new File(
+                fileSystemFileId, expirationTime, withKeys ? keys : null, Bytes.wrap(contents), memo, deleted, 0L);
     }
 
     protected void givenValidUpgradeFile(boolean deleted, boolean withKeys) {
         upgradeFile = new File(
-                fileUpgradeFileId, expirationTime, withKeys ? keys : null, Bytes.wrap(contents), memo, deleted);
+                fileUpgradeFileId, expirationTime, withKeys ? keys : null, Bytes.wrap(contents), memo, deleted, 0L);
     }
 
     protected File createFile() {

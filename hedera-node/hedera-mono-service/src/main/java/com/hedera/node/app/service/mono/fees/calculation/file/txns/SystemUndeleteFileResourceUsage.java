@@ -44,4 +44,8 @@ public class SystemUndeleteFileResourceUsage implements TxnResourceUsageEstimato
     public FeeData usageGiven(TransactionBody txn, SigValueObj sigUsage, StateView view) throws InvalidTxBodyException {
         return usageEstimator.getSystemUnDeleteFileTxFeeMatrices(txn, sigUsage);
     }
+
+    public FeeData usageGiven(TransactionBody txn, SigValueObj sigUsage) throws InvalidTxBodyException {
+        return usageEstimator.getSystemUnDeleteFileTxFeeMatrices(txn, sigUsage);
+    }
 }

@@ -38,6 +38,7 @@ import com.hedera.hapi.node.file.SystemDeleteTransactionBody;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.utils.fee.FileFeeBuilder;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
@@ -94,12 +95,15 @@ class FileSystemDeleteTest extends FileTestBase {
     @Mock(strictness = Mock.Strictness.LENIENT)
     protected Account payerAccount;
 
+    @Mock
+    private FileFeeBuilder usageEstimator;
+
     protected Configuration testConfig;
 
     @BeforeEach
     void setUp() {
         mockStore = mock(ReadableFileStoreImpl.class);
-        subject = new FileSystemDeleteHandler();
+        subject = new FileSystemDeleteHandler(usageEstimator);
 
         writableFileState = writableFileStateWithOneKey();
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
@@ -174,7 +178,7 @@ class FileSystemDeleteTest extends FileTestBase {
     @DisplayName("Fails handle if keys doesn't exist on file system to be deleted")
     void keysDoesntExist() {
         given(handleContext.body()).willReturn(newFileDeleteTxn());
-        file = new File(fileId, expirationTime, null, Bytes.wrap(contents), memo, false);
+        file = new File(fileId, expirationTime, null, Bytes.wrap(contents), memo, false, 0L);
 
         writableFileState = writableFileStateWithOneKey();
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);

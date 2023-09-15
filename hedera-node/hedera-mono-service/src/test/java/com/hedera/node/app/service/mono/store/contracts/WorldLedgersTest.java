@@ -481,7 +481,7 @@ class WorldLedgersTest {
     void staticNftTokenInfoWorks() {
         worldLedgers = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
         final var nftId =
-                NftID.newBuilder().setTokenId(nftTokenId).setSerialNumber(1L).build();
+                NftID.newBuilder().setTokenID(nftTokenId).setSerialNumber(1L).build();
 
         given(staticEntityAccess.infoForNft(nftId)).willReturn(Optional.of(tokenNftInfo));
 
@@ -507,7 +507,7 @@ class WorldLedgersTest {
         worldLedgers = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
         tokenAccessor();
         final var nftId =
-                NftID.newBuilder().setTokenId(nftTokenId).setSerialNumber(1L).build();
+                NftID.newBuilder().setTokenID(nftTokenId).setSerialNumber(1L).build();
         final var nftAddr = asTypedEvmAddress(nftTokenId);
 
         given(staticEntityAccess.infoForNft(nftId)).willReturn(Optional.of(tokenNftInfo));
@@ -531,7 +531,7 @@ class WorldLedgersTest {
     void staticEvmNftTokenInfoEmpty() {
         worldLedgers = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
         final var nftId =
-                NftID.newBuilder().setTokenId(nftTokenId).setSerialNumber(1L).build();
+                NftID.newBuilder().setTokenID(nftTokenId).setSerialNumber(1L).build();
         given(staticEntityAccess.infoForNft(nftId)).willReturn(Optional.empty());
         final var tokenNftInfo = worldLedgers.evmNftInfo(nftId, ledgerId);
 
@@ -541,7 +541,7 @@ class WorldLedgersTest {
     @Test
     void nonStaticNftTokenInfoWorks() {
         final var nftId =
-                NftID.newBuilder().setTokenId(nftTokenId).setSerialNumber(1L).build();
+                NftID.newBuilder().setTokenID(nftTokenId).setSerialNumber(1L).build();
         final var targetKey = NftId.withDefaultShardRealm(nftTokenId.getTokenNum(), 1L);
         given(nftsLedger.contains(targetKey)).willReturn(true);
         given(nftsLedger.getImmutableRef(targetKey)).willReturn(targetNft);
@@ -559,7 +559,7 @@ class WorldLedgersTest {
     @Test
     void nonStaticNftTokenInfoWorksForMissingSerialNumber() {
         final var nftId =
-                NftID.newBuilder().setTokenId(nftTokenId).setSerialNumber(1L).build();
+                NftID.newBuilder().setTokenID(nftTokenId).setSerialNumber(1L).build();
         final var targetKey = NftId.withDefaultShardRealm(nftTokenId.getTokenNum(), 1L);
         given(nftsLedger.contains(targetKey)).willReturn(false);
 
@@ -571,7 +571,7 @@ class WorldLedgersTest {
     @Test
     void nonStaticNftTokenInfoWorksForWildCardOwner() {
         final var nftId =
-                NftID.newBuilder().setTokenId(nftTokenId).setSerialNumber(1L).build();
+                NftID.newBuilder().setTokenID(nftTokenId).setSerialNumber(1L).build();
         final var targetKey = NftId.withDefaultShardRealm(nftTokenId.getTokenNum(), 1L);
         targetNft.setOwner(MISSING_ENTITY_ID);
         given(nftsLedger.contains(targetKey)).willReturn(true);
@@ -591,7 +591,7 @@ class WorldLedgersTest {
     @Test
     void nonStaticNftTokenInfoWorksForWildCardOwnerWithMissingToken() {
         final var nftId =
-                NftID.newBuilder().setTokenId(nftTokenId).setSerialNumber(1L).build();
+                NftID.newBuilder().setTokenID(nftTokenId).setSerialNumber(1L).build();
         final var targetKey = NftId.withDefaultShardRealm(nftTokenId.getTokenNum(), 1L);
         targetNft.setOwner(MISSING_ENTITY_ID);
         given(nftsLedger.contains(targetKey)).willReturn(true);

@@ -272,4 +272,67 @@ class RecycleBinTests {
 
         recycleBin.stop();
     }
+
+    @Test
+    @DisplayName("clear() Test")
+    void clearTest() throws IOException, InterruptedException {
+        final FakeTime time = new FakeTime(Instant.now(), Duration.ZERO);
+
+        final Configuration customConfiguration = new TestConfigBuilder()
+                .withValue("state.savedStateDirectory", testDirectory.toString())
+                .withValue("recycleBin.collectionPeriod", "1ns")
+                .getOrCreateConfig();
+
+        final RecycleBinImpl recycleBin = new RecycleBinImpl(
+                customConfiguration, new NoOpMetrics(), getStaticThreadManager(), time, new NodeId(0));
+        recycleBin.start();
+
+        // Recycle some files.
+        final Path path1 = testDirectory.resolve("file1.txt");
+        writeFile(path1, "file1");
+
+        final Path path2 = testDirectory.resolve("file2.txt");
+        writeFile(path2, "file2");
+
+        final Path path3 = testDirectory.resolve("foo/bar/baz/file3.txt");
+        writeFile(path3, "file3");
+
+        recycleBin.recycle(path1);
+        recycleBin.recycle(path2);
+        recycleBin.recycle(testDirectory.resolve("foo"));
+
+        assertFalse(Files.exists(path1));
+        assertFalse(Files.exists(path2));
+        assertFalse(Files.exists(path3));
+
+        final Path recycleBinPath = testDirectory.resolve("swirlds-recycle-bin").resolve("0");
+        final Path recycledPath1 = recycleBinPath.resolve("file1.txt");
+        final Path recycledPath2 = recycleBinPath.resolve("file2.txt");
+        final Path recycledPath3 = recycleBinPath.resolve("foo/bar/baz/file3.txt");
+
+        // Wait some time. Although the recycle bin will have had time to delete files if it wanted to,
+        // it won't have actually deleted them yet because not enough time has passed.
+        for (int i = 0; i < 100; i++) {
+            time.tick(Duration.ofMinutes(1));
+            MILLISECONDS.sleep(5);
+
+            assertTrue(Files.exists(recycledPath1));
+            assertTrue(Files.exists(recycledPath2));
+            assertTrue(Files.exists(recycledPath3));
+        }
+
+        // Manually clear the recycle bin
+        recycleBin.clear();
+
+        assertEventuallyDoesNotThrow(
+                () -> {
+                    assertFalse(Files.exists(recycledPath1));
+                    assertFalse(Files.exists(recycledPath2));
+                    assertFalse(Files.exists(recycledPath3));
+                },
+                Duration.ofSeconds(1),
+                "Files were not deleted after the maximum file age elapsed.");
+
+        recycleBin.stop();
+    }
 }
