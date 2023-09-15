@@ -14,7 +14,7 @@ import javax.inject.Singleton;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asTokenId;
 
 /**
- * Provides help in decoding an {@link HtsCallAttempt} representing an grantKyc or revokeKyc call into
+ * Provides help in decoding an {@link HtsCallAttempt} representing a grantKyc or revokeKyc call into
  * a synthetic {@link TransactionBody}.
  */
 @Singleton

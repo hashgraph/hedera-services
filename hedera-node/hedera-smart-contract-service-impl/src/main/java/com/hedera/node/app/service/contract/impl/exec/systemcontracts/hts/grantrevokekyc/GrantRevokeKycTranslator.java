@@ -20,7 +20,7 @@ public class GrantRevokeKycTranslator extends AbstractHtsCallTranslator {
 
     private final GrantRevokeKycDecoder decoder;
 
-    private GrantRevokeKycTranslator(@NonNull GrantRevokeKycDecoder decoder) {
+    public GrantRevokeKycTranslator(@NonNull GrantRevokeKycDecoder decoder) {
         this.decoder = decoder;
     }
 
