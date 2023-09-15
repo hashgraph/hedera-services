@@ -111,7 +111,7 @@ class ThrottleManagerTest {
         // default values are applied
         assertEquals(ThrottleDefinitions.DEFAULT, subject.throttleDefinitions());
         assertEquals(ThrottleDefinitions.DEFAULT.throttleBuckets(), subject.throttleBuckets());
-        assertEquals(ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION, exception.getStatus());
+        assertEquals(ResponseCodeEnum.INVALID_TRANSACTION, exception.getStatus());
     }
 
     private static Stream<Arguments> invalidArgumentsOnUpdateSource() {

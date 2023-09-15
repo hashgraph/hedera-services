@@ -227,8 +227,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
 
         // then
         assertThat(exception).isInstanceOf(HandleException.class);
-        assertThat(((HandleException) exception).getStatus())
-                .isEqualTo(ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION);
+        assertThat(((HandleException) exception).getStatus()).isEqualTo(ResponseCodeEnum.INVALID_TRANSACTION);
     }
 
     @Test
@@ -257,8 +256,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
 
         // then
         assertThat(exception).isInstanceOf(HandleException.class);
-        assertThat(((HandleException) exception).getStatus())
-                .isEqualTo(ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION);
+        assertThat(((HandleException) exception).getStatus()).isEqualTo(ResponseCodeEnum.INVALID_TRANSACTION);
     }
 
     @Test
