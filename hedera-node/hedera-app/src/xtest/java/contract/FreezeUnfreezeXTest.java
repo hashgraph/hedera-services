@@ -16,8 +16,10 @@
 
 package contract;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc20TransfersTranslator.ERC_20_TRANSFER;
 import static contract.AssociationsXTestConstants.A_TOKEN_ADDRESS;
 import static contract.AssociationsXTestConstants.A_TOKEN_ID;
 import static contract.AssociationsXTestConstants.B_TOKEN_ADDRESS;
@@ -28,6 +30,7 @@ import static contract.XTestConstants.OWNER_ADDRESS;
 import static contract.XTestConstants.OWNER_BESU_ADDRESS;
 import static contract.XTestConstants.OWNER_HEADLONG_ADDRESS;
 import static contract.XTestConstants.OWNER_ID;
+import static contract.XTestConstants.RECEIVER_HEADLONG_ADDRESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -39,6 +42,7 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.associations.AssociationsTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.freeze.FreezeUnfreezeTranslator;
+import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.tuweni.bytes.Bytes;
@@ -61,6 +65,13 @@ public class FreezeUnfreezeXTest extends AbstractContractXTest {
                         .encodeCallWithArgs(A_TOKEN_ADDRESS, OWNER_HEADLONG_ADDRESS)
                         .array()),
                 output -> assertEquals(Bytes.wrap(ReturnTypes.encodedRc(SUCCESS).array()), output));
+        // TRY TRANSFER
+        runHtsCallAndExpectRevert(
+                OWNER_BESU_ADDRESS,
+                bytesForRedirect(
+                        ERC_20_TRANSFER.encodeCallWithArgs(RECEIVER_HEADLONG_ADDRESS, BigInteger.valueOf(100L)),
+                        A_TOKEN_ID),
+                FAIL_INVALID);
         // UNFREEZE
         runHtsCallAndExpectOnSuccess(
                 OWNER_BESU_ADDRESS,
