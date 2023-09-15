@@ -95,9 +95,9 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
         final var tokenStore = context.writableStore(WritableTokenStore.class);
         final var tokenRelStore = context.writableStore(WritableTokenRelationStore.class);
         final var accountStore = context.writableStore(WritableAccountStore.class);
-        // validate token exists
+        // validate token exists and is usable
         final var token = TokenHandlerHelper.getIfUsable(tokenId, tokenStore);
-        validateTrue(token != null, INVALID_TOKEN_ID);
+
         // validate treasury relation exists
         final var treasuryRel = tokenRelStore.get(token.treasuryAccountId(), tokenId);
         validateTrue(treasuryRel != null, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);

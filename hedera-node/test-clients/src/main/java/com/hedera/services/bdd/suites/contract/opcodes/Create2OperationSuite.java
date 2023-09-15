@@ -106,6 +106,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.esaulpaugh.headlong.abi.Address;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -316,6 +317,7 @@ public class Create2OperationSuite extends HapiSuite {
                                         factoryEntityNum.get() + 1))));
     }
 
+    @HapiTest
     private HapiSpec canAssociateInConstructor() {
         final var token = "token";
         final var contract = "SelfAssociating";

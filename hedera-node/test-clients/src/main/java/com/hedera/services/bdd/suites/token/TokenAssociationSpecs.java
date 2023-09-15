@@ -426,7 +426,6 @@ public class TokenAssociationSpecs extends HapiSuite {
                         getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(0));
     }
 
-    //    @HapiTest
     public HapiSpec dissociateHasExpectedSemantics() {
         return defaultHapiSpec("DissociateHasExpectedSemantics")
                 .given(basicKeysAndTokens())
@@ -476,7 +475,6 @@ public class TokenAssociationSpecs extends HapiSuite {
                         .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT));
     }
 
-    //    @HapiTest
     public HapiSpec treasuryAssociationIsAutomatic() {
         return defaultHapiSpec("TreasuryAssociationIsAutomatic")
                 .given(basicKeysAndTokens())
