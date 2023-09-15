@@ -26,7 +26,7 @@ import java.util.Objects;
 
 public class UniqueTokenKeySerializer implements KeySerializer<UniqueTokenKey> {
 
-    static final long CLASS_ID = 0xb3c94b6cf62aa6c4L;
+    static final long CLASS_ID = 0xb3c94b6cf62aa6c5L;
 
     // Serializer version
     static final int CURRENT_VERSION = 1;

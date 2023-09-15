@@ -28,7 +28,7 @@ import java.util.Objects;
 
 public class EntityNumVirtualKeySerializer implements KeySerializer<EntityNumVirtualKey> {
 
-    static final long CLASS_ID = 0xc7b4f042fcf1e2a2L;
+    static final long CLASS_ID = 0xc7b4f042fcf1e2a3L;
 
     static final int CURRENT_VERSION = 1;
 

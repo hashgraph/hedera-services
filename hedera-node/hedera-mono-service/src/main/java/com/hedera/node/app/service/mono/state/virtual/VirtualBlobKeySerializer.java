@@ -27,7 +27,7 @@ import java.util.Objects;
 
 public class VirtualBlobKeySerializer implements KeySerializer<VirtualBlobKey> {
 
-    static final long CLASS_ID = 0xb7b4f0d24bf1ebf2L;
+    static final long CLASS_ID = 0xb7b4f0d24bf1ebf3L;
 
     // Serializer version
     static final int CURRENT_VERSION = 1;

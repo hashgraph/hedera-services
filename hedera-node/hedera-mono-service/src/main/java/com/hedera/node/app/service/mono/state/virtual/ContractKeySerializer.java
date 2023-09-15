@@ -34,7 +34,7 @@ import java.util.Objects;
 /** KeySerializer for ContractKeys */
 public class ContractKeySerializer implements KeySerializer<ContractKey> {
 
-    static final long CLASS_ID = 0xfb12270526c45316L;
+    static final long CLASS_ID = 0xfb12270526c45317L;
 
     static final int CURRENT_VERSION = 1;
 
