@@ -62,9 +62,7 @@ public class InProcessHapiTestNode implements HapiTestNode {
 
     @Override
     public void start() {
-        if (th != null) {
-            throw new IllegalStateException("Node is not stopped, cannot start it!");
-        }
+        if (th != null) throw new IllegalStateException("Node is not stopped, cannot start it!");
 
         try {
             th = new WorkerThread(workingDir, nodeId, grpcPort);
