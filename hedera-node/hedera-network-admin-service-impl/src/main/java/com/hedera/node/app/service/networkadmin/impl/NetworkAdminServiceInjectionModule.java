@@ -26,6 +26,10 @@ import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkTransaction
 import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkTransactionGetRecordHandler;
 import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkUncheckedSubmitHandler;
 import dagger.Module;
+import dagger.Provides;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ForkJoinPool;
+import javax.inject.Named;
 
 /**
  * Dagger module of the networkadmin service
@@ -34,6 +38,13 @@ import dagger.Module;
 public interface NetworkAdminServiceInjectionModule {
 
     FreezeHandler freezeHandler();
+
+    @Provides
+    @Named("FreezeService")
+    static Executor freezeServiceExecutor() {
+        return new ForkJoinPool(
+                1, ForkJoinPool.defaultForkJoinWorkerThreadFactory, Thread.getDefaultUncaughtExceptionHandler(), true);
+    }
 
     NetworkGetAccountDetailsHandler networkGetAccountDetailsHandler();
 
