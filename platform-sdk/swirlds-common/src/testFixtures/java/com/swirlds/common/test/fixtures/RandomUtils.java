@@ -22,7 +22,6 @@ import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.crypto.SignatureType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.Random;
@@ -35,8 +34,7 @@ public class RandomUtils {
     /**
      * Prevents instantiation.
      */
-    private RandomUtils() {
-    }
+    private RandomUtils() {}
 
     private static final Random RANDOM = new SecureRandom();
 

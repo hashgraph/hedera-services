@@ -104,7 +104,8 @@ public class SimpleGraphs {
                 .setCreatorId(2)
                 .setConsensus(true)
                 .buildEventImpl();
-        final EventImpl e2 = GossipEventBuilder.builder().setRandom(r).setCreatorId(3).buildEventImpl();
+        final EventImpl e2 =
+                GossipEventBuilder.builder().setRandom(r).setCreatorId(3).buildEventImpl();
         // generation 1
         final EventImpl e3 = GossipEventBuilder.builder()
                 .setRandom(r)

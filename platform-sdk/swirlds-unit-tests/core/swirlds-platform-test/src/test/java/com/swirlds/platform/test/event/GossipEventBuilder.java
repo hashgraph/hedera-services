@@ -161,7 +161,7 @@ public class GossipEventBuilder {
         return sp.isAfter(op) ? sp : op;
     }
 
-    public GossipEvent buildEvent(){
+    public GossipEvent buildEvent() {
         return buildGossipEvent();
     }
 
