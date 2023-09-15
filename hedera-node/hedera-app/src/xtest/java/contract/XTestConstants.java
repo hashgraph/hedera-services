@@ -16,10 +16,12 @@
 
 package contract;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asHeadlongAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToBesuAddress;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
@@ -34,9 +36,11 @@ import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.time.Instant;
 import java.util.Map;
+import java.util.function.Consumer;
 import org.hyperledger.besu.datatypes.Address;
 
 /**
@@ -130,5 +134,12 @@ class XTestConstants {
                         .balance(balance)
                         .kycGranted(true)
                         .build());
+    }
+
+    public static final org.apache.tuweni.bytes.Bytes SUCCESS_AS_BYTES =
+            org.apache.tuweni.bytes.Bytes.wrap(ReturnTypes.encodedRc(SUCCESS).array());
+
+    public static Consumer<org.apache.tuweni.bytes.Bytes> assertSuccess() {
+        return output -> assertEquals(SUCCESS_AS_BYTES, output);
     }
 }
