@@ -174,12 +174,12 @@ public final class EventRecoveryWorkflow {
             logger.info(STARTUP.getMarker(), "Signed state written to disk");
 
             final PreconsensusEventFile preconsensusEventFile = PreconsensusEventFile.of(
+                    Instant.now(),
                     0,
                     recoveredState.judge().getGeneration(),
                     recoveredState.judge().getGeneration(),
-                    Instant.now(),
-                    resultingStateDirectory,
-                    false);
+                    recoveredState.state().get().getRound(),
+                    resultingStateDirectory);
             final PreconsensusEventMutableFile mutableFile = preconsensusEventFile.getMutableFile();
             mutableFile.writeEvent(recoveredState.judge());
             mutableFile.close();
