@@ -14,27 +14,21 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.networkadmin;
+package com.hedera.services.cli.contracts.assembly;
 
-import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.crypto.RunningHash;
+import static com.hedera.services.cli.contracts.assembly.Constants.FULL_LINE_COMMENT_PREFIX;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 
-/**
- * Provides access to the underlying running hash leaf in state.
- */
-public interface ReadableRunningHashLeafStore {
-    /**
-     * Get the n-3 record's running hash from running hash leaf.
-     * @return the n-3 record's running hash
-     */
-    @NonNull
-    RunningHash getNMinusThreeRunningHash();
+/** Represents a full-line comment in the generated assembly */
+public record CommentLine(@NonNull String comment) implements Line {
 
-    /**
-     * Get the current running hash from running hash leaf.
-     * @return the current running hash
-     */
-    @NonNull
-    Hash getRunningHash();
+    @Override
+    public void formatLine(@NonNull final StringBuilder sb) {
+        Objects.requireNonNull(sb);
+        extendWithBlanksTo(sb, Columns.COMMENT.getColumn());
+        sb.append(FULL_LINE_COMMENT_PREFIX);
+        sb.append(comment);
+    }
 }
