@@ -34,6 +34,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
+import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -130,10 +131,7 @@ public class TokenUnfreezeAccountHandler implements TransactionHandler {
         validateTrue(tokenRel != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
 
         // Check that the token itself exists and is valid
-        final var token = tokenStore.get(tokenId);
-        validateTrue(token != null, INVALID_TOKEN_ID);
-        validateFalse(token.deleted(), TOKEN_WAS_DELETED);
-
+        var token = TokenHandlerHelper.getIfUsable(tokenId, tokenStore);
         // Return the token relation
         return tokenRel;
     }
