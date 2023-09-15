@@ -29,7 +29,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileDelete;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
@@ -52,7 +51,6 @@ public class FileDeleteSuite extends HapiSuite {
         return List.of(getDeletedFileInfo(), canDeleteWithAnyOneOfTopLevelKeyList());
     }
 
-    @HapiTest
     private HapiSpec canDeleteWithAnyOneOfTopLevelKeyList() {
         KeyShape shape = listOf(SIMPLE, threshOf(1, 2), listOf(2));
         SigControl deleteSigs = shape.signedWith(sigs(ON, sigs(OFF, OFF), sigs(ON, OFF)));
@@ -63,7 +61,6 @@ public class FileDeleteSuite extends HapiSuite {
                 .then(fileDelete("test").sigControl(forKey("test", deleteSigs)));
     }
 
-    @HapiTest
     private HapiSpec getDeletedFileInfo() {
         return defaultHapiSpec("getDeletedFileInfo")
                 .given(fileCreate("deletedFile").logged())

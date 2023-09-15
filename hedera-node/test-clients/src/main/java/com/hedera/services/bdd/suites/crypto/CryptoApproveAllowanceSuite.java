@@ -71,7 +71,6 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -175,7 +174,6 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                         .hasPrecheck(PAYER_ACCOUNT_NOT_FOUND)));
     }
 
-    @HapiTest
     private HapiSpec transferringMissingNftViaApprovalFailsWithInvalidNftId() {
         return defaultHapiSpec("TransferringMissingNftViaApprovalFailsWithInvalidNftId")
                 .given(
@@ -1186,7 +1184,6 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                 .then();
     }
 
-    @HapiTest
     private HapiSpec emptyAllowancesRejected() {
         return defaultHapiSpec("emptyAllowancesRejected")
                 .given(cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10))

@@ -24,7 +24,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileDelete;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -50,7 +49,6 @@ public class QueryFailuresSpec extends HapiSuite {
         return List.of(getsExpectedRejections());
     }
 
-    @HapiTest
     private HapiSpec getsExpectedRejections() {
         return defaultHapiSpec("getsExpectedRejections")
                 .given(fileCreate("tbd"), fileDelete("tbd"))

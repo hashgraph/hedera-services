@@ -92,7 +92,6 @@ public class FileCreateSuite extends HapiSuite {
                 .then(getAccountBalance(EXCHANGE_RATE_CONTROL).hasTinyBars(changeFromSnapshot("pre", 0)));
     }
 
-    @HapiTest
     private HapiSpec createFailsWithExcessiveLifetime() {
         return defaultHapiSpec("CreateFailsWithExcessiveLifetime")
                 .given()
@@ -102,7 +101,6 @@ public class FileCreateSuite extends HapiSuite {
                         .hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE));
     }
 
-    @HapiTest
     private HapiSpec createWithMemoWorks() {
         String memo = "Really quite something!";
 
@@ -114,7 +112,6 @@ public class FileCreateSuite extends HapiSuite {
                 .then(getFileInfo("memorable").hasExpectedLedgerId("0x03").hasMemo(memo));
     }
 
-    @HapiTest
     private HapiSpec createFailsWithMissingSigs() {
         KeyShape shape = listOf(SIMPLE, threshOf(2, 3), threshOf(1, 3));
         SigControl validSig = shape.signedWith(sigs(ON, sigs(ON, ON, OFF), sigs(OFF, OFF, ON)));

@@ -30,7 +30,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
@@ -109,7 +108,6 @@ public class UpdateFailuresSpec extends HapiSuite {
                         fileUpdate(EXCHANGE_RATES).payingWith(CIVILIAN).hasPrecheck(AUTHORIZATION_FAILED));
     }
 
-    @HapiTest
     private HapiSpec precheckAllowsMissing() {
         return defaultHapiSpec("PrecheckAllowsMissing")
                 .given()
@@ -122,7 +120,6 @@ public class UpdateFailuresSpec extends HapiSuite {
                         .hasKnownStatus(INVALID_FILE_ID));
     }
 
-    @HapiTest
     private HapiSpec precheckAllowsDeleted() {
         return defaultHapiSpec("PrecheckAllowsDeleted")
                 .given(fileCreate("tbd"))
@@ -130,7 +127,6 @@ public class UpdateFailuresSpec extends HapiSuite {
                 .then(fileUpdate("tbd").hasPrecheck(OK).hasKnownStatus(FILE_DELETED));
     }
 
-    @HapiTest
     private HapiSpec precheckRejectsPrematureExpiry() {
         long now = Instant.now().getEpochSecond();
         return defaultHapiSpec("PrecheckRejectsPrematureExpiry")
@@ -142,7 +138,6 @@ public class UpdateFailuresSpec extends HapiSuite {
                         .hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE));
     }
 
-    @HapiTest
     private HapiSpec precheckAllowsBadEncoding() {
         return defaultHapiSpec("PrecheckAllowsBadEncoding")
                 .given(fileCreate("file"))
@@ -156,7 +151,6 @@ public class UpdateFailuresSpec extends HapiSuite {
     }
 
     @SuppressWarnings("java:S5960")
-    @HapiTest
     private HapiSpec handleIgnoresEarlierExpiry() {
         var initialExpiry = new AtomicLong();
 

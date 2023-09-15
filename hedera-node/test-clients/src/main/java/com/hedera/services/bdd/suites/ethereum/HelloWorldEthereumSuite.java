@@ -118,7 +118,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
         return List.of(smallContractCreate(), contractCreateWithConstructorArgs(), bigContractCreate());
     }
 
-    HapiSpec badRelayClient() {
+    private HapiSpec badRelayClient() {
         final var adminKey = "adminKey";
         final var exploitToken = "exploitToken";
         final var exploitContract = "BadRelayClient";
@@ -186,7 +186,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                         getAliasedAccountInfo(maliciousEOA).has(accountWith().nonce(1L)));
     }
 
-    HapiSpec relayerFeeAsExpectedIfSenderCoversGas() {
+    private HapiSpec relayerFeeAsExpectedIfSenderCoversGas() {
         final var canonicalTxn = "canonical";
 
         return defaultHapiSpec("relayerFeeAsExpectedIfSenderCoversGas")
@@ -217,7 +217,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                         .logged());
     }
 
-    HapiSpec depositSuccess() {
+    private HapiSpec depositSuccess() {
         return defaultHapiSpec("depositSuccess")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
@@ -285,7 +285,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                 .has(accountWith().nonce(3L)));
     }
 
-    HapiSpec ethereumCallWithCalldataBiggerThanMaxSucceeds() {
+    private HapiSpec ethereumCallWithCalldataBiggerThanMaxSucceeds() {
         final var largerThanMaxCalldata = new byte[MAX_CALL_DATA_SIZE + 1];
         return defaultHapiSpec("ethereumCallWithCalldataBiggerThanMaxSucceeds")
                 .given(
@@ -323,7 +323,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                 .has(accountWith().nonce(1L)));
     }
 
-    HapiSpec createWithSelfDestructInConstructorHasSaneRecord() {
+    private HapiSpec createWithSelfDestructInConstructorHasSaneRecord() {
         final var txn = "txn";
         final var selfDestructingContract = "FactorySelfDestructConstructor";
         return defaultHapiSpec("createWithSelfDestructInConstructorHasSaneRecord")
@@ -344,7 +344,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                 .then(childRecordsCheck(txn, SUCCESS, recordWith(), recordWith().hasMirrorIdInReceipt()));
     }
 
-    HapiSpec smallContractCreate() {
+    private HapiSpec smallContractCreate() {
         return defaultHapiSpec("smallContractCreate")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
@@ -487,7 +487,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
 
     private static final String SEND_TO = "sendTo";
 
-    HapiSpec topLevelBurnToZeroAddressReverts() {
+    private HapiSpec topLevelBurnToZeroAddressReverts() {
         final var ethBurnAddress = new byte[20];
         return defaultHapiSpec("topLevelBurnToZeroAddressReverts")
                 .given(
@@ -505,7 +505,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                         .hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION));
     }
 
-    HapiSpec topLevelLazyCreateOfMirrorAddressReverts() {
+    private HapiSpec topLevelLazyCreateOfMirrorAddressReverts() {
         final var nonExistentMirrorAddress = Utils.asSolidityAddress(0, 0, 666_666);
         return defaultHapiSpec("topLevelLazyCreateOfMirrorAddressReverts")
                 .given(
@@ -523,7 +523,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                         .hasKnownStatus(INVALID_CONTRACT_ID));
     }
 
-    HapiSpec topLevelSendToReceiverSigRequiredAccountReverts() {
+    private HapiSpec topLevelSendToReceiverSigRequiredAccountReverts() {
         final var receiverSigAccount = "receiverSigAccount";
         final AtomicReference<byte[]> receiverMirrorAddr = new AtomicReference<>();
         final var preCallBalance = "preCallBalance";
@@ -551,7 +551,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                 .then(getAccountBalance(receiverSigAccount).hasTinyBars(changeFromSnapshot(preCallBalance, 0L)));
     }
 
-    HapiSpec internalBurnToZeroAddressReverts() {
+    private HapiSpec internalBurnToZeroAddressReverts() {
         return defaultHapiSpec("internalBurnToZeroAddressReverts")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),

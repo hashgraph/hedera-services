@@ -28,7 +28,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -262,7 +261,6 @@ public class ProtectedFilesUpdateSuite extends HapiSuite {
         return specialAccountCanUpdateSpecialFile(SYSTEM_ADMIN, NODE_DETAILS, TARGET_MEMO, REPLACE_MEMO);
     }
 
-    @HapiTest
     private HapiSpec account55CanUpdateNodeDetails() {
         return specialAccountCanUpdateSpecialFile(ADDRESS_BOOK_CONTROL, NODE_DETAILS, TARGET_MEMO, REPLACE_MEMO, false);
     }
@@ -271,7 +269,6 @@ public class ProtectedFilesUpdateSuite extends HapiSuite {
         return unauthorizedAccountCannotUpdateSpecialFile(NODE_DETAILS, NEW_CONTENTS);
     }
 
-    @HapiTest
     private HapiSpec account2CanUpdateFeeSchedule() {
         return specialAccountCanUpdateSpecialFile(GENESIS, FEE_SCHEDULE, IGNORE, IGNORE);
     }
@@ -288,7 +285,6 @@ public class ProtectedFilesUpdateSuite extends HapiSuite {
         return unauthorizedAccountCannotUpdateSpecialFile(FEE_SCHEDULE, NEW_CONTENTS);
     }
 
-    @HapiTest
     private HapiSpec account2CanUpdateExchangeRates() {
         return specialAccountCanUpdateSpecialFile(GENESIS, EXCHANGE_RATES, IGNORE, IGNORE);
     }
