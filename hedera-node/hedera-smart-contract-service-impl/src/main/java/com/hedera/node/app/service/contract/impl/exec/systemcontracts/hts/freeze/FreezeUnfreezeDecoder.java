@@ -51,8 +51,8 @@ public class FreezeUnfreezeDecoder {
 
     private TokenFreezeAccountTransactionBody freeze(
             @NonNull final AddressIdConverter addressIdConverter,
-            @NonNull final Address account,
-            @NonNull final Address token) {
+            @NonNull final Address token,
+            @NonNull final Address account) {
         return TokenFreezeAccountTransactionBody.newBuilder()
                 .account(addressIdConverter.convert(account))
                 .token(ConversionUtils.asTokenId(token))
@@ -61,8 +61,8 @@ public class FreezeUnfreezeDecoder {
 
     private TokenUnfreezeAccountTransactionBody unfreeze(
             @NonNull final AddressIdConverter addressIdConverter,
-            @NonNull final Address account,
-            @NonNull final Address token) {
+            @NonNull final Address token,
+            @NonNull final Address account) {
         return TokenUnfreezeAccountTransactionBody.newBuilder()
                 .account(addressIdConverter.convert(account))
                 .token(ConversionUtils.asTokenId(token))

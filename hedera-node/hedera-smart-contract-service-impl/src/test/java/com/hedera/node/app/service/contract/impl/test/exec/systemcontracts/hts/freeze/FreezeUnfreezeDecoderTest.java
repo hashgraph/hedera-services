@@ -46,7 +46,7 @@ class FreezeUnfreezeDecoderTest {
     @Test
     void freezeWorks() {
         final var encoded = FreezeUnfreezeTranslator.FREEZE
-                .encodeCallWithArgs(OWNER_HEADLONG_ADDRESS, FUNGIBLE_TOKEN_HEADLONG_ADDRESS)
+                .encodeCallWithArgs(FUNGIBLE_TOKEN_HEADLONG_ADDRESS, OWNER_HEADLONG_ADDRESS)
                 .array();
         given(attempt.inputBytes()).willReturn(encoded);
         given(attempt.addressIdConverter()).willReturn(addressIdConverter);
@@ -57,7 +57,7 @@ class FreezeUnfreezeDecoderTest {
     @Test
     void unfreezeWorks() {
         final var encoded = FreezeUnfreezeTranslator.UNFREEZE
-                .encodeCallWithArgs(OWNER_HEADLONG_ADDRESS, FUNGIBLE_TOKEN_HEADLONG_ADDRESS)
+                .encodeCallWithArgs(FUNGIBLE_TOKEN_HEADLONG_ADDRESS, OWNER_HEADLONG_ADDRESS)
                 .array();
         given(attempt.inputBytes()).willReturn(encoded);
         given(attempt.addressIdConverter()).willReturn(addressIdConverter);
