@@ -243,7 +243,7 @@ class PhaseTimerTests {
 
         final PhaseTimer<TestPhases> timer = new PhaseTimerBuilder<>(platformContext, time, "test", TestPhases.class)
                 .enableAbsoluteTimeMetrics()
-                .setAbsoluteTimeUnit(TimeUnit.UNIT_SECONDS)
+                .setAbsoluteUnit(TimeUnit.UNIT_SECONDS) // extra chonky
                 .build();
 
         assertTrue(fooMetricRegistered.get());
@@ -271,20 +271,20 @@ class PhaseTimerTests {
         }
 
         assertEquals(2, fooUpdates.size());
-        assertEquals(fooUpdates.get(0), 3.0);
-        assertEquals(fooUpdates.get(1), 1.0);
+        assertEquals(3.0, fooUpdates.get(0));
+        assertEquals(1.0, fooUpdates.get(1));
 
         assertEquals(102, barUpdates.size());
-        assertEquals(barUpdates.get(0), 3.0);
-        assertEquals(barUpdates.get(1), 6.0);
+        assertEquals(3.0, barUpdates.get(0));
+        assertEquals(6.0, barUpdates.get(1));
         for (int i = 2; i < 102; i++) {
-            assertEquals(barUpdates.get(i), 1.0);
+            assertEquals(1.0, barUpdates.get(i));
         }
 
         assertEquals(100, bazUpdates.size());
         assertEquals(bazUpdates.get(0), 9.0);
         for (int i = 1; i < 100; i++) {
-            assertEquals(bazUpdates.get(i), 1.0);
+            assertEquals(1.0, bazUpdates.get(i));
         }
     }
 
@@ -352,7 +352,7 @@ class PhaseTimerTests {
         final PhaseTimer<TestPhases> timer = new PhaseTimerBuilder<>(platformContext, time, "test", TestPhases.class)
                 .enableFractionalMetrics()
                 .enableAbsoluteTimeMetrics()
-                .setAbsoluteTimeUnit(TimeUnit.UNIT_SECONDS)
+                .setAbsoluteUnit(TimeUnit.UNIT_SECONDS)
                 .build();
 
         assertNotNull(fooFractionConfig.get());
@@ -419,20 +419,20 @@ class PhaseTimerTests {
         assertEquals(expectedBazFraction2, actualBazFraction2, 0.0001);
 
         assertEquals(2, fooTimeUpdates.size());
-        assertEquals(fooTimeUpdates.get(0), 3.0);
-        assertEquals(fooTimeUpdates.get(1), 1.0);
+        assertEquals(3.0, fooTimeUpdates.get(0));
+        assertEquals(1.0, fooTimeUpdates.get(1));
 
         assertEquals(102, barTimeUpdates.size());
-        assertEquals(barTimeUpdates.get(0), 3.0);
-        assertEquals(barTimeUpdates.get(1), 6.0);
+        assertEquals(3.0, barTimeUpdates.get(0));
+        assertEquals(6.0, barTimeUpdates.get(1));
         for (int i = 2; i < 102; i++) {
-            assertEquals(barTimeUpdates.get(i), 1.0);
+            assertEquals(1.0, barTimeUpdates.get(i));
         }
 
         assertEquals(100, bazTimeUpdates.size());
-        assertEquals(bazTimeUpdates.get(0), 9.0);
+        assertEquals(9.0, bazTimeUpdates.get(0));
         for (int i = 1; i < 100; i++) {
-            assertEquals(bazTimeUpdates.get(i), 1.0);
+            assertEquals(1.0, bazTimeUpdates.get(i));
         }
     }
 
@@ -503,7 +503,7 @@ class PhaseTimerTests {
         final PhaseTimer<TestPhases> timer = new PhaseTimerBuilder<>(platformContext, time, "test", TestPhases.class)
                 .enableFractionalMetrics()
                 .enableAbsoluteTimeMetrics()
-                .setAbsoluteTimeUnit(TimeUnit.UNIT_MILLISECONDS)
+                .setAbsoluteUnit(TimeUnit.UNIT_MILLISECONDS)
                 .setInitialPhase(BAR)
                 .setMetricsNamePrefix("asdf")
                 .build();

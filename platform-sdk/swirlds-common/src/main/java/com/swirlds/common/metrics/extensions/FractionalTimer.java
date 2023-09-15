@@ -222,7 +222,7 @@ public class FractionalTimer {
         // the epoch time when the last reset occurred
         final int measurementStart = ByteUtils.extractLeftInt(currentState);
         // The current status is represented by the (+ -) sign. The number represents the time spent in the
-        // opposite status. This is that its time spent being active/inactive can be deduced whenever the sample is
+        // opposite status. This is so that its time spent being active/inactive can be deduced whenever the sample is
         // taken. If the time spent active is X, and the measurement time is Y, then inactive time is Y-X. Since zero
         // is neither positive nor negative, the values are offset by 1
         final int currentStatus = ByteUtils.extractRightInt(currentState);

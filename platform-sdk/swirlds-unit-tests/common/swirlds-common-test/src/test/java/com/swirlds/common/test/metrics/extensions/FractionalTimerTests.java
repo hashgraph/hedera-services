@@ -43,21 +43,21 @@ class FractionalTimerTests {
     @Test
     void diagramExample() {
         // time == 1
-        assertEquals(0.0, metric.getActiveFraction(), "initially, the busy fraction should be 0");
+        assertEquals(0.0, metric.getActiveFraction(), "initially, the active fraction should be 0");
 
         clock.tick(Duration.ofSeconds(1)); // time == 2
-        assertEquals(0.0, metric.getActiveFraction(), "no work has started yet, so the busy fraction should be 0");
+        assertEquals(0.0, metric.getActiveFraction(), "no work has started yet, so the active fraction should be 0");
         metric.activate();
         assertEquals(
                 0.0,
                 metric.getActiveFraction(),
-                "work has started, but not time has elapsed yet, so the busy fraction should be 0");
+                "work has started, but not time has elapsed yet, so the active fraction should be 0");
 
         clock.tick(Duration.ofSeconds(1)); // time == 3
         assertEquals(
                 0.5,
                 metric.getActiveFraction(),
-                "1 second of work, 1 second of idle, so the busy fraction should be 0.5");
+                "1 second of work, 1 second of idle, so the active fraction should be 0.5");
         metric.deactivate();
         assertEquals(0.5, metric.getActiveFraction(), "no time has elapsed, so the value should still be 0.5");
 
@@ -66,21 +66,21 @@ class FractionalTimerTests {
                 0.33,
                 metric.getActiveFraction(),
                 0.01,
-                "1 second of work, 2 seconds of idle, so the busy fraction should be 0.33");
+                "1 second of work, 2 seconds of idle, so the active fraction should be 0.33");
 
         clock.tick(Duration.ofSeconds(1)); // time == 5
         assertEquals(
                 0.25,
                 metric.getActiveFraction(),
                 0.01,
-                "1 second of work, 3 seconds of idle, so the busy fraction should be 0.25");
+                "1 second of work, 3 seconds of idle, so the active fraction should be 0.25");
 
         clock.tick(Duration.ofSeconds(1)); // time == 6
         assertEquals(
                 0.20,
                 metric.getActiveFraction(),
                 0.01,
-                "1 second of work, 4 seconds of idle, so the busy fraction should be 0.20");
+                "1 second of work, 4 seconds of idle, so the active fraction should be 0.20");
         metric.activate();
         assertEquals(0.20, metric.getActiveFraction(), "no time has elapsed, so the value should still be 0.2");
 
@@ -89,26 +89,26 @@ class FractionalTimerTests {
                 0.33,
                 metric.getActiveFraction(),
                 0.01,
-                "2 second of work, 4 seconds of idle, so the busy fraction should be 0.33");
+                "2 second of work, 4 seconds of idle, so the active fraction should be 0.33");
 
         clock.tick(Duration.ofSeconds(1)); // time == 8
         assertEquals(
                 0.43,
                 metric.getActiveFraction(),
                 0.01,
-                "3 second of work, 4 seconds of idle, so the busy fraction should be 0.43");
+                "3 second of work, 4 seconds of idle, so the active fraction should be 0.43");
         assertEquals(
                 0.43,
                 metric.getAndReset(),
                 0.01,
-                "the snapshot should contain the same value returned by getBusyFraction()");
+                "the snapshot should contain the same value returned by getActiveFraction()");
         assertEquals(0.0, metric.getActiveFraction(), "the snapshotting should reset the value");
 
         clock.tick(Duration.ofSeconds(1)); // time == 9
         assertEquals(
                 1.0,
                 metric.getActiveFraction(),
-                "work has been ongoing since the reset, so the busy fraction should be 1");
+                "work has been ongoing since the reset, so the active fraction should be 1");
     }
 
     @Test

@@ -41,7 +41,7 @@ public class PhaseTimerBuilder<T extends Enum<T>> {
     private T initialPhase;
     private boolean fractionMetricsEnabled = false;
     private boolean absoluteTimeMetricsEnabled = false;
-    private TimeUnit absoluteTimeUnit = UNIT_MICROSECONDS;
+    private TimeUnit absoluteUnit = UNIT_MICROSECONDS;
 
     /**
      * Create a new {@link PhaseTimerBuilder} instance.
@@ -98,7 +98,7 @@ public class PhaseTimerBuilder<T extends Enum<T>> {
      */
     @NonNull
     public PhaseTimerBuilder<T> setInitialPhase(@NonNull final T initialPhase) {
-        this.initialPhase = initialPhase;
+        this.initialPhase = Objects.requireNonNull(initialPhase);
         return this;
     }
 
@@ -127,12 +127,12 @@ public class PhaseTimerBuilder<T extends Enum<T>> {
     /**
      * Set the unit for absolute time metrics. If not set, microseconds are used.
      *
-     * @param absoluteTimeUnit the unit for absolute time metrics
+     * @param absoluteUnit the unit for absolute time metrics
      * @return this
      */
     @NonNull
-    public PhaseTimerBuilder<T> setAbsoluteTimeUnit(@NonNull final TimeUnit absoluteTimeUnit) {
-        this.absoluteTimeUnit = Objects.requireNonNull(absoluteTimeUnit);
+    public PhaseTimerBuilder<T> setAbsoluteUnit(@NonNull final TimeUnit absoluteUnit) {
+        this.absoluteUnit = Objects.requireNonNull(absoluteUnit);
         return this;
     }
 
@@ -224,7 +224,7 @@ public class PhaseTimerBuilder<T extends Enum<T>> {
      * @return the unit for absolute time metrics
      */
     @NonNull
-    TimeUnit getAbsoluteTimeUnit() {
-        return absoluteTimeUnit;
+    TimeUnit getAbsoluteUnit() {
+        return absoluteUnit;
     }
 }

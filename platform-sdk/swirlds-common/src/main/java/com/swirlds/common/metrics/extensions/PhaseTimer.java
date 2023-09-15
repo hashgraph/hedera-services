@@ -40,7 +40,14 @@ public class PhaseTimer<T extends Enum<T>> {
     private final boolean fractionMetricsEnabled;
     private final boolean absoluteTimeMetricsEnabled;
 
+    /**
+     * Tracks the fraction of the time, out of 1.0, spent in each phase.
+     */
     private final Map<T, FractionalTimer> fractionalTimers = new HashMap<>();
+
+    /**
+     * Tracks the average time spent in a phase before switching to another phase.
+     */
     private final Map<T, RunningAverageMetric> absoluteTimeMetrics = new HashMap<>();
 
     private T activePhase;
@@ -69,7 +76,7 @@ public class PhaseTimer<T extends Enum<T>> {
             }
         }
 
-        absoluteTimeUnit = builder.getAbsoluteTimeUnit();
+        absoluteTimeUnit = builder.getAbsoluteUnit();
 
         registerMetrics(
                 builder.getPlatformContext().getMetrics(),
