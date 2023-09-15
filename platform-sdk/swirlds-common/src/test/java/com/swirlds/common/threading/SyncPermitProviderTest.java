@@ -24,11 +24,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.address.AddressBook;
 import java.time.Duration;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 class SyncPermitProviderTest {
     private final NodeId nodeId = new NodeId(0);
@@ -133,7 +136,11 @@ class SyncPermitProviderTest {
     @Test
     @DisplayName("tryAcquire with unprocessed events")
     void testAcquireWithUnprocessedEvents() {
-        final DefaultIntakePipelineManager intakePipelineManager = new DefaultIntakePipelineManager();
+        final NodeId otherNodeId = new NodeId(1);
+
+        final AddressBook addressBook = mock(AddressBook.class);
+        Mockito.when(addressBook.getNodeIdSet()).thenReturn(Set.of(nodeId, otherNodeId));
+        final DefaultIntakePipelineManager intakePipelineManager = new DefaultIntakePipelineManager(addressBook);
 
         final int numPermits = 3;
         final SyncPermitProvider syncPermitProvider = new SyncPermitProvider(numPermits, intakePipelineManager);
@@ -151,7 +158,7 @@ class SyncPermitProviderTest {
 
         intakePipelineManager.eventThroughIntakePipeline(nodeId);
         // an event in the pipeline for a different node shouldn't have any effect
-        intakePipelineManager.eventAddedToIntakePipeline(new NodeId(1));
+        intakePipelineManager.eventAddedToIntakePipeline(otherNodeId);
 
         assertTrue(
                 syncPermitProvider.tryAcquire(nodeId),

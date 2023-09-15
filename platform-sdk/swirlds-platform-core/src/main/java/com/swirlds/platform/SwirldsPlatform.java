@@ -539,7 +539,7 @@ public class SwirldsPlatform implements Platform, Startable {
 
         final IntakePipelineManager intakePipelineManager;
         if (syncConfig.waitForEventsInIntake()) {
-            intakePipelineManager = new DefaultIntakePipelineManager();
+            intakePipelineManager = new DefaultIntakePipelineManager(currentAddressBook);
         } else {
             intakePipelineManager = new NoOpIntakePipelineManager();
         }

@@ -17,6 +17,7 @@
 package com.swirlds.common.threading;
 
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;
@@ -39,9 +40,15 @@ public class DefaultIntakePipelineManager implements IntakePipelineManager {
 
     /**
      * Constructor
+     *
+     * @param addressBook the address book
      */
-    public DefaultIntakePipelineManager() {
+    public DefaultIntakePipelineManager(@NonNull final AddressBook addressBook) {
         this.unprocessedEventCounts = new HashMap<>();
+
+        for (final NodeId nodeId : addressBook.getNodeIdSet()) {
+            unprocessedEventCounts.put(nodeId, new AtomicInteger(0));
+        }
     }
 
     /**
@@ -54,9 +61,7 @@ public class DefaultIntakePipelineManager implements IntakePipelineManager {
             return;
         }
 
-        unprocessedEventCounts
-                .computeIfAbsent(eventSender, nodeId -> new AtomicInteger(0))
-                .incrementAndGet();
+        unprocessedEventCounts.get(eventSender).incrementAndGet();
     }
 
     /**
@@ -67,12 +72,6 @@ public class DefaultIntakePipelineManager implements IntakePipelineManager {
         // This can happen if the event was created locally, or obtained in any way apart from normal gossip
         if (eventSender == null) {
             return;
-        }
-
-        if (!unprocessedEventCounts.containsKey(eventSender)) {
-            throw new IllegalStateException(
-                    "Event processed from peer %s, which hasn't sent any events. This shouldn't be possible."
-                            .formatted(eventSender));
         }
 
         if (unprocessedEventCounts.get(eventSender).getAndUpdate(count -> count > 0 ? count - 1 : 0) == 0) {
@@ -89,10 +88,7 @@ public class DefaultIntakePipelineManager implements IntakePipelineManager {
     public boolean hasUnprocessedEvents(@NonNull final NodeId peer) {
         Objects.requireNonNull(peer);
 
-        return unprocessedEventCounts
-                        .computeIfAbsent(peer, nodeId -> new AtomicInteger(0))
-                        .get()
-                > 0;
+        return unprocessedEventCounts.get(peer).get() > 0;
     }
 
     /**
@@ -100,6 +96,6 @@ public class DefaultIntakePipelineManager implements IntakePipelineManager {
      */
     @Override
     public void reset() {
-        unprocessedEventCounts.clear();
+        unprocessedEventCounts.forEach((nodeId, unprocessedEventCount) -> unprocessedEventCount.set(0));
     }
 }
