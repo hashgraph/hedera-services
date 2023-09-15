@@ -295,7 +295,7 @@ public class ActionStack {
                 .gas(frame.getRemainingGas())
                 .input(tuweniToPbjBytes(frame.getInputData()))
                 .value(frame.getValue().toLong())
-                .callDepth(frame.getMessageStackDepth());
+                .callDepth(frame.getDepth());
         // If this call "targets" a missing address, we can't decide yet whether to use a contract id or an
         // account id for the recipient; only later when we know whether the call attempted a lazy creation
         // can we decide to either leave this address (on failure) or replace it with the created account id

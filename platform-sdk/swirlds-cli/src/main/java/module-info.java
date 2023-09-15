@@ -2,6 +2,7 @@ module com.swirlds.cli {
     exports com.swirlds.cli;
     exports com.swirlds.cli.commands;
     exports com.swirlds.cli.utility;
+    exports com.swirlds.cli.logging;
 
     opens com.swirlds.cli to
             info.picocli;
@@ -9,10 +10,13 @@ module com.swirlds.cli {
             info.picocli;
     opens com.swirlds.cli.commands to
             info.picocli;
+    opens com.swirlds.cli.logging to
+            info.picocli;
 
     requires transitive com.swirlds.common;
     requires transitive info.picocli;
     requires transitive org.apache.logging.log4j;
     requires io.github.classgraph;
     requires static com.github.spotbugs.annotations;
+    requires com.swirlds.logging;
 }

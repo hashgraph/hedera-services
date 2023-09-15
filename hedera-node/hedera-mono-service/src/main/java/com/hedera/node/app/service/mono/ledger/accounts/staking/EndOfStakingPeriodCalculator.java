@@ -203,12 +203,18 @@ public class EndOfStakingPeriodCalculator {
                 curNetworkCtx.pendingRewards(),
                 rewardsBalance());
 
+        final long reservedStakingRewards = curNetworkCtx.pendingRewards();
+        final long unreservedStakingRewardBalance = rewardsBalance() - reservedStakingRewards;
         final var syntheticNodeStakeUpdateTxn = syntheticTxnFactory.nodeStakeUpdate(
                 lastInstantOfPreviousPeriodFor(consensusTime),
                 nodeStakingInfos,
                 properties,
                 totalStakedRewardStart,
-                perHbarRate);
+                perHbarRate,
+                reservedStakingRewards,
+                unreservedStakingRewardBalance,
+                dynamicProperties.stakingRewardBalanceThreshold(),
+                dynamicProperties.maxStakeRewarded());
         log.info("Exporting:\n{}", nodeStakingInfos);
         recordsHistorian.trackPrecedingChildRecord(
                 DEFAULT_SOURCE_ID,

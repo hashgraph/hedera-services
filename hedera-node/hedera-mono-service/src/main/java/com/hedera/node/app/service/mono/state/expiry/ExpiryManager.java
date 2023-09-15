@@ -16,9 +16,12 @@
 
 package com.hedera.node.app.service.mono.state.expiry;
 
+import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
 import static java.util.Comparator.comparing;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.service.mono.records.TxnIdRecentHistory;
 import com.hedera.node.app.service.mono.state.migration.RecordsStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.StorageStrategy;
@@ -54,11 +57,15 @@ public class ExpiryManager {
     private StorageStrategy strategyInUse;
     // Needed if strategyInUse != IN_SINGLE_FCQ so we can do deterministic expiration
     private final MonotonicFullQueueExpiries<Long> payerRecordExpiries = new MonotonicFullQueueExpiries<>();
+    private final NodeInfo nodeInfo;
 
     @Inject
     public ExpiryManager(
-            final Map<TransactionID, TxnIdRecentHistory> txnHistories, final Supplier<RecordsStorageAdapter> records) {
+            final Map<TransactionID, TxnIdRecentHistory> txnHistories,
+            final Supplier<RecordsStorageAdapter> records,
+            final NodeInfo nodeInfo) {
         this.records = records;
+        this.nodeInfo = nodeInfo;
         this.txnHistories = txnHistories;
     }
 
@@ -95,13 +102,25 @@ public class ExpiryManager {
             queryableRecords.clear();
             requireNonNull(savedRecords.getRecords()).forEach(savedRecord -> {
                 stage(savedRecord);
-                // TODO - the effective payer for this record could have been different than the
-                // account in the transaction id (in case of node diligence failure); to address,
-                // we will need to add the effective payer number to the ExpirableTxnRecord type
-                final var payerNum = savedRecord.getPayerNum();
-                queryableRecords
-                        .computeIfAbsent(payerNum, ignore -> new LinkedList<>())
-                        .add(savedRecord);
+                EntityNum queryableAccountNum = MISSING_NUM;
+                if (nodeAccountWasPayer(savedRecord)) {
+                    final var nodeId = savedRecord.getSubmittingMember();
+                    try {
+                        queryableAccountNum = nodeInfo.accountKeyOf(nodeId);
+                    } catch (IllegalArgumentException e) {
+                        log.warn(
+                                "Address book does not have member id {} from diligence failure record {}",
+                                nodeId,
+                                savedRecord);
+                    }
+                } else {
+                    queryableAccountNum = savedRecord.getPayerNum();
+                }
+                if (queryableAccountNum != MISSING_NUM) {
+                    queryableRecords
+                            .computeIfAbsent(queryableAccountNum, ignore -> new LinkedList<>())
+                            .add(savedRecord);
+                }
             });
         } else {
             savedRecords.doForEach((payerNum, accountRecords) ->
@@ -129,23 +148,41 @@ public class ExpiryManager {
             }
             curRecords.poll();
             purgeHistoryFor(nextRecord, now);
-
-            final var payerRecords = curQueryableRecords.get(nextRecord.getPayerNum());
-            if (payerRecords != null && !payerRecords.isEmpty()) {
-                final var nextPayerRecord = payerRecords.poll();
-                if (!nextRecord.equals(nextPayerRecord)) {
-                    log.error("Inconsistent queryable record {} for expired record {}", nextPayerRecord, nextRecord);
-                }
-                // No more records for this payer, so remove the queue
-                if (payerRecords.isEmpty()) {
-                    curQueryableRecords.remove(nextRecord.getPayerNum());
+            if (nodeAccountWasPayer(nextRecord)) {
+                try {
+                    final var nodeNum = nodeInfo.accountKeyOf(nextRecord.getSubmittingMember());
+                    purgeQueryableRecord(nodeNum, nextRecord, curQueryableRecords);
+                } catch (IllegalArgumentException e) {
+                    log.warn(
+                            "Address book does not have member id {} from diligence failure record {}",
+                            nextRecord.getSubmittingMember(),
+                            nextRecord);
                 }
             } else {
-                log.error(
-                        "No queryable records found for payer {} despite link to expiring record {}",
-                        nextRecord.getPayerNum(),
-                        nextRecord);
+                purgeQueryableRecord(nextRecord.getPayerNum(), nextRecord, curQueryableRecords);
             }
+        }
+    }
+
+    private void purgeQueryableRecord(
+            @NonNull final EntityNum payerNum,
+            @NonNull final ExpirableTxnRecord purgedRecord,
+            @NonNull final Map<EntityNum, Queue<ExpirableTxnRecord>> queryableRecords) {
+        final var payerRecords = queryableRecords.get(payerNum);
+        if (payerRecords != null && !payerRecords.isEmpty()) {
+            final var nextPayerRecord = payerRecords.poll();
+            if (!purgedRecord.equals(nextPayerRecord)) {
+                log.error("Inconsistent queryable record {} for expired record {}", nextPayerRecord, purgedRecord);
+            }
+            // No more records for this payer, so remove the queue
+            if (payerRecords.isEmpty()) {
+                queryableRecords.remove(payerNum);
+            }
+        } else {
+            log.error(
+                    "No queryable records found for payer {} despite link to expiring record {}",
+                    payerNum,
+                    purgedRecord);
         }
     }
 
@@ -201,5 +238,11 @@ public class ExpiryManager {
             log.info("Using {} strategy for record storage", strategyInUse);
         }
         return strategyInUse;
+    }
+
+    private boolean nodeAccountWasPayer(final ExpirableTxnRecord expirableTxnRecord) {
+        return INVALID_PAYER_SIGNATURE
+                .name()
+                .equals(expirableTxnRecord.getReceipt().getStatus());
     }
 }

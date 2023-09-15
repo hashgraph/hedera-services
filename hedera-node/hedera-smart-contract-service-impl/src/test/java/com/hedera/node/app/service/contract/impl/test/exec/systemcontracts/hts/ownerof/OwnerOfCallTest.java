@@ -32,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ownerof.OwnerOfCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ownerof.OwnerOfTranslator;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
 import org.apache.tuweni.bytes.Bytes;
@@ -86,7 +87,7 @@ class OwnerOfCallTest extends HtsCallTestBase {
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
-                Bytes.wrap(OwnerOfCall.OWNER_OF
+                Bytes.wrap(OwnerOfTranslator.OWNER_OF
                         .getOutputs()
                         .encodeElements(asHeadlongAddress(asLongZeroAddress(ownerNum)))
                         .array()),
@@ -105,7 +106,7 @@ class OwnerOfCallTest extends HtsCallTestBase {
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
-                Bytes.wrap(OwnerOfCall.OWNER_OF
+                Bytes.wrap(OwnerOfTranslator.OWNER_OF
                         .getOutputs()
                         .encodeElements(
                                 asHeadlongAddress(ALIASED_SOMEBODY.alias().toByteArray()))

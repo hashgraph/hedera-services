@@ -82,8 +82,7 @@ public class FreezeHandler implements TransactionHandler {
         }
         if (Arrays.asList(FREEZE_UPGRADE, TELEMETRY_UPGRADE, PREPARE_UPGRADE).contains(freezeType)) {
             // from proto specs, it looks like updateFileId not required for FREEZE_UPGRADE and TELEMETRY_UPGRADE
-            // but specs aren't very clear
-            // previous code in FreezeTransitionLogic checks for it in all 3 cases
+            // but specs aren't very clear previous code in FreezeTransitionLogic checks for it in all 3 cases,
             // so we will do the same
             final ReadableUpgradeFileStore upgradeStore = context.createStore(ReadableUpgradeFileStore.class);
             final var filesConfig = context.configuration().getConfigData(FilesConfig.class);

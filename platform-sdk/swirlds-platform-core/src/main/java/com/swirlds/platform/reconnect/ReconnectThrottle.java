@@ -18,8 +18,10 @@ package com.swirlds.platform.reconnect;
 
 import static com.swirlds.logging.LogMarker.RECONNECT;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
@@ -53,16 +55,24 @@ public class ReconnectThrottle {
      */
     private NodeId reconnectingNode;
 
+    /** A rate limited logger for rejecting teacher role due to already teaching another node. */
+    private final RateLimitedLogger alreadyHelpingLogger;
+    /** A rate limited logger for rejecting teacher role due to throttle limit. */
+    private final RateLimitedLogger throttledLogger;
+
     /**
      * A method used to get the current time. Useful to have for debugging.
      */
     private Supplier<Instant> currentTime;
 
-    public ReconnectThrottle(@NonNull final ReconnectConfig config) {
+    public ReconnectThrottle(@NonNull final ReconnectConfig config, @NonNull final Time time) {
         this.config = Objects.requireNonNull(config, "config must not be null");
+        Objects.requireNonNull(time);
         lastReconnectTime = new HashMap<>();
         reconnectingNode = null;
         currentTime = Instant::now;
+        alreadyHelpingLogger = new RateLimitedLogger(logger, time, config.minimumTimeBetweenReconnects());
+        throttledLogger = new RateLimitedLogger(logger, time, config.minimumTimeBetweenReconnects());
     }
 
     /**
@@ -88,7 +98,7 @@ public class ReconnectThrottle {
      */
     public synchronized boolean initiateReconnect(final NodeId nodeId) {
         if (reconnectingNode != null) {
-            logger.info(
+            alreadyHelpingLogger.info(
                     RECONNECT.getMarker(),
                     "This node is actively helping node {} to reconnect, rejecting "
                             + "concurrent reconnect request from node {}",
@@ -101,7 +111,7 @@ public class ReconnectThrottle {
 
         forgetOldReconnects(now);
         if (lastReconnectTime.containsKey(nodeId)) {
-            logger.info(
+            throttledLogger.info(
                     RECONNECT.getMarker(),
                     "Rejecting reconnect request from node {} " + "due to a previous reconnect attempt at {}",
                     nodeId,

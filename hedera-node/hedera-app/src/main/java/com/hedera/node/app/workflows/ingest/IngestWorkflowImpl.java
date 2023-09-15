@@ -24,6 +24,7 @@ import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.TransactionChecker;
+import com.hedera.node.config.ConfigProvider;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.AutoCloseableWrapper;
@@ -39,6 +40,7 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
     private final TransactionChecker transactionChecker;
     private final IngestChecker ingestChecker;
     private final SubmissionManager submissionManager;
+    private final ConfigProvider configProvider;
 
     /**
      * Constructor of {@code IngestWorkflowImpl}
@@ -47,6 +49,7 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
      * @param transactionChecker the {@link TransactionChecker} that pre-processes the bytes of a transaction
      * @param ingestChecker the {@link IngestChecker} with specific checks of an ingest-workflow
      * @param submissionManager the {@link SubmissionManager} to submit transactions to the platform
+     * @param configProvider the {@link ConfigProvider} to provide the configuration
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     @Inject
@@ -54,11 +57,13 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
             @NonNull final Supplier<AutoCloseableWrapper<HederaState>> stateAccessor,
             @NonNull final TransactionChecker transactionChecker,
             @NonNull final IngestChecker ingestChecker,
-            @NonNull final SubmissionManager submissionManager) {
+            @NonNull final SubmissionManager submissionManager,
+            @NonNull final ConfigProvider configProvider) {
         this.stateAccessor = requireNonNull(stateAccessor);
         this.transactionChecker = requireNonNull(transactionChecker);
         this.ingestChecker = requireNonNull(ingestChecker);
         this.submissionManager = requireNonNull(submissionManager);
+        this.configProvider = requireNonNull(configProvider);
     }
 
     @Override
@@ -77,7 +82,8 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
             // 1.-6. Parse and check the transaction
             final var tx = transactionChecker.parse(requestBuffer);
             final var state = wrappedState.get();
-            final var transactionInfo = ingestChecker.runAllChecks(state, tx);
+            final var configuration = configProvider.getConfiguration();
+            final var transactionInfo = ingestChecker.runAllChecks(state, tx, configuration);
 
             // 7. Submit to platform
             submissionManager.submit(transactionInfo.txBody(), requestBuffer);

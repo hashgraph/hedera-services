@@ -33,6 +33,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.balanceof.BalanceOfCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.balanceof.BalanceOfTranslator;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
 import java.math.BigInteger;
 import org.apache.tuweni.bytes.Bytes;
@@ -75,7 +76,7 @@ class BalanceOfCallTest extends HtsCallTestBase {
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
-                Bytes.wrap(BalanceOfCall.BALANCE_OF
+                Bytes.wrap(BalanceOfTranslator.BALANCE_OF
                         .getOutputs()
                         .encodeElements(BigInteger.ZERO)
                         .array()),
@@ -95,7 +96,7 @@ class BalanceOfCallTest extends HtsCallTestBase {
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
-                Bytes.wrap(BalanceOfCall.BALANCE_OF
+                Bytes.wrap(BalanceOfTranslator.BALANCE_OF
                         .getOutputs()
                         .encodeElements(BigInteger.valueOf(A_FUNGIBLE_RELATION.balance()))
                         .array()),

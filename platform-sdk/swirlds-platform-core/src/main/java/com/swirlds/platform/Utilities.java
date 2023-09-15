@@ -20,6 +20,7 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.platform.internal.Deserializer;
 import com.swirlds.platform.internal.Serializer;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.net.SocketException;
 import java.util.Arrays;
@@ -329,5 +330,27 @@ public final class Utilities {
             cause = cause.getCause();
         }
         return type.isInstance(cause);
+    }
+
+    /**
+     * Checks all nesting of causes for any instance of the supplied type.
+     *
+     * @param throwable
+     * 		the throwable to unwrap
+     * @param type
+     * 		the type to check against
+     * @return true if any of the causes matches the supplied type, false otherwise.
+     */
+    public static boolean hasAnyCauseSuppliedType(
+            @NonNull final Throwable throwable, @NonNull final Class<? extends Throwable> type) {
+        Throwable cause = throwable;
+        // check all causes
+        while (cause != null) {
+            if (type.isInstance(cause)) {
+                return true;
+            }
+            cause = cause.getCause();
+        }
+        return false;
     }
 }
