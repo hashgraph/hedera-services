@@ -22,8 +22,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import com.hedera.node.app.Hedera;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.platform.SwirldsPlatform;
-import com.swirlds.platform.SwirldsPlatformBuilder;
 import com.swirlds.platform.util.BootstrapUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
@@ -136,10 +134,8 @@ public class InProcessHapiTestNode implements HapiTestNode {
         public void run() {
             BootstrapUtils.setupConstructableRegistry();
             final var cr = ConstructableRegistry.getInstance();
-            hedera = new Hedera(cr);
-            final SwirldsPlatformBuilder builder = new SwirldsPlatformBuilder(
-                    "com.hedera.services.ServicesMain", "TODO", hedera.getSoftwareVersion(), hedera::newState, selfId);
-            final SwirldsPlatform platform = builder.withConfigValue("paths.configPath", path("config.txt"))
+            hedera = new Hedera(cr, selfId, platformBuilder -> platformBuilder
+                    .withConfigValue("paths.configPath", path("config.txt"))
                     .withConfigValue("paths.settingsPath", path("settings.txt"))
                     .withConfigValue("paths.settingsUsedDir", path("."))
                     .withConfigValue("paths.keysDirPath", path("data/keys"))
@@ -148,11 +144,9 @@ public class InProcessHapiTestNode implements HapiTestNode {
                     .withConfigValue("emergencyRecoveryFileLoadDir", path("data/saved"))
                     .withConfigValue("state.savedStateDirectory", path("data/saved"))
                     .withConfigValue("loadKeysFromPfxFiles", false)
-                    .withConfigValue("grpc.port", grpcPort)
-                    .build();
-            hedera.init(platform, selfId);
-            platform.start();
-            hedera.run();
+                    .withConfigValue("grpc.port", grpcPort));
+
+            hedera.start();
         }
 
         private String path(String path) {

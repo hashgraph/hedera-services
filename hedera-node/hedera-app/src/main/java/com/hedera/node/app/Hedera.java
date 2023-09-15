@@ -74,6 +74,8 @@ import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.common.system.transaction.Transaction;
+import com.swirlds.platform.SwirldsPlatform;
+import com.swirlds.platform.SwirldsPlatformBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.charset.Charset;
@@ -82,6 +84,7 @@ import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.Locale;
 import java.util.Set;
+import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -125,8 +128,8 @@ public final class Hedera {
     private final HederaSoftwareVersion version;
     /** The configuration at the time of bootstrapping the node */
     private final ConfigProvider bootstrapConfigProvider;
-    /** The Hashgraph Platform. This is set during state initialization. */
-    private Platform platform;
+    /** The Hashgraph Platform. */
+    private final SwirldsPlatform platform;
     /** The configuration for this node */
     private ConfigProviderImpl configProvider;
     /** The throttle manager for parsing the throttle definition file */
@@ -142,6 +145,17 @@ public final class Hedera {
     /** Indicates whether the platform is active */
     private PlatformStatus platformStatus = PlatformStatus.STARTING_UP;
 
+    /**
+     * The application name from the platform's perspective. This is currently locked in at the old main class name and
+     * requires data migration to change.
+     */
+    public static final String APP_NAME = "com.hedera.services.ServicesMain";
+
+    /**
+     * The swirld name. Currently there is only one swirld.
+     */
+    public static final String SWIRLD_NAME = "0"; // TODO waiting to hear back from devops on the current configuration
+
     /*==================================================================================================================
     *
     * Hedera Object Construction.
@@ -152,8 +166,24 @@ public final class Hedera {
      * Create a new Hedera instance.
      *
      * @param constructableRegistry The registry to use during the deserialization process
+     * @param selfId                The ID of this node
      */
-    public Hedera(@NonNull final ConstructableRegistry constructableRegistry) {
+    public Hedera(@NonNull final ConstructableRegistry constructableRegistry, @NonNull final NodeId selfId) {
+        this(constructableRegistry, selfId, null);
+    }
+
+    /**
+     * Create a new Hedera instance.
+     *
+     * @param constructableRegistry       The registry to use during the deserialization process
+     * @param selfId                      The ID of this node
+     * @param updatePlatformConfiguration A callback to update the platform configuration. Ignored if null.
+     */
+    public Hedera(
+            @NonNull final ConstructableRegistry constructableRegistry,
+            @NonNull final NodeId selfId,
+            @Nullable Consumer<SwirldsPlatformBuilder> updatePlatformConfiguration) {
+
         requireNonNull(constructableRegistry);
 
         // Print welcome message
@@ -225,6 +255,14 @@ public final class Hedera {
             logger.error("Failed to register MerkleHederaState with ConstructableRegistry", e);
             throw new RuntimeException(e);
         }
+
+        final SwirldsPlatformBuilder builder = new SwirldsPlatformBuilder(
+                Hedera.APP_NAME, Hedera.SWIRLD_NAME, getSoftwareVersion(), this::newState, selfId);
+        if (updatePlatformConfiguration != null) {
+            updatePlatformConfiguration.accept(builder);
+        }
+        platform = builder.build();
+        init(platform, selfId);
     }
 
     /** Gets the port the gRPC server is listening on, or {@code -1} if there is no server listening. */
@@ -234,6 +272,7 @@ public final class Hedera {
 
     /**
      * Indicates whether this node is UP and ready for business.
+     *
      * @return True if the platform is active and the gRPC server is running.
      */
     public boolean isActive() {
@@ -316,7 +355,6 @@ public final class Hedera {
         // This is the *FIRST* time in the initialization sequence that we have access to the platform. Grab it!
         // This instance should never change on us, once it has been set
         assert this.platform == null || this.platform == platform : "Platform should never change once set";
-        this.platform = platform;
 
         // Different paths for different triggers. Every trigger should be handled here. If a new trigger is added,
         // since there is no 'default' case, it will cause a compile error, so you will know you have to deal with it
@@ -347,9 +385,9 @@ public final class Hedera {
     }
 
     /**
-     * Called by this class when we detect it is time to do migration. The {@code deserializedVersion} must not be
-     * newer than the current software version. If it is prior to the current version, then each migration between
-     * the {@code deserializedVersion} and the current version, including the current version, will be executed, thus
+     * Called by this class when we detect it is time to do migration. The {@code deserializedVersion} must not be newer
+     * than the current software version. If it is prior to the current version, then each migration between the
+     * {@code deserializedVersion} and the current version, including the current version, will be executed, thus
      * bringing the state up to date.
      *
      * <p>If the {@code deserializedVersion} is {@code null}, then this is the first time the node has been started,
@@ -510,7 +548,8 @@ public final class Hedera {
      * the notification listener when it is time to restart the gRPC server after it had been stopped (such as during
      * reconnect).
      */
-    public void run() {
+    public void start() {
+        platform.start();
         startGrpcServer();
     }
 
@@ -534,7 +573,7 @@ public final class Hedera {
     }
 
     /**
-     * Invoked by the platform to handle pre-consensus events. This only happens after {@link #run()} has been called.
+     * Invoked by the platform to handle pre-consensus events. This only happens after {@link #start()} has been called.
      */
     private void onPreHandle(@NonNull final Event event, @NonNull final HederaState state) {
         final var readableStoreFactory = new ReadableStoreFactory(state);
@@ -553,7 +592,7 @@ public final class Hedera {
     }
 
     /**
-     * Invoked by the platform to handle a round of consensus events.  This only happens after {@link #run()} has been
+     * Invoked by the platform to handle a round of consensus events.  This only happens after {@link #start()} has been
      * called.
      */
     private void onHandleConsensusRound(

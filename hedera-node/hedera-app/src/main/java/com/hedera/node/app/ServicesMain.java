@@ -16,100 +16,22 @@
 
 package com.hedera.node.app;
 
-import com.hedera.node.app.config.ConfigProviderImpl;
-import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.SoftwareVersion;
-import com.swirlds.common.system.SwirldMain;
-import com.swirlds.common.system.SwirldState;
-import com.swirlds.platform.SwirldsPlatform;
-import com.swirlds.platform.SwirldsPlatformBuilder;
 import com.swirlds.platform.util.BootstrapUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
- * Main entry point.
- *
- * <p>This class simply delegates to either {@link MonoServicesMain} or {@link Hedera} depending on
- * the value of the {@code hedera.services.functions.workflows.enabled} property. If *any* workflows are enabled, then
- * {@link Hedera} is used; otherwise, {@link MonoServicesMain} is used.
+ * Main hedera consensus node entry point.
  */
-public class ServicesMain implements SwirldMain {
-    private static final Logger logger = LogManager.getLogger(ServicesMain.class);
+public final class ServicesMain {
 
-    /**
-     * The {@link SwirldMain} to actually use, depending on whether workflows are enabled.
-     */
-    private final SwirldMain delegate;
-
-    /** Create a new instance */
-    public ServicesMain() {
-        final var configProvider = new ConfigProviderImpl(false);
-        final var hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
-        if (hederaConfig.workflowsEnabled().isEmpty()) {
-            logger.info("No workflows enabled, using mono-service");
-            delegate = new MonoServicesMain();
-        } else {
-            logger.info("One or more workflows enabled, using Hedera");
-            final Hedera hedera = new Hedera(ConstructableRegistry.getInstance());
-
-            delegate = new SwirldMain() {
-                @Override
-                public void init(@NonNull final Platform platform, @NonNull final NodeId selfId) {
-                    hedera.init(platform, selfId);
-                }
-
-                @Override
-                public void run() {
-                    hedera.run();
-                }
-
-                @Override
-                @NonNull
-                public SwirldState newState() {
-                    return hedera.newState();
-                }
-
-                @Override
-                @NonNull
-                public SoftwareVersion getSoftwareVersion() {
-                    return hedera.getSoftwareVersion();
-                }
-            };
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public SoftwareVersion getSoftwareVersion() {
-        return delegate.getSoftwareVersion();
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public void init(@NonNull final Platform ignored, @NonNull final NodeId nodeId) {
-        delegate.init(ignored, nodeId);
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public SwirldState newState() {
-        return delegate.newState();
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public void run() {
-        delegate.run();
-    }
+    private ServicesMain() {}
 
     /**
      * Determine this node's ID based on the command line arguments.
+     *
      * @param args The command line arguments
      * @return The node ID
      */
@@ -122,25 +44,21 @@ public class ServicesMain implements SwirldMain {
     }
 
     /**
+     * Setup and get the constructable registry.
+     *
+     * @return The constructable registry
+     */
+    private static ConstructableRegistry getRegistry() {
+        BootstrapUtils.setupConstructableRegistry();
+        return ConstructableRegistry.getInstance();
+    }
+
+    /**
      * Launches the application.
      *
      * @param args First arg, if specified, will be the node ID
      */
     public static void main(@Nullable final String... args) throws Exception {
-        final NodeId selfId = parseSelfId(args);
-
-        BootstrapUtils.setupConstructableRegistry();
-        final var registry = ConstructableRegistry.getInstance();
-
-        final Hedera hedera = new Hedera(registry);
-
-        final SwirldsPlatformBuilder builder = new SwirldsPlatformBuilder(
-                "com.hedera.services.ServicesMain", "TODO", hedera.getSoftwareVersion(), hedera::newState, selfId);
-
-        final SwirldsPlatform platform = builder.build();
-
-        hedera.init(platform, selfId);
-        platform.start();
-        hedera.run();
+        new Hedera(getRegistry(), parseSelfId(args)).start();
     }
 }
