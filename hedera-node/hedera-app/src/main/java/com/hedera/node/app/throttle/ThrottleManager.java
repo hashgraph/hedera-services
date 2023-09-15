@@ -65,9 +65,14 @@ public class ThrottleManager {
     public void update(@NonNull final Bytes bytes) {
         // Parse the throttle file. If we cannot parse it, we just continue with whatever our previous rate was.
         try {
-            throttleDefinitions = ThrottleDefinitions.PROTOBUF.parse(bytes.toReadableSequentialData());
+            final var tempThrottleDefinitions = ThrottleDefinitions.PROTOBUF.parse(bytes.toReadableSequentialData());
+            validate(tempThrottleDefinitions);
+
+            throttleDefinitions = tempThrottleDefinitions;
             throttleDefinitionsProto =
                     com.hederahashgraph.api.proto.java.ThrottleDefinitions.parseFrom(bytes.toByteArray());
+        } catch (HandleException e) {
+            throw e;
         } catch (final Exception e) {
             // Not being able to parse the throttle file is not fatal, and may happen if the throttle file
             // was too big for a single file update for example.
@@ -81,46 +86,43 @@ public class ThrottleManager {
             logger.warn("Throttle definition file did not contain throttle buckets!");
             throttleBuckets = DEFAULT_THROTTLE_DEFINITIONS.throttleBuckets();
         }
-
-        validate();
     }
 
     /**
      * Checks if the throttle definitions are valid.
      */
-    private void validate() {
-        try {
-            checkForMissingExpectedOperations();
-            checkForZeroOpsPerSec();
-            checkForRepeatedOperations();
-        } catch (IllegalStateException e) {
-            throw new HandleException(ResponseCodeEnum.valueOf(e.getMessage()));
-        }
+    private void validate(ThrottleDefinitions throttleDefinitions) {
+        checkForMissingExpectedOperations(throttleDefinitions);
+        checkForZeroOpsPerSec(throttleDefinitions);
+        checkForRepeatedOperations(throttleDefinitions);
     }
 
     /**
      * Checks if there are missing {@link HederaFunctionality} operations from the expected ones that should be throttled.
      */
-    private void checkForMissingExpectedOperations() {
+    private void checkForMissingExpectedOperations(ThrottleDefinitions throttleDefinitions) {
         Set<HederaFunctionality> customizedOps = new HashSet<>();
-        for (var bucket : throttleDefinitions().throttleBuckets()) {
+        for (var bucket : throttleDefinitions.throttleBuckets()) {
             for (var group : bucket.throttleGroups()) {
                 customizedOps.addAll(group.operations());
             }
         }
         if (customizedOps.isEmpty() || !expectedOps.equals(EnumSet.copyOf(customizedOps))) {
-            throw new IllegalStateException(ResponseCodeEnum.INVALID_TRANSACTION.name());
+            throw new HandleException(ResponseCodeEnum.INVALID_TRANSACTION);
         }
     }
 
     /**
      * Checks if there are throttle groups defined with zero operations per second.
      */
-    private void checkForZeroOpsPerSec() {
-        for (var bucket : throttleBuckets()) {
+    private void checkForZeroOpsPerSec(ThrottleDefinitions throttleDefinitions) {
+        final var buckets = throttleDefinitions.throttleBuckets() != null
+                ? throttleDefinitions.throttleBuckets()
+                : DEFAULT_THROTTLE_DEFINITIONS.throttleBuckets();
+        for (var bucket : buckets) {
             for (var group : bucket.throttleGroups()) {
                 if (group.milliOpsPerSec() == 0) {
-                    throw new IllegalStateException(ResponseCodeEnum.THROTTLE_GROUP_HAS_ZERO_OPS_PER_SEC.name());
+                    throw new HandleException(ResponseCodeEnum.THROTTLE_GROUP_HAS_ZERO_OPS_PER_SEC);
                 }
             }
         }
@@ -129,13 +131,16 @@ public class ThrottleManager {
     /**
      * Checks if an operation was assigned to more than one throttle group in a given bucket.
      */
-    private void checkForRepeatedOperations() {
-        for (var bucket : throttleBuckets()) {
+    private void checkForRepeatedOperations(ThrottleDefinitions throttleDefinitions) {
+        final var buckets = throttleDefinitions.throttleBuckets() != null
+                ? throttleDefinitions.throttleBuckets()
+                : DEFAULT_THROTTLE_DEFINITIONS.throttleBuckets();
+        for (var bucket : buckets) {
             final Set<HederaFunctionality> seenSoFar = new HashSet<>();
             for (var group : bucket.throttleGroups()) {
                 final var functions = group.operations();
                 if (!Collections.disjoint(seenSoFar, functions)) {
-                    throw new IllegalStateException(ResponseCodeEnum.OPERATION_REPEATED_IN_BUCKET_GROUPS.name());
+                    throw new HandleException(ResponseCodeEnum.OPERATION_REPEATED_IN_BUCKET_GROUPS);
                 }
                 seenSoFar.addAll(functions);
             }

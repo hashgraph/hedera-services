@@ -20,10 +20,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.ThrottleBucket;
 import com.hedera.hapi.node.transaction.ThrottleDefinitions;
 import com.hedera.hapi.node.transaction.ThrottleGroup;
@@ -31,7 +29,6 @@ import com.hedera.node.app.spi.fixtures.util.LogCaptor;
 import com.hedera.node.app.spi.fixtures.util.LogCaptureExtension;
 import com.hedera.node.app.spi.fixtures.util.LoggingSubject;
 import com.hedera.node.app.spi.fixtures.util.LoggingTarget;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.List;
 import java.util.stream.Stream;
@@ -103,7 +100,7 @@ class ThrottleManagerTest {
     @MethodSource("invalidArgumentsOnUpdateSource")
     void invalidArgumentsOnUpdate(Bytes bytes) {
         // when
-        final var exception = assertThrows(HandleException.class, () -> subject.update(bytes));
+        subject.update(bytes);
 
         // expect
         assertThat(logCaptor.warnLogs(), hasItems(startsWith("Unable to parse the throttle file")));
@@ -111,7 +108,6 @@ class ThrottleManagerTest {
         // default values are applied
         assertEquals(ThrottleDefinitions.DEFAULT, subject.throttleDefinitions());
         assertEquals(ThrottleDefinitions.DEFAULT.throttleBuckets(), subject.throttleBuckets());
-        assertEquals(ResponseCodeEnum.INVALID_TRANSACTION, exception.getStatus());
     }
 
     private static Stream<Arguments> invalidArgumentsOnUpdateSource() {
