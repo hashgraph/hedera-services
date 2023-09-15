@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.state.merkle.memory;
 
+import static com.hedera.node.app.state.logging.TransactionStateLogger.*;
+
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableKVStateBase;
 import com.hedera.node.app.state.merkle.StateMetadata;
@@ -23,8 +25,6 @@ import com.swirlds.merkle.map.MerkleMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Iterator;
 import java.util.Objects;
-
-import static com.hedera.node.app.state.logging.TransactionStateLogger.*;
 
 /**
  * An implementation of {@link ReadableKVState} backed by a {@link MerkleMap}, resulting in a state

@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.state.merkle.disk;
 
+import static com.hedera.node.app.state.logging.TransactionStateLogger.*;
+
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableKVStateBase;
 import com.hedera.node.app.state.merkle.StateMetadata;
@@ -25,8 +27,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-
-import static com.hedera.node.app.state.logging.TransactionStateLogger.*;
 
 /**
  * An implementation of {@link ReadableKVState} backed by a {@link VirtualMap}, resulting in a state

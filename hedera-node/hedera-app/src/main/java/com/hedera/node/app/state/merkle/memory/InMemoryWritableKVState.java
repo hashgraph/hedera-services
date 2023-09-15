@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.state.merkle.memory;
 
+import static com.hedera.node.app.state.logging.TransactionStateLogger.*;
+
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.app.state.merkle.StateMetadata;
@@ -23,8 +25,6 @@ import com.swirlds.merkle.map.MerkleMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Iterator;
 import java.util.Objects;
-
-import static com.hedera.node.app.state.logging.TransactionStateLogger.*;
 
 /**
  * An implementation of {@link WritableKVState} backed by a {@link MerkleMap}, resulting in a state
@@ -76,7 +76,7 @@ public final class InMemoryWritableKVState<K, V> extends WritableKVStateBase<K, 
     protected V getForModifyFromDataSource(@NonNull K key) {
         final var k = new InMemoryKey<>(key);
         final var leaf = merkle.getForModify(k);
-        final var value =  leaf == null ? null : leaf.getValue();
+        final var value = leaf == null ? null : leaf.getValue();
         // Log to transaction state log, what was read
         logMapGetForModify(getStateKey(), key, value);
         return value;

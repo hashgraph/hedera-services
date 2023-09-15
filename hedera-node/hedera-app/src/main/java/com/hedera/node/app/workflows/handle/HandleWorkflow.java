@@ -20,9 +20,9 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.node.app.state.logging.TransactionStateLogger.*;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.SAME_NODE;
+import static com.hedera.node.app.state.logging.TransactionStateLogger.*;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.NODE_DUE_DILIGENCE_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE_HANDLE_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
@@ -294,10 +294,13 @@ public class HandleWorkflow {
 
             // Log start of user transaction to transaction state log
             logStartUserTransaction(platformTxn, txBody, payer);
-            logStartUserTransactionPreHandleResultP2(preHandleResult.payer(), preHandleResult.payerKey(),
-                    preHandleResult.status(), preHandleResult.responseCode());
-            logStartUserTransactionPreHandleResultP3(preHandleResult.txInfo(), preHandleResult.requiredKeys(),
-                    preHandleResult.verificationResults());
+            logStartUserTransactionPreHandleResultP2(
+                    preHandleResult.payer(),
+                    preHandleResult.payerKey(),
+                    preHandleResult.status(),
+                    preHandleResult.responseCode());
+            logStartUserTransactionPreHandleResultP3(
+                    preHandleResult.txInfo(), preHandleResult.requiredKeys(), preHandleResult.verificationResults());
 
             // Initialize record builder list
             recordBuilder

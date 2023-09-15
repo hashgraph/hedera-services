@@ -98,14 +98,14 @@ public class QueueNode<E> extends PartialBinaryMerkleInternal implements Labeled
     public void add(E element) {
         getQueue().add(new ValueLeaf<>(md, element));
         // Log to transaction state log, what was added
-        logQueueAdd(getLabel(),element);
+        logQueueAdd(getLabel(), element);
     }
 
     /** Peek an element */
     public E peek() {
         final var valueLeaf = getQueue().peek();
         // Log to transaction state log, what was peeked
-        logQueuePeek(getLabel(),valueLeaf);
+        logQueuePeek(getLabel(), valueLeaf);
         return valueLeaf == null ? null : valueLeaf.getValue();
     }
 
@@ -113,7 +113,7 @@ public class QueueNode<E> extends PartialBinaryMerkleInternal implements Labeled
     public E remove() {
         final var valueLeaf = getQueue().remove();
         // Log to transaction state log, what was added
-        logQueueRemove(getLabel(),valueLeaf);
+        logQueueRemove(getLabel(), valueLeaf);
         return valueLeaf == null ? null : valueLeaf.getValue();
     }
 
