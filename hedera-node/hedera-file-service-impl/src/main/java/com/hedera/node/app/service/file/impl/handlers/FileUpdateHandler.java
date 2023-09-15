@@ -39,6 +39,8 @@ import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
 import com.hedera.node.app.service.mono.fees.calculation.file.txns.FileUpdateResourceUsage;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -114,17 +116,6 @@ public class FileUpdateHandler implements TransactionHandler {
         final var file = maybeFile.get();
         validateFalse(file.deleted(), FILE_DELETED);
 
-        // Feature: This is not working as expected. This should be reworked and added support for a system file or
-        // privileged users. When this is done we can turn on the following tests in  ThrottleDefValidationSuite -
-        // updateWithMissingTokenMintGetsWarning, throttleUpdateWithZeroGroupOpsPerSecFails, and
-        // throttleUpdateRejectsMultiGroupAssignment
-        final var fees = handleContext
-                .feeCalculator(SubType.DEFAULT)
-                .legacyCalculate(sigValueObj -> new FileUpdateResourceUsage(fileOpsUsage)
-                        .usageGiven(fromPbj(handleContext.body()), sigValueObj, fromPbj(file)));
-
-        handleContext.feeAccumulator().charge(handleContext.payer(), fees);
-
         // First validate this file is mutable; and the pending mutations are allowed
         // TODO: add or condition for privilege accounts from context
         validateFalse(file.keys() == null, UNAUTHORIZED);
@@ -141,6 +132,18 @@ public class FileUpdateHandler implements TransactionHandler {
         // And then resolve mutable attributes, and put the new topic back
         resolveMutableBuilderAttributes(fileUpdate, builder, fileServiceConfig, file);
         fileStore.put(builder.build());
+    }
+
+    @NonNull
+    @Override
+    public Fees calculateFees(@NonNull FeeContext feeContext) {
+        final var op = feeContext.body();
+        final var file = feeContext
+                .readableStore(ReadableFileStore.class)
+                .getFileLeaf(op.fileUpdateOrThrow().fileIDOrThrow());
+        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> {
+            return new FileUpdateResourceUsage(fileOpsUsage).usageGiven(fromPbj(op), sigValueObj, fromPbj(file));
+        });
     }
 
     private void handleUpdateUpgradeFile(FileUpdateTransactionBody fileUpdate, HandleContext handleContext) {

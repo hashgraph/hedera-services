@@ -7,6 +7,7 @@ module com.hedera.node.services.cli {
     requires transitive com.swirlds.common;
     requires transitive com.swirlds.platform.core;
     requires transitive info.picocli;
+    requires io.github.classgraph;
     requires com.hedera.node.app.hapi.utils;
     requires com.hedera.node.hapi;
     requires com.google.common;

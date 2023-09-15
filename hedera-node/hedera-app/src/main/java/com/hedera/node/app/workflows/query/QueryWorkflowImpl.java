@@ -174,21 +174,16 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             TransactionBody txBody = null;
             if (paymentRequired) {
                 allegedPayment = queryHeader.paymentOrThrow();
+                final var configuration = configProvider.getConfiguration();
 
                 // 4.i Ingest checks
-                final var transactionInfo = ingestChecker.runAllChecks(state, allegedPayment);
+                final var transactionInfo = ingestChecker.runAllChecks(state, allegedPayment, configuration);
                 txBody = transactionInfo.txBody();
 
                 // get payer
                 final var payerID = transactionInfo.payerID();
                 context = new QueryContextImpl(
-                        state,
-                        storeFactory,
-                        query,
-                        configProvider.getConfiguration(),
-                        recordCache,
-                        exchangeRateManager,
-                        payerID);
+                        state, storeFactory, query, configuration, recordCache, exchangeRateManager, payerID);
 
                 // A super-user does not have to pay for a query and has all permissions
                 if (!authorizer.isSuperUser(payerID)) {

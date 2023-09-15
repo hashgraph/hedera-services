@@ -40,6 +40,7 @@ import com.swirlds.demo.migration.virtual.AccountVirtualMapKeySerializer;
 import com.swirlds.demo.migration.virtual.AccountVirtualMapValue;
 import com.swirlds.demo.migration.virtual.AccountVirtualMapValueSerializer;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.virtualmap.VirtualMap;
@@ -209,6 +210,9 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
                 new AccountVirtualMapKeySerializer(),
                 (short) 1,
                 new AccountVirtualMapValueSerializer());
+        // to make it work for the multiple node in one JVM case, we need reset the default instance path every time
+        // we create another instance of MerkleDB.
+        MerkleDb.resetDefaultInstancePath();
         final VirtualDataSourceBuilder<AccountVirtualMapKey, AccountVirtualMapValue> dsBuilder =
                 new MerkleDbDataSourceBuilder<>(tableConfig);
         setVirtualMap(new VirtualMap<>("virtualMap", dsBuilder));

@@ -36,6 +36,7 @@ import java.util.Set;
  * If, for example, we extract a {@code StakingService}, this API would likely need to expand.
  */
 public interface TokenServiceApi {
+
     /**
      * Validates the given staking election relative to the given account store, network info, and staking config.
      *
