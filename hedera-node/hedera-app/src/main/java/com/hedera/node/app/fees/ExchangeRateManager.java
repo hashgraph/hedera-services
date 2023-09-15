@@ -50,7 +50,7 @@ import javax.inject.Singleton;
  * <p>All fees in Hedera are based on the exchange rate between HBAR and USD. Fees are paid in HBAR, but based on the
  * current USD price of the HBAR. The "ERT", exchange rate tool, is responsible for tracking the exchange rate of
  * various exchanges, and updating the {@link ExchangeRateSet} on a periodic basis. Currently, this is in a special
- * file, but could be from any other source. The encoded {@link Bytes} are passed to the {@link #updateViaTransaction(Bytes, AccountID)} method.
+ * file, but could be from any other source. The encoded {@link Bytes} are passed to the {@link #update(Bytes, AccountID)} method.
  * This <strong>MUST</strong> be done on the same thread that this manager is used by -- the manager is not threadsafe.
  *
  * <p>The {@link ExchangeRateSet} has two rates -- a "current" rate and the "next" rate. Each rate has an expiration
@@ -107,7 +107,7 @@ public final class ExchangeRateManager {
      * @param bytes   The protobuf encoded {@link ExchangeRateSet}.
      * @param payerId   The payer of the transaction that triggered this update.
      */
-    public void updateViaTransaction(@NonNull final Bytes bytes, @NonNull AccountID payerId) {
+    public void update(@NonNull final Bytes bytes, @NonNull AccountID payerId) {
         requireNonNull(payerId, "payerId must not be null");
         internalUpdate(bytes, payerId);
     }

@@ -197,7 +197,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
 
         // then
         verify(exchangeRateManager, times(1))
-                .updateViaTransaction(
+                .update(
                         FileUtilities.getFileContent(state, fileID),
                         AccountID.newBuilder().accountNum(50L).build());
     }

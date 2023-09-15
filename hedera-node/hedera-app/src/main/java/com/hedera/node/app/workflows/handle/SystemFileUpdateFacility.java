@@ -101,7 +101,7 @@ public class SystemFileUpdateFacility {
             } else if (fileNum == config.feeSchedules()) {
                 logger.error("Update of fee schedules not implemented");
             } else if (fileNum == config.exchangeRates()) {
-                exchangeRateManager.updateViaTransaction(FileUtilities.getFileContent(state, fileID), payer);
+                exchangeRateManager.update(FileUtilities.getFileContent(state, fileID), payer);
             } else if (fileNum == config.networkProperties()) {
                 configProvider.update(FileUtilities.getFileContent(state, fileID));
             } else if (fileNum == config.hapiPermissions()) {
