@@ -476,6 +476,7 @@ public final class Hedera implements SwirldMain {
             // com.hedera.node.app.service.mono.state.logic.StateWriteToDiskListener
             // which looks like it is related to freeze / upgrade.
             // daggerApp.stateWriteToDiskListener());
+            // see issue #8660
 
             // TBD: notifications.register(NewSignedStateListener.class, daggerApp.newSignedStateListener());
             // com.hedera.node.app.service.mono.state.exports.NewSignedStateListener
