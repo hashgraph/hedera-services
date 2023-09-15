@@ -16,18 +16,18 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.failure;
 
-import static com.hedera.node.app.service.contract.impl.exec.failure.StandardExceptionalHaltReason.INVALID_SIGNATURE;
-import static com.hedera.node.app.service.contract.impl.exec.failure.StandardExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
-import static com.hedera.node.app.service.contract.impl.exec.failure.StandardExceptionalHaltReason.SELF_DESTRUCT_TO_SELF;
-import static com.hedera.node.app.service.contract.impl.exec.failure.StandardExceptionalHaltReason.statusFor;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SIGNATURE;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.SELF_DESTRUCT_TO_SELF;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.statusFor;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.node.app.service.contract.impl.exec.failure.StandardExceptionalHaltReason;
+import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.junit.jupiter.api.Test;
 
-class StandardExceptionalHaltReasonTest {
+class CustomExceptionalHaltReasonTest {
     @Test
     void translatesSameStatusesAsMonoService() {
         assertEquals(ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID, statusFor(SELF_DESTRUCT_TO_SELF));
@@ -43,6 +43,6 @@ class StandardExceptionalHaltReasonTest {
     @Test
     void usesToStringForErrorMessages() {
         assertEquals(
-                "INVALID_SOLIDITY_ADDRESS", StandardExceptionalHaltReason.errorMessageFor(INVALID_SOLIDITY_ADDRESS));
+                "INVALID_SOLIDITY_ADDRESS", CustomExceptionalHaltReason.errorMessageFor(INVALID_SOLIDITY_ADDRESS));
     }
 }

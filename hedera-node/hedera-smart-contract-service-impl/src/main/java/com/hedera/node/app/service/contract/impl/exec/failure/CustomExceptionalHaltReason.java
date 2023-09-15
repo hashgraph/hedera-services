@@ -16,57 +16,60 @@
 
 package com.hedera.node.app.service.contract.impl.exec.failure;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 
-/**
- * Some {@link ExceptionalHaltReason}s that are not part of the Besu core.
- */
 public enum CustomExceptionalHaltReason implements ExceptionalHaltReason {
-    TOO_MANY_CHILD_RECORDS("CONTRACT_EXECUTION_EXCEPTION", CONTRACT_EXECUTION_EXCEPTION),
-    ACCOUNTS_LIMIT_REACHED("CONTRACT_EXECUTION_EXCEPTION", CONTRACT_EXECUTION_EXCEPTION),
-    INVALID_VALUE_TRANSFER("Value transfer not allowed to system or expired accounts", CONTRACT_EXECUTION_EXCEPTION);
+    INVALID_SOLIDITY_ADDRESS("Invalid account reference"),
+    SELF_DESTRUCT_TO_SELF("Self destruct to the same address"),
+    CONTRACT_IS_TREASURY("Token treasuries cannot be deleted"),
+    INVALID_SIGNATURE("Invalid signature"),
+    TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES("Accounts with positive fungible token balances cannot be deleted"),
+    CONTRACT_STILL_OWNS_NFTS("Accounts who own nfts cannot be deleted"),
+    ERROR_DECODING_PRECOMPILE_INPUT("Error when decoding precompile input."),
+    FAILURE_DURING_LAZY_ACCOUNT_CREATION("Failure during lazy account creation"),
+    NOT_SUPPORTED("Not supported."),
+    INVALID_FEE_SUBMITTED("Invalid fee submitted for an EVM call.");
 
-    /**
-     * The default status returned for halted contract executions, by tradition.
-     */
-    private static final ResponseCodeEnum DEFAULT_STATUS = CONTRACT_EXECUTION_EXCEPTION;
-    /**
-     * The default error message returned for halted contract executions, by tradition.
-     */
-    private static final String DEFAULT_ERROR_MESSAGE = DEFAULT_STATUS.protoName();
+    private final String description;
 
-    private final String errorMessage;
-    private final ResponseCodeEnum status;
-
-    CustomExceptionalHaltReason(String errorMessage, ResponseCodeEnum status) {
-        this.errorMessage = errorMessage;
-        this.status = status;
+    CustomExceptionalHaltReason(@NonNull final String description) {
+        this.description = description;
     }
 
     @Override
     public String getDescription() {
-        return errorMessage;
+        return description;
     }
 
     /**
-     * Returns the error message corresponding to this halt reason.
+     * Returns the "preferred" status for the given halt reason.
      *
-     * @return the error message
+     * @param reason the halt reason
+     * @return the status
      */
-    public String errorMessage() {
-        return status.protoName();
+    public static ResponseCodeEnum statusFor(@NonNull final ExceptionalHaltReason reason) {
+        requireNonNull(reason);
+        if (reason == SELF_DESTRUCT_TO_SELF) {
+            return ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
+        } else if (reason == INVALID_SOLIDITY_ADDRESS) {
+            return ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
+        } else if (reason == INVALID_SIGNATURE) {
+            return ResponseCodeEnum.INVALID_SIGNATURE;
+        } else if (reason == ExceptionalHaltReason.INSUFFICIENT_GAS) {
+            return ResponseCodeEnum.INSUFFICIENT_GAS;
+        } else if (reason == ExceptionalHaltReason.ILLEGAL_STATE_CHANGE) {
+            return ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION;
+        } else {
+            return ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
+        }
     }
 
-    /**
-     * Returns the status code corresponding to this halt reason.
-     *
-     * @return the status code
-     */
-    public ResponseCodeEnum correspondingStatus() {
-        return status;
+    public static String errorMessageFor(@NonNull final ExceptionalHaltReason reason) {
+        requireNonNull(reason);
+        return reason.toString();
     }
 }

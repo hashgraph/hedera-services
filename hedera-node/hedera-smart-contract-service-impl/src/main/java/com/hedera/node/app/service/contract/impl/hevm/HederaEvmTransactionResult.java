@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.service.contract.impl.hevm;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.errorMessageFor;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.accessTrackerFor;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asPbjStateChanges;
@@ -85,7 +85,7 @@ public record HederaEvmTransactionResult(
     public ContractFunctionResult asProtoResultOf(
             @Nullable final EthTxData ethTxData, @NonNull final RootProxyWorldUpdater updater) {
         if (haltReason != null) {
-            return withMaybeEthFields(asUncommittedFailureResult(haltReason.toString()), ethTxData);
+            return withMaybeEthFields(asUncommittedFailureResult(errorMessageFor(haltReason)), ethTxData);
         } else if (revertReason != null) {
             throw new AssertionError("Not implemented");
         } else {
@@ -116,11 +116,7 @@ public record HederaEvmTransactionResult(
      */
     public ResponseCodeEnum finalStatus() {
         if (haltReason != null) {
-            if (haltReason instanceof CustomExceptionalHaltReason customReason) {
-                return customReason.correspondingStatus();
-            } else {
-                return CONTRACT_EXECUTION_EXCEPTION;
-            }
+            return CustomExceptionalHaltReason.statusFor(haltReason);
         } else if (revertReason != null) {
             throw new AssertionError("Not implemented");
         } else {

@@ -21,9 +21,11 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUN
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OBTAINER_DOES_NOT_EXIST;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OBTAINER_REQUIRED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.PERMANENT_REMOVAL_REQUIRES_SYSTEM_INITIATION;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumericContractId;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -56,6 +58,7 @@ public class ContractDeleteHandler implements TransactionHandler {
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
         final var op = context.body().contractDeleteInstanceOrThrow();
+        validateFalsePreCheck(op.permanentRemoval(), PERMANENT_REMOVAL_REQUIRES_SYSTEM_INITIATION);
         // The contract ID must be present on the transaction
         final var contractID = op.contractID();
         mustExist(contractID, INVALID_CONTRACT_ID);
@@ -65,6 +68,8 @@ public class ContractDeleteHandler implements TransactionHandler {
         // If there is not an admin key, then the contract is immutable. Otherwise, the transaction must
         // be signed by the admin key.
         context.requireKeyOrThrow(contract.key(), MODIFYING_IMMUTABLE_CONTRACT);
+        final var adminKey = contract.keyOrThrow();
+        validateFalsePreCheck(adminKey.hasContractID() || adminKey.hasDelegatableContractId(), MODIFYING_IMMUTABLE_CONTRACT);
         // If there is a transfer account ID, and IF that account has receiverSigRequired set, then the transaction
         // must be signed by that account's key. Same if instead it uses a contract as the transfer target.
         if (op.hasTransferAccountID()) {

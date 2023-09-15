@@ -17,17 +17,12 @@
 package com.hedera.node.app.service.contract.impl.state;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.ACCOUNTS_LIMIT_REACHED;
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_VALUE_TRANSFER;
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.TOO_MANY_CHILD_RECORDS;
-import static com.hedera.node.app.service.contract.impl.exec.failure.StandardExceptionalHaltReason.CONTRACT_IS_TREASURY;
-import static com.hedera.node.app.service.contract.impl.exec.failure.StandardExceptionalHaltReason.CONTRACT_STILL_OWNS_NFTS;
-import static com.hedera.node.app.service.contract.impl.exec.failure.StandardExceptionalHaltReason.FAILURE_DURING_LAZY_ACCOUNT_CREATION;
-import static com.hedera.node.app.service.contract.impl.exec.failure.StandardExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
-import static com.hedera.node.app.service.contract.impl.exec.failure.StandardExceptionalHaltReason.SELF_DESTRUCT_TO_SELF;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.CONTRACT_IS_TREASURY;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.CONTRACT_STILL_OWNS_NFTS;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.FAILURE_DURING_LAZY_ACCOUNT_CREATION;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.SELF_DESTRUCT_TO_SELF;
 import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.EVM_ADDRESS_LENGTH_AS_LONG;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
@@ -46,7 +41,7 @@ import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
-import com.hedera.node.app.service.contract.impl.exec.failure.StandardExceptionalHaltReason;
+import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
 import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy.UseTopLevelSigs;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaNativeOperations;
@@ -345,7 +340,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
                         from.number, tuweniToPbjBytes(from.getAddress()), delegateCall, UseTopLevelSigs.YES));
         if (status != OK) {
             if (status == INVALID_SIGNATURE) {
-                return Optional.of(StandardExceptionalHaltReason.INVALID_SIGNATURE);
+                return Optional.of(CustomExceptionalHaltReason.INVALID_SIGNATURE);
             } else {
                 throw new IllegalStateException("Transfer from 0.0." + from.number
                         + " to 0.0." + ((ProxyEvmAccount) to).number
@@ -369,7 +364,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
             final var account = nativeOperations.getAccount(number);
             if (account != null) {
                 if (account.expiredAndPendingRemoval()) {
-                    return Optional.of(INVALID_VALUE_TRANSFER);
+                    return Optional.of(FAILURE_DURING_LAZY_ACCOUNT_CREATION);
                 } else {
                     throw new IllegalArgumentException(
                             "Unexpired account 0.0." + number + " already exists at address " + address);

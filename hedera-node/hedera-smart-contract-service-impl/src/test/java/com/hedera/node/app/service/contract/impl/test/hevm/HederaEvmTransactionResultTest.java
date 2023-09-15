@@ -16,9 +16,10 @@
 
 package com.hedera.node.app.service.contract.impl.test.hevm;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.ACCOUNTS_LIMIT_REACHED;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.SELF_DESTRUCT_TO_SELF;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.BESU_LOGS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_EVM_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
@@ -86,19 +87,19 @@ class HederaEvmTransactionResultTest {
     @Test
     void finalStatusFromHaltUsesCorrespondingStatusIfFromCustom() {
         given(frame.getGasPrice()).willReturn(WEI_NETWORK_GAS_PRICE);
-        given(frame.getExceptionalHaltReason()).willReturn(Optional.of(ACCOUNTS_LIMIT_REACHED));
+        given(frame.getExceptionalHaltReason()).willReturn(Optional.of(SELF_DESTRUCT_TO_SELF));
         final var subject = HederaEvmTransactionResult.failureFrom(GAS_LIMIT / 2, SENDER_ID, frame);
-        assertEquals(ACCOUNTS_LIMIT_REACHED.correspondingStatus(), subject.finalStatus());
+        assertEquals(OBTAINER_SAME_CONTRACT_ID, subject.finalStatus());
         final var protoResult = subject.asProtoResultOf(rootProxyWorldUpdater);
-        assertEquals(ACCOUNTS_LIMIT_REACHED.toString(), protoResult.errorMessage());
+        assertEquals(SELF_DESTRUCT_TO_SELF.toString(), protoResult.errorMessage());
     }
 
     @Test
-    void finalStatusFromHaltUsesDefaultStatusIfFromStandard() {
+    void finalStatusFromHaltUsesCorrespondingStatusIfFromStandard() {
         given(frame.getGasPrice()).willReturn(WEI_NETWORK_GAS_PRICE);
         given(frame.getExceptionalHaltReason()).willReturn(Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
         final var subject = HederaEvmTransactionResult.failureFrom(GAS_LIMIT / 2, SENDER_ID, frame);
-        assertEquals(CONTRACT_EXECUTION_EXCEPTION, subject.finalStatus());
+        assertEquals(INSUFFICIENT_GAS, subject.finalStatus());
         final var protoResult = subject.asProtoResultOf(rootProxyWorldUpdater);
         assertEquals(ExceptionalHaltReason.INSUFFICIENT_GAS.toString(), protoResult.errorMessage());
     }

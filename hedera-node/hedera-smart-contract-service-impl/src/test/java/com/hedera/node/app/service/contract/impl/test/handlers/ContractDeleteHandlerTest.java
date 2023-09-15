@@ -16,8 +16,10 @@
 
 package com.hedera.node.app.service.contract.impl.test.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OBTAINER_DOES_NOT_EXIST;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OBTAINER_REQUIRED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.PERMANENT_REMOVAL_REQUIRES_SYSTEM_INITIATION;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_ACCOUNT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.B_NEW_ACCOUNT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
@@ -25,11 +27,15 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.VALID_CONTRACT_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.asNumericContractId;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertFailsWith;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractDeleteTransactionBody;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -38,6 +44,8 @@ import com.hedera.node.app.service.contract.impl.records.ContractDeleteRecordBui
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -50,6 +58,9 @@ class ContractDeleteHandlerTest {
     private HandleContext context;
 
     @Mock
+    private PreHandleContext preHandleContext;
+
+    @Mock
     private TokenServiceApi tokenServiceApi;
 
     @Mock
@@ -59,6 +70,29 @@ class ContractDeleteHandlerTest {
     private ContractDeleteRecordBuilder recordBuilder;
 
     private final ContractDeleteHandler subject = new ContractDeleteHandler();
+
+    @Test
+    void preHandleRecognizesContractIdKeyAsImmutable() {
+        given(preHandleContext.createStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
+        given(readableAccountStore.getContractById(VALID_CONTRACT_ADDRESS)).willReturn(TBD_CONTRACT);
+        final var txn =
+                TransactionBody.newBuilder().contractDeleteInstance(deletion(VALID_CONTRACT_ADDRESS, CALLED_EOA_ID)).build();
+        given(preHandleContext.body()).willReturn(txn);
+
+        final var ex = assertThrows(PreCheckException.class, () -> subject.preHandle(preHandleContext));
+        assertEquals(MODIFYING_IMMUTABLE_CONTRACT, ex.responseCode());
+    }
+
+    @Test
+    void preHandleRejectsPermanentRemoval() {
+        final var txn =
+                TransactionBody.newBuilder().contractDeleteInstance(ContractDeleteTransactionBody.newBuilder()
+                        .permanentRemoval(true)).build();
+        given(preHandleContext.body()).willReturn(txn);
+
+        final var ex = assertThrows(PreCheckException.class, () -> subject.preHandle(preHandleContext));
+        assertEquals(PERMANENT_REMOVAL_REQUIRES_SYSTEM_INITIATION, ex.responseCode());
+    }
 
     @Test
     void delegatesUsingObtainerAccountIfSet() {
@@ -145,7 +179,11 @@ class ContractDeleteHandlerTest {
     }
 
     private static final Account TBD_CONTRACT =
-            Account.newBuilder().accountId(CALLED_EOA_ID).smartContract(true).build();
+            Account.newBuilder()
+                    .accountId(CALLED_EOA_ID)
+                    .smartContract(true)
+                    .key(Key.newBuilder().contractID(CALLED_CONTRACT_ID))
+                    .build();
 
     private static final Account OBTAINER_ACCOUNT =
             Account.newBuilder().accountId(A_NEW_ACCOUNT_ID).build();
