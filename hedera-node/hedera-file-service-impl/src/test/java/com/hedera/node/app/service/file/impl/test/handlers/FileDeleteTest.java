@@ -39,6 +39,7 @@ import com.hedera.hapi.node.file.FileDeleteTransactionBody;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.utils.fee.FileFeeBuilder;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
@@ -91,12 +92,15 @@ class FileDeleteTest extends FileTestBase {
     @Mock(strictness = Mock.Strictness.LENIENT)
     protected Account payerAccount;
 
+    @Mock
+    protected FileFeeBuilder usageEstimator;
+
     protected Configuration testConfig;
 
     @BeforeEach
     void setUp() {
         mockStore = mock(ReadableFileStoreImpl.class);
-        subject = new FileDeleteHandler();
+        subject = new FileDeleteHandler(usageEstimator);
 
         writableFileState = writableFileStateWithOneKey();
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
@@ -189,7 +193,7 @@ class FileDeleteTest extends FileTestBase {
     void keysDoesntExist() {
         final var txn = newDeleteTxn().fileDeleteOrThrow();
 
-        file = new File(fileId, expirationTime, null, Bytes.wrap(contents), memo, false);
+        file = new File(fileId, expirationTime, null, Bytes.wrap(contents), memo, false, 0L);
 
         writableFileState = writableFileStateWithOneKey();
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
@@ -229,7 +233,7 @@ class FileDeleteTest extends FileTestBase {
     @Test
     @DisplayName("File without keys returns error")
     void noFileKeys() {
-        file = new File(fileId, expirationTime, null, Bytes.wrap(contents), memo, false);
+        file = new File(fileId, expirationTime, null, Bytes.wrap(contents), memo, false, 0L);
         refreshStoresWithCurrentFileInBothReadableAndWritable();
 
         final var txn = newDeleteTxn().fileDeleteOrThrow();

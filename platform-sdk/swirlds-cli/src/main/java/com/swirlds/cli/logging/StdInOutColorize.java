@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.swirlds.cli.utility;
+package com.swirlds.cli.logging;
 
-import static com.swirlds.cli.utility.LogProcessingUtils.colorizeLogLineAnsi;
+import static com.swirlds.cli.logging.LogProcessingUtils.colorizeLogLineAnsi;
 
 import com.swirlds.common.formatting.TextEffect;
 import java.io.BufferedReader;
