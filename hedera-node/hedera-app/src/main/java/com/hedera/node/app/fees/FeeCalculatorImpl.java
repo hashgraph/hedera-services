@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.fees;
 
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_QUERY_HEADER;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_QUERY_RES_HEADER;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_TX_ID_SIZE;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.spi.HapiUtils.countOfCryptographicKeys;
 import static java.util.Objects.requireNonNull;
@@ -113,6 +116,18 @@ public class FeeCalculatorImpl implements FeeCalculator {
         // class to record usage (bpt, rbs, sbs, etc.) for the transaction.
         this.usage = UsageAccumulator.fromGrpc(this.feeData);
         usage.resetForTransaction(baseMeta, sigUsage);
+    }
+
+    public FeeCalculatorImpl(
+            @NonNull final FeeData feeData,
+            @NonNull final ExchangeRate currentRate) {
+        this.feeData = fromPbj(feeData);
+        this.currentRate = fromPbj(currentRate);
+        this.sigUsage = new SigUsage(0, 0, 0);
+        this.usage = UsageAccumulator.fromGrpc(this.feeData);
+        usage.reset();
+        usage.addBpt(BASIC_QUERY_HEADER + BASIC_TX_ID_SIZE);
+        usage.addBpr(BASIC_QUERY_RES_HEADER);
     }
 
     @Override

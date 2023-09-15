@@ -156,6 +156,17 @@ public final class FeeManager {
                 txInfo, payerKey, numVerifications, feeData, exchangeRateManager.activeRate(consensusTime));
     }
 
+    @NonNull
+    public FeeCalculator createFeeCalculator(
+            @NonNull final HederaFunctionality functionality,
+            @NonNull final Instant consensusTime) {
+        // Determine which fee schedule to use, based on the consensus time
+        final var feeData = getFeeData(functionality, consensusTime, SubType.DEFAULT);
+
+        // Create the fee calculator
+        return new FeeCalculatorImpl(feeData, exchangeRateManager.activeRate(consensusTime));
+    }
+
     /**
      * Looks up the fee data for the given transaction and its details.
      */
