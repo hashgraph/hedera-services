@@ -33,7 +33,7 @@ import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.test.event.EventBuilder;
+import com.swirlds.platform.test.event.GossipEventBuilder;
 import com.swirlds.platform.test.fixtures.event.generator.GraphGenerator;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
@@ -71,21 +71,21 @@ class OrphanBufferingLinkerTest {
      */
     private static List<GossipEvent> buildGraph(final Random r) {
         final GossipEvent e0 =
-                EventBuilder.builder().setRandom(r).setCreatorId(new NodeId(1)).buildGossipEvent();
+                GossipEventBuilder.builder().setRandom(r).setCreatorId(new NodeId(1)).buildGossipEvent();
         final GossipEvent e1 =
-                EventBuilder.builder().setRandom(r).setCreatorId(new NodeId(2)).buildGossipEvent();
-        final GossipEvent e2 = EventBuilder.builder()
+                GossipEventBuilder.builder().setRandom(r).setCreatorId(new NodeId(2)).buildGossipEvent();
+        final GossipEvent e2 = GossipEventBuilder.builder()
                 .setRandom(r)
                 .setCreatorId(new NodeId(1))
                 .setSelfParent(e0)
                 .setOtherParent(e1)
                 .buildGossipEvent();
-        final GossipEvent e3 = EventBuilder.builder()
+        final GossipEvent e3 = GossipEventBuilder.builder()
                 .setRandom(r)
                 .setCreatorId(new NodeId(1))
                 .setSelfParent(e2)
                 .buildGossipEvent();
-        final GossipEvent e4 = EventBuilder.builder()
+        final GossipEvent e4 = GossipEventBuilder.builder()
                 .setRandom(r)
                 .setCreatorId(new NodeId(2))
                 .setSelfParent(e1)
@@ -119,9 +119,9 @@ class OrphanBufferingLinkerTest {
         final OrphanBufferTester orphanBuffer =
                 new OrphanBufferTester(pf -> new OrphanBufferingLinker(consensusConfig, pf, GENERATIONS_STORED));
 
-        final GossipEvent e1 = EventBuilder.builder().setRandom(r).buildGossipEvent();
+        final GossipEvent e1 = GossipEventBuilder.builder().setRandom(r).buildGossipEvent();
         final GossipEvent e2 =
-                EventBuilder.builder().setRandom(r).setSelfParent(e1).buildGossipEvent();
+                GossipEventBuilder.builder().setRandom(r).setSelfParent(e1).buildGossipEvent();
 
         orphanBuffer.linkEvent(e2);
         orphanBuffer.assertGeneration();
@@ -256,8 +256,8 @@ class OrphanBufferingLinkerTest {
 
         // before we load the signed state, we will add an orphan into the buffer
         // we expect it to disappear after we load state because it will be ancient
-        final GossipEvent preLoadOrphan = EventBuilder.builder()
-                .setSelfParent(EventBuilder.builder().setGeneration(1).buildGossipEvent())
+        final GossipEvent preLoadOrphan = GossipEventBuilder.builder()
+                .setSelfParent(GossipEventBuilder.builder().setGeneration(1).buildGossipEvent())
                 .buildGossipEvent();
         orphanBuffer.linkEvent(preLoadOrphan);
         Assertions.assertFalse(orphanBuffer.hasLinkedEvents(), "the orphan should not be linked");
@@ -283,8 +283,8 @@ class OrphanBufferingLinkerTest {
         orphanBuffer.loadFromSignedState(signedState);
 
         // now we create an ancient events and insert it
-        final GossipEvent ancient = EventBuilder.builder()
-                .setSelfParent(EventBuilder.builder().setGeneration(ancientGen).buildGossipEvent())
+        final GossipEvent ancient = GossipEventBuilder.builder()
+                .setSelfParent(GossipEventBuilder.builder().setGeneration(ancientGen).buildGossipEvent())
                 .buildGossipEvent();
         orphanBuffer.linkEvent(ancient);
         Assertions.assertSame(
@@ -294,9 +294,9 @@ class OrphanBufferingLinkerTest {
         Assertions.assertFalse(orphanBuffer.hasLinkedEvents(), "there should be no event left in the buffer");
 
         // now we create a non-ancient orphan and insert it
-        final GossipEvent orphan = EventBuilder.builder()
+        final GossipEvent orphan = GossipEventBuilder.builder()
                 .setSelfParent(
-                        EventBuilder.builder().setGeneration(nonAncientGen).buildGossipEvent())
+                        GossipEventBuilder.builder().setGeneration(nonAncientGen).buildGossipEvent())
                 .buildGossipEvent();
         orphanBuffer.linkEvent(orphan);
         Assertions.assertFalse(orphanBuffer.hasLinkedEvents(), "the orphan should not be linked");
@@ -321,7 +321,7 @@ class OrphanBufferingLinkerTest {
         final OrphanBufferTester orphanBuffer =
                 new OrphanBufferTester(pf -> new OrphanBufferingLinker(consensusConfig, pf, GENERATIONS_STORED));
         final GossipEvent outsideWindow =
-                EventBuilder.builder().setGeneration(GENERATIONS_STORED + 1).buildGossipEvent();
+                GossipEventBuilder.builder().setGeneration(GENERATIONS_STORED + 1).buildGossipEvent();
 
         assertDoesNotThrow(
                 () -> orphanBuffer.linkEvent(outsideWindow),

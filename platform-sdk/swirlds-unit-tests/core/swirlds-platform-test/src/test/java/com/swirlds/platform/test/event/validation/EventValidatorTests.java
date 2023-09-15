@@ -40,7 +40,7 @@ import com.swirlds.platform.event.validation.StaticValidators;
 import com.swirlds.platform.event.validation.TransactionSizeValidator;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
-import com.swirlds.platform.test.event.EventBuilder;
+import com.swirlds.platform.test.event.GossipEventBuilder;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
@@ -79,7 +79,7 @@ class EventValidatorTests {
 
     @Test
     void baseEventValidators() {
-        final GossipEvent event = EventBuilder.builder().buildGossipEvent();
+        final GossipEvent event = GossipEventBuilder.builder().buildGossipEvent();
         assertTrue(new GossipEventValidators(List.of()).isEventValid(event));
         assertTrue(new GossipEventValidators(List.of(VALID)).isEventValid(event));
         assertTrue(new GossipEventValidators(List.of(VALID, VALID, VALID)).isEventValid(event));
@@ -92,12 +92,12 @@ class EventValidatorTests {
         final AtomicBoolean isValid = new AtomicBoolean(true);
         final EventValidator eventValidator = new EventValidator((e) -> isValid.get(), intakeEvents::add);
 
-        final GossipEvent validEvent = EventBuilder.builder().buildGossipEvent();
+        final GossipEvent validEvent = GossipEventBuilder.builder().buildGossipEvent();
         eventValidator.validateEvent(validEvent);
         assertTrue(intakeEvents.contains(validEvent), "event should have been passed to intake");
 
         isValid.set(false);
-        final GossipEvent invalidEvent = EventBuilder.builder().buildGossipEvent();
+        final GossipEvent invalidEvent = GossipEventBuilder.builder().buildGossipEvent();
         eventValidator.validateEvent(invalidEvent);
         assertFalse(intakeEvents.contains(invalidEvent), "event should not have been passed to intake");
     }
@@ -107,7 +107,7 @@ class EventValidatorTests {
         final AtomicBoolean isDuplicate = new AtomicBoolean(true);
         final EventIntakeMetrics metrics = mock(EventIntakeMetrics.class);
         final EventDeduplication deduplication = new EventDeduplication(e -> isDuplicate.get(), metrics);
-        final GossipEvent event = EventBuilder.builder().buildGossipEvent();
+        final GossipEvent event = GossipEventBuilder.builder().buildGossipEvent();
 
         assertFalse(deduplication.isEventValid(event), "it should be a duplicate, so not valid");
         verify(metrics, description("metrics should have recorded the duplicate event"))
@@ -130,7 +130,7 @@ class EventValidatorTests {
         final int maxTransactionBytesPerEvent = 2000;
         final GossipEventValidator validator = new TransactionSizeValidator(maxTransactionBytesPerEvent);
         final GossipEvent event =
-                EventBuilder.builder().setNumberOfTransactions(transAmount).buildGossipEvent();
+                GossipEventBuilder.builder().setNumberOfTransactions(transAmount).buildGossipEvent();
 
         int eventTransSize = 0;
         for (final Transaction t : event.getHashedData().getTransactions()) {
@@ -213,19 +213,19 @@ class EventValidatorTests {
     void invalidCreationTime() {
         final Instant time = Instant.now();
         final GossipEvent gossipEvent =
-                EventBuilder.builder().setTimestamp(time).buildGossipEvent();
+                GossipEventBuilder.builder().setTimestamp(time).buildGossipEvent();
         final EventImpl event = new EventImpl(gossipEvent, null, null);
 
         event.setSelfParent(new EventImpl(
-                EventBuilder.builder().setTimestamp(time.plusNanos(100)).buildGossipEvent(), null, null));
+                GossipEventBuilder.builder().setTimestamp(time.plusNanos(100)).buildGossipEvent(), null, null));
         assertFalse(StaticValidators.isValidTimeCreated(event), "should be invalid");
 
         event.setSelfParent(new EventImpl(
-                EventBuilder.builder().setTimestamp(time.plusNanos(1)).buildGossipEvent(), null, null));
+                GossipEventBuilder.builder().setTimestamp(time.plusNanos(1)).buildGossipEvent(), null, null));
         assertFalse(StaticValidators.isValidTimeCreated(event), "should be invalid");
 
         event.setSelfParent(
-                new EventImpl(EventBuilder.builder().setTimestamp(time).buildGossipEvent(), null, null));
+                new EventImpl(GossipEventBuilder.builder().setTimestamp(time).buildGossipEvent(), null, null));
         assertFalse(StaticValidators.isValidTimeCreated(event), "should be invalid");
     }
 }

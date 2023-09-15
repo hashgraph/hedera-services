@@ -30,7 +30,7 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.chatter.protocol.ChatterCore;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.test.event.EventBuilder;
+import com.swirlds.platform.test.event.GossipEventBuilder;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.LinkedList;
 import java.util.List;
@@ -60,7 +60,7 @@ public class ChatterCoreTests {
         chatterCore.newPeerInstance(new NodeId(0L), e -> {});
         chatterCore.newPeerInstance(new NodeId(1L), e -> {});
 
-        final EventBuilder builder = EventBuilder.builder().setRandom(random);
+        final GossipEventBuilder builder = GossipEventBuilder.builder().setRandom(random);
 
         long minGen = 100;
         final long windowSize = 100;
@@ -115,14 +115,14 @@ public class ChatterCoreTests {
         chatterCore.loadFromSignedState(signedState);
     }
 
-    private List<GossipEvent> generateEventsBelow(final EventBuilder builder, final long lowerBound) {
+    private List<GossipEvent> generateEventsBelow(final GossipEventBuilder builder, final long lowerBound) {
         final List<GossipEvent> events = new LinkedList<>();
         events.add(builder.setGeneration(lowerBound - 1).buildGossipEvent());
         events.add(builder.setGeneration(lowerBound - 2).buildGossipEvent());
         return events;
     }
 
-    private List<GossipEvent> generateEventsAbove(final EventBuilder builder, final long upperBound) {
+    private List<GossipEvent> generateEventsAbove(final GossipEventBuilder builder, final long upperBound) {
         final List<GossipEvent> events = new LinkedList<>();
         events.add(builder.setGeneration(upperBound).buildGossipEvent());
         events.add(builder.setGeneration(upperBound + 1).buildGossipEvent());
@@ -130,7 +130,7 @@ public class ChatterCoreTests {
     }
 
     private List<GossipEvent> generateEventsInWindow(
-            final EventBuilder builder, final long lowerBound, final long upperBound) {
+            final GossipEventBuilder builder, final long lowerBound, final long upperBound) {
         final List<GossipEvent> events = new LinkedList<>();
         events.add(builder.setGeneration(lowerBound).buildGossipEvent());
         events.add(builder.setGeneration((upperBound + lowerBound) / 2).buildGossipEvent());

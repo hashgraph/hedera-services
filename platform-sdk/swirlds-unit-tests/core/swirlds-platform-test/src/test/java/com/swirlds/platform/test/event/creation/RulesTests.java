@@ -31,7 +31,7 @@ import com.swirlds.platform.event.creation.BelowIntCreationRule;
 import com.swirlds.platform.event.creation.ChatteringRule;
 import com.swirlds.platform.event.creation.OtherParentTracker;
 import com.swirlds.platform.gossip.chatter.protocol.peer.CommunicationState;
-import com.swirlds.platform.test.event.EventBuilder;
+import com.swirlds.platform.test.event.GossipEventBuilder;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
 import java.util.HashSet;
@@ -88,8 +88,8 @@ class RulesTests {
 
         assertEquals(EventCreationRuleResponse.PASS, tracker.shouldCreateEvent(null, null), "null should always pass");
 
-        final EventBuilder myBuilder = EventBuilder.builder().setCreatorId(new NodeId(1));
-        final EventBuilder otherBuilder = EventBuilder.builder().setCreatorId(new NodeId(1));
+        final GossipEventBuilder myBuilder = GossipEventBuilder.builder().setCreatorId(new NodeId(1));
+        final GossipEventBuilder otherBuilder = GossipEventBuilder.builder().setCreatorId(new NodeId(1));
 
         final GossipEvent other1 = otherBuilder.buildGossipEvent();
         final GossipEvent self1 = otherBuilder.buildGossipEvent();

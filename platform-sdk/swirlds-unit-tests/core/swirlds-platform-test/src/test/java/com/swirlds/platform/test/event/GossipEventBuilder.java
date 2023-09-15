@@ -32,7 +32,7 @@ import com.swirlds.platform.internal.EventImpl;
 import java.time.Instant;
 import java.util.Random;
 
-public class EventBuilder {
+public class GossipEventBuilder {
     private static final Instant DEFAULT_TIMESTAMP = Instant.ofEpochMilli(1588771316678L);
     private Random random;
     private NodeId creatorId;
@@ -46,11 +46,11 @@ public class EventBuilder {
 
     private boolean consensus;
 
-    public static EventBuilder builder() {
-        return new EventBuilder().setDefaults();
+    public static GossipEventBuilder builder() {
+        return new GossipEventBuilder().setDefaults();
     }
 
-    public EventBuilder setDefaults() {
+    public GossipEventBuilder setDefaults() {
         random = new Random();
         creatorId = new NodeId(0);
         timestamp = null;
@@ -64,67 +64,67 @@ public class EventBuilder {
         return this;
     }
 
-    public EventBuilder setRandom(final Random random) {
+    public GossipEventBuilder setRandom(final Random random) {
         this.random = random;
         return this;
     }
 
-    public EventBuilder setCreatorId(final long creatorId) {
+    public GossipEventBuilder setCreatorId(final long creatorId) {
         this.creatorId = new NodeId(creatorId);
         return this;
     }
 
-    public EventBuilder setCreatorId(final NodeId creatorId) {
+    public GossipEventBuilder setCreatorId(final NodeId creatorId) {
         this.creatorId = creatorId;
         return this;
     }
 
-    public EventBuilder setTimestamp(final Instant timestamp) {
+    public GossipEventBuilder setTimestamp(final Instant timestamp) {
         this.timestamp = timestamp;
         return this;
     }
 
-    public EventBuilder setNumberOfTransactions(final int numberOfTransactions) {
+    public GossipEventBuilder setNumberOfTransactions(final int numberOfTransactions) {
         this.numberOfTransactions = numberOfTransactions;
         return this;
     }
 
-    public EventBuilder setTransactionSize(final int transactionSize) {
+    public GossipEventBuilder setTransactionSize(final int transactionSize) {
         this.transactionSize = transactionSize;
         return this;
     }
 
-    public EventBuilder setSelfParent(final GossipEvent selfParent) {
+    public GossipEventBuilder setSelfParent(final GossipEvent selfParent) {
         this.selfParent = selfParent;
         return this;
     }
 
-    public EventBuilder setOtherParent(final GossipEvent otherParent) {
+    public GossipEventBuilder setOtherParent(final GossipEvent otherParent) {
         this.otherParent = otherParent;
         return this;
     }
 
-    public EventBuilder setSelfParent(final EventImpl selfParent) {
+    public GossipEventBuilder setSelfParent(final EventImpl selfParent) {
         this.selfParent = selfParent;
         return this;
     }
 
-    public EventBuilder setOtherParent(final EventImpl otherParent) {
+    public GossipEventBuilder setOtherParent(final EventImpl otherParent) {
         this.otherParent = otherParent;
         return this;
     }
 
-    public EventBuilder setFakeHash(final boolean fakeHash) {
+    public GossipEventBuilder setFakeHash(final boolean fakeHash) {
         this.fakeHash = fakeHash;
         return this;
     }
 
-    public EventBuilder setGeneration(final long generation) {
+    public GossipEventBuilder setGeneration(final long generation) {
         fakeGeneration = generation;
         return this;
     }
 
-    public EventBuilder setConsensus(final boolean consensus) {
+    public GossipEventBuilder setConsensus(final boolean consensus) {
         this.consensus = consensus;
         return this;
     }
@@ -214,7 +214,7 @@ public class EventBuilder {
         return event;
     }
 
-    public EventBuilder reset() {
+    public GossipEventBuilder reset() {
         return setDefaults();
     }
 }
