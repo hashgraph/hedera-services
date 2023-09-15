@@ -58,21 +58,21 @@ public class FreezeUnfreezeXTest extends AbstractContractXTest {
         runHtsCallAndExpectOnSuccess(
                 OWNER_BESU_ADDRESS,
                 Bytes.wrap(FreezeUnfreezeTranslator.FREEZE
-                        .encodeCallWithArgs(OWNER_HEADLONG_ADDRESS, A_TOKEN_ADDRESS)
+                        .encodeCallWithArgs(A_TOKEN_ADDRESS, OWNER_HEADLONG_ADDRESS)
                         .array()),
                 output -> assertEquals(Bytes.wrap(ReturnTypes.encodedRc(SUCCESS).array()), output));
         // UNFREEZE
         runHtsCallAndExpectOnSuccess(
                 OWNER_BESU_ADDRESS,
                 Bytes.wrap(FreezeUnfreezeTranslator.UNFREEZE
-                        .encodeCallWithArgs(OWNER_HEADLONG_ADDRESS, A_TOKEN_ADDRESS)
+                        .encodeCallWithArgs(A_TOKEN_ADDRESS, OWNER_HEADLONG_ADDRESS)
                         .array()),
                 output -> assertEquals(Bytes.wrap(ReturnTypes.encodedRc(SUCCESS).array()), output));
         // FREEZE NO FREEZE KEY
         runHtsCallAndExpectOnSuccess(
                 OWNER_BESU_ADDRESS,
                 Bytes.wrap(FreezeUnfreezeTranslator.FREEZE
-                        .encodeCallWithArgs(OWNER_HEADLONG_ADDRESS, B_TOKEN_ADDRESS)
+                        .encodeCallWithArgs(B_TOKEN_ADDRESS, OWNER_HEADLONG_ADDRESS)
                         .array()),
                 output -> assertEquals(
                         Bytes.wrap(
