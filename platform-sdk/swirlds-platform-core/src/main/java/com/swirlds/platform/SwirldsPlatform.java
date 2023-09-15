@@ -68,13 +68,13 @@ import com.swirlds.common.system.transaction.internal.SystemTransaction;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
+import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.LoggingClearables;
 import com.swirlds.logging.LogMarker;
 import com.swirlds.platform.components.EventIntake;
-import com.swirlds.platform.components.EventTaskDispatcher;
 import com.swirlds.platform.components.appcomm.AppCommunicationComponent;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.components.transaction.system.ConsensusSystemTransactionManager;
@@ -163,6 +163,8 @@ import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+// TODO search for deleted configuration!!!
+
 public class SwirldsPlatform implements Platform, Startable {
 
     public static final String PLATFORM_THREAD_POOL_NAME = "platform-core";
@@ -203,7 +205,6 @@ public class SwirldsPlatform implements Platform, Startable {
     private final long initialMinimumGenerationNonAncient;
 
     private final StateManagementComponent stateManagementComponent;
-    private final EventTaskDispatcher eventTaskDispatcher;
     private final QueueThread<GossipEvent> intakeQueue;
     private final QueueThread<ReservedSignedState> stateHashSignQueue;
     private final EventLinker eventLinker;
@@ -549,8 +550,6 @@ public class SwirldsPlatform implements Platform, Startable {
         // validates events received from gossip
         final EventValidator eventValidator = new EventValidator(eventValidators, eventIntake::addUnlinkedEvent);
 
-        eventTaskDispatcher = new EventTaskDispatcher(time, eventValidator, eventIntakeMetrics, intakeCycleStats);
-
         intakeQueue = components.add(new QueueThreadConfiguration<GossipEvent>(threadManager)
                 .setNodeId(selfId)
                 .setComponent(PLATFORM_THREAD_POOL_NAME)
@@ -589,6 +588,14 @@ public class SwirldsPlatform implements Platform, Startable {
 
         final boolean startedFromGenesis = initialState.isGenesisState();
 
+        final InterruptableConsumer<GossipEvent> eventIntakeLambda = event -> {
+            intakeCycleStats.startedIntake();
+            final long start = time.nanoTime();
+            eventValidator.validateEvent(event);
+            eventIntakeMetrics.processedEventTask(start);
+            intakeCycleStats.doneIntake();
+        };
+
         gossip = GossipFactory.buildGossip(
                 platformContext,
                 threadManager,
@@ -606,7 +613,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 freezeManager,
                 swirldStateManager,
                 stateManagementComponent,
-                eventTaskDispatcher::dispatchTask,
+                eventIntakeLambda,
                 eventObserverDispatcher,
                 eventIntakeMetrics,
                 syncMetrics,
@@ -1033,7 +1040,6 @@ public class SwirldsPlatform implements Platform, Startable {
                     Time.getCurrent(),
                     preconsensusEventFileManager,
                     preconsensusEventWriter,
-                    eventTaskDispatcher,
                     intakeQueue,
                     consensusRoundHandler,
                     stateHashSignQueue,

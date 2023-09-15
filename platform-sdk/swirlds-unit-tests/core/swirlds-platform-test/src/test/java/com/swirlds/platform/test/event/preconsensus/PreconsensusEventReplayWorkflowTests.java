@@ -23,7 +23,6 @@ import static com.swirlds.platform.test.event.preconsensus.AsyncPreconsensusEven
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
@@ -34,7 +33,6 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
-import com.swirlds.platform.components.EventTaskDispatcher;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventFileManager;
@@ -92,13 +90,17 @@ class PreconsensusEventReplayWorkflowTests {
             return it;
         });
 
-        final EventTaskDispatcher eventTaskDispatcher = mock(EventTaskDispatcher.class);
+        final QueueThread<GossipEvent> eventIntakeTaskQueueThread = mock(QueueThread.class);
+        doAnswer(invocation -> {
+                    assertEquals(TestPhase.FLUSH_INTAKE_QUEUE, phase.get());
+                    phase.set(TestPhase.FLUSH_CONSENSUS_ROUND_HANDLER);
+                    return null;
+                })
+                .when(eventIntakeTaskQueueThread)
+                .waitUntilNotBusy();
+
         final AtomicInteger nextIndex = new AtomicInteger(0);
         doAnswer(invocation -> {
-                    if (phase.get() != TestPhase.REPLAY_EVENTS) {
-                        fail("EventTaskDispatcher should not be called until after replaying events");
-                    }
-
                     final GossipEvent event = invocation.getArgument(0);
                     assertNotNull(event.getHashedData().getHash());
 
@@ -113,17 +115,8 @@ class PreconsensusEventReplayWorkflowTests {
 
                     return null;
                 })
-                .when(eventTaskDispatcher)
-                .dispatchTask(any());
-
-        final QueueThread<GossipEvent> eventIntakeTaskQueueThread = mock(QueueThread.class);
-        doAnswer(invocation -> {
-                    assertEquals(TestPhase.FLUSH_INTAKE_QUEUE, phase.get());
-                    phase.set(TestPhase.FLUSH_CONSENSUS_ROUND_HANDLER);
-                    return null;
-                })
                 .when(eventIntakeTaskQueueThread)
-                .waitUntilNotBusy();
+                .put(any());
 
         final ConsensusRoundHandler consensusRoundHandler = mock(ConsensusRoundHandler.class);
         doAnswer(invocation -> {
@@ -170,7 +163,6 @@ class PreconsensusEventReplayWorkflowTests {
                 Time.getCurrent(),
                 preconsensusEventFileManager,
                 preconsensusEventWriter,
-                eventTaskDispatcher,
                 eventIntakeTaskQueueThread,
                 consensusRoundHandler,
                 stateHashSignQueue,

@@ -27,7 +27,6 @@ import com.swirlds.common.formatting.UnitFormatter;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.platform.components.EventTaskDispatcher;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
@@ -36,6 +35,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
+import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -55,7 +55,6 @@ public final class PreconsensusEventReplayWorkflow {
      * @param threadManager                      the thread manager for this node
      * @param preconsensusEventFileManager       manages the preconsensus event files on disk
      * @param preconsensusEventWriter            writes preconsensus events to disk
-     * @param eventTaskDispatcher                where events read from the stream should be passed
      * @param intakeQueue                        the queue thread for the event intake component
      * @param consensusRoundHandler              the object responsible for applying transactions to consensus rounds
      * @param stateHashSignQueue                 the queue thread for hashing and signing states
@@ -68,7 +67,6 @@ public final class PreconsensusEventReplayWorkflow {
             @NonNull final Time time,
             @NonNull final PreconsensusEventFileManager preconsensusEventFileManager,
             @NonNull final PreconsensusEventWriter preconsensusEventWriter,
-            @NonNull final EventTaskDispatcher eventTaskDispatcher,
             @NonNull final QueueThread<GossipEvent> intakeQueue,
             @NonNull final ConsensusRoundHandler consensusRoundHandler,
             @NonNull final QueueThread<ReservedSignedState> stateHashSignQueue,
@@ -80,7 +78,6 @@ public final class PreconsensusEventReplayWorkflow {
         Objects.requireNonNull(time);
         Objects.requireNonNull(preconsensusEventFileManager);
         Objects.requireNonNull(preconsensusEventWriter);
-        Objects.requireNonNull(eventTaskDispatcher);
         Objects.requireNonNull(intakeQueue);
         Objects.requireNonNull(consensusRoundHandler);
         Objects.requireNonNull(stateHashSignQueue);
@@ -97,8 +94,17 @@ public final class PreconsensusEventReplayWorkflow {
             final IOIterator<GossipEvent> iterator =
                     preconsensusEventFileManager.getEventIterator(initialMinimumGenerationNonAncient);
 
-            final PreconsensusEventReplayPipeline eventReplayPipeline = new PreconsensusEventReplayPipeline(
-                    platformContext, threadManager, iterator, eventTaskDispatcher::dispatchTask);
+            final Consumer<GossipEvent> enqueueEvent = event -> {
+                try {
+                    intakeQueue.put(event);
+                } catch (final InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException("interrupted while submitting event from preconsensus stream", e);
+                }
+            };
+
+            final PreconsensusEventReplayPipeline eventReplayPipeline =
+                    new PreconsensusEventReplayPipeline(platformContext, threadManager, iterator, enqueueEvent);
             eventReplayPipeline.replayEvents();
 
             waitForReplayToComplete(intakeQueue, consensusRoundHandler, stateHashSignQueue);
@@ -121,8 +127,8 @@ public final class PreconsensusEventReplayWorkflow {
     }
 
     /**
-     * Wait for all events to be replayed. Some of this work happens on asynchronous threads, so we need to wait for them
-     * to complete even after we exhaust all available events from the stream.
+     * Wait for all events to be replayed. Some of this work happens on asynchronous threads, so we need to wait for
+     * them to complete even after we exhaust all available events from the stream.
      */
     private static void waitForReplayToComplete(
             @NonNull final QueueThread<GossipEvent> intakeQueue,
