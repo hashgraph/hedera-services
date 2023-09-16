@@ -13,8 +13,8 @@
 /hedera-node/README.md                          @hashgraph/hedera-services @hashgraph/release-engineering @hashgraph/release-engineering-managers
 
 # Hedera Node Deployments - Configuration & Grafana Dashboards
-/hedera-node/configuration/**                   @hashgraph/release-engineering @hashgraph/devops @hashgraph/hedera-services @hashgraph/platform-hashgraph
-/hedera-node/infrastructure/**                  @hashgraph/release-engineering @hashgraph/devops @hashgraph/hedera-services
+/hedera-node/configuration/**                   @rbair23 @dalvizu @poulok @netopyr @Nana-EC @SimiHunjan @steven-sheehy @nickpoorman @nathanklick
+/hedera-node/infrastructure/**                  @hashgraph/release-engineering @hashgraph/devops @hashgraph/hedera-base @hashgraph/hedera-services
 
 # Hedera Node Docker Definitions
 /hedera-node/docker/                            @hashgraph/hedera-services @hashgraph/release-engineering @hashgraph/release-engineering-managers
