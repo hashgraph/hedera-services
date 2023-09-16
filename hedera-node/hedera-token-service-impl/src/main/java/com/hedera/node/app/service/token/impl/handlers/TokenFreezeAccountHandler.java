@@ -114,8 +114,8 @@ public class TokenFreezeAccountHandler implements TransactionHandler {
             throws HandleException {
         // Check that the token exists
         final var tokenId = op.tokenOrElse(TokenID.DEFAULT);
-        final var token = TokenHandlerHelper.getIfUsable(tokenId, tokenStore);
         final var tokenMeta = tokenStore.getTokenMeta(tokenId);
+        validateTrue(tokenMeta != null, INVALID_TOKEN_ID);
 
         // Check that the token has a freeze key
         validateTrue(tokenMeta.hasFreezeKey(), TOKEN_HAS_NO_FREEZE_KEY);
@@ -124,6 +124,9 @@ public class TokenFreezeAccountHandler implements TransactionHandler {
         final var accountId = op.accountOrElse(AccountID.DEFAULT);
         final var account = accountStore.getAccountById(accountId);
         validateTrue(account != null, INVALID_ACCOUNT_ID);
+
+        // Check that token exists
+        TokenHandlerHelper.getIfUsable(tokenId, tokenStore);
 
         // Check that the token is associated to the account
         final var tokenRel = tokenRelStore.getForModify(accountId, tokenId);

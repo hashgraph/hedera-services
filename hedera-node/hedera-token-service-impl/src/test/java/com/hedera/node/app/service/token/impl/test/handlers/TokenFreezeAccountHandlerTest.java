@@ -29,7 +29,6 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.FIRST_TOKE
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_NO_SPECIAL_KEYS;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_FREEZE;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FREEZE_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_WIPE_KT;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -175,7 +174,7 @@ class TokenFreezeAccountHandlerTest {
             final var noAcctTxn = newFreezeTxn(pbjToken, null);
             given(readableTokenStore.get(pbjToken))
                     .willReturn(Token.newBuilder().tokenId(pbjToken).build());
-            given(readableTokenStore.getTokenMeta(pbjToken)).willReturn(tokenMetaWithFreezeKey());
+            given(readableTokenStore.getTokenMeta(pbjToken)).willReturn(tokenMetaWithFreezeKey(null));
             given(context.body()).willReturn(noAcctTxn);
 
             assertThatThrownBy(() -> subject.handle(context))
@@ -199,8 +198,6 @@ class TokenFreezeAccountHandlerTest {
         @Test
         void tokenHasNoFreezeKey() {
             final var token = toPbj(KNOWN_TOKEN_NO_SPECIAL_KEYS);
-            given(readableTokenStore.get(token))
-                    .willReturn(Token.newBuilder().tokenId(token).build());
             given(readableTokenStore.getTokenMeta(token)).willReturn(tokenMetaWithFreezeKey(null));
             final var txn = newFreezeTxn(token);
             given(context.body()).willReturn(txn);
@@ -214,8 +211,6 @@ class TokenFreezeAccountHandlerTest {
         @Test
         void accountNotFound() {
             final var token = toPbj(KNOWN_TOKEN_WITH_FREEZE);
-            given(readableTokenStore.get(token))
-                    .willReturn(Token.newBuilder().tokenId(token).build());
             given(readableTokenStore.getTokenMeta(token)).willReturn(tokenMetaWithFreezeKey());
             given(readableAccountStore.getAccountById(ACCOUNT_13257)).willReturn(null);
             final var txn = newFreezeTxn(token);
