@@ -75,7 +75,6 @@ public class TokenManagementSpecsStateful extends HapiSuite {
 
         return defaultHapiSpec("FreezeMgmtFailureCasesWork")
                 .given(
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, ONE_HUNDRED_HBARS)),
                         fileUpdate(APP_PROPERTIES)
                                 .payingWith(ADDRESS_BOOK_CONTROL)
                                 .overridingProps(Map.of("tokens.maxPerAccount", "" + 1000)),
