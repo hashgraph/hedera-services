@@ -172,10 +172,8 @@ class TokenFreezeAccountHandlerTest {
         void accountNotPresentInTxnBody() {
             final var pbjToken = toPbj(KNOWN_TOKEN_WITH_FREEZE);
             final var noAcctTxn = newFreezeTxn(pbjToken, null);
-            given(readableTokenStore.get(pbjToken))
-                    .willReturn(Token.newBuilder().tokenId(pbjToken).build());
-            given(readableTokenStore.getTokenMeta(pbjToken)).willReturn(tokenMetaWithFreezeKey(null));
             given(context.body()).willReturn(noAcctTxn);
+            given(readableTokenStore.getTokenMeta(pbjToken)).willReturn(tokenMetaWithFreezeKey());
 
             assertThatThrownBy(() -> subject.handle(context))
                     .isInstanceOf(HandleException.class)
