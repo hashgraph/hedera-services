@@ -48,7 +48,7 @@ import org.apache.tuweni.bytes.Bytes;
  *     <li>Transfer {@code ERC721_TOKEN} serial 1234 from SENDER to RECEIVER.</li>*
  *     <li>Revoke KYC {@code ERC721_TOKEN} via {@link GrantRevokeKycTranslator#REVOKE_KYC}.</li>
  *     <li>Transfer {@code ERC721_TOKEN} serial 2345 from SENDER to RECEIVER.  This should fail with code ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN</li>*
- *     <li>Unpause {@code ERC721_TOKEN} via {@link GrantRevokeKycTranslator#GRANT_KYC}.</li>
+ *     <li>Grant KYC {@code ERC721_TOKEN} via {@link GrantRevokeKycTranslator#GRANT_KYC}.</li>
  *     <li>Transfer {@code ERC721_TOKEN} serial 2345 from SENDER to RECEIVER.  This should now succeed</li>*
  * </ol>
  */
