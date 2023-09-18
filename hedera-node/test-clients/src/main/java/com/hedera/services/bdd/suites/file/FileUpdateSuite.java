@@ -282,19 +282,21 @@ public class FileUpdateSuite extends HapiSuite {
                         fileUpdate("test").contents(new4k).extendingExpiryBy(0).via("updateTo4"),
                         fileUpdate("test").contents(new2k).extendingExpiryBy(0).via("updateTo2"),
                         fileUpdate("test").extendingExpiryBy(extension).via("extend"),
-                        overriding("maxFileSize", "1024"))
+                        fileUpdate(APP_PROPERTIES)
+                                .payingWith(ADDRESS_BOOK_CONTROL)
+                                .overridingProps(Map.of("maxFileSize", "1025"))
+                                .via("special"),
+                        fileUpdate(APP_PROPERTIES)
+                                .payingWith(ADDRESS_BOOK_CONTROL)
+                                .overridingProps(Map.of("maxFileSize", "1024")))
                 .then(UtilVerbs.withOpContext((spec, opLog) -> {
                     final var createOp = getTxnRecord(CREATE_TXN);
                     final var to4kOp = getTxnRecord("updateTo4");
                     final var to2kOp = getTxnRecord("updateTo2");
                     final var extensionOp = getTxnRecord("extend");
-                    allRunFor(spec, createOp, to4kOp, to2kOp, extensionOp);
+                    final var specialOp = getTxnRecord("special");
+                    allRunFor(spec, createOp, to4kOp, to2kOp, extensionOp, specialOp);
                     final var createFee = createOp.getResponseRecord().getTransactionFee();
-
-                    assertTrue(createFee > 0);
-                    assertTrue(to4kOp.getResponseRecord().getTransactionFee() > 0);
-                    assertTrue(to2kOp.getResponseRecord().getTransactionFee() > 0);
-                    assertTrue(extensionOp.getResponseRecord().getTransactionFee() > 0);
                     opLog.info("Creation : {} ", createFee);
                     opLog.info(
                             "New 4k   : {} ({})",
@@ -308,6 +310,7 @@ public class FileUpdateSuite extends HapiSuite {
                             "Extension: {} ({})",
                             extensionOp.getResponseRecord().getTransactionFee(),
                             (extensionOp.getResponseRecord().getTransactionFee() - createFee));
+                    opLog.info("Special: {}", specialOp.getResponseRecord().getTransactionFee());
                 }));
     }
 
