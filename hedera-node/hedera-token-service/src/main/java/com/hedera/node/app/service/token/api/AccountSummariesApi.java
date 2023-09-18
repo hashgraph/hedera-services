@@ -57,6 +57,8 @@ import java.util.function.UnaryOperator;
  */
 public interface AccountSummariesApi {
     int EVM_ADDRESS_SIZE = 20;
+    int SENTINEL_NODE_ID = -1;
+    AccountID SENTINEL_ACCOUNT_ID = AccountID.newBuilder().accountNum(0).build();
 
     /**
      * Returns the hexed EVM address of the given account.
@@ -193,11 +195,11 @@ public interface AccountSummariesApi {
 
         final var stakingInfo =
                 StakingInfo.newBuilder().declineReward(account.declineReward()).stakedToMe(account.stakedToMe());
-        if (account.hasStakedNodeId()) {
+        if (account.hasStakedNodeId() && account.stakedNodeId() != SENTINEL_NODE_ID) {
             stakingInfo.stakedNodeId(account.stakedNodeIdOrThrow());
             addNodeStakeMeta(
                     numStoredPeriods, stakePeriodMins, areRewardsActive, account, stakingInfoStore, stakingInfo);
-        } else if (account.hasStakedAccountId()) {
+        } else if (account.hasStakedAccountId() && account.stakedAccountId() != null) {
             stakingInfo.stakedAccountId(account.stakedAccountIdOrThrow());
         }
         return stakingInfo.build();

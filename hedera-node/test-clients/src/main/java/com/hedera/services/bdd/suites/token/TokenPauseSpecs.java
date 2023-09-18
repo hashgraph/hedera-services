@@ -120,6 +120,7 @@ public final class TokenPauseSpecs extends HapiSuite {
         return true;
     }
 
+    @HapiTest
     private HapiSpec cannotAddPauseKeyViaTokenUpdate() {
         return defaultHapiSpec("CannotAddPauseKeyViaTokenUpdate")
                 .given(newKeyNamed(PAUSE_KEY), newKeyNamed(ADMIN_KEY))
