@@ -73,9 +73,7 @@ public class WipeXTest extends AbstractContractXTest {
                 OWNER_BESU_ADDRESS,
                 Bytes.wrap(WipeTranslator.WIPE_NFT
                         .encodeCallWithArgs(
-                                ERC721_TOKEN_ADDRESS,
-                                OWNER_HEADLONG_ADDRESS,
-                                new long[]{SN_1234.serialNumber()})
+                                ERC721_TOKEN_ADDRESS, OWNER_HEADLONG_ADDRESS, new long[] {SN_1234.serialNumber()})
                         .array()),
                 assertSuccess());
 
@@ -83,10 +81,7 @@ public class WipeXTest extends AbstractContractXTest {
         runHtsCallAndExpectOnSuccess(
                 OWNER_BESU_ADDRESS,
                 Bytes.wrap(WipeTranslator.WIPE_FUNGIBLE_V1
-                        .encodeCallWithArgs(
-                                ERC20_TOKEN_ADDRESS,
-                                OWNER_HEADLONG_ADDRESS,
-                                10L)
+                        .encodeCallWithArgs(ERC20_TOKEN_ADDRESS, OWNER_HEADLONG_ADDRESS, 10L)
                         .array()),
                 assertSuccess());
 
@@ -94,10 +89,7 @@ public class WipeXTest extends AbstractContractXTest {
         runHtsCallAndExpectOnSuccess(
                 OWNER_BESU_ADDRESS,
                 Bytes.wrap(WipeTranslator.WIPE_FUNGIBLE_V2
-                        .encodeCallWithArgs(
-                                ERC20_TOKEN_ADDRESS,
-                                OWNER_HEADLONG_ADDRESS,
-                                10L)
+                        .encodeCallWithArgs(ERC20_TOKEN_ADDRESS, OWNER_HEADLONG_ADDRESS, 10L)
                         .array()),
                 assertSuccess());
     }
@@ -175,18 +167,17 @@ public class WipeXTest extends AbstractContractXTest {
     protected void assertExpectedAccounts(@NotNull final ReadableKVState<AccountID, Account> accounts) {
         final var account = accounts.get(OWNER_ID);
         assertNotNull(account);
-        //Number of owned NFTs should be decreased by 1
+        // Number of owned NFTs should be decreased by 1
         assertEquals(NUMBER_OWNED_NFTS - 1, account.numberOwnedNfts());
     }
 
     @Override
     protected void assertExpectedTokenRelations(
             @NotNull final ReadableKVState<EntityIDPair, TokenRelation> tokenRelationships) {
-        final var tokenRelation = tokenRelationships.get(
-                EntityIDPair.newBuilder()
-                        .tokenId(ERC20_TOKEN_ID)
-                        .accountId(OWNER_ID)
-                        .build());
+        final var tokenRelation = tokenRelationships.get(EntityIDPair.newBuilder()
+                .tokenId(ERC20_TOKEN_ID)
+                .accountId(OWNER_ID)
+                .build());
         assertNotNull(tokenRelation);
         // Token balance should be decreased by 20
         assertEquals(TOKEN_BALANCE - 20L, tokenRelation.balance());

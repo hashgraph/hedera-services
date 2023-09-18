@@ -98,6 +98,8 @@ public class WipeDecoder {
     }
 
     private TransactionBody bodyOf(@NonNull final TokenWipeAccountTransactionBody wipeAccountTransactionBody) {
-        return TransactionBody.newBuilder().tokenWipe(wipeAccountTransactionBody).build();
+        return TransactionBody.newBuilder()
+                .tokenWipe(wipeAccountTransactionBody)
+                .build();
     }
 }
