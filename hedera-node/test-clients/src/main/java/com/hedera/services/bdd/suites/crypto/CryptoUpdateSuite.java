@@ -39,6 +39,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite.ADMIN_KEY;
@@ -182,7 +183,7 @@ public class CryptoUpdateSuite extends HapiSuite {
                                 .logged());
     }
 
-    // @HapiTest recheck after TransactionRecord.getTranscationFee() is implemented
+    // @HapiTest recheck after calculateFees() is implemented
     private HapiSpec usdFeeAsExpectedCryptoUpdate() {
         double autoAssocSlotPrice = 0.0018;
         double baseFee = 0.00022;
@@ -394,7 +395,8 @@ public class CryptoUpdateSuite extends HapiSuite {
                 .then(cryptoUpdate(TEST_ACCOUNT).key(UPD_KEY).hasPrecheck(INVALID_ADMIN_KEY));
     }
 
-    // @HapiTest recheck after MichaelT complete the parseStrict() #96 fix
+    // @HapiTest Wrong status! Expected EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT, was
+    // INVALID_TRANSACTION_BODY! recheck after ContractUpdateHandler.handle() implemented
     private HapiSpec updateMaxAutoAssociationsWorks() {
         final int maxAllowedAssociations = 5000;
         final int originalMax = 2;
@@ -415,6 +417,7 @@ public class CryptoUpdateSuite extends HapiSuite {
                 .given(
                         cryptoCreate(treasury).balance(ONE_HUNDRED_HBARS),
                         newKeyNamed(ADMIN_KEY),
+                        overriding("contracts.allowAutoAssociations", "true"),
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT).adminKey(ADMIN_KEY).maxAutomaticTokenAssociations(originalMax),
                         tokenCreate(tokenA)
