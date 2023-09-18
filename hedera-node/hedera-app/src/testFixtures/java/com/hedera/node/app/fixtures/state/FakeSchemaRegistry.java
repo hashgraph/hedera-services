@@ -16,8 +16,7 @@
 
 package com.hedera.node.app.fixtures.state;
 
-import com.hedera.hapi.node.state.token.Account;
-import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
+import com.hedera.node.app.fixtures.genesis.NoOpGenesisRecordsBuilder;
 import com.hedera.node.app.spi.fixtures.state.ListWritableQueueState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
@@ -36,7 +35,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class FakeSchemaRegistry implements SchemaRegistry {
@@ -130,27 +128,5 @@ public class FakeSchemaRegistry implements SchemaRegistry {
     public SchemaRegistry register(@NonNull Schema schema) {
         schemas.add(schema);
         return this;
-    }
-
-    private class NoOpGenesisRecordsBuilder implements GenesisRecordsBuilder {
-        @Override
-        public void systemAccounts(@NonNull final Map<Account, CryptoCreateTransactionBody.Builder> accounts) {
-            // Intentional no-op
-        }
-
-        @Override
-        public void stakingAccounts(@NonNull final Map<Account, CryptoCreateTransactionBody.Builder> accounts) {
-            // Intentional no-op
-        }
-
-        @Override
-        public void miscAccounts(@NonNull final Map<Account, CryptoCreateTransactionBody.Builder> accounts) {
-            // Intentional no-op
-        }
-
-        @Override
-        public void treasuryClones(@NonNull final Map<Account, CryptoCreateTransactionBody.Builder> accounts) {
-            // Intentional no-op
-        }
     }
 }

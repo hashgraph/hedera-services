@@ -20,6 +20,7 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionResponse;
+import com.hedera.node.app.fixtures.genesis.NoOpGenesisRecordsBuilder;
 import com.hedera.node.app.grpc.impl.netty.NettyGrpcServerManager;
 import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.spi.Service;
@@ -175,7 +176,7 @@ abstract class GrpcTestBase extends TestBase {
         };
 
         final var cr = ConstructableRegistry.getInstance();
-        final var registry = new MerkleSchemaRegistry(cr, "TestService", null);
+        final var registry = new MerkleSchemaRegistry(cr, "TestService", new NoOpGenesisRecordsBuilder());
         final var registration = new ServicesRegistry.Registration(testService, registry);
         final var config = createConfig(new TestSource());
         this.grpcServer = new NettyGrpcServerManager(

@@ -98,10 +98,10 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
     public MerkleSchemaRegistry(
             @NonNull final ConstructableRegistry constructableRegistry,
             @NonNull final String serviceName,
-            @Nullable final GenesisRecordsBuilder genesisRecordsBuilder) {
+            @NonNull final GenesisRecordsBuilder genesisRecordsBuilder) {
         this.constructableRegistry = requireNonNull(constructableRegistry);
         this.serviceName = StateUtils.validateStateKey(requireNonNull(serviceName));
-        this.genesisRecordsBuilder = genesisRecordsBuilder;
+        this.genesisRecordsBuilder = requireNonNull(genesisRecordsBuilder);
     }
 
     /**
