@@ -116,7 +116,7 @@ public record MerkleDbConfig(
         @ConfigProperty(defaultValue = "10240") int mediumMergeCutoffMb,
         @ConfigProperty(defaultValue = "3072") int smallMergeCutoffMb,
         @ConfigProperty(defaultValue = "MINUTES") ChronoUnit mergePeriodUnit,
-        @ConstraintMethod("maxNumberOfFilesInMergeValidation") @ConfigProperty(defaultValue = "64")
+        @ConstraintMethod("maxNumberOfFilesInMergeValidation") @ConfigProperty(defaultValue = "1024")
                 int maxNumberOfFilesInMerge,
         @ConstraintMethod("minNumberOfFilesInMergeValidation") @ConfigProperty(defaultValue = "8")
                 int minNumberOfFilesInMerge,
