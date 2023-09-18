@@ -17,7 +17,6 @@
 package com.swirlds.common.utility;
 
 import com.swirlds.base.utility.ToStringBuilder;
-
 import java.util.Objects;
 
 /**
@@ -86,8 +85,6 @@ public class IntReference {
 
     @Override
     public String toString() {
-        return new ToStringBuilder(this)
-                .append("value", value)
-                .toString();
+        return new ToStringBuilder(this).append("value", value).toString();
     }
 }

@@ -82,7 +82,8 @@ class AncestorSearchTest {
     private void searchAndAssert() {
         // look for non-consensus ancestors of 8
         final Map<Hash, EventImpl> ancestors = StreamSupport.stream(
-                        Spliterators.spliteratorUnknownSize(search.initializeSearch(root, e -> !e.isConsensus()), 0), false)
+                        Spliterators.spliteratorUnknownSize(search.initializeSearch(root, e -> !e.isConsensus()), 0),
+                        false)
                 .collect(Collectors.toMap(EventImpl::getBaseHash, e -> e));
         assertEquals(6, ancestors.size());
         IntStream.of(2, 3, 4, 6, 7, 8)

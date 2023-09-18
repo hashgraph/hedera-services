@@ -21,10 +21,9 @@ import static com.swirlds.logging.LogMarker.CONSENSUS_VOTING;
 import com.swirlds.common.utility.IntReference;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import java.util.Objects;
 
 /** A wrapper for a witness which holds additional metadata while an election to decide its fame is ongoing */
 public final class CandidateWitness {

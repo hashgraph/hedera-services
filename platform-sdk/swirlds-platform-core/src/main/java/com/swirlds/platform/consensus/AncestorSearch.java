@@ -48,7 +48,8 @@ public class AncestorSearch {
      * @param valid do a depth-first search, but backtrack from any event e where valid(e)==false
      * @return an iterator over all valid ancestors of the root
      */
-    public @NonNull AncestorIterator initializeSearch(@NonNull final EventImpl root, @NonNull final Predicate<EventImpl> valid) {
+    public @NonNull AncestorIterator initializeSearch(
+            @NonNull final EventImpl root, @NonNull final Predicate<EventImpl> valid) {
         iterator.initializeSearch(root, valid);
         return iterator;
     }
