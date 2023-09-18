@@ -34,4 +34,7 @@ public interface TokenMintRecordBuilder {
      */
     @NonNull
     TokenMintRecordBuilder serialNumbers(@NonNull List<Long> serialNumbers);
+
+    @NonNull
+    TokenMintRecordBuilder newTotalSupply(long totalSupply);
 }

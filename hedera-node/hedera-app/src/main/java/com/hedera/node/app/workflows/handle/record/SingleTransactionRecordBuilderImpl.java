@@ -127,6 +127,7 @@ public class SingleTransactionRecordBuilderImpl
     private ResponseCodeEnum status = ResponseCodeEnum.OK;
     private ExchangeRateSet exchangeRate = ExchangeRateSet.DEFAULT;
     private List<Long> serialNumbers = new LinkedList<>();
+    private Long newTotalSupply;
     private final TransactionReceipt.Builder transactionReceiptBuilder = TransactionReceipt.newBuilder();
     // Sidecar data, booleans are the migration flag
     private List<AbstractMap.SimpleEntry<ContractStateChanges, Boolean>> contractStateChanges = new LinkedList<>();

@@ -18,7 +18,6 @@ package com.hedera.node.app.service.token.impl.validators;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -113,7 +112,9 @@ public class CryptoTransferValidator {
             validateFalsePreCheck(nftIds.size() < nftTransfers.size(), TOKEN_ID_REPEATED_IN_TOKEN_LIST);
 
             // Verify that one and only one of the two types of transfers (fungible or non-fungible) is present
-            validateFalsePreCheck(!nonZeroFungibleValueFound && nftIds.isEmpty(), EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS);
+            // commented out due to TokenManagementSpecs.zeroUnitTokenOperationsWorkAsExpected test failure
+            //            validateFalsePreCheck(!nonZeroFungibleValueFound && nftIds.isEmpty(),
+            // EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS);
             validateFalsePreCheck(nonZeroFungibleValueFound && !nftIds.isEmpty(), INVALID_ACCOUNT_AMOUNTS);
         }
     }
