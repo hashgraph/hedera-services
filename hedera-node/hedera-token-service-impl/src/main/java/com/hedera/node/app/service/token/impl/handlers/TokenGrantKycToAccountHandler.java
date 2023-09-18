@@ -89,12 +89,12 @@ public class TokenGrantKycToAccountHandler implements TransactionHandler {
 
         final var txnBody = handleContext.body();
         final var tokenRelStore = handleContext.writableStore(WritableTokenRelationStore.class);
+        final var tokenStore = handleContext.readableStore(ReadableTokenStore.class);
 
         final var op = txnBody.tokenGrantKycOrThrow();
 
         final var targetTokenId = op.tokenOrThrow();
         final var targetAccountId = op.accountOrThrow();
-        final var tokenStore = handleContext.readableStore(ReadableTokenStore.class);
         final var tokenRelation = validateSemantics(targetAccountId, targetTokenId, tokenRelStore, tokenStore);
 
         final var tokenRelBuilder = tokenRelation.copyBuilder();
@@ -114,11 +114,8 @@ public class TokenGrantKycToAccountHandler implements TransactionHandler {
             @NonNull final WritableTokenRelationStore tokenRelStore,
             @NonNull final ReadableTokenStore tokenStore)
             throws HandleException {
+        final var token = TokenHandlerHelper.getIfUsable(tokenId, tokenStore);
         final var tokenRel = tokenRelStore.getForModify(accountId, tokenId);
-
-        // Validate token is paused or deleted
-        TokenHandlerHelper.getIfUsable(tokenId, tokenStore);
-
         validateTrue(tokenRel != null, INVALID_TOKEN_ID);
 
         return tokenRel;

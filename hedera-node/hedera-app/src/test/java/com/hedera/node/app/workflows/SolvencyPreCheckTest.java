@@ -149,7 +149,7 @@ class SolvencyPreCheckTest extends AppTestBase {
             // then
             assertThatThrownBy(() -> subject.getPayerAccount(storeFactory, ALICE.accountID()))
                     .isInstanceOf(PreCheckException.class)
-                    .has(responseCode(ResponseCodeEnum.ACCOUNT_DELETED));
+                    .has(responseCode(ResponseCodeEnum.PAYER_ACCOUNT_DELETED));
         }
 
         @Test

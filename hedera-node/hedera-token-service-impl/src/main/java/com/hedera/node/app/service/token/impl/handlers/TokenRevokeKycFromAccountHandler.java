@@ -121,6 +121,7 @@ public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
             @NonNull final WritableTokenRelationStore tokenRelStore,
             @NonNull final ReadableTokenStore tokenStore)
             throws HandleException {
+        final var token = TokenHandlerHelper.getIfUsable(tokenId, tokenStore);
         final var tokenRel = tokenRelStore.getForModify(accountId, tokenId);
 
         // Validate token is paused or deleted

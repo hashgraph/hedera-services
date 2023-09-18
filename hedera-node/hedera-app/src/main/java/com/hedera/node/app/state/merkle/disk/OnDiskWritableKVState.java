@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.state.merkle.disk;
 
+import static com.hedera.node.app.state.logging.TransactionStateLogger.*;
+
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.app.state.merkle.StateMetadata;
@@ -55,7 +57,10 @@ public final class OnDiskWritableKVState<K, V> extends WritableKVStateBase<K, V>
     protected V readFromDataSource(@NonNull K key) {
         final var k = new OnDiskKey<>(md, key);
         final var v = virtualMap.get(k);
-        return v == null ? null : v.getValue();
+        final var value = v == null ? null : v.getValue();
+        // Log to transaction state log, what was read
+        logMapGet(getStateKey(), key, value);
+        return value;
     }
 
     /** {@inheritDoc} */
@@ -70,7 +75,10 @@ public final class OnDiskWritableKVState<K, V> extends WritableKVStateBase<K, V>
     protected V getForModifyFromDataSource(@NonNull K key) {
         final var k = new OnDiskKey<>(md, key);
         final var v = virtualMap.getForModify(k);
-        return v == null ? null : v.getValue();
+        final var value = v == null ? null : v.getValue();
+        // Log to transaction state log, what was read
+        logMapGetForModify(getStateKey(), key, value);
+        return value;
     }
 
     /** {@inheritDoc} */
@@ -83,18 +91,25 @@ public final class OnDiskWritableKVState<K, V> extends WritableKVStateBase<K, V>
         } else {
             virtualMap.put(k, new OnDiskValue<>(md, value));
         }
+        // Log to transaction state log, what was put
+        logMapPut(getStateKey(), key, value);
     }
 
     /** {@inheritDoc} */
     @Override
     protected void removeFromDataSource(@NonNull K key) {
         final var k = new OnDiskKey<>(md, key);
-        virtualMap.remove(k);
+        final var removed = virtualMap.remove(k);
+        // Log to transaction state log, what was removed
+        logMapRemove(getStateKey(), key, removed);
     }
 
     /** {@inheritDoc} */
     @Override
     public long sizeOfDataSource() {
-        return virtualMap.size();
+        final var size = virtualMap.size();
+        // Log to transaction state log, size of map
+        logMapGetSize(getStateKey(), size);
+        return size;
     }
 }

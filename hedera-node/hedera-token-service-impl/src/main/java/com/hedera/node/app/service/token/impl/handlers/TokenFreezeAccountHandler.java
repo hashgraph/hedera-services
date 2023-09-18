@@ -129,6 +129,9 @@ public class TokenFreezeAccountHandler implements TransactionHandler {
         final var account = accountStore.getAccountById(accountId);
         validateTrue(account != null, INVALID_ACCOUNT_ID);
 
+        // Check that token exists
+        TokenHandlerHelper.getIfUsable(tokenId, tokenStore);
+
         // Check that the token is associated to the account
         final var tokenRel = tokenRelStore.getForModify(accountId, tokenId);
         validateTrue(tokenRel != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
