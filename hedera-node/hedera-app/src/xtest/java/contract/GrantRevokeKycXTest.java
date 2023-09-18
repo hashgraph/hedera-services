@@ -1,0 +1,180 @@
+package contract;
+
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.NftID;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TokenType;
+import com.hedera.hapi.node.state.common.EntityIDPair;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
+import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.Nft;
+import com.hedera.hapi.node.state.token.Token;
+import com.hedera.hapi.node.state.token.TokenRelation;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantrevokekyc.GrantRevokeKycTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersTranslator;
+import org.apache.tuweni.bytes.Bytes;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
+import static contract.HtsErc721TransferXTestConstants.APPROVED_ID;
+import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_ID;
+import static contract.MiscClassicTransfersXTestConstants.INITIAL_RECEIVER_AUTO_ASSOCIATIONS;
+import static contract.MiscClassicTransfersXTestConstants.NEXT_ENTITY_NUM;
+import static contract.XTestConstants.*;
+import static contract.XTestConstants.RECEIVER_ID;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+/**
+ * Exercises grantKyc and revokeKyc on a token via the following steps relative to an {@code OWNER} account:
+ * <ol>
+ *     <li>Transfer {@code ERC721_TOKEN} serial 1234 from SENDER to RECEIVER.</li>*
+ *     <li>Revoke KYC {@code ERC721_TOKEN} via {@link GrantRevokeKycTranslator#REVOKE_KYC}.</li>
+ *     <li>Transfer {@code ERC721_TOKEN} serial 2345 from SENDER to RECEIVER.  This should fail with code ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN</li>*
+ *     <li>Unpause {@code ERC721_TOKEN} via {@link GrantRevokeKycTranslator#GRANT_KYC}.</li>
+ *     <li>Transfer {@code ERC721_TOKEN} serial 2345 from SENDER to RECEIVER.  This should now succeed</li>*
+ * </ol>
+ */
+public class GrantRevokeKycXTest extends AbstractContractXTest {
+
+    @Override
+    protected void doScenarioOperations() {
+        // Transfer series 1234 of ERC721_TOKEN to RECEIVER
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(ClassicTransfersTranslator.TRANSFER_NFT
+                        .encodeCallWithArgs(
+                                ERC721_TOKEN_ADDRESS,
+                                OWNER_HEADLONG_ADDRESS,
+                                RECEIVER_HEADLONG_ADDRESS,
+                                SN_1234.serialNumber())
+                        .array()),
+                assertSuccess());
+
+        // REVOKE_KYC
+        runHtsCallAndExpectOnSuccess(
+                OWNER_BESU_ADDRESS,
+                Bytes.wrap(GrantRevokeKycTranslator.REVOKE_KYC
+                        .encodeCallWithArgs(ERC721_TOKEN_ADDRESS, RECEIVER_HEADLONG_ADDRESS)
+                        .array()),
+                assertSuccess());
+
+        // Transfer series 2345 of ERC721_TOKEN to RECEIVER - should fail with ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(ClassicTransfersTranslator.TRANSFER_NFT
+                        .encodeCallWithArgs(
+                                ERC721_TOKEN_ADDRESS,
+                                OWNER_HEADLONG_ADDRESS,
+                                RECEIVER_HEADLONG_ADDRESS,
+                                SN_2345.serialNumber())
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(ReturnTypes.encodedRc(ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN).array()), output));
+
+        // GRANT_KYC
+        runHtsCallAndExpectOnSuccess(
+                OWNER_BESU_ADDRESS,
+                Bytes.wrap(GrantRevokeKycTranslator.GRANT_KYC
+                        .encodeCallWithArgs(ERC721_TOKEN_ADDRESS, RECEIVER_HEADLONG_ADDRESS)
+                        .array()),
+                assertSuccess());
+
+        // Transfer series 2345 of ERC721_TOKEN to RECEIVER - should succeed now.
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(ClassicTransfersTranslator.TRANSFER_NFT
+                        .encodeCallWithArgs(
+                                ERC721_TOKEN_ADDRESS,
+                                OWNER_HEADLONG_ADDRESS,
+                                RECEIVER_HEADLONG_ADDRESS,
+                                SN_2345.serialNumber())
+                        .array()),
+                assertSuccess());
+    }
+
+    @Override
+    protected long initialEntityNum() {
+        return NEXT_ENTITY_NUM - 1;
+    }
+
+    @Override
+    protected Map<ProtoBytes, AccountID> initialAliases() {
+        final var aliases = new HashMap<ProtoBytes, AccountID>();
+        aliases.put(ProtoBytes.newBuilder().value(SENDER_ADDRESS).build(), SENDER_ID);
+        aliases.put(ProtoBytes.newBuilder().value(OWNER_ADDRESS).build(), OWNER_ID);
+        return aliases;
+    }
+
+    @Override
+    protected Map<TokenID, Token> initialTokens() {
+        final var tokens = new HashMap<TokenID, Token>();
+        tokens.put(
+                ERC721_TOKEN_ID,
+                Token.newBuilder()
+                        .tokenId(ERC721_TOKEN_ID)
+                        .treasuryAccountId(UNAUTHORIZED_SPENDER_ID)
+                        .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                        .build());
+        return tokens;
+    }
+
+    @Override
+    protected Map<EntityIDPair, TokenRelation> initialTokenRelationships() {
+        final var tokenRelationships = new HashMap<EntityIDPair, TokenRelation>();
+        addErc721Relation(tokenRelationships, OWNER_ID, 3L);
+        return tokenRelationships;
+    }
+
+    @Override
+    protected Map<NftID, Nft> initialNfts() {
+        final var nfts = new HashMap<NftID, Nft>();
+        nfts.put(
+                SN_1234,
+                Nft.newBuilder()
+                        .nftId(SN_1234)
+                        .ownerId(OWNER_ID)
+                        .spenderId(APPROVED_ID)
+                        .metadata(SN_1234_METADATA)
+                        .build());
+        nfts.put(
+                SN_2345,
+                Nft.newBuilder()
+                        .nftId(SN_2345)
+                        .ownerId(OWNER_ID)
+                        .metadata(SN_2345_METADATA)
+                        .build());
+        return nfts;
+    }
+
+    @Override
+    protected Map<AccountID, Account> initialAccounts() {
+        final var accounts = new HashMap<AccountID, Account>();
+        accounts.put(
+                SENDER_ID,
+                Account.newBuilder()
+                        .accountId(OWNER_ID)
+                        .alias(SENDER_ADDRESS)
+                        .smartContract(true)
+                        .build());
+        accounts.put(
+                OWNER_ID,
+                Account.newBuilder()
+                        .accountId(OWNER_ID)
+                        .alias(OWNER_ADDRESS)
+                        .key(SENDER_CONTRACT_ID_KEY)
+                        .build());
+        accounts.put(
+                RECEIVER_ID,
+                Account.newBuilder()
+                        .accountId(RECEIVER_ID)
+                        .maxAutoAssociations(INITIAL_RECEIVER_AUTO_ASSOCIATIONS)
+                        .build());
+        accounts.put(
+                UNAUTHORIZED_SPENDER_ID,
+                Account.newBuilder().accountId(UNAUTHORIZED_SPENDER_ID).build());
+        return accounts;
+    }
+}
