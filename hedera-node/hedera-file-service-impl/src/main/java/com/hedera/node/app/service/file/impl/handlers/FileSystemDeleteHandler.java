@@ -19,7 +19,6 @@ package com.hedera.node.app.service.file.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.preValidate;
-import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateAndAddRequiredKeys;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.verifyNotSystemFile;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static java.util.Objects.requireNonNull;
@@ -75,9 +74,6 @@ public class FileSystemDeleteHandler implements TransactionHandler {
         final var fileStore = context.createStore(ReadableFileStore.class);
         final var transactionFileId = requireNonNull(transactionBody.fileID());
         preValidate(transactionFileId, fileStore, context, true);
-
-        var file = fileStore.getFileLeaf(transactionFileId);
-        validateAndAddRequiredKeys(file, null, context);
     }
 
     @Override
@@ -97,8 +93,9 @@ public class FileSystemDeleteHandler implements TransactionHandler {
         final var fileStore = handleContext.writableStore(WritableFileStore.class);
         final File file = verifyNotSystemFile(ledgerConfig, fileStore, fileId);
 
+        final var oldExpiration = file.expirationSecond();
         final var newExpiry = systemDeleteTransactionBody
-                .expirationTimeOrElse(new TimestampSeconds(file.expirationSecond()))
+                .expirationTimeOrElse(new TimestampSeconds(oldExpiration))
                 .seconds();
         // If the file is already expired, remove it from state completely otherwise change the deleted flag to be true.
         if (newExpiry <= handleContext.consensusNow().getEpochSecond()) {
@@ -107,6 +104,7 @@ public class FileSystemDeleteHandler implements TransactionHandler {
             /* Get all the fields from existing file and change deleted flag */
             final var fileBuilder = new File.Builder()
                     .fileId(file.fileId())
+                    .preSystemDeleteExpirationSecond(oldExpiration)
                     .expirationSecond(newExpiry)
                     .keys(file.keys())
                     .contents(file.contents())
