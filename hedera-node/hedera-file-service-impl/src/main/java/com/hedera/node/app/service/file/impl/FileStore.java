@@ -45,6 +45,9 @@ public abstract class FileStore {
                 file.keys(),
                 file.contents(),
                 file.memo(),
-                file.deleted());
+                file.deleted(),
+                Timestamp.newBuilder()
+                        .seconds(file.preSystemDeleteExpirationSecond())
+                        .build());
     }
 }

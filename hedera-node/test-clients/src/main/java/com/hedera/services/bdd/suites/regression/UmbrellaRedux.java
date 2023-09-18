@@ -28,6 +28,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.regression.factories.RegressionProviderFactory.factoryFrom;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -67,6 +68,7 @@ public class UmbrellaRedux extends HapiSuite {
         });
     }
 
+    @HapiTest
     private HapiSpec umbrellaRedux() {
         return defaultHapiSpec("UmbrellaRedux")
                 .given(
