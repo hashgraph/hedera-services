@@ -64,6 +64,7 @@ import org.jetbrains.annotations.NotNull;
 public class WipeXTest extends AbstractContractXTest {
 
     public static final int NUMBER_OWNED_NFTS = 3;
+    public static final long TOKEN_BALANCE = 50L;
 
     @Override
     protected void doScenarioOperations() {
@@ -71,7 +72,8 @@ public class WipeXTest extends AbstractContractXTest {
         runHtsCallAndExpectOnSuccess(
                 OWNER_BESU_ADDRESS,
                 Bytes.wrap(WipeTranslator.WIPE_NFT
-                        .encodeCallWithArgs(ERC721_TOKEN_ADDRESS,
+                        .encodeCallWithArgs(
+                                ERC721_TOKEN_ADDRESS,
                                 OWNER_HEADLONG_ADDRESS,
                                 new long[]{SN_1234.serialNumber()})
                         .array()),
@@ -81,7 +83,8 @@ public class WipeXTest extends AbstractContractXTest {
         runHtsCallAndExpectOnSuccess(
                 OWNER_BESU_ADDRESS,
                 Bytes.wrap(WipeTranslator.WIPE_FUNGIBLE_V1
-                        .encodeCallWithArgs(ERC20_TOKEN_ADDRESS,
+                        .encodeCallWithArgs(
+                                ERC20_TOKEN_ADDRESS,
                                 OWNER_HEADLONG_ADDRESS,
                                 10L)
                         .array()),
@@ -91,7 +94,8 @@ public class WipeXTest extends AbstractContractXTest {
         runHtsCallAndExpectOnSuccess(
                 OWNER_BESU_ADDRESS,
                 Bytes.wrap(WipeTranslator.WIPE_FUNGIBLE_V2
-                        .encodeCallWithArgs(ERC20_TOKEN_ADDRESS,
+                        .encodeCallWithArgs(
+                                ERC20_TOKEN_ADDRESS,
                                 OWNER_HEADLONG_ADDRESS,
                                 10L)
                         .array()),
@@ -133,7 +137,7 @@ public class WipeXTest extends AbstractContractXTest {
     protected Map<EntityIDPair, TokenRelation> initialTokenRelationships() {
         final var tokenRelationships = new HashMap<EntityIDPair, TokenRelation>();
         addErc721Relation(tokenRelationships, OWNER_ID, NUMBER_OWNED_NFTS);
-        addErc20Relation(tokenRelationships, OWNER_ID, 50L);
+        addErc20Relation(tokenRelationships, OWNER_ID, TOKEN_BALANCE);
         return tokenRelationships;
     }
 
@@ -171,6 +175,20 @@ public class WipeXTest extends AbstractContractXTest {
     protected void assertExpectedAccounts(@NotNull final ReadableKVState<AccountID, Account> accounts) {
         final var account = accounts.get(OWNER_ID);
         assertNotNull(account);
+        //Number of owned NFTs should be decreased by 1
         assertEquals(NUMBER_OWNED_NFTS - 1, account.numberOwnedNfts());
+    }
+
+    @Override
+    protected void assertExpectedTokenRelations(
+            @NotNull final ReadableKVState<EntityIDPair, TokenRelation> tokenRelationships) {
+        final var tokenRelation = tokenRelationships.get(
+                EntityIDPair.newBuilder()
+                        .tokenId(ERC20_TOKEN_ID)
+                        .accountId(OWNER_ID)
+                        .build());
+        assertNotNull(tokenRelation);
+        // Token balance should be decreased by 20
+        assertEquals(TOKEN_BALANCE - 20L, tokenRelation.balance());
     }
 }
