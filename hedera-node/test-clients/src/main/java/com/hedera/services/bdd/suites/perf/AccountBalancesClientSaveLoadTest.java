@@ -231,10 +231,9 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest {
                         .withRecharging()
                         .rechargeWindow(30)
                         .hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
-                        .hasPrecheckFrom(DUPLICATE_TRANSACTION, OK, INSUFFICIENT_TX_FEE)
-                        .hasKnownStatusFrom(SUCCESS, INVALID_SIGNATURE)
-                        .noLogging()
-                        .deferStatusResolution();
+                        .hasPrecheckFrom(DUPLICATE_TRANSACTION, OK)
+                        .hasKnownStatusFrom(SUCCESS)
+                        .logged();
 
                 return Optional.of(op);
             }
