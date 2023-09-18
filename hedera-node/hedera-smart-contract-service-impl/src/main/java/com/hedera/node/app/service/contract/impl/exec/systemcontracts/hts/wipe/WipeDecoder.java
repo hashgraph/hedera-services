@@ -77,10 +77,9 @@ public class WipeDecoder {
             @NonNull final Address tokenAddress,
             @NonNull final Address accountAddress,
             final long amount) {
-        final var vas = addressIdConverter.convert(accountAddress);
         return TokenWipeAccountTransactionBody.newBuilder()
                 .token(asTokenId(tokenAddress))
-                .account(vas)
+                .account(addressIdConverter.convert(accountAddress))
                 .amount(amount)
                 .build();
     }

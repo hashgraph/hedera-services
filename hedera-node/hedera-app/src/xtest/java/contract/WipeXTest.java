@@ -59,6 +59,7 @@ import org.jetbrains.annotations.NotNull;
  *     <li>Wipe 10 {@code ERC20_TOKEN} Owner's account via wipeTokenAccountV1 and verify successful operation</li>*
  *     <li>Wipe 10 {@code ERC20_TOKEN} Owner's account via wipeTokenAccountV2 and verify successful operation</li>*
  *     <li>Via {@code assertExpectedAccounts} verify that owner's nft supply was decreased by 1.</li>*
+ *     <li>Via {@code assertExpectedTokenRelations} verify that owner's token balance was decreased by 20.</li>*
  * </ol>
  */
 public class WipeXTest extends AbstractContractXTest {
@@ -179,7 +180,7 @@ public class WipeXTest extends AbstractContractXTest {
                 .accountId(OWNER_ID)
                 .build());
         assertNotNull(tokenRelation);
-        // Token balance should be decreased by 20
+        // Token balance should be decreased by 20, the sum of the two wipe operations (10 + 10)
         assertEquals(TOKEN_BALANCE - 20L, tokenRelation.balance());
     }
 }
