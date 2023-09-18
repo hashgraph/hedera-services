@@ -49,6 +49,7 @@ import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -279,8 +280,9 @@ public class BaseTokenHandler {
             }
 
             // Create the new token relation
-            final var isFrozen = token.hasFreezeKey() && token.accountsFrozenByDefault();
-            final var kycGranted = token.hasKycKey();
+            boolean isTreasuryAccount = Objects.equals(token.treasuryAccountId(), account.accountId());
+            final var isFrozen = token.hasFreezeKey() && token.accountsFrozenByDefault() && !isTreasuryAccount;
+            final var kycGranted = !token.hasKycKey() || isTreasuryAccount;
             final var newTokenRel = new TokenRelation(
                     token.tokenId(),
                     account.accountId(),

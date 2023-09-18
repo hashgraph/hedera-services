@@ -20,6 +20,7 @@ import com.swirlds.common.system.events.BaseEvent;
 import com.swirlds.common.system.events.PlatformEvent;
 
 public interface GraphGenerations {
+    // FUTURE WORK: move this to EventConstants.java
     long FIRST_GENERATION = 0;
 
     /**
