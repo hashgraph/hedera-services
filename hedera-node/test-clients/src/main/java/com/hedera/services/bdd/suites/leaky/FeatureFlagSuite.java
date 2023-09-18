@@ -52,6 +52,7 @@ import static com.hedera.services.bdd.suites.util.UtilPrngSuite.BOB;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -79,6 +80,7 @@ public class FeatureFlagSuite extends HapiSuite {
                 enableAllFeatureFlagsAndDisableThrottlesForFurtherCiTesting());
     }
 
+    @HapiTest
     private HapiSpec disableAllFeatureFlagsAndConfirmNotSupported() {
         return defaultHapiSpec("disableAllFeatureFlagsAndConfirmNotSupported")
                 .given(overridingAllOf(FeatureFlags.FEATURE_FLAGS.allDisabled()))
@@ -90,6 +92,7 @@ public class FeatureFlagSuite extends HapiSuite {
                         confirmHollowAccountCreationNotSupported()));
     }
 
+    @HapiTest
     private HapiSpec enableAllFeatureFlagsAndDisableThrottlesForFurtherCiTesting() {
         return defaultHapiSpec("enableAllFeatureFlagsAndDisableThrottlesForFurtherCiTesting")
                 .given()
