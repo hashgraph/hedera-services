@@ -318,6 +318,14 @@ public class UtilVerbs {
     private static final Set<ByteString> RECOGNIZED_LEDGER_IDS =
             Set.of(MAINNET_LEDGER_ID, TESTNET_LEDGER_ID, PREVIEWNET_LEDGER_ID, DEVNET_LEDGER_ID);
 
+    /**
+     * Returns an operation that uses a {@link com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo} query
+     * against the {@code 0.0.2} account to look up the ledger id of the target network; and then passes the ledger
+     * id to the given callback.
+     *
+     * @param ledgerIdConsumer the callback to pass the ledger id to
+     * @return the operation exposing the ledger id to the callback
+     */
     public static HapiSpecOperation exposeTargetLedgerIdTo(@NonNull final Consumer<ByteString> ledgerIdConsumer) {
         return getAccountInfo(GENESIS).payingWith(GENESIS).exposingLedgerIdTo(ledgerId -> {
             if (!RECOGNIZED_LEDGER_IDS.contains(ledgerId)) {
@@ -328,6 +336,17 @@ public class UtilVerbs {
         });
     }
 
+    /**
+     * A convenience operation that accepts a factory mapping the target ledger id into a {@link HapiSpecOperation}
+     * (for example, a query that asserts something about the ledger id); and then,
+     * <ol>
+     *     <Li>Looks up the ledger id via {@link UtilVerbs#exposeTargetLedgerIdTo(Consumer)}; and,</Li>
+     *     <Li>Calls the given factory with this id, and runs the resulting {@link HapiSpecOperation}.</Li>
+     * </ol>
+     *
+     * @param opFn the factory mapping the ledger id into a {@link HapiSpecOperation}
+     * @return the operation that looks up the ledger id and runs the resulting {@link HapiSpecOperation}
+     */
     public static HapiSpecOperation withTargetLedgerId(@NonNull final Function<ByteString, HapiSpecOperation> opFn) {
         final AtomicReference<ByteString> targetLedgerId = new AtomicReference<>();
         return blockingOrder(
