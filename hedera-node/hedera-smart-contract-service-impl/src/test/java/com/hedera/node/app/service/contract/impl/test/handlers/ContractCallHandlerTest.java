@@ -16,9 +16,11 @@
 
 package com.hedera.node.app.service.contract.impl.test.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.HALT_RESULT;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SUCCESS_RESULT;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertFailsWith;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.BDDMockito.given;
@@ -87,10 +89,10 @@ class ContractCallHandlerTest extends ContractHandlerTestBase {
         final var expectedOutcome = new CallOutcome(expectedResult, HALT_RESULT.finalStatus());
         given(processor.call()).willReturn(expectedOutcome);
 
-        given(recordBuilder.contractID(CALLED_CONTRACT_ID)).willReturn(recordBuilder);
+        given(recordBuilder.contractID(null)).willReturn(recordBuilder);
         given(recordBuilder.contractCallResult(expectedResult)).willReturn(recordBuilder);
 
-        assertDoesNotThrow(() -> subject.handle(handleContext));
+        assertFailsWith(INVALID_SIGNATURE, () -> subject.handle(handleContext));
     }
 
     @Test

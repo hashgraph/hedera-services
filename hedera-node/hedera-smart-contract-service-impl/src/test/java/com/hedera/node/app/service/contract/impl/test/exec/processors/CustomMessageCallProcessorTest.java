@@ -171,7 +171,7 @@ class CustomMessageCallProcessorTest {
 
         subject.start(frame, operationTracer);
 
-        verifyHalt(CustomExceptionalHaltReason.FAILURE_DURING_LAZY_ACCOUNT_CREATION);
+        verifyHalt(CustomExceptionalHaltReason.INVALID_FEE_SUBMITTED);
     }
 
     @Test
