@@ -138,13 +138,15 @@ public class ServicesState extends PartialNaryMerkleInternal
     public ServicesState() {
         // RuntimeConstructable
         bootstrapProperties = null;
-        resetDefaultMerkleDbPathIfNeeded();
+
+        MerkleDb.resetDefaultInstancePath();
     }
 
     @VisibleForTesting
     ServicesState(final BootstrapProperties bootstrapProperties) {
         this.bootstrapProperties = bootstrapProperties;
-        resetDefaultMerkleDbPathIfNeeded();
+
+        MerkleDb.resetDefaultInstancePath();
     }
 
     private ServicesState(final ServicesState that) {
@@ -321,16 +323,6 @@ public class ServicesState extends PartialNaryMerkleInternal
         // irrespective of the weight provided in config.txt
         configNodeIds.forEach(nodeId -> configAddressBook.updateWeight(nodeId, 0));
         return configAddressBook;
-    }
-
-    private void resetDefaultMerkleDbPathIfNeeded() {
-        // This is a workaround to support multiple nodes running in a single process for testing
-        // purposes. When a node is restored from a saved state, all virtual maps are restored to
-        // the default MerkleDb instance. There is no way yet to provide node config to MerkleDb,
-        // it's a singleton. It leads to nodes to overwrite each other's data. To work it around,
-        // let's reset the default MerkleDb path. It has to be done before the state is loaded
-        // from disk, so I'm putting this code right into the constructor
-        MerkleDb.setDefaultPath(null);
     }
 
     private ServicesApp deserializedInit(

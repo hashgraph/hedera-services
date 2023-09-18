@@ -53,7 +53,6 @@ import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
 import com.swirlds.common.crypto.Cryptography;
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
@@ -137,9 +136,6 @@ public interface HederaInjectionComponent {
 
         @BindsInstance
         Builder crypto(Cryptography engine);
-
-        @BindsInstance
-        Builder initialHash(Hash initialHash);
 
         @BindsInstance
         Builder platform(Platform platform);

@@ -222,9 +222,9 @@ class EndOfStakingPeriodUpdaterTest {
         Assertions.assertThat(resultStakingInfo1.unclaimedStakeRewardStart()).isZero();
         Assertions.assertThat(resultStakingInfo2.unclaimedStakeRewardStart()).isZero();
         Assertions.assertThat(resultStakingInfo3.unclaimedStakeRewardStart()).isZero();
-        Assertions.assertThat(resultStakingInfo1.rewardSumHistory()).isEqualTo(List.of(14L, 6L, 5L));
-        Assertions.assertThat(resultStakingInfo2.rewardSumHistory()).isEqualTo(List.of(11L, 1L, 1L));
-        Assertions.assertThat(resultStakingInfo3.rewardSumHistory()).isEqualTo(List.of(3L, 3L, 1L));
+        Assertions.assertThat(resultStakingInfo1.rewardSumHistory()).isEqualTo(List.of(86L, 6L, 5L));
+        Assertions.assertThat(resultStakingInfo2.rewardSumHistory()).isEqualTo(List.of(101L, 1L, 1L));
+        Assertions.assertThat(resultStakingInfo3.rewardSumHistory()).isEqualTo(List.of(11L, 3L, 1L));
         Assertions.assertThat(resultStakingInfo1.weight()).isEqualTo(307);
         Assertions.assertThat(resultStakingInfo2.weight()).isEqualTo(192);
         Assertions.assertThat(resultStakingInfo3.weight()).isZero();

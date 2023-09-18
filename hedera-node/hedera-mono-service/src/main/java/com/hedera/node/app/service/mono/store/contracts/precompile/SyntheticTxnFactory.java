@@ -531,14 +531,25 @@ public class SyntheticTxnFactory {
      * @param properties the properties of the network at that time
      * @param totalStakedRewardStart the total staked reward at the start of the period
      * @param maxPerHbarRewardRate the maximum reward rate per hbar for the period (per HIP-782)
+     * @param reservedStakingRewards the total amount of staking rewards reserved in the 0.0.800 balance
+     * @param unreservedStakingRewardBalance the remaining "unreserved" part of the 0.0.800 balance
+     * @param rewardBalanceThreshold the 0.0.800 balance threshold at which the max reward rate is attainable
+     * @param maxStakeRewarded the maximum stake that can be rewarded at the max reward rate
      * @return the transaction builder with the {@code NodeStakeUpdateTransactionBody} set
      */
+
+    // too may parameters
+    @SuppressWarnings("java:S107")
     public TransactionBody.Builder nodeStakeUpdate(
             @NonNull final Timestamp stakingPeriodEnd,
             @NonNull final List<NodeStake> nodeStakes,
             @NonNull final PropertySource properties,
             final long totalStakedRewardStart,
-            final long maxPerHbarRewardRate) {
+            final long maxPerHbarRewardRate,
+            final long reservedStakingRewards,
+            final long unreservedStakingRewardBalance,
+            final long rewardBalanceThreshold,
+            final long maxStakeRewarded) {
         final var threshold = dynamicProperties.getStakingStartThreshold();
         final var stakingPeriod = properties.getLongProperty(STAKING_PERIOD_MINS);
         final var stakingPeriodsStored = properties.getIntProperty(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS);
@@ -552,7 +563,8 @@ public class SyntheticTxnFactory {
                 .setDenominator(100L)
                 .build();
 
-        final var maxPeriodRewardRate = maxPerHbarRewardRate * (totalStakedRewardStart / HBARS_TO_TINYBARS);
+        final var hbarsStakedToReward = (totalStakedRewardStart / HBARS_TO_TINYBARS);
+        final var maxTotalReward = maxPerHbarRewardRate * hbarsStakedToReward;
         final var txnBody = NodeStakeUpdateTransactionBody.newBuilder()
                 .setEndOfStakingPeriod(stakingPeriodEnd)
                 .addAllNodeStake(nodeStakes)
@@ -562,7 +574,13 @@ public class SyntheticTxnFactory {
                 .setStakingPeriod(stakingPeriod)
                 .setStakingRewardFeeFraction(stakingRewardFeeFraction)
                 .setStakingStartThreshold(threshold)
-                .setStakingRewardRate(maxPeriodRewardRate)
+                // Deprecated field but keep it for backward compatibility at the moment
+                .setStakingRewardRate(maxTotalReward)
+                .setMaxTotalReward(maxTotalReward)
+                .setReservedStakingRewards(reservedStakingRewards)
+                .setUnreservedStakingRewardBalance(unreservedStakingRewardBalance)
+                .setRewardBalanceThreshold(rewardBalanceThreshold)
+                .setMaxStakeRewarded(maxStakeRewarded)
                 .build();
 
         return TransactionBody.newBuilder().setNodeStakeUpdate(txnBody);

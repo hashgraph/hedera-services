@@ -84,6 +84,7 @@ public class Issue310Suite extends HapiSuite {
     }
 
     // This test requires multiple nodes
+    @HapiTest
     private HapiSpec duplicatedTxnsSameTypeDifferentNodesDetected() {
 
         return defaultHapiSpec("duplicatedTxnsSameTypeDifferentNodesDetected")
@@ -99,6 +100,7 @@ public class Issue310Suite extends HapiSuite {
     }
 
     // This test requires multiple nodes
+    @HapiTest
     private HapiSpec duplicatedTxnsDifferentTypesDifferentNodesDetected() {
         return defaultHapiSpec("duplicatedTxnsDifferentTypesDifferentNodesDetected")
                 .given(

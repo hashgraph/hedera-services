@@ -426,8 +426,8 @@ class RandomAccessDequeTests {
         assertThrows(IllegalStateException.class, () -> deque.set(1, 0));
 
         final Iterator<Integer> it2 = deque.iterator();
-        it1.next();
-        assertThrows(NoSuchElementException.class, it1::next);
+        it2.next();
+        assertThrows(NoSuchElementException.class, it2::next);
     }
 
     @Test

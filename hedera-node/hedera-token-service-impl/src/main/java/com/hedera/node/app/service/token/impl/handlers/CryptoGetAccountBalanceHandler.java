@@ -106,14 +106,16 @@ public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
         final var tokenStore = context.createStore(ReadableTokenStore.class);
         final var op = query.cryptogetAccountBalanceOrThrow();
         final var response = CryptoGetAccountBalanceResponse.newBuilder();
-        final var accountId = op.accountIDOrElse(AccountID.DEFAULT);
 
         response.header(header);
         if (header.nodeTransactionPrecheckCode() == OK) {
-            response.accountID(accountId);
-            final var account = accountStore.getAccountById(accountId);
-            response.balance(requireNonNull(account).tinybarBalance());
-            response.tokenBalances(getTokenBalances(config, account, tokenStore, tokenRelationStore));
+            final var account = op.hasAccountID()
+                    ? accountStore.getAccountById(op.accountIDOrThrow())
+                    : accountStore.getContractById(op.contractIDOrThrow());
+            requireNonNull(account);
+            response.accountID(account.accountIdOrThrow())
+                    .balance(account.tinybarBalance())
+                    .tokenBalances(getTokenBalances(config, account, tokenStore, tokenRelationStore));
         }
 
         return Response.newBuilder().cryptogetAccountBalance(response).build();
@@ -121,6 +123,7 @@ public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
 
     /**
      * Calculate TokenBalance of an Account
+     *
      * @param tokenConfig use TokenConfig to get maxRelsPerInfoQuery value
      * @param account the account to be calculated from
      * @param readableTokenStore readable token store
