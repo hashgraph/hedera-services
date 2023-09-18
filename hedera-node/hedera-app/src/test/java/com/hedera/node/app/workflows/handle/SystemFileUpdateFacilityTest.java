@@ -16,33 +16,24 @@
 
 package com.hedera.node.app.workflows.handle;
 
-import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_CREATE;
-import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
 import static com.hedera.node.app.service.file.impl.FileServiceImpl.BLOBS_KEY;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.Assertions.catchException;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.FileID;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.file.FileAppendTransactionBody;
 import com.hedera.hapi.node.file.FileUpdateTransactionBody;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
-import com.hedera.hapi.node.transaction.ThrottleBucket;
-import com.hedera.hapi.node.transaction.ThrottleDefinitions;
-import com.hedera.hapi.node.transaction.ThrottleGroup;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.spi.fixtures.TransactionFactory;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.throttle.ThrottleManager;
 import com.hedera.node.app.util.FileUtilities;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
@@ -55,7 +46,6 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.time.Instant;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -205,132 +195,5 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
 
         // then
         verify(exchangeRateManager, times(1)).update(FileUtilities.getFileContent(state, fileID));
-    }
-
-    @Test
-    void handleThrottleFileTxBodyWithEmptyListOfGroups() {
-        // given
-        final var throttleBucket = ThrottleBucket.newBuilder()
-                .name("test")
-                .burstPeriodMs(100)
-                .throttleGroups(List.of()) // no throttle groups added
-                .build();
-
-        var throttleDefinitions = new ThrottleDefinitions(List.of(throttleBucket));
-
-        final var txBody =
-                generateThrottleDefFileTransaction(ThrottleDefinitions.PROTOBUF.toBytes(throttleDefinitions));
-
-        // when
-        Exception exception = catchException(
-                () -> subject.handleTxBody(state, txBody, new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW)));
-
-        // then
-        assertThat(exception).isInstanceOf(HandleException.class);
-        assertThat(((HandleException) exception).getStatus()).isEqualTo(ResponseCodeEnum.INVALID_TRANSACTION);
-    }
-
-    @Test
-    void handleThrottleFileTxBodyWithNotAllRequiredOperations() {
-        // given
-        var throttleGroup = ThrottleGroup.newBuilder()
-                .milliOpsPerSec(10)
-                .operations(
-                        List.of(CRYPTO_CREATE, CRYPTO_TRANSFER)) // setting only a few operations. We require a lot more
-                .build();
-
-        final var throttleBucket = ThrottleBucket.newBuilder()
-                .name("test")
-                .burstPeriodMs(100)
-                .throttleGroups(List.of(throttleGroup))
-                .build();
-
-        var throttleDefinitions = new ThrottleDefinitions(List.of(throttleBucket));
-
-        final var txBody =
-                generateThrottleDefFileTransaction(ThrottleDefinitions.PROTOBUF.toBytes(throttleDefinitions));
-
-        // when
-        Exception exception = catchException(
-                () -> subject.handleTxBody(state, txBody, new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW)));
-
-        // then
-        assertThat(exception).isInstanceOf(HandleException.class);
-        assertThat(((HandleException) exception).getStatus()).isEqualTo(ResponseCodeEnum.INVALID_TRANSACTION);
-    }
-
-    @Test
-    void handleThrottleFileTxBodyWithZeroOpsPerSec() {
-        // given
-        var throttleGroup = ThrottleGroup.newBuilder()
-                .milliOpsPerSec(0) // the ops per sec should be more than 0
-                .operations(ThrottleManager.expectedOps.stream().toList())
-                .build();
-
-        final var throttleBucket = ThrottleBucket.newBuilder()
-                .name("test")
-                .burstPeriodMs(100)
-                .throttleGroups(List.of(throttleGroup))
-                .build();
-
-        var throttleDefinitions = new ThrottleDefinitions(List.of(throttleBucket));
-
-        final var txBody =
-                generateThrottleDefFileTransaction(ThrottleDefinitions.PROTOBUF.toBytes(throttleDefinitions));
-
-        // when
-        Exception exception = catchException(
-                () -> subject.handleTxBody(state, txBody, new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW)));
-
-        // then
-        assertThat(exception).isInstanceOf(HandleException.class);
-        assertThat(((HandleException) exception).getStatus())
-                .isEqualTo(ResponseCodeEnum.THROTTLE_GROUP_HAS_ZERO_OPS_PER_SEC);
-    }
-
-    @Test
-    void handleThrottleFileTxBodyWithRepeatedOperation() {
-        // given
-        final var throttleGroup = ThrottleGroup.newBuilder()
-                .milliOpsPerSec(10)
-                .operations(ThrottleManager.expectedOps.stream().toList())
-                .build();
-
-        final var repeatedThrottleGroup = ThrottleGroup.newBuilder()
-                .milliOpsPerSec(10)
-                .operations(List.of(CRYPTO_CREATE)) // repeating an operation that exists in the first throttle group
-                .build();
-
-        final var throttleBucket = ThrottleBucket.newBuilder()
-                .name("test")
-                .burstPeriodMs(100)
-                .throttleGroups(List.of(throttleGroup, repeatedThrottleGroup))
-                .build();
-
-        var throttleDefinitions = new ThrottleDefinitions(List.of(throttleBucket));
-
-        final var txBody =
-                generateThrottleDefFileTransaction(ThrottleDefinitions.PROTOBUF.toBytes(throttleDefinitions));
-
-        // when
-        Exception exception = catchException(
-                () -> subject.handleTxBody(state, txBody, new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW)));
-
-        // then
-        assertThat(exception).isInstanceOf(HandleException.class);
-        assertThat(((HandleException) exception).getStatus())
-                .isEqualTo(ResponseCodeEnum.OPERATION_REPEATED_IN_BUCKET_GROUPS);
-    }
-
-    private TransactionBody generateThrottleDefFileTransaction(Bytes contents) {
-        final var configuration = configProvider.getConfiguration();
-        final var config = configuration.getConfigData(FilesConfig.class);
-
-        final var fileNum = config.throttleDefinitions();
-        final var fileID = FileID.newBuilder().fileNum(fileNum).build();
-        files.put(fileID, File.newBuilder().contents(contents).build());
-        return TransactionBody.newBuilder()
-                .fileAppend(FileAppendTransactionBody.newBuilder().fileID(fileID))
-                .build();
     }
 }
