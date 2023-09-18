@@ -97,6 +97,8 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+
+import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -219,8 +221,7 @@ public class HapiSpec implements Runnable {
     public void exportAccountBalances(Supplier<String> dir) {
         AllAccountBalances.Builder allAccountBalancesBuilder =
                 AllAccountBalances.newBuilder().addAllAllAccounts(accountBalances);
-
-        try (FileOutputStream fout = new FileOutputStream(dir.get())) {
+        try (FileOutputStream fout = FileUtils.openOutputStream(new File(dir.get()))) {
             allAccountBalancesBuilder.build().writeTo(fout);
         } catch (IOException e) {
             log.error(String.format("Could not export to '%s'!", dir), e);
