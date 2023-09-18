@@ -319,7 +319,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
             @BeforeEach
             void setUp() {
                 // Use a fresh database instance for each test
-                MerkleDb.setDefaultPath(null);
+                MerkleDb.resetDefaultInstancePath();
             }
 
             Schema createV1Schema() {

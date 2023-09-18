@@ -297,7 +297,7 @@ public class MerkleTestBase extends StateTestBase {
     protected <T extends MerkleNode> T parseTree(@NonNull final byte[] state, @NonNull final Path tempDir)
             throws IOException {
         // Restore to a fresh MerkleDb instance
-        MerkleDb.setDefaultPath(null);
+        MerkleDb.resetDefaultInstancePath();
         final var byteInputStream = new ByteArrayInputStream(state);
         try (final var in = new MerkleDataInputStream(byteInputStream)) {
             return in.readMerkleTree(tempDir, 100);

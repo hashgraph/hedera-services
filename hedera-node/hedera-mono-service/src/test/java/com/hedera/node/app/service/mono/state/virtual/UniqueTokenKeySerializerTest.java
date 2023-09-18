@@ -136,7 +136,7 @@ class UniqueTokenKeySerializerTest {
     @Test
     void serializer_classId() {
         final UniqueTokenKeySerializer serializer = new UniqueTokenKeySerializer();
-        assertThat(serializer.getClassId()).isEqualTo(0xb3c94b6cf62aa6c4L);
+        assertThat(serializer.getClassId()).isEqualTo(0xb3c94b6cf62aa6c5L);
     }
 
     @Test
