@@ -32,8 +32,8 @@ package com.hedera.node.app.service.token.impl.util;
  * limitations under the License.
  */
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_DELETED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_PAUSED;
@@ -92,7 +92,7 @@ public class TokenHandlerHelper {
         validateTrue(acct != null, errorIfNotUsable);
         final var isContract = acct.smartContract();
 
-        validateFalse(acct.deleted(), isContract ? CONTRACT_DELETED : INVALID_AUTORENEW_ACCOUNT);
+        validateFalse(acct.deleted(), isContract ? CONTRACT_DELETED : ACCOUNT_DELETED);
         final var type = isContract ? EntityType.CONTRACT : EntityType.ACCOUNT;
 
         final var expiryStatus =

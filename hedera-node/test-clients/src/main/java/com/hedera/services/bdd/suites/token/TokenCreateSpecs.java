@@ -281,26 +281,24 @@ public class TokenCreateSpecs extends HapiSuite {
                         cryptoCreate(AUTO_RENEW).balance(0L),
                         cryptoCreate(deletingAccount).balance(0L))
                 .when(
-                        cryptoDelete(deletingAccount),
-                        tokenCreate(PRIMARY)
-                                .autoRenewAccount(deletingAccount)
-                                .hasKnownStatus(INVALID_AUTORENEW_ACCOUNT),
-                        tokenCreate(PRIMARY)
-                                .signedBy(GENESIS)
-                                .autoRenewAccount("1.2.3")
-                                .hasKnownStatus(INVALID_AUTORENEW_ACCOUNT),
-                        // TODO: for some reason setting the autoRenewPeriod does not change the value. We always get
-                        // the default value(7776000). Not sure why
-                        // Other then that the validation itself seems to be in place.
-                        //                        tokenCreate(PRIMARY)
-                        //                                .autoRenewAccount(AUTO_RENEW)
-                        //                                .autoRenewPeriod(Long.MAX_VALUE)
-                        //                                .hasPrecheck(INVALID_RENEWAL_PERIOD),
-                        tokenCreate(PRIMARY)
-                                .signedBy(GENESIS)
-                                .autoRenewAccount(AUTO_RENEW)
-                                .hasKnownStatus(INVALID_SIGNATURE),
-                        tokenCreate(PRIMARY).autoRenewAccount(AUTO_RENEW))
+                    cryptoDelete(deletingAccount),
+                    tokenCreate(PRIMARY).autoRenewAccount(deletingAccount).hasKnownStatus(ACCOUNT_DELETED),
+                    tokenCreate(PRIMARY)
+                        .signedBy(GENESIS)
+                        .autoRenewAccount("1.2.3")
+                        .hasKnownStatus(INVALID_AUTORENEW_ACCOUNT),
+                    // TODO: for some reason setting the autoRenewPeriod does not change the value. We always get
+                    // the default value(7776000). Not sure why
+                    // Other then that the validation itself seems to be in place.
+                    //                        tokenCreate(PRIMARY)
+                    //                                .autoRenewAccount(AUTO_RENEW)
+                    //                                .autoRenewPeriod(Long.MAX_VALUE)
+                    //                                .hasPrecheck(INVALID_RENEWAL_PERIOD),
+                    tokenCreate(PRIMARY)
+                        .signedBy(GENESIS)
+                        .autoRenewAccount(AUTO_RENEW)
+                        .hasKnownStatus(INVALID_SIGNATURE),
+                    tokenCreate(PRIMARY).autoRenewAccount(AUTO_RENEW))
                 .then(getTokenInfo(PRIMARY).logged());
     }
 
@@ -956,11 +954,9 @@ public class TokenCreateSpecs extends HapiSuite {
     @HapiTest
     public HapiSpec creationValidatesTreasuryAccount() {
         return defaultHapiSpec("CreationValidatesTreasuryAccount")
-                .given(cryptoCreate(TOKEN_TREASURY).balance(0L))
-                .when(cryptoDelete(TOKEN_TREASURY))
-                .then(tokenCreate("shouldntWork")
-                        .treasury(TOKEN_TREASURY)
-                        .hasKnownStatus(INVALID_TREASURY_ACCOUNT_FOR_TOKEN));
+            .given(cryptoCreate(TOKEN_TREASURY).balance(0L))
+            .when(cryptoDelete(TOKEN_TREASURY))
+            .then(tokenCreate("shouldntWork").treasury(TOKEN_TREASURY).hasKnownStatus(ACCOUNT_DELETED));
     }
 
     @HapiTest
