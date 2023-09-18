@@ -21,6 +21,7 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -140,6 +141,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -306,6 +308,30 @@ public class UtilVerbs {
 
     public static CustomSpecAssert withOpContext(CustomSpecAssert.ThrowingConsumer custom) {
         return new CustomSpecAssert(custom);
+    }
+
+    private static final ByteString MAINNET_LEDGER_ID = ByteString.copyFrom(new byte[] {0x00});
+    private static final ByteString TESTNET_LEDGER_ID = ByteString.copyFrom(new byte[] {0x01});
+    private static final ByteString PREVIEWNET_LEDGER_ID = ByteString.copyFrom(new byte[] {0x02});
+    private static final ByteString DEVNET_LEDGER_ID = ByteString.copyFrom(new byte[] {0x03});
+
+    private static final Set<ByteString> RECOGNIZED_LEDGER_IDS =
+            Set.of(MAINNET_LEDGER_ID, TESTNET_LEDGER_ID, PREVIEWNET_LEDGER_ID, DEVNET_LEDGER_ID);
+
+    public static HapiSpecOperation exposeTargetLedgerIdTo(@NonNull final Consumer<ByteString> ledgerIdConsumer) {
+        return getAccountInfo(GENESIS).payingWith(GENESIS).exposingLedgerIdTo(ledgerId -> {
+            if (!RECOGNIZED_LEDGER_IDS.contains(ledgerId)) {
+                Assertions.fail(
+                        "Target network is claiming unrecognized ledger id " + CommonUtils.hex(ledgerId.toByteArray()));
+            }
+            ledgerIdConsumer.accept(ledgerId);
+        });
+    }
+
+    public static HapiSpecOperation withTargetLedgerId(@NonNull final Function<ByteString, HapiSpecOperation> opFn) {
+        final AtomicReference<ByteString> targetLedgerId = new AtomicReference<>();
+        return blockingOrder(
+                exposeTargetLedgerIdTo(targetLedgerId::set), sourcing(() -> opFn.apply(targetLedgerId.get())));
     }
 
     public static BalanceSnapshot balanceSnapshot(String name, String forAccount) {

@@ -1120,11 +1120,7 @@ public class ContractCallSuite extends HapiSuite {
 
                     ctxLog.info("symbol: [{}]", symbol);
 
-                    Assertions.assertEquals("", symbol, "TokenIssuer's symbol should be fixed value"); // should
-                    // be
-                    // "OCT"
-                    // as
-                    // expected
+                    Assertions.assertEquals("OCT", symbol, "TokenIssuer's symbol should be fixed value");
                     final var funcDecimals = Function.fromJson(getABIFor(FUNCTION, DECIMALS, contract));
 
                     final Integer decimals = getValueFromRegistry(spec, DECIMALS, funcDecimals);

@@ -63,6 +63,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withTargetLedgerId;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.VALID_ALIAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
@@ -1078,7 +1079,7 @@ public class TokenTransactSpecs extends HapiSuite {
                 .then(
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(A_TOKEN, 0),
                         getAccountBalance(FIRST_USER).hasTokenBalance(A_TOKEN, 1),
-                        getTokenInfo(A_TOKEN).hasExpectedLedgerId("0x03"),
+                        withTargetLedgerId(ledgerId -> getTokenInfo(A_TOKEN).hasEncodedLedgerId(ledgerId)),
                         getTokenNftInfo(A_TOKEN, 1)
                                 .hasSerialNum(1)
                                 .hasMetadata(copyFromUtf8("memo"))
@@ -1114,12 +1115,12 @@ public class TokenTransactSpecs extends HapiSuite {
                         getAccountBalance(OLD_TREASURY).hasTokenBalance(A_TOKEN, 0),
                         getAccountBalance(NEW_TREASURY).hasTokenBalance(A_TOKEN, 1),
                         getAccountBalance(NEW_TREASURY).hasTokenBalance(B_TOKEN, 1),
-                        getTokenNftInfo(A_TOKEN, 1)
-                                .hasExpectedLedgerId("0x03")
+                        withTargetLedgerId(ledgerId -> getTokenNftInfo(A_TOKEN, 1)
+                                .hasEncodedLedgerId(ledgerId)
                                 .hasSerialNum(1)
                                 .hasMetadata(copyFromUtf8("memo"))
                                 .hasTokenID(A_TOKEN)
-                                .hasAccountID(NEW_TREASURY));
+                                .hasAccountID(NEW_TREASURY)));
     }
 
     @HapiTest
