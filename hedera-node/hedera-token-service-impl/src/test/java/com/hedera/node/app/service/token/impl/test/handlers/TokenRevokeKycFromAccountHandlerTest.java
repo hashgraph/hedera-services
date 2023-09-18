@@ -183,15 +183,13 @@ class TokenRevokeKycFromAccountHandlerTest {
         private static final AccountID TREASURY_ACCOUNT_9876 = BaseCryptoHandler.asAccount(9876);
         private static final TokenID TOKEN_531 = BaseTokenHandler.asToken(531);
 
-        private Token newToken10() {
-            return Token.newBuilder()
-                    .tokenId(TOKEN_10)
-                    .tokenType(TokenType.FUNGIBLE_COMMON)
-                    .treasuryAccountId(TREASURY_ACCOUNT_9876)
-                    .wipeKey(TOKEN_WIPE_KT.asPbjKey())
-                    .totalSupply(1000L)
-                    .build();
-        }
+        private static final Token newToken10 = Token.newBuilder()
+                .tokenId(TOKEN_10)
+                .tokenType(TokenType.FUNGIBLE_COMMON)
+                .treasuryAccountId(TREASURY_ACCOUNT_9876)
+                .wipeKey(TOKEN_WIPE_KT.asPbjKey())
+                .totalSupply(1000L)
+                .build();
 
         @BeforeEach
         void setUp() {
@@ -218,7 +216,7 @@ class TokenRevokeKycFromAccountHandlerTest {
         @Test
         @DisplayName("When getForModify returns empty, should not put or commit")
         void emptyGetForModifyShouldNotPersist() {
-            given(readableTokenStore.get(TOKEN_10)).willReturn(newToken10());
+            given(readableTokenStore.get(TOKEN_10)).willReturn(newToken10);
             given(tokenRelStore.getForModify(notNull(), notNull())).willReturn(null);
 
             final var txnBody = newTxnBody();
@@ -239,7 +237,7 @@ class TokenRevokeKycFromAccountHandlerTest {
                     .accountId(ACCOUNT_100)
                     .kycGranted(true)
                     .build();
-            given(readableTokenStore.get(TOKEN_10)).willReturn(newToken10());
+            given(readableTokenStore.get(TOKEN_10)).willReturn(newToken10);
             given(tokenRelStore.getForModify(ACCOUNT_100, TOKEN_10)).willReturn(stateTokenRel);
 
             final var txnBody = newTxnBody();

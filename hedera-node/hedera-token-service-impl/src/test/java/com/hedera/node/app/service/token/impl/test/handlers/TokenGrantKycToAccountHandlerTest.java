@@ -171,15 +171,13 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
         private static final AccountID TREASURY_ACCOUNT_9876 = BaseCryptoHandler.asAccount(9876);
         private static final TokenID TOKEN_531 = BaseTokenHandler.asToken(531);
 
-        private static final Token newToken531() {
-            return Token.newBuilder()
-                    .tokenId(TOKEN_531)
-                    .tokenType(TokenType.FUNGIBLE_COMMON)
-                    .treasuryAccountId(TREASURY_ACCOUNT_9876)
-                    .wipeKey(TOKEN_WIPE_KT.asPbjKey())
-                    .totalSupply(1000L)
-                    .build();
-        }
+        private static final Token newToken531 = Token.newBuilder()
+                .tokenId(TOKEN_531)
+                .tokenType(TokenType.FUNGIBLE_COMMON)
+                .treasuryAccountId(TREASURY_ACCOUNT_9876)
+                .wipeKey(TOKEN_WIPE_KT.asPbjKey())
+                .totalSupply(1000L)
+                .build();
 
         @Mock(strictness = LENIENT)
         private HandleContext handleContext;
@@ -225,7 +223,7 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
         @Test
         @DisplayName("When getForModify returns empty, should not put or commit")
         void emptyGetForModifyShouldNotPersist() {
-            given(readableTokenStore.get(tokenId)).willReturn(newToken531());
+            given(readableTokenStore.get(tokenId)).willReturn(newToken531);
             given(tokenRelStore.getForModify(notNull(), notNull())).willReturn(null);
 
             final var txnBody = newTxnBody(true, true);
@@ -242,7 +240,7 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
         void kycGrantedAndPersisted() {
             final var stateTokenRel =
                     newTokenRelationBuilder().kycGranted(false).build();
-            given(readableTokenStore.get(tokenId)).willReturn(newToken531());
+            given(readableTokenStore.get(tokenId)).willReturn(newToken531);
             given(tokenRelStore.getForModify(payerId, tokenId)).willReturn(stateTokenRel);
 
             final var txnBody = newTxnBody(true, true);
