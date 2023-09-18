@@ -218,6 +218,8 @@ class TokenUnfreezeAccountHandlerTest {
         @Test
         void tokenRelNotFound() throws HandleException {
             final var token = toPbj(KNOWN_TOKEN_WITH_FREEZE);
+            given(tokenStore.get(token))
+                    .willReturn(Token.newBuilder().tokenId(token).build());
             given(tokenStore.getTokenMeta(token)).willReturn(tokenMetaWithFreezeKey());
             given(accountStore.getAccountById(ACCOUNT_13257))
                     .willReturn(Account.newBuilder().accountId(ACCOUNT_13257).build());
@@ -237,11 +239,6 @@ class TokenUnfreezeAccountHandlerTest {
             given(tokenStore.getTokenMeta(token)).willReturn(tokenMetaWithFreezeKey());
             given(accountStore.getAccountById(ACCOUNT_13257))
                     .willReturn(Account.newBuilder().accountId(ACCOUNT_13257).build());
-            given(tokenRelStore.getForModify(ACCOUNT_13257, token))
-                    .willReturn(TokenRelation.newBuilder()
-                            .tokenId(token)
-                            .accountId(ACCOUNT_13257)
-                            .build());
             given(tokenStore.get(token)).willReturn(null);
             final var txn = newUnfreezeTxn(token);
             given(context.body()).willReturn(txn);
@@ -258,11 +255,6 @@ class TokenUnfreezeAccountHandlerTest {
             given(tokenStore.getTokenMeta(token)).willReturn(tokenMetaWithFreezeKey());
             given(accountStore.getAccountById(ACCOUNT_13257))
                     .willReturn(Account.newBuilder().accountId(ACCOUNT_13257).build());
-            given(tokenRelStore.getForModify(ACCOUNT_13257, token))
-                    .willReturn(TokenRelation.newBuilder()
-                            .tokenId(token)
-                            .accountId(ACCOUNT_13257)
-                            .build());
             given(tokenStore.get(token))
                     .willReturn(Token.newBuilder().deleted(true).build());
             final var txn = newUnfreezeTxn(token);

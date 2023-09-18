@@ -172,10 +172,8 @@ class TokenFreezeAccountHandlerTest {
         void accountNotPresentInTxnBody() {
             final var pbjToken = toPbj(KNOWN_TOKEN_WITH_FREEZE);
             final var noAcctTxn = newFreezeTxn(pbjToken, null);
-            given(readableTokenStore.get(pbjToken))
-                    .willReturn(Token.newBuilder().tokenId(pbjToken).build());
-            given(readableTokenStore.getTokenMeta(pbjToken)).willReturn(tokenMetaWithFreezeKey());
             given(context.body()).willReturn(noAcctTxn);
+            given(readableTokenStore.getTokenMeta(pbjToken)).willReturn(tokenMetaWithFreezeKey());
 
             assertThatThrownBy(() -> subject.handle(context))
                     .isInstanceOf(HandleException.class)
@@ -198,8 +196,6 @@ class TokenFreezeAccountHandlerTest {
         @Test
         void tokenHasNoFreezeKey() {
             final var token = toPbj(KNOWN_TOKEN_NO_SPECIAL_KEYS);
-            given(readableTokenStore.get(token))
-                    .willReturn(Token.newBuilder().tokenId(token).build());
             given(readableTokenStore.getTokenMeta(token)).willReturn(tokenMetaWithFreezeKey(null));
             final var txn = newFreezeTxn(token);
             given(context.body()).willReturn(txn);
@@ -213,8 +209,6 @@ class TokenFreezeAccountHandlerTest {
         @Test
         void accountNotFound() {
             final var token = toPbj(KNOWN_TOKEN_WITH_FREEZE);
-            given(readableTokenStore.get(token))
-                    .willReturn(Token.newBuilder().tokenId(token).build());
             given(readableTokenStore.getTokenMeta(token)).willReturn(tokenMetaWithFreezeKey());
             given(readableAccountStore.getAccountById(ACCOUNT_13257)).willReturn(null);
             final var txn = newFreezeTxn(token);
