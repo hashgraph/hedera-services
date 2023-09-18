@@ -16,10 +16,10 @@
 
 package com.hedera.node.app.fixtures.state;
 
-import com.hedera.node.app.fixtures.genesis.NoOpGenesisRecordsBuilder;
 import com.hedera.node.app.spi.fixtures.state.ListWritableQueueState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
+import com.hedera.node.app.spi.fixtures.state.NoOpGenesisRecordsBuilder;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.state.EmptyReadableStates;
 import com.hedera.node.app.spi.state.MigrationContext;

@@ -23,7 +23,7 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.node.app.fixtures.genesis.NoOpGenesisRecordsBuilder;
+import com.hedera.node.app.spi.fixtures.state.NoOpGenesisRecordsBuilder;
 import com.hedera.node.app.spi.fixtures.state.TestSchema;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.state.MigrationContext;
