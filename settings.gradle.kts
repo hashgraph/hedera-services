@@ -105,7 +105,7 @@ gradleEnterprise {
 
 // The HAPI API version to use for Protobuf sources. This can be a tag or branch
 // name from the hedera-protobufs GIT repo.
-val hapiProtoVersion = "0.40.0-blocks-state-SNAPSHOT"
+val hapiProtoVersion = "0.42.0"
 val hapiProtoBranchOrTag = "v0.42.0" // hapiProtoVersion
 
 gitRepositories {
