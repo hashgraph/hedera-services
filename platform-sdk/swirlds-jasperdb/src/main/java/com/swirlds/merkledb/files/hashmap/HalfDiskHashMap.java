@@ -82,22 +82,17 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
     private static final String BUCKET_INDEX_FILENAME_SUFFIX = "_bucket_index.ll";
     /** Nominal value for value to say please delete from map. */
     protected static final long SPECIAL_DELETE_ME_VALUE = Long.MIN_VALUE;
-    /** The amount of data used for storing key hash code */
-    protected static final int KEY_HASHCODE_SIZE = Integer.BYTES;
-    /**
-     * The amount of data used for storing value in bucket, our values are longs as this is a key to
-     * long map
-     */
-    protected static final int VALUE_SIZE = Long.BYTES;
+
     /**
      * This is the average number of entries per bucket we aim for when filled to mapSize. It is a
      * heuristic used in calculation for how many buckets to create. The larger this number the
      * slower lookups will be but the more even distribution of entries across buckets will be. So
      * it is a matter of balance.
      */
-    private static final long GOOD_AVERAGE_BUCKET_ENTRY_COUNT = 64;
+    private static final long GOOD_AVERAGE_BUCKET_ENTRY_COUNT = 32;
     /** The limit on the number of concurrent read tasks in {@code endWriting()} */
     private static final int MAX_IN_FLIGHT = 64;
+
     /**
      * Long list used for mapping bucketIndex(index into list) to disk location for latest copy of
      * bucket

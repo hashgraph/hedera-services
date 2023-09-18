@@ -17,6 +17,7 @@
 package com.swirlds.merkledb.files;
 
 import static com.hedera.pbj.runtime.ProtoParserTools.TAG_FIELD_OFFSET;
+import static com.swirlds.merkledb.utilities.ProtoUtils.WIRE_TYPE_FIXED_64_BIT;
 import static com.swirlds.merkledb.utilities.ProtoUtils.WIRE_TYPE_VARINT;
 
 import com.hedera.pbj.runtime.FieldDefinition;
@@ -61,7 +62,7 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends Virtual
         implements DataItemSerializer<VirtualLeafRecord<K, V>> {
 
     static final FieldDefinition FIELD_LEAFRECORD_PATH =
-            new FieldDefinition("path", FieldType.UINT64, false, true, false, 1);
+            new FieldDefinition("path", FieldType.FIXED64, false, true, false, 1);
     static final FieldDefinition FIELD_LEAFRECORD_KEY =
             new FieldDefinition("key", FieldType.BYTES, false, true, false, 2);
     static final FieldDefinition FIELD_LEAFRECORD_VALUE =
@@ -123,8 +124,7 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends Virtual
     public int getSerializedSize(@NonNull final VirtualLeafRecord<K, V> data) {
         int size = 0;
         if (data.getPath() != 0) {
-            size += ProtoUtils.sizeOfTag(FIELD_LEAFRECORD_PATH, WIRE_TYPE_VARINT)
-                    + ProtoUtils.sizeOfUnsignedVarInt64(data.getPath());
+            size += ProtoUtils.sizeOfTag(FIELD_LEAFRECORD_PATH, WIRE_TYPE_FIXED_64_BIT) + Long.BYTES;
         }
         size += ProtoUtils.sizeOfDelimited(FIELD_LEAFRECORD_KEY, keySerializer.getSerializedSize(data.getKey()));
         size += ProtoUtils.sizeOfDelimited(FIELD_LEAFRECORD_VALUE, valueSerializer.getSerializedSize(data.getValue()));
@@ -152,7 +152,7 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends Virtual
             @NonNull final VirtualLeafRecord<K, V> leafRecord, @NonNull final WritableSequentialData out) {
         if (leafRecord.getPath() != 0) {
             ProtoUtils.writeTag(out, FIELD_LEAFRECORD_PATH);
-            out.writeVarLong(leafRecord.getPath(), false);
+            out.writeLong(leafRecord.getPath());
         }
         ProtoUtils.writeBytes(
                 out,
@@ -213,7 +213,7 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends Virtual
     }
 
     private long readPath(final ReadableSequentialData in) {
-        final long path = in.readVarLong(false);
+        final long path = in.readLong();
         return path;
     }
 

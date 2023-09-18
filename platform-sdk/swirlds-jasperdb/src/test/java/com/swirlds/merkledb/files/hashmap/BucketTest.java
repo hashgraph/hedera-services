@@ -244,14 +244,14 @@ class BucketTest {
         bucket.setBucketIndex(0);
         assertEquals(bucketWithIndex0Repr, bucket.toString(), "Empty bucket should represent as expected");
 
-        final String bucketWithIndex1Repr = "Bucket{bucketIndex=1, entryCount=0, size=2\n" + "}";
+        final String bucketWithIndex1Repr = "Bucket{bucketIndex=1, entryCount=0, size=5\n" + "}";
         bucket.setBucketIndex(1);
         assertEquals(bucketWithIndex1Repr, bucket.toString(), "Empty bucket should represent as expected");
 
         final ExampleLongKeyFixedSize key = new ExampleLongKeyFixedSize(2056);
         bucket.putValue(key, 5124);
         bucket.setBucketIndex(0);
-        final String nonEmptyBucketRepr = "Bucket{bucketIndex=0, entryCount=1, size=18\n"
+        final String nonEmptyBucketRepr = "Bucket{bucketIndex=0, entryCount=1, size=26\n"
                 + "    ENTRY[0] value= 5124 keyHashCode=2056"
                 + " key=LongVirtualKey{value=2056, hashCode=2056}\n"
                 + "}";

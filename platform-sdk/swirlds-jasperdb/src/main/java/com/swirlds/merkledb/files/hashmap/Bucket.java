@@ -81,14 +81,14 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
     private static final AtomicInteger LARGEST_BUCKET_CREATED = new AtomicInteger(0);
 
     private static final FieldDefinition FIELD_BUCKET_INDEX =
-            new FieldDefinition("index", FieldType.UINT32, false, false, false, 1);
+            new FieldDefinition("index", FieldType.FIXED32, false, false, false, 1);
     private static final FieldDefinition FIELD_BUCKET_ENTRIES =
             new FieldDefinition("entries", FieldType.MESSAGE, true, false, false, 11);
 
     private static final FieldDefinition FIELD_BUCKETENTRY_HASHCODE =
-            new FieldDefinition("hashCode", FieldType.INT32, false, false, false, 1);
+            new FieldDefinition("hashCode", FieldType.FIXED32, false, false, false, 1);
     private static final FieldDefinition FIELD_BUCKETENTRY_VALUE =
-            new FieldDefinition("value", FieldType.INT64, false, true, false, 2);
+            new FieldDefinition("value", FieldType.FIXED64, false, true, false, 2);
     private static final FieldDefinition FIELD_BUCKETENTRY_KEYBYTES =
             new FieldDefinition("keyBytes", FieldType.BYTES, false, false, false, 3);
 
@@ -180,8 +180,7 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
     public int sizeInBytes() {
         int size = 0;
         if (bucketIndex.get() > 0) {
-            size += ProtoUtils.sizeOfTag(FIELD_BUCKET_INDEX, ProtoUtils.WIRE_TYPE_VARINT)
-                    + ProtoUtils.sizeOfVarInt32(bucketIndex.get());
+            size += ProtoUtils.sizeOfTag(FIELD_BUCKET_INDEX, ProtoUtils.WIRE_TYPE_FIXED_32_BIT) + Integer.BYTES;
         }
         for (final BucketEntry entry : entries) {
             size += ProtoUtils.sizeOfDelimited(FIELD_BUCKET_ENTRIES, entry.sizeInBytes());
@@ -253,7 +252,7 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
             final int tag = in.readVarInt(false);
             final int fieldNum = tag >> TAG_FIELD_OFFSET;
             if (fieldNum == FIELD_BUCKET_INDEX.number()) {
-                bucketIndex.set(in.readVarInt(false));
+                bucketIndex.set(in.readInt());
             } else if (fieldNum == FIELD_BUCKET_ENTRIES.number()) {
                 final int entryBytesSize = in.readVarInt(false);
                 final long oldLimit = in.limit();
@@ -281,7 +280,7 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
     public void writeTo(final WritableSequentialData out) {
         if (bucketIndex.get() > 0) {
             ProtoUtils.writeTag(out, FIELD_BUCKET_INDEX);
-            out.writeVarInt(bucketIndex.get(), false);
+            out.writeInt(bucketIndex.get());
         }
         for (final BucketEntry entry : entries) {
             ProtoUtils.writeTag(out, FIELD_BUCKET_ENTRIES);
@@ -380,9 +379,9 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
                 final int tag = entryData.readVarInt(false);
                 final int fieldNum = tag >> TAG_FIELD_OFFSET;
                 if (fieldNum == FIELD_BUCKETENTRY_HASHCODE.number()) {
-                    hashCode = entryData.readVarInt(false);
+                    hashCode = entryData.readInt();
                 } else if (fieldNum == FIELD_BUCKETENTRY_VALUE.number()) {
-                    value = entryData.readVarLong(false);
+                    value = entryData.readLong();
                 } else if (fieldNum == FIELD_BUCKETENTRY_KEYBYTES.number()) {
                     final int bytesSize = entryData.readVarInt(false);
                     keyBytes = BufferedData.allocate(bytesSize);
@@ -444,11 +443,9 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
 
         public int sizeInBytes() {
             int size = 0;
-            size += ProtoUtils.sizeOfTag(FIELD_BUCKETENTRY_HASHCODE, ProtoUtils.WIRE_TYPE_VARINT)
-                    + ProtoUtils.sizeOfVarInt32(hashCode);
+            size += ProtoUtils.sizeOfTag(FIELD_BUCKETENTRY_HASHCODE, ProtoUtils.WIRE_TYPE_FIXED_32_BIT) + Integer.BYTES;
             if (value != 0) {
-                size += ProtoUtils.sizeOfTag(FIELD_BUCKETENTRY_VALUE, ProtoUtils.WIRE_TYPE_VARINT)
-                        + ProtoUtils.sizeOfVarInt64(value);
+                size += ProtoUtils.sizeOfTag(FIELD_BUCKETENTRY_VALUE, ProtoUtils.WIRE_TYPE_FIXED_64_BIT) + Long.BYTES;
             }
             final BufferedData keyb = getKeyBytes();
             size += ProtoUtils.sizeOfDelimited(FIELD_BUCKETENTRY_KEYBYTES, (int) keyb.capacity());
@@ -457,10 +454,10 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
 
         public void writeTo(final WritableSequentialData out) {
             ProtoUtils.writeTag(out, FIELD_BUCKETENTRY_HASHCODE);
-            out.writeVarInt(hashCode, false);
+            out.writeInt(hashCode);
             if (value != 0) {
                 ProtoUtils.writeTag(out, FIELD_BUCKETENTRY_VALUE);
-                out.writeVarLong(value, false);
+                out.writeLong(value);
             }
             final BufferedData keyb = getKeyBytes();
             ProtoUtils.writeBytes(out, FIELD_BUCKETENTRY_KEYBYTES, (int) keyb.capacity(), o -> o.writeBytes(keyb));
