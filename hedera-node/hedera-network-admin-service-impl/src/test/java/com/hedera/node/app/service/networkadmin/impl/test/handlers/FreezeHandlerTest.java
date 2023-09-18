@@ -54,6 +54,7 @@ import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import java.io.IOException;
+import java.util.concurrent.ForkJoinPool;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -85,7 +86,8 @@ class FreezeHandlerTest {
             .build();
     private final AccountID nonAdminAccount =
             AccountID.newBuilder().accountNum(9999L).build();
-    private final FreezeHandler subject = new FreezeHandler();
+    private final FreezeHandler subject = new FreezeHandler(new ForkJoinPool(
+            1, ForkJoinPool.defaultForkJoinWorkerThreadFactory, Thread.getDefaultUncaughtExceptionHandler(), true));
 
     @BeforeEach
     void setUp() {

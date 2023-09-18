@@ -32,6 +32,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
+import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -110,7 +111,7 @@ public class TokenUnfreezeAccountHandler implements TransactionHandler {
             @NonNull final ReadableTokenStore tokenStore,
             @NonNull final WritableTokenRelationStore tokenRelStore)
             throws HandleException {
-        // Check that the token exists
+        // Check that the token meta exists
         final var tokenId = op.tokenOrElse(TokenID.DEFAULT);
         final var tokenMeta = tokenStore.getTokenMeta(tokenId);
         validateTrue(tokenMeta != null, INVALID_TOKEN_ID);
@@ -122,6 +123,9 @@ public class TokenUnfreezeAccountHandler implements TransactionHandler {
         final var accountId = op.accountOrElse(AccountID.DEFAULT);
         final var account = accountStore.getAccountById(accountId);
         validateTrue(account != null, INVALID_ACCOUNT_ID);
+
+        // Check that token exists
+        TokenHandlerHelper.getIfUsable(tokenId, tokenStore);
 
         // Check that the token is associated to the account
         final var tokenRel = tokenRelStore.getForModify(accountId, tokenId);
