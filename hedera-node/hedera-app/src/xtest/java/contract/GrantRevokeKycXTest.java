@@ -1,4 +1,29 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package contract;
+
+import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
+import static contract.HtsErc721TransferXTestConstants.APPROVED_ID;
+import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_ID;
+import static contract.MiscClassicTransfersXTestConstants.INITIAL_RECEIVER_AUTO_ASSOCIATIONS;
+import static contract.MiscClassicTransfersXTestConstants.NEXT_ENTITY_NUM;
+import static contract.XTestConstants.*;
+import static contract.XTestConstants.RECEIVER_ID;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NftID;
@@ -13,19 +38,9 @@ import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantrevokekyc.GrantRevokeKycTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersTranslator;
-import org.apache.tuweni.bytes.Bytes;
-
 import java.util.HashMap;
 import java.util.Map;
-
-import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
-import static contract.HtsErc721TransferXTestConstants.APPROVED_ID;
-import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_ID;
-import static contract.MiscClassicTransfersXTestConstants.INITIAL_RECEIVER_AUTO_ASSOCIATIONS;
-import static contract.MiscClassicTransfersXTestConstants.NEXT_ENTITY_NUM;
-import static contract.XTestConstants.*;
-import static contract.XTestConstants.RECEIVER_ID;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.apache.tuweni.bytes.Bytes;
 
 /**
  * Exercises grantKyc and revokeKyc on a token via the following steps relative to an {@code OWNER} account:
@@ -72,7 +87,9 @@ public class GrantRevokeKycXTest extends AbstractContractXTest {
                                 SN_2345.serialNumber())
                         .array()),
                 output -> assertEquals(
-                        Bytes.wrap(ReturnTypes.encodedRc(ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN).array()), output));
+                        Bytes.wrap(ReturnTypes.encodedRc(ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN)
+                                .array()),
+                        output));
 
         // GRANT_KYC
         runHtsCallAndExpectOnSuccess(
