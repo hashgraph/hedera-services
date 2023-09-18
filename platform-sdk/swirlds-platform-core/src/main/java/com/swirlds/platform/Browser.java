@@ -233,7 +233,7 @@ public class Browser {
             startThreads.add(thread);
         }
 
-        for (Thread startThread : startThreads) {
+        for (final Thread startThread : startThreads) {
             try {
                 startThread.join();
             } catch (final InterruptedException e) {

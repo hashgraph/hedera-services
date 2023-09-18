@@ -154,7 +154,7 @@ public final class Hedera {
     /**
      * The swirld name. Currently there is only one swirld.
      */
-    public static final String SWIRLD_NAME = "0"; // TODO waiting to hear back from devops on the current configuration
+    public static final String SWIRLD_NAME = "123";
 
     /*==================================================================================================================
     *
