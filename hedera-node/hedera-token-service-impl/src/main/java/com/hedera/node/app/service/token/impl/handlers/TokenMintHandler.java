@@ -25,7 +25,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUN
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SERIAL_NUMBER_LIMIT_REACHED;
 import static com.hedera.node.app.hapi.fees.usage.SingletonUsageProperties.USAGE_PROPERTIES;
-import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsageUtils.tokenMintUsageFrom;
+import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.MAX_NUM_ALLOWED;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
@@ -287,7 +287,7 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
             calculator.addVerificationsPerTransaction(Math.max(0, numSimpleKeys(payerKey) - 1L));
         }
 
-        final var meta = tokenMintUsageFrom(fromPbj(feeContext.body()), fromPbj(subType), 76000L);
+        final var meta = TOKEN_OPS_USAGE_UTILS.tokenMintUsageFrom(fromPbj(feeContext.body()), fromPbj(subType), 76000L);
 
         calculator.addBytesPerTransaction(meta.getBpt());
         calculator.addRamByteSeconds(meta.getRbs());
