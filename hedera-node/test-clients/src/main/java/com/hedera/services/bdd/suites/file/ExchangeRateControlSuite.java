@@ -27,6 +27,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXCHANGE_RATE_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileUpdate;
@@ -64,6 +65,7 @@ public class ExchangeRateControlSuite extends HapiSuite {
             .fee(ADEQUATE_FUNDS)
             .contents(spec -> spec.ratesProvider().rateSetWith(1, 12).toByteString());
 
+    @HapiTest
     private HapiSpec acct57CanMakeSmallChanges() {
         return defaultHapiSpec("Acct57CanMakeSmallChanges")
                 .given(
@@ -116,6 +118,7 @@ public class ExchangeRateControlSuite extends HapiSuite {
                         resetRatesOp);
     }
 
+    @HapiTest
     private HapiSpec midnightRateChangesWhenAcct50UpdatesFile112() {
         return defaultHapiSpec("MidnightRateChangesWhenAcct50UpdatesFile112")
                 .given(
@@ -169,6 +172,7 @@ public class ExchangeRateControlSuite extends HapiSuite {
                                 .hasKnownStatus(SUCCESS));
     }
 
+    @HapiTest
     private HapiSpec anonCantUpdateRates() {
         return defaultHapiSpec("AnonCantUpdateRates")
                 .given(resetRatesOp, cryptoCreate("randomAccount"))
@@ -179,6 +183,7 @@ public class ExchangeRateControlSuite extends HapiSuite {
                         .hasPrecheck(AUTHORIZATION_FAILED));
     }
 
+    @HapiTest
     private HapiSpec acct57CantMakeLargeChanges() {
         return defaultHapiSpec("Acct57CantMakeLargeChanges")
                 .given(

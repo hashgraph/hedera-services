@@ -122,6 +122,7 @@ public class TokenDeleteSpecs extends HapiSuite {
                 .then(tokenDelete("tbd").payingWith(PAYER).signedBy(PAYER).hasKnownStatus(TOKEN_IS_IMMUTABLE));
     }
 
+    @HapiTest
     public HapiSpec deletionWorksAsExpected() {
         return defaultHapiSpec("DeletionWorksAsExpected")
                 .given(

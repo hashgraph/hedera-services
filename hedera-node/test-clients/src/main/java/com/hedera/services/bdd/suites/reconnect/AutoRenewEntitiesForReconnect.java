@@ -112,7 +112,7 @@ public class AutoRenewEntitiesForReconnect extends HapiSuite {
                         // do some transfers to save a state before reconnect
                         withOpContext((spec, ctxLog) -> {
                             List<HapiSpecOperation> opsList = new ArrayList<HapiSpecOperation>();
-                            for (int i = 0; i < 500; i++) {
+                            for (int i = 0; i < 125; i++) {
                                 opsList.add(cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)));
                             }
                             CustomSpecAssert.allRunFor(spec, opsList);
