@@ -30,14 +30,30 @@ public enum Level {
     DEBUG(40),
     TRACE(100);
 
+    /**
+     * The emergency logger
+     */
     private static final EmergencyLogger EMERGENCY_LOGGER = EmergencyLoggerProvider.getEmergencyLogger();
 
+    /**
+     * The ordinal of the level
+     */
     private final int levelOrdinal;
 
+    /**
+     * Constructs a level
+     *
+     * @param levelOrdinal the ordinal of the level
+     */
     Level(final int levelOrdinal) {
         this.levelOrdinal = levelOrdinal;
     }
 
+    /**
+     * Returns true if the logging of the given level is enabled
+     * @param level the level
+     * @return true if the logging of the given level is enabled
+     */
     public boolean enabledLoggingOfLevel(@NonNull final Level level) {
         if (level == null) {
             EMERGENCY_LOGGER.logNPE("level");
