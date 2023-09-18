@@ -123,8 +123,8 @@ public class TokenUnfreezeAccountHandler implements TransactionHandler {
         validateTrue(tokenMeta.hasFreezeKey(), TOKEN_HAS_NO_FREEZE_KEY);
 
         // Check that the account exists
-        final var account =
-                TokenHandlerHelper.getIfUsable(op.accountOrElse(AccountID.DEFAULT), accountStore, expiryValidator, INVALID_ACCOUNT_ID);
+        final var account = TokenHandlerHelper.getIfUsable(
+                op.accountOrElse(AccountID.DEFAULT), accountStore, expiryValidator, INVALID_ACCOUNT_ID);
 
         // Check that token exists
         TokenHandlerHelper.getIfUsable(tokenId, tokenStore);
