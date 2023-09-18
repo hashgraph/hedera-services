@@ -23,6 +23,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BOD
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.METADATA_TOO_LONG;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_PAUSED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatNoException;
@@ -144,6 +146,28 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(INVALID_TOKEN_ID));
+    }
+
+    @Test
+    void failsOnDeletedToken() {
+        final var deletedToken = givenValidFungibleToken(payerId, true, false, false, false);
+        writableTokenStore.put(deletedToken);
+        givenMintTxn(fungibleTokenId, List.of(metadata1, metadata2), null);
+
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(TOKEN_WAS_DELETED));
+    }
+
+    @Test
+    void failsOnPausedToken() {
+        final var pausedToken = givenValidFungibleToken(payerId, false, true, false, false);
+        writableTokenStore.put(pausedToken);
+        givenMintTxn(fungibleTokenId, List.of(metadata1, metadata2), null);
+
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(TOKEN_IS_PAUSED));
     }
 
     @Test

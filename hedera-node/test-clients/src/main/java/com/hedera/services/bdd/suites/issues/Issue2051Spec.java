@@ -28,6 +28,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -57,6 +58,7 @@ public class Issue2051Spec extends HapiSuite {
         });
     }
 
+    @HapiTest
     private HapiSpec tbdCanPayForItsOwnDeletion() {
         return defaultHapiSpec("TbdCanPayForItsOwnDeletion")
                 .given(cryptoCreate("tbd"), cryptoCreate(TRANSFER))
