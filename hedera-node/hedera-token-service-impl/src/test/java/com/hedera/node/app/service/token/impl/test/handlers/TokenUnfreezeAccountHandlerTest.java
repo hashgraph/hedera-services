@@ -166,7 +166,8 @@ class TokenUnfreezeAccountHandlerTest {
         void accountNotPresentInTxnBody() {
             final var pbjToken = toPbj(KNOWN_TOKEN_WITH_FREEZE);
             final var noAcctTxn = newUnfreezeTxn(pbjToken, null);
-            given(tokenStore.get(pbjToken)).willReturn(Token.newBuilder().tokenId(pbjToken).build());
+            given(tokenStore.get(pbjToken))
+                    .willReturn(Token.newBuilder().tokenId(pbjToken).build());
             given(context.body()).willReturn(noAcctTxn);
             given(tokenStore.getTokenMeta(pbjToken)).willReturn(tokenMetaWithFreezeKey());
 
@@ -179,7 +180,8 @@ class TokenUnfreezeAccountHandlerTest {
         @Test
         void tokenMetaNotFound() {
             final var token = MISSING_TOKEN_97531;
-            given(tokenStore.get(token)).willReturn(Token.newBuilder().tokenId(token).build());
+            given(tokenStore.get(token))
+                    .willReturn(Token.newBuilder().tokenId(token).build());
             given(tokenStore.getTokenMeta(token)).willReturn(null);
             final var txn = newUnfreezeTxn(token);
             given(context.body()).willReturn(txn);
@@ -193,7 +195,8 @@ class TokenUnfreezeAccountHandlerTest {
         @Test
         void tokenHasNoFreezeKey() {
             final var token = toPbj(KNOWN_TOKEN_NO_SPECIAL_KEYS);
-            given(tokenStore.get(token)).willReturn(Token.newBuilder().tokenId(token).build());
+            given(tokenStore.get(token))
+                    .willReturn(Token.newBuilder().tokenId(token).build());
             given(tokenStore.getTokenMeta(token)).willReturn(tokenMetaWithFreezeKey(null));
             final var txn = newUnfreezeTxn(token);
             given(context.body()).willReturn(txn);
@@ -207,7 +210,8 @@ class TokenUnfreezeAccountHandlerTest {
         @Test
         void accountNotFound() {
             final var token = toPbj(KNOWN_TOKEN_WITH_FREEZE);
-            given(tokenStore.get(token)).willReturn(Token.newBuilder().tokenId(token).build());
+            given(tokenStore.get(token))
+                    .willReturn(Token.newBuilder().tokenId(token).build());
             given(tokenStore.getTokenMeta(token)).willReturn(tokenMetaWithFreezeKey());
             given(accountStore.getAccountById(ACCOUNT_13257)).willReturn(null);
             final var txn = newUnfreezeTxn(token);
@@ -253,7 +257,8 @@ class TokenUnfreezeAccountHandlerTest {
         @Test
         void tokenDeleted() throws HandleException {
             final var token = toPbj(KNOWN_TOKEN_WITH_FREEZE);
-            given(tokenStore.get(token)).willReturn(Token.newBuilder().deleted(true).build());
+            given(tokenStore.get(token))
+                    .willReturn(Token.newBuilder().deleted(true).build());
             final var txn = newUnfreezeTxn(token);
             given(context.body()).willReturn(txn);
 
