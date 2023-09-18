@@ -246,7 +246,7 @@ class FileUpdateTest extends FileTestBase {
     @Test
     @DisplayName("Fails handle if keys doesn't exist on file to be updated")
     void failForImmutableFile() {
-        file = new File(fileId, expirationTime, null, Bytes.wrap(contents), memo, false);
+        file = new File(fileId, expirationTime, null, Bytes.wrap(contents), memo, false, 0L);
         refreshStoresWithCurrentFileInBothReadableAndWritable();
 
         final var op = OP_BUILDER.fileID(fileId).keys(anotherKeys).build();

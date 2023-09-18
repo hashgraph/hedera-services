@@ -114,7 +114,7 @@ public class TokenUnfreezeAccountHandler implements TransactionHandler {
             @NonNull final WritableTokenRelationStore tokenRelStore,
             @NonNull final ExpiryValidator expiryValidator)
             throws HandleException {
-        // Check that the token exists
+        // Check that the token meta exists
         final var tokenId = op.tokenOrElse(TokenID.DEFAULT);
         final var tokenMeta = tokenStore.getTokenMeta(tokenId);
         validateTrue(tokenMeta != null, INVALID_TOKEN_ID);
@@ -125,6 +125,9 @@ public class TokenUnfreezeAccountHandler implements TransactionHandler {
         // Check that the account exists
         final var account =
                 TokenHandlerHelper.getIfUsable(op.accountOrElse(AccountID.DEFAULT), accountStore, expiryValidator, INVALID_ACCOUNT_ID);
+
+        // Check that token exists
+        TokenHandlerHelper.getIfUsable(tokenId, tokenStore);
 
         // Check that the token is associated to the account
         final var tokenRel = tokenRelStore.getForModify(account.accountId(), tokenId);

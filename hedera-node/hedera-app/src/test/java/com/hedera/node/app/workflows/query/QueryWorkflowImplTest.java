@@ -71,6 +71,7 @@ import com.hedera.node.app.workflows.ingest.IngestChecker;
 import com.hedera.node.app.workflows.ingest.SubmissionManager;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
+import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
@@ -135,6 +136,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     @Mock
     private ExchangeRateManager exchangeRateManager;
 
+    private VersionedConfiguration configuration;
     private Query query;
     private Transaction payment;
     private TransactionBody txBody;
@@ -156,6 +158,9 @@ class QueryWorkflowImplTest extends AppTestBase {
                 .build();
         when(queryParser.parseStrict(notNull())).thenReturn(query);
 
+        configuration = new VersionedConfigImpl(HederaTestConfigBuilder.createConfig(), DEFAULT_CONFIG_VERSION);
+        when(configProvider.getConfiguration()).thenReturn(configuration);
+
         final var transactionID =
                 TransactionID.newBuilder().accountID(ALICE.accountID()).build();
         txBody = TransactionBody.newBuilder().transactionID(transactionID).build();
@@ -163,7 +168,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         final var signatureMap = SignatureMap.newBuilder().build();
         transactionInfo =
                 new TransactionInfo(payment, txBody, signatureMap, payment.signedTransactionBytes(), CRYPTO_TRANSFER);
-        when(ingestChecker.runAllChecks(state, payment)).thenReturn(transactionInfo);
+        when(ingestChecker.runAllChecks(state, payment, configuration)).thenReturn(transactionInfo);
 
         when(handler.extractHeader(query)).thenReturn(queryHeader);
         when(handler.createEmptyResponse(any())).thenAnswer((Answer<Response>) invocation -> {
@@ -183,9 +188,6 @@ class QueryWorkflowImplTest extends AppTestBase {
 
         when(dispatcher.getHandler(query)).thenReturn(handler);
         when(handler.findResponse(any(), eq(responseHeader))).thenReturn(response);
-
-        final var config = new VersionedConfigImpl(HederaTestConfigBuilder.createConfig(), DEFAULT_CONFIG_VERSION);
-        when(configProvider.getConfiguration()).thenReturn(config);
 
         workflow = new QueryWorkflowImpl(
                 stateAccessor,
@@ -515,7 +517,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         when(handler.requiresNodePayment(ANSWER_ONLY)).thenReturn(true);
         doThrow(new PreCheckException(INVALID_TRANSACTION_BODY))
                 .when(ingestChecker)
-                .runAllChecks(state, payment);
+                .runAllChecks(state, payment, configuration);
         final var responseBuffer = newEmptyBuffer();
 
         // when

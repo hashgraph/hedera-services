@@ -30,11 +30,8 @@ import com.hedera.node.app.service.file.ReadableUpgradeFileStore;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.ReadableUpgradeFileStoreImpl;
 import com.hedera.node.app.service.networkadmin.FreezeService;
-import com.hedera.node.app.service.networkadmin.NetworkService;
 import com.hedera.node.app.service.networkadmin.ReadableFreezeStore;
-import com.hedera.node.app.service.networkadmin.ReadableRunningHashLeafStore;
 import com.hedera.node.app.service.networkadmin.impl.ReadableFreezeStoreImpl;
-import com.hedera.node.app.service.networkadmin.impl.ReadableRunningHashLeafStoreImpl;
 import com.hedera.node.app.service.schedule.ReadableScheduleStore;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.impl.ReadableScheduleStoreImpl;
@@ -94,10 +91,6 @@ public class ReadableStoreFactory {
         newMap.put(ReadableUpgradeFileStore.class, new StoreEntry(FileService.NAME, ReadableUpgradeFileStoreImpl::new));
         // Network Admin
         newMap.put(ReadableFreezeStore.class, new StoreEntry(FreezeService.NAME, ReadableFreezeStoreImpl::new));
-        // Util
-        newMap.put(
-                ReadableRunningHashLeafStore.class,
-                new StoreEntry(NetworkService.NAME, ReadableRunningHashLeafStoreImpl::new));
         // Contracts
         newMap.put(ContractStateStore.class, new StoreEntry(ContractService.NAME, ReadableContractStateStore::new));
         return Collections.unmodifiableMap(newMap);

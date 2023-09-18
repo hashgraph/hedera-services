@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -90,6 +91,7 @@ public class TokenGrantKycToAccountHandler implements TransactionHandler {
 
         final var txnBody = handleContext.body();
         final var tokenRelStore = handleContext.writableStore(WritableTokenRelationStore.class);
+        final var tokenStore = handleContext.readableStore(ReadableTokenStore.class);
 
         final var op = txnBody.tokenGrantKycOrThrow();
 
@@ -97,7 +99,7 @@ public class TokenGrantKycToAccountHandler implements TransactionHandler {
         final var targetAccountId = op.accountOrThrow();
         final var accountStore = handleContext.readableStore(ReadableAccountStore.class);
         final var expiryValidator = handleContext.expiryValidator();
-        final var tokenRelation = validateSemantics(targetAccountId, targetTokenId, tokenRelStore, accountStore, expiryValidator);
+        final var tokenRelation = validateSemantics(targetAccountId, targetTokenId, tokenRelStore, accountStore, expiryValidator, tokenStore);
 
         final var tokenRelBuilder = tokenRelation.copyBuilder();
         tokenRelBuilder.kycGranted(true);
@@ -115,11 +117,16 @@ public class TokenGrantKycToAccountHandler implements TransactionHandler {
             @NonNull final TokenID tokenId,
             @NonNull final WritableTokenRelationStore tokenRelStore,
             @NonNull final ReadableAccountStore accountStore,
-            @NonNull final ExpiryValidator expiryValidator)
+            @NonNull final ExpiryValidator expiryValidator,
+            @NonNull final ReadableTokenStore tokenStore)
             throws HandleException {
         final var account =
                 TokenHandlerHelper.getIfUsable(accountId, accountStore, expiryValidator, INVALID_ACCOUNT_ID);
 
-        return TokenHandlerHelper.getIfUsable(account.accountId(), tokenId, tokenRelStore);
+        final var token = TokenHandlerHelper.getIfUsable(tokenId, tokenStore);
+        final var tokenRel = tokenRelStore.getForModify(accountId, tokenId);
+        validateTrue(tokenRel != null, INVALID_TOKEN_ID);
+
+        return tokenRel;
     }
 }
