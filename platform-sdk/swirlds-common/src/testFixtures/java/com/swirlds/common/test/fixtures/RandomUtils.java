@@ -65,7 +65,7 @@ public class RandomUtils {
      * 		the random object to use
      * @return a random IP address
      */
-    public static @NonNull String randomIp(final Random r) {
+    public static @NonNull String randomIp(@NonNull final Random r) {
         return r.nextInt(256) + "." + r.nextInt(256) + "." + r.nextInt(256) + "." + r.nextInt(256);
     }
 

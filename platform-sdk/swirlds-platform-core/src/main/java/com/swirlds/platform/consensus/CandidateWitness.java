@@ -24,6 +24,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.Objects;
+
 /** A wrapper for a witness which holds additional metadata while an election to decide its fame is ongoing */
 public final class CandidateWitness {
     private static final Logger logger = LogManager.getLogger(CandidateWitness.class);
@@ -41,8 +43,8 @@ public final class CandidateWitness {
      */
     public CandidateWitness(
             @NonNull final EventImpl witness, @NonNull final IntReference numUnknownFame, final int electionIndex) {
-        this.witness = witness;
-        this.numUnknownFame = numUnknownFame;
+        this.witness = Objects.requireNonNull(witness);
+        this.numUnknownFame = Objects.requireNonNull(numUnknownFame);
         this.electionIndex = electionIndex;
         this.decided = false;
         this.famous = false;

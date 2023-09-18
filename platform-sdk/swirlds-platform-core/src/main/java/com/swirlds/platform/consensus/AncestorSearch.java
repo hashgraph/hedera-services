@@ -27,6 +27,7 @@ public class AncestorSearch {
     /** the iterator that returns ancestors */
     private final AncestorIterator iterator;
 
+    /** Create a new ancestor search */
     public AncestorSearch() {
         this(new EventVisitedMark());
     }
@@ -47,8 +48,8 @@ public class AncestorSearch {
      * @param valid do a depth-first search, but backtrack from any event e where valid(e)==false
      * @return an iterator over all valid ancestors of the root
      */
-    public @NonNull AncestorIterator search(@NonNull final EventImpl root, @NonNull final Predicate<EventImpl> valid) {
-        iterator.search(root, valid);
+    public @NonNull AncestorIterator initializeSearch(@NonNull final EventImpl root, @NonNull final Predicate<EventImpl> valid) {
+        iterator.initializeSearch(root, valid);
         return iterator;
     }
 
@@ -68,7 +69,7 @@ public class AncestorSearch {
         // Do a non-recursive search of the hashgraph, without using the Java stack, and being
         // efficient when it's a DAG that isn't a tree.
         for (final EventImpl e : events) {
-            final AncestorIterator validAncestors = search(e, valid);
+            final AncestorIterator validAncestors = initializeSearch(e, valid);
             while (validAncestors.hasNext()) {
                 final EventImpl event = validAncestors.next();
                 if (event.getRecTimes() == null) {

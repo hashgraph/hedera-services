@@ -51,9 +51,9 @@ public class ConsensusRounds {
             @NonNull final ConsensusConfig config,
             @NonNull final SequentialRingBuffer<MinGenInfo> minGenStorage,
             @NonNull final AddressBook addressBook) {
-        this.config = config;
-        this.minGenStorage = minGenStorage;
-        this.addressBook = addressBook;
+        this.config = Objects.requireNonNull(config);
+        this.minGenStorage = Objects.requireNonNull(minGenStorage);
+        this.addressBook = Objects.requireNonNull(addressBook);
         reset();
     }
 
@@ -65,8 +65,7 @@ public class ConsensusRounds {
     }
 
     /**
-     * @return the round number below which the fame of all witnesses has been decided for all
-     *     earlier rounds
+     * @return the round number below which the fame of all witnesses has been decided
      */
     public long getFameDecidedBelow() {
         return electionRound.getRound();

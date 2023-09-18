@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.consensus;
 
+import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -103,7 +104,7 @@ public class ConsensusSnapshot implements SelfSerializable {
     /**
      * @return the hashes of all the judges for this round, ordered by their creator ID
      */
-    public @NonNull Collection<Hash> judgeHashes() {
+    public @NonNull List<Hash> judgeHashes() {
         return judgeHashes;
     }
 
@@ -158,21 +159,13 @@ public class ConsensusSnapshot implements SelfSerializable {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder();
-        sb.append("round: ").append(round).append('\n');
-        sb.append("hashes: ").append('\n');
-        for (final Hash hash : judgeHashes) {
-            sb.append("   ").append(hash.toString()).append('\n');
-        }
-        sb.append("minGens: ").append('\n');
-        minGens.forEach(mg -> sb.append("   ")
-                .append(mg.round())
-                .append("->")
-                .append(mg.minimumGeneration())
-                .append('\n'));
-        sb.append("nextConsensusNumber: ").append(nextConsensusNumber).append('\n');
-        sb.append("minConsensusTimestamp: ").append(consensusTimestamp).append('\n');
-        return sb.toString();
+        return new ToStringBuilder(this)
+                .append("round", round)
+                .append("judgeHashes", judgeHashes)
+                .append("minGens", minGens)
+                .append("nextConsensusNumber", nextConsensusNumber)
+                .append("consensusTimestamp", consensusTimestamp)
+                .toString();
     }
 
     @Override

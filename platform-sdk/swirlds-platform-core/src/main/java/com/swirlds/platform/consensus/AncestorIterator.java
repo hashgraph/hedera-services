@@ -28,7 +28,7 @@ import java.util.function.Predicate;
 /**
  * This is an iterator over all valid ancestors of a given root event, that are reachable through
  * valid ancestors. The "valid" ancestors are defined by a lambda predicate passed in to the
- * constructor.
+ * {@link #initializeSearch(EventImpl, Predicate)} method.
  *
  * <p>It can be used to read or modify the events. This does not implement Collection, because its
  * only purpose to allow iteration over those events. The iteration is depth first, and backtracks
@@ -44,8 +44,8 @@ import java.util.function.Predicate;
  * ancestors, and is last in the iteration.
  *
  * <p>Recursion happens on self parents before other parents. So if there are multiple paths from
- * the root to an event, it will use the path that stays on line of self parents for as far down as
- * possible before leaving that line.
+ * the root to an event, it will use the path that stays on a line of self parents for as far down
+ * as possible before leaving that line.
  */
 public class AncestorIterator implements Iterator<EventImpl> {
     private static final int INITIAL_STACK_SIZE = 300;
@@ -77,6 +77,12 @@ public class AncestorIterator implements Iterator<EventImpl> {
     /** is curr a self ancestor of the judge? */
     private boolean selfAncestor;
 
+    private enum IteratorState {
+        TRAVERSING_SELF_PARENT,
+        TRAVERSING_OTHER_PARENT,
+        BOTTOM
+    }
+
     /**
      * Create an iterator that will iterate over all ancestors of a given event
      * @param mark the instance to use to mark events as visited
@@ -93,7 +99,7 @@ public class AncestorIterator implements Iterator<EventImpl> {
      * @param predicate do a depth-first search, but backtrack from any event e where
      *     valid(e)==false
      */
-    public void search(@NonNull final EventImpl root, @NonNull final Predicate<EventImpl> predicate) {
+    public void initializeSearch(@NonNull final EventImpl root, @NonNull final Predicate<EventImpl> predicate) {
         clear();
 
         // use the next mark, so that currently marked events will not be found until they are
@@ -122,7 +128,7 @@ public class AncestorIterator implements Iterator<EventImpl> {
 
     /**
      * @return the time when the event last returned by the iterator first reached a self-ancestor
-     *     of the root. to phrase is differently, it is the timestamp of the oldest self-ancestor of
+     *     of the root. To phrase it differently, it is the timestamp of the oldest self-ancestor of
      *     root that is also an ancestor of the last event returned.
      */
     public @NonNull Instant getTime() {
@@ -151,19 +157,19 @@ public class AncestorIterator implements Iterator<EventImpl> {
         if (!hasNext) {
             throw new NoSuchElementException("no more events left to iterate over");
         }
-        while (true) { // keep looking until we reach the return statement in the case state ==
-            // BOTTOM
+        // keep looking until we reach the return statement in the case state == BOTTOM
+        while (true) {
             mark.markVisited(curr); // mark this event, so we don't explore it again later
             switch (state) {
                 case TRAVERSING_SELF_PARENT -> { // try to traverse into selfParent
-                    final EventImpl p = curr.getSelfParent();
+                    final EventImpl parent = curr.getSelfParent();
                     state = IteratorState.TRAVERSING_OTHER_PARENT;
-                    if (mark.isNotVisited(p) && valid.test(p)) {
+                    if (mark.isNotVisited(parent) && valid.test(parent)) {
                         stackRef.push(curr);
                         stackState.push(state);
                         stackSelfAncestor.push(selfAncestor);
                         stackTime.push(timeReachedRoot);
-                        curr = p;
+                        curr = parent;
                         state = IteratorState.TRAVERSING_SELF_PARENT;
                         if (selfAncestor) {
                             timeReachedRoot = curr.getTimeCreated(); // ancestors of curr reached creator then
@@ -171,19 +177,19 @@ public class AncestorIterator implements Iterator<EventImpl> {
                     } // there is no selfParent, or it was already visited, or it was not valid
                 }
                 case TRAVERSING_OTHER_PARENT -> { // try to traverse into otherParent
-                    final EventImpl p = curr.getOtherParent();
+                    final EventImpl parent = curr.getOtherParent();
                     state = IteratorState.BOTTOM;
-                    if (mark.isNotVisited(p) && valid.test(p)) {
+                    if (mark.isNotVisited(parent) && valid.test(parent)) {
                         stackRef.push(curr);
                         stackState.push(state);
                         stackSelfAncestor.push(selfAncestor);
                         stackTime.push(timeReachedRoot);
-                        curr = p;
+                        curr = parent;
                         state = IteratorState.TRAVERSING_SELF_PARENT;
                         // first step off the selfAncestor path makes all the events below false
                         selfAncestor = false;
-                    } // else there is no otherParent, or it was already visited, or it was not
-                    // valid
+                    }
+                    // else there is no otherParent, or it was already visited, or it was not valid
                 }
                 case BOTTOM -> { // done with ancestors of curr, so return curr then backtrack
                     if (stackRef.isEmpty()) { // if we're back to the root
@@ -200,11 +206,5 @@ public class AncestorIterator implements Iterator<EventImpl> {
                 default -> throw new IllegalStateException("Unknown state: " + state);
             }
         }
-    }
-
-    private enum IteratorState {
-        TRAVERSING_SELF_PARENT,
-        TRAVERSING_OTHER_PARENT,
-        BOTTOM
     }
 }
