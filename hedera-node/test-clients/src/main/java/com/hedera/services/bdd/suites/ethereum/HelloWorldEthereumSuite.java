@@ -387,7 +387,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                 .has(accountWith().nonce(1L)));
     }
 
-    private HapiSpec bigContractCreate() {
+    HapiSpec bigContractCreate() {
         final var contractAdminKey = "contractAdminKey";
         return defaultHapiSpec("bigContractCreate")
                 .given(
@@ -432,7 +432,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                 .has(accountWith().nonce(1L)));
     }
 
-    private HapiSpec contractCreateWithConstructorArgs() {
+    HapiSpec contractCreateWithConstructorArgs() {
         final var contractAdminKey = "contractAdminKey";
         return defaultHapiSpec("contractCreateWithConstructorArgs")
                 .given(

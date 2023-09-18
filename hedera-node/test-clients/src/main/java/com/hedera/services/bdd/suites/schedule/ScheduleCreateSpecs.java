@@ -519,6 +519,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
                         .hasKnownStatus(UNRESOLVABLE_REQUIRED_SIGNERS));
     }
 
+    @HapiTest
     public HapiSpec rejectsFunctionlessTxn() {
         return defaultHapiSpec("RejectsFunctionlessTxn")
                 .given()

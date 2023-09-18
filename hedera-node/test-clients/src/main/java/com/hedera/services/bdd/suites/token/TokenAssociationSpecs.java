@@ -77,6 +77,7 @@ public class TokenAssociationSpecs extends HapiSuite {
     public static final String CREATION = "creation";
     public static final String SIMPLE = "simple";
     public static final String FREEZE_KEY = "freezeKey";
+    public static final String KYC_KEY = "kycKey";
 
     public static void main(String... args) {
         final var spec = new TokenAssociationSpecs();
@@ -426,7 +427,8 @@ public class TokenAssociationSpecs extends HapiSuite {
                         getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(0));
     }
 
-    //    @HapiTest
+    // enable when TokenDissociateFromAccountHandler.tokenIsExpired is implemented
+    // @HapiTest
     public HapiSpec dissociateHasExpectedSemantics() {
         return defaultHapiSpec("DissociateHasExpectedSemantics")
                 .given(basicKeysAndTokens())
@@ -476,7 +478,7 @@ public class TokenAssociationSpecs extends HapiSuite {
                         .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT));
     }
 
-    //    @HapiTest
+    @HapiTest
     public HapiSpec treasuryAssociationIsAutomatic() {
         return defaultHapiSpec("TreasuryAssociationIsAutomatic")
                 .given(basicKeysAndTokens())
@@ -510,7 +512,7 @@ public class TokenAssociationSpecs extends HapiSuite {
 
     public static HapiSpecOperation[] basicKeysAndTokens() {
         return new HapiSpecOperation[] {
-            newKeyNamed("kycKey"),
+            newKeyNamed(KYC_KEY),
             newKeyNamed(FREEZE_KEY),
             cryptoCreate(TOKEN_TREASURY).balance(0L),
             tokenCreate(FREEZABLE_TOKEN_ON_BY_DEFAULT)
@@ -521,7 +523,7 @@ public class TokenAssociationSpecs extends HapiSuite {
                     .treasury(TOKEN_TREASURY)
                     .freezeKey(FREEZE_KEY)
                     .freezeDefault(false),
-            tokenCreate(KNOWABLE_TOKEN).treasury(TOKEN_TREASURY).kycKey("kycKey"),
+            tokenCreate(KNOWABLE_TOKEN).treasury(TOKEN_TREASURY).kycKey(KYC_KEY),
             tokenCreate(VANILLA_TOKEN).treasury(TOKEN_TREASURY)
         };
     }
