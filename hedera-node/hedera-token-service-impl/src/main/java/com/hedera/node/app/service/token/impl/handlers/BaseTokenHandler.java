@@ -280,7 +280,7 @@ public class BaseTokenHandler {
 
             // Create the new token relation
             final var isFrozen = token.hasFreezeKey() && token.accountsFrozenByDefault();
-            final var kycGranted = !token.hasKycKey();
+            final var kycGranted = token.hasKycKey();
             final var newTokenRel = new TokenRelation(
                     token.tokenId(),
                     account.accountId(),
