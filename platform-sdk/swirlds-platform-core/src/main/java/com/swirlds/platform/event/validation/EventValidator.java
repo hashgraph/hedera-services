@@ -59,9 +59,12 @@ public class EventValidator {
                 // we also need to build the descriptor once we have the hash
                 gossipEvent.buildDescriptor();
             }
+
             if (!gossipEventValidator.isEventValid(gossipEvent)) {
+                gossipEvent.exitIntakePipeline();
                 return;
             }
+
             eventIntake.accept(gossipEvent);
         } catch (final RuntimeException e) {
             logger.error(EXCEPTION.getMarker(), "Error while processing intake event", e);
