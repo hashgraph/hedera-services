@@ -150,7 +150,7 @@ public final class ExchangeRateManager {
         // Update the current ExchangeRateInfo and eventually the midnightRates
         this.currentExchangeRateInfo = new ExchangeRateInfoImpl(proposedRates);
         // TODO: save the mignightRates in state only
-        if (isSuperUser) {
+        if (isAdminUser(payerId, accountsConfig)) {
             midnightRates = proposedRates;
         }
     }
@@ -160,6 +160,13 @@ public final class ExchangeRateManager {
         if (!accountID.hasAccountNum()) return false;
         long num = accountID.accountNumOrThrow();
         return num == accountsConfig.treasury() || num == accountsConfig.systemAdmin();
+    }
+
+    private boolean isAdminUser(@NonNull final AccountID accountID, AccountsConfig accountsConfig) {
+        if (accountID == null) return true;
+        if (!accountID.hasAccountNum()) return false;
+        long num = accountID.accountNumOrThrow();
+        return num == accountsConfig.systemAdmin();
     }
 
     public void updateMidnightRates(@NonNull final HederaState state) {
