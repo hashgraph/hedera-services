@@ -41,6 +41,10 @@ sonarqube {
         property("sonar.links.scm", "https://github.com/hashgraph/hedera-services.git")
 
         property("sonar.coverage.exclusions", "**/test-clients/**,**/hedera-node/src/jmh/**")
+        property(
+            "sonar.coverage.jacoco.xmlReportPaths",
+            "build/reports/jacoco/jacocoTestReport.xml"
+        )
 
         // Ignored to match pom.xml setup
         property("sonar.issue.ignore.multicriteria", "e1,e2")
