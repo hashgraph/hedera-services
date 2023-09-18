@@ -28,12 +28,20 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.IntUnaryOperator;
 
 /**
  * A class used to hold information about an event transferred through gossip
  */
 public class GossipEvent implements EventIntakeTask, BaseEvent, ChatterEvent {
     private static final long CLASS_ID = 0xfe16b46795bfb8dcL;
+
+    /**
+     * Lambda to update the intake counter when an event exits the intake pipeline. The lambda decrements the counter,
+     * but prevents it from going below 0.
+     */
+    private static final IntUnaryOperator EXIT_INTAKE = count -> count > 0 ? count - 1 : 0;
+
     private static final long ROUND_CREATED_UNDEFINED = -1;
     private BaseEventHashedData hashedData;
     private BaseEventUnhashedData unhashedData;
@@ -171,7 +179,7 @@ public class GossipEvent implements EventIntakeTask, BaseEvent, ChatterEvent {
             return;
         }
 
-        if (intakeCounter.getAndUpdate(count -> count > 0 ? count - 1 : 0) == 0) {
+        if (intakeCounter.getAndUpdate(EXIT_INTAKE) == 0) {
             throw new IllegalStateException(
                     "Event processed from peer, but no known events from that peer were in the intake pipeline."
                             + "This shouldn't be possible.");

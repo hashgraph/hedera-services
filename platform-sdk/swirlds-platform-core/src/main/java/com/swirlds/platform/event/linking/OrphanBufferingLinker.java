@@ -83,10 +83,9 @@ public class OrphanBufferingLinker extends AbstractEventLinker {
             logger.error(LogMarker.EXCEPTION.getMarker(), "Null orphan, descriptor: {}", key);
             return;
         }
+
         orphan.orphanForever();
         orphan.getChild().getBaseEvent().exitIntakePipeline();
-
-        logger.error(LogMarker.EXCEPTION.getMarker(), "Purging an orphan: {}", orphan.getChild());
     }
 
     /**
