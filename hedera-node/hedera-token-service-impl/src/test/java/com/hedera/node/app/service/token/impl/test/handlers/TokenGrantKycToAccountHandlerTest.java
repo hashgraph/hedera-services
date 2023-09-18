@@ -171,7 +171,7 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
         private static final AccountID TREASURY_ACCOUNT_9876 = BaseCryptoHandler.asAccount(9876);
         private static final TokenID TOKEN_531 = BaseTokenHandler.asToken(531);
 
-        private Token newToken531() {
+        private static final Token newToken531() {
             return Token.newBuilder()
                     .tokenId(TOKEN_531)
                     .tokenType(TokenType.FUNGIBLE_COMMON)
