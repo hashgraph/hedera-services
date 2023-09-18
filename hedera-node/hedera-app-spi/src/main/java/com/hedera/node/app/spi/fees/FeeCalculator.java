@@ -76,6 +76,14 @@ public interface FeeCalculator {
     @NonNull
     FeeCalculator addRamByteSeconds(long amount);
 
+    /**
+     * Adds to the "vpt" component the number of verifications used by the transaction.
+     * @param amount The number of verifications per transaction. Must not be negative.
+     * @return {@code this} for fluent usage.
+     */
+    @NonNull
+    FeeCalculator addVerificationsPerTransaction(long amount);
+
     @NonNull
     Fees legacyCalculate(@NonNull final Function<SigValueObj, FeeData> callback);
 

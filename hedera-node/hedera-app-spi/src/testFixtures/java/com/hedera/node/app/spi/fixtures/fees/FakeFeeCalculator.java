@@ -53,6 +53,11 @@ public class FakeFeeCalculator implements FeeCalculator {
         return this;
     }
 
+    @NonNull
+    public FeeCalculator addVerificationsPerTransaction(long amount) {
+        return this;
+    }
+
     @Override
     @NonNull
     public Fees calculate() {

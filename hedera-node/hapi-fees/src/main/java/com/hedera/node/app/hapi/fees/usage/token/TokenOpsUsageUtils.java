@@ -83,7 +83,7 @@ public enum TokenOpsUsageUtils {
                 .build();
     }
 
-    public TokenMintMeta tokenMintUsageFrom(
+    public static TokenMintMeta tokenMintUsageFrom(
             final TransactionBody txn, final SubType subType, final long expectedLifeTime) {
         final var op = txn.getTokenMint();
         int bpt = 0;
@@ -126,6 +126,12 @@ public enum TokenOpsUsageUtils {
     public TokenBurnMeta tokenBurnUsageFrom(final TransactionBody txn, final SubType subType) {
         final var op = txn.getTokenBurn();
         return retrieveRawDataFrom(subType, op::getSerialNumbersCount, TokenBurnMeta::new);
+    }
+
+    public TokenWipeMeta tokenWipeUsageFrom(final TransactionBody txn) {
+        final var op = txn.getTokenWipe();
+        final var subType = op.getSerialNumbersCount() > 0 ? TOKEN_NON_FUNGIBLE_UNIQUE : TOKEN_FUNGIBLE_COMMON;
+        return tokenWipeUsageFrom(op, subType);
     }
 
     public TokenWipeMeta tokenWipeUsageFrom(final TokenWipeAccountTransactionBody op) {
