@@ -24,7 +24,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 63,
+  "id": 66,
   "links": [],
   "liveNow": false,
   "panels": [
@@ -62,22 +62,22 @@
                   "text": "FREEZING"
                 },
                 "6": {
-                  "color": "yellow",
+                  "color": "dark-purple",
                   "index": 4,
                   "text": "FREEZE COMPLETE"
                 },
                 "7": {
-                  "color": "yellow",
+                  "color": "blue",
                   "index": 5,
                   "text": "OBSERVING"
                 },
                 "9": {
-                  "color": "yellow",
+                  "color": "dark-blue",
                   "index": 6,
                   "text": "CHECKING"
                 },
                 "10": {
-                  "color": "yellow",
+                  "color": "dark-green",
                   "index": 7,
                   "text": "RECONNECT COMPLETE"
                 },
@@ -93,7 +93,7 @@
               "options": {
                 "match": "null+nan",
                 "result": {
-                  "color": "yellow",
+                  "color": "orange",
                   "index": 9,
                   "text": "UNKNOWN"
                 }
@@ -104,7 +104,7 @@
               "options": {
                 "match": "empty",
                 "result": {
-                  "color": "dark-yellow",
+                  "color": "dark-orange",
                   "index": 10,
                   "text": "EMPTY"
                 }
