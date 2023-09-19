@@ -6,14 +6,16 @@ import com.hedera.hapi.node.base.TokenType;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
+import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.math.BigInteger;
 import java.util.Arrays;
 import javax.inject.Inject;
 import org.hyperledger.besu.datatypes.Address;
 
 public class BurnTranslator extends AbstractHtsCallTranslator {
 
-    public static final Function BURN_TOKEN_V1 = new Function("burnToken(address,uint64,int64[])", "(int,int)");
+    public static final Function BURN_TOKEN_V1 = new Function("burnToken(address,uint64,int64[])", ReturnTypes.INT);
     public static final Function BURN_TOKEN_V2 = new Function("burnToken(address,int64,int64[])", ReturnTypes.INT);
 
     @Inject
@@ -43,8 +45,8 @@ public class BurnTranslator extends AbstractHtsCallTranslator {
             return token.tokenType() == TokenType.FUNGIBLE_COMMON
                     ? new FungibleBurnCall(
                             attempt.enhancement(),
-                            call.get(0),
-                            call.get(1),
+                            ConversionUtils.asTokenId(call.get(0)),
+                            ((BigInteger) call.get(1)).longValue(),
                             attempt.defaultVerificationStrategy(),
                             attempt.senderAddress(),
                             attempt.addressIdConverter())

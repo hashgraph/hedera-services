@@ -54,6 +54,7 @@ import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoDeleteRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.service.token.records.NodeStakeUpdateRecordBuilder;
+import com.hedera.node.app.service.token.records.TokenBurnRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenCreateRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenMintRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenUpdateRecordBuilder;
@@ -100,6 +101,7 @@ public class SingleTransactionRecordBuilderImpl
                 PrngRecordBuilder,
                 ScheduleRecordBuilder,
                 TokenMintRecordBuilder,
+                TokenBurnRecordBuilder,
                 TokenCreateRecordBuilder,
                 ContractCreateRecordBuilder,
                 ContractCallRecordBuilder,
@@ -126,6 +128,7 @@ public class SingleTransactionRecordBuilderImpl
     private ResponseCodeEnum status = ResponseCodeEnum.OK;
     private ExchangeRateSet exchangeRate = ExchangeRateSet.DEFAULT;
     private List<Long> serialNumbers = new LinkedList<>();
+    private long newTotalSupply = 0L;
     private final TransactionReceipt.Builder transactionReceiptBuilder = TransactionReceipt.newBuilder();
     // Sidecar data, booleans are the migration flag
     private List<AbstractMap.SimpleEntry<ContractStateChanges, Boolean>> contractStateChanges = new LinkedList<>();
@@ -727,8 +730,13 @@ public class SingleTransactionRecordBuilderImpl
      */
     @NonNull
     public SingleTransactionRecordBuilderImpl newTotalSupply(final long newTotalSupply) {
+        this.newTotalSupply = newTotalSupply;
         transactionReceiptBuilder.newTotalSupply(newTotalSupply);
         return this;
+    }
+
+    public long getNewTotalSupply() {
+        return newTotalSupply;
     }
 
     /**

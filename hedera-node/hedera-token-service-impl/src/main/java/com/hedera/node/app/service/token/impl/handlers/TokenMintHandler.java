@@ -129,6 +129,8 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
             // TODO: Need to build transfer ownership from list to transfer NFT to treasury
             // This should probably be done in finalize method on token service which constructs the
             // transfer list looking at state
+
+            // @TODO add the new total supply to the receipt
         }
     }
 

@@ -105,7 +105,9 @@ class XTestConstants {
     static final Address OWNER_BESU_ADDRESS = pbjToBesuAddress(OWNER_ADDRESS);
     static final com.esaulpaugh.headlong.abi.Address OWNER_HEADLONG_ADDRESS =
             asHeadlongAddress(OWNER_ADDRESS.toByteArray());
-
+    static final Key AN_ED25519_KEY = Key.newBuilder()
+            .ed25519(Bytes.fromHex("0101010101010101010101010101010101010101010101010101010101010101"))
+            .build();
     public static void addErc721Relation(
             final Map<EntityIDPair, TokenRelation> tokenRelationships, final AccountID accountID, final long balance) {
         tokenRelationships.put(
