@@ -360,6 +360,7 @@ public class Hip17UnhappyTokensSuite extends HapiSuite {
                         .hasKnownStatus(TOKEN_WAS_DELETED));
     }
 
+    @HapiTest
     private HapiSpec cannotBurnNftWhenDeleted() {
         return defaultHapiSpec("cannotBurnNftWhenDeleted")
                 .given(
@@ -390,6 +391,7 @@ public class Hip17UnhappyTokensSuite extends HapiSuite {
                 .then(burnToken(NFTdeleted, List.of(2L)).hasKnownStatus(TOKEN_WAS_DELETED));
     }
 
+    @HapiTest
     private HapiSpec cannotWipeNftWhenDeleted() {
         return defaultHapiSpec("cannotWipeNftWhenDeleted")
                 .given(
