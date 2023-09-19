@@ -38,7 +38,7 @@ import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHel
 import com.hedera.node.app.service.token.impl.test.fixtures.FakeNodeStakeUpdateRecordBuilder;
 import com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory;
 import com.hedera.node.app.service.token.records.NodeStakeUpdateRecordBuilder;
-import com.hedera.node.app.service.token.records.StakingContext;
+import com.hedera.node.app.service.token.records.TokenContext;
 import com.hedera.node.app.spi.fixtures.numbers.FakeHederaNumbers;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
@@ -80,7 +80,7 @@ class EndOfStakingPeriodUpdaterTest {
         final var consensusTime = Instant.now();
 
         // Set up the staking config
-        final var context = mock(StakingContext.class);
+        final var context = mock(TokenContext.class);
         given(context.configuration())
                 .willReturn(
                         newStakingConfig().withValue("staking.isEnabled", false).getOrCreateConfig());
@@ -171,7 +171,7 @@ class EndOfStakingPeriodUpdaterTest {
 
     @Test
     void calculatesNewTotalStakesAsExpected() {
-        final var context = mock(StakingContext.class);
+        final var context = mock(TokenContext.class);
         given(context.consensusTime()).willReturn(Instant.now());
 
         // Create staking config
