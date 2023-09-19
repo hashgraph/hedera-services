@@ -22,6 +22,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOU
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.*;
 import static com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl.RUNNING_HASH_BYTE_ARRAY_SIZE;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static java.util.Objects.requireNonNull;
@@ -32,9 +33,11 @@ import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
-import com.hedera.node.app.hapi.utils.fee.ConsensusServiceFeeBuilder;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
+import com.hedera.node.app.service.mono.fees.calculation.consensus.txns.CreateTopicResourceUsage;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -87,17 +90,6 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
         requireNonNull(handleContext, "The argument 'context' must not be null");
 
         final var op = handleContext.body().consensusCreateTopicOrThrow();
-
-        final var fees = handleContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> {
-            try {
-                final var protoBody = fromPbj(handleContext.body());
-                return ConsensusServiceFeeBuilder.getConsensusCreateTopicFee(protoBody, sigValueObj);
-            } catch (InvalidTxBodyException e) {
-                throw new HandleException(INVALID_TRANSACTION_BODY);
-            }
-        });
-
-        handleContext.feeAccumulator().charge(handleContext.payer(), fees);
 
         final var configuration = handleContext.configuration();
         final var topicConfig = configuration.getConfigData(TopicsConfig.class);
@@ -162,5 +154,20 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
             }
             throw e;
         }
+    }
+
+    @NonNull
+    @Override
+    public Fees calculateFees(@NonNull final FeeContext feeContext) {
+        requireNonNull(feeContext);
+        final var op = feeContext.body();
+
+        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> {
+            try {
+                return new CreateTopicResourceUsage().usageGiven(fromPbj(op), sigValueObj, null);
+            } catch (InvalidTxBodyException e) {
+                throw new HandleException(INVALID_TRANSACTION_BODY);
+            }
+        });
     }
 }
