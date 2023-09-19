@@ -1,5 +1,8 @@
 package contract;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
+import static contract.AssociationsXTestConstants.A_TOKEN_ADDRESS;
+import static contract.AssociationsXTestConstants.A_TOKEN_ID;
 import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_ID;
 import static contract.MiscClassicTransfersXTestConstants.INITIAL_RECEIVER_AUTO_ASSOCIATIONS;
 import static contract.XTestConstants.AN_ED25519_KEY;
@@ -30,7 +33,6 @@ import com.hedera.node.app.spi.state.ReadableKVState;
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import org.apache.tuweni.bytes.Bytes;
 import org.jetbrains.annotations.NotNull;
 
@@ -51,6 +53,19 @@ public class BurnFungibleXTest extends AbstractContractXTest {
                                 new long[] {})
                         .array()),
                 assertSuccess());
+
+        // should revert when token has no supplyKey
+        runHtsCallAndExpectRevert(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(BurnTranslator.BURN_TOKEN_V1
+                        .encodeCallWithArgs(
+                                A_TOKEN_ADDRESS,
+                                BigInteger.valueOf(TOKENS_TO_BURN),
+                                new long[]{})
+                        .array()), TOKEN_HAS_NO_SUPPLY_KEY);
+
+        // should revert when token is not associated to account
+        // should revert on totalSupply < 0
     }
 
     @Override
@@ -82,7 +97,15 @@ public class BurnFungibleXTest extends AbstractContractXTest {
                         .treasuryAccountId(OWNER_ID)
                         .tokenType(TokenType.FUNGIBLE_COMMON)
                         .supplyKey(AN_ED25519_KEY)
-                        .totalSupply(1000L)
+                        .totalSupply(TOKEN_BALANCE)
+                        .build());
+        tokens.put(
+                A_TOKEN_ID,
+                Token.newBuilder()
+                        .tokenId(A_TOKEN_ID)
+                        .treasuryAccountId(OWNER_ID)
+                        .tokenType(TokenType.FUNGIBLE_COMMON)
+                        .totalSupply(TOKEN_BALANCE)
                         .build());
         return tokens;
     }
