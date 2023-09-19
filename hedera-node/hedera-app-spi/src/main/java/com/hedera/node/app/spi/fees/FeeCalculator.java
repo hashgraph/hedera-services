@@ -93,4 +93,11 @@ public interface FeeCalculator {
      */
     @NonNull
     Fees calculate();
+
+    /**
+     * Resets the usage of all components to zero.
+     * @return
+     */
+    @NonNull
+    FeeCalculator resetUsage();
 }

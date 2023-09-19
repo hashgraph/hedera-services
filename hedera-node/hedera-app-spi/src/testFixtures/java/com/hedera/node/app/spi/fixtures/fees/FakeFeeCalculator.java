@@ -70,4 +70,9 @@ public class FakeFeeCalculator implements FeeCalculator {
         callback.apply(new SigValueObj(0, 0, 0));
         return new Fees(0, 0, 0);
     }
+
+    @NonNull
+    public FakeFeeCalculator resetUsage() {
+        return this;
+    }
 }

@@ -33,6 +33,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.TokenCreateTransactionBody;
 import com.hedera.hapi.node.transaction.CustomFee;
@@ -355,13 +356,18 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
     @Override
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
         final var txn = feeContext.body();
+        final var op = txn.tokenCreationOrThrow();
+        final var type = op.tokenType();
         final var meta = TOKEN_OPS_USAGE_UTILS.tokenCreateUsageFrom(fromPbj(txn));
         final long tokenSizes = TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(
                         meta.getNumTokens(), meta.getFungibleNumTransfers(), meta.getNftsTransfers())
                 * USAGE_PROPERTIES.legacyReceiptStorageSecs();
 
         final var calculator = feeContext
-                .feeCalculator(SubType.DEFAULT)
+                .feeCalculator(
+                        type.equals(TokenType.FUNGIBLE_COMMON)
+                                ? SubType.TOKEN_FUNGIBLE_COMMON
+                                : SubType.TOKEN_NON_FUNGIBLE_UNIQUE)
                 .addBytesPerTransaction(meta.getBaseSize())
                 .addRamByteSeconds((meta.getBaseSize() + meta.getCustomFeeScheduleSize()) * meta.getLifeTime())
                 .addRamByteSeconds(tokenSizes)

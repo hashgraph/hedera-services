@@ -281,6 +281,7 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
 
         final var calculator = feeContext.feeCalculator(subType);
         if (SubType.TOKEN_NON_FUNGIBLE_UNIQUE.equals(subType)) {
+            calculator.resetUsage();
             // The price of nft mint should be increased based on number of signatures.
             // The first signature is free and is accounted in the base price, so we only need to add
             // the price of the rest of the signatures.

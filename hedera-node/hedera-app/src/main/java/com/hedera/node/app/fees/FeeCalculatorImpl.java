@@ -155,6 +155,12 @@ public class FeeCalculatorImpl implements FeeCalculator {
     }
 
     @NonNull
+    public FeeCalculator resetUsage() {
+        usage.reset();
+        return this;
+    }
+
+    @NonNull
     @Override
     public Fees legacyCalculate(@NonNull Function<SigValueObj, com.hederahashgraph.api.proto.java.FeeData> callback) {
         final var sigValueObject = new SigValueObj(sigUsage.numSigs(), sigUsage.numPayerKeys(), sigUsage.sigsSize());

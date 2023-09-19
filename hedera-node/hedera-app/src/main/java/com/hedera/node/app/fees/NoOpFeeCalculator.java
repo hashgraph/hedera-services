@@ -66,6 +66,11 @@ public class NoOpFeeCalculator implements FeeCalculator {
     }
 
     @NonNull
+    public FeeCalculator resetUsage() {
+        return this;
+    }
+
+    @NonNull
     @Override
     public Fees legacyCalculate(@NonNull Function<SigValueObj, FeeData> callback) {
         return Fees.FREE;
