@@ -32,7 +32,5 @@ public interface LogEventConsumer extends Consumer<LogEvent> {
      * @param level the level
      * @return true if the consumer is enabled, false otherwise
      */
-    default boolean isEnabled(@NonNull String name, @NonNull Level level) {
-        return true;
-    }
+    boolean isEnabled(@NonNull String name, @NonNull Level level);
 }
