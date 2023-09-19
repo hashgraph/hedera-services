@@ -63,7 +63,7 @@ public class UniqueTokenValueSerializer implements ValueSerializer<UniqueTokenVa
         return value.getSerializedSize();
     }
 
-    // FUTURE WORK: mark it as @Override after migration to platform 0.39
+    @Override
     public int getTypicalSerializedSize() {
         return UniqueTokenValue.getTypicalSerializedSize();
     }

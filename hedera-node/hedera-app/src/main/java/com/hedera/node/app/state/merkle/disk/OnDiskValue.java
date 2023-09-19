@@ -20,7 +20,6 @@ import static com.hedera.node.app.state.merkle.StateUtils.readFromStream;
 import static com.hedera.node.app.state.merkle.StateUtils.writeToStream;
 
 import com.hedera.node.app.state.merkle.StateMetadata;
-import com.hedera.pbj.runtime.Codec;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualValue;
@@ -46,20 +45,18 @@ public class OnDiskValue<V> implements VirtualValue {
 
     static final int VERSION = 1;
 
-    private final Codec<V> codec;
     private final StateMetadata<?, V> md;
     private V value;
     private boolean immutable = false;
 
     // Default constructor is for deserialization
     public OnDiskValue() {
-        this.codec = null;
         this.md = null;
     }
 
     public OnDiskValue(@NonNull final StateMetadata<?, V> md) {
-        this.md = md;
-        this.codec = md.stateDefinition().valueCodec();
+        this.md = Objects.requireNonNull(md);
+        Objects.requireNonNull(md.stateDefinition().valueCodec());
     }
 
     public OnDiskValue(@NonNull final StateMetadata<?, V> md, @NonNull final V value) {
@@ -96,13 +93,19 @@ public class OnDiskValue<V> implements VirtualValue {
     /** {@inheritDoc} */
     @Override
     public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
-        writeToStream(out, codec, value);
+        if (md == null) {
+            throw new IllegalStateException("Cannot serialize on-disk value, null metadata / codec");
+        }
+        writeToStream(out, md.stateDefinition().valueCodec(), value);
     }
 
     /** {@inheritDoc} */
     @Override
     public void deserialize(@NonNull final SerializableDataInputStream in, int ignored) throws IOException {
-        value = readFromStream(in, codec);
+        if (md == null) {
+            throw new IllegalStateException("Cannot deserialize on-disk value, null metadata / codec");
+        }
+        value = readFromStream(in, md.stateDefinition().valueCodec());
     }
 
     /** {@inheritDoc} */

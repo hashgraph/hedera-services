@@ -63,7 +63,7 @@ public class VirtualBlobValueSerializer implements ValueSerializer<VirtualBlobVa
         return data.getSizeInBytes();
     }
 
-    // FUTURE WORK: mark it as @Override after migration to platform 0.39
+    @Override
     public int getTypicalSerializedSize() {
         return VirtualBlobValue.getTypicalSerializedSize();
     }

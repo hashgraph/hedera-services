@@ -60,7 +60,7 @@ public class IterableContractValueSerializer implements ValueSerializer<Iterable
         return value.getSerializedSize();
     }
 
-    // FUTURE WORK: mark it as @Override after migration to platform 0.39
+    @Override
     public int getTypicalSerializedSize() {
         return IterableContractValue.getTypicalSerializedSize();
     }

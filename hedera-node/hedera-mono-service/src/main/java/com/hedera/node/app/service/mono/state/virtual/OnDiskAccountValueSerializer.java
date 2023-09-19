@@ -66,7 +66,7 @@ public class OnDiskAccountValueSerializer implements ValueSerializer<OnDiskAccou
         return value.getSerializedSizeInBytes();
     }
 
-    // FUTURE WORK: mark it as @Override after migration to platform 0.39
+    @Override
     public int getTypicalSerializedSize() {
         return OnDiskAccount.getTypicalSerializedSize();
     }

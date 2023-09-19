@@ -67,8 +67,9 @@ public final class OnDiskKey<K> implements VirtualKey {
      *
      * @param md The state metadata
      */
-    public OnDiskKey(final StateMetadata<K, ?> md) {
-        this.md = md;
+    public OnDiskKey(@NonNull final StateMetadata<K, ?> md) {
+        this.md = Objects.requireNonNull(md);
+        Objects.requireNonNull(md.stateDefinition().keyCodec());
     }
 
     /**
@@ -78,7 +79,7 @@ public final class OnDiskKey<K> implements VirtualKey {
      * @param key The "real" key
      */
     public OnDiskKey(@NonNull final StateMetadata<K, ?> md, @NonNull final K key) {
-        this(Objects.requireNonNull(md));
+        this(md);
         this.key = Objects.requireNonNull(key);
     }
 
@@ -101,17 +102,19 @@ public final class OnDiskKey<K> implements VirtualKey {
     /** Writes the "real" key to the given stream. {@inheritDoc} */
     @Override
     public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
-        assert md != null;
-        final Codec<K> codec = md.stateDefinition().keyCodec();
-        assert codec != null;
+        final Codec<K> codec;
+        if ((md == null) || ((codec = md.stateDefinition().keyCodec()) == null)) {
+            throw new IllegalStateException("Cannot serialize on-disk key, null metadata / codec");
+        }
         writeToStream(out, codec, key);
     }
 
     @Override
     public void deserialize(@NonNull final SerializableDataInputStream in, int ignored) throws IOException {
-        assert md != null;
-        final Codec<K> codec = md.stateDefinition().keyCodec();
-        assert codec != null;
+        final Codec<K> codec;
+        if ((md == null) || ((codec = md.stateDefinition().keyCodec()) == null)) {
+            throw new IllegalStateException("Cannot deserialize on-disk key, null metadata / codec");
+        }
         key = readFromStream(in, codec);
     }
 
