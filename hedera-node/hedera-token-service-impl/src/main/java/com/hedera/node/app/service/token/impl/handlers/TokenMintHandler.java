@@ -28,6 +28,7 @@ import static com.hedera.node.app.hapi.fees.usage.SingletonUsageProperties.USAGE
 import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.MAX_NUM_ALLOWED;
+import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
@@ -287,8 +288,10 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
             // the price of the rest of the signatures.
             calculator.addVerificationsPerTransaction(Math.max(0, numSimpleKeys(payerKey) - 1L));
         }
-
-        final var meta = TOKEN_OPS_USAGE_UTILS.tokenMintUsageFrom(fromPbj(feeContext.body()), fromPbj(subType), 76000L);
+        // FUTURE: lifetime parameter is not being used by the function below, in order to avoid making changes
+        // to mono-service passed a default lifetime of 3 months here
+        final var meta = TOKEN_OPS_USAGE_UTILS.tokenMintUsageFrom(
+                fromPbj(feeContext.body()), fromPbj(subType), THREE_MONTHS_IN_SECONDS);
 
         calculator.addBytesPerTransaction(meta.getBpt());
         calculator.addRamByteSeconds(meta.getRbs());
@@ -310,6 +313,7 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
                 numSimpleKeys(k);
             }
         } else {
+            // FUTURE: We don't need to count contractId keys here, but we need this to pass differential testing
             count.incrementAndGet();
         }
         return count.get();
