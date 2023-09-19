@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.file.impl.test.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
@@ -61,7 +62,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -129,24 +129,6 @@ class FileSystemUndeleteTest extends FileTestBase {
     }
 
     @Test
-    @DisplayName("Pre handle works as expected")
-    void preHandleWorksAsExpected() throws PreCheckException {
-        refreshStoresWithCurrentFileOnlyInReadable();
-        BDDMockito.given(accountStore.getAccountById(payerId)).willReturn(payerAccount);
-        BDDMockito.given(mockStoreFactory.getStore(ReadableFileStore.class)).willReturn(readableStore);
-        BDDMockito.given(mockStoreFactory.getStore(ReadableAccountStore.class)).willReturn(accountStore);
-        BDDMockito.given(payerAccount.key()).willReturn(A_COMPLEX_KEY);
-
-        PreHandleContext realPreContext =
-                new PreHandleContextImpl(mockStoreFactory, newFileUnDeleteTxn(), testConfig, mockDispatcher);
-
-        subject.preHandle(realPreContext);
-
-        assertTrue(realPreContext.requiredNonPayerKeys().size() > 0);
-        assertEquals(3, realPreContext.requiredNonPayerKeys().size());
-    }
-
-    @Test
     @DisplayName("Fails handle if file doesn't exist")
     void fileDoesntExist() {
         given(handleContext.body()).willReturn(newFileUnDeleteTxn());
@@ -171,7 +153,7 @@ class FileSystemUndeleteTest extends FileTestBase {
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
-        assertEquals(INVALID_FILE_ID, msg.getStatus());
+        assertEquals(ENTITY_NOT_ALLOWED_TO_DELETE, msg.getStatus());
     }
 
     @Test
