@@ -184,7 +184,8 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
 
         // Change the supply on token
         changeSupply(token, treasuryRel, metadataCount, FAIL_INVALID, accountStore, tokenStore, tokenRelStore);
-
+        // The token is modified in previous step, so we need to get the modified token
+        final var modifiedToken = tokenStore.get(token.tokenId());
         final var mintedSerials = new ArrayList<Long>(metadata.size());
 
         // for each serial number minted increment serial numbers and create new unique token
@@ -199,7 +200,7 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
         }
         // Update last used serial number and number of owned nfts and put the updated token and treasury
         // into the store
-        final var copyToken = token.copyBuilder();
+        final var copyToken = modifiedToken.copyBuilder();
         final var copyTreasury = treasuryAccount.copyBuilder();
         // Update Token and treasury
         copyToken.lastUsedSerialNumber(currentSerialNumber);
