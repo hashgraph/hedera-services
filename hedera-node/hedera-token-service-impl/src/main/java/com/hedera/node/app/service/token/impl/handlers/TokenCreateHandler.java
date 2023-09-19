@@ -180,6 +180,26 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         for (final var customFee : requireCollectorAutoAssociation) {
             // This should exist as it is validated in validateSemantics
             final var collector = accountStore.get(customFee.feeCollectorAccountIdOrThrow());
+            // TODO: probably this is not the fix but I leave it here to start a discussion.
+            // onlyValidCustomFeeScheduleCanBeCreated was failing because of this:
+            /*
+            tokenCreate(token)
+                    .treasury(tokenCollector)
+                    .withCustom(fractionalFee(
+                        numerator,
+                        denominator,
+                        minimumToCollect,
+                        OptionalLong.of(minimumToCollect),
+                        tokenCollector))
+                    .hasKnownStatus(SUCCESS))
+             */
+            // we use tokenCollector for the treasury and for the collector. When this is the case the below validation
+            // fails because we already have linked it above. The change that led to this is the way I am getting
+            // the requireCollectorAutoAssociation(see the changes in CustomFeesValidator and more
+            // specifically the switch inside validateForCreation).
+            if (treasury.accountId().equals(collector.accountId())) {
+                continue;
+            }
             // Validate if token relation can be created between collector and new token
             // If this succeeds, create and link token relation.
             tokenCreateValidator.validateAssociation(entitiesConfig, tokensConfig, collector, newToken, tokenRelStore);
