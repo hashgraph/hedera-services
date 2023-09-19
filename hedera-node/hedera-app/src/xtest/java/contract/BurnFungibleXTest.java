@@ -7,14 +7,11 @@ import static contract.AssociationsXTestConstants.A_TOKEN_ADDRESS;
 import static contract.AssociationsXTestConstants.A_TOKEN_ID;
 import static contract.AssociationsXTestConstants.B_TOKEN_ADDRESS;
 import static contract.AssociationsXTestConstants.B_TOKEN_ID;
-import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_ID;
-import static contract.MiscClassicTransfersXTestConstants.INITIAL_RECEIVER_AUTO_ASSOCIATIONS;
 import static contract.XTestConstants.AN_ED25519_KEY;
 import static contract.XTestConstants.ERC20_TOKEN_ADDRESS;
 import static contract.XTestConstants.ERC20_TOKEN_ID;
 import static contract.XTestConstants.OWNER_ADDRESS;
 import static contract.XTestConstants.OWNER_ID;
-import static contract.XTestConstants.RECEIVER_ID;
 import static contract.XTestConstants.SENDER_ADDRESS;
 import static contract.XTestConstants.SENDER_BESU_ADDRESS;
 import static contract.XTestConstants.SENDER_CONTRACT_ID_KEY;
@@ -143,7 +140,6 @@ public class BurnFungibleXTest extends AbstractContractXTest {
     @Override
     protected Map<EntityIDPair, TokenRelation> initialTokenRelationships() {
         final var tokenRelationships = new HashMap<EntityIDPair, TokenRelation>();
-        addErc20Relation(tokenRelationships, UNAUTHORIZED_SPENDER_ID, TOKEN_BALANCE);
         addErc20Relation(tokenRelationships, OWNER_ID, TOKEN_BALANCE);
         return tokenRelationships;
     }
@@ -165,15 +161,6 @@ public class BurnFungibleXTest extends AbstractContractXTest {
                         .alias(OWNER_ADDRESS)
                         .key(SENDER_CONTRACT_ID_KEY)
                         .build());
-        accounts.put(
-                RECEIVER_ID,
-                Account.newBuilder()
-                        .accountId(RECEIVER_ID)
-                        .maxAutoAssociations(INITIAL_RECEIVER_AUTO_ASSOCIATIONS)
-                        .build());
-        accounts.put(
-                UNAUTHORIZED_SPENDER_ID,
-                Account.newBuilder().accountId(UNAUTHORIZED_SPENDER_ID).build());
         return accounts;
     }
 }
