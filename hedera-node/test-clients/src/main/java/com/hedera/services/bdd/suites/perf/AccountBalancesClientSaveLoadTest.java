@@ -156,7 +156,7 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest {
                                 .maxOpsPerSec(settings::getTps)
                                 .maxPendingOps(() -> MAX_PENDING_OPS_FOR_SETUP)))
                 .then(
-                        sleepFor(10L * SECOND),
+                        sleepFor(30L * SECOND),
                         withOpContext((spec, log) -> {
                             if (settings.getBooleanProperty("clientToExportBalances", false)) {
                                 log.info("Now get all {} accounts created and save them", totalAccounts);
