@@ -1,19 +1,3 @@
-/*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.swirlds.platform.cli;
 
 import static com.swirlds.logging.LogMarker.EXCEPTION;
@@ -34,9 +18,9 @@ import picocli.CommandLine;
  */
 @CommandLine.Command(name = "validate", mixinStandardHelpOptions = true, description = "Validate event stream files")
 @SubcommandOf(EventStreamCommand.class)
-public class EventStreamValidator extends AbstractCommand {
+public class EventStreamValidatorCommand extends AbstractCommand {
 
-    private static final Logger logger = LogManager.getLogger(EventStreamValidator.class);
+    private static final Logger logger = LogManager.getLogger(EventStreamValidatorCommand.class);
 
     private Path stateDirectory;
 
@@ -49,14 +33,19 @@ public class EventStreamValidator extends AbstractCommand {
 
     private Path consensusEventStreamDirectory;
 
-    @CommandLine.Parameters(index = "1", description = "The directory where CES files can be found.")
+    @CommandLine.Parameters(
+            index = "1",
+            description = "The directory where CES files can be found.")
     private void setConsensusEventStreamDirectory(final Path consensusEventStreamDirectory) {
         this.consensusEventStreamDirectory = this.pathMustExist(consensusEventStreamDirectory);
     }
 
+
     private Path preconsensusEventStreamDirectory;
 
-    @CommandLine.Parameters(index = "2", description = "The root of the directory tree where PCES files can be found.")
+    @CommandLine.Parameters(
+            index = "2",
+            description = "The root of the directory tree where PCES files can be found.")
     private void setPreconsensusEventStreamDirectory(final Path preconsensusEventStreamDirectory) {
         this.preconsensusEventStreamDirectory = this.pathMustExist(preconsensusEventStreamDirectory);
     }

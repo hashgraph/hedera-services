@@ -57,27 +57,34 @@ public final class SignedStateFileReader {
     /**
      * Looks for saved state files locally and returns a list of them sorted from newest to oldest
      *
-     * @param mainClassName
-     * 		the name of the main app class
-     * @param platformId
-     * 		the ID of the platform
-     * @param swirldName
-     * 		the swirld name
+     * @param mainClassName the name of the main app class
+     * @param platformId    the ID of the platform
+     * @param swirldName    the swirld name
+     * @return Information about saved states on disk, or null if none are found
+     */
+    @NonNull
+    public static List<SavedStateInfo> getSavedStateFiles(
+            @NonNull final String mainClassName, @NonNull final NodeId platformId, @NonNull final String swirldName) {
+        return getSavedStateFiles(getSignedStatesDirectoryForSwirld(mainClassName, platformId, swirldName));
+    }
+
+    /**
+     * Looks for saved state files locally and returns a list of them sorted from newest to oldest
+     *
+     * @param signedStatesDirectory the directory containing the saved state files
      * @return Information about saved states on disk, or null if none are found
      */
     @SuppressWarnings("resource")
     @NonNull
-    public static List<SavedStateInfo> getSavedStateFiles(
-            final String mainClassName, final NodeId platformId, final String swirldName) {
+    public static List<SavedStateInfo> getSavedStateFiles(@NonNull final Path signedStatesDirectory) {
 
         try {
-            final Path dir = getSignedStatesDirectoryForSwirld(mainClassName, platformId, swirldName);
-
-            if (!exists(dir) || !isDirectory(dir)) {
+            if (!exists(signedStatesDirectory) || !isDirectory(signedStatesDirectory)) {
                 return List.of();
             }
 
-            final List<Path> dirs = Files.list(dir).filter(Files::isDirectory).toList();
+            final List<Path> dirs =
+                    Files.list(signedStatesDirectory).filter(Files::isDirectory).toList();
 
             final TreeMap<Long, SavedStateInfo> savedStates = new TreeMap<>();
             for (final Path subDir : dirs) {
@@ -110,7 +117,7 @@ public final class SignedStateFileReader {
                             EXCEPTION.getMarker(),
                             "Unexpected directory '{}' in '{}'",
                             subDir.getFileName(),
-                            dir.toAbsolutePath());
+                            signedStatesDirectory.toAbsolutePath());
                 }
             }
             return new ArrayList<>(savedStates.descendingMap().values());
@@ -123,11 +130,9 @@ public final class SignedStateFileReader {
      * Reads a SignedState from disk
      *
      * @param platformContext the platform context
-     * @param stateFile
-     * 		the file to read from
+     * @param stateFile       the file to read from
      * @return a signed state with it's associated hash (as computed when the state was serialized)
-     * @throws IOException
-     * 		if there is any problems with reading from a file
+     * @throws IOException if there is any problems with reading from a file
      */
     public static DeserializedSignedState readStateFile(
             @NonNull final PlatformContext platformContext, @NonNull final Path stateFile) throws IOException {
