@@ -380,7 +380,11 @@ public class HandleWorkflow {
 
             } else {
                 networkUtilizationManager.trackTxn(transactionInfo, consensusNow, state);
-                feeAccumulator.charge(payer, fees);
+                if (authorizer.hasPrivilegedAuthorization(payer, transactionInfo.functionality(), txBody)
+                        != SystemPrivilege.AUTHORIZED) {
+                    // privileged transactions are not charged fees
+                    feeAccumulator.charge(payer, fees);
+                }
                 try {
                     if (networkUtilizationManager.wasLastTxnGasThrottled()) {
                         // Don't charge the payer the service fee component, because the user-submitted transaction

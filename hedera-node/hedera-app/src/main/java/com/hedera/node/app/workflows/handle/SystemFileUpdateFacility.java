@@ -23,6 +23,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.congestion.MonoMultiplierSources;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.HandleThrottleAccumulator;
 import com.hedera.node.app.throttle.ThrottleManager;
@@ -93,6 +94,7 @@ public class SystemFileUpdateFacility {
         final var configuration = configProvider.getConfiguration();
         final var ledgerConfig = configuration.getConfigData(LedgerConfig.class);
         final var fileNum = fileID.fileNum();
+        final var payer = txBody.transactionIDOrThrow().accountIDOrThrow();
         if (fileNum > ledgerConfig.numReservedSystemEntities()) {
             return;
         }
@@ -108,7 +110,7 @@ public class SystemFileUpdateFacility {
             } else if (fileNum == config.feeSchedules()) {
                 logger.error("Update of fee schedules not implemented");
             } else if (fileNum == config.exchangeRates()) {
-                exchangeRateManager.update(FileUtilities.getFileContent(state, fileID));
+                exchangeRateManager.update(FileUtilities.getFileContent(state, fileID), payer);
             } else if (fileNum == config.networkProperties()) {
                 configProvider.update(FileUtilities.getFileContent(state, fileID));
                 handleThrottleAccumulator.applyGasConfig();
@@ -127,6 +129,9 @@ public class SystemFileUpdateFacility {
             } else if (fileNum == config.upgradeFileNumber()) {
                 logger.error("Update of file number not implemented");
             }
+        } catch (final HandleException e) {
+            // handle exception suppose to propagate the exception to the caller
+            throw e;
         } catch (final RuntimeException e) {
             logger.warn(
                     "Exception while calling updater for file {}. " + "If the file is incomplete, this is expected.",
