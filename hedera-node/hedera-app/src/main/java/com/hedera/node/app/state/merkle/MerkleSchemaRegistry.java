@@ -29,6 +29,7 @@ import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
+import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.hedera.node.app.state.merkle.disk.OnDiskKey;
 import com.hedera.node.app.state.merkle.disk.OnDiskKeySerializer;
 import com.hedera.node.app.state.merkle.disk.OnDiskValue;
@@ -39,6 +40,7 @@ import com.hedera.node.app.state.merkle.queue.QueueNode;
 import com.hedera.node.app.state.merkle.singleton.SingletonNode;
 import com.hedera.node.app.state.merkle.singleton.StringLeaf;
 import com.hedera.node.app.state.merkle.singleton.ValueLeaf;
+import com.hedera.node.app.workflows.handle.record.MigrationContextImpl;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -82,18 +84,24 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
     private final ConstructableRegistry constructableRegistry;
     /** The ordered set of all schemas registered by the service */
     private final Set<Schema> schemas = new TreeSet<>();
+    /** Stores system entities created during genesis until the node can build synthetic records */
+    private final GenesisRecordsBuilder genesisRecordsBuilder;
 
     /**
      * Create a new instance.
      *
      * @param constructableRegistry The {@link ConstructableRegistry} to register states with for
-     *     deserialization
-     * @param serviceName The name of the service using this registry.
+     *                              deserialization
+     * @param serviceName           The name of the service using this registry.
+     * @param genesisRecordsBuilder      class used to store entities created at genesis
      */
     public MerkleSchemaRegistry(
-            @NonNull final ConstructableRegistry constructableRegistry, @NonNull final String serviceName) {
+            @NonNull final ConstructableRegistry constructableRegistry,
+            @NonNull final String serviceName,
+            @NonNull final GenesisRecordsBuilder genesisRecordsBuilder) {
         this.constructableRegistry = requireNonNull(constructableRegistry);
         this.serviceName = StateUtils.validateStateKey(requireNonNull(serviceName));
+        this.genesisRecordsBuilder = requireNonNull(genesisRecordsBuilder);
     }
 
     /**
@@ -208,7 +216,8 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             remainingStates.removeAll(statesToRemove);
             final var newStates = new FilteredWritableStates(writeableStates, remainingStates);
 
-            final var migrationContext = new MigrationContextImpl(previousStates, newStates, config, networkInfo);
+            final var migrationContext =
+                    new MigrationContextImpl(previousStates, newStates, config, networkInfo, genesisRecordsBuilder);
             if (updateInsteadOfMigrate) {
                 schema.restart(migrationContext);
             } else {

@@ -24,6 +24,7 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.bl
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjLogsFrom;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static java.util.Objects.requireNonNull;
+import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
@@ -31,6 +32,7 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
+import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
 import com.hedera.node.app.service.contract.impl.state.RootProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
@@ -82,9 +84,9 @@ public record HederaEvmTransactionResult(
     public ContractFunctionResult asProtoResultOf(
             @Nullable final EthTxData ethTxData, @NonNull final RootProxyWorldUpdater updater) {
         if (haltReason != null) {
-            throw new AssertionError("Not implemented");
+            return null;
         } else if (revertReason != null) {
-            throw new AssertionError("Not implemented");
+            return null;
         } else {
             return withMaybeEthFields(asSuccessResultForCommitted(updater), ethTxData);
         }
@@ -113,9 +115,19 @@ public record HederaEvmTransactionResult(
      */
     public ResponseCodeEnum finalStatus() {
         if (haltReason != null) {
-            throw new AssertionError("Not implemented");
+            if (haltReason.equals(CustomExceptionalHaltReason.MISSING_ADDRESS.toString())) {
+                return ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
+            } else if (haltReason.equals(INSUFFICIENT_GAS.toString())) {
+                return ResponseCodeEnum.INSUFFICIENT_GAS;
+            } else {
+                throw new AssertionError("Not implemented");
+            }
         } else if (revertReason != null) {
-            throw new AssertionError("Not implemented");
+            if (revertReason.length() == 0) {
+                return ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+            } else {
+                throw new AssertionError("Not implemented");
+            }
         } else {
             return SUCCESS;
         }
