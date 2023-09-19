@@ -26,7 +26,9 @@ import com.swirlds.common.system.SwirldState;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.SecureRandom;
+import java.util.List;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -62,9 +64,13 @@ public class AddressBookTestingToolMain implements SwirldMain {
         logger.info(STARTUP.getMarker(), "constructor called in Main.");
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Nullable
     @Override
-    public void updateConfigurationBuilder(@NonNull final ConfigurationBuilder configurationBuilder) {
-        configurationBuilder.withConfigDataType(AddressBookTestingToolConfig.class);
+    public List<Class<? extends Record>> getConfigDataTypes() {
+        return List.of(AddressBookTestingToolConfig.class);
     }
 
     @Override

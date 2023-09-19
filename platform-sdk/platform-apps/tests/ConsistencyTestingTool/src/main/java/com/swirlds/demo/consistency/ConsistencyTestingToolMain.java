@@ -26,7 +26,9 @@ import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.config.api.ConfigurationBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.SecureRandom;
+import java.util.List;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -103,8 +105,9 @@ public class ConsistencyTestingToolMain implements SwirldMain {
     /**
      * {@inheritDoc}
      */
+    @Nullable
     @Override
-    public void updateConfigurationBuilder(@NonNull final ConfigurationBuilder configurationBuilder) {
-        configurationBuilder.withConfigDataType(ConsistencyTestingToolConfig.class);
+    public List<Class<? extends Record>> getConfigDataTypes() {
+        return List.of(ConsistencyTestingToolConfig.class);
     }
 }

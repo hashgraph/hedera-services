@@ -74,6 +74,7 @@ import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.common.system.transaction.Transaction;
+import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.SwirldsPlatformBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -84,7 +85,6 @@ import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.Locale;
 import java.util.Set;
-import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -175,14 +175,14 @@ public final class Hedera {
     /**
      * Create a new Hedera instance.
      *
-     * @param constructableRegistry       The registry to use during the deserialization process
-     * @param selfId                      The ID of this node
-     * @param updatePlatformConfiguration A callback to update the platform configuration. Ignored if null.
+     * @param constructableRegistry The registry to use during the deserialization process
+     * @param selfId                The ID of this node
+     * @param configBuilder  The configuration builder to use for the platform, if not null
      */
     public Hedera(
             @NonNull final ConstructableRegistry constructableRegistry,
             @NonNull final NodeId selfId,
-            @Nullable Consumer<SwirldsPlatformBuilder> updatePlatformConfiguration) {
+            @Nullable final ConfigurationBuilder configBuilder) {
 
         requireNonNull(constructableRegistry);
 
@@ -258,10 +258,7 @@ public final class Hedera {
 
         final SwirldsPlatformBuilder builder = new SwirldsPlatformBuilder(
                 Hedera.APP_NAME, Hedera.SWIRLD_NAME, getSoftwareVersion(), this::newState, selfId);
-        if (updatePlatformConfiguration != null) {
-            updatePlatformConfiguration.accept(builder);
-        }
-        platform = builder.build();
+        platform = builder.withConfigBuilder(configBuilder).build();
         init(platform, selfId);
     }
 
@@ -364,7 +361,7 @@ public final class Hedera {
                 case GENESIS -> genesis(state);
                 case RESTART -> restart(state, deserializedVersion);
                 case RECONNECT -> reconnect();
-                    // We exited from this method early if we were recovering from an event stream.
+                // We exited from this method early if we were recovering from an event stream.
                 case EVENT_STREAM_RECOVERY -> throw new RuntimeException("Should never be reached");
             }
         } catch (final Throwable th) {
@@ -574,7 +571,8 @@ public final class Hedera {
     }
 
     /**
-     * Invoked by the platform to handle pre-consensus events. This only happens after {@link #start()} has been called.
+     * Invoked by the platform to handle pre-consensus events. This only happens after {@link #start()} has been
+     * called.
      */
     private void onPreHandle(@NonNull final Event event, @NonNull final HederaState state) {
         final var readableStoreFactory = new ReadableStoreFactory(state);

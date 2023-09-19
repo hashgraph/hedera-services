@@ -151,36 +151,6 @@ public final class BootstrapUtils {
     }
 
     /**
-     * Load the configuration for the platform and the app.
-     * <p>
-     * Future work: at some point the app configuration should be separated from the platform configuration
-     *
-     * @param pathsConfig the paths of configuration files
-     * @param appMains    the app main instances
-     * @return a new configuration instance
-     * @throws IOException if there is a problem reading the configuration files
-     */
-    public static @NonNull Configuration loadConfig(
-            @NonNull final PathsConfig pathsConfig, @NonNull final Map<NodeId, SwirldMain> appMains)
-            throws IOException {
-        Objects.requireNonNull(appMains, "appMains must not be null");
-        final var configurationBuilder = ConfigurationBuilder.create();
-        setupConfigBuilder(configurationBuilder, pathsConfig);
-
-        // Assume all locally run instances provide the same configuration definitions to the configuration builder.
-        if (!appMains.isEmpty()) {
-            appMains.values().iterator().next().updateConfigurationBuilder(configurationBuilder);
-        }
-
-        final Configuration configuration = configurationBuilder.build();
-
-        // Set the configuration on all SwirldMain instances.
-        appMains.values().forEach(swirldMain -> swirldMain.setConfiguration(configuration));
-
-        return configuration;
-    }
-
-    /**
      * Load the configuration for the platform.
      *
      * @param configurationBuilder the configuration builder to setup

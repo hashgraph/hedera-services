@@ -35,7 +35,6 @@ import com.swirlds.common.config.ConfigUtils;
 import com.swirlds.common.config.PathsConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
-import com.swirlds.common.config.sources.SimpleConfigSource;
 import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.utility.RecycleBinImpl;
@@ -49,7 +48,6 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
-import com.swirlds.config.api.source.ConfigSource;
 import com.swirlds.logging.payloads.NodeStartPayload;
 import com.swirlds.platform.config.internal.PlatformConfigUtils;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
@@ -92,8 +90,9 @@ public final class SwirldsPlatformBuilder {
     private final NodeId selfId;
     private final String swirldName;
 
-    private final ConfigurationBuilder configBuilder;
-    private final ConfigurationBuilder bootstrapConfigBuilder;
+    private ConfigurationBuilder configBuilder;
+
+    private ConfigurationBuilder configurationBuilder;
 
     /**
      * Static stateful variables are evil, but this one is required until we can refactor all the other places that use
@@ -126,96 +125,20 @@ public final class SwirldsPlatformBuilder {
         this.softwareVersion = Objects.requireNonNull(softwareVersion);
         this.genesisStateBuilder = Objects.requireNonNull(genesisStateBuilder);
         this.selfId = Objects.requireNonNull(selfId);
-
-        configBuilder =
-                ConfigUtils.scanAndRegisterAllConfigTypes(ConfigurationBuilder.create(), Set.of(SWIRLDS_PACKAGE));
-        bootstrapConfigBuilder = ConfigurationBuilder.create().withConfigDataType(PathsConfig.class);
     }
 
     /**
-     * Add a source of configuration.
+     * Set the configuration builder to use. If not provided then one is generated when the platform is built.
      *
-     * @param source the source of configuration
+     * @param configurationBuilder the configuration builder to use
      * @return this
      */
     @NonNull
-    public SwirldsPlatformBuilder withConfigSource(@NonNull final ConfigSource source) {
-        configBuilder.withSource(source);
-        bootstrapConfigBuilder.withSource(source);
+    public SwirldsPlatformBuilder withConfigBuilder(@Nullable final ConfigurationBuilder configurationBuilder) {
+        this.configurationBuilder = configurationBuilder;
         return this;
     }
 
-    /**
-     * Add a configuration value.
-     *
-     * @param name  the name of the configuration
-     * @param value the value of the configuration
-     * @return this
-     */
-    @NonNull
-    public SwirldsPlatformBuilder withConfigValue(@NonNull final String name, @Nullable final String value) {
-        return withConfigSource(new SimpleConfigSource(name, value));
-    }
-
-    /**
-     * Add a configuration value.
-     *
-     * @param name  the name of the configuration
-     * @param value the value of the configuration
-     * @return this
-     */
-    @NonNull
-    public SwirldsPlatformBuilder withConfigValue(@NonNull final String name, final boolean value) {
-        return withConfigSource(new SimpleConfigSource(name, value));
-    }
-
-    /**
-     * Add a configuration value.
-     *
-     * @param name  the name of the configuration
-     * @param value the value of the configuration
-     * @return this
-     */
-    @NonNull
-    public SwirldsPlatformBuilder withConfigValue(@NonNull final String name, final int value) {
-        return withConfigSource(new SimpleConfigSource(name, value));
-    }
-
-    /**
-     * Add a configuration value.
-     *
-     * @param name  the name of the configuration
-     * @param value the value of the configuration
-     * @return this
-     */
-    @NonNull
-    public SwirldsPlatformBuilder withConfigValue(@NonNull final String name, final long value) {
-        return withConfigSource(new SimpleConfigSource(name, value));
-    }
-
-    /**
-     * Add a configuration value.
-     *
-     * @param name  the name of the configuration
-     * @param value the value of the configuration
-     * @return this
-     */
-    @NonNull
-    public SwirldsPlatformBuilder withConfigValue(@NonNull final String name, final double value) {
-        return withConfigSource(new SimpleConfigSource(name, value));
-    }
-
-    /**
-     * Add a configuration value.
-     *
-     * @param name  the name of the configuration
-     * @param value the value of the configuration
-     * @return this
-     */
-    @NonNull
-    public SwirldsPlatformBuilder withConfigValue(@NonNull final String name, @NonNull final Object value) {
-        return withConfigSource(new SimpleConfigSource(name, value.toString()));
-    }
 
     /**
      * Build a platform but do not start it.
@@ -273,18 +196,36 @@ public final class SwirldsPlatformBuilder {
     }
 
     /**
+     * Build the configuration for the node.
+     *
+     * @return the configuration
+     */
+    @NonNull
+    private Configuration buildConfiguration() {
+        if (configBuilder == null) {
+            configBuilder = ConfigurationBuilder.create();
+        }
+        ConfigUtils.scanAndRegisterAllConfigTypes(configurationBuilder, Set.of(SWIRLDS_PACKAGE));
+        final ConfigurationBuilder bootstrapConfigBuilder =
+                ConfigurationBuilder.create().withConfigDataType(PathsConfig.class);
+        final Configuration bootstrapConfig = bootstrapConfigBuilder.build();
+        final PathsConfig bootstrapPaths = bootstrapConfig.getConfigData(PathsConfig.class);
+        rethrowIO(() -> BootstrapUtils.setupConfigBuilder(configBuilder, bootstrapPaths));
+
+        final Configuration configuration = configBuilder.build();
+        PlatformConfigUtils.checkConfiguration(configuration);
+
+        return configuration;
+    }
+
+    /**
      * Build a platform.
      *
      * @param start if true then start the platform
      * @return a new platform instance
      */
     public SwirldsPlatform build(final boolean start) {
-
-        // Setup the configuration, taking into account overrides from the platform builder
-        final Configuration bootstrapConfig = bootstrapConfigBuilder.build();
-        final PathsConfig bootstrapPaths = bootstrapConfig.getConfigData(PathsConfig.class);
-        rethrowIO(() -> BootstrapUtils.setupConfigBuilder(configBuilder, bootstrapPaths));
-        final Configuration configuration = configBuilder.build();
+        final Configuration configuration = buildConfiguration();
 
         final boolean firstTimeSetup = setupStaticUtilities(configuration);
 

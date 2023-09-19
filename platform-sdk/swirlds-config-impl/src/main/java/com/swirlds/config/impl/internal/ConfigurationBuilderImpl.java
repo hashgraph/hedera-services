@@ -16,6 +16,7 @@
 
 package com.swirlds.config.impl.internal;
 
+import com.swirlds.common.config.sources.SimpleConfigSource;
 import com.swirlds.common.threading.locks.AutoClosableLock;
 import com.swirlds.common.threading.locks.Locks;
 import com.swirlds.common.threading.locks.locked.Locked;
@@ -184,5 +185,19 @@ final class ConfigurationBuilderImpl implements ConfigurationBuilder {
             throw new IllegalStateException("ConfigDataType can not be added to initialized config");
         }
         configuration.addConfigDataType(type);
+    }
+
+    /**
+     * Sets the value for the config.
+     *
+     * @param propertyName name of the property
+     * @param value        the value
+     * @return the {@link ConfigurationBuilder} instance (for fluent API)
+     */
+    @NonNull
+    public ConfigurationBuilder withValue(@NonNull final String propertyName, @NonNull final Object value) {
+        Objects.requireNonNull(propertyName, "propertyName must not be null");
+        Objects.requireNonNull(value, "value must not be null");
+        return withSource(new SimpleConfigSource(propertyName, value.toString()));
     }
 }

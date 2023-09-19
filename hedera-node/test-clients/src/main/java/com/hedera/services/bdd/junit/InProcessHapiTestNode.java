@@ -22,6 +22,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import com.hedera.node.app.Hedera;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.util.BootstrapUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
@@ -132,17 +133,20 @@ public class InProcessHapiTestNode implements HapiTestNode {
         public void run() {
             BootstrapUtils.setupConstructableRegistry();
             final var cr = ConstructableRegistry.getInstance();
-            hedera = new Hedera(cr, selfId, platformBuilder -> platformBuilder
-                    .withConfigValue("paths.configPath", path("config.txt"))
-                    .withConfigValue("paths.settingsPath", path("settings.txt"))
-                    .withConfigValue("paths.settingsUsedDir", path("."))
-                    .withConfigValue("paths.keysDirPath", path("data/keys"))
-                    .withConfigValue("paths.appsDirPath", path("data/apps"))
-                    .withConfigValue("paths.logPath", path("log4j2.xml"))
-                    .withConfigValue("emergencyRecoveryFileLoadDir", path("data/saved"))
-                    .withConfigValue("state.savedStateDirectory", path("data/saved"))
-                    .withConfigValue("loadKeysFromPfxFiles", false)
-                    .withConfigValue("grpc.port", grpcPort));
+
+            final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create()
+                    .withValue("paths.configPath", path("config.txt"))
+                    .withValue("paths.settingsPath", path("settings.txt"))
+                    .withValue("paths.settingsUsedDir", path("."))
+                    .withValue("paths.keysDirPath", path("data/keys"))
+                    .withValue("paths.appsDirPath", path("data/apps"))
+                    .withValue("paths.logPath", path("log4j2.xml"))
+                    .withValue("emergencyRecoveryFileLoadDir", path("data/saved"))
+                    .withValue("state.savedStateDirectory", path("data/saved"))
+                    .withValue("loadKeysFromPfxFiles", false)
+                    .withValue("grpc.port", grpcPort);
+
+            hedera = new Hedera(cr, selfId, configurationBuilder);
 
             hedera.start();
         }

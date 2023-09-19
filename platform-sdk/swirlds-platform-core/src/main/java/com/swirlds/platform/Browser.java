@@ -41,6 +41,7 @@ import com.swirlds.common.system.SystemExitUtils;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.gui.model.GuiModel;
 import com.swirlds.gui.model.InfoApp;
 import com.swirlds.gui.model.InfoMember;
@@ -161,8 +162,6 @@ public class Browser {
         // Load all SwirldMain instances for locally run nodes.
         final Map<NodeId, SwirldMain> appMains = loadSwirldMains(appDefinition, nodesToRun);
         ParameterProvider.getInstance().setParameters(appDefinition.getAppParameters());
-        final Configuration configuration = BootstrapUtils.loadConfig(pathsConfig, appMains);
-        PlatformConfigUtils.checkConfiguration(configuration);
 
         setupBrowserWindow();
         setStateHierarchy(new StateHierarchy(null));
@@ -176,14 +175,24 @@ public class Browser {
             final NodeId nodeId = nodesToRun.get(index);
             final SwirldMain appMain = appMains.get(nodeId);
 
+            final ConfigurationBuilder configBuilder = ConfigurationBuilder.create();
+            final List<Class<? extends Record>> configTypes = appMain.getConfigDataTypes();
+            if (configTypes != null) {
+                for (final Class<? extends Record> configType : configTypes) {
+                    configBuilder.withConfigDataType(configType);
+                }
+            }
+
+            appMain.setConfiguration(null); // TODO AB testing tool
+
             final SwirldsPlatformBuilder builder = new SwirldsPlatformBuilder(
                     appMain.getClass().getName(),
                     appDefinition.getSwirldName(),
-                    appMain.getSoftwareVersion(),
+                    appMain.getSoftwareVersion(), // TODO!! AB testing tool
                     appMain::newState,
                     nodeId);
 
-            final SwirldsPlatform platform = builder.build();
+            final SwirldsPlatform platform = builder.withConfigBuilder(configBuilder).build();
             platforms.put(nodeId, platform);
 
             new InfoMember(infoSwirld, platform);

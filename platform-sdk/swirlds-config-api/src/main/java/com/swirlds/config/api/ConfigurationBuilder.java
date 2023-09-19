@@ -21,6 +21,8 @@ import com.swirlds.config.api.intern.ConfigurationProvider;
 import com.swirlds.config.api.source.ConfigSource;
 import com.swirlds.config.api.validation.ConfigValidator;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Objects;
 
 /**
  * The {@link ConfigurationBuilder} is the main entry point to the config api since it is used to create a {@link
@@ -118,6 +120,16 @@ public interface ConfigurationBuilder {
      */
     @NonNull
     ConfigurationBuilder withConfigDataTypes(@NonNull Class<? extends Record>... types) throws IllegalStateException;
+
+    /**
+     * Sets the value for the config.
+     *
+     * @param propertyName name of the property
+     * @param value        the value
+     * @return the {@link ConfigurationBuilder} instance (for fluent API)
+     */
+    @NonNull
+    ConfigurationBuilder withValue(@NonNull final String propertyName, @NonNull final Object value);
 
     /**
      * Creates a {@link Configuration} instance based on this builder.
