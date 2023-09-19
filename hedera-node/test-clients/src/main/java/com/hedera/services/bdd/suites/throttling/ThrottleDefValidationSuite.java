@@ -28,6 +28,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OPERATION_REPE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.THROTTLE_GROUP_HAS_ZERO_OPS_PER_SEC;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
@@ -73,6 +74,7 @@ public class ThrottleDefValidationSuite extends HapiSuite {
                         .hasKnownStatusFrom(INVALID_TRANSACTION, SUCCESS_BUT_MISSING_EXPECTED_OPERATION));
     }
 
+    @HapiTest
     private HapiSpec ensureDefaultsRestored() {
         var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
 
@@ -115,7 +117,7 @@ public class ThrottleDefValidationSuite extends HapiSuite {
                         .hasKnownStatus(OPERATION_REPEATED_IN_BUCKET_GROUPS));
     }
 
-    // Fails due to not having the authorization logic in place
+    @HapiTest
     private HapiSpec throttleDefsRejectUnauthorizedPayers() {
         return defaultHapiSpec("ThrottleDefsRejectUnauthorizedPayers")
                 .given(
