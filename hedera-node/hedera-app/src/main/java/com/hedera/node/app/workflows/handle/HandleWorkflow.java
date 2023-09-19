@@ -226,7 +226,6 @@ public class HandleWorkflow {
             @NonNull final ConsensusEvent platformEvent,
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction platformTxn) {
-
         // Get the consensus timestamp
         final Instant consensusNow = platformTxn.getConsensusTimestamp();
 
@@ -381,7 +380,7 @@ public class HandleWorkflow {
                     recordBuilder.status(SUCCESS);
 
                     // Notify responsible facility if system-file was uploaded
-                    systemFileUpdateFacility.handleTxBody(stack, txBody);
+                    systemFileUpdateFacility.handleTxBody(stack, txBody, recordBuilder);
 
                     // Notify if dual state was updated
                     dualStateUpdateFacility.handleTxBody(stack, dualState, txBody);
