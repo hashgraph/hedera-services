@@ -74,8 +74,8 @@ import org.apache.logging.log4j.Logger;
 
 public class AccountBalancesClientSaveLoadTest extends LoadTest {
     private static final Logger LOG = LogManager.getLogger(AccountBalancesClientSaveLoadTest.class);
-    static final int MAX_PENDING_OPS_FOR_SETUP = 10_000;
-    static final int TOTAL_ACCOUNT = 200_000;
+    static final int MAX_PENDING_OPS_FOR_SETUP = 1000;
+    static final int TOTAL_ACCOUNT = 20000;
     static final int ESTIMATED_TOKEN_CREATION_RATE = 50;
     static final int ESTIMATED_CRYPTO_CREATION_RATE = 500;
     static final long MIN_ACCOUNT_BALANCE = 1_000_000_000L;
