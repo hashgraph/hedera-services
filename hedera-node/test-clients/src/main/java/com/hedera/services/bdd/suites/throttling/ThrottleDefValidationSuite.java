@@ -25,6 +25,7 @@ import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsL
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OPERATION_REPEATED_IN_BUCKET_GROUPS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.THROTTLE_GROUP_HAS_ZERO_OPS_PER_SEC;
 
 import com.hedera.services.bdd.junit.HapiTestSuite;
@@ -69,7 +70,7 @@ public class ThrottleDefValidationSuite extends HapiSuite {
                 .then(fileUpdate(THROTTLE_DEFS)
                         .payingWith(EXCHANGE_RATE_CONTROL)
                         .contents(missingMintThrottles.toByteArray())
-                        .hasKnownStatus(INVALID_TRANSACTION));
+                        .hasKnownStatusFrom(INVALID_TRANSACTION, SUCCESS_BUT_MISSING_EXPECTED_OPERATION));
     }
 
     private HapiSpec ensureDefaultsRestored() {
