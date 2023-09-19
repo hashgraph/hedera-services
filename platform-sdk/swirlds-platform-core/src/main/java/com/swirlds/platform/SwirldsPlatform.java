@@ -369,7 +369,7 @@ public class SwirldsPlatform implements Platform, Startable {
 
         this.consensusMetrics = new ConsensusMetricsImpl(this.selfId, metrics);
 
-        final EventIntakeMetrics eventIntakeMetrics = new EventIntakeMetrics(metrics, time);
+        final EventIntakeMetrics eventIntakeMetrics = new EventIntakeMetrics(metrics, time, selfId);
         final SyncMetrics syncMetrics = new SyncMetrics(metrics);
         RuntimeMetrics.setup(metrics);
 
