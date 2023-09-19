@@ -93,8 +93,8 @@ public class ExpiryValidatorImpl implements ExpiryValidator {
 
         var resolvedExpiry = currentMeta.expiry();
         if (updateMeta.hasExplicitExpiry()) {
-            validateFalse(updateMeta.expiry() < currentMeta.expiry(), EXPIRATION_REDUCTION_NOT_ALLOWED);
             context.attributeValidator().validateExpiry(updateMeta.expiry());
+            validateFalse(updateMeta.expiry() < currentMeta.expiry(), EXPIRATION_REDUCTION_NOT_ALLOWED);
             resolvedExpiry = updateMeta.expiry();
         }
 
