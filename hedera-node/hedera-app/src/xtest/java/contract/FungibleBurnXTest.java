@@ -37,7 +37,7 @@ import java.util.Map;
 import org.apache.tuweni.bytes.Bytes;
 import org.jetbrains.annotations.NotNull;
 
-public class BurnFungibleXTest extends AbstractContractXTest {
+public class FungibleBurnXTest extends AbstractContractXTest {
 
     private static final long TOKEN_BALANCE = 9L;
     private static final long TOKENS_TO_BURN = 1L;
