@@ -206,7 +206,9 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
         validateTrue(token.wipeKey() != null, ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY);
 
         final var accountRel = TokenHandlerHelper.getIfUsable(accountId, tokenId, tokenRelStore);
-        validateTrue(accountRel.kycGranted(), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
+        if (token.hasKycKey()) {
+            validateTrue(accountRel.kycGranted(), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
+        }
         validateFalse(
                 token.treasuryAccountId().equals(accountRel.accountId()),
                 ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT);
