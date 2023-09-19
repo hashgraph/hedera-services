@@ -18,7 +18,7 @@ plugins {
     id("com.hedera.hashgraph.versions")
 }
 
-val besuNativeVersion = "0.8.3-SNAPSHOT"
+val besuNativeVersion = "0.8.2"
 val besuVersion = "23.7.2"
 val bouncycastleVersion = "1.70"
 val daggerVersion = "2.42"
