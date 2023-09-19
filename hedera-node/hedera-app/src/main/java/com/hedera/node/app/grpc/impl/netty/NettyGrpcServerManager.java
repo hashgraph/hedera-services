@@ -118,7 +118,7 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
 
     @Override
     public int port() {
-        return plainServer == null ? -1 : plainServer.getPort();
+        return plainServer == null || plainServer.isTerminated() ? -1 : plainServer.getPort();
     }
 
     @Override
