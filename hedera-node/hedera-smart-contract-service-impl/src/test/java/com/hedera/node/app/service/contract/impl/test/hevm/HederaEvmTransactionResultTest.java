@@ -43,6 +43,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
 import com.hedera.node.app.service.contract.impl.infra.StorageAccessTracker;
@@ -97,11 +99,27 @@ class HederaEvmTransactionResultTest {
     @Test
     void finalStatusFromHaltUsesCorrespondingStatusIfFromStandard() {
         given(frame.getGasPrice()).willReturn(WEI_NETWORK_GAS_PRICE);
-        given(frame.getExceptionalHaltReason()).willReturn(Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
+        given(frame.getExceptionalHaltReason()).willReturn(Optional.of(ExceptionalHaltReason.INVALID_OPERATION));
         final var subject = HederaEvmTransactionResult.failureFrom(GAS_LIMIT / 2, SENDER_ID, frame);
         assertEquals(INSUFFICIENT_GAS, subject.finalStatus());
         final var protoResult = subject.asProtoResultOf(rootProxyWorldUpdater);
         assertEquals(ExceptionalHaltReason.INSUFFICIENT_GAS.toString(), protoResult.errorMessage());
+    }
+
+    @Test
+    void finalStatusFromInsufficientGasHaltImplemented() {
+        given(frame.getGasPrice()).willReturn(WEI_NETWORK_GAS_PRICE);
+        given(frame.getExceptionalHaltReason()).willReturn(Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
+        final var subject = HederaEvmTransactionResult.failureFrom(GAS_LIMIT / 2, SENDER_ID, frame);
+        assertEquals(ResponseCodeEnum.INSUFFICIENT_GAS, subject.finalStatus());
+    }
+
+    @Test
+    void finalStatusFromMissingAddressHaltImplemented() {
+        given(frame.getGasPrice()).willReturn(WEI_NETWORK_GAS_PRICE);
+        given(frame.getExceptionalHaltReason()).willReturn(Optional.of(CustomExceptionalHaltReason.MISSING_ADDRESS));
+        final var subject = HederaEvmTransactionResult.failureFrom(GAS_LIMIT / 2, SENDER_ID, frame);
+        assertEquals(ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS, subject.finalStatus());
     }
 
     @Test

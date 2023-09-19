@@ -77,7 +77,7 @@ public interface TokenServiceApi {
      * Marks an account as a contract.
      *
      */
-    void markAsContract(@NonNull AccountID accountId);
+    void markAsContract(@NonNull AccountID accountId, @Nullable AccountID autoRenewAccountId);
 
     /**
      * Finalizes a hollow account as a contract.

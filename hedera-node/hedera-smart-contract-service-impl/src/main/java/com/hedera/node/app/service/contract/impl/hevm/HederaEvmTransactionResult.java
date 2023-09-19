@@ -25,6 +25,7 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.bl
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjLogsFrom;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static java.util.Objects.requireNonNull;
+import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
@@ -87,7 +88,7 @@ public record HederaEvmTransactionResult(
         if (haltReason != null) {
             return withMaybeEthFields(asUncommittedFailureResult(errorMessageFor(haltReason)), ethTxData);
         } else if (revertReason != null) {
-            throw new AssertionError("Not implemented");
+            return null;
         } else {
             return withMaybeEthFields(asSuccessResultForCommitted(updater), ethTxData);
         }
@@ -118,7 +119,11 @@ public record HederaEvmTransactionResult(
         if (haltReason != null) {
             return CustomExceptionalHaltReason.statusFor(haltReason);
         } else if (revertReason != null) {
-            throw new AssertionError("Not implemented");
+            if (revertReason.length() == 0) {
+                return ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+            } else {
+                throw new AssertionError("Not implemented");
+            }
         } else {
             return SUCCESS;
         }

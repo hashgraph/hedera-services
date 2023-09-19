@@ -127,11 +127,12 @@ public class TokenServiceApiImpl implements TokenServiceApi {
      * {@inheritDoc}
      */
     @Override
-    public void markAsContract(@NonNull final AccountID accountId) {
+    public void markAsContract(@NonNull final AccountID accountId, @Nullable AccountID autoRenewAccountId) {
         requireNonNull(accountId);
         final var accountAsContract = requireNonNull(accountStore.get(accountId))
                 .copyBuilder()
                 .smartContract(true)
+                .autoRenewAccountId(autoRenewAccountId)
                 .build();
         accountStore.put(accountAsContract);
     }
