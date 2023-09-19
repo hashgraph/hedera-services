@@ -721,7 +721,7 @@ public final class Hedera implements SwirldMain {
                     .servicesRegistry(servicesRegistry)
                     .bootstrapProps(new BootstrapProperties(false)) // TBD REMOVE
                     .instantSource(InstantSource.system())
-                    .genesisRecordsBuilder(genesisRecordsBuilder)
+                    .genesisRecordsConsensusHook((GenesisRecordsConsensusHook) genesisRecordsBuilder)
                     .build();
 
             daggerApp.workingStateAccessor().setHederaState(state);
