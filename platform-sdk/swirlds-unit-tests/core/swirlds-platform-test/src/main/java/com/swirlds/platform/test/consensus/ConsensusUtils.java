@@ -28,12 +28,10 @@ import com.swirlds.platform.ConsensusImpl;
 import com.swirlds.platform.components.ConsensusWrapper;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
-import com.swirlds.platform.intake.IntakeCycleStats;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusMetrics;
 import com.swirlds.platform.test.NoOpConsensusMetrics;
-import com.swirlds.platform.test.NoOpIntakeCycleStats;
 import com.swirlds.platform.test.event.TestSequence;
 import com.swirlds.platform.test.event.emitter.EventEmitter;
 import com.swirlds.platform.test.fixtures.event.EventUtils;
@@ -51,7 +49,6 @@ import java.util.function.Consumer;
 public abstract class ConsensusUtils {
 
     public static final ConsensusMetrics NOOP_CONSENSUS_METRICS = new NoOpConsensusMetrics();
-    public static final IntakeCycleStats NOOP_INTAKE_CYCLE_STATS = new NoOpIntakeCycleStats();
     public static final BiConsumer<Long, Long> NOOP_MINGEN = (l1, l2) -> {};
 
     private static final Random SEED_GENERATOR = new Random();
