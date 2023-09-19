@@ -1030,10 +1030,19 @@ public class TokenCreateSpecs extends HapiSuite {
                                 .hasPrecheck(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS),
                         tokenAssociate(FIRST_USER, A_TOKEN),
                         cryptoTransfer(moving(0, A_TOKEN).between(TOKEN_TREASURY, FIRST_USER))
-                                .hasPrecheck(OK),
+                                // Either fail pre-check with EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS (mono)
+                                // or post-consensus (modular). When we only have modular code left,
+                                // we can just check hasKnownStatus.
+                                .hasPrecheckFrom(OK, EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS)
+                                .hasKnownStatus(EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS),
                         cryptoTransfer(moving(10, A_TOKEN).from(TOKEN_TREASURY))
                                 .hasPrecheck(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN),
-                        cryptoTransfer(moving(10, A_TOKEN).empty()).hasPrecheck(EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS));
+                        cryptoTransfer(moving(10, A_TOKEN).empty())
+                                // Either fail pre-check with EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS (mono)
+                                // or post-consensus (modular). When we only have modular code left,
+                                // we can just check hasKnownStatus.
+                                .hasPrecheckFrom(OK, EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS)
+                                .hasKnownStatus(EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS));
     }
 
     @Override
