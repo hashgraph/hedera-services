@@ -70,6 +70,8 @@ public class ReconnectProtocol implements Protocol {
     private final RateLimitedLogger stateIncompleteLogger;
     /** A rate limited logger for when rejecting teacher role due to falling behind. */
     private final RateLimitedLogger fallenBehindLogger;
+    /** A rate limited logger for when rejecting teacher role due to not having a status of ACTIVE */
+    private final RateLimitedLogger notActiveLogger;
 
     /**
      * @param threadManager           responsible for creating and managing threads
@@ -119,6 +121,7 @@ public class ReconnectProtocol implements Protocol {
         stateNullLogger = new RateLimitedLogger(logger, time, minimumTimeBetweenReconnects);
         stateIncompleteLogger = new RateLimitedLogger(logger, time, minimumTimeBetweenReconnects);
         fallenBehindLogger = new RateLimitedLogger(logger, time, minimumTimeBetweenReconnects);
+        notActiveLogger = new RateLimitedLogger(logger, time, minimumTimeBetweenReconnects);
     }
 
     /** {@inheritDoc} */
@@ -147,21 +150,21 @@ public class ReconnectProtocol implements Protocol {
     /** {@inheritDoc} */
     @Override
     public boolean shouldAccept() {
-        // only teach if the platform is active
-        if (platformStatusGetter.getCurrentStatus() != PlatformStatus.ACTIVE) {
-            fallenBehindLogger.info(
-                    RECONNECT.getMarker(),
-                    "Rejecting reconnect request from node {} because this node isn't ACTIVE",
-                    peerId);
-            reconnectMetrics.recordReconnectRejection(peerId);
-            return false;
-        }
-
         // we should not be the teacher if we have fallen behind
         if (fallenBehindManager.hasFallenBehind()) {
             fallenBehindLogger.info(
                     RECONNECT.getMarker(),
                     "Rejecting reconnect request from node {} because this node has fallen behind",
+                    peerId);
+            reconnectMetrics.recordReconnectRejection(peerId);
+            return false;
+        }
+
+        // only teach if the platform is active
+        if (platformStatusGetter.getCurrentStatus() != PlatformStatus.ACTIVE) {
+            notActiveLogger.info(
+                    RECONNECT.getMarker(),
+                    "Rejecting reconnect request from node {} because this node isn't ACTIVE",
                     peerId);
             reconnectMetrics.recordReconnectRejection(peerId);
             return false;
