@@ -48,7 +48,7 @@ public interface EmergencyLogger {
      * @param level   the level of the message
      * @param message the message to log
      */
-    default void log(@NonNull Level level, @NonNull String message) {
+    default void log(@NonNull final Level level, @NonNull final String message) {
         log(level, message, null);
     }
 
