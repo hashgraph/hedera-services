@@ -370,7 +370,11 @@ public class HandleWorkflow {
                 }
 
             } else {
-                feeAccumulator.charge(payer, fees);
+                if (authorizer.hasPrivilegedAuthorization(payer, transactionInfo.functionality(), txBody)
+                        != SystemPrivilege.AUTHORIZED) {
+                    // privileged transactions are not charged fees
+                    feeAccumulator.charge(payer, fees);
+                }
                 try {
                     // Dispatch the transaction to the handler
                     dispatcher.dispatchHandle(context);
