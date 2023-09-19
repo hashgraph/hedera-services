@@ -99,7 +99,7 @@ class HederaEvmTransactionResultTest {
     @Test
     void finalStatusFromHaltUsesCorrespondingStatusIfFromStandard() {
         given(frame.getGasPrice()).willReturn(WEI_NETWORK_GAS_PRICE);
-        given(frame.getExceptionalHaltReason()).willReturn(Optional.of(ExceptionalHaltReason.INVALID_OPERATION));
+        given(frame.getExceptionalHaltReason()).willReturn(Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
         final var subject = HederaEvmTransactionResult.failureFrom(GAS_LIMIT / 2, SENDER_ID, frame);
         assertEquals(INSUFFICIENT_GAS, subject.finalStatus());
         final var protoResult = subject.asProtoResultOf(rootProxyWorldUpdater);
@@ -117,7 +117,8 @@ class HederaEvmTransactionResultTest {
     @Test
     void finalStatusFromMissingAddressHaltImplemented() {
         given(frame.getGasPrice()).willReturn(WEI_NETWORK_GAS_PRICE);
-        given(frame.getExceptionalHaltReason()).willReturn(Optional.of(CustomExceptionalHaltReason.MISSING_ADDRESS));
+        given(frame.getExceptionalHaltReason())
+                .willReturn(Optional.of(CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
         final var subject = HederaEvmTransactionResult.failureFrom(GAS_LIMIT / 2, SENDER_ID, frame);
         assertEquals(ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS, subject.finalStatus());
     }
