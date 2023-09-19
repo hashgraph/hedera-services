@@ -95,8 +95,8 @@ public class CustomFeesValidator {
             switch (fee.fee().kind()) {
                 case FIXED_FEE -> validateFixedFeeForCreation(
                         tokenType, fee, createdToken, tokenRelationStore, tokenStore, fees);
-                case FRACTIONAL_FEE -> validateFractionalFeeForCreation(tokenType, fee);
-                case ROYALTY_FEE -> validateRoyaltyFeeForCreation(tokenType, fee, tokenRelationStore, tokenStore);
+                case FRACTIONAL_FEE -> validateFractionalFeeForCreation(tokenType, fee, fees);
+                case ROYALTY_FEE -> validateRoyaltyFeeForCreation(tokenType, fee, tokenRelationStore, tokenStore, fees);
                 default -> throw new IllegalArgumentException(
                         "Unexpected value for custom fee type: " + fee.fee().kind());
             }
@@ -237,7 +237,7 @@ public class CustomFeesValidator {
         }
     }
 
-    private void validateFractionalFeeForCreation(TokenType tokenType, CustomFee fee) {
+    private void validateFractionalFeeForCreation(TokenType tokenType, CustomFee fee, Set<CustomFee> fees) {
         validateTrue(isFungibleCommon(tokenType), CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON);
 
         final var fractionalFee = fee.fractionalFee();
@@ -251,13 +251,16 @@ public class CustomFeesValidator {
         validateTrue(numerator > 0 && denominator > 0, CUSTOM_FEE_MUST_BE_POSITIVE);
         validateTrue(minimumUnitsToCollect >= 0 && maximumUnitsToCollect >= 0, CUSTOM_FEE_MUST_BE_POSITIVE);
         validateTrue(maximumUnitsToCollect >= minimumUnitsToCollect, FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT);
+
+        fees.add(fee);
     }
 
     private void validateRoyaltyFeeForCreation(
             @NonNull final TokenType tokenType,
             @NonNull final CustomFee fee,
             @NonNull final ReadableTokenRelationStore tokenRelationStore,
-            @NonNull final WritableTokenStore tokenStore) {
+            @NonNull final WritableTokenStore tokenStore,
+            @NonNull final Set<CustomFee> fees) {
         validateTrue(isNonFungibleUnique(tokenType), CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE);
         final var royaltyFee = fee.royaltyFeeOrThrow();
 
@@ -266,17 +269,16 @@ public class CustomFeesValidator {
         validateTrue(denominator != 0, FRACTION_DIVIDES_BY_ZERO);
         validateTrue(numerator > 0 && denominator > 0, CUSTOM_FEE_MUST_BE_POSITIVE);
         validateTrue(numerator <= denominator, ROYALTY_FRACTION_CANNOT_EXCEED_ONE);
-        if (royaltyFee.hasFallbackFee()) {
-            validateTrue(royaltyFee.fallbackFee().amount() > 0, CUSTOM_FEE_MUST_BE_POSITIVE);
-        }
 
         if (royaltyFee.hasFallbackFee()) {
+            validateTrue(royaltyFee.fallbackFee().amount() > 0, CUSTOM_FEE_MUST_BE_POSITIVE);
             final var fallbackFee = royaltyFee.fallbackFeeOrThrow();
             if (fallbackFee.hasDenominatingTokenId()) {
                 final var denominatingTokenId = fallbackFee.denominatingTokenIdOrThrow();
                 validateTrue(denominatingTokenId.tokenNum() != 0, CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON);
                 validateExplicitTokenDenomination(
                         fee.feeCollectorAccountId(), denominatingTokenId, tokenRelationStore, tokenStore);
+                fees.add(fee);
             }
         }
     }
