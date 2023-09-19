@@ -18,7 +18,6 @@ package com.swirlds.merkledb.files;
 
 import static com.hedera.pbj.runtime.ProtoParserTools.TAG_FIELD_OFFSET;
 import static com.swirlds.merkledb.utilities.ProtoUtils.WIRE_TYPE_FIXED_64_BIT;
-import static com.swirlds.merkledb.utilities.ProtoUtils.WIRE_TYPE_VARINT;
 
 import com.hedera.pbj.runtime.FieldDefinition;
 import com.hedera.pbj.runtime.FieldType;
