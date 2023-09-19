@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package contract;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
@@ -60,7 +76,7 @@ import org.jetbrains.annotations.NotNull;
  */
 public class SetApprovalForAllXTest extends AbstractContractXTest {
 
-    private final static long NUMBER_OWNED_NFT = 3L;
+    private static final long NUMBER_OWNED_NFT = 3L;
 
     @Override
     protected void doScenarioOperations() {
@@ -75,16 +91,15 @@ public class SetApprovalForAllXTest extends AbstractContractXTest {
                                 SN_1234.serialNumber())
                         .array()),
                 output -> assertEquals(
-                        Bytes.wrap(ReturnTypes.encodedRc(SPENDER_DOES_NOT_HAVE_ALLOWANCE).array()), output));
+                        Bytes.wrap(ReturnTypes.encodedRc(SPENDER_DOES_NOT_HAVE_ALLOWANCE)
+                                .array()),
+                        output));
 
         // Set approval for all to true
         runHtsCallAndExpectOnSuccess(
                 OWNER_BESU_ADDRESS,
                 Bytes.wrap(SetApprovalForAllTranslator.SET_APPROVAL_FOR_ALL
-                        .encodeCallWithArgs(
-                                ERC721_TOKEN_ADDRESS,
-                                SENDER_HEADLONG_ADDRESS,
-                                true)
+                        .encodeCallWithArgs(ERC721_TOKEN_ADDRESS, SENDER_HEADLONG_ADDRESS, true)
                         .array()),
                 assertSuccess());
 
@@ -116,10 +131,7 @@ public class SetApprovalForAllXTest extends AbstractContractXTest {
         runHtsCallAndExpectOnSuccess(
                 OWNER_BESU_ADDRESS,
                 Bytes.wrap(SetApprovalForAllTranslator.SET_APPROVAL_FOR_ALL
-                        .encodeCallWithArgs(
-                                ERC721_TOKEN_ADDRESS,
-                                SENDER_HEADLONG_ADDRESS,
-                                false)
+                        .encodeCallWithArgs(ERC721_TOKEN_ADDRESS, SENDER_HEADLONG_ADDRESS, false)
                         .array()),
                 assertSuccess());
 
@@ -134,7 +146,9 @@ public class SetApprovalForAllXTest extends AbstractContractXTest {
                                 SN_2345.serialNumber())
                         .array()),
                 output -> assertEquals(
-                        Bytes.wrap(ReturnTypes.encodedRc(SPENDER_DOES_NOT_HAVE_ALLOWANCE).array()), output));
+                        Bytes.wrap(ReturnTypes.encodedRc(SPENDER_DOES_NOT_HAVE_ALLOWANCE)
+                                .array()),
+                        output));
     }
 
     @Override
@@ -224,7 +238,7 @@ public class SetApprovalForAllXTest extends AbstractContractXTest {
     @Override
     protected void assertExpectedAccounts(@NotNull final ReadableKVState<AccountID, Account> accounts) {
         final var ownerAccount = accounts.get(OWNER_ID);
-        final var receiverAccount= accounts.get(RECEIVER_ID);
+        final var receiverAccount = accounts.get(RECEIVER_ID);
         assertNotNull(ownerAccount);
         assertNotNull(receiverAccount);
 

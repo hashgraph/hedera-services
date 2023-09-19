@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.setapproval;
 
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.APPROVED_HEADLONG_ADDRESS;
@@ -38,25 +54,25 @@ public class SetApprovalForAllDecoderTest {
 
     @Test
     void setApprovalForAll_true_Works() {
-        //given
+        // given
         final var encodedInput = SetApprovalForAllTranslator.SET_APPROVAL_FOR_ALL
                 .encodeCallWithArgs(NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS, APPROVED_HEADLONG_ADDRESS, true)
                 .array();
         given(attempt.inputBytes()).willReturn(encodedInput);
 
-        //then
+        // then
         verifyDecoding(true);
     }
 
     @Test
     void wipeNonFungibleToken_false_Works() {
-        //given
+        // given
         final var encodedInput = SetApprovalForAllTranslator.SET_APPROVAL_FOR_ALL
                 .encodeCallWithArgs(NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS, APPROVED_HEADLONG_ADDRESS, false)
                 .array();
         given(attempt.inputBytes()).willReturn(encodedInput);
 
-        //then
+        // then
         verifyDecoding(false);
     }
 
