@@ -148,19 +148,19 @@ public final class DataFileCommon {
     }
 
     /**
-     * Create a filter to only return all new files that are smaller than given size
+     * Create a filter to only return all old files that are smaller than given size.
      *
      * @param sizeMB max file size to accept in MB
      * @param maxNumberOfFilesInMerge The maximum number of files to process in a single merge
      * @return filter to filter list of files
      */
-    public static UnaryOperator<List<DataFileReader>> newestFilesSmallerThan(
+    public static UnaryOperator<List<DataFileReader>> oldestFilesSmallerThan(
             final int sizeMB, final int maxNumberOfFilesInMerge) {
         final long sizeBytes = sizeMB * (long) MEBIBYTES_TO_BYTES;
 
         return dataFileReaders -> {
             final List<DataFileReader> filesNewestFirst = dataFileReaders.stream()
-                    .sorted(DATA_FILE_READER_CREATION_TIME_COMPARATOR_REVERSED)
+                    .sorted(DATA_FILE_READER_CREATION_TIME_COMPARATOR)
                     .toList();
             final ArrayList<DataFileReader> smallEnoughFiles = new ArrayList<>(filesNewestFirst.size());
             for (final DataFileReader file : filesNewestFirst) {

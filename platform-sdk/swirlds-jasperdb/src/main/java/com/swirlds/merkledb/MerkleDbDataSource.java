@@ -1375,12 +1375,12 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                 logger.info(MERKLE_DB.getMarker(), "[{}] Starting Large Merge", tableName);
             } else if (isTimeForMediumMerge(timestamp)) {
                 lastMediumMerge = timestamp;
-                filesToMergeFilter = DataFileCommon.newestFilesSmallerThan(
+                filesToMergeFilter = DataFileCommon.oldestFilesSmallerThan(
                         config.mediumMergeCutoffMb(), config.maxNumberOfFilesInMerge());
                 compactionType = CompactionType.MEDIUM;
                 logger.info(MERKLE_DB.getMarker(), "[{}] Starting Medium Merge", tableName);
             } else {
-                filesToMergeFilter = DataFileCommon.newestFilesSmallerThan(
+                filesToMergeFilter = DataFileCommon.oldestFilesSmallerThan(
                         config.smallMergeCutoffMb(), config.maxNumberOfFilesInMerge());
                 compactionType = CompactionType.SMALL;
                 logger.info(MERKLE_DB.getMarker(), "[{}] Starting Small Merge", tableName);
