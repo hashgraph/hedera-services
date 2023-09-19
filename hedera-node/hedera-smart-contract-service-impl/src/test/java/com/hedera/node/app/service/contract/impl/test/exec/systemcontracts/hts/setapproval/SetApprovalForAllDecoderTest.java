@@ -78,9 +78,10 @@ public class SetApprovalForAllDecoderTest {
 
     private void verifyDecoding(final boolean expectedApproval) {
         final var body = subject.decodeSetApprovalForAll(attempt);
-        final var cryptoApproveAllowance = body.cryptoApproveAllowance();
 
+        final var cryptoApproveAllowance = body.cryptoApproveAllowance();
         assertThat(cryptoApproveAllowance).isNotNull();
+
         final var nftAllowancesList = cryptoApproveAllowance.nftAllowances();
         assertThat(nftAllowancesList).isNotEmpty();
 

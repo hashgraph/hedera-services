@@ -67,8 +67,8 @@ import org.jetbrains.annotations.NotNull;
  * <ol>
  *     <li>Transfer {@code ERC721_TOKEN} serialN 1234 from Owner's account. Should fail with SPENDER_DOES_NOT_HAVE_ALLOWANCE</li>
  *     <li>SetApprovalForAll to true and verify successful operation</li>
- *     <li>Transfer {@code ERC721_TOKEN} serial 1234 from Owner's account and verify successful operation</li>
- *     <li>Transfer {@code ERC721_TOKEN} serial 2345 from Owner's account and verify successful operation</li>
+ *     <li>Transfer {@code ERC721_TOKEN} serialN 1234 from Owner's account and verify successful operation</li>
+ *     <li>Transfer {@code ERC721_TOKEN} serialN 2345 from Owner's account and verify successful operation</li>
  *     <li>SetApprovalForAll to false and verify successful operation</li>
  *     <li>Transfer {@code ERC721_TOKEN} serialN 2345 from Owner's account. Should fail with SPENDER_DOES_NOT_HAVE_ALLOWANCE</li>
  *     <li>Via {@code assertExpectedAccounts} verify that 2 NFTs have been transferred from the OWNER to the RECEIVER</li>
