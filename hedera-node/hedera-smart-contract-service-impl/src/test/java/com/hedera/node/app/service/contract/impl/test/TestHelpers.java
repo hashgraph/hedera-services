@@ -78,6 +78,7 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -205,6 +206,11 @@ public class TestHelpers {
             .build();
 
     public static final long NFT_SERIAL_NO = 666L;
+
+    public static final long[] NFT_SERIAL_NUMBERS = {41L, 42L, 43L};
+
+    public static final List<Long> NFT_SERIAL_NUMBERS_LIST =
+            Arrays.stream(NFT_SERIAL_NUMBERS).boxed().toList();
 
     public static final AccountID NON_SYSTEM_ACCOUNT_ID = AccountID.newBuilder()
             .accountNum(numberOfLongZero(NON_SYSTEM_LONG_ZERO_ADDRESS))

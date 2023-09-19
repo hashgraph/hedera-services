@@ -23,7 +23,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.FileID;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.file.FileAppendTransactionBody;
 import com.hedera.hapi.node.file.FileUpdateTransactionBody;
 import com.hedera.hapi.node.state.file.File;
@@ -131,6 +133,9 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
         // given
         final var fileID = FileID.newBuilder().fileNum(121L).build();
         final var txBody = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder()
+                        .accountID(AccountID.newBuilder().accountNum(50L).build())
+                        .build())
                 .fileUpdate(FileUpdateTransactionBody.newBuilder().fileID(fileID));
         files.put(fileID, File.newBuilder().contents(FILE_BYTES).build());
 
@@ -146,6 +151,9 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
         // given
         final var fileID = FileID.newBuilder().fileNum(121L).build();
         final var txBody = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder()
+                        .accountID(AccountID.newBuilder().accountNum(50L).build())
+                        .build())
                 .fileAppend(FileAppendTransactionBody.newBuilder().fileID(fileID));
         files.put(fileID, File.newBuilder().contents(FILE_BYTES).build());
 
@@ -165,6 +173,9 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
         final var fileNum = config.throttleDefinitions();
         final var fileID = FileID.newBuilder().fileNum(fileNum).build();
         final var txBody = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder()
+                        .accountID(AccountID.newBuilder().accountNum(50L).build())
+                        .build())
                 .fileAppend(FileAppendTransactionBody.newBuilder().fileID(fileID));
         files.put(fileID, File.newBuilder().contents(FILE_BYTES).build());
 
@@ -187,6 +198,9 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
         final var fileNum = config.exchangeRates();
         final var fileID = FileID.newBuilder().fileNum(fileNum).build();
         final var txBody = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder()
+                        .accountID(AccountID.newBuilder().accountNum(50L).build())
+                        .build())
                 .fileAppend(FileAppendTransactionBody.newBuilder().fileID(fileID));
         files.put(fileID, File.newBuilder().contents(FILE_BYTES).build());
 
@@ -194,6 +208,9 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
         subject.handleTxBody(state, txBody.build(), new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW));
 
         // then
-        verify(exchangeRateManager, times(1)).update(FileUtilities.getFileContent(state, fileID));
+        verify(exchangeRateManager, times(1))
+                .update(
+                        FileUtilities.getFileContent(state, fileID),
+                        AccountID.newBuilder().accountNum(50L).build());
     }
 }

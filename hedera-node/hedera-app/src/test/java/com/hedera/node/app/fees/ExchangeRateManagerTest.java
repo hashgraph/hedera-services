@@ -21,6 +21,7 @@ import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.res
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TimestampSeconds;
 import com.hedera.hapi.node.transaction.ExchangeRate;
@@ -74,7 +75,7 @@ class ExchangeRateManagerTest {
     @Test
     void hasExpectedFields() throws IOException {
         // when
-        subject.update(validRateBytes);
+        subject.update(validRateBytes, AccountID.DEFAULT);
 
         // expect
         final var curr = subject.exchangeRates().currentRateOrThrow();
@@ -94,7 +95,7 @@ class ExchangeRateManagerTest {
         final var bytes = Bytes.wrap(new byte[] {0x06});
 
         // then
-        assertThatThrownBy(() -> subject.update(bytes))
+        assertThatThrownBy(() -> subject.update(bytes, AccountID.DEFAULT))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(ResponseCodeEnum.INVALID_EXCHANGE_RATE_FILE));
     }
@@ -103,7 +104,7 @@ class ExchangeRateManagerTest {
     @MethodSource("provideConsensusTimesForActiveRate")
     void activeRateWorksAsExpected(Instant consensusTime, ExchangeRate expectedExchangeRate) {
         // given
-        subject.update(validRateBytes);
+        subject.update(validRateBytes, AccountID.DEFAULT);
 
         // when
         final var activeRate = subject.activeRate(consensusTime);

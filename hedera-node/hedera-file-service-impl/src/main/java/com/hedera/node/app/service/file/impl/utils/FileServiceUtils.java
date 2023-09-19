@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.file.impl.utils;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FILE_CONTENT_EMPTY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FILE_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
@@ -93,12 +94,6 @@ public class FileServiceUtils {
             fileMeta = fileStore.getFileMetadata(fileId);
             mustExist(fileMeta, INVALID_FILE_ID);
         }
-
-        final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
-        // we cannot delete system files
-        if (fileId.fileNum() <= ledgerConfig.numReservedSystemEntities() && isDelete) {
-            throw new PreCheckException(INVALID_FILE_ID);
-        }
     }
 
     /**
@@ -173,7 +168,7 @@ public class FileServiceUtils {
             final boolean canBeDeleted) {
 
         if (fileId.fileNum() <= ledgerConfig.numReservedSystemEntities()) {
-            throw new HandleException(INVALID_FILE_ID);
+            throw new HandleException(ENTITY_NOT_ALLOWED_TO_DELETE);
         }
 
         var optionalFile = fileStore.get(fileId);
