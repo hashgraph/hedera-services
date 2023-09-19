@@ -232,7 +232,7 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest {
                         .hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
                         .hasPrecheckFrom(DUPLICATE_TRANSACTION, OK)
                         .hasKnownStatusFrom(SUCCESS)
-                        .logged();
+                        .noLogging();
 
                 return Optional.of(op);
             }
