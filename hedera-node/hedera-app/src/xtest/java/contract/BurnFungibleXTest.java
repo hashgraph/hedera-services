@@ -1,5 +1,6 @@
 package contract;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static contract.AssociationsXTestConstants.A_TOKEN_ADDRESS;
@@ -41,8 +42,8 @@ import org.jetbrains.annotations.NotNull;
 
 public class BurnFungibleXTest extends AbstractContractXTest {
 
-    private static final long TOKEN_BALANCE = 1000L;
-    private static final long TOKENS_TO_BURN = 10L;
+    private static final long TOKEN_BALANCE = 9L;
+    private static final long TOKENS_TO_BURN = 1L;
 
     @Override
     protected void doScenarioOperations() {
@@ -77,7 +78,15 @@ public class BurnFungibleXTest extends AbstractContractXTest {
                                 new long[]{})
                         .array()), TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
 
-        // should revert on totalSupply < 0
+        // should revert on totalSupply < amountToBurn
+        runHtsCallAndExpectRevert(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(BurnTranslator.BURN_TOKEN_V1
+                        .encodeCallWithArgs(
+                                ERC20_TOKEN_ADDRESS,
+                                BigInteger.valueOf(TOKEN_BALANCE + 1),
+                                new long[]{})
+                        .array()), INVALID_TOKEN_BURN_AMOUNT);
     }
 
     @Override
