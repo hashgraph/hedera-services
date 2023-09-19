@@ -218,7 +218,6 @@ public final class TokenPauseSpecs extends HapiSuite {
                         getAccountInfo(firstUser).logged());
     }
 
-    @HapiTest
     private HapiSpec pausedNonFungibleUniqueCannotBeUsed() {
         final String uniqueToken = "nonFungibleUnique";
         final String firstUser = FIRST_USER;
