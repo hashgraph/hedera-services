@@ -50,6 +50,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.logging.payloads.NodeStartPayload;
 import com.swirlds.platform.config.internal.PlatformConfigUtils;
+import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.internal.SignedStateLoadingException;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
@@ -70,9 +71,12 @@ import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public final class SwirldsPlatformBuilder {
+/**
+ * Builds a {@link SwirldsPlatform} instance.
+ */
+public final class PlatformBuilder {
 
-    private static final Logger logger = LogManager.getLogger(SwirldsPlatformBuilder.class);
+    private static final Logger logger = LogManager.getLogger(PlatformBuilder.class);
 
     private static final String SWIRLDS_PACKAGE = "com.swirlds";
 
@@ -113,7 +117,7 @@ public final class SwirldsPlatformBuilder {
      * @param softwareVersion     the software version of the application
      * @param genesisStateBuilder a supplier that will be called to create the genesis state, if necessary
      */
-    public SwirldsPlatformBuilder(
+    public PlatformBuilder(
             @NonNull final String appName,
             @NonNull final String swirldName,
             @NonNull final SoftwareVersion softwareVersion,
@@ -134,11 +138,10 @@ public final class SwirldsPlatformBuilder {
      * @return this
      */
     @NonNull
-    public SwirldsPlatformBuilder withConfigBuilder(@Nullable final ConfigurationBuilder configurationBuilder) {
+    public PlatformBuilder withConfigBuilder(@Nullable final ConfigurationBuilder configurationBuilder) {
         this.configurationBuilder = configurationBuilder;
         return this;
     }
-
 
     /**
      * Build a platform but do not start it.
@@ -219,6 +222,21 @@ public final class SwirldsPlatformBuilder {
     }
 
     /**
+     * Parse the address book from the config.txt file.
+     *
+     * @param configuration the configuration for this node
+     * @return the address book
+     */
+    private AddressBook loadConfigAddressBook(@NonNull final Configuration configuration) {
+        final PathsConfig pathsConfig = configuration.getConfigData(PathsConfig.class);
+        validatePathToConfigTxt(pathsConfig);
+        final LegacyConfigProperties legacyConfig =
+                LegacyConfigPropertiesLoader.loadConfigFile(pathsConfig.getConfigPath());
+        legacyConfig.appConfig().ifPresent(c -> ParameterProvider.getInstance().setParameters(c.params()));
+        return legacyConfig.getAddressBook();
+    }
+
+    /**
      * Build a platform.
      *
      * @param start if true then start the platform
@@ -229,15 +247,7 @@ public final class SwirldsPlatformBuilder {
 
         final boolean firstTimeSetup = setupStaticUtilities(configuration);
 
-        // Validate the configuration
-        final PathsConfig pathsConfig = configuration.getConfigData(PathsConfig.class);
-        validatePathToConfigTxt(pathsConfig);
-        PlatformConfigUtils.checkConfiguration(configuration);
-
-        // Load config.txt file, parse application jar file name, main class name, address book, and parameters
-        final var legacyConfig = LegacyConfigPropertiesLoader.loadConfigFile(pathsConfig.getConfigPath());
-        legacyConfig.appConfig().ifPresent(c -> ParameterProvider.getInstance().setParameters(c.params()));
-        final AddressBook configAddressBook = legacyConfig.getAddressBook();
+        final AddressBook configAddressBook = loadConfigAddressBook(configuration);
 
         checkNodesToRun(List.of(selfId));
 

@@ -40,16 +40,13 @@ import com.swirlds.common.system.SystemExitCode;
 import com.swirlds.common.system.SystemExitUtils;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.gui.model.GuiModel;
 import com.swirlds.gui.model.InfoApp;
 import com.swirlds.gui.model.InfoMember;
 import com.swirlds.gui.model.InfoSwirld;
-import com.swirlds.platform.config.internal.PlatformConfigUtils;
 import com.swirlds.platform.crypto.CryptoConstants;
 import com.swirlds.platform.gui.internal.StateHierarchy;
-import com.swirlds.platform.util.BootstrapUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -183,16 +180,15 @@ public class Browser {
                 }
             }
 
-            appMain.setConfiguration(null); // TODO AB testing tool
-
-            final SwirldsPlatformBuilder builder = new SwirldsPlatformBuilder(
+            final PlatformBuilder builder = new PlatformBuilder(
                     appMain.getClass().getName(),
                     appDefinition.getSwirldName(),
-                    appMain.getSoftwareVersion(), // TODO!! AB testing tool
+                    appMain.getSoftwareVersion(),
                     appMain::newState,
                     nodeId);
 
-            final SwirldsPlatform platform = builder.withConfigBuilder(configBuilder).build();
+            final SwirldsPlatform platform =
+                    builder.withConfigBuilder(configBuilder).build();
             platforms.put(nodeId, platform);
 
             new InfoMember(infoSwirld, platform);

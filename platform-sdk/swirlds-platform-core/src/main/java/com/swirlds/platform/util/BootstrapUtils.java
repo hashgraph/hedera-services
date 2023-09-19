@@ -154,7 +154,7 @@ public final class BootstrapUtils {
      * Load the configuration for the platform.
      *
      * @param configurationBuilder the configuration builder to setup
-     * @param pathsConfig the paths of configuration files
+     * @param pathsConfig          the paths of configuration files
      * @throws IOException if there is a problem reading the configuration files
      */
     public static void setupConfigBuilder(

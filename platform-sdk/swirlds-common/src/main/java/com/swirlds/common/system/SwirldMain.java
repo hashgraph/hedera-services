@@ -16,8 +16,6 @@
 
 package com.swirlds.common.system;
 
-import com.swirlds.config.api.Configuration;
-import com.swirlds.config.api.ConfigurationBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
@@ -27,15 +25,6 @@ import java.util.List;
  * run() method should run until the user quits the swirld.
  */
 public interface SwirldMain extends Runnable {
-
-    /**
-     * Pass in a copy of the configuration.
-     *
-     * @param configuration configuration for this node
-     */
-    default void setConfiguration(@NonNull final Configuration configuration) { // TODO
-        // override if needed
-    }
 
     /**
      * Get configuration types to be registered.
@@ -77,6 +66,7 @@ public interface SwirldMain extends Runnable {
      *
      * @return the newly instantiated SwirldState object
      */
+    @NonNull
     SwirldState newState();
 
     /**
@@ -99,5 +89,6 @@ public interface SwirldMain extends Runnable {
      *
      * @return the current version
      */
+    @NonNull
     SoftwareVersion getSoftwareVersion();
 }

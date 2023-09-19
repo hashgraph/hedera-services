@@ -75,8 +75,8 @@ import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.platform.PlatformBuilder;
 import com.swirlds.platform.SwirldsPlatform;
-import com.swirlds.platform.SwirldsPlatformBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.charset.Charset;
@@ -256,8 +256,8 @@ public final class Hedera {
             throw new RuntimeException(e);
         }
 
-        final SwirldsPlatformBuilder builder = new SwirldsPlatformBuilder(
-                Hedera.APP_NAME, Hedera.SWIRLD_NAME, getSoftwareVersion(), this::newState, selfId);
+        final PlatformBuilder builder =
+                new PlatformBuilder(Hedera.APP_NAME, Hedera.SWIRLD_NAME, getSoftwareVersion(), this::newState, selfId);
         platform = builder.withConfigBuilder(configBuilder).build();
         init(platform, selfId);
     }
@@ -361,7 +361,7 @@ public final class Hedera {
                 case GENESIS -> genesis(state);
                 case RESTART -> restart(state, deserializedVersion);
                 case RECONNECT -> reconnect();
-                // We exited from this method early if we were recovering from an event stream.
+                    // We exited from this method early if we were recovering from an event stream.
                 case EVENT_STREAM_RECOVERY -> throw new RuntimeException("Should never be reached");
             }
         } catch (final Throwable th) {

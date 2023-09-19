@@ -21,8 +21,6 @@ import com.swirlds.config.api.intern.ConfigurationProvider;
 import com.swirlds.config.api.source.ConfigSource;
 import com.swirlds.config.api.validation.ConfigValidator;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Objects;
 
 /**
  * The {@link ConfigurationBuilder} is the main entry point to the config api since it is used to create a {@link

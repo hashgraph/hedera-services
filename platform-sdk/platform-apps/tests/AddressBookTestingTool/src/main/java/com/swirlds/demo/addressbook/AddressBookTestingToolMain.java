@@ -18,6 +18,7 @@ package com.swirlds.demo.addressbook;
 
 import static com.swirlds.logging.LogMarker.STARTUP;
 
+import com.swirlds.common.config.sources.LegacyFileConfigSource;
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
@@ -27,6 +28,8 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.security.SecureRandom;
 import java.util.List;
 import java.util.Objects;
@@ -51,8 +54,8 @@ public class AddressBookTestingToolMain implements SwirldMain {
     /** The logger for this class. */
     private static final Logger logger = LogManager.getLogger(AddressBookTestingToolMain.class);
 
-    /** The software version of this application.  If not configured, defaults to 0 */
-    private BasicSoftwareVersion softwareVersion = new BasicSoftwareVersion(0);
+    /** The software version of this application. */
+    private BasicSoftwareVersion softwareVersion;
 
     /** The platform. */
     private Platform platform;
@@ -71,13 +74,6 @@ public class AddressBookTestingToolMain implements SwirldMain {
     @Override
     public List<Class<? extends Record>> getConfigDataTypes() {
         return List.of(AddressBookTestingToolConfig.class);
-    }
-
-    @Override
-    public void setConfiguration(@NonNull final Configuration configuration) {
-        final int softVersion =
-                configuration.getConfigData(AddressBookTestingToolConfig.class).softwareVersion();
-        this.softwareVersion = new BasicSoftwareVersion(softVersion);
     }
 
     /**
@@ -114,6 +110,27 @@ public class AddressBookTestingToolMain implements SwirldMain {
      */
     @Override
     public BasicSoftwareVersion getSoftwareVersion() {
+        if (softwareVersion != null) {
+            return softwareVersion;
+        }
+
+        // Preload configuration so that we can change the software version on the fly
+        final ConfigurationBuilder configurationBuilder;
+        try {
+            // TODO this will probably log like crazy
+            //  note to the reviewers: I am currently testing this and will delete this prior to merge
+            configurationBuilder = ConfigurationBuilder.create()
+                    .withConfigDataType(AddressBookTestingToolConfig.class)
+                    .withSource(LegacyFileConfigSource.ofSettingsFile());
+        } catch (final IOException e) {
+            throw new UncheckedIOException("unable to load settings.txt", e);
+        }
+
+        final Configuration configuration = configurationBuilder.build();
+
+        final int version = configuration.getConfigData(AddressBookTestingToolConfig.class).softwareVersion();
+        this.softwareVersion = new BasicSoftwareVersion(version);
+
         logger.info(STARTUP.getMarker(), "returning software version {}", softwareVersion);
         return softwareVersion;
     }
