@@ -245,10 +245,6 @@ class TokenUnfreezeAccountHandlerTest {
         @Test
         void tokenNotFound() throws HandleException {
             final var token = toPbj(KNOWN_TOKEN_WITH_FREEZE);
-            //            given(tokenStore.getTokenMeta(token)).willReturn(tokenMetaWithFreezeKey());
-            //            given(accountStore.getAccountById(ACCOUNT_13257))
-            //                    .willReturn(Account.newBuilder().accountId(ACCOUNT_13257).build());
-            //            given(tokenStore.get(token)).willReturn(null);
             final var txn = newUnfreezeTxn(token);
             given(context.body()).willReturn(txn);
 
