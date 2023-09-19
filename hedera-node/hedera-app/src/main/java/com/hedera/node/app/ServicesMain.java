@@ -18,6 +18,8 @@ package com.hedera.node.app;
 
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.config.data.HederaConfig;
+import com.swirlds.common.config.sources.SystemEnvironmentConfigSource;
+import com.swirlds.common.config.sources.SystemPropertiesConfigSource;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
@@ -92,6 +94,8 @@ public class ServicesMain implements SwirldMain {
         final var registry = ConstructableRegistry.getInstance();
         new SwirldsPlatformBuilder()
                 .withName("Hedera")
+                .withConfigSource(SystemEnvironmentConfigSource.getInstance())
+                .withConfigSource(SystemPropertiesConfigSource.getInstance())
                 .withMain(() -> new Hedera(registry))
                 .withNodeId(args != null && args.length > 0 ? Integer.parseInt(args[0]) : 0)
                 .buildAndStart();

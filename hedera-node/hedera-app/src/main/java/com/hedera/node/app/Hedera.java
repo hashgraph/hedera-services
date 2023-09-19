@@ -198,8 +198,8 @@ public final class Hedera implements SwirldMain {
         version = new HederaSoftwareVersion(versionConfig.hapiVersion(), versionConfig.servicesVersion());
         logger.info(
                 "Creating Hedera Consensus Node {} with HAPI {}",
-                () -> HapiUtils.toString(version.getHapiVersion()),
-                () -> HapiUtils.toString(version.getServicesVersion()));
+                () -> HapiUtils.toString(version.getServicesVersion()),
+                () -> HapiUtils.toString(version.getHapiVersion()));
 
         // Create a record builder for any genesis records that need to be created
         this.genesisRecordsBuilder = new GenesisRecordsConsensusHook();
@@ -247,6 +247,14 @@ public final class Hedera implements SwirldMain {
     public boolean isActive() {
         return platformStatus == PlatformStatus.ACTIVE
                 && daggerApp.grpcServerManager().isRunning();
+    }
+
+    /**
+     * Indicates whether this node is FROZEN.
+     * @return True if the platform is frozen
+     */
+    public boolean isFrozen() {
+        return platformStatus == PlatformStatus.FREEZE_COMPLETE;
     }
 
     /**
@@ -450,26 +458,33 @@ public final class Hedera implements SwirldMain {
             // server when we fall behind or ISS.
             final var notifications = platform.getNotificationEngine();
             notifications.register(PlatformStatusChangeListener.class, notification -> {
+                final var wasActive = platformStatus == PlatformStatus.ACTIVE;
                 platformStatus = notification.getNewStatus();
                 switch (notification.getNewStatus()) {
-                    case ACTIVE -> logger.info("Hederanode#{} is ACTIVE", nodeId);
+                    case ACTIVE -> {
+                        logger.info("Hederanode#{} is ACTIVE", nodeId);
+                        startGrpcServer();
+                    }
                     case BEHIND -> {
                         logger.info("Hederanode#{} is BEHIND", nodeId);
-                        shutdownGrpcServer();
+                        if (wasActive) shutdownGrpcServer();
                     }
-                    case FREEZE_COMPLETE -> {
-                        logger.info("Hederanode#{} is in FREEZE_COMPLETE", nodeId);
-                        shutdownGrpcServer();
-                    }
+                    case FREEZE_COMPLETE -> logger.info("Hederanode#{} is in FREEZE_COMPLETE", nodeId);
                     case REPLAYING_EVENTS -> logger.info("Hederanode#{} is REPLAYING_EVENTS", nodeId);
                     case STARTING_UP -> logger.info("Hederanode#{} is STARTING_UP", nodeId);
                     case CATASTROPHIC_FAILURE -> {
                         logger.info("Hederanode#{} is in CATASTROPHIC_FAILURE", nodeId);
-                        shutdownGrpcServer();
+                        if (wasActive) shutdownGrpcServer();
                     }
-                    case CHECKING -> logger.info("Hederanode#{} is CHECKING", nodeId);
+                    case CHECKING -> {
+                        logger.info("Hederanode#{} is CHECKING", nodeId);
+                        if (wasActive) shutdownGrpcServer();
+                    }
                     case OBSERVING -> logger.info("Hederanode#{} is OBSERVING", nodeId);
-                    case FREEZING -> logger.info("Hederanode#{} is FREEZING", nodeId);
+                    case FREEZING -> {
+                        logger.info("Hederanode#{} is FREEZING", nodeId);
+                        if (wasActive) shutdownGrpcServer();
+                    }
                     case RECONNECT_COMPLETE -> logger.info("Hederanode#{} is RECONNECT_COMPLETE", nodeId);
                 }
             });
@@ -538,7 +553,7 @@ public final class Hedera implements SwirldMain {
      */
     @Override
     public void run() {
-        startGrpcServer();
+        logger.info("Starting the Hedera node");
     }
 
     /**
@@ -558,6 +573,9 @@ public final class Hedera implements SwirldMain {
             logger.debug("Shutting down the block manager");
             daggerApp.blockRecordManager().close();
         }
+
+        platform = null;
+        daggerApp = null;
     }
 
     /**
@@ -597,7 +615,9 @@ public final class Hedera implements SwirldMain {
 
     /** Start the gRPC Server if it is not already running. */
     void startGrpcServer() {
-        daggerApp.grpcServerManager().start();
+        if (!daggerApp.grpcServerManager().isRunning()) {
+            daggerApp.grpcServerManager().start();
+        }
     }
 
     /**

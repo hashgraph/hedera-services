@@ -41,7 +41,6 @@ reconnect.asyncStreamTimeoutMilliseconds,      60000
 metrics.csvFileName,                           MainNetStats
 metrics.csvOutputFolder,                       data/stats
 showInternalStats,                             true
-prometheus.endpointEnabled,                    false                        # differs from mainnet
 
                                           #############################
                                           #          Security         #
