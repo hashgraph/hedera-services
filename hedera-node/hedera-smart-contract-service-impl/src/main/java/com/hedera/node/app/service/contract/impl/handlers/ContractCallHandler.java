@@ -55,6 +55,10 @@ public class ContractCallHandler implements TransactionHandler {
                 .contractCallResult(outcome.result())
                 .contractID(outcome.recipientIdIfCalled())
                 .status(outcome.status());
+
+        if (!outcome.isSuccess()) {
+            throw new HandleException(outcome.status());
+        }
     }
 
     @Override
