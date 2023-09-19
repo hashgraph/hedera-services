@@ -123,7 +123,7 @@ public class TokenGrantKycToAccountHandler implements TransactionHandler {
         final var account =
                 TokenHandlerHelper.getIfUsable(accountId, accountStore, expiryValidator, INVALID_ACCOUNT_ID);
         final var token = TokenHandlerHelper.getIfUsable(tokenId, tokenStore);
-        final var tokenRel = TokenHandlerHelper.getIfUsable(account.accountId(), tokenId, tokenRelStore);
+        final var tokenRel = TokenHandlerHelper.getIfUsable(accountId, tokenId, tokenRelStore);
 
         return tokenRel;
     }
