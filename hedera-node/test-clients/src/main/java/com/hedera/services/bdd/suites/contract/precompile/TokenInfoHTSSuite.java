@@ -40,6 +40,7 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fra
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.royaltyFeeWithFallback;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.exposeTargetLedgerIdTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
@@ -73,6 +74,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.OptionalLong;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
@@ -152,6 +154,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
     }
 
     private HapiSpec happyPathGetTokenInfo() {
+        final AtomicReference<ByteString> targetLedgerId = new AtomicReference<>();
         return defaultHapiSpec("HappyPathGetTokenInfo")
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
@@ -209,7 +212,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
                                 GET_INFORMATION_FOR_TOKEN,
                                 HapiParserUtil.asHeadlongAddress(
                                         asAddress(spec.registry().getTokenID(PRIMARY_TOKEN_NAME)))))))
-                .then(withOpContext((spec, opLog) -> {
+                .then(exposeTargetLedgerIdTo(targetLedgerId::set), withOpContext((spec, opLog) -> {
                     final var getTokenInfoQuery = getTokenInfo(PRIMARY_TOKEN_NAME);
                     allRunFor(spec, getTokenInfoQuery);
                     final var expirySecond = getTokenInfoQuery
@@ -238,12 +241,14 @@ public class TokenInfoHTSSuite extends HapiSuite {
                                                                     MEMO,
                                                                     spec.registry()
                                                                             .getAccountID(TOKEN_TREASURY),
-                                                                    expirySecond))))));
+                                                                    expirySecond,
+                                                                    targetLedgerId.get()))))));
                 }));
     }
 
     private HapiSpec happyPathGetFungibleTokenInfo() {
         final int decimals = 1;
+        final AtomicReference<ByteString> targetLedgerId = new AtomicReference<>();
         return defaultHapiSpec("HappyPathGetFungibleTokenInfo")
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
@@ -301,7 +306,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
                                 GET_INFORMATION_FOR_FUNGIBLE_TOKEN,
                                 HapiParserUtil.asHeadlongAddress(
                                         asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN_NAME)))))))
-                .then(withOpContext((spec, opLog) -> {
+                .then(exposeTargetLedgerIdTo(targetLedgerId::set), withOpContext((spec, opLog) -> {
                     final var getTokenInfoQuery = getTokenInfo(FUNGIBLE_TOKEN_NAME);
                     allRunFor(spec, getTokenInfoQuery);
                     final var expirySecond = getTokenInfoQuery
@@ -330,13 +335,15 @@ public class TokenInfoHTSSuite extends HapiSuite {
                                                                     MEMO,
                                                                     spec.registry()
                                                                             .getAccountID(TOKEN_TREASURY),
-                                                                    expirySecond))))));
+                                                                    expirySecond,
+                                                                    targetLedgerId.get()))))));
                 }));
     }
 
     private HapiSpec happyPathGetNonFungibleTokenInfo() {
         final int maxSupply = 10;
         final ByteString meta = ByteString.copyFrom(META.getBytes(StandardCharsets.UTF_8));
+        final AtomicReference<ByteString> targetLedgerId = new AtomicReference<>();
         return defaultHapiSpec("HappyPathGetNonFungibleTokenInfo")
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
@@ -404,7 +411,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
                                 HapiParserUtil.asHeadlongAddress(
                                         asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN_NAME))),
                                 1L))))
-                .then(withOpContext((spec, opLog) -> {
+                .then(exposeTargetLedgerIdTo(targetLedgerId::set), withOpContext((spec, opLog) -> {
                     final var getTokenInfoQuery = getTokenInfo(NON_FUNGIBLE_TOKEN_NAME);
                     allRunFor(spec, getTokenInfoQuery);
                     final var expirySecond = getTokenInfoQuery
@@ -414,7 +421,8 @@ public class TokenInfoHTSSuite extends HapiSuite {
                             .getExpiry()
                             .getSeconds();
 
-                    final var nftTokenInfo = getTokenNftInfoForCheck(spec, getTokenInfoQuery, meta);
+                    final var nftTokenInfo =
+                            getTokenNftInfoForCheck(spec, getTokenInfoQuery, meta, targetLedgerId.get());
 
                     allRunFor(
                             spec,
@@ -437,7 +445,8 @@ public class TokenInfoHTSSuite extends HapiSuite {
                                                                     MEMO,
                                                                     spec.registry()
                                                                             .getAccountID(TOKEN_TREASURY),
-                                                                    expirySecond))
+                                                                    expirySecond,
+                                                                    targetLedgerId.get()))
                                                             .withNftTokenInfo(nftTokenInfo)))));
                 }));
     }
@@ -749,7 +758,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
     }
 
     private TokenNftInfo getTokenNftInfoForCheck(
-            final HapiSpec spec, final HapiGetTokenInfo getTokenInfoQuery, final ByteString meta) {
+            final HapiSpec spec, final HapiGetTokenInfo getTokenInfoQuery, final ByteString meta, ByteString ledgerId) {
         final var tokenId =
                 getTokenInfoQuery.getResponse().getTokenGetInfo().getTokenInfo().getTokenId();
 
@@ -762,7 +771,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
         final var spenderId = spec.registry().getAccountID(NFT_SPENDER);
 
         return TokenNftInfo.newBuilder()
-                .setLedgerId(fromString("0x03"))
+                .setLedgerId(ledgerId)
                 .setNftID(NftID.newBuilder()
                         .setTokenId(tokenId)
                         .setSerialNumber(1L)
@@ -780,13 +789,14 @@ public class TokenInfoHTSSuite extends HapiSuite {
             final String symbol,
             final String memo,
             final AccountID treasury,
-            final long expirySecond) {
+            final long expirySecond,
+            ByteString ledgerId) {
         final var autoRenewAccount = spec.registry().getAccountID(AUTO_RENEW_ACCOUNT);
 
         final ArrayList<CustomFee> customFees = getExpectedCustomFees(spec);
 
         return TokenInfo.newBuilder()
-                .setLedgerId(fromString("0x03"))
+                .setLedgerId(ledgerId)
                 .setSupplyTypeValue(TokenSupplyType.FINITE_VALUE)
                 .setExpiry(Timestamp.newBuilder().setSeconds(expirySecond))
                 .setAutoRenewAccount(autoRenewAccount)
@@ -856,11 +866,12 @@ public class TokenInfoHTSSuite extends HapiSuite {
             final String symbol,
             final String memo,
             final AccountID treasury,
-            final long expirySecond) {
+            final long expirySecond,
+            final ByteString ledgerId) {
         final var autoRenewAccount = spec.registry().getAccountID(AUTO_RENEW_ACCOUNT);
 
         return TokenInfo.newBuilder()
-                .setLedgerId(fromString("0x03"))
+                .setLedgerId(ledgerId)
                 .setSupplyTypeValue(TokenSupplyType.FINITE_VALUE)
                 .setExpiry(Timestamp.newBuilder().setSeconds(expirySecond))
                 .setAutoRenewAccount(autoRenewAccount)
