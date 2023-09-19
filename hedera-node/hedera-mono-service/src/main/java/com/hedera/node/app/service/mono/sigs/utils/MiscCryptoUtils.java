@@ -29,8 +29,11 @@ public class MiscCryptoUtils {
     /**
      * Record for caching thread local variables to avoid allocating memory for each verification.
      */
-    private record ThreadLocalCache(LibSecp256k1.secp256k1_pubkey pubKey, byte[] uncompressedPublicKeyInput,
-                                    ByteBuffer uncompressedPublicKeyByteBuffer, LongByReference length) {
+    private record ThreadLocalCache(
+            LibSecp256k1.secp256k1_pubkey pubKey,
+            byte[] uncompressedPublicKeyInput,
+            ByteBuffer uncompressedPublicKeyByteBuffer,
+            LongByReference length) {
         public ThreadLocalCache() {
             this(new LibSecp256k1.secp256k1_pubkey(), new byte[65], ByteBuffer.allocate(65), new LongByReference());
             // set the type header byte for uncompressed public keys, this is always the same
