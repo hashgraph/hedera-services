@@ -111,7 +111,6 @@ public class Hip17UnhappyAccountsSuite extends HapiSuite {
                                 .kycKey(KYC_KEY)
                                 .wipeKey(WIPE_KEY)
                                 .treasury(TREASURY),
-                        grantTokenKyc(UNIQUE_TOKEN_A, TREASURY),
                         mintToken(
                                 UNIQUE_TOKEN_A,
                                 List.of(ByteString.copyFromUtf8(MEMO_1), ByteString.copyFromUtf8(MEMO_2))))
@@ -187,7 +186,6 @@ public class Hip17UnhappyAccountsSuite extends HapiSuite {
                                 .kycKey(KYC_KEY)
                                 .wipeKey(WIPE_KEY)
                                 .treasury(TREASURY),
-                        grantTokenKyc(UNIQUE_TOKEN_A, TREASURY),
                         mintToken(
                                 UNIQUE_TOKEN_A,
                                 List.of(ByteString.copyFromUtf8(MEMO_1), ByteString.copyFromUtf8(MEMO_2))),
@@ -238,7 +236,6 @@ public class Hip17UnhappyAccountsSuite extends HapiSuite {
                                 List.of(ByteString.copyFromUtf8(MEMO_1), ByteString.copyFromUtf8(MEMO_2))),
                         tokenAssociate(CLIENT_1, UNIQUE_TOKEN_A),
                         grantTokenKyc(UNIQUE_TOKEN_A, CLIENT_1),
-                        grantTokenKyc(UNIQUE_TOKEN_A, TREASURY),
                         cryptoTransfer(movingUnique(UNIQUE_TOKEN_A, 1L).between(TREASURY, CLIENT_1)),
                         tokenAssociate(CLIENT_2, UNIQUE_TOKEN_A),
                         revokeTokenKyc(UNIQUE_TOKEN_A, CLIENT_1))
@@ -271,7 +268,6 @@ public class Hip17UnhappyAccountsSuite extends HapiSuite {
                                 .kycKey(KYC_KEY)
                                 .wipeKey(WIPE_KEY)
                                 .treasury(TREASURY),
-                        grantTokenKyc(UNIQUE_TOKEN_A, TREASURY),
                         mintToken(
                                 UNIQUE_TOKEN_A,
                                 List.of(ByteString.copyFromUtf8(MEMO_1), ByteString.copyFromUtf8(MEMO_2))),
