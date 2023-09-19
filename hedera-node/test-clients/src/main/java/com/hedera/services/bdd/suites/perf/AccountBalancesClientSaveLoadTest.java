@@ -132,7 +132,7 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest {
                 .when(
                         sourcing(() -> runWithProvider(accountsCreate(settings))
                                 .lasting(
-                                        () -> totalAccounts / ESTIMATED_CRYPTO_CREATION_RATE + 10,
+                                        () -> totalAccounts / settings.getTps() + 30,
                                         () -> TimeUnit.SECONDS)
                                 .totalOpsToSumbit(() -> totalAccounts)
                                 .maxOpsPerSec(settings::getTps)
