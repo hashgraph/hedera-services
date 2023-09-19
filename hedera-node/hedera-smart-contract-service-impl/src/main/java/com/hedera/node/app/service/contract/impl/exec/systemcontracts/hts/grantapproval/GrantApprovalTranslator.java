@@ -29,6 +29,9 @@ import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/**
+ * Translates {@code approve}, {@code approveNFT} calls to the HTS system contract.
+ */
 @Singleton
 public class GrantApprovalTranslator extends AbstractHtsCallTranslator {
     public static final Function GRANT_APPROVAL = new Function("approve(address,address,uint256)", ReturnTypes.INT_64);
@@ -41,11 +44,17 @@ public class GrantApprovalTranslator extends AbstractHtsCallTranslator {
         this.decoder = decoder;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean matches(@NonNull final HtsCallAttempt attempt) {
         return matchesClassicSelector(attempt.selector());
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public HtsCall callFrom(@NonNull final HtsCallAttempt attempt) {
         return new DispatchForResponseCodeHtsCall<>(
