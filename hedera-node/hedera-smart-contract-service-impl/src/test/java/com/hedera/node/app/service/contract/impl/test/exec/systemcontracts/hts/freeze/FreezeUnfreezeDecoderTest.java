@@ -19,8 +19,12 @@ package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN_HEADLONG_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.OWNER_HEADLONG_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.OWNER_ID;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
@@ -50,8 +54,9 @@ class FreezeUnfreezeDecoderTest {
                 .array();
         given(attempt.inputBytes()).willReturn(encoded);
         given(attempt.addressIdConverter()).willReturn(addressIdConverter);
+        given(addressIdConverter.convert(any())).willReturn(OWNER_ID);
         final var body = subject.decodeFreeze(attempt);
-        assertFreezePresent(body, FUNGIBLE_TOKEN_ID);
+        assertFreezePresent(body, FUNGIBLE_TOKEN_ID, OWNER_ID);
     }
 
     @Test
@@ -61,17 +66,22 @@ class FreezeUnfreezeDecoderTest {
                 .array();
         given(attempt.inputBytes()).willReturn(encoded);
         given(attempt.addressIdConverter()).willReturn(addressIdConverter);
+        given(addressIdConverter.convert(any())).willReturn(OWNER_ID);
         final var body = subject.decodeUnfreeze(attempt);
-        assertUnfreezePresent(body, FUNGIBLE_TOKEN_ID);
+        assertUnfreezePresent(body, FUNGIBLE_TOKEN_ID, OWNER_ID);
     }
 
-    private void assertFreezePresent(@NonNull final TransactionBody body, @NonNull final TokenID tokenId) {
+    private void assertFreezePresent(@NonNull final TransactionBody body, @NonNull final TokenID tokenId,
+            @NonNull final AccountID accountID) {
         final var freeze = body.tokenFreezeOrThrow();
-        org.assertj.core.api.Assertions.assertThat(freeze.token()).isEqualTo(tokenId);
+        assertEquals(freeze.token(), tokenId);
+        assertEquals(freeze.account(), accountID);
     }
 
-    private void assertUnfreezePresent(@NonNull final TransactionBody body, @NonNull final TokenID tokenId) {
+    private void assertUnfreezePresent(@NonNull final TransactionBody body, @NonNull final TokenID tokenId,
+            @NonNull final AccountID accountID) {
         final var unfreeze = body.tokenUnfreezeOrThrow();
-        org.assertj.core.api.Assertions.assertThat(unfreeze.token()).isEqualTo(tokenId);
+        assertEquals(unfreeze.token(), tokenId);
+        assertEquals(unfreeze.account(), accountID);
     }
 }
