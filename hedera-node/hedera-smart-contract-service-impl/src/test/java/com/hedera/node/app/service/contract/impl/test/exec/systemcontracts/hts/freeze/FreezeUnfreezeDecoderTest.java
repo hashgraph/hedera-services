@@ -71,15 +71,15 @@ class FreezeUnfreezeDecoderTest {
         assertUnfreezePresent(body, FUNGIBLE_TOKEN_ID, OWNER_ID);
     }
 
-    private void assertFreezePresent(@NonNull final TransactionBody body, @NonNull final TokenID tokenId,
-            @NonNull final AccountID accountID) {
+    private void assertFreezePresent(
+            @NonNull final TransactionBody body, @NonNull final TokenID tokenId, @NonNull final AccountID accountID) {
         final var freeze = body.tokenFreezeOrThrow();
         assertEquals(freeze.token(), tokenId);
         assertEquals(freeze.account(), accountID);
     }
 
-    private void assertUnfreezePresent(@NonNull final TransactionBody body, @NonNull final TokenID tokenId,
-            @NonNull final AccountID accountID) {
+    private void assertUnfreezePresent(
+            @NonNull final TransactionBody body, @NonNull final TokenID tokenId, @NonNull final AccountID accountID) {
         final var unfreeze = body.tokenUnfreezeOrThrow();
         assertEquals(unfreeze.token(), tokenId);
         assertEquals(unfreeze.account(), accountID);
