@@ -101,6 +101,7 @@ public class AddressBookTestingToolMain implements SwirldMain {
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     public SwirldState newState() {
         return new AddressBookTestingToolState();
     }
@@ -109,6 +110,7 @@ public class AddressBookTestingToolMain implements SwirldMain {
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     public BasicSoftwareVersion getSoftwareVersion() {
         if (softwareVersion != null) {
             return softwareVersion;
