@@ -39,4 +39,5 @@ public record FileMetadata(
         @NonNull KeyList keys,
         @NonNull Bytes contents,
         @Nullable String memo,
-        boolean deleted) {}
+        boolean deleted,
+        @Nullable Timestamp preSystemDeleteExpirationSecond) {}

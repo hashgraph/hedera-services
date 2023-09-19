@@ -31,6 +31,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccoun
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -55,6 +56,7 @@ public class TokenTotalSupplyAfterMintBurnWipeSuite extends HapiSuite {
         return List.of(new HapiSpec[] {checkTokenTotalSupplyAfterMintAndBurn(), totalSupplyAfterWipe()});
     }
 
+    @HapiTest
     public HapiSpec checkTokenTotalSupplyAfterMintAndBurn() {
         String tokenName = "tokenToTest";
         return defaultHapiSpec("checkTokenTotalSupplyAfterMintAndBurn")
@@ -83,6 +85,7 @@ public class TokenTotalSupplyAfterMintBurnWipeSuite extends HapiSuite {
                                 .hasTotalSupply(1800));
     }
 
+    @HapiTest
     public HapiSpec totalSupplyAfterWipe() {
         var tokenToWipe = "tokenToWipe";
 
