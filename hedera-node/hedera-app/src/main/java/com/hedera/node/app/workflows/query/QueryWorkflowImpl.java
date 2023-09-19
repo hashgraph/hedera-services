@@ -26,6 +26,7 @@ import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER_STATE_PROOF;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ResponseHeader;
 import com.hedera.hapi.node.base.ResponseType;
@@ -33,9 +34,12 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
+import com.hedera.node.app.fees.ExchangeRateManager;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.UnknownHederaFunctionality;
+import com.hedera.node.app.spi.authorization.Authorizer;
+import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -83,17 +87,24 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
     private final Codec<Query> queryParser;
     private final ConfigProvider configProvider;
     private final RecordCache recordCache;
+    private final Authorizer authorizer;
+    private final ExchangeRateManager exchangeRateManager;
 
     /**
      * Constructor of {@code QueryWorkflowImpl}
      *
-     * @param stateAccessor a {@link Function} that returns the latest immutable or latest signed
-     *     state depending on the {@link ResponseType}
+     * @param stateAccessor a {@link Function} that returns the latest immutable or latest signed state depending on the
+     * {@link ResponseType}
      * @param throttleAccumulator the {@link ThrottleAccumulator} for throttling
      * @param submissionManager the {@link SubmissionManager} to submit transactions to the platform
      * @param queryChecker the {@link QueryChecker} with specific checks of an ingest-workflow
      * @param ingestChecker the {@link IngestChecker} to handle the crypto transfer
      * @param dispatcher the {@link QueryDispatcher} that will call query-specific methods
+     * @param queryParser the {@link Codec} to parse a query
+     * @param configProvider the {@link ConfigProvider} to get the current configuration
+     * @param recordCache the {@link RecordCache}
+     * @param authorizer the {@link Authorizer} to check permissions and special privileges
+     * @param exchangeRateManager the {@link ExchangeRateManager} to get the {@link ExchangeRateInfo}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     @Inject
@@ -106,16 +117,20 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             @NonNull final QueryDispatcher dispatcher,
             @NonNull final Codec<Query> queryParser,
             @NonNull final ConfigProvider configProvider,
-            @NonNull final RecordCache recordCache) {
-        this.stateAccessor = requireNonNull(stateAccessor);
-        this.throttleAccumulator = requireNonNull(throttleAccumulator);
-        this.submissionManager = requireNonNull(submissionManager);
-        this.ingestChecker = requireNonNull(ingestChecker);
-        this.queryChecker = requireNonNull(queryChecker);
-        this.dispatcher = requireNonNull(dispatcher);
-        this.queryParser = requireNonNull(queryParser);
-        this.configProvider = requireNonNull(configProvider);
-        this.recordCache = requireNonNull(recordCache);
+            @NonNull final RecordCache recordCache,
+            @NonNull final Authorizer authorizer,
+            @NonNull final ExchangeRateManager exchangeRateManager) {
+        this.stateAccessor = requireNonNull(stateAccessor, "stateAccessor must not be null");
+        this.throttleAccumulator = requireNonNull(throttleAccumulator, "throttleAccumulator must not be null");
+        this.submissionManager = requireNonNull(submissionManager, "submissionManager must not be null");
+        this.ingestChecker = requireNonNull(ingestChecker, "ingestChecker must not be null");
+        this.queryChecker = requireNonNull(queryChecker, "queryChecker must not be null");
+        this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
+        this.queryParser = requireNonNull(queryParser, "queryParser must not be null");
+        this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
+        this.recordCache = requireNonNull(recordCache, "recordCache must not be null");
+        this.exchangeRateManager = requireNonNull(exchangeRateManager, "exchangeRateManager must not be null");
+        this.authorizer = requireNonNull(authorizer, "authorizer must not be null");
     }
 
     @Override
@@ -130,9 +145,9 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         final var function = functionOf(query);
 
         final var handler = dispatcher.getHandler(query);
-        final var queryHeader = handler.extractHeader(query);
+        var queryHeader = handler.extractHeader(query);
         if (queryHeader == null) {
-            throw new StatusRuntimeException(Status.INVALID_ARGUMENT);
+            queryHeader = QueryHeader.DEFAULT;
         }
         final ResponseType responseType = queryHeader.responseType();
         logger.debug("Started answering a {} query of type {}", function, responseType);
@@ -159,36 +174,49 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             TransactionBody txBody = null;
             if (paymentRequired) {
                 allegedPayment = queryHeader.paymentOrThrow();
+                final var configuration = configProvider.getConfiguration();
 
                 // 4.i Ingest checks
-                final var transactionInfo = ingestChecker.runAllChecks(state, allegedPayment);
-
-                // 4.ii Validate CryptoTransfer
-                queryChecker.validateCryptoTransfer(transactionInfo);
-
+                final var transactionInfo = ingestChecker.runAllChecks(state, allegedPayment, configuration);
                 txBody = transactionInfo.txBody();
-                final var payer = txBody.transactionIDOrThrow().accountIDOrThrow();
+
+                // get payer
+                final var payerID = transactionInfo.payerID();
                 context = new QueryContextImpl(
-                        state, storeFactory, query, configProvider.getConfiguration(), recordCache, payer);
+                        state, storeFactory, query, configuration, recordCache, exchangeRateManager, payerID);
 
-                // 4.iii Check permissions
-                queryChecker.checkPermissions(payer, function);
+                // A super-user does not have to pay for a query and has all permissions
+                if (!authorizer.isSuperUser(payerID)) {
 
-                // 4.iv Calculate costs
-                fee = handler.computeFees(context).totalFee();
+                    // 4.ii Validate CryptoTransfer
+                    queryChecker.validateCryptoTransfer(transactionInfo);
 
-                // 4.v Check account balances
-                queryChecker.validateAccountBalances(payer, transactionInfo, fee);
+                    // 4.iii Check permissions
+                    queryChecker.checkPermissions(payerID, function);
 
-                // 4.vi Submit payment to platform
-                final var txBytes = PbjConverter.asWrappedBytes(Transaction.PROTOBUF, allegedPayment);
-                submissionManager.submit(txBody, txBytes);
+                    // 4.iv Calculate costs
+                    fee = handler.computeFees(context).totalFee();
+
+                    // 4.v Check account balances
+                    final var accountStore = storeFactory.getStore(ReadableAccountStore.class);
+                    queryChecker.validateAccountBalances(accountStore, transactionInfo, fee);
+
+                    // 4.vi Submit payment to platform
+                    final var txBytes = Transaction.PROTOBUF.toBytes(allegedPayment);
+                    submissionManager.submit(txBody, txBytes);
+                }
             } else {
                 if (RESTRICTED_FUNCTIONALITIES.contains(function)) {
                     throw new PreCheckException(NOT_SUPPORTED);
                 }
                 context = new QueryContextImpl(
-                        state, storeFactory, query, configProvider.getConfiguration(), recordCache, null);
+                        state,
+                        storeFactory,
+                        query,
+                        configProvider.getConfiguration(),
+                        recordCache,
+                        exchangeRateManager,
+                        null);
             }
 
             // 5. Check validity of query

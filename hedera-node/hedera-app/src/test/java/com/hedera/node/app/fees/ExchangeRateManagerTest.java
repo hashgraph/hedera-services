@@ -17,20 +17,27 @@
 package com.hedera.node.app.fees;
 
 import static com.hedera.hapi.node.transaction.ExchangeRateSet.PROTOBUF;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasItems;
-import static org.hamcrest.Matchers.startsWith;
+import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TimestampSeconds;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
-import com.hedera.node.app.spi.fixtures.util.LogCaptor;
+import com.hedera.node.app.fixtures.state.FakeHederaState;
+import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.VersionedConfigImpl;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.io.IOException;
 import java.time.Instant;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -53,12 +60,22 @@ class ExchangeRateManagerTest {
             .build();
 
     Bytes validRateBytes = ExchangeRateSet.PROTOBUF.toBytes(validRatesObj);
-    ExchangeRateManager subject = new ExchangeRateManager();
+    ExchangeRateManager subject;
+
+    @BeforeEach
+    void setup() {
+        final ConfigProvider configProvider = () -> new VersionedConfigImpl(HederaTestConfigBuilder.createConfig(), 1);
+        subject = new ExchangeRateManager(configProvider);
+        final var state = new FakeHederaState();
+        final var midnightRates = new AtomicReference<>(validRatesObj);
+        state.addService(FeeService.NAME, Map.of(FeeService.MIDNIGHT_RATES_STATE_KEY, midnightRates));
+        subject.init(state, validRateBytes);
+    }
 
     @Test
     void hasExpectedFields() throws IOException {
         // when
-        subject.update(validRateBytes);
+        subject.update(validRateBytes, AccountID.DEFAULT);
 
         // expect
         final var curr = subject.exchangeRates().currentRateOrThrow();
@@ -73,75 +90,21 @@ class ExchangeRateManagerTest {
     }
 
     @Test
-    void onlyCurrentRates() throws IOException {
-        // given
-        final var onlyCurrentRates =
-                ExchangeRateSet.newBuilder().currentRate(someRate).build();
-        subject = new ExchangeRateManager();
-
-        // when
-        subject.update(ExchangeRateSet.PROTOBUF.toBytes(onlyCurrentRates));
-
-        // expect
-        final var curr = subject.exchangeRates().currentRateOrElse(ExchangeRate.DEFAULT);
-        final var next = subject.exchangeRates().nextRateOrElse(ExchangeRate.DEFAULT);
-        assertEquals(hbarEquiv, curr.hbarEquiv());
-        assertEquals(0, next.hbarEquiv());
-        assertEquals(centEquiv, curr.centEquiv());
-        assertEquals(0, next.centEquiv());
-        assertEquals(expirationTime.seconds(), curr.expirationTimeOrThrow().seconds());
-        assertEquals(0, next.expirationTimeOrElse(TimestampSeconds.DEFAULT).seconds());
-    }
-
-    @Test
-    void onlyNextRates() throws IOException {
-        // given
-        final var onlyNextRates =
-                ExchangeRateSet.newBuilder().nextRate(someRate).build();
-        subject = new ExchangeRateManager();
-
-        // when
-        subject.update(ExchangeRateSet.PROTOBUF.toBytes(onlyNextRates));
-
-        // expect
-        final var curr = subject.exchangeRates().currentRateOrElse(ExchangeRate.DEFAULT);
-        final var next = subject.exchangeRates().nextRateOrElse(ExchangeRate.DEFAULT);
-        assertEquals(0, curr.hbarEquiv());
-        assertEquals(hbarEquiv, next.hbarEquiv());
-        assertEquals(0, curr.centEquiv());
-        assertEquals(centEquiv, next.centEquiv());
-        assertEquals(0, curr.expirationTimeOrElse(TimestampSeconds.DEFAULT).seconds());
-        assertEquals(expirationTime.seconds(), next.expirationTimeOrThrow().seconds());
-    }
-
-    @Test
     void updateWithInvalidExchangeRateBytes() {
         // given
-        subject = new ExchangeRateManager();
-        final var logCaptor = new LogCaptor(LogManager.getLogger(ExchangeRateManager.class));
+        final var bytes = Bytes.wrap(new byte[] {0x06});
 
-        // when
-        subject.update(Bytes.wrap(new byte[] {0x06}));
-
-        // expect
-        assertEquals(ExchangeRateSet.DEFAULT, subject.exchangeRates());
-        assertThat(logCaptor.warnLogs(), hasItems(startsWith("Unable to parse exchange rate file")));
-        assertThat(logCaptor.warnLogs(), hasItems(startsWith("Exchange rate file did not contain a current rate!")));
-        assertThat(
-                logCaptor.warnLogs(),
-                hasItems(startsWith("Exchange rate current rate did not contain an expiration time! Defaulting to 0")));
-        assertThat(
-                logCaptor.warnLogs(),
-                hasItems(startsWith(
-                        "Exchange rate file did not contain a next rate! Will default to the current rate")));
+        // then
+        assertThatThrownBy(() -> subject.update(bytes, AccountID.DEFAULT))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(ResponseCodeEnum.INVALID_EXCHANGE_RATE_FILE));
     }
 
     @ParameterizedTest
     @MethodSource("provideConsensusTimesForActiveRate")
     void activeRateWorksAsExpected(Instant consensusTime, ExchangeRate expectedExchangeRate) {
         // given
-        subject = new ExchangeRateManager();
-        subject.update(validRateBytes);
+        subject.update(validRateBytes, AccountID.DEFAULT);
 
         // when
         final var activeRate = subject.activeRate(consensusTime);

@@ -16,6 +16,10 @@
 
 package com.hedera.node.app.workflows.handle;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTHORIZATION_FAILED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -36,6 +40,7 @@ import com.hedera.node.app.AppTestBase;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.fixtures.signature.ExpandedSignaturePairFactory;
+import com.hedera.node.app.fixtures.workflows.handle.record.SingleTransactionRecordConditions;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
@@ -44,6 +49,8 @@ import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.SignatureExpander;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.signature.SignatureVerifier;
+import com.hedera.node.app.spi.authorization.Authorizer;
+import com.hedera.node.app.spi.authorization.Authorizer.SystemPrivilege;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -51,9 +58,12 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.state.HederaRecordCache;
+import com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult;
+import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionScenarioBuilder;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.hedera.node.app.workflows.handle.record.SingleTransactionRecord;
 import com.hedera.node.app.workflows.prehandle.FakeSignatureVerificationFuture;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult.Status;
@@ -63,6 +73,7 @@ import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.system.Round;
+import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
@@ -72,11 +83,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -99,6 +113,8 @@ class HandleWorkflowTest extends AppTestBase {
     private static final ExchangeRateSet EXCHANGE_RATE_SET =
             ExchangeRateSet.newBuilder().build();
 
+    private static final Fees DEFAULT_FEES = new Fees(1L, 20L, 300L);
+
     private static PreHandleResult createPreHandleResult(@NonNull Status status, @NonNull ResponseCodeEnum code) {
         final var key = ALICE.account().keyOrThrow();
         return new PreHandleResult(
@@ -107,6 +123,7 @@ class HandleWorkflowTest extends AppTestBase {
                 status,
                 code,
                 new TransactionScenarioBuilder().txInfo(),
+                Set.of(),
                 Set.of(),
                 Map.of(key, FakeSignatureVerificationFuture.goodFuture(key)),
                 null,
@@ -149,7 +166,7 @@ class HandleWorkflowTest extends AppTestBase {
     @Mock(strictness = LENIENT)
     private SwirldTransaction platformTxn;
 
-    @Mock
+    @Mock(strictness = LENIENT)
     private HederaRecordCache recordCache;
 
     @Mock
@@ -167,11 +184,37 @@ class HandleWorkflowTest extends AppTestBase {
     @Mock
     private SystemFileUpdateFacility systemFileUpdateFacility;
 
+    @Mock
+    private DualStateUpdateFacility dualStateUpdateFacility;
+
+    @Mock
+    private SolvencyPreCheck solvencyPreCheck;
+
+    @Mock(strictness = LENIENT)
+    private Authorizer authorizer;
+
+    @Mock
+    private SwirldDualState dualState;
+
     private HandleWorkflow workflow;
 
     @BeforeEach
     void setup() {
         setupStandardStates();
+
+        accountsState.put(
+                ALICE.accountID(),
+                ALICE.account()
+                        .copyBuilder()
+                        .tinybarBalance(DEFAULT_FEES.totalFee())
+                        .build());
+        accountsState.put(
+                nodeSelfAccountId,
+                nodeSelfAccount
+                        .copyBuilder()
+                        .tinybarBalance(DEFAULT_FEES.totalFee())
+                        .build());
+        accountsState.commit();
 
         when(round.iterator()).thenReturn(List.of(event).iterator());
         when(event.consensusTransactionIterator())
@@ -194,9 +237,14 @@ class HandleWorkflowTest extends AppTestBase {
                 .when(dispatcher)
                 .dispatchHandle(any());
 
-        when(dispatcher.dispatchComputeFees(any())).thenReturn(Fees.FREE);
+        when(dispatcher.dispatchComputeFees(any())).thenReturn(DEFAULT_FEES);
         when(networkInfo.nodeInfo(nodeSelfId.id())).thenReturn(selfNodeInfo);
-        when(exchangeRateManager.exchangeRates()).thenReturn(ExchangeRateSet.DEFAULT);
+        when(exchangeRateManager.exchangeRates()).thenReturn(EXCHANGE_RATE_SET);
+        when(recordCache.hasDuplicate(any(), eq(nodeSelfId.id())))
+                .thenReturn(HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE);
+        when(authorizer.isAuthorized(eq(ALICE.accountID()), any())).thenReturn(true);
+        when(authorizer.hasPrivilegedAuthorization(eq(ALICE.accountID()), any(), any()))
+                .thenReturn(Authorizer.SystemPrivilege.UNNECESSARY);
 
         workflow = new HandleWorkflow(
                 networkInfo,
@@ -213,7 +261,10 @@ class HandleWorkflowTest extends AppTestBase {
                 feeManager,
                 exchangeRateManager,
                 finalizer,
-                systemFileUpdateFacility);
+                systemFileUpdateFacility,
+                dualStateUpdateFacility,
+                solvencyPreCheck,
+                authorizer);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -234,7 +285,10 @@ class HandleWorkflowTest extends AppTestBase {
                         feeManager,
                         exchangeRateManager,
                         finalizer,
-                        systemFileUpdateFacility))
+                        systemFileUpdateFacility,
+                        dualStateUpdateFacility,
+                        solvencyPreCheck,
+                        authorizer))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -251,7 +305,10 @@ class HandleWorkflowTest extends AppTestBase {
                         feeManager,
                         exchangeRateManager,
                         finalizer,
-                        systemFileUpdateFacility))
+                        systemFileUpdateFacility,
+                        dualStateUpdateFacility,
+                        solvencyPreCheck,
+                        authorizer))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -268,7 +325,10 @@ class HandleWorkflowTest extends AppTestBase {
                         feeManager,
                         exchangeRateManager,
                         finalizer,
-                        systemFileUpdateFacility))
+                        systemFileUpdateFacility,
+                        dualStateUpdateFacility,
+                        solvencyPreCheck,
+                        authorizer))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -285,7 +345,10 @@ class HandleWorkflowTest extends AppTestBase {
                         feeManager,
                         exchangeRateManager,
                         finalizer,
-                        systemFileUpdateFacility))
+                        systemFileUpdateFacility,
+                        dualStateUpdateFacility,
+                        solvencyPreCheck,
+                        authorizer))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -302,7 +365,10 @@ class HandleWorkflowTest extends AppTestBase {
                         feeManager,
                         exchangeRateManager,
                         finalizer,
-                        systemFileUpdateFacility))
+                        systemFileUpdateFacility,
+                        dualStateUpdateFacility,
+                        solvencyPreCheck,
+                        authorizer))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -319,7 +385,10 @@ class HandleWorkflowTest extends AppTestBase {
                         feeManager,
                         exchangeRateManager,
                         finalizer,
-                        systemFileUpdateFacility))
+                        systemFileUpdateFacility,
+                        dualStateUpdateFacility,
+                        solvencyPreCheck,
+                        authorizer))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -336,7 +405,10 @@ class HandleWorkflowTest extends AppTestBase {
                         feeManager,
                         exchangeRateManager,
                         finalizer,
-                        systemFileUpdateFacility))
+                        systemFileUpdateFacility,
+                        dualStateUpdateFacility,
+                        solvencyPreCheck,
+                        authorizer))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -353,7 +425,10 @@ class HandleWorkflowTest extends AppTestBase {
                         feeManager,
                         exchangeRateManager,
                         finalizer,
-                        systemFileUpdateFacility))
+                        systemFileUpdateFacility,
+                        dualStateUpdateFacility,
+                        solvencyPreCheck,
+                        authorizer))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -370,7 +445,10 @@ class HandleWorkflowTest extends AppTestBase {
                         feeManager,
                         exchangeRateManager,
                         finalizer,
-                        systemFileUpdateFacility))
+                        systemFileUpdateFacility,
+                        dualStateUpdateFacility,
+                        solvencyPreCheck,
+                        authorizer))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -387,7 +465,10 @@ class HandleWorkflowTest extends AppTestBase {
                         feeManager,
                         exchangeRateManager,
                         finalizer,
-                        systemFileUpdateFacility))
+                        systemFileUpdateFacility,
+                        dualStateUpdateFacility,
+                        solvencyPreCheck,
+                        authorizer))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -404,7 +485,10 @@ class HandleWorkflowTest extends AppTestBase {
                         feeManager,
                         exchangeRateManager,
                         finalizer,
-                        systemFileUpdateFacility))
+                        systemFileUpdateFacility,
+                        dualStateUpdateFacility,
+                        solvencyPreCheck,
+                        authorizer))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -421,7 +505,10 @@ class HandleWorkflowTest extends AppTestBase {
                         null,
                         exchangeRateManager,
                         finalizer,
-                        systemFileUpdateFacility))
+                        systemFileUpdateFacility,
+                        dualStateUpdateFacility,
+                        solvencyPreCheck,
+                        authorizer))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -438,7 +525,10 @@ class HandleWorkflowTest extends AppTestBase {
                         feeManager,
                         null,
                         finalizer,
-                        systemFileUpdateFacility))
+                        systemFileUpdateFacility,
+                        dualStateUpdateFacility,
+                        solvencyPreCheck,
+                        authorizer))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -455,7 +545,10 @@ class HandleWorkflowTest extends AppTestBase {
                         feeManager,
                         exchangeRateManager,
                         null,
-                        systemFileUpdateFacility))
+                        systemFileUpdateFacility,
+                        dualStateUpdateFacility,
+                        solvencyPreCheck,
+                        authorizer))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -472,6 +565,69 @@ class HandleWorkflowTest extends AppTestBase {
                         feeManager,
                         exchangeRateManager,
                         finalizer,
+                        null,
+                        dualStateUpdateFacility,
+                        solvencyPreCheck,
+                        authorizer))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new HandleWorkflow(
+                        networkInfo,
+                        preHandleWorkflow,
+                        dispatcher,
+                        blockRecordManager,
+                        signatureExpander,
+                        signatureVerifier,
+                        checker,
+                        serviceLookup,
+                        configProvider,
+                        recordCache,
+                        stakingPeriodTimeHook,
+                        feeManager,
+                        exchangeRateManager,
+                        finalizer,
+                        systemFileUpdateFacility,
+                        null,
+                        solvencyPreCheck,
+                        authorizer))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new HandleWorkflow(
+                        networkInfo,
+                        preHandleWorkflow,
+                        dispatcher,
+                        blockRecordManager,
+                        signatureExpander,
+                        signatureVerifier,
+                        checker,
+                        serviceLookup,
+                        configProvider,
+                        recordCache,
+                        stakingPeriodTimeHook,
+                        feeManager,
+                        exchangeRateManager,
+                        finalizer,
+                        systemFileUpdateFacility,
+                        dualStateUpdateFacility,
+                        null,
+                        authorizer))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new HandleWorkflow(
+                        networkInfo,
+                        preHandleWorkflow,
+                        dispatcher,
+                        blockRecordManager,
+                        signatureExpander,
+                        signatureVerifier,
+                        checker,
+                        serviceLookup,
+                        configProvider,
+                        recordCache,
+                        stakingPeriodTimeHook,
+                        feeManager,
+                        exchangeRateManager,
+                        finalizer,
+                        systemFileUpdateFacility,
+                        dualStateUpdateFacility,
+                        solvencyPreCheck,
                         null))
                 .isInstanceOf(NullPointerException.class);
     }
@@ -483,7 +639,7 @@ class HandleWorkflowTest extends AppTestBase {
         when(platformTxn.isSystem()).thenReturn(true);
 
         // when
-        workflow.handleRound(state, round);
+        workflow.handleRound(state, dualState, round);
 
         // then
         assertThat(accountsState.isModified()).isFalse();
@@ -495,16 +651,15 @@ class HandleWorkflowTest extends AppTestBase {
     @Test
     @DisplayName("Successful execution of simple case")
     void testHappyPath() {
-        // given
-        when(exchangeRateManager.exchangeRates()).thenReturn(EXCHANGE_RATE_SET);
         // when
-        workflow.handleRound(state, round);
+        workflow.handleRound(state, dualState, round);
 
         // then
         final var alice = aliasesState.get(new ProtoBytes(Bytes.wrap(ALICE_ALIAS)));
         assertThat(alice).isEqualTo(ALICE.account().accountId());
         // TODO: Check that record was created
-        verify(systemFileUpdateFacility).handleTxBody(eq(state), any());
+        verify(systemFileUpdateFacility).handleTxBody(any(), any(), any());
+        verify(dualStateUpdateFacility).handleTxBody(any(), any(), any());
     }
 
     @Nested
@@ -524,7 +679,7 @@ class HandleWorkflowTest extends AppTestBase {
             when(platformTxn.getMetadata()).thenReturn(null);
 
             // when
-            workflow.handleRound(state, round);
+            workflow.handleRound(state, dualState, round);
 
             // then
             verify(preHandleWorkflow).preHandleTransaction(any(), any(), any(), eq(platformTxn));
@@ -537,7 +692,7 @@ class HandleWorkflowTest extends AppTestBase {
             when(platformTxn.getMetadata()).thenReturn(PRE_HANDLE_FAILURE_RESULT);
 
             // when
-            workflow.handleRound(state, round);
+            workflow.handleRound(state, dualState, round);
 
             // then
             verify(preHandleWorkflow).preHandleTransaction(any(), any(), any(), eq(platformTxn));
@@ -550,7 +705,7 @@ class HandleWorkflowTest extends AppTestBase {
             when(platformTxn.getMetadata()).thenReturn(PreHandleResult.unknownFailure());
 
             // when
-            workflow.handleRound(state, round);
+            workflow.handleRound(state, dualState, round);
 
             // then
             verify(preHandleWorkflow).preHandleTransaction(any(), any(), any(), eq(platformTxn));
@@ -568,13 +723,14 @@ class HandleWorkflowTest extends AppTestBase {
                     ResponseCodeEnum.OK,
                     new TransactionScenarioBuilder().txInfo(),
                     Set.of(),
+                    Set.of(),
                     Map.of(key, FakeSignatureVerificationFuture.goodFuture(key)),
                     null,
                     CONFIG_VERSION - 1L);
             when(platformTxn.getMetadata()).thenReturn(preHandleResult);
 
             // when
-            workflow.handleRound(state, round);
+            workflow.handleRound(state, dualState, round);
 
             // then
             verify(preHandleWorkflow).preHandleTransaction(any(), any(), any(), eq(platformTxn));
@@ -585,10 +741,9 @@ class HandleWorkflowTest extends AppTestBase {
         void testPreHandleSuccess() {
             // given
             when(platformTxn.getMetadata()).thenReturn(null);
-            when(exchangeRateManager.exchangeRates()).thenReturn(EXCHANGE_RATE_SET);
 
             // when
-            workflow.handleRound(state, round);
+            workflow.handleRound(state, dualState, round);
 
             // then
             final var alice = aliasesState.get(new ProtoBytes(Bytes.wrap(ALICE_ALIAS)));
@@ -605,7 +760,7 @@ class HandleWorkflowTest extends AppTestBase {
                     .thenReturn(DUE_DILIGENCE_RESULT);
 
             // when
-            workflow.handleRound(state, round);
+            workflow.handleRound(state, dualState, round);
 
             // then
             assertThat(aliasesState.isModified()).isFalse();
@@ -621,7 +776,7 @@ class HandleWorkflowTest extends AppTestBase {
                     .thenReturn(DUE_DILIGENCE_RESULT);
 
             // when
-            workflow.handleRound(state, round);
+            workflow.handleRound(state, dualState, round);
 
             // then
             assertThat(aliasesState.isModified()).isFalse();
@@ -636,7 +791,7 @@ class HandleWorkflowTest extends AppTestBase {
                     .thenReturn(PreHandleResult.unknownFailure());
 
             // when
-            workflow.handleRound(state, round);
+            workflow.handleRound(state, dualState, round);
 
             // then
             assertThat(accountsState.isModified()).isFalse();
@@ -651,7 +806,7 @@ class HandleWorkflowTest extends AppTestBase {
         // given
         when(platformTxn.getMetadata()).thenReturn(DUE_DILIGENCE_RESULT);
         // when
-        workflow.handleRound(state, round);
+        workflow.handleRound(state, dualState, round);
 
         // then
         assertThat(aliasesState.isModified()).isFalse();
@@ -678,6 +833,7 @@ class HandleWorkflowTest extends AppTestBase {
                     ResponseCodeEnum.OK,
                     new TransactionScenarioBuilder().txInfo(),
                     Set.of(bobsKey),
+                    Set.of(),
                     verificationResults,
                     null,
                     CONFIG_VERSION);
@@ -696,9 +852,9 @@ class HandleWorkflowTest extends AppTestBase {
                     })
                     .when(signatureExpander)
                     .expand(eq(Set.of(bobsKey)), any(), any());
-            when(exchangeRateManager.exchangeRates()).thenReturn(EXCHANGE_RATE_SET);
+
             // when
-            workflow.handleRound(state, round);
+            workflow.handleRound(state, dualState, round);
 
             // then
             final var argCapture = ArgumentCaptor.forClass(HandleContext.class);
@@ -731,6 +887,7 @@ class HandleWorkflowTest extends AppTestBase {
                     ResponseCodeEnum.OK,
                     new TransactionScenarioBuilder().txInfo(),
                     Set.of(bobsKey),
+                    Set.of(),
                     verificationResults,
                     null,
                     CONFIG_VERSION);
@@ -751,7 +908,7 @@ class HandleWorkflowTest extends AppTestBase {
                     .expand(eq(Set.of(bobsKey)), any(), any());
 
             // when
-            workflow.handleRound(state, round);
+            workflow.handleRound(state, dualState, round);
 
             // then
             verify(dispatcher, never()).dispatchHandle(any());
@@ -784,9 +941,9 @@ class HandleWorkflowTest extends AppTestBase {
                             argThat(set -> set.size() == 1
                                     && bobsKey.equals(set.iterator().next().key()))))
                     .thenReturn(verificationResults);
-            when(exchangeRateManager.exchangeRates()).thenReturn(EXCHANGE_RATE_SET);
+
             // when
-            workflow.handleRound(state, round);
+            workflow.handleRound(state, dualState, round);
 
             // then
             final var argCapture = ArgumentCaptor.forClass(HandleContext.class);
@@ -831,7 +988,7 @@ class HandleWorkflowTest extends AppTestBase {
                     .thenReturn(verificationResults);
 
             // when
-            workflow.handleRound(state, round);
+            workflow.handleRound(state, dualState, round);
 
             // then
             verify(dispatcher, never()).dispatchHandle(any());
@@ -853,11 +1010,11 @@ class HandleWorkflowTest extends AppTestBase {
                     ResponseCodeEnum.OK,
                     new TransactionScenarioBuilder().txInfo(),
                     Set.of(),
+                    Set.of(),
                     verificationResults,
                     null,
                     CONFIG_VERSION);
             when(platformTxn.getMetadata()).thenReturn(preHandleResult);
-            when(exchangeRateManager.exchangeRates()).thenReturn(EXCHANGE_RATE_SET);
             doAnswer(invocation -> {
                         final var context = invocation.getArgument(0, PreHandleContext.class);
                         context.optionalKey(bobsKey);
@@ -874,7 +1031,7 @@ class HandleWorkflowTest extends AppTestBase {
                     .expand(eq(Set.of(bobsKey)), any(), any());
 
             // when
-            workflow.handleRound(state, round);
+            workflow.handleRound(state, dualState, round);
 
             // then
             final var argCapture = ArgumentCaptor.forClass(HandleContext.class);
@@ -907,11 +1064,11 @@ class HandleWorkflowTest extends AppTestBase {
                     ResponseCodeEnum.OK,
                     new TransactionScenarioBuilder().txInfo(),
                     Set.of(),
+                    Set.of(),
                     verificationResults,
                     null,
                     CONFIG_VERSION);
             when(platformTxn.getMetadata()).thenReturn(preHandleResult);
-            when(exchangeRateManager.exchangeRates()).thenReturn(EXCHANGE_RATE_SET);
             doAnswer(invocation -> {
                         final var context = invocation.getArgument(0, PreHandleContext.class);
                         context.optionalKey(bobsKey);
@@ -928,7 +1085,7 @@ class HandleWorkflowTest extends AppTestBase {
                     .expand(eq(Set.of(bobsKey)), any(), any());
 
             // when
-            workflow.handleRound(state, round);
+            workflow.handleRound(state, dualState, round);
 
             // then
             final var argCapture = ArgumentCaptor.forClass(HandleContext.class);
@@ -972,9 +1129,9 @@ class HandleWorkflowTest extends AppTestBase {
                             argThat(set -> set.size() == 1
                                     && bobsKey.equals(set.iterator().next().key()))))
                     .thenReturn(verificationResults);
-            when(exchangeRateManager.exchangeRates()).thenReturn(EXCHANGE_RATE_SET);
+
             // when
-            workflow.handleRound(state, round);
+            workflow.handleRound(state, dualState, round);
 
             // then
             final var argCapture = ArgumentCaptor.forClass(HandleContext.class);
@@ -1018,9 +1175,9 @@ class HandleWorkflowTest extends AppTestBase {
                             argThat(set -> set.size() == 1
                                     && bobsKey.equals(set.iterator().next().key()))))
                     .thenReturn(verificationResults);
-            when(exchangeRateManager.exchangeRates()).thenReturn(EXCHANGE_RATE_SET);
+
             // when
-            workflow.handleRound(state, round);
+            workflow.handleRound(state, dualState, round);
 
             // then
             final var argCapture = ArgumentCaptor.forClass(HandleContext.class);
@@ -1055,11 +1212,11 @@ class HandleWorkflowTest extends AppTestBase {
                     ResponseCodeEnum.OK,
                     new TransactionScenarioBuilder().txInfo(),
                     Set.of(erinsKey),
+                    Set.of(),
                     preHandleVerificationResults,
                     null,
                     CONFIG_VERSION);
             when(platformTxn.getMetadata()).thenReturn(preHandleResult);
-            when(exchangeRateManager.exchangeRates()).thenReturn(EXCHANGE_RATE_SET);
             doAnswer(invocation -> {
                         final var context = invocation.getArgument(0, PreHandleContext.class);
                         context.requireKey(bobsKey);
@@ -1091,7 +1248,7 @@ class HandleWorkflowTest extends AppTestBase {
                     .thenReturn(verificationResults);
 
             // when
-            workflow.handleRound(state, round);
+            workflow.handleRound(state, dualState, round);
 
             // then
             final var argCapture = ArgumentCaptor.forClass(HandleContext.class);
@@ -1120,6 +1277,180 @@ class HandleWorkflowTest extends AppTestBase {
     }
 
     @Nested
+    @DisplayName("Tests for general validations before handle is called")
+    final class ValidationTest {
+
+        @Test
+        @DisplayName("Reject transaction, if it is a duplicate from another node")
+        void testDuplicateFromOtherNode() {
+            // given
+            when(recordCache.hasDuplicate(OK_RESULT.txInfo().txBody().transactionID(), selfNodeInfo.nodeId()))
+                    .thenReturn(DuplicateCheckResult.OTHER_NODE);
+
+            // when
+            workflow.handleRound(state, dualState, round);
+
+            // then
+            assertThat(accountsState.get(ALICE.accountID()).tinybarBalance()).isLessThan(DEFAULT_FEES.totalFee());
+            assertThat(accountsState.get(nodeSelfAccountId).tinybarBalance()).isEqualTo(DEFAULT_FEES.totalFee());
+        }
+
+        @Test
+        @DisplayName("Reject transaction, if it is a duplicate from same node")
+        void testDuplicateFromSameNode() {
+            // given
+            when(recordCache.hasDuplicate(OK_RESULT.txInfo().txBody().transactionID(), selfNodeInfo.nodeId()))
+                    .thenReturn(DuplicateCheckResult.SAME_NODE);
+
+            // when
+            workflow.handleRound(state, dualState, round);
+
+            // then
+            assertThat(accountsState.get(ALICE.accountID()).tinybarBalance()).isEqualTo(DEFAULT_FEES.totalFee());
+            assertThat(accountsState.get(nodeSelfAccountId).tinybarBalance()).isLessThan(DEFAULT_FEES.totalFee());
+        }
+
+        @ParameterizedTest
+        @EnumSource(names = {"INVALID_TRANSACTION_DURATION", "TRANSACTION_EXPIRED", "INVALID_TRANSACTION_START"})
+        @DisplayName("Reject transaction, if it does not fit in the time box")
+        void testExpiredTransactionFails(final ResponseCodeEnum responseCode) throws PreCheckException {
+            // given
+            doThrow(new PreCheckException(responseCode))
+                    .when(checker)
+                    .checkTimeBox(OK_RESULT.txInfo().txBody(), CONSENSUS_NOW);
+
+            // when
+            workflow.handleRound(state, dualState, round);
+
+            // then
+            final var block = getRecordFromStream();
+            assertThat(block).has(SingleTransactionRecordConditions.status(responseCode));
+            assertThat(accountsState.get(ALICE.accountID()).tinybarBalance()).isLessThan(DEFAULT_FEES.totalFee());
+            assertThat(accountsState.get(nodeSelfAccountId).tinybarBalance()).isEqualTo(DEFAULT_FEES.totalFee());
+        }
+
+        @ParameterizedTest
+        @EnumSource(names = {"INVALID_ACCOUNT_ID", "ACCOUNT_DELETED"})
+        @DisplayName("Reject transaction, if the payer account is not valid")
+        void testInvalidPayerAccountFails(final ResponseCodeEnum responseCode) throws PreCheckException {
+            // given
+            doThrow(new PreCheckException(responseCode))
+                    .when(solvencyPreCheck)
+                    .getPayerAccount(any(), eq(ALICE.accountID()));
+
+            // when
+            workflow.handleRound(state, dualState, round);
+
+            // then
+            final var block = getRecordFromStream();
+            assertThat(block).has(SingleTransactionRecordConditions.status(responseCode));
+            assertThat(accountsState.get(ALICE.accountID()).tinybarBalance()).isEqualTo(DEFAULT_FEES.totalFee());
+            assertThat(accountsState.get(nodeSelfAccountId).tinybarBalance()).isLessThan(DEFAULT_FEES.totalFee());
+        }
+
+        @ParameterizedTest
+        @EnumSource(
+                names = {
+                    "INSUFFICIENT_TX_FEE",
+                    "INVALID_TRANSACTION_BODY",
+                    "INSUFFICIENT_PAYER_BALANCE",
+                    "ACCOUNT_EXPIRED_AND_PENDING_REMOVAL"
+                })
+        @DisplayName("Reject transaction, if the payer cannot pay the fees")
+        void testInsolventPayerAccountFails(final ResponseCodeEnum responseCode) throws PreCheckException {
+            // given
+            doThrow(new PreCheckException(responseCode))
+                    .when(solvencyPreCheck)
+                    .checkSolvency(eq(OK_RESULT.txInfo()), any(), eq(DEFAULT_FEES.totalWithoutServiceFee()));
+
+            // when
+            workflow.handleRound(state, dualState, round);
+
+            // then
+            final var block = getRecordFromStream();
+            assertThat(block).has(SingleTransactionRecordConditions.status(responseCode));
+            assertThat(accountsState.get(ALICE.accountID()).tinybarBalance()).isEqualTo(DEFAULT_FEES.totalFee());
+            assertThat(accountsState.get(nodeSelfAccountId).tinybarBalance()).isLessThan(DEFAULT_FEES.totalFee());
+        }
+
+        @Test
+        @DisplayName("Reject transaction, if the payer is not authorized")
+        void testNonAuthorizedAccountFails() {
+            // given
+            when(authorizer.isAuthorized(ALICE.accountID(), OK_RESULT.txInfo().functionality()))
+                    .thenReturn(false);
+
+            // when
+            workflow.handleRound(state, dualState, round);
+
+            // then
+            final var block = getRecordFromStream();
+            assertThat(block).has(SingleTransactionRecordConditions.status(UNAUTHORIZED));
+            assertThat(accountsState.get(ALICE.accountID()).tinybarBalance()).isLessThan(DEFAULT_FEES.totalFee());
+            assertThat(accountsState.get(nodeSelfAccountId).tinybarBalance()).isEqualTo(DEFAULT_FEES.totalFee());
+        }
+
+        @Test
+        @DisplayName("Reject transaction, if the transaction is privileged and the payer is not authorized")
+        void testNonAuthorizedAccountFailsForPrivilegedTxn() {
+            // given
+            when(authorizer.hasPrivilegedAuthorization(
+                            ALICE.accountID(),
+                            OK_RESULT.txInfo().functionality(),
+                            OK_RESULT.txInfo().txBody()))
+                    .thenReturn(SystemPrivilege.UNAUTHORIZED);
+
+            // when
+            workflow.handleRound(state, dualState, round);
+
+            // then
+            final var block = getRecordFromStream();
+            assertThat(block).has(SingleTransactionRecordConditions.status(AUTHORIZATION_FAILED));
+            assertThat(accountsState.get(ALICE.accountID()).tinybarBalance()).isLessThan(DEFAULT_FEES.totalFee());
+            assertThat(accountsState.get(nodeSelfAccountId).tinybarBalance()).isEqualTo(DEFAULT_FEES.totalFee());
+        }
+
+        @Test
+        @DisplayName("Reject transaction, if the transaction is impermissible")
+        void testImpermissibleTransactionFails() {
+            // given
+            when(authorizer.hasPrivilegedAuthorization(
+                            ALICE.accountID(),
+                            OK_RESULT.txInfo().functionality(),
+                            OK_RESULT.txInfo().txBody()))
+                    .thenReturn(SystemPrivilege.IMPERMISSIBLE);
+
+            // when
+            workflow.handleRound(state, dualState, round);
+
+            // then
+            final var block = getRecordFromStream();
+            assertThat(block).has(SingleTransactionRecordConditions.status(ENTITY_NOT_ALLOWED_TO_DELETE));
+            assertThat(accountsState.get(ALICE.accountID()).tinybarBalance()).isLessThan(DEFAULT_FEES.totalFee());
+            assertThat(accountsState.get(nodeSelfAccountId).tinybarBalance()).isEqualTo(DEFAULT_FEES.totalFee());
+        }
+
+        @ParameterizedTest
+        @EnumSource(names = {"UNNECESSARY", "AUTHORIZED"})
+        @DisplayName("Accept transaction, if the transaction is not privileged or the payer is authorized")
+        void testAuthorizedAccountFailsForPrivilegedTxn(final SystemPrivilege privilege) {
+            // given
+            when(authorizer.hasPrivilegedAuthorization(
+                            ALICE.accountID(),
+                            OK_RESULT.txInfo().functionality(),
+                            OK_RESULT.txInfo().txBody()))
+                    .thenReturn(privilege);
+
+            // when
+            workflow.handleRound(state, dualState, round);
+
+            // then
+            final var block = getRecordFromStream();
+            assertThat(block).has(SingleTransactionRecordConditions.status(SUCCESS));
+        }
+    }
+
+    @Nested
     @DisplayName("Tests for special cases during transaction dispatching")
     final class DispatchTest {
         @Test
@@ -1129,7 +1460,7 @@ class HandleWorkflowTest extends AppTestBase {
             doThrow(new HandleException(ResponseCodeEnum.INVALID_SIGNATURE))
                     .when(dispatcher)
                     .dispatchHandle(any());
-            workflow.handleRound(state, round);
+            workflow.handleRound(state, dualState, round);
 
             // then
             assertThat(aliasesState.isModified()).isFalse();
@@ -1141,7 +1472,7 @@ class HandleWorkflowTest extends AppTestBase {
         void testUnknownFailure() {
             // when
             doThrow(new ArrayIndexOutOfBoundsException()).when(dispatcher).dispatchHandle(any());
-            workflow.handleRound(state, round);
+            workflow.handleRound(state, dualState, round);
 
             // then
             assertThat(accountsState.isModified()).isFalse();
@@ -1160,7 +1491,7 @@ class HandleWorkflowTest extends AppTestBase {
         @Test
         void testSimpleRun() {
             // when
-            workflow.handleRound(state, round);
+            workflow.handleRound(state, dualState, round);
 
             // then
             verify(blockRecordManager).startUserTransaction(CONSENSUS_NOW, state);
@@ -1171,7 +1502,15 @@ class HandleWorkflowTest extends AppTestBase {
 
     @Test
     void testConsensusTimeHookCalled() {
-        workflow.handleRound(state, round);
+        workflow.handleRound(state, dualState, round);
         verify(stakingPeriodTimeHook).process(any());
+    }
+
+    private SingleTransactionRecord getRecordFromStream() {
+        final var argument = ArgumentCaptor.forClass(Stream.class);
+        verify(blockRecordManager).endUserTransaction(argument.capture(), eq(state));
+        final var blockStream = argument.getValue().toList();
+        assertThat(blockStream).isNotEmpty();
+        return (SingleTransactionRecord) blockStream.get(0);
     }
 }

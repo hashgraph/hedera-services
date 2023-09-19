@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.token.impl.test.fixtures;
 
 import com.hedera.hapi.node.base.AccountAmount;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenAssociation;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
@@ -37,6 +38,12 @@ public class FakeCryptoTransferRecordBuilder {
             private List<AssessedCustomFee> assessedCustomFees;
             private List<AccountAmount> paidStakingRewards;
             private List<TokenAssociation> automaticTokenAssociations;
+
+            @NotNull
+            @Override
+            public ResponseCodeEnum status() {
+                return ResponseCodeEnum.SUCCESS;
+            }
 
             @NotNull
             @Override

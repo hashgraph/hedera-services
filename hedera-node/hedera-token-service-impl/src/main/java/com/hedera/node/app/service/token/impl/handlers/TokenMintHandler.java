@@ -32,6 +32,7 @@ import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.*;
+import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
 import com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator;
 import com.hedera.node.app.service.token.records.TokenMintRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -94,9 +95,9 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
         final var tokenStore = context.writableStore(WritableTokenStore.class);
         final var tokenRelStore = context.writableStore(WritableTokenRelationStore.class);
         final var accountStore = context.writableStore(WritableAccountStore.class);
-        // validate token exists
-        final var token = tokenStore.get(tokenId);
-        validateTrue(token != null, INVALID_TOKEN_ID);
+        // validate token exists and is usable
+        final var token = TokenHandlerHelper.getIfUsable(tokenId, tokenStore);
+
         // validate treasury relation exists
         final var treasuryRel = tokenRelStore.get(token.treasuryAccountId(), tokenId);
         validateTrue(treasuryRel != null, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
@@ -182,7 +183,8 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
 
         // Change the supply on token
         changeSupply(token, treasuryRel, metadataCount, FAIL_INVALID, accountStore, tokenStore, tokenRelStore);
-
+        // The token is modified in previous step, so we need to get the modified token
+        final var modifiedToken = tokenStore.get(token.tokenId());
         final var mintedSerials = new ArrayList<Long>(metadata.size());
 
         // for each serial number minted increment serial numbers and create new unique token
@@ -197,7 +199,7 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
         }
         // Update last used serial number and number of owned nfts and put the updated token and treasury
         // into the store
-        final var copyToken = token.copyBuilder();
+        final var copyToken = modifiedToken.copyBuilder();
         final var copyTreasury = treasuryAccount.copyBuilder();
         // Update Token and treasury
         copyToken.lastUsedSerialNumber(currentSerialNumber);

@@ -28,6 +28,7 @@ import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
+import com.hedera.node.app.fees.FeeService;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.info.CurrentPlatformStatusImpl;
 import com.hedera.node.app.info.NetworkInfoImpl;
@@ -38,16 +39,13 @@ import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.service.mono.utils.NamedDigestFactory;
-import com.hedera.node.app.service.networkadmin.ReadableRunningHashLeafStore;
 import com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl;
 import com.hedera.node.app.service.networkadmin.impl.NetworkServiceImpl;
 import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.util.impl.UtilServiceImpl;
-import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.spi.HapiUtils;
-import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
@@ -75,6 +73,7 @@ import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.events.Event;
+import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.common.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -121,21 +120,8 @@ public final class Hedera implements SwirldMain {
     private static final Logger logger = LogManager.getLogger(Hedera.class);
     // FUTURE: This should come from configuration, not be hardcoded.
     public static final int MAX_SIGNED_TXN_SIZE = 6144;
-
-    /**
-     * Defines the registration information for a service.
-     *
-     * @param name     The name of the service.
-     * @param service  The service implementation itself.
-     * @param registry The {@link MerkleSchemaRegistry} with which the service registers its schemas.
-     */
-    private record ServiceRegistration(
-            @NonNull String name, @NonNull Service service, @NonNull MerkleSchemaRegistry registry) {}
-
-    /** Required for state management. Used by platform for deserialization of state. */
-    private final ConstructableRegistry constructableRegistry;
     /** The registry of all known services */
-    private final ServicesRegistry servicesRegistry;
+    private final ServicesRegistryImpl servicesRegistry;
     /** The current version of THIS software */
     private final HederaSoftwareVersion version;
     /** The configuration at the time of bootstrapping the node */
@@ -154,6 +140,8 @@ public final class Hedera implements SwirldMain {
      * and used to initialize the system, and more concrete dependencies are used from there.
      */
     private HederaInjectionComponent daggerApp;
+    /** Indicates whether the platform is active */
+    private PlatformStatus platformStatus = PlatformStatus.STARTING_UP;
 
     /*==================================================================================================================
     *
@@ -167,7 +155,7 @@ public final class Hedera implements SwirldMain {
      * @param constructableRegistry The registry to use during the deserialization process
      */
     public Hedera(@NonNull final ConstructableRegistry constructableRegistry) {
-        this.constructableRegistry = requireNonNull(constructableRegistry);
+        requireNonNull(constructableRegistry);
 
         // Print welcome message
         logger.info(
@@ -185,7 +173,7 @@ public final class Hedera implements SwirldMain {
                             -----------------------
                                 ---------------
                         """);
-        logger.info("Welcome to Hedera! Developed with love by the Open Source Community. "
+        logger.info("Welcome to Hedera! Developed with ❤\uFE0F by the Open Source Community. "
                 + "https://github.com/hashgraph/hedera-services");
 
         // Load the bootstrap configuration. These config values are NOT stored in state, so we don't need to have
@@ -212,18 +200,21 @@ public final class Hedera implements SwirldMain {
         // Create all the service implementations
         logger.info("Registering services");
         // FUTURE: Use the service loader framework to load these services!
-        this.servicesRegistry = new ServicesRegistryImpl(Set.of(
-                new ConsensusServiceImpl(),
-                CONTRACT_SERVICE,
-                new FileServiceImpl(),
-                new FreezeServiceImpl(),
-                new NetworkServiceImpl(),
-                new ScheduleServiceImpl(),
-                new TokenServiceImpl(),
-                new UtilServiceImpl(),
-                new RecordCacheService(),
-                new BlockRecordService(),
-                new EntityIdService()));
+        this.servicesRegistry = new ServicesRegistryImpl(constructableRegistry);
+        Set.of(
+                        new ConsensusServiceImpl(),
+                        CONTRACT_SERVICE,
+                        new FileServiceImpl(),
+                        new FreezeServiceImpl(),
+                        new NetworkServiceImpl(),
+                        new ScheduleServiceImpl(),
+                        new TokenServiceImpl(),
+                        new UtilServiceImpl(),
+                        new RecordCacheService(),
+                        new BlockRecordService(),
+                        new EntityIdService(),
+                        new FeeService())
+                .forEach(servicesRegistry::register);
 
         // Register MerkleHederaState with the ConstructableRegistry, so we can use a constructor OTHER THAN the default
         // constructor to make sure it has the config and other info it needs to be created correctly.
@@ -240,6 +231,15 @@ public final class Hedera implements SwirldMain {
     /** Gets the port the gRPC server is listening on, or {@code -1} if there is no server listening. */
     public int getGrpcPort() {
         return daggerApp.grpcServerManager().port();
+    }
+
+    /**
+     * Indicates whether this node is UP and ready for business.
+     * @return True if the platform is active and the gRPC server is running.
+     */
+    public boolean isActive() {
+        return platformStatus == PlatformStatus.ACTIVE
+                && daggerApp.grpcServerManager().isRunning();
     }
 
     /**
@@ -328,8 +328,8 @@ public final class Hedera implements SwirldMain {
         // here. This is intentional so as to avoid forgetting to handle a new trigger.
         try {
             switch (trigger) {
-                case GENESIS -> genesis(state, dualState);
-                case RESTART -> restart(state, dualState, deserializedVersion);
+                case GENESIS -> genesis(state);
+                case RESTART -> restart(state, deserializedVersion);
                 case RECONNECT -> reconnect();
                     // We exited from this method early if we were recovering from an event stream.
                 case EVENT_STREAM_RECOVERY -> throw new RuntimeException("Should never be reached");
@@ -344,14 +344,21 @@ public final class Hedera implements SwirldMain {
         // assertion will hold true.
         assert configProvider != null : "Config Provider *must* have been set by now!";
 
-        // Since we now have an "app" instance, we can update the dual state accessor. This is *ONLY* used by the app to
-        // produce a log summary after a freeze. We should refactor to not have a global reference to this.
-        updateDualState(dualState);
+        // Some logging on what we found about freeze in the dual state
+        logger.info(
+                "Dual state includes freeze time={} and last frozen={}",
+                dualState.getFreezeTime(),
+                dualState.getLastFrozenTime());
     }
 
     /**
-     * Called by this class when we detect it is time to do migration. This is only used as part of genesis or restart,
-     * not as a result of reconnect.
+     * Called by this class when we detect it is time to do migration. The {@code deserializedVersion} must not be
+     * newer than the current software version. If it is prior to the current version, then each migration between
+     * the {@code deserializedVersion} and the current version, including the current version, will be executed, thus
+     * bringing the state up to date.
+     *
+     * <p>If the {@code deserializedVersion} is {@code null}, then this is the first time the node has been started,
+     * and thus all schemas will be executed.
      */
     private void onMigrate(
             @NonNull final MerkleHederaState state, @Nullable final HederaSoftwareVersion deserializedVersion) {
@@ -366,13 +373,12 @@ public final class Hedera implements SwirldMain {
         final var nodeAddress = platform.getAddressBook().getAddress(selfId);
         final var selfNodeInfo = SelfNodeInfoImpl.of(nodeAddress, version);
         final var networkInfo = new NetworkInfoImpl(selfNodeInfo, platform, bootstrapConfigProvider);
-        for (final var service : servicesRegistry.services()) {
+        for (final var registration : servicesRegistry.registrations()) {
             // FUTURE We should have metrics here to keep track of how long it takes to migrate each service
+            final var service = registration.service();
             final var serviceName = service.getServiceName();
-            final var registry = new MerkleSchemaRegistry(constructableRegistry, serviceName);
-            logger.debug("Registering schemas for service {}", serviceName);
-            service.registerSchemas(registry);
             logger.info("Migrating Service {}", serviceName);
+            final var registry = (MerkleSchemaRegistry) registration.registry();
             registry.migrate(state, previousVersion, currentVersion, configProvider.getConfiguration(), networkInfo);
         }
         logger.info("Migration complete");
@@ -429,6 +435,7 @@ public final class Hedera implements SwirldMain {
             // server when we fall behind or ISS.
             final var notifications = platform.getNotificationEngine();
             notifications.register(PlatformStatusChangeListener.class, notification -> {
+                platformStatus = notification.getNewStatus();
                 switch (notification.getNewStatus()) {
                     case ACTIVE -> logger.info("Hederanode#{} is ACTIVE", nodeId);
                     case BEHIND -> {
@@ -460,12 +467,16 @@ public final class Hedera implements SwirldMain {
             // tempted to say that each service has lifecycle methods we can invoke (optional methods on the Service
             // interface), but I worry about the order of invocation on different services. Which service gets called
             // before which other service? Does it matter?
+            // ANSWER: We need to look and see if there is an update to the upgrade file that happened on other nodes
+            // that we reconnected with. In that case, we need to save the file to disk. Similar to how we have to hook
+            // for all the other special files on restart / genesis / reconnect.
 
             // TBD: notifications.register(StateWriteToDiskCompleteListener.class,
             // It looks like this notification is handled by
             // com.hedera.node.app.service.mono.state.logic.StateWriteToDiskListener
             // which looks like it is related to freeze / upgrade.
             // daggerApp.stateWriteToDiskListener());
+            // see issue #8660
 
             // TBD: notifications.register(NewSignedStateListener.class, daggerApp.newSignedStateListener());
             // com.hedera.node.app.service.mono.state.exports.NewSignedStateListener
@@ -560,7 +571,7 @@ public final class Hedera implements SwirldMain {
     private void onHandleConsensusRound(
             @NonNull final Round round, @NonNull final SwirldDualState dualState, @NonNull final HederaState state) {
         daggerApp.workingStateAccessor().setHederaState(state);
-        daggerApp.handleWorkflow().handleRound(state, round);
+        daggerApp.handleWorkflow().handleRound(state, dualState, round);
     }
 
     /*==================================================================================================================
@@ -588,7 +599,7 @@ public final class Hedera implements SwirldMain {
     =================================================================================================================*/
 
     /** Implements the code flow for initializing the state of a new Hedera node with NO SAVED STATE. */
-    private void genesis(@NonNull final MerkleHederaState state, @NonNull final SwirldDualState dualState) {
+    private void genesis(@NonNull final MerkleHederaState state) {
         logger.debug("Genesis Initialization");
 
         // Initialize the configuration from disk (genesis case). We must do this BEFORE we run migration, because
@@ -604,7 +615,7 @@ public final class Hedera implements SwirldMain {
         this.throttleManager = new ThrottleManager();
 
         logger.info("Initializing ExchangeRateManager");
-        exchangeRateManager = new ExchangeRateManager();
+        exchangeRateManager = new ExchangeRateManager(configProvider);
 
         // Create all the nodes in the merkle tree for all the services
         onMigrate(state, null);
@@ -618,6 +629,110 @@ public final class Hedera implements SwirldMain {
         initializeFeeManager(state);
         initializeExchangeRateManager(state);
         initializeThrottleManager(state);
+    }
+
+    /*==================================================================================================================
+    *
+    * Restart Initialization
+    *
+    =================================================================================================================*/
+
+    /** Initialize flow for when a node has been restarted. This means it was started from a saved state. */
+    private void restart(
+            @NonNull final MerkleHederaState state, @Nullable final HederaSoftwareVersion deserializedVersion) {
+        logger.debug("Restart Initialization");
+
+        // The deserialized version can ONLY be null if we are in genesis, otherwise something is wrong with the state
+        if (deserializedVersion == null) {
+            logger.fatal("Fatal error, previous software version not found in saved state!");
+            System.exit(1);
+        }
+
+        // Initialize the configuration from disk (restart case). We must do this BEFORE we run migration, because
+        // the various migration methods may depend on configuration to do their work
+        logger.info("Initializing restart configuration");
+        this.configProvider = new ConfigProviderImpl(false);
+        logConfiguration();
+
+        logger.info("Initializing ThrottleManager");
+        this.throttleManager = new ThrottleManager();
+
+        logger.info("Initializing ExchangeRateManager");
+        exchangeRateManager = new ExchangeRateManager(configProvider);
+
+        // Create all the nodes in the merkle tree for all the services
+        // TODO: Actually, we should reinitialize the config on each step along the migration path, so we should pass
+        //       the config provider to the migration code and let it get the right version of config as it goes.
+        onMigrate(state, deserializedVersion);
+
+        // Now that we have the state created, we are ready to create the dependency graph with Dagger
+        initializeDagger(state, RESTART);
+
+        // And now that the entire dependency graph has been initialized, and we have config, and all migration has
+        // been completed, we are prepared to initialize in-memory data structures. These specifically are loaded
+        // from information held in state (especially those in special files).
+        initializeFeeManager(state);
+        initializeExchangeRateManager(state);
+        initializeThrottleManager(state);
+        // TODO We may need to update the config with the latest version in file 121
+    }
+
+    /*==================================================================================================================
+    *
+    * Reconnect Initialization
+    *
+    =================================================================================================================*/
+
+    private void reconnect() {
+        // No-op
+    }
+
+    /*==================================================================================================================
+    *
+    * Random private helper methods
+    *
+    =================================================================================================================*/
+
+    private void initializeDagger(@NonNull final MerkleHederaState state, @NonNull final InitTrigger trigger) {
+        logger.debug("Initializing dagger");
+        final var selfId = platform.getSelfId();
+        if (daggerApp == null) {
+            final var nodeAddress = platform.getAddressBook().getAddress(selfId);
+            // Fully qualified so as to not confuse javadoc
+            daggerApp = com.hedera.node.app.DaggerHederaInjectionComponent.builder()
+                    .initTrigger(trigger)
+                    .configuration(configProvider)
+                    .throttleManager(throttleManager)
+                    .exchangeRateManager(exchangeRateManager)
+                    .systemFileUpdateFacility(
+                            new SystemFileUpdateFacility(configProvider, throttleManager, exchangeRateManager))
+                    .self(SelfNodeInfoImpl.of(nodeAddress, version))
+                    .platform(platform)
+                    .maxSignedTxnSize(MAX_SIGNED_TXN_SIZE)
+                    .crypto(CryptographyHolder.get())
+                    .currentPlatformStatus(new CurrentPlatformStatusImpl(platform))
+                    .servicesRegistry(servicesRegistry)
+                    .bootstrapProps(new BootstrapProperties(false)) // TBD REMOVE
+                    .instantSource(InstantSource.system())
+                    .build();
+
+            daggerApp.workingStateAccessor().setHederaState(state);
+        }
+    }
+
+    private boolean isDowngrade(
+            final HederaSoftwareVersion deployedVersion, final SoftwareVersion deserializedVersion) {
+        return deployedVersion.isBefore(deserializedVersion);
+    }
+
+    private void logConfiguration() {
+        if (logger.isInfoEnabled()) {
+            final var config = configProvider.getConfiguration();
+            final var lines = new ArrayList<String>();
+            lines.add("Active Configuration:");
+            Utils.allProperties(config).forEach((key, value) -> lines.add(key + " = " + value));
+            logger.info(String.join("\n", lines));
+        }
     }
 
     private void initializeFeeManager(@NonNull final HederaState state) {
@@ -639,7 +754,7 @@ public final class Hedera implements SwirldMain {
         final var file = getFileFromStorage(state, fileNum);
         if (file != null) {
             final var fileData = file.contents();
-            daggerApp.exchangeRateManager().update(fileData);
+            daggerApp.exchangeRateManager().init(state, fileData);
         }
         logger.info("Exchange rates initialized");
     }
@@ -665,143 +780,5 @@ public final class Hedera implements SwirldMain {
                 .realmNum(hederaConfig.realm())
                 .build();
         return readableFileStore.getFileLeaf(fileId);
-    }
-
-    /*==================================================================================================================
-    *
-    * Restart Initialization
-    *
-    =================================================================================================================*/
-
-    /** Initialize flow for when a node has been restarted. This means it was started from a saved state. */
-    private void restart(
-            @NonNull final MerkleHederaState state,
-            @NonNull final SwirldDualState dualState,
-            @Nullable final HederaSoftwareVersion deserializedVersion) {
-        logger.debug("Restart Initialization");
-
-        // The deserialized version can ONLY be null if we are in genesis, otherwise something is wrong with the state
-        if (deserializedVersion == null) {
-            logger.fatal("Fatal error, previous software version not found in saved state!");
-            System.exit(1);
-        }
-
-        // This configuration is based on what is in state *RIGHT NOW*, before any possible upgrade. This is the config
-        // that must be passed to the migration methods.
-        // TODO: Actually, we should reinitialize the config on each step along the migration path, so we should pass
-        //       the config provider to the migration code and let it get the right version of config as it goes.
-        logger.info("Initializing Configuration");
-        this.configProvider = new ConfigProviderImpl(false);
-
-        // Migrate to the most recent state, if needed
-        final boolean upgrade = isUpgrade(version, deserializedVersion);
-        if (upgrade) {
-            logger.debug("Upgrade detected");
-            onMigrate(state, deserializedVersion);
-        }
-
-        // TODO Update the configuration with whatever is the new latest version in state. In reality, we shouldn't
-        //      be messing with configuration during migration, but it could happen (by the file service), so we should
-        //      be defensive about it so the software is always correct, even in that very unlikely scenario.
-        //        this.configProvider.update(null);
-
-        // Now that we have the state created, we are ready to create the all the dagger dependencies
-        initializeDagger(state, RESTART);
-
-        // We may still want to change the address book without an upgrade. But note
-        // that without a dynamic address book, this MUST be a no-op during reconnect.
-        //        final var stakingInfo = stateChildren.stakingInfo();
-        //        final var networkCtx = stateChildren.networkCtx();
-        //        daggerApp.stakeStartupHelper().doRestartHousekeeping(stateChildren.addressBook(), stakingInfo);
-        //        if (upgrade) {
-        //            dualState.setFreezeTime(null);
-        //            networkCtx.discardPreparedUpgradeMeta();
-        ////            if (version.hasMigrationRecordsFrom(deserializedVersion)) {
-        ////                networkCtx.markMigrationRecordsNotYetStreamed();
-        ////            }
-        //        }
-
-        // This updates the working state accessor with our children
-        //        daggerApp.initializationFlow().runWith(stateChildren, configProvider);
-        //        if (upgrade) {
-        //            daggerApp.stakeStartupHelper().doUpgradeHousekeeping(networkCtx, stateChildren.accounts(),
-        // stakingInfo);
-        //        }
-
-        // Once we have a dynamic address book, this will run unconditionally
-        //        daggerApp.sysFilesManager().updateStakeDetails();
-    }
-
-    /*==================================================================================================================
-    *
-    * Reconnect Initialization
-    *
-    =================================================================================================================*/
-
-    private void reconnect() {
-        // No-op
-    }
-
-    /*==================================================================================================================
-    *
-    * Random private helper methods
-    *
-    =================================================================================================================*/
-
-    private void initializeDagger(@NonNull final MerkleHederaState state, @NonNull final InitTrigger trigger) {
-        logger.debug("Initializing dagger");
-        final var selfId = platform.getSelfId();
-        if (daggerApp == null) {
-            final var nodeAddress = platform.getAddressBook().getAddress(selfId);
-            final var runningHashStore = new ReadableStoreFactory(state).getStore(ReadableRunningHashLeafStore.class);
-            final var initialHash = runningHashStore.getRunningHash();
-            // Fully qualified so as to not confuse javadoc
-            daggerApp = com.hedera.node.app.DaggerHederaInjectionComponent.builder()
-                    .initTrigger(trigger)
-                    .configuration(configProvider)
-                    .throttleManager(throttleManager)
-                    .exchangeRateManager(exchangeRateManager)
-                    .systemFileUpdateFacility(
-                            new SystemFileUpdateFacility(configProvider, throttleManager, exchangeRateManager))
-                    .self(SelfNodeInfoImpl.of(nodeAddress, version))
-                    .initialHash(initialHash)
-                    .platform(platform)
-                    .maxSignedTxnSize(MAX_SIGNED_TXN_SIZE)
-                    .crypto(CryptographyHolder.get())
-                    .currentPlatformStatus(new CurrentPlatformStatusImpl(platform))
-                    .servicesRegistry(servicesRegistry)
-                    .bootstrapProps(new BootstrapProperties(false)) // TBD REMOVE
-                    .instantSource(InstantSource.system())
-                    .build();
-
-            daggerApp.workingStateAccessor().setHederaState(state);
-        }
-    }
-
-    private void updateDualState(final SwirldDualState dualState) {
-        //        daggerApp.dualStateAccessor().setDualState(dualState);
-        logger.info(
-                "Dual state includes freeze time={} and last frozen={}",
-                dualState.getFreezeTime(),
-                dualState.getLastFrozenTime());
-    }
-
-    private boolean isUpgrade(final HederaSoftwareVersion deployedVersion, final SoftwareVersion deserializedVersion) {
-        return deployedVersion.isAfter(deserializedVersion);
-    }
-
-    private boolean isDowngrade(
-            final HederaSoftwareVersion deployedVersion, final SoftwareVersion deserializedVersion) {
-        return deployedVersion.isBefore(deserializedVersion);
-    }
-
-    private void logConfiguration() {
-        if (logger.isInfoEnabled()) {
-            final var config = configProvider.getConfiguration();
-            final var lines = new ArrayList<String>();
-            lines.add("Active Configuration:");
-            Utils.allProperties(config).forEach((key, value) -> lines.add(key + " = " + value));
-            logger.info(String.join("\n", lines));
-        }
     }
 }

@@ -65,6 +65,7 @@ import com.hedera.services.stream.proto.AllAccountBalances;
 import com.hedera.services.stream.proto.SingleAccountBalances;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -98,7 +99,6 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class HapiSpec implements Runnable {
     private static final AtomicLong NEXT_AUTO_SCHEDULE_NUM = new AtomicLong(1);
@@ -475,6 +475,9 @@ public class HapiSpec implements Runnable {
                 status = FAILED;
                 failure = maybeRecordStreamError.get();
             }
+        } else if (assertions != null) {
+            assertions.forEach(EventualRecordStreamAssertion::unsubscribe);
+            RECORD_STREAM_ACCESS.stopMonitorIfNoSubscribers();
         }
 
         tearDown();
@@ -791,8 +794,12 @@ public class HapiSpec implements Runnable {
 
     public static Map<String, String> ciPropOverrides() {
         if (ciPropsSource == null) {
-            dynamicNodes =
-                    Stream.of(dynamicNodes.split(",")).map(s -> s + ":" + 50211).collect(joining(","));
+            // Make sure there is a port number specified for each node. Note that the node specification
+            // is expected to be in the form of <host>[:<port>[:<account>]]. If port is not specified we will
+            // default to 50211, if account is not specified, we leave it off.
+            dynamicNodes = Stream.of(dynamicNodes.split(","))
+                    .map(s -> s.contains(":") ? s : s + ":" + 50211)
+                    .collect(joining(","));
             String ciPropertiesMap =
                     Optional.ofNullable(System.getenv("CI_PROPERTIES_MAP")).orElse("");
             log.info("CI_PROPERTIES_MAP: {}", ciPropertiesMap);

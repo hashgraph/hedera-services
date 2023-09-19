@@ -56,6 +56,8 @@ import com.swirlds.platform.event.tipset.TipsetUtils;
 import com.swirlds.platform.event.tipset.TipsetWeightCalculator;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -65,8 +67,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicReference;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -848,6 +848,37 @@ class TipsetEventCreatorImplTests {
 
         // It should not be possible to create another event since we have exhausted all possible other parents in the
         // address book.
+        assertNull(eventCreator.maybeCreateEvent());
+    }
+
+    /**
+     * There was once a bug where it was possible to create a self event that was stale at the moment of its creation
+     * time. This test verifies that this is no longer possible.
+     */
+    @Test
+    @DisplayName("No Stale Events At Creation Time Test")
+    void noStaleEventsAtCreationTimeTest() {
+        final Random random = getRandomPrintSeed();
+
+        final int networkSize = 4;
+
+        final AddressBook addressBook = new RandomAddressBookGenerator(random)
+                .setCustomWeightGenerator(x -> 1L)
+                .setSize(networkSize)
+                .build();
+
+        final FakeTime time = new FakeTime();
+
+        final NodeId nodeA = addressBook.getNodeId(0); // self
+
+        final TipsetEventCreator eventCreator =
+                buildEventCreator(random, time, addressBook, nodeA, () -> new ConsensusTransactionImpl[0]);
+
+        eventCreator.setMinimumGenerationNonAncient(100);
+
+        // Since there are no other parents available, the next event created would have a generation of 0
+        // (if event creation were permitted). Since the current minimum generation non ancient is 100,
+        // that event would be stale at the moment of its creation.
         assertNull(eventCreator.maybeCreateEvent());
     }
 }

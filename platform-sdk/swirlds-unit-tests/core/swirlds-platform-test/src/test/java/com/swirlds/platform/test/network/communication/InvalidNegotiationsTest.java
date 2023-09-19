@@ -21,15 +21,14 @@ import static com.swirlds.platform.network.communication.NegotiatorBytes.KEEPALI
 import static com.swirlds.platform.test.network.communication.NegotiatorTestSuite.PROTOCOL_1;
 import static com.swirlds.platform.test.network.communication.NegotiatorTestSuite.PROTOCOL_2;
 import static com.swirlds.platform.test.network.communication.NegotiatorTestSuite.PROTOCOL_3;
-import static org.junit.Assert.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.platform.network.communication.NegotiationException;
 import com.swirlds.platform.network.communication.NegotiatorBytes;
 import java.io.EOFException;
 import java.io.IOException;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -40,7 +39,7 @@ class InvalidNegotiationsTest {
         final NegotiatorTestSuite suite = new NegotiatorTestSuite();
         suite.input(ACCEPT);
         suite.expectedOutput(KEEPALIVE);
-        Assertions.assertThrows(
+        assertThrows(
                 NegotiationException.class,
                 suite::execute,
                 "an ACCEPT sent at the beginning of the negotiation is not valid and should throw");
@@ -53,7 +52,7 @@ class InvalidNegotiationsTest {
         final NegotiatorTestSuite suite = new NegotiatorTestSuite();
         suite.input(-100);
         suite.expectedOutput(KEEPALIVE);
-        Assertions.assertThrows(
+        assertThrows(
                 NegotiationException.class,
                 suite::execute,
                 "an negative byte sent at any point in the negotiation is not valid and should throw");
@@ -66,7 +65,7 @@ class InvalidNegotiationsTest {
         final NegotiatorTestSuite suite = new NegotiatorTestSuite();
         suite.input(NegotiatorBytes.END_OF_STREAM_BYTE);
         suite.expectedOutput(KEEPALIVE);
-        Assertions.assertThrows(
+        assertThrows(
                 EOFException.class,
                 suite::execute,
                 "an END_OF_STREAM_BYTE sent at any point in the negotiation is not valid and should throw");
@@ -79,7 +78,7 @@ class InvalidNegotiationsTest {
         final NegotiatorTestSuite suite = new NegotiatorTestSuite();
         suite.input(NegotiatorTestSuite.INVALID_PROTOCOL);
         suite.expectedOutput(KEEPALIVE);
-        Assertions.assertThrows(
+        assertThrows(
                 NegotiationException.class, suite::execute, "if a non-existent protocol ID is sent it should throw");
         suite.assertProtocolRuns(0, 0, 0);
     }
@@ -91,7 +90,7 @@ class InvalidNegotiationsTest {
         suite.getProtocol(PROTOCOL_2).setShouldInitiate(true);
         suite.input(KEEPALIVE, PROTOCOL_2);
         suite.expectedOutput(PROTOCOL_2);
-        Assertions.assertThrows(
+        assertThrows(
                 NegotiationException.class,
                 suite::execute,
                 "if the negotiator initiated a protocol, we are expected to reply ACCEPT or REJECT. "

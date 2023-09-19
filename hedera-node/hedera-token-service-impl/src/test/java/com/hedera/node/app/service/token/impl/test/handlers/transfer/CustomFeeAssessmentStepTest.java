@@ -58,7 +58,7 @@ class CustomFeeAssessmentStepTest extends StepsBase {
         givenTxn();
         given(handleContext.body()).willReturn(txn);
         given(handleContext.recordBuilder(CryptoTransferRecordBuilder.class)).willReturn(xferRecordBuilder);
-        givenAutoCreationDispatchEffects();
+        givenAutoCreationDispatchEffects(payerId);
 
         transferContext = new TransferContextImpl(handleContext);
         ensureAliasesStep = new EnsureAliasesStep(body);
@@ -419,13 +419,13 @@ class CustomFeeAssessmentStepTest extends StepsBase {
     private void givenDifferentTxn(final CryptoTransferTransactionBody body, final AccountID payerId) {
         givenStoresAndConfig(handleContext);
         givenTxn(body, payerId);
-        given(handleContext.body()).willReturn(txn);
-        givenAutoCreationDispatchEffects();
+        givenAutoCreationDispatchEffects(payerId);
 
         transferContext = new TransferContextImpl(handleContext);
         ensureAliasesStep = new EnsureAliasesStep(body);
         replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
         associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
+        System.out.println("Before " + handleContext.payer());
 
         final var replacedOp = getReplacedOp();
         subject = new CustomFeeAssessmentStep(replacedOp, transferContext);

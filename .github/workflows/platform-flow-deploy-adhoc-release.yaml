@@ -50,15 +50,9 @@ permissions:
 jobs:
   develop-release-commit:
     name: "Branch"
-    uses: ./.github/workflows/platform-zxc-release-internal.yaml
-    with:
-      java-version: ${{ github.event.inputs.java-version || '17.0.3' }}
-      java-distribution: ${{ github.event.inputs.java-distribution || 'temurin' }}
-      gradle-version: ${{ github.event.inputs.gradle-version || 'wrapper' }}
-      deployment-profile: adhoc-commit
-      version-policy: commit-locked
-      prerelease-prefix: adhoc
-      custom-job-label: "Release / Adhoc"
-      dry-run-enabled: ${{ github.event.inputs.dry-run-enabled == 'true' }}
-    secrets:
-      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
+    runs-on: [self-hosted, Linux, medium, ephemeral]
+    steps:
+      - name: Deprecation Error
+        run: |
+          echo "::error title=Deprecation Error::This workflow is deprecated. Please use the 'Node: Deploy Adhoc Release' workflow instead."
+          exit 1
