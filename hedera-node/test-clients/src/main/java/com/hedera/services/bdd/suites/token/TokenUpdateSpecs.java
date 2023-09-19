@@ -134,6 +134,7 @@ public class TokenUpdateSpecs extends HapiSuite {
                 tokenUpdateCanClearMemo());
     }
 
+    @HapiTest
     private HapiSpec validatesNewExpiry() {
         final var smallBuffer = 12_345L;
         final var okExpiry = defaultMaxLifetime + Instant.now().getEpochSecond() - smallBuffer;
@@ -177,6 +178,7 @@ public class TokenUpdateSpecs extends HapiSuite {
                                 .hasKnownStatus(TOKEN_IS_IMMUTABLE));
     }
 
+    @HapiTest
     private HapiSpec standardImmutabilitySemanticsHold() {
         long then = Instant.now().getEpochSecond() + 1_234_567L;
         final var immutable = "immutable";
@@ -308,6 +310,7 @@ public class TokenUpdateSpecs extends HapiSuite {
                         tokenUpdate("tbu").treasury("newTreasury"));
     }
 
+    @HapiTest
     public HapiSpec treasuryEvolves() {
         return defaultHapiSpec("TreasuryEvolves")
                 .given(
@@ -403,6 +406,7 @@ public class TokenUpdateSpecs extends HapiSuite {
                 .then(tokenUpdate("tbu").symbol(tooLongSymbol).hasPrecheck(TOKEN_SYMBOL_TOO_LONG));
     }
 
+    @HapiTest
     public HapiSpec deletedAutoRenewAccountCheckHolds() {
         return defaultHapiSpec("DeletedAutoRenewAccountCheckHolds")
                 .given(
@@ -417,6 +421,7 @@ public class TokenUpdateSpecs extends HapiSuite {
                         .hasKnownStatus(INVALID_AUTORENEW_ACCOUNT));
     }
 
+    @HapiTest
     public HapiSpec renewalPeriodCheckHolds() {
         return defaultHapiSpec("RenewalPeriodCheckHolds")
                 .given(
@@ -457,6 +462,7 @@ public class TokenUpdateSpecs extends HapiSuite {
                 .then(tokenUpdate("tbu").treasury(INVALID_TREASURY).hasKnownStatus(ACCOUNT_DELETED));
     }
 
+    @HapiTest
     public HapiSpec updateHappyPath() {
         String originalMemo = "First things first";
         String updatedMemo = "Nothing left to do";
@@ -564,6 +570,7 @@ public class TokenUpdateSpecs extends HapiSuite {
                         .hasKnownStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES));
     }
 
+    @HapiTest
     public HapiSpec tokenUpdateCanClearMemo() {
         final var token = "token";
         final var multiKey = "multiKey";
@@ -577,6 +584,7 @@ public class TokenUpdateSpecs extends HapiSuite {
                 .then(getTokenInfo(token).logged().hasEntityMemo(""));
     }
 
+    @HapiTest
     public HapiSpec updateNftTreasuryHappyPath() {
         return defaultHapiSpec("UpdateNftTreasuryHappyPath")
                 .given(
@@ -656,6 +664,7 @@ public class TokenUpdateSpecs extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     private HapiSpec customFeesOnlyUpdatableWithKey() {
         final var origHbarFee = 1_234L;
         final var newHbarFee = 4_321L;
@@ -707,6 +716,7 @@ public class TokenUpdateSpecs extends HapiSuite {
                         .hasFeeScheduleKey(tokenWithFeeKey));
     }
 
+    @HapiTest
     public HapiSpec updateUniqueTreasuryWithNfts() {
         final var specialKey = "special";
 

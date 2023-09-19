@@ -171,7 +171,7 @@ public class ExpiryValidatorImpl implements ExpiryValidator {
         final var accountStore = context.readableStore(ReadableAccountStore.class);
         try {
             final var account = accountStore.getAccountById(accountID);
-            if (account == null) {
+            if (account == null || account.deleted()) {
                 throw new HandleException(INVALID_AUTORENEW_ACCOUNT);
             }
         } catch (final InvalidTransactionException e) {

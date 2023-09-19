@@ -36,6 +36,7 @@ import com.hedera.hapi.node.transaction.Response;
 import com.hedera.node.app.service.mono.fees.calculation.token.queries.GetTokenNftInfoResourceUsage;
 import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
@@ -90,6 +91,7 @@ public class TokenGetNftInfoHandler extends PaidQueryHandler {
         final var query = context.query();
         final var config = context.configuration().getConfigData(LedgerConfig.class);
         final var nftStore = context.createStore(ReadableNftStore.class);
+        final var tokenStore = context.createStore(ReadableTokenStore.class);
         final var op = query.tokenGetNftInfoOrThrow();
         final var response = TokenGetNftInfoResponse.newBuilder();
         final var nftId = op.nftIDOrElse(NftID.DEFAULT);
@@ -97,7 +99,7 @@ public class TokenGetNftInfoHandler extends PaidQueryHandler {
         final var responseType = op.headerOrElse(QueryHeader.DEFAULT).responseType();
         response.header(header);
         if (header.nodeTransactionPrecheckCode() == OK && responseType != COST_ANSWER) {
-            final var optionalInfo = infoForNft(nftId, nftStore, config);
+            final var optionalInfo = infoForNft(nftId, nftStore, tokenStore, config);
             if (optionalInfo.isPresent()) {
                 response.nft(optionalInfo.get());
             } else {
@@ -123,19 +125,22 @@ public class TokenGetNftInfoHandler extends PaidQueryHandler {
     private Optional<TokenNftInfo> infoForNft(
             @NonNull final NftID nftId,
             @NonNull final ReadableNftStore readableNftStore,
+            @NonNull final ReadableTokenStore readableTokenStore,
             @NonNull final LedgerConfig config) {
         requireNonNull(nftId);
         requireNonNull(readableNftStore);
+        requireNonNull(readableTokenStore);
         requireNonNull(config);
 
         final var nft = readableNftStore.get(nftId.tokenId(), nftId.serialNumber());
+        final var token = readableTokenStore.get(nftId.tokenId());
         if (nft == null) {
             return Optional.empty();
         } else {
             final var info = TokenNftInfo.newBuilder()
                     .ledgerId(config.id())
                     .nftID(nftId)
-                    .accountID(nft.ownerId())
+                    .accountID(nft.hasOwnerId() ? nft.ownerId() : token.treasuryAccountId())
                     .creationTime(nft.mintTime())
                     .metadata(nft.metadata())
                     .spenderId(nft.spenderId())
