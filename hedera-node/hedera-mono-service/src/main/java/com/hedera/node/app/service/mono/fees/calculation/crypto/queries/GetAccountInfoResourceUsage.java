@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.service.mono.fees.calculation.crypto.queries;
 
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
+
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage;
 import com.hedera.node.app.hapi.fees.usage.crypto.ExtantCryptoContext;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
@@ -76,6 +79,23 @@ public final class GetAccountInfoResourceUsage implements QueryResourceUsageEsti
                 .setCurrentlyHasProxy(details.hasProxyAccountID())
                 .setCurrentNumTokenRels(details.getTokenRelationshipsCount())
                 .setCurrentMaxAutomaticAssociations(details.getMaxAutomaticTokenAssociations())
+                .setCurrentCryptoAllowances(Collections.emptyMap())
+                .setCurrentTokenAllowances(Collections.emptyMap())
+                .setCurrentApproveForAllNftAllowances(Collections.emptySet())
+                .build();
+        return cryptoOpsUsage.cryptoInfoUsage(query, ctx);
+    }
+
+    public FeeData usageGiven(final Query query, final Account account) {
+        if (account == null) {
+            return FeeData.getDefaultInstance();
+        }
+        final var ctx = ExtantCryptoContext.newBuilder()
+                .setCurrentKey(fromPbj(account.key()))
+                .setCurrentMemo(account.memo())
+                .setCurrentExpiry(account.expirationSecond())
+                .setCurrentNumTokenRels(account.numberAssociations())
+                .setCurrentMaxAutomaticAssociations(account.maxAutoAssociations())
                 .setCurrentCryptoAllowances(Collections.emptyMap())
                 .setCurrentTokenAllowances(Collections.emptyMap())
                 .setCurrentApproveForAllNftAllowances(Collections.emptySet())
