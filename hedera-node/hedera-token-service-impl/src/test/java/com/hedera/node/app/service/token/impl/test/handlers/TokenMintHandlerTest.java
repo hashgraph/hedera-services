@@ -134,8 +134,8 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
 
         // number of owned NFTs should increase
         assertThat(writableAccountStore.get(treasuryId).numberOwnedNfts()).isEqualTo(4);
-        // treasury relation supply will not increase since its not fungible token change
-        assertThat(writableTokenStore.get(nonFungibleTokenId).totalSupply()).isEqualTo(1000L);
+        // token total supply should be increased
+        assertThat(writableTokenStore.get(nonFungibleTokenId).totalSupply()).isEqualTo(1002L);
         assertThat(recordBuilder.build().transactionRecord().receipt().serialNumbers())
                 .isEqualTo(List.of(3L, 4L));
     }
