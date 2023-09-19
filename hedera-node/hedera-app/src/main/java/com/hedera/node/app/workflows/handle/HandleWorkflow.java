@@ -354,17 +354,19 @@ public class HandleWorkflow {
             if (validationResult.status() != SO_FAR_SO_GOOD) {
                 recordBuilder.status(validationResult.responseCodeEnum());
                 try {
-                    final var penaltyPayerID = validationResult.status() == NODE_DUE_DILIGENCE_FAILURE
-                            ? creator.accountId()
-                            : payer;
+                    final var penaltyPayerID =
+                            validationResult.status() == NODE_DUE_DILIGENCE_FAILURE ? creator.accountId() : payer;
                     final var penaltyFee = new Fees(fees.nodeFee(), fees.networkFee(), 0L);
                     feeAccumulator.charge(penaltyPayerID, penaltyFee);
                 } catch (HandleException ex) {
-                    if (validationResult.status() == NODE_DUE_DILIGENCE_FAILURE) {
-                        logger.error("Unable to charge node {} a penalty after {} happened. Cause of the failed charge:", creator.nodeId(), validationResult.responseCodeEnum, ex);
-                    } else {
-                        logger.error("Unable to charge account {} a penalty after {} happened. Cause of the failed charge:", payer, validationResult.responseCodeEnum, ex);
-                    }
+                    final var identifier = validationResult.status == NODE_DUE_DILIGENCE_FAILURE
+                            ? "node " + creator.nodeId()
+                            : "account " + payer;
+                    logger.error(
+                            "Unable to charge {} a penalty after {} happened. Cause of the failed charge:",
+                            identifier,
+                            validationResult.responseCodeEnum,
+                            ex);
                 }
 
             } else {
@@ -392,7 +394,11 @@ public class HandleWorkflow {
                 try {
                     feeAccumulator.charge(payer, fees);
                 } catch (HandleException chargeException) {
-                    logger.error("Unable to charge account {} a penalty after an unexpected exception {}. Cause of the failed charge:", payer, e, chargeException);
+                    logger.error(
+                            "Unable to charge account {} a penalty after an unexpected exception {}. Cause of the failed charge:",
+                            payer,
+                            e,
+                            chargeException);
                 }
             }
         }
