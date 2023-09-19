@@ -14,6 +14,8 @@ import static contract.XTestConstants.SENDER_CONTRACT_ID_KEY;
 import static contract.XTestConstants.SENDER_ID;
 import static contract.XTestConstants.addErc20Relation;
 import static contract.XTestConstants.assertSuccess;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
@@ -24,25 +26,42 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.burn.BurnTranslator;
+import com.hedera.node.app.spi.state.ReadableKVState;
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import org.apache.tuweni.bytes.Bytes;
+import org.jetbrains.annotations.NotNull;
 
 public class BurnFungibleXTest extends AbstractContractXTest {
+
+    private static final long TOKEN_BALANCE = 1000L;
+    private static final long TOKENS_TO_BURN = 10L;
+
     @Override
     protected void doScenarioOperations() {
-        // Transfer series 1234 of ERC721_TOKEN to RECEIVER
+        // BURN_TOKEN_V1
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(BurnTranslator.BURN_TOKEN_V1
                         .encodeCallWithArgs(
                                 ERC20_TOKEN_ADDRESS,
-                                BigInteger.valueOf(10L),
+                                BigInteger.valueOf(TOKENS_TO_BURN),
                                 new long[] {})
                         .array()),
                 assertSuccess());
+    }
 
+    @Override
+    protected void assertExpectedTokenRelations(
+            @NotNull final ReadableKVState<EntityIDPair, TokenRelation> tokenRelationships) {
+        final var tokenRelation = tokenRelationships.get(EntityIDPair.newBuilder()
+                .tokenId(ERC20_TOKEN_ID)
+                .accountId(OWNER_ID)
+                .build());
+        assertNotNull(tokenRelation);
+        assertEquals(TOKEN_BALANCE - TOKENS_TO_BURN, tokenRelation.balance());
     }
 
     @Override
@@ -60,7 +79,7 @@ public class BurnFungibleXTest extends AbstractContractXTest {
                 ERC20_TOKEN_ID,
                 Token.newBuilder()
                         .tokenId(ERC20_TOKEN_ID)
-                        .treasuryAccountId(UNAUTHORIZED_SPENDER_ID)
+                        .treasuryAccountId(OWNER_ID)
                         .tokenType(TokenType.FUNGIBLE_COMMON)
                         .supplyKey(AN_ED25519_KEY)
                         .totalSupply(1000L)
@@ -71,7 +90,8 @@ public class BurnFungibleXTest extends AbstractContractXTest {
     @Override
     protected Map<EntityIDPair, TokenRelation> initialTokenRelationships() {
         final var tokenRelationships = new HashMap<EntityIDPair, TokenRelation>();
-        addErc20Relation(tokenRelationships, UNAUTHORIZED_SPENDER_ID, 1234L);
+        addErc20Relation(tokenRelationships, UNAUTHORIZED_SPENDER_ID, TOKEN_BALANCE);
+        addErc20Relation(tokenRelationships, OWNER_ID, TOKEN_BALANCE);
         return tokenRelationships;
     }
 
