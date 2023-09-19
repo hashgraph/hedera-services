@@ -18,8 +18,10 @@ package com.hedera.node.app.service.token.api;
 
 import static com.hedera.hapi.node.base.TokenFreezeStatus.FREEZE_NOT_APPLICABLE;
 import static com.hedera.hapi.node.base.TokenFreezeStatus.FROZEN;
+import static com.hedera.hapi.node.base.TokenFreezeStatus.UNFROZEN;
 import static com.hedera.hapi.node.base.TokenKycStatus.GRANTED;
 import static com.hedera.hapi.node.base.TokenKycStatus.KYC_NOT_APPLICABLE;
+import static com.hedera.hapi.node.base.TokenKycStatus.REVOKED;
 import static com.hedera.node.app.hapi.utils.CommonUtils.asEvmAddress;
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.EVM_ADDRESS_LEN;
 import static com.hedera.node.app.service.token.api.StakingRewardsApi.epochSecondAtStartOfPeriod;
@@ -32,7 +34,9 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.StakingInfo;
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.TokenFreezeStatus;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TokenKycStatus;
 import com.hedera.hapi.node.base.TokenRelationship;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
@@ -121,13 +125,23 @@ public interface AccountSummariesApi {
 
     private static void addTokenRelation(
             ArrayList<TokenRelationship> ret, Token token, TokenRelation tokenRelation, TokenID tokenId) {
+        TokenFreezeStatus freezeStatus = FREEZE_NOT_APPLICABLE;
+        if (token.hasFreezeKey()) {
+            freezeStatus = tokenRelation.frozen() ? FROZEN : UNFROZEN;
+        }
+
+        TokenKycStatus kycStatus = KYC_NOT_APPLICABLE;
+        if (token.hasKycKey()) {
+            kycStatus = tokenRelation.kycGranted() ? GRANTED : REVOKED;
+        }
+
         final var tokenRelationship = TokenRelationship.newBuilder()
                 .tokenId(tokenId)
                 .symbol(token.symbol())
                 .balance(tokenRelation.balance())
                 .decimals(token.decimals())
-                .kycStatus(tokenRelation.kycGranted() ? GRANTED : KYC_NOT_APPLICABLE)
-                .freezeStatus(tokenRelation.frozen() ? FROZEN : FREEZE_NOT_APPLICABLE)
+                .kycStatus(kycStatus)
+                .freezeStatus(freezeStatus)
                 .automaticAssociation(tokenRelation.automaticAssociation())
                 .build();
         ret.add(tokenRelationship);
