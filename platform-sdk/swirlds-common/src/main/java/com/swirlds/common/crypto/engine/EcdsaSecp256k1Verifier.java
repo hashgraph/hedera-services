@@ -186,7 +186,12 @@ public class EcdsaSecp256k1Verifier {
         final LibSecp256k1.secp256k1_pubkey pubkey = cache.publicKey;
         final int keyParseResult = LibSecp256k1.secp256k1_ec_pubkey_parse(
                 LibSecp256k1.CONTEXT, pubkey, publicKeyInput, publicKeyInput.length);
-        if (keyParseResult != 1) throw new RuntimeException("Failed to parse public key");
+        if (keyParseResult != 1) {
+            logger.debug(
+                    TESTING_EXCEPTIONS.getMarker(), () -> "Failed to parse public key [ publicKey = %s, rawSig = %s ]"
+                            .formatted(hex(pubKey), hex(rawSig)));
+            return false;
+        }
         // verify signature
         final int result = LibSecp256k1.secp256k1_ecdsa_verify(LibSecp256k1.CONTEXT, nativeSignature, msg, pubkey);
         return result == 1;

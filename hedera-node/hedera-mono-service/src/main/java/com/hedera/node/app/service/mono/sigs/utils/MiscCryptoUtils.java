@@ -68,6 +68,7 @@ public class MiscCryptoUtils {
      *
      * @param compressedKey a compressed ECDSA(secp256k1) public key
      * @return the raw bytes of the public key coordinates
+     * @throws IllegalArgumentException if the compressed key not parsable
      */
     public static byte[] decompressSecp256k1(final byte[] compressedKey) {
         final ThreadLocalCache cache = CACHE.get();
@@ -75,13 +76,13 @@ public class MiscCryptoUtils {
         final LibSecp256k1.secp256k1_pubkey publicKey = cache.pubKey;
         final int keyParseResult = LibSecp256k1.secp256k1_ec_pubkey_parse(
                 LibSecp256k1.CONTEXT, publicKey, compressedKey, compressedKey.length);
-        if (keyParseResult != 1) throw new RuntimeException("Failed to parse public key");
+        if (keyParseResult != 1) throw new IllegalArgumentException("Failed to parse public key");
         final ByteBuffer outputBuffer = cache.uncompressedPublicKeyByteBuffer;
         final LongByReference outputLength = cache.length;
         outputLength.setValue(ECDSA_UNCOMPRESSED_KEY_SIZE_WITH_HEADER_BYTE);
         final int keySerializeResult = LibSecp256k1.secp256k1_ec_pubkey_serialize(
                 LibSecp256k1.CONTEXT, outputBuffer, outputLength, publicKey, LibSecp256k1.SECP256K1_EC_UNCOMPRESSED);
-        if (keySerializeResult != 1) throw new RuntimeException("Failed to serialize public key");
+        if (keySerializeResult != 1) throw new IllegalArgumentException("Failed to serialize public key");
         // chop off header first byte
         final var rawKey = new byte[64];
         outputBuffer.get(1, rawKey);
@@ -95,6 +96,7 @@ public class MiscCryptoUtils {
      *
      * @param decompressedKey a decompressed ECDSA(secp256k1) public key
      * @return the raw bytes of the compressed public key
+     * @throws IllegalArgumentException if the decompressed key not parsable
      */
     public static byte[] compressSecp256k1(final byte[] decompressedKey) {
         final ThreadLocalCache cache = CACHE.get();
@@ -105,14 +107,14 @@ public class MiscCryptoUtils {
         final LibSecp256k1.secp256k1_pubkey publicKey = cache.pubKey;
         final int keyParseResult = LibSecp256k1.secp256k1_ec_pubkey_parse(
                 LibSecp256k1.CONTEXT, publicKey, decompressedBytes, decompressedBytes.length);
-        if (keyParseResult != 1) throw new RuntimeException("Failed to parse public key");
+        if (keyParseResult != 1) throw new IllegalArgumentException("Failed to parse public key");
         // serialize public key to compressed format
         final ByteBuffer outputBuffer = ByteBuffer.allocate(33);
         final LongByReference outputLength = cache.length;
         outputLength.setValue(33);
         final int keySerializeResult = LibSecp256k1.secp256k1_ec_pubkey_serialize(
                 LibSecp256k1.CONTEXT, outputBuffer, outputLength, publicKey, LibSecp256k1.SECP256K1_EC_COMPRESSED);
-        if (keySerializeResult != 1) throw new RuntimeException("Failed to serialize public key");
+        if (keySerializeResult != 1) throw new IllegalArgumentException("Failed to serialize public key");
         return outputBuffer.array();
     }
 

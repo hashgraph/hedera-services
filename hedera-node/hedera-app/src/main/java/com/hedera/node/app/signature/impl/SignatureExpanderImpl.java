@@ -162,16 +162,14 @@ public final class SignatureExpanderImpl implements SignatureExpander {
     @Nullable
     private Bytes decompressKey(@Nullable final Bytes keyBytes) {
         if (keyBytes == null) return null;
-        final var compressedPrefixByteArray = new byte[(int) keyBytes.length()];
-        keyBytes.getBytes(0, compressedPrefixByteArray);
         // If the compressed key begins with a prefix byte other than 0x02 or 0x03, decompressing will throw.
         // We don't want it to throw, because that is a waste of CPU cycles. So we'll check the first byte
         // first. But the compiler still requires the try/catch. We hope it is never thrown, but if it is,
         // it isn't the end of the world.
-        if (compressedPrefixByteArray[0] == 0x02 || compressedPrefixByteArray[0] == 0x03) {
+        final byte firstByte = keyBytes.getByte(0);
+        if (firstByte == 0x02 || firstByte == 0x03) {
             try {
-                final var decompressedByteArray = MiscCryptoUtils.decompressSecp256k1(compressedPrefixByteArray);
-                return Bytes.wrap(decompressedByteArray);
+                return Bytes.wrap(MiscCryptoUtils.decompressSecp256k1(keyBytes.toByteArray()));
             } catch (IllegalArgumentException e) {
                 // This isn't the key we're looking for. Move along.
                 logger.warn("Unable to decompress ECDSA(secp256k1) key. Should never happen", e);
