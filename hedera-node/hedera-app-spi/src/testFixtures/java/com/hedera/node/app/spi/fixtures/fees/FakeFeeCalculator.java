@@ -53,6 +53,11 @@ public class FakeFeeCalculator implements FeeCalculator {
         return this;
     }
 
+    @NonNull
+    public FeeCalculator addVerificationsPerTransaction(long amount) {
+        return this;
+    }
+
     @Override
     @NonNull
     public Fees calculate() {
@@ -64,5 +69,10 @@ public class FakeFeeCalculator implements FeeCalculator {
     public Fees legacyCalculate(@NonNull Function<SigValueObj, FeeData> callback) {
         callback.apply(new SigValueObj(0, 0, 0));
         return new Fees(0, 0, 0);
+    }
+
+    @NonNull
+    public FakeFeeCalculator resetUsage() {
+        return this;
     }
 }
