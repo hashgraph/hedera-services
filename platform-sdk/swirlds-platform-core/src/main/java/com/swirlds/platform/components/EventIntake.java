@@ -234,6 +234,8 @@ public class EventIntake {
             phaseTimer.activatePhase(EventIntakePhase.HANDLING_STALE_EVENTS);
             handleStale(minGenNonAncientBeforeAdding);
         }
+
+        phaseTimer.activatePhase(EventIntakePhase.IDLE);
     }
 
     /**
