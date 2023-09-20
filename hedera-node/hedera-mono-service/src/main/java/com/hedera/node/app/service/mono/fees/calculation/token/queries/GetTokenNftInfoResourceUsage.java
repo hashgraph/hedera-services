@@ -60,6 +60,13 @@ public final class GetTokenNftInfoResourceUsage implements QueryResourceUsageEst
         }
     }
 
+    /**
+     * This method is used to calculate the fee for the {@code GetNftInfo}
+     * only in modularized code, until new fee logic is implemented.
+     * @param query query to be processed
+     * @param nft nft whose info to be retrieved
+     * @return fee data
+     */
     public FeeData usageGiven(final Query query, final Nft nft) {
         if (nft != null) {
             final var estimate =

@@ -76,6 +76,13 @@ public final class GetTokenInfoResourceUsage implements QueryResourceUsageEstima
         }
     }
 
+    /**
+     * This method is used to calculate the fee for the {@code GetTokenInfo}
+     * only in modularized code, until new fee logic is implemented.
+     * @param query query to be processed
+     * @param token token whose info to be retrieved
+     * @return fee data
+     */
     public FeeData usageGiven(final Query query, final Token token) {
         if (token != null) {
             final var estimate = factory.apply(query)

@@ -86,6 +86,13 @@ public final class GetAccountInfoResourceUsage implements QueryResourceUsageEsti
         return cryptoOpsUsage.cryptoInfoUsage(query, ctx);
     }
 
+    /**
+     * This method is used to calculate the fee for the {@code CryptoGetInfo}
+     * query in modularized code only.
+     * @param query query to be processed
+     * @param account account whose info is being retrieved
+     * @return the fee for the query
+     */
     public FeeData usageGiven(final Query query, final Account account) {
         if (account == null) {
             return FeeData.getDefaultInstance();

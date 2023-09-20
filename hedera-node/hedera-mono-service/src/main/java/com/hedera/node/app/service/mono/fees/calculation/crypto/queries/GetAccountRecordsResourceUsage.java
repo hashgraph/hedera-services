@@ -63,6 +63,13 @@ public final class GetAccountRecordsResourceUsage implements QueryResourceUsageE
         return usageFor(query, view, type, null);
     }
 
+    /**
+     * This method is used to calculate the fee for the {@code CryptoGetAccountRecords}
+     * only in modularized code, until new fee logic is implemented.
+     * @param account account whose records to be retrieved
+     * @param records list of records retrieved from account
+     * @return fee data
+     */
     public FeeData usageGivenFor(final Account account, List<TransactionRecord> records) {
         if (account == null) {
             return FeeData.getDefaultInstance();
