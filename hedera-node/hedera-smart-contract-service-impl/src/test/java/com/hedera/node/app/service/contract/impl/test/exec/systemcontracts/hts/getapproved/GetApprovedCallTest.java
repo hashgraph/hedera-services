@@ -1,23 +1,34 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.getapproved;
+
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.*;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.headlongAddressOf;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.getapproved.GetApprovedCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.getapproved.GetApprovedTranslator;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.isapprovedforall.IsApprovedForAllCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ownerof.OwnerOfTranslator;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
-
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.*;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.headlongAddressOf;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.given;
 
 public class GetApprovedCallTest extends HtsCallTestBase {
 
@@ -39,7 +50,6 @@ public class GetApprovedCallTest extends HtsCallTestBase {
         given(nativeOperations.getNft(9898L, 123)).willReturn(CIVILIAN_OWNED_NFT);
         given(nativeOperations.getAccount(B_NEW_ACCOUNT_ID.accountNumOrThrow())).willReturn(OPERATOR);
 
-
         final var result = subject.execute().fullResult().result();
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -56,7 +66,6 @@ public class GetApprovedCallTest extends HtsCallTestBase {
         given(nativeOperations.getNft(9898L, 123)).willReturn(CIVILIAN_OWNED_NFT);
         given(nativeOperations.getAccount(B_NEW_ACCOUNT_ID.accountNumOrThrow())).willReturn(OPERATOR);
 
-
         final var result = subject.execute().fullResult().result();
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -66,5 +75,4 @@ public class GetApprovedCallTest extends HtsCallTestBase {
                         .array()),
                 result.getOutput());
     }
-
 }

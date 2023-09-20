@@ -1,4 +1,29 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package contract;
+
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.getapproved.GetApprovedTranslator.ERC_GET_APPROVED;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.getapproved.GetApprovedTranslator.HAPI_GET_APPROVED;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.headlongAddressOf;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static contract.HtsErc721TransferXTestConstants.*;
+import static contract.MiscViewsXTestConstants.NEXT_ENTITY_NUM;
+import static contract.XTestConstants.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NftID;
@@ -11,23 +36,10 @@ import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.getapproved.GetApprovedTranslator;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersTranslator;
-import org.apache.tuweni.bytes.Bytes;
-
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
-
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.getapproved.GetApprovedTranslator.ERC_GET_APPROVED;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.getapproved.GetApprovedTranslator.HAPI_GET_APPROVED;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc20TransfersTranslator.ERC_20_TRANSFER;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.headlongAddressOf;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static contract.HtsErc721TransferXTestConstants.*;
-import static contract.MiscClassicTransfersXTestConstants.INITIAL_RECEIVER_AUTO_ASSOCIATIONS;
-import static contract.MiscViewsXTestConstants.NEXT_ENTITY_NUM;
-import static contract.XTestConstants.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.apache.tuweni.bytes.Bytes;
 
 public class GetApprovedXTest extends AbstractContractXTest {
 
@@ -36,23 +48,22 @@ public class GetApprovedXTest extends AbstractContractXTest {
         // ErcGetApproved series 1234 of ERC721_TOKEN
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
-                bytesForRedirect(ERC_GET_APPROVED
-                                .encodeCallWithArgs(BigInteger.valueOf(1234)),
-                        ERC721_TOKEN_ID),
-                output ->
-                        assertEquals(asBytesResult(ERC_GET_APPROVED.getOutputs().encodeElements(headlongAddressOf(spenderAccount))), output));
+                bytesForRedirect(ERC_GET_APPROVED.encodeCallWithArgs(BigInteger.valueOf(1234)), ERC721_TOKEN_ID),
+                output -> assertEquals(
+                        asBytesResult(ERC_GET_APPROVED.getOutputs().encodeElements(headlongAddressOf(spenderAccount))),
+                        output));
 
         // HapiGetApproved series 1234 of ERC721_TOKEN
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(GetApprovedTranslator.HAPI_GET_APPROVED
-                        .encodeCallWithArgs(
-                                ERC721_TOKEN_ADDRESS,
-                                BigInteger.valueOf(1234))
+                        .encodeCallWithArgs(ERC721_TOKEN_ADDRESS, BigInteger.valueOf(1234))
                         .array()),
-                output ->
-                        assertEquals(asBytesResult(HAPI_GET_APPROVED.getOutputs().encodeElements(SUCCESS.getNumber(), headlongAddressOf(spenderAccount))), output));
-
+                output -> assertEquals(
+                        asBytesResult(HAPI_GET_APPROVED
+                                .getOutputs()
+                                .encodeElements(SUCCESS.getNumber(), headlongAddressOf(spenderAccount))),
+                        output));
     }
 
     @Override
@@ -126,11 +137,7 @@ public class GetApprovedXTest extends AbstractContractXTest {
                         .alias(OWNER_ADDRESS)
                         .key(SENDER_CONTRACT_ID_KEY)
                         .build());
-        accounts.put(
-                APPROVED_ID,
-                Account.newBuilder()
-                        .accountId(APPROVED_ID)
-                        .build());
+        accounts.put(APPROVED_ID, Account.newBuilder().accountId(APPROVED_ID).build());
         accounts.put(
                 UNAUTHORIZED_SPENDER_ID,
                 Account.newBuilder().accountId(UNAUTHORIZED_SPENDER_ID).build());

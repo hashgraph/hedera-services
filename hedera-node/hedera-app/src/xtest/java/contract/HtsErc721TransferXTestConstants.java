@@ -38,7 +38,8 @@ public class HtsErc721TransferXTestConstants {
             asHeadlongAddress(APPROVED_ADDRESS.toByteArray());
     static final Address APPROVED_BESU_ADDRESS = pbjToBesuAddress(APPROVED_ADDRESS);
 
-   static final Account spenderAccount = Account.newBuilder().accountId(APPROVED_ID).build();
+    static final Account spenderAccount =
+            Account.newBuilder().accountId(APPROVED_ID).build();
 
     static final AccountID OPERATOR_ID =
             AccountID.newBuilder().accountNum(7773777L).build();
