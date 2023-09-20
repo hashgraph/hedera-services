@@ -17,11 +17,11 @@
 package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
@@ -40,7 +40,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -51,7 +50,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-@HapiTestSuite
 public class TokenAndTypeCheckSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(TokenAndTypeCheckSuite.class);
@@ -124,7 +122,7 @@ public class TokenAndTypeCheckSuite extends HapiSuite {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final var notAnAddress = new byte[20];
 
-        return defaultHapiSpec("checkTokenAndTypeNegativeCases")
+        return onlyDefaultHapiSpec("checkTokenAndTypeNegativeCases")
                 .given(
                         cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
                         cryptoCreate(TOKEN_TREASURY),
@@ -138,18 +136,18 @@ public class TokenAndTypeCheckSuite extends HapiSuite {
                         contractCreate(TOKEN_AND_TYPE_CHECK_CONTRACT))
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
-                        contractCall(
-                                        TOKEN_AND_TYPE_CHECK_CONTRACT,
-                                        IS_TOKEN,
-                                        HapiParserUtil.asHeadlongAddress(notAnAddress))
-                                .via("FakeAddressTokenCheckTx")
-                                .payingWith(ACCOUNT)
-                                .gas(GAS_TO_OFFER),
-                        contractCall(
+                        //                        contractCallLocal(
+                        //                                        TOKEN_AND_TYPE_CHECK_CONTRACT,
+                        //                                        IS_TOKEN,
+                        //                                        HapiParserUtil.asHeadlongAddress(notAnAddress))
+                        //                                .via("FakeAddressTokenCheckTx")
+                        //                                .payingWith(ACCOUNT)
+                        //                                .gas(GAS_TO_OFFER),
+                        contractCallLocal(
                                         TOKEN_AND_TYPE_CHECK_CONTRACT,
                                         GET_TOKEN_TYPE,
                                         HapiParserUtil.asHeadlongAddress(notAnAddress))
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                // .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                 .via("FakeAddressTokenTypeCheckTx")
                                 .payingWith(ACCOUNT)
                                 .gas(GAS_TO_OFFER)

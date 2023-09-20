@@ -21,7 +21,6 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.token.Token;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -58,10 +57,12 @@ public abstract class AbstractNonRevertibleTokenViewCall extends AbstractHtsCall
      * @return the result of viewing the given {@code token}
      */
     @NonNull
-    protected abstract HederaSystemContract.FullResult resultOfViewingToken(@NonNull Token token);
+    protected abstract FullResult resultOfViewingToken(@NonNull Token token);
 
     /**
      * Returns the result of viewing the given {@code token} given the {@code status}.
+     * Currently, the only usage for this method is to return an INVALID_TOKEN_ID status
+     * if the token is null.
      * @param status - ResponseCodeEnum status
      * @return the results to return to the caller
      */

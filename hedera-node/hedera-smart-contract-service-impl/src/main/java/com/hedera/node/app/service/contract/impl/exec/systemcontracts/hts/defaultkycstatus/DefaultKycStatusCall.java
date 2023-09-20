@@ -18,7 +18,7 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.defau
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.defaultfreezestatus.DefaultFreezeStatusTranslator.DEFAULT_FREEZE_STATUS;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.defaultkycstatus.DefaultKycStatusTranslator.DEFAULT_KYC_STATUS;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -55,6 +55,6 @@ public class DefaultKycStatusCall extends AbstractNonRevertibleTokenViewCall {
     private @NonNull FullResult fullResultsFor(
             @NonNull ResponseCodeEnum status, long gasRequirement, boolean kycStatus) {
         return successResult(
-                DEFAULT_FREEZE_STATUS.getOutputs().encodeElements(status.protoOrdinal(), kycStatus), gasRequirement);
+                DEFAULT_KYC_STATUS.getOutputs().encodeElements(status.protoOrdinal(), kycStatus), gasRequirement);
     }
 }

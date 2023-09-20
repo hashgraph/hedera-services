@@ -19,7 +19,7 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.iskyc
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.defaultfreezestatus.DefaultFreezeStatusTranslator.DEFAULT_FREEZE_STATUS;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.iskyc.IsKycTranslator.IS_KYC;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.accountNumberForEvmReference;
 import static java.util.Objects.requireNonNull;
 
@@ -68,7 +68,6 @@ public class IsKycCall extends AbstractNonRevertibleTokenViewCall {
     }
 
     private @NonNull FullResult fullResultsFor(@NonNull ResponseCodeEnum status, long gasRequirement, boolean isKyc) {
-        return successResult(
-                DEFAULT_FREEZE_STATUS.getOutputs().encodeElements(status.protoOrdinal(), isKyc), gasRequirement);
+        return successResult(IS_KYC.getOutputs().encodeElements(status.protoOrdinal(), isKyc), gasRequirement);
     }
 }

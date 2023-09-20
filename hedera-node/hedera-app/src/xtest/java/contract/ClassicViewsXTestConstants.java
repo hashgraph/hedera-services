@@ -26,16 +26,22 @@ public class ClassicViewsXTestConstants {
     static final ContractID CLASSIC_QUERIES_X_TEST_ID =
             ContractID.newBuilder().contractNum(1030L).build();
     static final String SUCCESS_RESPONSE_CODE = "0000000000000000000000000000000000000000000000000000000000000016";
+    // IS_FROZEN flag for token is false
     static final Bytes TOKEN_IS_FROZEN =
             Bytes.fromHex(SUCCESS_RESPONSE_CODE + "0000000000000000000000000000000000000000000000000000000000000000");
+    // IS_KYC flag for token is true - set in ClassicViewsXTest.initialTokenRelationships()
     static final Bytes TOKEN_IS_KYC =
             Bytes.fromHex(SUCCESS_RESPONSE_CODE + "0000000000000000000000000000000000000000000000000000000000000001");
+    // the token is truly a token
     static final Bytes TOKEN_IS_TOKEN =
             Bytes.fromHex(SUCCESS_RESPONSE_CODE + "0000000000000000000000000000000000000000000000000000000000000001");
+    // the token is fungible
     static final Bytes TOKEN_TYPE_FUNGIBLE =
             Bytes.fromHex(SUCCESS_RESPONSE_CODE + "0000000000000000000000000000000000000000000000000000000000000000");
+    // default freeze status is false
     static final Bytes TOKEN_DEFAULT_FREEZE_STATUS =
             Bytes.fromHex(SUCCESS_RESPONSE_CODE + "0000000000000000000000000000000000000000000000000000000000000000");
+    // default kyc status is false
     static final Bytes TOKEN_DEFAULT_KYC_STATUS =
             Bytes.fromHex(SUCCESS_RESPONSE_CODE + "0000000000000000000000000000000000000000000000000000000000000000");
     static final Function GET_IS_FROZEN = new Function("isFrozenPublic(address,address)");
