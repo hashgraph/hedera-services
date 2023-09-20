@@ -17,6 +17,7 @@
 package com.hedera.node.app.workflows.handle;
 
 import static com.hedera.node.app.service.file.impl.FileServiceImpl.BLOBS_KEY;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -37,6 +38,7 @@ import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.spi.fixtures.TransactionFactory;
 import com.hedera.node.app.throttle.ThrottleManager;
 import com.hedera.node.app.util.FileUtilities;
+import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.converter.LongPairConverter;
@@ -44,20 +46,22 @@ import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.test.framework.config.TestConfigBuilder;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mock.Strictness;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class SystemFileUpdateFacilityTest implements TransactionFactory {
 
     private static final Bytes FILE_BYTES = Bytes.wrap("Hello World");
+    private static final Instant CONSENSUS_NOW = Instant.parse("2000-01-01T00:00:00Z");
 
     @Mock(strictness = Strictness.LENIENT)
     private ConfigProviderImpl configProvider;
@@ -68,7 +72,6 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
 
     private SystemFileUpdateFacility subject;
 
-    @Mock
     private ThrottleManager throttleManager;
 
     @Mock
@@ -87,6 +90,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
                 .getOrCreateConfig();
         when(configProvider.getConfiguration()).thenReturn(new VersionedConfigImpl(config, 1L));
 
+        throttleManager = new ThrottleManager();
         subject = new SystemFileUpdateFacility(configProvider, throttleManager, exchangeRateManager);
     }
 
@@ -95,6 +99,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
     void testMethodsWithInvalidArguments() {
         // given
         final var txBody = simpleCryptoTransfer().body();
+        final var recordBuilder = new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW);
 
         // then
         assertThatThrownBy(() -> new SystemFileUpdateFacility(null, throttleManager, exchangeRateManager))
@@ -104,8 +109,11 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
         assertThatThrownBy(() -> new SystemFileUpdateFacility(configProvider, throttleManager, null))
                 .isInstanceOf(NullPointerException.class);
 
-        assertThatThrownBy(() -> subject.handleTxBody(null, txBody)).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> subject.handleTxBody(state, null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> subject.handleTxBody(null, txBody, recordBuilder))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> subject.handleTxBody(state, null, recordBuilder))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> subject.handleTxBody(state, txBody, null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
@@ -114,9 +122,10 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
         final var txBody = TransactionBody.newBuilder()
                 .cryptoTransfer(CryptoTransferTransactionBody.DEFAULT)
                 .build();
+        final var recordBuilder = new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW);
 
         // then
-        Assertions.assertThatCode(() -> subject.handleTxBody(state, txBody)).doesNotThrowAnyException();
+        assertThatCode(() -> subject.handleTxBody(state, txBody, recordBuilder)).doesNotThrowAnyException();
     }
 
     @Test
@@ -131,7 +140,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
         files.put(fileID, File.newBuilder().contents(FILE_BYTES).build());
 
         // when
-        subject.handleTxBody(state, txBody.build());
+        subject.handleTxBody(state, txBody.build(), new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW));
 
         // then
         verify(configProvider).update(FILE_BYTES);
@@ -149,7 +158,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
         files.put(fileID, File.newBuilder().contents(FILE_BYTES).build());
 
         // when
-        subject.handleTxBody(state, txBody.build());
+        subject.handleTxBody(state, txBody.build(), new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW));
 
         // then
         verify(configProvider).update(FILE_BYTES);
@@ -170,8 +179,11 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
                 .fileAppend(FileAppendTransactionBody.newBuilder().fileID(fileID));
         files.put(fileID, File.newBuilder().contents(FILE_BYTES).build());
 
+        throttleManager = Mockito.mock(ThrottleManager.class);
+        subject = new SystemFileUpdateFacility(configProvider, throttleManager, exchangeRateManager);
+
         // when
-        subject.handleTxBody(state, txBody.build());
+        subject.handleTxBody(state, txBody.build(), new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW));
 
         // then
         verify(throttleManager, times(1)).update(FileUtilities.getFileContent(state, fileID));
@@ -193,7 +205,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
         files.put(fileID, File.newBuilder().contents(FILE_BYTES).build());
 
         // when
-        subject.handleTxBody(state, txBody.build());
+        subject.handleTxBody(state, txBody.build(), new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW));
 
         // then
         verify(exchangeRateManager, times(1))

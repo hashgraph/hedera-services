@@ -89,6 +89,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withTargetLedgerId;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.Utils.accountId;
 import static com.hedera.services.bdd.suites.contract.Utils.captureOneChildCreate2MetaFor;
@@ -1822,10 +1823,10 @@ public class CryptoTransferSuite extends HapiSuite {
                                 tinyBarsFromTo(PAYER, PAYEE_NO_SIG_REQ, 2_000L))
                         .via("transferTxn"))
                 .then(
-                        getAccountInfo(PAYER)
+                        withTargetLedgerId(ledgerId -> getAccountInfo(PAYER)
                                 .logged()
-                                .hasExpectedLedgerId("0x03")
-                                .has(accountWith().balance(initialBalance - 3_000L)),
+                                .hasEncodedLedgerId(ledgerId)
+                                .has(accountWith().balance(initialBalance - 3_000L))),
                         getAccountInfo(PAYEE_SIG_REQ).has(accountWith().balance(initialBalance + 1_000L)),
                         getAccountDetails(PAYEE_NO_SIG_REQ)
                                 .payingWith(GENESIS)

@@ -411,8 +411,7 @@ public final class TokenPauseSpecs extends HapiSuite {
                                 .hasKnownStatus(ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY));
     }
 
-    // Enable when pause/unpause fees are implemented
-    // @HapiTest
+    @HapiTest
     private HapiSpec basePauseAndUnpauseHaveExpectedPrices() {
         final var expectedBaseFee = 0.001;
         final var token = "token";

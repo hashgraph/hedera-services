@@ -188,7 +188,7 @@ class TokenServiceApiImplTest {
         accountStore.put(Account.newBuilder().accountId(CONTRACT_ACCOUNT_ID).build());
 
         assertNull(accountStore.getContractById(CONTRACT_ID_BY_NUM));
-        subject.markAsContract(CONTRACT_ACCOUNT_ID);
+        subject.markAsContract(CONTRACT_ACCOUNT_ID, null);
 
         assertEquals(1, accountStore.sizeOfAccountState());
         assertNotNull(accountStore.getContractById(CONTRACT_ID_BY_NUM));
@@ -394,8 +394,8 @@ class TokenServiceApiImplTest {
                     .withValue("staking.isEnabled", true)
                     .withValue("staking.fees.nodeRewardPercentage", 10)
                     .withValue("staking.fees.stakingRewardPercentage", 20)
-                    .withValue("hedera.shard", 3)
-                    .withValue("hedera.realm", 4)
+                    .withValue("hedera.shard", 0)
+                    .withValue("hedera.realm", 0)
                     .withValue("ledger.fundingAccount", 12)
                     .withValue("accounts.stakingRewardAccount", 13)
                     .withValue("accounts.nodeRewardAccount", 14);
