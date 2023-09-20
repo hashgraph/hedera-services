@@ -339,20 +339,16 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
                 addAccount(context, collector, alwaysAdd);
             } else if (customFee.hasFractionalFee()) {
                 context.requireKeyOrThrow(collector, INVALID_CUSTOM_FEE_COLLECTOR);
-            } else {
+            } else if (customFee.hasRoyaltyFee()) {
                 // TODO: Need to validate if this is actually needed
-                // TODO: the suite onlyValidCustomFeeScheduleCanBeCreated is failing because there is no custom fee set.
-                // do we need to require it?
-                // TODO: TokenCreateHandleParityTest is failing when this is commented out - fix the tests when this is
-                // at it's final form
-                //                final var royaltyFee = customFee.royaltyFeeOrThrow();
-                //                var alwaysAdd = false;
-                //                if (royaltyFee.hasFallbackFee()) {
-                //                    final var fFee = royaltyFee.fallbackFeeOrThrow();
-                //                    alwaysAdd = fFee.hasDenominatingTokenId()
-                //                        && fFee.denominatingTokenIdOrThrow().tokenNum() == 0;
-                //                }
-                //                addAccount(context, collector, alwaysAdd);
+                final var royaltyFee = customFee.royaltyFeeOrThrow();
+                var alwaysAdd = false;
+                if (royaltyFee.hasFallbackFee()) {
+                    final var fFee = royaltyFee.fallbackFeeOrThrow();
+                    alwaysAdd = fFee.hasDenominatingTokenId()
+                        && fFee.denominatingTokenIdOrThrow().tokenNum() == 0;
+                }
+                addAccount(context, collector, alwaysAdd);
             }
         }
     }
