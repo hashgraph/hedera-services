@@ -21,9 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.common.config.ConsensusConfig;
-import com.swirlds.common.system.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
-import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.OrphanBufferingLinker;
 import com.swirlds.platform.event.linking.ParentFinder;
