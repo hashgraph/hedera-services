@@ -38,6 +38,7 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ResponseType;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.SignatureMap;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TopicID;
@@ -191,6 +192,11 @@ public final class PbjConverter {
         } catch (InvalidProtocolBufferException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static @NonNull com.hederahashgraph.api.proto.java.SubType fromPbj(@NonNull SubType subType) {
+        requireNonNull(subType);
+        return com.hederahashgraph.api.proto.java.SubType.valueOf(subType.name());
     }
 
     public static @NonNull com.hederahashgraph.api.proto.java.AccountAmount fromPbj(@NonNull AccountAmount a) {
