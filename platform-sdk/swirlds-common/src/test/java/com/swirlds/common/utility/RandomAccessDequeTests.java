@@ -445,4 +445,23 @@ class RandomAccessDequeTests {
             assertEquals(i, iterator.next());
         }
     }
+
+    @Test
+    @DisplayName("clear() method Test")
+    void clearTest() {
+        final RandomAccessDeque<Integer> deque = new RandomAccessDeque<>(100);
+        for (int i = 0; i < 10; i++) {
+            deque.addLast(i);
+        }
+        for (int i = 10; i < 20; i++) {
+            deque.addFirst(i);
+        }
+        deque.removeFirst();
+        deque.removeLast();
+
+        deque.clear();
+
+        assertEquals(0, deque.size());
+        assertFalse(deque.iterator().hasNext());
+    }
 }
