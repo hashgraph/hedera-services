@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.swirlds.logging.v2;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -10,10 +26,10 @@ class LevelTest {
 
     @Test
     void testError() {
-        //given
+        // given
         final Level level = Level.ERROR;
 
-        //then
+        // then
         assertTrue(level.enabledLoggingOfLevel(Level.ERROR));
         assertFalse(level.enabledLoggingOfLevel(Level.WARN));
         assertFalse(level.enabledLoggingOfLevel(Level.INFO));
@@ -25,10 +41,10 @@ class LevelTest {
 
     @Test
     void testWarn() {
-        //given
+        // given
         final Level level = Level.WARN;
 
-        //then
+        // then
         assertTrue(level.enabledLoggingOfLevel(Level.ERROR));
         assertTrue(level.enabledLoggingOfLevel(Level.WARN));
         assertFalse(level.enabledLoggingOfLevel(Level.INFO));
@@ -38,13 +54,12 @@ class LevelTest {
         assertEquals("WARN", level.name());
     }
 
-
     @Test
     void testInfo() {
-        //given
+        // given
         final Level level = Level.INFO;
 
-        //then
+        // then
         assertTrue(level.enabledLoggingOfLevel(Level.ERROR));
         assertTrue(level.enabledLoggingOfLevel(Level.WARN));
         assertTrue(level.enabledLoggingOfLevel(Level.INFO));
@@ -54,13 +69,12 @@ class LevelTest {
         assertEquals("INFO", level.name());
     }
 
-
     @Test
     void testDebug() {
-        //given
+        // given
         final Level level = Level.DEBUG;
 
-        //then
+        // then
         assertTrue(level.enabledLoggingOfLevel(Level.ERROR));
         assertTrue(level.enabledLoggingOfLevel(Level.WARN));
         assertTrue(level.enabledLoggingOfLevel(Level.INFO));
@@ -70,13 +84,12 @@ class LevelTest {
         assertEquals("DEBUG", level.name());
     }
 
-
     @Test
     void testTrace() {
-        //given
+        // given
         final Level level = Level.TRACE;
 
-        //then
+        // then
         assertTrue(level.enabledLoggingOfLevel(Level.ERROR));
         assertTrue(level.enabledLoggingOfLevel(Level.WARN));
         assertTrue(level.enabledLoggingOfLevel(Level.INFO));
@@ -85,5 +98,4 @@ class LevelTest {
         assertTrue(level.enabledLoggingOfLevel(null), "for null param it should return true");
         assertEquals("TRACE", level.name());
     }
-
 }
