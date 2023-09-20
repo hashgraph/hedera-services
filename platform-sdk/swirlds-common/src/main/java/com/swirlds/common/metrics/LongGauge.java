@@ -87,6 +87,16 @@ public interface LongGauge extends Metric {
     void add(final long delta);
 
     /**
+     * Add one to the current value. Equivalent to {@link #add(long) add(1)}.
+     */
+    void increment();
+
+    /**
+     * Subtract one from the current value. Equivalent to {@link #add(long) add(-1)}.
+     */
+    void decrement();
+
+    /**
      * Configuration of a {@link LongGauge}
      */
     final class Config extends MetricConfig<LongGauge, LongGauge.Config> {

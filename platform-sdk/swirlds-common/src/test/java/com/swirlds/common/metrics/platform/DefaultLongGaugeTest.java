@@ -118,6 +118,46 @@ class DefaultLongGaugeTest {
     }
 
     @Test
+    @DisplayName("Test increment() and decrement()")
+    void incrementAndDecrement() {
+        // given
+        final LongGauge.Config config = new LongGauge.Config(CATEGORY, NAME).withInitialValue(2L);
+        final LongGauge gauge = new DefaultLongGauge(config);
+
+        // when
+        gauge.set(5L);
+
+        // then
+        assertEquals(5L, gauge.get(), "Value should be 5");
+        assertEquals(5L, gauge.get(VALUE), "Value should be 5");
+
+        // when
+        gauge.increment();
+
+        // then
+        assertEquals(6L, gauge.get(), "Value should be -3");
+        assertEquals(6L, gauge.get(VALUE), "Value should be -3");
+
+        // when
+        gauge.decrement();
+
+        // then
+        assertEquals(5L, gauge.get(), "Value should be -3");
+        assertEquals(5L, gauge.get(VALUE), "Value should be -3");
+
+        // when
+        for (int i = 0; i < 10; i++) {
+            gauge.increment();
+            gauge.decrement();
+            gauge.increment();
+        }
+
+        // then
+        assertEquals(15L, gauge.get(), "Value should be -3");
+        assertEquals(15L, gauge.get(VALUE), "Value should be -3");
+    }
+
+    @Test
     void testSnapshot() {
         // given
         final LongGauge.Config config = new LongGauge.Config(CATEGORY, NAME).withInitialValue(2L);
