@@ -417,9 +417,17 @@ public final class Hedera implements SwirldMain {
         final var defaultCharset = daggerApp.nativeCharset().get();
         if (!isUTF8(defaultCharset)) {
             logger.error(
-                    "Fatal precondition violation in HederaNode#{}:" + "default charset is {} and not UTF-8",
+                    """
+                    Fatal precondition violation in HederaNode#{}: default charset is {} and not UTF-8
+                    LC_ALL={}
+                    LANG={}
+                    file.encoding={}
+                    """,
                     daggerApp.nodeId(),
-                    defaultCharset);
+                    defaultCharset,
+                    System.getenv("LC_ALL"),
+                    System.getenv("LANG"),
+                    System.getProperty("file.encoding"));
             daggerApp.systemExits().fail(1);
         }
 
@@ -427,7 +435,7 @@ public final class Hedera implements SwirldMain {
         final var digestFactory = daggerApp.digestFactory();
         if (!sha384DigestIsAvailable(digestFactory)) {
             logger.error(
-                    "Fatal precondition violation in HederaNode#{}:" + "digest factory does not support SHA-384",
+                    "Fatal precondition violation in HederaNode#{}: digest factory does not support SHA-384",
                     daggerApp.nodeId());
             daggerApp.systemExits().fail(1);
         }

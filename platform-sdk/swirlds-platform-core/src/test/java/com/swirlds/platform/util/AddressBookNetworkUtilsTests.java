@@ -31,6 +31,8 @@ import java.net.SocketException;
 import java.net.UnknownHostException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 /**
  * Tests for {@link AddressBookNetworkUtils}
@@ -59,6 +61,15 @@ class AddressBookNetworkUtilsTests {
                 address.copySetHostnameInternal(Inet4Address.getByAddress(new byte[] {(byte) 192, (byte) 168, 0, 1})
                         .getHostAddress());
         assertFalse(AddressBookNetworkUtils.isLocal(notLocalAddress));
+    }
+
+    @Test
+    @DisplayName("Error On Invalid Local Address")
+    @DisabledOnOs({OS.WINDOWS, OS.MAC})
+    void ErrorOnInvalidLocalAddress() throws UnknownHostException, SocketException {
+        final AddressBook addressBook =
+                new RandomAddressBookGenerator().setSize(2).build();
+        final Address address = addressBook.getAddress(addressBook.getNodeId(0));
 
         final Address badLocalAddress = address.copySetHostnameInternal("500.8.8");
         assertThrows(IllegalStateException.class, () -> AddressBookNetworkUtils.isLocal(badLocalAddress));
