@@ -15,21 +15,11 @@
  */
 
 plugins {
-    id("com.swirlds.platform.conventions")
-    `java-library`
-    id("com.swirlds.platform.maven-publish")
+    id("com.hedera.hashgraph.sdk.conventions")
+    id("com.hedera.hashgraph.platform-maven-publish")
 }
 
-dependencies {
-    // Individual Dependencies
-    api(libs.bundles.logging.api)
-    api(project(":swirlds-config-api"))
-    api(project(":swirlds-common"))
-    implementation(libs.bundles.logging.impl)
-    implementation(libs.classgraph)
-    compileOnly(libs.spotbugs.annotations)
-
-    // Test Dependencies
-    testImplementation(testLibs.bundles.junit)
-    testImplementation(project(":swirlds-config-impl"))
+mainModuleInfo {
+    runtimeOnly("com.swirlds.config.api")
+    runtimeOnly("com.swirlds.config.impl")
 }

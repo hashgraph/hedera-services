@@ -21,6 +21,7 @@ import com.hedera.hapi.node.base.TokenAssociation;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
@@ -28,7 +29,7 @@ import java.util.List;
  * A {@code RecordBuilder} specialization for tracking the effects of a {@code CryptoTransfer}
  * transaction.
  */
-public interface CryptoTransferRecordBuilder {
+public interface CryptoTransferRecordBuilder extends SingleTransactionRecordBuilder {
     /**
      * Tracks the <b>net</b> hbar transfers that need to be applied to the associated accounts
      * (accounts are specified in the {@code TransferList} input param)

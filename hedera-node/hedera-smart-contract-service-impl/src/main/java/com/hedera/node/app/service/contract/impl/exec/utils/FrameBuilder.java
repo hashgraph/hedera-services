@@ -31,7 +31,6 @@ import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.ArrayDeque;
 import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -87,7 +86,6 @@ public class FrameBuilder {
         final var nominalCoinbase = asLongZeroAddress(ledgerConfig.fundingAccount());
         final var contextVariables = contextVariablesFrom(config);
         final var builder = MessageFrame.builder()
-                .messageFrameStack(new ArrayDeque<>())
                 .maxStackSize(MAX_STACK_SIZE)
                 .worldUpdater(worldUpdater.updater())
                 .initialGas(transaction.gasAvailable(intrinsicGas))
@@ -97,7 +95,6 @@ public class FrameBuilder {
                 .value(value)
                 .apparentValue(value)
                 .blockValues(context.blockValuesOf(transaction.gasLimit()))
-                .depth(0)
                 .completer(unused -> {})
                 .isStatic(context.staticCall())
                 .miningBeneficiary(nominalCoinbase)

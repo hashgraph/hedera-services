@@ -45,6 +45,7 @@ import com.hedera.node.app.service.contract.impl.exec.operations.CustomSelfDestr
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomStaticCallOperation;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomContractCreationProcessor;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameBuilder;
 import com.hedera.node.app.service.contract.impl.exec.v034.Version034FeatureFlags;
 import dagger.Binds;
@@ -69,7 +70,6 @@ import org.hyperledger.besu.evm.operation.SLoadOperation;
 import org.hyperledger.besu.evm.operation.SStoreOperation;
 import org.hyperledger.besu.evm.precompile.MainnetPrecompiledContracts;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
-import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 
 /**
@@ -117,8 +117,8 @@ public interface V038Module {
             @ServicesV038 @NonNull final FeatureFlags featureFlags,
             @ServicesV038 @NonNull final AddressChecks addressChecks,
             @ServicesV038 @NonNull final PrecompileContractRegistry registry,
-            @NonNull final Map<Address, PrecompiledContract> hederaPrecompiles) {
-        return new CustomMessageCallProcessor(evm, featureFlags, registry, addressChecks, hederaPrecompiles);
+            @NonNull final Map<Address, HederaSystemContract> systemContracts) {
+        return new CustomMessageCallProcessor(evm, featureFlags, registry, addressChecks, systemContracts);
     }
 
     @Provides

@@ -131,6 +131,12 @@ public class FeeCalculatorImpl implements FeeCalculator {
     @NonNull
     @Override
     public FeeCalculator addNetworkRamByteSeconds(long amount) {
+        usage.addNetworkRbs(amount);
+        return this;
+    }
+
+    @NonNull
+    public FeeCalculator addRamByteSeconds(long amount) {
         usage.addRbs(amount);
         return this;
     }
@@ -139,6 +145,18 @@ public class FeeCalculatorImpl implements FeeCalculator {
     @Override
     public FeeCalculator addStorageBytesSeconds(long seconds) {
         usage.addSbs(seconds);
+        return this;
+    }
+
+    @NonNull
+    public FeeCalculator addVerificationsPerTransaction(long amount) {
+        usage.addVpt(amount);
+        return this;
+    }
+
+    @NonNull
+    public FeeCalculator resetUsage() {
+        usage.reset();
         return this;
     }
 

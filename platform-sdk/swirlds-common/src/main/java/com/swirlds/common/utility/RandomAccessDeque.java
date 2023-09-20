@@ -16,6 +16,8 @@
 
 package com.swirlds.common.utility;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
@@ -238,6 +240,10 @@ public class RandomAccessDeque<T> implements Iterable<T> {
      */
     @Override
     public Iterator<T> iterator() {
+        if (size == 0) {
+            return Collections.emptyIterator();
+        }
+
         return iterator(0);
     }
 
@@ -249,6 +255,14 @@ public class RandomAccessDeque<T> implements Iterable<T> {
      * @return an iterator that walks over objects starting at an index
      */
     public Iterator<T> iterator(final int startingIndex) {
+        if (startingIndex >= size()) {
+            throw new IllegalArgumentException("startingIndex is " + startingIndex + " but size is " + size());
+        }
+
+        if (size == 0) {
+            return Collections.emptyIterator();
+        }
+
         return new Iterator<>() {
             private int offset = startingIndex;
 
@@ -267,5 +281,13 @@ public class RandomAccessDeque<T> implements Iterable<T> {
                 return next;
             }
         };
+    }
+
+    /** Clears all data from the deque making it the same as a new instance */
+    public void clear() {
+        Arrays.fill(data, null);
+        size = 0;
+        firstIndex = 0;
+        nextIndex = 0;
     }
 }

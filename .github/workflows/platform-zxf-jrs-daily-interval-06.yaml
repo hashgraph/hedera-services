@@ -14,7 +14,7 @@
 # limitations under the License.
 ##
 
-name: "Z-Platform XF: JRS Daily (Interval: 6)"
+name: "ZXF: [Platform] JRS Daily (Interval: 6)"
 on:
   workflow_dispatch:
     inputs:
@@ -97,7 +97,7 @@ jobs:
       - iss
     if: ${{ !cancelled() && always() }}
   addressBook-add-remove:
-    name: AddressBook Add/Remove
+    name: AddressBook-Add-Remove
     uses: ./.github/workflows/zxc-jrs-regression.yaml
     with:
       ref: ${{ github.event.inputs.ref }}

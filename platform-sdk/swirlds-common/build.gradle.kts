@@ -15,42 +15,25 @@
  */
 
 plugins {
-    id("com.swirlds.platform.conventions")
-    `java-library`
-    id("com.swirlds.platform.maven-publish")
-    id("org.gradle.java-test-fixtures")
+    id("com.hedera.hashgraph.sdk.conventions")
+    id("com.hedera.hashgraph.platform-maven-publish")
+    id("java-test-fixtures")
 }
 
-dependencies {
-    // Individual Dependencies
-    api(project(":swirlds-base"))
-    api(project(":swirlds-logging"))
-    api(project(":swirlds-config-api"))
-    implementation(libs.classgraph)
-    implementation(libs.prometheus.httpserver) {
-        exclude("io.prometheus", "simpleclient_tracer_otel")
-        exclude("io.prometheus", "simpleclient_tracer_otel_agent")
-    }
-    compileOnly(libs.spotbugs.annotations)
+mainModuleInfo {
+    runtimeOnly("resource.loader")
+    runtimeOnly("com.sun.jna")
+}
 
-    // Bundle Dependencies
-    api(libs.bundles.cryptography.core)
-    runtimeOnly(libs.bundles.cryptography.runtime)
-    implementation(libs.bundles.logging.impl)
-    compileOnly(libs.spotbugs.annotations)
-
-    // Test Dependencies
-    testCompileOnly(libs.spotbugs.annotations)
-    testImplementation(testLibs.bundles.junit)
-    testImplementation(testLibs.bundles.mocking)
-    testImplementation(testLibs.bundles.utils)
-    testImplementation(testFixtures(project(":swirlds-base")))
-    testImplementation(project(":swirlds-config-impl"))
-    testImplementation(project(":swirlds-unit-tests:common:swirlds-test-framework"))
-    testImplementation(project(":swirlds-unit-tests:common:swirlds-common-test"))
-    testImplementation(testFixtures(project(":swirlds-config-api")))
-
-    // Test Fixtures
-    testFixturesImplementation(testLibs.bundles.junit)
-    testFixturesCompileOnly(libs.spotbugs.annotations)
+testModuleInfo {
+    requires("com.swirlds.common.testing")
+    requires("com.swirlds.test.framework")
+    requires("com.swirlds.base.test.fixtures")
+    requires("com.swirlds.config.api.test.fixtures")
+    requires("org.assertj.core")
+    requires("org.junit.jupiter.api")
+    requires("org.junit.jupiter.params")
+    requires("org.mockito")
+    requires("org.mockito.junit.jupiter")
+    requiresStatic("com.github.spotbugs.annotations")
 }

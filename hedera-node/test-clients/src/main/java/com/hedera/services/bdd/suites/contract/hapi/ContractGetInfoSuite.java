@@ -22,7 +22,9 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withTargetLedgerId;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
@@ -54,6 +56,7 @@ public class ContractGetInfoSuite extends HapiSuite {
         return true;
     }
 
+    @HapiTest
     private HapiSpec getInfoWorks() {
         final var contract = "Multipurpose";
         final var MEMO = "This is a test.";
@@ -66,12 +69,13 @@ public class ContractGetInfoSuite extends HapiSuite {
                                 .entityMemo(MEMO)
                                 .autoRenewSecs(6999999L))
                 .when()
-                .then(getContractInfo(contract)
-                        .hasExpectedLedgerId("0x03")
+                .then(withTargetLedgerId(ledgerId -> getContractInfo(contract)
+                        .hasEncodedLedgerId(ledgerId)
                         .hasExpectedInfo()
-                        .has(contractWith().memo(MEMO).adminKey("adminKey")));
+                        .has(contractWith().memo(MEMO).adminKey("adminKey"))));
     }
 
+    @HapiTest
     private HapiSpec invalidContractFromCostAnswer() {
         return defaultHapiSpec("InvalidContractFromCostAnswer")
                 .given()
@@ -80,6 +84,7 @@ public class ContractGetInfoSuite extends HapiSuite {
                         .hasCostAnswerPrecheck(ResponseCodeEnum.INVALID_CONTRACT_ID));
     }
 
+    @HapiTest
     private HapiSpec invalidContractFromAnswerOnly() {
         return defaultHapiSpec("InvalidContractFromAnswerOnly")
                 .given()

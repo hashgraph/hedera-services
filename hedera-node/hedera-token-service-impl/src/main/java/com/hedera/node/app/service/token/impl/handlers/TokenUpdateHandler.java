@@ -29,6 +29,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static com.hedera.hapi.node.base.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
@@ -155,6 +156,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
                 // TODO : Not sure why we are checking existing treasury account here
                 final var existingTreasuryAccount = getIfUsable(
                         existingTreasury, accountStore, context.expiryValidator(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+
                 updateTreasuryTitles(existingTreasuryAccount, newTreasuryAccount, token, accountStore, tokenRelStore);
                 // If the token is fungible, transfer fungible balance to new treasury
                 // If it is non-fungible token transfer the ownership of the NFTs from old treasury to new treasury
@@ -194,6 +196,8 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
                 // and puts to modifications on state.
                 transferFungibleTokensToTreasury(oldTreasuryRel, newTreasuryRel, tokenRelStore, accountStore);
             } else {
+                // Check whether new treasury has balance, if it does throw TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES
+                validateTrue(newTreasuryRel.balance() == 0, TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
                 // Transfers NFT ownerships and updates account's numOwnedNfts and
                 // tokenRelation's balance and puts to modifications on state.
                 changeOwnerToNewTreasury(oldTreasuryRel, newTreasuryRel, tokenRelStore, accountStore);

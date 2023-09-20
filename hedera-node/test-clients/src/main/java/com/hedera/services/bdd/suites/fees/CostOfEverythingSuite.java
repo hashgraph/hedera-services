@@ -46,7 +46,6 @@ import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTIO
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static java.util.stream.Collectors.toList;
 
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -59,7 +58,6 @@ import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-@HapiTestSuite
 public class CostOfEverythingSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(CostOfEverythingSuite.class);
     private static final String PAYING_SENDER = "payingSender";

@@ -4,7 +4,7 @@ module com.hedera.node.app.service.token {
             com.hedera.node.app.service.contract.impl,
             com.hedera.node.app,
             com.hedera.node.app.service.token.impl,
-            com.hedera.node.app.service.token.fixtures;
+            com.hedera.node.app.service.token.test.fixtures;
     exports com.hedera.node.app.service.token.records to
             com.hedera.node.app.service.contract.impl,
             com.hedera.node.app,
@@ -15,5 +15,7 @@ module com.hedera.node.app.service.token {
     requires transitive com.hedera.node.app.spi;
     requires transitive com.hedera.node.hapi;
     requires transitive com.hedera.pbj.runtime;
+    requires transitive com.swirlds.config.api;
+    requires com.hedera.node.app.service.evm;
     requires com.github.spotbugs.annotations;
 }

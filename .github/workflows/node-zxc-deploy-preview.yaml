@@ -14,7 +14,7 @@
 # limitations under the License.
 ##
 
-name: "Z-Node XC: Deploy Preview"
+name: "ZXC: [Node] Deploy Preview Network Release"
 on:
   workflow_call:
     inputs:
@@ -112,14 +112,14 @@ jobs:
           fi
 
       - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@ef5d53e30bbcd8d0836f4288f5e50ff3e086997d # pin@v1
+        uses: google-github-actions/auth@35b0e87d162680511bf346c299f71c9c5c379033 # v1.1.1
         if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
         with:
           workload_identity_provider: "projects/235822363393/locations/global/workloadIdentityPools/hedera-builds-pool/providers/hedera-builds-gh-actions"
           service_account: "hedera-artifact-builds@devops-1-254919.iam.gserviceaccount.com"
 
       - name: Setup Google Cloud SDK
-        uses: google-github-actions/setup-gcloud@d51b5346f85640ec2aa2fa057354d2b82c2fcbce # pin@v1
+        uses: google-github-actions/setup-gcloud@e30db14379863a8c79331b04a9969f4c1e225e0b # v1.1.1
         if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
 
       - name: Validate Release Artifact Exist
@@ -137,7 +137,7 @@ jobs:
 
       - name: Notify Jenkins of Release (Preview)
         id: jenkins-preview
-        uses: fjogeleit/http-request-action@86014825e97036cd3e0903bbc72b3c5fff7474c4 # pin@v1
+        uses: fjogeleit/http-request-action@eab8015483ccea148feff7b1c65f320805ddc2bf # v1.14.1
         if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
         with:
           url: ${{ secrets.jenkins-preview-url }}

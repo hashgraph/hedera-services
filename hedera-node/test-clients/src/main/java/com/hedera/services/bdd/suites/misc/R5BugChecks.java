@@ -59,7 +59,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static java.util.stream.Collectors.toList;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.ControlForKey;
@@ -73,7 +72,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-@HapiTestSuite
 public class R5BugChecks extends HapiSuite {
     private static final Logger log = LogManager.getLogger(R5BugChecks.class);
     private static final String UNCHECKED_TRANSFER = "uncheckedTransfer";

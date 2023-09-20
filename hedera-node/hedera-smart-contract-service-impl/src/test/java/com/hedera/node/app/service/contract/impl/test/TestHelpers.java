@@ -16,7 +16,10 @@
 
 package com.hedera.node.app.service.contract.impl.test;
 
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmAddress;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToBesuAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniBytes;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static java.util.Objects.requireNonNull;
@@ -29,6 +32,7 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
@@ -38,7 +42,11 @@ import com.hedera.hapi.node.contract.ContractNonceInfo;
 import com.hedera.hapi.node.contract.EthereumTransactionBody;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.contract.Bytecode;
+import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
+import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.streams.CallOperationType;
 import com.hedera.hapi.streams.ContractAction;
@@ -47,7 +55,10 @@ import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.service.contract.impl.exec.failure.ResourceExhaustedException;
 import com.hedera.node.app.service.contract.impl.exec.gas.GasCharges;
 import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy;
+import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy.UseTopLevelSigs;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
@@ -64,7 +75,10 @@ import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -165,22 +179,111 @@ public class TestHelpers {
             FileID.newBuilder().fileNum(7890L).build();
     public static final TokenID FUNGIBLE_TOKEN_ID =
             TokenID.newBuilder().tokenNum(9876L).build();
-    public static final Token FUNGIBLE_TOKEN =
-            Token.newBuilder().tokenType(TokenType.FUNGIBLE_COMMON).build();
+    public static final com.esaulpaugh.headlong.abi.Address FUNGIBLE_TOKEN_HEADLONG_ADDRESS =
+            asHeadlongAddress(asEvmAddress(FUNGIBLE_TOKEN_ID.tokenNum()));
+    public static final TokenID NON_FUNGIBLE_TOKEN_ID =
+            TokenID.newBuilder().tokenNum(9898L).build();
+
+    public static final com.esaulpaugh.headlong.abi.Address NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS =
+            asHeadlongAddress(asEvmAddress(NON_FUNGIBLE_TOKEN_ID.tokenNum()));
+
+    public static final Token FUNGIBLE_TOKEN = Token.newBuilder()
+            .tokenId(FUNGIBLE_TOKEN_ID)
+            .name("Fungible Token")
+            .symbol("FT")
+            .decimals(6)
+            .totalSupply(666666L)
+            .tokenType(TokenType.FUNGIBLE_COMMON)
+            .build();
+
+    public static final Token UNREASONABLY_DIVISIBLE_TOKEN = Token.newBuilder()
+            .tokenId(FUNGIBLE_TOKEN_ID)
+            .name("Odd")
+            .symbol("ODD")
+            .decimals(Integer.MAX_VALUE)
+            .totalSupply(666666L)
+            .tokenType(TokenType.FUNGIBLE_COMMON)
+            .build();
+
+    public static final long NFT_SERIAL_NO = 666L;
+
+    public static final long[] NFT_SERIAL_NUMBERS = {41L, 42L, 43L};
+
+    public static final List<Long> NFT_SERIAL_NUMBERS_LIST =
+            Arrays.stream(NFT_SERIAL_NUMBERS).boxed().toList();
+
     public static final AccountID NON_SYSTEM_ACCOUNT_ID = AccountID.newBuilder()
             .accountNum(numberOfLongZero(NON_SYSTEM_LONG_ZERO_ADDRESS))
+            .build();
+
+    public static final Token NON_FUNGIBLE_TOKEN = Token.newBuilder()
+            .tokenId(NON_FUNGIBLE_TOKEN_ID)
+            .treasuryAccountId(NON_SYSTEM_ACCOUNT_ID)
+            .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
             .build();
 
     public static final AccountID A_NEW_ACCOUNT_ID =
             AccountID.newBuilder().accountNum(191919L).build();
     public static final AccountID B_NEW_ACCOUNT_ID =
             AccountID.newBuilder().accountNum(919191L).build();
+    public static final AccountID OPERATOR_ACCOUNT_ID =
+            AccountID.newBuilder().accountNum(7777777L).build();
+
+    public static final Nft TREASURY_OWNED_NFT = Nft.newBuilder()
+            .metadata(Bytes.wrap("Unsold"))
+            .nftId(NftID.newBuilder().tokenId(NON_FUNGIBLE_TOKEN_ID).serialNumber(NFT_SERIAL_NO))
+            .ownerId(AccountID.newBuilder().accountNum(0).build())
+            .build();
+
+    public static final Nft CIVILIAN_OWNED_NFT = Nft.newBuilder()
+            .metadata(Bytes.wrap("SOLD"))
+            .nftId(NftID.newBuilder().tokenId(NON_FUNGIBLE_TOKEN_ID).serialNumber(NFT_SERIAL_NO))
+            .ownerId(A_NEW_ACCOUNT_ID)
+            .spenderId(B_NEW_ACCOUNT_ID)
+            .build();
     public static final org.apache.tuweni.bytes.Bytes SOME_REVERT_REASON =
             org.apache.tuweni.bytes.Bytes.wrap("I prefer not to".getBytes());
     public static final ContractID NON_SYSTEM_CONTRACT_ID = ContractID.newBuilder()
             .contractNum(numberOfLongZero(NON_SYSTEM_LONG_ZERO_ADDRESS))
             .build();
     public static final Address EIP_1014_ADDRESS = Address.fromHexString("0x89abcdef89abcdef89abcdef89abcdef89abcdef");
+
+    public static final Account OPERATOR =
+            Account.newBuilder().accountId(B_NEW_ACCOUNT_ID).build();
+
+    public static final Account SOMEBODY = Account.newBuilder()
+            .accountId(A_NEW_ACCOUNT_ID)
+            .key(AN_ED25519_KEY)
+            .approveForAllNftAllowances(
+                    AccountApprovalForAllAllowance.newBuilder()
+                            .tokenId(NON_FUNGIBLE_TOKEN_ID)
+                            .spenderId(OPERATOR_ACCOUNT_ID)
+                            .build(),
+                    AccountApprovalForAllAllowance.newBuilder()
+                            .tokenId(FUNGIBLE_TOKEN_ID)
+                            .spenderId(B_NEW_ACCOUNT_ID)
+                            .build(),
+                    AccountApprovalForAllAllowance.newBuilder()
+                            .tokenId(NON_FUNGIBLE_TOKEN_ID)
+                            .spenderId(B_NEW_ACCOUNT_ID)
+                            .build())
+            .build();
+    public static final Account ALIASED_SOMEBODY = Account.newBuilder()
+            .accountId(A_NEW_ACCOUNT_ID)
+            .alias(tuweniToPbjBytes(EIP_1014_ADDRESS))
+            .build();
+
+    public static final Account PARANOID_SOMEBODY = Account.newBuilder()
+            .accountId(B_NEW_ACCOUNT_ID)
+            .receiverSigRequired(true)
+            .key(AN_ED25519_KEY)
+            .alias(tuweniToPbjBytes(EIP_1014_ADDRESS))
+            .build();
+    public static final TokenRelation A_FUNGIBLE_RELATION = TokenRelation.newBuilder()
+            .tokenId(FUNGIBLE_TOKEN_ID)
+            .accountId(A_NEW_ACCOUNT_ID)
+            .balance(123L)
+            .build();
     public static final Bytes CANONICAL_ALIAS = tuweniToPbjBytes(EIP_1014_ADDRESS);
     public static final ContractID CALLED_CONTRACT_EVM_ADDRESS =
             ContractID.newBuilder().evmAddress(CANONICAL_ALIAS).build();
@@ -204,6 +307,9 @@ public class TestHelpers {
     public static final String PSEUDORANDOM_SEED_GENERATOR_SELECTOR = "0xd83bf9a1";
     public static final org.apache.tuweni.bytes.Bytes PSEUDO_RANDOM_SYSTEM_CONTRACT_ADDRESS =
             org.apache.tuweni.bytes.Bytes.fromHexString(PSEUDORANDOM_SEED_GENERATOR_SELECTOR);
+    public static final String EXCHANGE_RATE_SELECTOR = "0xd83bf9a1";
+    public static final org.apache.tuweni.bytes.Bytes EXCHANGE_RATE_SYSTEM_CONTRACT_ADDRESS =
+            org.apache.tuweni.bytes.Bytes.fromHexString(EXCHANGE_RATE_SELECTOR);
     public static final org.apache.tuweni.bytes.Bytes EXPECTED_RANDOM_NUMBER =
             org.apache.tuweni.bytes.Bytes.fromHexString(
                     "0x1234567890123456789012345678901234567890123456789012345678901234");
@@ -283,6 +389,15 @@ public class TestHelpers {
             .recipientContract(CALLED_CONTRACT_ID)
             .gas(REMAINING_GAS)
             .build();
+    public static final Key A_CONTRACT_KEY = Key.newBuilder()
+            .contractID(ContractID.newBuilder().contractNum(1234L))
+            .build();
+    public static final Key A_SECP256K1_KEY = Key.newBuilder()
+            .ecdsaSecp256k1(Bytes.fromHex("030101010101010101010101010101010101010101010101010101010101010101"))
+            .build();
+    public static final Key B_SECP256K1_KEY = Key.newBuilder()
+            .ecdsaSecp256k1(Bytes.fromHex("039191919191919191919191919191919191919191919191919191919191919191"))
+            .build();
     private static final ContractCreateTransactionBody MOCK_CREATE_BODY = ContractCreateTransactionBody.newBuilder()
             .memo("Something to think about")
             .build();
@@ -299,12 +414,48 @@ public class TestHelpers {
             TransactionBody.newBuilder().ethereumTransaction(MOCK_ETH_BODY).build();
 
     public static final VerificationStrategy MOCK_VERIFICATION_STRATEGY =
-            new ActiveContractVerificationStrategy(1, Bytes.EMPTY, true);
+            new ActiveContractVerificationStrategy(1, Bytes.EMPTY, true, UseTopLevelSigs.NO);
+    public static final AccountID OWNER_ID =
+            AccountID.newBuilder().accountNum(121212L).build();
+    public static final Bytes OWNER_ADDRESS = Bytes.fromHex("a213624b8b83a724438159ba7c0d333a2b6b3990");
+    public static final com.esaulpaugh.headlong.abi.Address OWNER_HEADLONG_ADDRESS =
+            asHeadlongAddress(OWNER_ADDRESS.toByteArray());
+    public static final Address OWNER_BESU_ADDRESS = pbjToBesuAddress(OWNER_ADDRESS);
+    public static final AccountID UNAUTHORIZED_SPENDER_ID =
+            AccountID.newBuilder().accountNum(999999L).build();
+    public static final Bytes UNAUTHORIZED_SPENDER_ADDRESS = Bytes.fromHex("b284224b8b83a724438cc3cc7c0d333a2b6b3222");
+    public static final com.esaulpaugh.headlong.abi.Address UNAUTHORIZED_SPENDER_HEADLONG_ADDRESS =
+            asHeadlongAddress(UNAUTHORIZED_SPENDER_ADDRESS.toByteArray());
+    public static final Address UNAUTHORIZED_SPENDER_BESU_ADDRESS = pbjToBesuAddress(UNAUTHORIZED_SPENDER_ADDRESS);
+    public static final AccountID APPROVED_ID =
+            AccountID.newBuilder().accountNum(8888888L).build();
+    public static final Bytes APPROVED_ADDRESS = Bytes.fromHex("aa1e6a49898ea7a44e81599a7c0deeeaa969e990");
+    public static final com.esaulpaugh.headlong.abi.Address APPROVED_HEADLONG_ADDRESS =
+            asHeadlongAddress(APPROVED_ADDRESS.toByteArray());
+    public static final Address APPROVED_BESU_ADDRESS = pbjToBesuAddress(APPROVED_ADDRESS);
+
+    public static final AccountID RECEIVER_ID =
+            AccountID.newBuilder().accountNum(7773777L).build();
+    public static final Bytes RECEIVER_ADDRESS = Bytes.fromHex("3b1ef340808e37344e8150037c0deee33060e123");
+    public static final com.esaulpaugh.headlong.abi.Address RECEIVER_HEADLONG_ADDRESS =
+            asHeadlongAddress(RECEIVER_ADDRESS.toByteArray());
+    public static final Address RECEIVER_BESU_ADDRESS = pbjToBesuAddress(RECEIVER_ADDRESS);
 
     public static void assertSameResult(
             final Operation.OperationResult expected, final Operation.OperationResult actual) {
         assertEquals(expected.getHaltReason(), actual.getHaltReason());
         assertEquals(expected.getGasCost(), actual.getGasCost());
+    }
+
+    public static void assertSamePrecompileResult(
+            final HederaSystemContract.FullResult expected, final HederaSystemContract.FullResult actual) {
+        assertEquals(expected.gasRequirement(), actual.gasRequirement());
+        final var expectedResult = expected.result();
+        final var actualResult = actual.result();
+        assertEquals(expectedResult.getState(), actualResult.getState());
+        assertEquals(expectedResult.getOutput(), actualResult.getOutput());
+        assertEquals(expectedResult.getHaltReason(), actualResult.getHaltReason());
+        assertEquals(expectedResult.isRefundGas(), actualResult.isRefundGas());
     }
 
     public static boolean isSameResult(
@@ -405,5 +556,43 @@ public class TestHelpers {
             @NonNull final Runnable something, @NonNull final ResponseCodeEnum status) {
         final var ex = assertThrows(ResourceExhaustedException.class, something::run);
         assertEquals(status, ex.getStatus());
+    }
+
+    public static com.esaulpaugh.headlong.abi.Address asHeadlongAddress(final Address address) {
+        return asHeadlongAddress(address.toArrayUnsafe());
+    }
+
+    public static com.esaulpaugh.headlong.abi.Address asHeadlongAddress(final long entityNum) {
+        final var addressBytes = org.apache.tuweni.bytes.Bytes.wrap(asLongZeroAddress(entityNum));
+        final var addressAsInteger = addressBytes.toUnsignedBigInteger();
+        return com.esaulpaugh.headlong.abi.Address.wrap(
+                com.esaulpaugh.headlong.abi.Address.toChecksumAddress(addressAsInteger));
+    }
+
+    public static com.esaulpaugh.headlong.abi.Address asHeadlongAddress(final byte[] address) {
+        final var addressBytes = org.apache.tuweni.bytes.Bytes.wrap(address);
+        final var addressAsInteger = addressBytes.toUnsignedBigInteger();
+        return com.esaulpaugh.headlong.abi.Address.wrap(
+                com.esaulpaugh.headlong.abi.Address.toChecksumAddress(addressAsInteger));
+    }
+
+    public static org.apache.tuweni.bytes.Bytes revertOutputFor(final ResponseCodeEnum status) {
+        return org.apache.tuweni.bytes.Bytes.wrap(status.protoName().getBytes(StandardCharsets.UTF_8));
+    }
+
+    public static org.apache.tuweni.bytes.Bytes bytesForRedirect(
+            final ByteBuffer encodedErcCall, final TokenID tokenId) {
+        return bytesForRedirect(encodedErcCall.array(), asLongZeroAddress(tokenId.tokenNum()));
+    }
+
+    public static org.apache.tuweni.bytes.Bytes bytesForRedirect(final byte[] subSelector, final Address tokenAddress) {
+        return org.apache.tuweni.bytes.Bytes.concatenate(
+                org.apache.tuweni.bytes.Bytes.wrap(HtsCallAttempt.REDIRECT_FOR_TOKEN.selector()),
+                tokenAddress,
+                org.apache.tuweni.bytes.Bytes.of(subSelector));
+    }
+
+    public static org.apache.tuweni.bytes.Bytes asBytesResult(final ByteBuffer encoded) {
+        return org.apache.tuweni.bytes.Bytes.wrap(encoded.array());
     }
 }
