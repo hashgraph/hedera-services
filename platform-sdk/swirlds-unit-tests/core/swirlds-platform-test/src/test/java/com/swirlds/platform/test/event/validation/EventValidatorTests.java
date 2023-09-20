@@ -129,8 +129,9 @@ class EventValidatorTests {
     void accumulatedTransactionSize(final int transAmount) {
         final int maxTransactionBytesPerEvent = 2000;
         final GossipEventValidator validator = new TransactionSizeValidator(maxTransactionBytesPerEvent);
-        final GossipEvent event =
-                GossipEventBuilder.builder().setNumberOfTransactions(transAmount).buildGossipEvent();
+        final GossipEvent event = GossipEventBuilder.builder()
+                .setNumberOfTransactions(transAmount)
+                .buildGossipEvent();
 
         int eventTransSize = 0;
         for (final Transaction t : event.getHashedData().getTransactions()) {

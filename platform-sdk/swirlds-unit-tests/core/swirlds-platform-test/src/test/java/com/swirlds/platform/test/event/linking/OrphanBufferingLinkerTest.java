@@ -70,10 +70,14 @@ class OrphanBufferingLinkerTest {
      * </pre>
      */
     private static List<GossipEvent> buildGraph(final Random r) {
-        final GossipEvent e0 =
-                GossipEventBuilder.builder().setRandom(r).setCreatorId(new NodeId(1)).buildGossipEvent();
-        final GossipEvent e1 =
-                GossipEventBuilder.builder().setRandom(r).setCreatorId(new NodeId(2)).buildGossipEvent();
+        final GossipEvent e0 = GossipEventBuilder.builder()
+                .setRandom(r)
+                .setCreatorId(new NodeId(1))
+                .buildGossipEvent();
+        final GossipEvent e1 = GossipEventBuilder.builder()
+                .setRandom(r)
+                .setCreatorId(new NodeId(2))
+                .buildGossipEvent();
         final GossipEvent e2 = GossipEventBuilder.builder()
                 .setRandom(r)
                 .setCreatorId(new NodeId(1))
@@ -284,7 +288,8 @@ class OrphanBufferingLinkerTest {
 
         // now we create an ancient events and insert it
         final GossipEvent ancient = GossipEventBuilder.builder()
-                .setSelfParent(GossipEventBuilder.builder().setGeneration(ancientGen).buildGossipEvent())
+                .setSelfParent(
+                        GossipEventBuilder.builder().setGeneration(ancientGen).buildGossipEvent())
                 .buildGossipEvent();
         orphanBuffer.linkEvent(ancient);
         Assertions.assertSame(
@@ -295,8 +300,9 @@ class OrphanBufferingLinkerTest {
 
         // now we create a non-ancient orphan and insert it
         final GossipEvent orphan = GossipEventBuilder.builder()
-                .setSelfParent(
-                        GossipEventBuilder.builder().setGeneration(nonAncientGen).buildGossipEvent())
+                .setSelfParent(GossipEventBuilder.builder()
+                        .setGeneration(nonAncientGen)
+                        .buildGossipEvent())
                 .buildGossipEvent();
         orphanBuffer.linkEvent(orphan);
         Assertions.assertFalse(orphanBuffer.hasLinkedEvents(), "the orphan should not be linked");
@@ -320,8 +326,9 @@ class OrphanBufferingLinkerTest {
                 new TestConfigBuilder().getOrCreateConfig().getConfigData(ConsensusConfig.class);
         final OrphanBufferTester orphanBuffer =
                 new OrphanBufferTester(pf -> new OrphanBufferingLinker(consensusConfig, pf, GENERATIONS_STORED));
-        final GossipEvent outsideWindow =
-                GossipEventBuilder.builder().setGeneration(GENERATIONS_STORED + 1).buildGossipEvent();
+        final GossipEvent outsideWindow = GossipEventBuilder.builder()
+                .setGeneration(GENERATIONS_STORED + 1)
+                .buildGossipEvent();
 
         assertDoesNotThrow(
                 () -> orphanBuffer.linkEvent(outsideWindow),
