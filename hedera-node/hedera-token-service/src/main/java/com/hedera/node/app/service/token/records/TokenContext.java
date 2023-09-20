@@ -22,9 +22,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 
 /**
- * Interface that contains all information needed to calculate staking.
+ * Interface that contains all information needed for token-specific actions.
  */
-public interface StakingContext {
+public interface TokenContext {
     /**
      * Returns the current consensus time.
      *
