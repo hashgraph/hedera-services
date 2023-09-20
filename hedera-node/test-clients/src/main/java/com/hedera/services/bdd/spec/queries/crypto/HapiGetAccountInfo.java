@@ -72,6 +72,9 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
     @Nullable
     private Consumer<byte[]> aliasObserver = null;
 
+    @Nullable
+    private Consumer<ByteString> ledgerIdObserver = null;
+
     private Optional<Consumer<String>> contractAccountIdObserver = Optional.empty();
     private Optional<Integer> tokenAssociationsCount = Optional.empty();
     private boolean assertAliasKeyMatches = false;
@@ -136,6 +139,11 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 
     public HapiGetAccountInfo exposingAliasTo(Consumer<byte[]> obs) {
         this.aliasObserver = obs;
+        return this;
+    }
+
+    public HapiGetAccountInfo exposingLedgerIdTo(Consumer<ByteString> obs) {
+        this.ledgerIdObserver = obs;
         return this;
     }
 
@@ -240,7 +248,7 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
             }
             assertEquals(actualCount, usedCount);
         });
-        expectedLedgerId.ifPresent(id -> assertEquals(rationalize(id), actualInfo.getLedgerId()));
+        expectedLedgerId.ifPresent(id -> assertEquals(id, actualInfo.getLedgerId()));
 
         tokenAssociationsCount.ifPresent(count -> assertEquals(count, actualInfo.getTokenRelationshipsCount()));
     }
@@ -275,6 +283,8 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
             Optional.ofNullable(aliasObserver)
                     .ifPresent(cb ->
                             cb.accept(infoResponse.getAccountInfo().getAlias().toByteArray()));
+            Optional.ofNullable(ledgerIdObserver)
+                    .ifPresent(cb -> cb.accept(infoResponse.getAccountInfo().getLedgerId()));
             contractAccountIdObserver.ifPresent(
                     cb -> cb.accept(infoResponse.getAccountInfo().getContractAccountID()));
         }
