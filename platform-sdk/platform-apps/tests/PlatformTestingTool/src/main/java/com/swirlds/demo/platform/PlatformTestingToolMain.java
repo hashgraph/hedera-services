@@ -59,6 +59,7 @@ import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.SystemExitCode;
 import com.swirlds.common.system.SystemExitUtils;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.state.notifications.NewSignedStateListener;
 import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
@@ -90,6 +91,7 @@ import com.swirlds.merkle.map.test.pta.TransactionRecord;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.ParameterProvider;
 import com.swirlds.virtualmap.internal.merkle.VirtualLeafNode;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -839,7 +841,8 @@ public class PlatformTestingToolMain implements SwirldMain {
     }
 
     @Override
-    public SwirldState newState() {
+    @NonNull
+    public SwirldState newState(@NonNull final AddressBook addressBook) {
         return new PlatformTestingToolState();
     }
 

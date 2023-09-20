@@ -23,6 +23,7 @@ import com.hedera.node.app.service.mono.utils.SystemExits;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
+import com.swirlds.common.system.address.AddressBook;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -40,6 +41,12 @@ public interface PlatformModule {
     @Singleton
     static NodeId selfId(@NonNull final Platform platform) {
         return platform.getSelfId();
+    }
+
+    @Provides
+    @Singleton
+    static AddressBook addressBook(@NonNull final Platform platform) {
+        return platform.getAddressBook();
     }
 
     @Provides

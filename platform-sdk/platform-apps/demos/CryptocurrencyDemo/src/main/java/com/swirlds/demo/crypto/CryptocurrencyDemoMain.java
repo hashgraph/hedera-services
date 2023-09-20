@@ -36,11 +36,13 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.gui.model.GuiModel;
 import com.swirlds.platform.Browser;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.util.Random;
@@ -181,7 +183,8 @@ public class CryptocurrencyDemoMain implements SwirldMain {
     }
 
     @Override
-    public SwirldState newState() {
+    @NonNull
+    public SwirldState newState(@NonNull final AddressBook addressBook) {
         return new CryptocurrencyDemoState();
     }
 

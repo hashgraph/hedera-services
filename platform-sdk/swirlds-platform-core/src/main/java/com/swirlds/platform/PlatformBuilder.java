@@ -68,7 +68,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Supplier;
+import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -91,7 +91,7 @@ public final class PlatformBuilder {
 
     private final String appName;
     private final SoftwareVersion softwareVersion;
-    private final Supplier<SwirldState> genesisStateBuilder;
+    private final Function<AddressBook, SwirldState> genesisStateBuilder;
     private final NodeId selfId;
     private final String swirldName;
 
@@ -131,7 +131,7 @@ public final class PlatformBuilder {
             @NonNull final String appName,
             @NonNull final String swirldName,
             @NonNull final SoftwareVersion softwareVersion,
-            @NonNull final Supplier<SwirldState> genesisStateBuilder,
+            @NonNull final Function<AddressBook, SwirldState> genesisStateBuilder,
             @NonNull final NodeId selfId) {
 
         this.appName = Objects.requireNonNull(appName);
@@ -316,7 +316,7 @@ public final class PlatformBuilder {
                 platformContext,
                 recycleBin,
                 softwareVersion,
-                genesisStateBuilder,
+                () -> genesisStateBuilder.apply(configAddressBook),
                 appName,
                 swirldName,
                 selfId,

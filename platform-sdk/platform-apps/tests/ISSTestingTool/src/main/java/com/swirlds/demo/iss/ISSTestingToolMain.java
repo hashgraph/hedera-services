@@ -23,8 +23,10 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.state.notifications.IssListener;
 import com.swirlds.common.system.state.notifications.IssNotification;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Random;
@@ -85,7 +87,8 @@ public class ISSTestingToolMain implements SwirldMain {
      * {@inheritDoc}
      */
     @Override
-    public SwirldState newState() {
+    @NonNull
+    public SwirldState newState(@NonNull final AddressBook addressBook) {
         return new ISSTestingToolState();
     }
 

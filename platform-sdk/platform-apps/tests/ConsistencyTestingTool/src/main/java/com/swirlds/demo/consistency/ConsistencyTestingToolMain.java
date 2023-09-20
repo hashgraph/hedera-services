@@ -24,6 +24,7 @@ import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
+import com.swirlds.common.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.SecureRandom;
@@ -87,7 +88,7 @@ public class ConsistencyTestingToolMain implements SwirldMain {
      */
     @Override
     @NonNull
-    public SwirldState newState() {
+    public SwirldState newState(@NonNull final AddressBook addressBook) {
         return new ConsistencyTestingToolState();
     }
 

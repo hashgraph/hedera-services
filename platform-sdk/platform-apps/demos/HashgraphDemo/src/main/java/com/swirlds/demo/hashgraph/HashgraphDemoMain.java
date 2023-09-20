@@ -502,7 +502,7 @@ public class HashgraphDemoMain implements SwirldMain {
     }
 
     @Override
-    public SwirldState newState() {
+    public SwirldState newState(final AddressBook addressBook) {
         return new HashgraphDemoState();
     }
 

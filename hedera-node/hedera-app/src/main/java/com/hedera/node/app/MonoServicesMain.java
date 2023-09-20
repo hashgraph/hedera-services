@@ -30,9 +30,11 @@ import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.state.notifications.IssListener;
 import com.swirlds.common.system.state.notifications.NewSignedStateListener;
 import com.swirlds.platform.Browser;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.NoSuchAlgorithmException;
 import java.util.Locale;
 import org.apache.logging.log4j.LogManager;
@@ -73,7 +75,8 @@ public class MonoServicesMain implements SwirldMain {
     }
 
     @Override
-    public SwirldState newState() {
+    @NonNull
+    public SwirldState newState(@NonNull final AddressBook addressBook) {
         return new ServicesState();
     }
 

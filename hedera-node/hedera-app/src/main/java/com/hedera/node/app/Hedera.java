@@ -71,6 +71,7 @@ import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldState;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.common.system.transaction.Transaction;
@@ -83,6 +84,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
@@ -130,6 +132,10 @@ public final class Hedera {
     private final ConfigProvider bootstrapConfigProvider;
     /** The Hashgraph Platform. */
     private final SwirldsPlatform platform;
+    /** The ID of this node. */
+    private final NodeId selfId;
+    /** The address book, null until known. */
+    private AddressBook platformAddressBook = null;
     /** The configuration for this node */
     private ConfigProviderImpl configProvider;
     /** The throttle manager for parsing the throttle definition file */
@@ -205,6 +211,8 @@ public final class Hedera {
         logger.info("Welcome to Hedera! Developed with ❤\uFE0F by the Open Source Community. "
                 + "https://github.com/hashgraph/hedera-services");
 
+        this.selfId = Objects.requireNonNull(selfId);
+
         // Load the bootstrap configuration. These config values are NOT stored in state, so we don't need to have
         // state up and running for getting their values. We use this bootstrap config only in this constructor.
         this.bootstrapConfigProvider = new BootstrapConfigProviderImpl();
@@ -256,8 +264,8 @@ public final class Hedera {
             throw new RuntimeException(e);
         }
 
-        final PlatformBuilder builder =
-                new PlatformBuilder(Hedera.APP_NAME, Hedera.SWIRLD_NAME, getSoftwareVersion(), this::newState, selfId);
+        final PlatformBuilder builder = new PlatformBuilder(
+                Hedera.APP_NAME, Hedera.SWIRLD_NAME, getSoftwareVersion(), this::buildGenesisState, selfId);
         if (updatePlatformBuilder != null) {
             updatePlatformBuilder.accept(builder);
         }
@@ -309,6 +317,17 @@ public final class Hedera {
     @NonNull
     public SwirldState newState() {
         return new MerkleHederaState(this::onPreHandle, this::onHandleConsensusRound, this::onStateInitialized);
+    }
+
+    /**
+     * Build the genesis state.
+     *
+     * @param platformAddressBook The address book to use for the genesis state.
+     * @return The genesis state.
+     */
+    public SwirldState buildGenesisState(@NonNull final AddressBook platformAddressBook) {
+        this.platformAddressBook = Objects.requireNonNull(platformAddressBook);
+        return newState();
     }
 
     /*==================================================================================================================
@@ -403,10 +422,9 @@ public final class Hedera {
                 () -> previousVersion == null ? "<NONE>" : HapiUtils.toString(previousVersion),
                 () -> HapiUtils.toString(currentVersion));
 
-        final var selfId = platform.getSelfId();
-        final var nodeAddress = platform.getAddressBook().getAddress(selfId);
+        final var nodeAddress = platformAddressBook.getAddress(selfId);
         final var selfNodeInfo = SelfNodeInfoImpl.of(nodeAddress, version);
-        final var networkInfo = new NetworkInfoImpl(selfNodeInfo, platform, bootstrapConfigProvider);
+        final var networkInfo = new NetworkInfoImpl(selfNodeInfo, platformAddressBook, bootstrapConfigProvider);
         for (final var registration : servicesRegistry.registrations()) {
             // FUTURE We should have metrics here to keep track of how long it takes to migrate each service
             final var service = registration.service();
@@ -435,6 +453,7 @@ public final class Hedera {
             throw new IllegalArgumentException("Platform must be the same instance");
         }
         logger.info("Initializing Hedera app with HederaNode#{}", nodeId);
+        platformAddressBook = platform.getAddressBook();
 
         // Check that UTF-8 is in use. Otherwise, the node will be subject to subtle bugs in string handling that will
         // lead to ISS.
