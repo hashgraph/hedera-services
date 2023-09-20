@@ -273,7 +273,7 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
                 if (lastProvokedIssTime.equals(currentTimestamp)) {
                     logger.info(
                             STARTUP.getMarker(),
-                            "Planned {} skipped at {} because this ISS was invoked prior to restart.",
+                            "Planned {} skipped at {} because this ISS was already invoked (likely before a restart).",
                             plannedIncident.getDescriptor(),
                             currentTimestamp);
                 }
