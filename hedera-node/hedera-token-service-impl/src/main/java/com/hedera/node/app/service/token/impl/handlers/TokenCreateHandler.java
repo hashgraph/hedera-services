@@ -262,9 +262,16 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
      * @param op token creation transaction body
      * @return given expiry metadata
      */
-    private ExpiryMeta getExpiryMeta(@NonNull final TokenCreateTransactionBody op) {
+    private ExpiryMeta getExpiryMeta(
+            final long consensusTime,
+            @NonNull final TokenCreateTransactionBody op,
+            @NonNull final HandleContext context) {
+        final var maxEntityLifetime =
+                context.configuration().getConfigData(EntitiesConfig.class).maxLifetime();
+        final var impliedExpiry = op.hasExpiry() ? op.expiry().seconds() : consensusTime + maxEntityLifetime;
+
         return new ExpiryMeta(
-                op.expiry().seconds(),
+                impliedExpiry,
                 op.hasAutoRenewPeriod() ? op.autoRenewPeriod().seconds() : NA,
                 // Shard and realm will be ignored if num is NA
                 op.autoRenewAccount());
@@ -293,7 +300,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         tokenCreateValidator.validate(context, accountStore, op, config);
 
         // validate expiration and auto-renew account if present
-        final var givenExpiryMeta = getExpiryMeta(op);
+        final var givenExpiryMeta = getExpiryMeta(context.consensusNow().getEpochSecond(), op, context);
         final var resolvedExpiryMeta = context.expiryValidator().resolveCreationAttempt(false, givenExpiryMeta);
 
         // validate auto-renew account exists

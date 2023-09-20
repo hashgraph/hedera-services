@@ -662,7 +662,6 @@ public class TokenCreateSpecs extends HapiSuite {
                         tokenCreate(token)
                                 .treasury(tokenCollector)
                                 .withCustom(fixedHtsFee(negativeHtsFee, feeDenom, hbarCollector))
-                                //
                                 .hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE),
                         tokenCreate(token)
                                 .treasury(tokenCollector)
