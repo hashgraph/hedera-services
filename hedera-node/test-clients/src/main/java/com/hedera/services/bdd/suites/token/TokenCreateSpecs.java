@@ -274,7 +274,6 @@ public class TokenCreateSpecs extends HapiSuite {
                         tokenCreate("neverToBe").expiry(okExpiry));
     }
 
-    @HapiTest
     public HapiSpec autoRenewValidationWorks() {
         final var deletingAccount = "deletingAccount";
         return defaultHapiSpec("AutoRenewValidationWorks")
