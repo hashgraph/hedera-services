@@ -41,4 +41,7 @@ public class NoOpLongGauge extends AbstractNoOpMetric implements LongGauge {
      */
     @Override
     public void set(final long newValue) {}
+
+    @Override
+    public void add(final long delta) {}
 }

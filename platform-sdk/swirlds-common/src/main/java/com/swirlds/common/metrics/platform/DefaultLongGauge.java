@@ -64,6 +64,14 @@ public class DefaultLongGauge extends DefaultMetric implements LongGauge {
      * {@inheritDoc}
      */
     @Override
+    public void add(final long delta) {
+        value.addAndGet(delta);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public String toString() {
         return new ToStringBuilder(this)
                 .appendSuper(super.toString())

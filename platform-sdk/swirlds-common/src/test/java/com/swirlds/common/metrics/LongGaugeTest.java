@@ -44,6 +44,9 @@ class LongGaugeTest {
         public void set(long newValue) {}
 
         @Override
+        public void add(long delta) {}
+
+        @Override
         public String getCategory() {
             return null;
         }

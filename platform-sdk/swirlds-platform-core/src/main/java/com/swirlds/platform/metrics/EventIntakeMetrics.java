@@ -26,6 +26,7 @@ import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
 import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.metrics.LongGauge;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
@@ -69,35 +70,35 @@ public class EventIntakeMetrics implements StaleEventObserver {
             new RunningAverageMetric.Config(INTERNAL_CATEGORY, "shouldCreateEvent").withFormat(FORMAT_10_1);
     private final RunningAverageMetric shouldCreateEvent;
 
-    private static final SpeedometerMetric.Config STALE_EVENTS_PER_SECOND_CONFIG = new SpeedometerMetric.Config(
-                    INTERNAL_CATEGORY, "staleEventsPerSecond")
-            .withDescription("number of stale events per second");
-    private final SpeedometerMetric staleEventsPerSecond;
+    private static final LongGauge.Config STALE_EVENTS_PER_SECOND_CONFIG = new LongGauge.Config(
+                    INTERNAL_CATEGORY, "staleEvents")
+            .withDescription("number of stale events since the node booted up");
+    private final LongGauge staleEventCount;
 
-    private static final SpeedometerMetric.Config STALE_SELF_EVENTS_PER_SECOND_CONFIG = new SpeedometerMetric.Config(
-                    INTERNAL_CATEGORY, "staleSelfEventsPerSecond")
-            .withDescription("number of stale self events per second");
-    private final SpeedometerMetric staleSelfEventsPerSecond;
+    private static final LongGauge.Config STALE_SELF_EVENTS_PER_SECOND_CONFIG = new LongGauge.Config(
+                    INTERNAL_CATEGORY, "staleSelfEvents")
+            .withDescription("number of stale self events since the node booted up");
+    private final LongGauge staleSelfEventCount;
 
-    private static final SpeedometerMetric.Config STALE_APP_TRANSACTIONS_PER_SECOND_CONFIG =
-            new SpeedometerMetric.Config(INTERNAL_CATEGORY, "staleAppTransactionsPerSecond")
-                    .withDescription("number of application transactions in stale events per second");
-    private final SpeedometerMetric staleAppTransactionsPerSecond;
+    private static final LongGauge.Config STALE_APP_TRANSACTIONS_PER_SECOND_CONFIG = new LongGauge.Config(
+                    INTERNAL_CATEGORY, "staleAppTransactions")
+            .withDescription("number of application transactions in stale events since the node booted up");
+    private final LongGauge staleAppTransactionCount;
 
-    private static final SpeedometerMetric.Config STALE_SELF_APP_TRANSACTIONS_PER_SECOND_CONFIG =
-            new SpeedometerMetric.Config(INTERNAL_CATEGORY, "staleSelfAppTransactionsPerSecond")
-                    .withDescription("number of application transactions in stale self events per second");
-    private final SpeedometerMetric staleSelfAppTransactionsPerSecond;
+    private static final LongGauge.Config STALE_SELF_APP_TRANSACTIONS_PER_SECOND_CONFIG = new LongGauge.Config(
+                    INTERNAL_CATEGORY, "staleSelfAppTransactions")
+            .withDescription("number of application transactions in stale self events since the node booted up");
+    private final LongGauge staleSelfAppTransactionCount;
 
-    private static final SpeedometerMetric.Config STALE_SYSTEM_TRANSACTIONS_PER_SECOND_CONFIG =
-            new SpeedometerMetric.Config(INTERNAL_CATEGORY, "staleSystemTransactionsPerSecond")
-                    .withDescription("number of system transactions in stale events per second");
-    private final SpeedometerMetric staleSystemTransactionsPerSecond;
+    private static final LongGauge.Config STALE_SYSTEM_TRANSACTIONS_PER_SECOND_CONFIG = new LongGauge.Config(
+                    INTERNAL_CATEGORY, "staleSystemTransactions")
+            .withDescription("number of system transactions in stale events since the node booted up");
+    private final LongGauge staleSystemTransactionCount;
 
-    private static final SpeedometerMetric.Config STALE_SELF_SYSTEM_TRANSACTIONS_PER_SECOND_CONFIG =
-            new SpeedometerMetric.Config(INTERNAL_CATEGORY, "staleSelfSystemTransactionsPerSecond")
-                    .withDescription("number of system transactions in stale self events per second");
-    private final SpeedometerMetric staleSelfSystemTransactionsPerSecond;
+    private static final LongGauge.Config STALE_SELF_SYSTEM_TRANSACTIONS_PER_SECOND_CONFIG = new LongGauge.Config(
+                    INTERNAL_CATEGORY, "staleSelfSystemTransactions")
+            .withDescription("number of system transactions in stale self events since the node booted up");
+    private final LongGauge staleSelfSystemTransactionCount;
 
     private final Time time;
     private final NodeId selfId;
@@ -120,12 +121,12 @@ public class EventIntakeMetrics implements StaleEventObserver {
         avgDuplicatePercent = metrics.getOrCreate(AVG_DUPLICATE_PERCENT_CONFIG);
         timeFracAdd = metrics.getOrCreate(TIME_FRAC_ADD_CONFIG);
         shouldCreateEvent = metrics.getOrCreate(SHOULD_CREATE_EVENT_CONFIG);
-        staleEventsPerSecond = metrics.getOrCreate(STALE_EVENTS_PER_SECOND_CONFIG);
-        staleSelfEventsPerSecond = metrics.getOrCreate(STALE_SELF_EVENTS_PER_SECOND_CONFIG);
-        staleAppTransactionsPerSecond = metrics.getOrCreate(STALE_APP_TRANSACTIONS_PER_SECOND_CONFIG);
-        staleSelfAppTransactionsPerSecond = metrics.getOrCreate(STALE_SELF_APP_TRANSACTIONS_PER_SECOND_CONFIG);
-        staleSystemTransactionsPerSecond = metrics.getOrCreate(STALE_SYSTEM_TRANSACTIONS_PER_SECOND_CONFIG);
-        staleSelfSystemTransactionsPerSecond = metrics.getOrCreate(STALE_SELF_SYSTEM_TRANSACTIONS_PER_SECOND_CONFIG);
+        staleEventCount = metrics.getOrCreate(STALE_EVENTS_PER_SECOND_CONFIG);
+        staleSelfEventCount = metrics.getOrCreate(STALE_SELF_EVENTS_PER_SECOND_CONFIG);
+        staleAppTransactionCount = metrics.getOrCreate(STALE_APP_TRANSACTIONS_PER_SECOND_CONFIG);
+        staleSelfAppTransactionCount = metrics.getOrCreate(STALE_SELF_APP_TRANSACTIONS_PER_SECOND_CONFIG);
+        staleSystemTransactionCount = metrics.getOrCreate(STALE_SYSTEM_TRANSACTIONS_PER_SECOND_CONFIG);
+        staleSelfSystemTransactionCount = metrics.getOrCreate(STALE_SELF_SYSTEM_TRANSACTIONS_PER_SECOND_CONFIG);
     }
 
     /**
@@ -180,14 +181,14 @@ public class EventIntakeMetrics implements StaleEventObserver {
         final int applicationTransactionCount = event.getNumAppTransactions();
         final int systemTransactionCount = event.getNumTransactions() - applicationTransactionCount;
 
-        staleEventsPerSecond.cycle();
-        staleAppTransactionsPerSecond.update(applicationTransactionCount);
-        staleSystemTransactionsPerSecond.update(systemTransactionCount);
+        staleEventCount.add(1);
+        staleAppTransactionCount.add(applicationTransactionCount);
+        staleSystemTransactionCount.add(systemTransactionCount);
 
         if (event.getCreatorId().equals(selfId)) {
-            staleSelfEventsPerSecond.cycle();
-            staleSelfAppTransactionsPerSecond.update(applicationTransactionCount);
-            staleSelfSystemTransactionsPerSecond.update(systemTransactionCount);
+            staleSelfEventCount.add(1);
+            staleSelfAppTransactionCount.add(applicationTransactionCount);
+            staleSelfSystemTransactionCount.add(systemTransactionCount);
         }
     }
 }

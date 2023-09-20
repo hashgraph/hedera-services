@@ -82,6 +82,42 @@ class DefaultLongGaugeTest {
     }
 
     @Test
+    @DisplayName("Test add()")
+    void testAdd() {
+        // given
+        final LongGauge.Config config = new LongGauge.Config(CATEGORY, NAME).withInitialValue(2L);
+        final LongGauge gauge = new DefaultLongGauge(config);
+
+        // when
+        gauge.set(5L);
+
+        // then
+        assertEquals(5L, gauge.get(), "Value should be 5");
+        assertEquals(5L, gauge.get(VALUE), "Value should be 5");
+
+        // when
+        gauge.add(1);
+
+        // then
+        assertEquals(6L, gauge.get(), "Value should be -3");
+        assertEquals(6L, gauge.get(VALUE), "Value should be -3");
+
+        // when
+        gauge.add(-20);
+
+        // then
+        assertEquals(-14L, gauge.get(), "Value should be -3");
+        assertEquals(-14L, gauge.get(VALUE), "Value should be -3");
+
+        // when
+        gauge.add(0);
+
+        // then
+        assertEquals(-14L, gauge.get(), "Value should be -3");
+        assertEquals(-14L, gauge.get(VALUE), "Value should be -3");
+    }
+
+    @Test
     void testSnapshot() {
         // given
         final LongGauge.Config config = new LongGauge.Config(CATEGORY, NAME).withInitialValue(2L);
