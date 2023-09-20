@@ -591,9 +591,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 .setHandler(e -> getGossip().getEventIntakeLambda().accept(e))
                 .setCapacity(eventConfig.eventIntakeQueueSize())
                 .setLogAfterPauseDuration(threadConfig.logStackTracePauseDuration())
-                .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics)
-                        .enableMaxSizeMetric()
-                        .enableBusyTimeMetric())
+                .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics).enableMaxSizeMetric())
                 .build());
 
         tipsetEventCreator = buildTipsetEventCreationManager(
