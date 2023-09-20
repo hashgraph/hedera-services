@@ -21,14 +21,15 @@ import static com.hedera.node.app.service.mono.utils.EntityNum.fromAccountId;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.putIfNotNull;
 
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.hapi.utils.fee.CryptoFeeBuilder;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.fees.calculation.QueryResourceUsageEstimator;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.queries.answering.AnswerFunctions;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Map;
@@ -67,13 +68,15 @@ public final class GetAccountRecordsResourceUsage implements QueryResourceUsageE
      * This method is used to calculate the fee for the {@code CryptoGetAccountRecords}
      * only in modularized code, until new fee logic is implemented.
      * @param account account whose records to be retrieved
-     * @param records list of records retrieved from account
+     * @param pbjRecords list of records retrieved from account
      * @return fee data
      */
-    public FeeData usageGivenFor(final Account account, List<TransactionRecord> records) {
+    public FeeData usageGivenFor(final Account account, List<TransactionRecord> pbjRecords) {
         if (account == null) {
             return FeeData.getDefaultInstance();
         }
+        final var records =
+                pbjRecords.stream().map(k -> PbjConverter.fromPbj(k)).toList();
         return usageEstimator.getCryptoAccountRecordsQueryFeeMatrices(records, null);
     }
 

@@ -21,7 +21,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
@@ -157,6 +156,6 @@ public class TokenGetNftInfoHandler extends PaidQueryHandler {
 
         return queryContext
                 .feeCalculator(SubType.DEFAULT)
-                .legacyCalculate(sigValueObj -> new GetTokenNftInfoResourceUsage().usageGiven(fromPbj(query), nft));
+                .legacyCalculate(sigValueObj -> new GetTokenNftInfoResourceUsage().usageGiven(query, nft));
     }
 }

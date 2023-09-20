@@ -93,7 +93,7 @@ public final class GetAccountInfoResourceUsage implements QueryResourceUsageEsti
      * @param account account whose info is being retrieved
      * @return the fee for the query
      */
-    public FeeData usageGiven(final Query query, final Account account) {
+    public FeeData usageGiven(final com.hedera.hapi.node.transaction.Query query, final Account account) {
         if (account == null) {
             return FeeData.getDefaultInstance();
         }
@@ -107,6 +107,6 @@ public final class GetAccountInfoResourceUsage implements QueryResourceUsageEsti
                 .setCurrentTokenAllowances(Collections.emptyMap())
                 .setCurrentApproveForAllNftAllowances(Collections.emptySet())
                 .build();
-        return cryptoOpsUsage.cryptoInfoUsage(query, ctx);
+        return cryptoOpsUsage.cryptoInfoUsage(fromPbj(query), ctx);
     }
 }

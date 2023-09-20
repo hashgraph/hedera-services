@@ -21,7 +21,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
@@ -42,9 +41,7 @@ import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.ArrayList;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -124,11 +121,7 @@ public class CryptoGetAccountRecordsHandler extends PaidQueryHandler {
         final var accountId = op.accountIDOrThrow();
         final var account = accountStore.getAccountById(accountId);
 
-        final var pbjRecords = recordCache.getRecords(accountId);
-        final var records = new ArrayList<TransactionRecord>();
-        for (final var record : pbjRecords) {
-            records.add(fromPbj(record));
-        }
+        final var records = recordCache.getRecords(accountId);
         return queryContext
                 .feeCalculator(SubType.DEFAULT)
                 .legacyCalculate(sigValueObj -> new GetAccountRecordsResourceUsage(null, new CryptoFeeBuilder())

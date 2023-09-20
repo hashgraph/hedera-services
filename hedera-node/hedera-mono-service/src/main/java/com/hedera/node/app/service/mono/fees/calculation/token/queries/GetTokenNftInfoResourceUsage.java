@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.mono.fees.calculation.token.queries;
 
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.mono.queries.token.GetTokenNftInfoAnswer.NFT_INFO_CTX_KEY;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.putIfNotNull;
 
@@ -67,10 +68,10 @@ public final class GetTokenNftInfoResourceUsage implements QueryResourceUsageEst
      * @param nft nft whose info to be retrieved
      * @return fee data
      */
-    public FeeData usageGiven(final Query query, final Nft nft) {
+    public FeeData usageGiven(final com.hedera.hapi.node.transaction.Query query, final Nft nft) {
         if (nft != null) {
             final var estimate =
-                    factory.apply(query).givenMetadata(nft.metadata().toString());
+                    factory.apply(fromPbj(query)).givenMetadata(nft.metadata().toString());
             return estimate.get();
         } else {
             return FeeData.getDefaultInstance();

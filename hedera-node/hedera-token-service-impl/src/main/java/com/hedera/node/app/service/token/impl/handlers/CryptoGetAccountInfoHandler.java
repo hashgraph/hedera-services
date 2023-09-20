@@ -21,7 +21,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.tokenRelationshipsOf;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
@@ -39,6 +38,7 @@ import com.hedera.hapi.node.token.CryptoGetInfoQuery;
 import com.hedera.hapi.node.token.CryptoGetInfoResponse;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
+import com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage;
 import com.hedera.node.app.service.mono.fees.calculation.crypto.queries.GetAccountInfoResourceUsage;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableNetworkStakingRewardsStore;
@@ -64,9 +64,11 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
+    private final CryptoOpsUsage cryptoOpsUsage;
 
     @Inject
-    public CryptoGetAccountInfoHandler() {
+    public CryptoGetAccountInfoHandler(final CryptoOpsUsage cryptoOpsUsage) {
+        this.cryptoOpsUsage = cryptoOpsUsage;
         // Dagger2
     }
 
@@ -188,6 +190,6 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
         return queryContext
                 .feeCalculator(SubType.DEFAULT)
                 .legacyCalculate(sigValueObj ->
-                        new GetAccountInfoResourceUsage(null, null, null, null).usageGiven(fromPbj(query), account));
+                        new GetAccountInfoResourceUsage(cryptoOpsUsage, null, null, null).usageGiven(query, account));
     }
 }

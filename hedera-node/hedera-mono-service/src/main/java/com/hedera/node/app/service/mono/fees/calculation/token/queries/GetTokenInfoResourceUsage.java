@@ -92,7 +92,7 @@ public final class GetTokenInfoResourceUsage implements QueryResourceUsageEstima
                             token.hasFreezeKey() ? Optional.of(fromPbj(token.freezeKey())) : Optional.empty())
                     .givenCurrentWipeKey(token.hasWipeKey() ? Optional.of(fromPbj(token.wipeKey())) : Optional.empty())
                     .givenCurrentSupplyKey(
-                            token.hasWipeKey() ? Optional.of(fromPbj(token.wipeKey())) : Optional.empty())
+                            token.hasSupplyKey() ? Optional.of(fromPbj(token.supplyKey())) : Optional.empty())
                     .givenCurrentKycKey(token.hasKycKey() ? Optional.of(fromPbj(token.kycKey())) : Optional.empty())
                     .givenCurrentPauseKey(
                             token.hasPauseKey() ? Optional.of(fromPbj(token.pauseKey())) : Optional.empty())
