@@ -39,6 +39,7 @@ import static contract.XTestConstants.SENDER_CONTRACT_ID_KEY;
 import static contract.XTestConstants.SENDER_ID;
 import static contract.XTestConstants.SN_1234;
 import static contract.XTestConstants.SN_1234_METADATA;
+import static contract.XTestConstants.SN_2345;
 import static contract.XTestConstants.addErc20Relation;
 import static contract.XTestConstants.assertSuccess;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -63,14 +64,14 @@ import java.util.Objects;
 import org.apache.tuweni.bytes.Bytes;
 import org.jetbrains.annotations.NotNull;
 
-public class FungibleBurnXTest extends AbstractContractXTest {
+public class BurnsXTest extends AbstractContractXTest {
 
     private static final long TOKEN_BALANCE = 9L;
     private static final long TOKENS_TO_BURN = 1L;
 
     @Override
     protected void doScenarioOperations() {
-        // BURN_TOKEN_V1
+        // should successfully burn fungible token with V1
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(BurnTranslator.BURN_TOKEN_V1
@@ -78,7 +79,7 @@ public class FungibleBurnXTest extends AbstractContractXTest {
                         .array()),
                 assertSuccess());
 
-        // BURN_TOKEN_V2
+        // should successfully burn fungible token with V2
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(BurnTranslator.BURN_TOKEN_V2
@@ -110,12 +111,21 @@ public class FungibleBurnXTest extends AbstractContractXTest {
                         .array()),
                 INVALID_TOKEN_BURN_AMOUNT);
 
-        // BURN_TOKEN_V1 NFT
+        // should successfully burn NFT with V1
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(BurnTranslator.BURN_TOKEN_V1
                         .encodeCallWithArgs(
                                 ERC721_TOKEN_ADDRESS, BigInteger.valueOf(0L), new long[] {SN_1234.serialNumber()})
+                        .array()),
+                assertSuccess());
+
+        // should successfully burn NFT with V2
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(BurnTranslator.BURN_TOKEN_V2
+                        .encodeCallWithArgs(
+                                ERC721_TOKEN_ADDRESS, 0L, new long[] {SN_2345.serialNumber()})
                         .array()),
                 assertSuccess());
     }
@@ -131,12 +141,12 @@ public class FungibleBurnXTest extends AbstractContractXTest {
         // one token burnt from V1 and one token burnt from V2
         assertEquals(TOKEN_BALANCE - (TOKENS_TO_BURN + TOKENS_TO_BURN), tokenRelation.balance());
 
-        // asserts one NFT is burned
+        // asserts one NFT is burnt form V1 and one from V2
         final var receiverRelation = Objects.requireNonNull(tokenRelationships.get(EntityIDPair.newBuilder()
                 .tokenId(ERC721_TOKEN_ID)
                 .accountId(UNAUTHORIZED_SPENDER_ID)
                 .build()));
-        assertEquals(TOKEN_BALANCE - 1L, receiverRelation.balance());
+        assertEquals(TOKEN_BALANCE - 2L, receiverRelation.balance());
     }
 
     @Override
@@ -195,6 +205,13 @@ public class FungibleBurnXTest extends AbstractContractXTest {
                 SN_1234,
                 Nft.newBuilder()
                         .nftId(SN_1234)
+                        .spenderId(APPROVED_ID)
+                        .metadata(SN_1234_METADATA)
+                        .build());
+        nfts.put(
+                SN_2345,
+                Nft.newBuilder()
+                        .nftId(SN_2345)
                         .spenderId(APPROVED_ID)
                         .metadata(SN_1234_METADATA)
                         .build());
