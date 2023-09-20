@@ -44,7 +44,6 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID_IN_CUSTOM_FEES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY;
@@ -275,7 +274,7 @@ public final class TokenPauseSpecs extends HapiSuite {
                         tokenCreate("failedTokenCreate")
                                 .treasury(TOKEN_TREASURY)
                                 .withCustom(fixedHtsFee(1, uniqueToken, firstUser))
-                                .hasKnownStatus(CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON),
+                                .hasKnownStatus(INVALID_TOKEN_ID_IN_CUSTOM_FEES),
                         tokenAssociate(secondUser, uniqueToken).hasKnownStatus(TOKEN_IS_PAUSED),
                         cryptoTransfer(movingUnique(uniqueToken, 2L).between(TOKEN_TREASURY, firstUser))
                                 .hasKnownStatus(TOKEN_IS_PAUSED),

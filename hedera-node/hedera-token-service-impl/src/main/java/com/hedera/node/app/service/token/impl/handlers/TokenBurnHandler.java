@@ -160,7 +160,7 @@ public final class TokenBurnHandler extends BaseTokenHandler implements Transact
         final var op = feeContext.body();
         final var meta = TOKEN_OPS_USAGE_UTILS.tokenBurnUsageFrom(fromPbj(op));
         return feeContext
-                .feeCalculator(SubType.DEFAULT)
+                .feeCalculator(SubType.fromProtobufOrdinal(meta.getSubType().ordinal()))
                 .addBytesPerTransaction(meta.getBpt())
                 .addNetworkRamByteSeconds(meta.getTransferRecordDb() * USAGE_PROPERTIES.legacyReceiptStorageSecs())
                 .calculate();

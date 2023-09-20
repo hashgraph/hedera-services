@@ -196,7 +196,7 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
         final var op = feeContext.body();
         final var meta = TOKEN_OPS_USAGE_UTILS.tokenWipeUsageFrom(fromPbj(op));
         return feeContext
-                .feeCalculator(SubType.DEFAULT)
+                .feeCalculator(SubType.fromProtobufOrdinal(meta.getSubType().ordinal()))
                 .addBytesPerTransaction(meta.getBpt())
                 .addNetworkRamByteSeconds(meta.getTransferRecordDb() * USAGE_PROPERTIES.legacyReceiptStorageSecs())
                 .calculate();
