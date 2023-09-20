@@ -51,11 +51,9 @@ public class DefaultFreezeStatusCall extends AbstractNonRevertibleTokenViewCall 
         return fullResultsFor(status, gasRequirement, false);
     }
 
-    private @NonNull FullResult fullResultsFor(@NonNull ResponseCodeEnum status, long gasRequirement, boolean freezeStatus) {
+    private @NonNull FullResult fullResultsFor(
+            @NonNull ResponseCodeEnum status, long gasRequirement, boolean freezeStatus) {
         return successResult(
-                DEFAULT_FREEZE_STATUS
-                        .getOutputs()
-                        .encodeElements(status.protoOrdinal(), freezeStatus),
-                gasRequirement);
+                DEFAULT_FREEZE_STATUS.getOutputs().encodeElements(status.protoOrdinal(), freezeStatus), gasRequirement);
     }
 }

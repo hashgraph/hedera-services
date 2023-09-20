@@ -18,7 +18,6 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.token
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.iskyc.IsKycTranslator.IS_KYC;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokentype.TokenTypeTranslator.TOKEN_TYPE;
 import static java.util.Objects.requireNonNull;
 
@@ -53,11 +52,6 @@ public class TokenTypeCall extends AbstractNonRevertibleTokenViewCall {
     }
 
     private @NonNull FullResult fullResultsFor(@NonNull ResponseCodeEnum status, long gasRequirement, int tokenType) {
-        return successResult(
-                TOKEN_TYPE
-                        .getOutputs()
-                        .encodeElements(status.protoOrdinal(), tokenType),
-                gasRequirement);
+        return successResult(TOKEN_TYPE.getOutputs().encodeElements(status.protoOrdinal(), tokenType), gasRequirement);
     }
-
 }

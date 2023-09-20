@@ -67,11 +67,9 @@ public class IsFrozenCall extends AbstractNonRevertibleTokenViewCall {
         return fullResultsFor(status, gasRequirement, false);
     }
 
-    private @NonNull FullResult fullResultsFor(@NonNull ResponseCodeEnum status, long gasRequirement, boolean isFrozen) {
+    private @NonNull FullResult fullResultsFor(
+            @NonNull ResponseCodeEnum status, long gasRequirement, boolean isFrozen) {
         return successResult(
-                DEFAULT_FREEZE_STATUS
-                        .getOutputs()
-                        .encodeElements(status.protoOrdinal(), isFrozen),
-                gasRequirement);
+                DEFAULT_FREEZE_STATUS.getOutputs().encodeElements(status.protoOrdinal(), isFrozen), gasRequirement);
     }
 }

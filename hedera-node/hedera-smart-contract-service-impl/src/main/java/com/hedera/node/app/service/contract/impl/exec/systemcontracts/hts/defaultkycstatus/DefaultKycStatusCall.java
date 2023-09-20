@@ -52,11 +52,9 @@ public class DefaultKycStatusCall extends AbstractNonRevertibleTokenViewCall {
         return fullResultsFor(status, gasRequirement, false);
     }
 
-    private @NonNull FullResult fullResultsFor(@NonNull ResponseCodeEnum status, long gasRequirement, boolean kycStatus) {
+    private @NonNull FullResult fullResultsFor(
+            @NonNull ResponseCodeEnum status, long gasRequirement, boolean kycStatus) {
         return successResult(
-                DEFAULT_FREEZE_STATUS
-                        .getOutputs()
-                        .encodeElements(status.protoOrdinal(), kycStatus),
-                gasRequirement);
+                DEFAULT_FREEZE_STATUS.getOutputs().encodeElements(status.protoOrdinal(), kycStatus), gasRequirement);
     }
 }

@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -67,5 +66,5 @@ public abstract class AbstractNonRevertibleTokenViewCall extends AbstractHtsCall
      * @return the results to return to the caller
      */
     @NonNull
-    abstract protected FullResult viewCallResultWith(ResponseCodeEnum status, long gasRequirement);
+    protected abstract FullResult viewCallResultWith(ResponseCodeEnum status, long gasRequirement);
 }
