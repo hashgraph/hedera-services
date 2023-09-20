@@ -221,10 +221,11 @@ public class GenesisSchema extends Schema {
 
         // ---------- Create blocklist accounts (if enabled) -------------------------
         if (accountsConfig.blocklistEnabled()) {
-            final var blocklistResourceName =
-                    ctx.configuration().getConfigData(AccountsConfig.class).blocklistResource();
-            final List<BlocklistParser.BlockedInfo> blocklist = blocklistParser.parse(blocklistResourceName);
-            if (blocklist.isEmpty()) return;
+            final var blocklistResourceName = accountsConfig.blocklistResource();
+            final var blocklist = blocklistParser.parse(blocklistResourceName);
+            if (blocklist.isEmpty()) {
+                return;
+            }
 
             final var aliases = ctx.newStates().<Bytes, AccountID>get(TokenServiceImpl.ALIASES_KEY);
 
@@ -244,7 +245,7 @@ public class GenesisSchema extends Schema {
                 accounts.put(account.accountIdOrThrow(), account);
                 aliases.put(account.alias(), account.accountIdOrThrow());
             }
-            ctx.genesisRecordsBuilder().blocklistAccounts(blocklistAccts);
+            recordsKeeper.blocklistAccounts(blocklistAccts);
         }
     }
 
