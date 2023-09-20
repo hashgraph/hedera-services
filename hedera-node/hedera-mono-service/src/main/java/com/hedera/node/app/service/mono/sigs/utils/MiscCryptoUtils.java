@@ -35,7 +35,8 @@ public class MiscCryptoUtils {
             ByteBuffer uncompressedPublicKeyByteBuffer,
             LongByReference length) {
         public ThreadLocalCache() {
-            this(new LibSecp256k1.secp256k1_pubkey(),
+            this(
+                    new LibSecp256k1.secp256k1_pubkey(),
                     new byte[ECDSA_UNCOMPRESSED_KEY_SIZE_WITH_HEADER_BYTE],
                     ByteBuffer.allocate(ECDSA_UNCOMPRESSED_KEY_SIZE_WITH_HEADER_BYTE),
                     new LongByReference());
