@@ -158,7 +158,6 @@ public class TokenCreateSpecs extends HapiSuite {
      * It also verifies that these auto-associations don't "count" against the max
      * automatic associations limit defined by https://hips.hedera.com/hip/hip-23.
      */
-    // @HapiTest Commened because it's broking other  tests
     private HapiSpec validateNewTokenAssociations() {
         final String notToBeToken = "notToBeToken";
         final String hbarCollector = "hbarCollector";
@@ -201,6 +200,8 @@ public class TokenCreateSpecs extends HapiSuite {
                                         selfDenominatedFixedCollector,
                                         otherSelfDenominatedFixedCollector)
                                 .via(creationTxn),
+                        // TODO: Here it throws that we expect INVALID_TREASURY_ACCOUNT_FOR_TOKEN but it was OK.
+                        // When I change it to expect OK it now returns PLATFORM_NOT_ACTIVE
                         tokenCreate(notToBeToken)
                                 .treasury(tbd)
                                 .hasKnownStatus(INVALID_TREASURY_ACCOUNT_FOR_TOKEN)
