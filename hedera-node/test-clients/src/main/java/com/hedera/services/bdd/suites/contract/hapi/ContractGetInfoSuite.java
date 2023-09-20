@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withTargetLedgerId;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
@@ -68,10 +69,10 @@ public class ContractGetInfoSuite extends HapiSuite {
                                 .entityMemo(MEMO)
                                 .autoRenewSecs(6999999L))
                 .when()
-                .then(getContractInfo(contract)
-                        .hasExpectedLedgerId("0x03")
+                .then(withTargetLedgerId(ledgerId -> getContractInfo(contract)
+                        .hasEncodedLedgerId(ledgerId)
                         .hasExpectedInfo()
-                        .has(contractWith().memo(MEMO).adminKey("adminKey")));
+                        .has(contractWith().memo(MEMO).adminKey("adminKey"))));
     }
 
     @HapiTest
