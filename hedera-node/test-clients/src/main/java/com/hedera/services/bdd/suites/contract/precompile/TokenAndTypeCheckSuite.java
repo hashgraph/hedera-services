@@ -17,11 +17,11 @@
 package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
@@ -122,7 +122,7 @@ public class TokenAndTypeCheckSuite extends HapiSuite {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final var notAnAddress = new byte[20];
 
-        return onlyDefaultHapiSpec("checkTokenAndTypeNegativeCases")
+        return defaultHapiSpec("checkTokenAndTypeNegativeCases")
                 .given(
                         cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
                         cryptoCreate(TOKEN_TREASURY),
@@ -136,18 +136,18 @@ public class TokenAndTypeCheckSuite extends HapiSuite {
                         contractCreate(TOKEN_AND_TYPE_CHECK_CONTRACT))
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
-                        //                        contractCallLocal(
-                        //                                        TOKEN_AND_TYPE_CHECK_CONTRACT,
-                        //                                        IS_TOKEN,
-                        //                                        HapiParserUtil.asHeadlongAddress(notAnAddress))
-                        //                                .via("FakeAddressTokenCheckTx")
-                        //                                .payingWith(ACCOUNT)
-                        //                                .gas(GAS_TO_OFFER),
-                        contractCallLocal(
+                        contractCall(
+                                        TOKEN_AND_TYPE_CHECK_CONTRACT,
+                                        IS_TOKEN,
+                                        HapiParserUtil.asHeadlongAddress(notAnAddress))
+                                .via("FakeAddressTokenCheckTx")
+                                .payingWith(ACCOUNT)
+                                .gas(GAS_TO_OFFER),
+                        contractCall(
                                         TOKEN_AND_TYPE_CHECK_CONTRACT,
                                         GET_TOKEN_TYPE,
                                         HapiParserUtil.asHeadlongAddress(notAnAddress))
-                                // .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                 .via("FakeAddressTokenTypeCheckTx")
                                 .payingWith(ACCOUNT)
                                 .gas(GAS_TO_OFFER)
