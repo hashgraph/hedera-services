@@ -21,6 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
@@ -29,15 +30,21 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseHeader;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.token.CryptoGetAccountRecordsResponse;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
+import com.hedera.node.app.hapi.utils.fee.CryptoFeeBuilder;
+import com.hedera.node.app.service.mono.fees.calculation.crypto.queries.GetAccountRecordsResourceUsage;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayList;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -106,5 +113,25 @@ public class CryptoGetAccountRecordsHandler extends PaidQueryHandler {
         }
 
         return Response.newBuilder().cryptoGetAccountRecords(response).build();
+    }
+
+    @NonNull
+    @Override
+    public Fees computeFees(@NonNull final QueryContext queryContext) {
+        final var query = queryContext.query();
+        final var accountStore = queryContext.createStore(ReadableAccountStore.class);
+        final var op = query.cryptoGetAccountRecordsOrThrow();
+        final var accountId = op.accountIDOrThrow();
+        final var account = accountStore.getAccountById(accountId);
+
+        final var pbjRecords = recordCache.getRecords(accountId);
+        final var records = new ArrayList<TransactionRecord>();
+        for (final var record : pbjRecords) {
+            records.add(fromPbj(record));
+        }
+        return queryContext
+                .feeCalculator(SubType.DEFAULT)
+                .legacyCalculate(sigValueObj -> new GetAccountRecordsResourceUsage(null, new CryptoFeeBuilder())
+                        .usageGivenFor(account, records));
     }
 }

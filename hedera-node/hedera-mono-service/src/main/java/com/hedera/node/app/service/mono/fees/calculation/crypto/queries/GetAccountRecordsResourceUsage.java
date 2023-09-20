@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.mono.queries.meta.GetTxnRecordAnswer.P
 import static com.hedera.node.app.service.mono.utils.EntityNum.fromAccountId;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.putIfNotNull;
 
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.hapi.utils.fee.CryptoFeeBuilder;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.fees.calculation.QueryResourceUsageEstimator;
@@ -27,7 +28,9 @@ import com.hedera.node.app.service.mono.queries.answering.AnswerFunctions;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.List;
 import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -58,6 +61,13 @@ public final class GetAccountRecordsResourceUsage implements QueryResourceUsageE
     @Override
     public FeeData usageGivenType(final Query query, final StateView view, final ResponseType type) {
         return usageFor(query, view, type, null);
+    }
+
+    public FeeData usageGivenFor(final Account account, List<TransactionRecord> records) {
+        if (account == null) {
+            return FeeData.getDefaultInstance();
+        }
+        return usageEstimator.getCryptoAccountRecordsQueryFeeMatrices(records, null);
     }
 
     private FeeData usageFor(
