@@ -18,10 +18,12 @@ package com.swirlds.common.config.sources;
 
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -39,6 +41,13 @@ public final class SimpleConfigSource extends AbstractConfigSource {
      */
     public SimpleConfigSource() {
         this.internalProperties = new HashMap<>();
+    }
+
+    /**
+     * Creates an instance without any config properties
+     */
+    public SimpleConfigSource(@NonNull final Map<String, String> properties) {
+        this.internalProperties = Objects.requireNonNull(properties);
     }
 
     /**

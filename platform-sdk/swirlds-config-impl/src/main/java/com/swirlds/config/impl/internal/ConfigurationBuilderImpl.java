@@ -27,6 +27,8 @@ import com.swirlds.config.api.source.ConfigSource;
 import com.swirlds.config.api.validation.ConfigValidator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -72,6 +74,11 @@ final class ConfigurationBuilderImpl implements ConfigurationBuilder {
     private final AtomicBoolean initialized = new AtomicBoolean();
 
     /**
+     * Key-value pairs specified by {@link #withValue(String, Object)}.
+     */
+    private final Map<String, String> properties = new HashMap<>();
+
+    /**
      * Default constructor that creates all internal services
      */
     public ConfigurationBuilderImpl() {
@@ -88,6 +95,9 @@ final class ConfigurationBuilderImpl implements ConfigurationBuilder {
         try (final Locked ignored = initializationLock.lock()) {
             if (initialized.get()) {
                 throw new IllegalStateException("Configuration already initialized");
+            }
+            if (!properties.isEmpty()) {
+                withSource(new SimpleConfigSource(properties));
             }
             configSourceService.init();
             converterService.init();
@@ -198,6 +208,7 @@ final class ConfigurationBuilderImpl implements ConfigurationBuilder {
     public ConfigurationBuilder withValue(@NonNull final String propertyName, @NonNull final Object value) {
         Objects.requireNonNull(propertyName, "propertyName must not be null");
         Objects.requireNonNull(value, "value must not be null");
-        return withSource(new SimpleConfigSource(propertyName, value.toString()));
+        properties.put(propertyName, value.toString());
+        return this;
     }
 }
