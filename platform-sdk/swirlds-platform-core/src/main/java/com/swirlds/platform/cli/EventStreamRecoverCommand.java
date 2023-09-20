@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.cli;
 
+import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.platform.recovery.EventRecoveryWorkflow.recoverState;
 
 import com.swirlds.cli.commands.EventStreamCommand;
@@ -123,7 +124,8 @@ public final class EventStreamRecoverCommand extends AbstractCommand {
 
     @Override
     public Integer call() throws Exception {
-        final Configuration configuration = DefaultConfiguration.buildBasicConfiguration(configurationPaths);
+        final Configuration configuration =
+                DefaultConfiguration.buildBasicConfiguration(getAbsolutePath("settings.txt"), configurationPaths);
         final PlatformContext platformContext =
                 new DefaultPlatformContext(configuration, new NoOpMetrics(), CryptographyHolder.get());
 

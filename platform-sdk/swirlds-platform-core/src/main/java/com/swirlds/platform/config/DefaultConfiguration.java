@@ -54,22 +54,23 @@ public class DefaultConfiguration {
      * @throws IOException if there is an error reading the configuration files
      */
     @NonNull
-    public static Configuration buildBasicConfiguration() throws IOException {
-        return buildBasicConfiguration(Collections.emptyList());
+    public static Configuration buildBasicConfiguration(@NonNull final Path settingsPath) throws IOException {
+        return buildBasicConfiguration(settingsPath, Collections.emptyList());
     }
 
     /**
      * Build a basic configuration with the default configuration sources.
      * And register the configuration to the {@link ConfigurationHolder}.
      *
+     * @param settingsPath the path to the settings.txt file
      * @param configurationPaths additional paths to configuration files
      * @return the configuration object
      * @throws IOException if there is an error reading the configuration files
      */
     @NonNull
-    public static Configuration buildBasicConfiguration(@NonNull final List<Path> configurationPaths)
-            throws IOException {
-        final ConfigSource settingsConfigSource = LegacyFileConfigSource.ofSettingsFile();
+    public static Configuration buildBasicConfiguration(
+            @NonNull final Path settingsPath, @NonNull final List<Path> configurationPaths) throws IOException {
+        final ConfigSource settingsConfigSource = LegacyFileConfigSource.ofSettingsFile(settingsPath);
         final ConfigSource mappedSettingsConfigSource = ConfigMappings.addConfigMapping(settingsConfigSource);
         final ConfigSource threadCountPropertyConfigSource = new ThreadCountPropertyConfigSource();
 

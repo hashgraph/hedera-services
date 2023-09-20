@@ -16,16 +16,16 @@
 
 package com.swirlds.demo.addressbook;
 
+import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.logging.LogMarker.STARTUP;
 
-import com.swirlds.common.config.sources.LegacyFileConfigSource;
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.platform.config.DefaultConfiguration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -117,18 +117,12 @@ public class AddressBookTestingToolMain implements SwirldMain {
         }
 
         // Preload configuration so that we can change the software version on the fly
-        final ConfigurationBuilder configurationBuilder;
+        final Configuration configuration;
         try {
-            // TODO this will probably log like crazy
-            //  note to the reviewers: I am currently testing this and will delete this prior to merge
-            configurationBuilder = ConfigurationBuilder.create()
-                    .withConfigDataType(AddressBookTestingToolConfig.class)
-                    .withSource(LegacyFileConfigSource.ofSettingsFile());
+            configuration = DefaultConfiguration.buildBasicConfiguration(getAbsolutePath("settings.txt"), List.of());
         } catch (final IOException e) {
             throw new UncheckedIOException("unable to load settings.txt", e);
         }
-
-        final Configuration configuration = configurationBuilder.build();
 
         final int version =
                 configuration.getConfigData(AddressBookTestingToolConfig.class).softwareVersion();

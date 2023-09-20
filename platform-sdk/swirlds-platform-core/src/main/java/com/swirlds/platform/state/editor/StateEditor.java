@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.state.editor;
 
+import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.platform.state.editor.StateEditorUtils.formatNodeType;
 import static com.swirlds.platform.state.editor.StateEditorUtils.formatRoute;
 
@@ -62,7 +63,8 @@ public class StateEditor {
     @SuppressWarnings("java:S106")
     public StateEditor(final Path statePath) throws IOException {
 
-        final Configuration configuration = DefaultConfiguration.buildBasicConfiguration();
+        final Configuration configuration =
+                DefaultConfiguration.buildBasicConfiguration(getAbsolutePath("settings.txt"));
 
         platformContext = new DefaultPlatformContext(configuration, new NoOpMetrics(), CryptographyHolder.get());
 

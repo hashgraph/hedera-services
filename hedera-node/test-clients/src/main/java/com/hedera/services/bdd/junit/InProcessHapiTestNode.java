@@ -23,9 +23,11 @@ import com.hedera.node.app.Hedera;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.platform.PlatformBuilder;
 import com.swirlds.platform.util.BootstrapUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
+import java.util.function.Consumer;
 
 /**
  * An implementation of {@link HapiTestNode} that runs the node in this JVM process. The advantage of the in-process
@@ -63,7 +65,9 @@ public class InProcessHapiTestNode implements HapiTestNode {
 
     @Override
     public void start() {
-        if (th != null) throw new IllegalStateException("Node is not stopped, cannot start it!");
+        if (th != null) {
+            throw new IllegalStateException("Node is not stopped, cannot start it!");
+        }
 
         try {
             th = new WorkerThread(workingDir, nodeId, grpcPort);
@@ -135,8 +139,6 @@ public class InProcessHapiTestNode implements HapiTestNode {
             final var cr = ConstructableRegistry.getInstance();
 
             final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create()
-                    .withValue("paths.configPath", path("config.txt"))
-                    .withValue("paths.settingsPath", path("settings.txt"))
                     .withValue("paths.settingsUsedDir", path("."))
                     .withValue("paths.keysDirPath", path("data/keys"))
                     .withValue("paths.appsDirPath", path("data/apps"))
@@ -146,8 +148,12 @@ public class InProcessHapiTestNode implements HapiTestNode {
                     .withValue("loadKeysFromPfxFiles", false)
                     .withValue("grpc.port", grpcPort);
 
-            hedera = new Hedera(cr, selfId, configurationBuilder);
+            final Consumer<PlatformBuilder> updatePlatformBuilder =
+                    builder -> builder.withConfigurationBuilder(configurationBuilder)
+                            .withConfigPath(Path.of(path("config.txt")))
+                            .withSettingsPath(Path.of(path("settings.txt")));
 
+            hedera = new Hedera(cr, selfId, updatePlatformBuilder);
             hedera.start();
         }
 

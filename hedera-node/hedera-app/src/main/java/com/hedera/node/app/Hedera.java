@@ -74,7 +74,6 @@ import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.common.system.transaction.Transaction;
-import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.PlatformBuilder;
 import com.swirlds.platform.SwirldsPlatform;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -85,6 +84,7 @@ import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.Locale;
 import java.util.Set;
+import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -177,12 +177,12 @@ public final class Hedera {
      *
      * @param constructableRegistry The registry to use during the deserialization process
      * @param selfId                The ID of this node
-     * @param configBuilder  The configuration builder to use for the platform, if not null
+     * @param updatePlatformBuilder a function that can be used to update the platform builder, ignored if null
      */
     public Hedera(
             @NonNull final ConstructableRegistry constructableRegistry,
             @NonNull final NodeId selfId,
-            @Nullable final ConfigurationBuilder configBuilder) {
+            @Nullable final Consumer<PlatformBuilder> updatePlatformBuilder) {
 
         requireNonNull(constructableRegistry);
 
@@ -258,7 +258,11 @@ public final class Hedera {
 
         final PlatformBuilder builder =
                 new PlatformBuilder(Hedera.APP_NAME, Hedera.SWIRLD_NAME, getSoftwareVersion(), this::newState, selfId);
-        platform = builder.withConfigurationBuilder(configBuilder).build();
+        if (updatePlatformBuilder != null) {
+            updatePlatformBuilder.accept(builder);
+        }
+        platform = builder.build();
+
         init(platform, selfId);
     }
 

@@ -68,7 +68,8 @@ public class StateEditorSave extends StateEditorOperation {
                 Files.createDirectories(directory);
             }
 
-            final Configuration configuration = DefaultConfiguration.buildBasicConfiguration();
+            final Configuration configuration =
+                    DefaultConfiguration.buildBasicConfiguration(getAbsolutePath("settings.txt"));
             try (final ReservedSignedState signedState = getStateEditor().getSignedStateCopy()) {
                 writeSignedStateFilesToDirectory(NO_NODE_ID, directory, signedState.get(), configuration);
             }

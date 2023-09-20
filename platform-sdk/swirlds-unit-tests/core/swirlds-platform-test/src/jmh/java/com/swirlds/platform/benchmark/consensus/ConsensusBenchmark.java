@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.benchmark.consensus;
 
+import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
+
 import com.swirlds.base.utility.Pair;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.test.fixtures.WeightGenerators;
@@ -72,7 +74,8 @@ public class ConsensusBenchmark {
         testDefinition.setSeed(seed);
         events = testDefinition.getNode1EventEmitter().emitEvents(numEvents);
 
-        final Configuration configuration = DefaultConfiguration.buildBasicConfiguration();
+        final Configuration configuration =
+                DefaultConfiguration.buildBasicConfiguration(getAbsolutePath("settings.txt"));
         consensus = new ConsensusImpl(
                 configuration.getConfigData(ConsensusConfig.class),
                 new NoOpConsensusMetrics(),
