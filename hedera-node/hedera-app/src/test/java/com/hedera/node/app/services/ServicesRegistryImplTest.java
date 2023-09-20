@@ -26,6 +26,7 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.node.app.spi.fixtures.TestService;
 import com.hedera.node.app.spi.fixtures.state.TestSchema;
 import com.hedera.node.app.spi.state.StateDefinition;
+import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import org.junit.jupiter.api.DisplayName;
@@ -40,16 +41,27 @@ final class ServicesRegistryImplTest {
     @Mock
     ConstructableRegistry cr;
 
+    @Mock
+    GenesisRecordsBuilder genesisRecords;
+
     @DisplayName("The constructable registry cannot be null")
     @Test
     void nullConstructableRegistryThrows() {
         //noinspection DataFlowIssue
-        assertThatThrownBy(() -> new ServicesRegistryImpl(null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new ServicesRegistryImpl(null, genesisRecords))
+                .isInstanceOf(NullPointerException.class);
+    }
+
+    @DisplayName("The genesis record builder cannot be null")
+    @Test
+    void nullGenesisRecordsThrows() {
+        //noinspection DataFlowIssue
+        assertThatThrownBy(() -> new ServicesRegistryImpl(cr, null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
     void registerCallsTheConstructableRegistry() throws ConstructableRegistryException {
-        final var registry = new ServicesRegistryImpl(cr);
+        final var registry = new ServicesRegistryImpl(cr, genesisRecords);
         registry.register(TestService.newBuilder()
                 .name("registerCallsTheConstructableRegistryTest")
                 .schema(TestSchema.newBuilder()
@@ -63,7 +75,7 @@ final class ServicesRegistryImplTest {
 
     @Test
     void registrationsAreSortedByName() {
-        final var registry = new ServicesRegistryImpl(cr);
+        final var registry = new ServicesRegistryImpl(cr, genesisRecords);
         registry.register(TestService.newBuilder().name("B").build());
         registry.register(TestService.newBuilder().name("C").build());
         registry.register(TestService.newBuilder().name("A").build());

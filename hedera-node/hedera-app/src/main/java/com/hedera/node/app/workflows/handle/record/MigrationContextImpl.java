@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.state.merkle;
+package com.hedera.node.app.workflows.handle.record;
 
 import static java.util.Objects.requireNonNull;
 
@@ -22,6 +22,7 @@ import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -31,12 +32,14 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param previousStates The previous states.
  * @param newStates The new states, preloaded with any new state definitions.
  * @param configuration The configuration to use
+ * @param genesisRecordsBuilder The instance responsible for genesis records
  */
 public record MigrationContextImpl(
         @NonNull ReadableStates previousStates,
         @NonNull WritableStates newStates,
         @NonNull Configuration configuration,
-        @NonNull NetworkInfo networkInfo)
+        @NonNull NetworkInfo networkInfo,
+        @NonNull GenesisRecordsBuilder genesisRecordsBuilder)
         implements MigrationContext {
 
     public MigrationContextImpl {
@@ -44,5 +47,6 @@ public record MigrationContextImpl(
         requireNonNull(newStates);
         requireNonNull(configuration);
         requireNonNull(networkInfo);
+        requireNonNull(genesisRecordsBuilder);
     }
 }

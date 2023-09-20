@@ -35,6 +35,7 @@ import java.util.stream.Collectors;
  * The {@code stdout} and {@code stderr} files will be written into the working directory.
  */
 final class SubProcessHapiTestNode implements HapiTestNode {
+    private static final String[] EMPTY_STRING_ARRAY = new String[0];
     /** The Hedera instance we are testing */
     private ProcessHandle handle;
     /** The ID of the node */
@@ -74,29 +75,31 @@ final class SubProcessHapiTestNode implements HapiTestNode {
             // argument, and terminate them forcibly (kill -9 style).
             ProcessHandle.allProcesses()
                     .filter(p -> p.info().command().orElse("").contains("java"))
-                    .filter(p -> p.info().arguments().orElse(new String[0]).length > 0)
+                    .filter(p -> p.info().arguments().orElse(EMPTY_STRING_ARRAY).length > 0)
                     .filter(p -> p.info()
                             .arguments()
-                            .orElseThrow()[p.info().arguments().orElse(new String[0]).length - 1]
-                            .equals("" + nodeId))
+                            .orElseThrow()[p.info().arguments().orElse(EMPTY_STRING_ARRAY).length - 1]
+                            .equals(Long.toString(nodeId)))
                     .findFirst()
                     .ifPresent(ProcessHandle::destroyForcibly);
 
             // Now we can start the new process
-            final var builder = new ProcessBuilder()
-                    .command(
+            final var builder = new ProcessBuilder();
+            final var environment = builder.environment();
+            environment.put("LC_ALL", "en.UTF-8");
+            environment.put("LANG", "en_US.UTF-8");
+            environment.put("grpc.port", Integer.toString(grpcPort));
+            builder.command(
                             javaCmd,
+                            "-Dfile.encoding=UTF-8",
+                            "-Dhedera.workflows.enabled=true",
                             "-classpath",
                             classPath,
-                            "-Dhedera.workflows.enabled=true",
                             "com.hedera.node.app.ServicesMain",
                             "" + nodeId)
                     .directory(workingDir.toFile())
                     .redirectOutput(stdout.toFile())
                     .redirectError(stderr.toFile());
-
-            final var env = builder.environment();
-            env.put("grpc.port", "" + grpcPort);
 
             handle = builder.start().toHandle();
         } catch (Exception e) {
@@ -161,7 +164,7 @@ final class SubProcessHapiTestNode implements HapiTestNode {
     private String getClasspath() {
         // Could have been launched with -cp, or -classpath, or @/path/to/classpathFile.txt, or maybe module path?
         final var me = ProcessHandle.current();
-        final var args = me.info().arguments().orElse(new String[0]);
+        final var args = me.info().arguments().orElse(EMPTY_STRING_ARRAY);
 
         String classpath = "";
         for (int i = 0; i < args.length; i++) {

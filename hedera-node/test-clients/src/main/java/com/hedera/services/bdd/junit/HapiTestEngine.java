@@ -111,7 +111,6 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
     private static void addChildToEngineDescriptor(
             Class<?> javaClass, EngineDiscoveryRequest discoveryRequest, EngineDescriptor engineDescriptor) {
         if (IS_HAPI_TEST_SUITE.test(javaClass)) {
-            discoveryRequest.getConfigurationParameters().keySet().forEach(System.out::println);
             final var classDescriptor = new ClassTestDescriptor(javaClass, engineDescriptor, discoveryRequest);
             if (!classDescriptor.skip) {
                 engineDescriptor.addChild(classDescriptor);
@@ -162,6 +161,9 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
 
             final var tmpDir = Path.of("data");
             final var defaultProperties = JutilPropertySource.getDefaultInstance();
+            final String recordStreamPath = tmpDir.resolve("recordStream").toString();
+            final var parameters =
+                    Map.of("recordStream.path", recordStreamPath, "ci.properties.map", "secondsWaitingServerUp=300");
             HapiSpec.runInCiMode(
                     String.valueOf(env.getNodes()),
                     defaultProperties.get("default.payer"),
@@ -169,8 +171,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                     defaultProperties.get("tls"),
                     defaultProperties.get("txn.proto.structure"),
                     defaultProperties.get("node.selector"),
-                    Map.of("recordStream.path", tmpDir.resolve("recordStream").toString()));
-
+                    parameters);
             return context;
         }
 
