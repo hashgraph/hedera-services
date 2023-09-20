@@ -26,8 +26,9 @@ import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKEN_RELS
 import static com.hedera.node.app.spi.HapiUtils.EMPTY_KEY_LIST;
 import static com.hedera.node.app.spi.HapiUtils.FUNDING_ACCOUNT_EXPIRY;
 
-import com.google.common.collect.Streams;
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.SemanticVersion;
@@ -41,6 +42,7 @@ import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
+import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.StateDefinition;
@@ -51,21 +53,25 @@ import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.LongStream;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Genesis schema for the token service
  */
 public class GenesisSchema extends Schema {
+    private static final Logger log = LogManager.getLogger(GenesisSchema.class);
     private static final SemanticVersion GENESIS_VERSION = SemanticVersion.DEFAULT;
     private static final int MAX_ACCOUNTS = 1024;
     private static final int MAX_TOKEN_RELS = 1042;
     private static final int MAX_MINTABLE_NFTS = 4096;
-
-    private static final long LAST_RESERVED_FILE = 199L;
     private static final long FIRST_RESERVED_SYSTEM_CONTRACT = 350L;
     private static final long LAST_RESERVED_SYSTEM_CONTRACT = 399L;
+    private static final long FIRST_POST_SYSTEM_FILE_ENTITY = 200L;
 
     /**
      * Create a new instance
@@ -95,6 +101,9 @@ public class GenesisSchema extends Schema {
         final var ledgerConfig = ctx.configuration().getConfigData(LedgerConfig.class);
         final var hederaConfig = ctx.configuration().getConfigData(HederaConfig.class);
 
+        // Get the record builder for creating any necessary (synthetic) records
+        final var recordsKeeper = ctx.genesisRecordsBuilder();
+
         // Get the map for storing all the created accounts
         final var accounts = ctx.newStates().<AccountID, Account>get(ACCOUNTS_KEY);
 
@@ -106,28 +115,79 @@ public class GenesisSchema extends Schema {
         // accounts. So we can just create all of these up front. Basically, every account from 1 to 750 (inclusive)
         // other than those set aside for files (101-199 inclusive) and contracts (350-399 inclusive) are the same,
         // except for the treasury account, which has a balance
-        final var standardAccounts = Streams.concat(
-                LongStream.rangeClosed(1, ledgerConfig.numSystemAccounts()),
-                LongStream.range(LAST_RESERVED_FILE + 1, FIRST_RESERVED_SYSTEM_CONTRACT),
-                LongStream.rangeClosed(LAST_RESERVED_SYSTEM_CONTRACT + 1, ledgerConfig.numReservedSystemEntities()),
-                LongStream.rangeClosed(900, 1000));
+        // ---------- Create system accounts -------------------------
+        final var systemAccts = new HashMap<Account, CryptoCreateTransactionBody.Builder>();
+        for (long num = 1; num <= ledgerConfig.numSystemAccounts(); num++) {
+            final var id = asAccountId(num, hederaConfig);
+            if (accounts.contains(id)) {
+                continue;
+            }
 
-        standardAccounts.forEach(i -> {
-            final var balance = i == accountsConfig.treasury() ? ledgerConfig.totalTinyBarFloat() : 0L;
-            final var expiry = bootstrapConfig.systemEntityExpiry();
-            final var account = createAccount(hederaConfig, i, balance, expiry, superUserKey);
-            accounts.put(account.accountIdOrThrow(), account);
-        });
+            final var accountTinyBars = num == accountsConfig.treasury() ? ledgerConfig.totalTinyBarFloat() : 0;
+            assert accountTinyBars >= 0L : "Negative account balance!";
 
-        // Create the staking reward account and the node staking reward account.
-        final var stakingRewardAccount = createStakingAccount(hederaConfig, accountsConfig.stakingRewardAccount());
-        accounts.put(stakingRewardAccount.accountIdOrThrow(), stakingRewardAccount);
-        final var nodeRewardAccount = createStakingAccount(hederaConfig, accountsConfig.nodeRewardAccount());
-        accounts.put(nodeRewardAccount.accountIdOrThrow(), nodeRewardAccount);
+            final var account = createAccount(id, accountTinyBars, bootstrapConfig.systemEntityExpiry(), superUserKey);
+            systemAccts.put(account, newCryptoCreate(account));
+            accounts.put(id, account);
+        }
+        recordsKeeper.systemAccounts(systemAccts);
+
+        // ---------- Create staking fund accounts -------------------------
+        final var stakingAccts = new HashMap<Account, CryptoCreateTransactionBody.Builder>();
+        final var stakingRewardAccountId = asAccountId(accountsConfig.stakingRewardAccount(), hederaConfig);
+        final var nodeRewardAccountId = asAccountId(accountsConfig.nodeRewardAccount(), hederaConfig);
+        final var stakingFundAccounts = List.of(stakingRewardAccountId, nodeRewardAccountId);
+        for (final var id : stakingFundAccounts) {
+            if (accounts.contains(id)) {
+                continue;
+            }
+
+            final var stakingFundAccount = createAccount(id, 0, FUNDING_ACCOUNT_EXPIRY, EMPTY_KEY_LIST);
+            stakingAccts.put(stakingFundAccount, newCryptoCreate(stakingFundAccount));
+            accounts.put(id, stakingFundAccount);
+        }
+        recordsKeeper.stakingAccounts(stakingAccts);
+
+        // ---------- Create multi-use accounts -------------------------
+        final var multiAccts = new HashMap<Account, CryptoCreateTransactionBody.Builder>();
+        for (long num = 900; num <= 1000; num++) {
+            final var id = asAccountId(num, hederaConfig);
+            if (accounts.contains(id)) {
+                continue;
+            }
+
+            final var account = createAccount(id, 0, bootstrapConfig.systemEntityExpiry(), superUserKey);
+            multiAccts.put(account, newCryptoCreate(account));
+            accounts.put(id, account);
+        }
+        recordsKeeper.miscAccounts(multiAccts);
+
+        // ---------- Create treasury clones -------------------------
+        // Since version 0.28.6, all of these clone accounts should either all exist (on a restart) or all not exist
+        // (starting from genesis)
+        final Account treasury = accounts.get(asAccountId(accountsConfig.treasury(), hederaConfig));
+        final var treasuryClones = new HashMap<Account, CryptoCreateTransactionBody.Builder>();
+        for (final var num : nonContractSystemNums(ledgerConfig.numReservedSystemEntities())) {
+            final var nextCloneId = asAccountId(num, hederaConfig);
+            if (accounts.contains(nextCloneId)) {
+                continue;
+            }
+
+            final var nextClone = createAccount(
+                    nextCloneId, 0, treasury.expirationSecond(), treasury.key(), treasury.declineReward());
+            treasuryClones.put(nextClone, newCryptoCreate(nextClone));
+            accounts.put(nextCloneId, nextClone);
+        }
+        recordsKeeper.treasuryClones(treasuryClones);
+        log.info(
+                "Created {} zero-balance accounts cloning treasury properties in the {}-{} range",
+                treasuryClones.size(),
+                FIRST_POST_SYSTEM_FILE_ENTITY,
+                ledgerConfig.numReservedSystemEntities());
 
         // Create the network rewards state
-        updateNetworkRewards(ctx);
-        updateStakingNodeInfo(ctx);
+        initializeNetworkRewards(ctx);
+        initializeStakingNodeInfo(ctx);
 
         // Safety check -- add up the balances of all accounts, they must match 50,000,000,000 HBARs (config)
         var totalBalance = 0L;
@@ -146,6 +206,25 @@ public class GenesisSchema extends Schema {
         if (totalBalance != ledgerConfig.totalTinyBarFloat()) {
             throw new IllegalStateException("Total balance of all accounts does not match the total float");
         }
+        log.info(
+                "Ledger float is {} tinyBars in {} accounts.",
+                totalBalance,
+                accounts.modifiedKeys().size());
+    }
+
+    private static AccountID asAccountId(final long acctNum, final HederaConfig hederaConfig) {
+        return AccountID.newBuilder()
+                .shardNum(hederaConfig.shard())
+                .realmNum(hederaConfig.realm())
+                .accountNum(acctNum)
+                .build();
+    }
+
+    @VisibleForTesting
+    public static long[] nonContractSystemNums(final long numReservedSystemEntities) {
+        return LongStream.rangeClosed(FIRST_POST_SYSTEM_FILE_ENTITY, numReservedSystemEntities)
+                .filter(i -> i < FIRST_RESERVED_SYSTEM_CONTRACT || i > LAST_RESERVED_SYSTEM_CONTRACT)
+                .toArray();
     }
 
     @NonNull
@@ -157,22 +236,16 @@ public class GenesisSchema extends Schema {
         return Key.newBuilder().ed25519(superUserKeyBytes).build();
     }
 
-    private Account createStakingAccount(@NonNull final HederaConfig hederaConfig, final long num) {
-        return createAccount(hederaConfig, num, 0, FUNDING_ACCOUNT_EXPIRY, EMPTY_KEY_LIST);
+    private Account createAccount(@NonNull final AccountID id, final long balance, final long expiry, final Key key) {
+        return createAccount(id, balance, expiry, key, true);
     }
 
     private Account createAccount(
-            @NonNull final HederaConfig hederaConfig,
-            final long num,
+            @NonNull final AccountID id,
             final long balance,
             final long expiry,
-            final Key key) {
-        final var id = AccountID.newBuilder()
-                .shardNum(hederaConfig.shard())
-                .realmNum(hederaConfig.realm())
-                .accountNum(num)
-                .build();
-
+            final Key key,
+            final boolean declineReward) {
         return Account.newBuilder()
                 .accountId(id)
                 .receiverSigRequired(false)
@@ -181,14 +254,14 @@ public class GenesisSchema extends Schema {
                 .memo("")
                 .smartContract(false)
                 .key(key)
-                .declineReward(true)
+                .declineReward(declineReward)
                 .autoRenewSeconds(expiry)
                 .maxAutoAssociations(0)
                 .tinybarBalance(balance)
                 .build();
     }
 
-    private void updateStakingNodeInfo(final MigrationContext ctx) {
+    private void initializeStakingNodeInfo(final MigrationContext ctx) {
         // TODO: This need to go through address book and set all the nodes
         final var config = ctx.configuration();
         final var ledgerConfig = config.getConfigData(LedgerConfig.class);
@@ -213,7 +286,7 @@ public class GenesisSchema extends Schema {
         stakingInfoState.put(EntityNumber.newBuilder().number(0L).build(), stakingInfo);
     }
 
-    private void updateNetworkRewards(final MigrationContext ctx) {
+    private void initializeNetworkRewards(final MigrationContext ctx) {
         // Set genesis network rewards state
         final var networkRewardsState = ctx.newStates().getSingleton(STAKING_NETWORK_REWARDS_KEY);
         final var networkRewards = NetworkStakingRewards.newBuilder()
@@ -223,5 +296,17 @@ public class GenesisSchema extends Schema {
                 .stakingRewardsActivated(true)
                 .build();
         networkRewardsState.put(networkRewards);
+    }
+
+    private static CryptoCreateTransactionBody.Builder newCryptoCreate(Account account) {
+        return CryptoCreateTransactionBody.newBuilder()
+                .key(account.key())
+                .memo(account.memo())
+                .declineReward(account.declineReward())
+                .receiverSigRequired(account.receiverSigRequired())
+                .autoRenewPeriod(Duration.newBuilder()
+                        .seconds(account.autoRenewSeconds())
+                        .build())
+                .initialBalance(account.tinybarBalance());
     }
 }
