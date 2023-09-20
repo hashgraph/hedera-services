@@ -33,6 +33,8 @@ import com.swirlds.platform.test.graph.OtherParentMatrixFactory;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+
+import java.time.Instant;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
@@ -254,6 +256,11 @@ class IntakeAndConsensusTests {
         @Override
         public void setOtherParentAffinity(final DynamicValue<List<List<Double>>> affinityMatrix) {
             generator.setOtherParentAffinity(affinityMatrix);
+        }
+
+        @Override
+        public void setPreviousTimestamp(final Instant previousTimestamp) {
+            generator.setPreviousTimestamp(previousTimestamp);
         }
     }
 }
