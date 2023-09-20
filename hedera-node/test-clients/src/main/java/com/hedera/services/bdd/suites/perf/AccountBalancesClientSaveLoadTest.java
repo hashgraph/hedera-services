@@ -131,7 +131,9 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest {
                         fileUpdate(THROTTLE_DEFS).payingWith(GENESIS).contents(throttlesForJRS.toByteArray()))
                 .when(
                         sourcing(() -> runWithProvider(accountsCreate(settings))
-                                .lasting(() -> Long.MAX_VALUE, () -> TimeUnit.SECONDS)
+                                .lasting(
+                                        () -> totalAccounts / settings.getTps() + 30,
+                                        () -> TimeUnit.SECONDS)
                                 .totalOpsToSumbit(() -> totalAccounts)
                                 .maxOpsPerSec(settings::getTps)
                                 .maxPendingOps(() -> MAX_PENDING_OPS_FOR_SETUP)),
