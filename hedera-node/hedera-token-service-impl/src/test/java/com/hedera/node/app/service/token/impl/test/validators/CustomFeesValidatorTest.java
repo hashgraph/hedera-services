@@ -176,7 +176,7 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
                         writableTokenStore,
                         feeWithRoyalty))
                 .isInstanceOf(HandleException.class)
-                .has(responseCode(CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON));
+                .has(responseCode(INVALID_TOKEN_ID_IN_CUSTOM_FEES));
     }
 
     @Test
@@ -282,7 +282,7 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
                         writableTokenStore,
                         List.of(withFixedFee(newFee))))
                 .isInstanceOf(HandleException.class)
-                .has(responseCode(CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON));
+                .has(responseCode(INVALID_TOKEN_ID_IN_CUSTOM_FEES));
     }
 
     @Test
@@ -459,7 +459,7 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
                         writableTokenStore,
                         feeWithRoyalty))
                 .isInstanceOf(HandleException.class)
-                .has(responseCode(CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON));
+                .has(responseCode(INVALID_TOKEN_ID_IN_CUSTOM_FEES));
     }
 
     @Test
@@ -544,7 +544,7 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
                         writableTokenStore,
                         List.of(withFixedFee(newFee))))
                 .isInstanceOf(HandleException.class)
-                .has(responseCode(CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON));
+                .has(responseCode(INVALID_TOKEN_ID_IN_CUSTOM_FEES));
     }
 
     @Test
