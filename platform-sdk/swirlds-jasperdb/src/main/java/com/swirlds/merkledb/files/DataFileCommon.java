@@ -157,26 +157,11 @@ public final class DataFileCommon {
     public static UnaryOperator<List<DataFileReader>> oldestFilesSmallerThan(
             final int sizeMB, final int maxNumberOfFilesInMerge) {
         final long sizeBytes = sizeMB * (long) MEBIBYTES_TO_BYTES;
-
-        return dataFileReaders -> {
-            final List<DataFileReader> filesNewestFirst = dataFileReaders.stream()
-                    .sorted(DATA_FILE_READER_CREATION_TIME_COMPARATOR)
-                    .toList();
-            final ArrayList<DataFileReader> smallEnoughFiles = new ArrayList<>(filesNewestFirst.size());
-            for (final DataFileReader file : filesNewestFirst) {
-                long size = file.getSize();
-                if (size < sizeBytes) {
-                    smallEnoughFiles.add(file);
-                } else {
-                    break;
-                }
-            }
-
-            final var numFiles = smallEnoughFiles.size();
-            return numFiles > maxNumberOfFilesInMerge
-                    ? smallEnoughFiles.subList(numFiles - maxNumberOfFilesInMerge, numFiles)
-                    : smallEnoughFiles;
-        };
+        return dataFileReaders -> dataFileReaders.stream()
+                .filter(reader -> reader.getSize() < sizeBytes)
+                .sorted(DATA_FILE_READER_CREATION_TIME_COMPARATOR)
+                .limit(maxNumberOfFilesInMerge)
+                .toList();
     }
 
     /**
