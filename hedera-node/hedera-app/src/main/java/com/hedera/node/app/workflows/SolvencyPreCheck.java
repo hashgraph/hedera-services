@@ -91,7 +91,7 @@ public class SolvencyPreCheck {
         }
 
         if (account.deleted()) {
-            throw new PreCheckException(ResponseCodeEnum.ACCOUNT_DELETED);
+            throw new PreCheckException(ResponseCodeEnum.PAYER_ACCOUNT_DELETED);
         }
 
         if (account.smartContract()) {

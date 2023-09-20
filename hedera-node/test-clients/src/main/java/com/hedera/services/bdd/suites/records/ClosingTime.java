@@ -20,6 +20,7 @@ import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -46,6 +47,7 @@ public class ClosingTime extends HapiSuite {
         return List.of(closeLastStreamFileWithNoBalanceImpact());
     }
 
+    @HapiTest
     private HapiSpec closeLastStreamFileWithNoBalanceImpact() {
         return customHapiSpec("CloseLastStreamFileWithNoBalanceImpact")
                 .withProperties(Map.of(

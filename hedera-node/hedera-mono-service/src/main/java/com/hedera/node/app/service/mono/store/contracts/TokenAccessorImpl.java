@@ -59,7 +59,7 @@ public class TokenAccessorImpl implements TokenAccessor {
     public Optional<EvmNftInfo> evmNftInfo(final Address token, long serialNo) {
         final var target = NftID.newBuilder()
                 .setSerialNumber(serialNo)
-                .setTokenId(tokenIdFromEvmAddress(token))
+                .setTokenID(tokenIdFromEvmAddress(token))
                 .build();
         return trackingLedgers.evmNftInfo(target, ledgerId);
     }

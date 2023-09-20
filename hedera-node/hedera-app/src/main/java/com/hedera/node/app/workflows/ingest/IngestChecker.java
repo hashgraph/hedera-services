@@ -18,15 +18,18 @@ package com.hedera.node.app.workflows.ingest;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.swirlds.common.system.status.PlatformStatus.ACTIVE;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.node.app.annotations.NodeSelfId;
 import com.hedera.node.app.fees.FeeContextImpl;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.info.CurrentPlatformStatus;
@@ -43,6 +46,7 @@ import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.HashSet;
@@ -68,10 +72,12 @@ public final class IngestChecker {
     private final DeduplicationCache deduplicationCache;
     private final TransactionDispatcher dispatcher;
     private final FeeManager feeManager;
+    private final AccountID nodeAccount;
 
     /**
      * Constructor of the {@code IngestChecker}
      *
+     * @param nodeAccount the {@link AccountID} of the node
      * @param currentPlatformStatus the {@link CurrentPlatformStatus} that contains the current status of the platform
      * @param transactionChecker the {@link TransactionChecker} that pre-processes the bytes of a transaction
      * @param throttleAccumulator the {@link ThrottleAccumulator} for throttling
@@ -84,6 +90,7 @@ public final class IngestChecker {
      */
     @Inject
     public IngestChecker(
+            @NodeSelfId @NonNull final AccountID nodeAccount,
             @NonNull final CurrentPlatformStatus currentPlatformStatus,
             @NonNull final TransactionChecker transactionChecker,
             @NonNull final ThrottleAccumulator throttleAccumulator,
@@ -93,6 +100,7 @@ public final class IngestChecker {
             @NonNull final DeduplicationCache deduplicationCache,
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final FeeManager feeManager) {
+        this.nodeAccount = requireNonNull(nodeAccount, "nodeAccount must not be null");
         this.currentPlatformStatus = requireNonNull(currentPlatformStatus, "currentPlatformStatus must not be null");
         this.transactionChecker = requireNonNull(transactionChecker, "transactionChecker must not be null");
         this.throttleAccumulator = requireNonNull(throttleAccumulator, "throttleAccumulator must not be null");
@@ -118,11 +126,14 @@ public final class IngestChecker {
     /**
      * Runs all the ingest checks on a {@link Transaction}
      *
+     * @param state the {@link HederaState} to use
      * @param tx the {@link Transaction} to check
+     * @param configuration the {@link Configuration} to use
      * @return the {@link TransactionInfo} with the extracted information
      * @throws PreCheckException if a check fails
      */
-    public TransactionInfo runAllChecks(@NonNull final HederaState state, @NonNull final Transaction tx)
+    public TransactionInfo runAllChecks(
+            @NonNull final HederaState state, @NonNull final Transaction tx, @NonNull final Configuration configuration)
             throws PreCheckException {
         // During ingest we approximate consensus time with wall clock time
         final var consensusTime = Instant.now();
@@ -131,6 +142,11 @@ public final class IngestChecker {
         final var txInfo = transactionChecker.check(tx);
         final var txBody = txInfo.txBody();
         final var functionality = txInfo.functionality();
+
+        // 1a. Verify the transaction has been sent to *this* node
+        if (!nodeAccount.equals(txBody.nodeAccountID())) {
+            throw new PreCheckException(INVALID_NODE_ACCOUNT);
+        }
 
         // 2. Check the time box of the transaction
         transactionChecker.checkTimeBox(txBody, consensusTime);
@@ -164,7 +180,8 @@ public final class IngestChecker {
         }
 
         // 6. Check account balance
-        final FeeContext feeContext = new FeeContextImpl(consensusTime, txInfo, payerKey, feeManager, storeFactory);
+        final FeeContext feeContext =
+                new FeeContextImpl(consensusTime, txInfo, payerKey, feeManager, storeFactory, configuration);
         final var fees = dispatcher.dispatchComputeFees(feeContext);
         solvencyPreCheck.checkSolvency(txInfo, payer, fees.totalWithoutServiceFee());
 

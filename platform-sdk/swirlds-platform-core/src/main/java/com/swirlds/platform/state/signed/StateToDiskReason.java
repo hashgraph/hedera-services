@@ -46,7 +46,11 @@ public enum StateToDiskReason {
     /**
      * The state was written to disk because a fatal error was encountered
      */
-    FATAL_ERROR("fatal");
+    FATAL_ERROR("fatal"),
+    /**
+     * The state was written because the PCES recovery process has been completed
+     */
+    PCES_RECOVERY_COMPLETE("pces-recovery");
 
     /**
      * The description of the reason

@@ -21,6 +21,7 @@
 			"ConsensusDeleteTopic",
 			"ConsensusGetTopicInfo",
 			"TokenGetInfo",
+			"TokenGetNftInfos",
 			"TokenGetNftInfo",
 			"TokenGetAccountNftInfos",
 			"ScheduleDelete",
@@ -34,7 +35,8 @@
 			"ContractGetRecords",
 			"ContractCallLocal",
 			"TransactionGetRecord",
-			"GetVersionInfo"
+			"GetVersionInfo",
+			"UtilPrng"
 		  ]
 		},
 		{

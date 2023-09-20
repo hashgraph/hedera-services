@@ -18,6 +18,7 @@ package com.swirlds.platform.event.tipset;
 
 import static com.swirlds.common.system.NodeId.UNDEFINED_NODE_ID;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.platform.consensus.GraphGenerations.FIRST_GENERATION;
 import static com.swirlds.platform.event.EventConstants.CREATOR_ID_UNDEFINED;
 import static com.swirlds.platform.event.EventConstants.GENERATION_UNDEFINED;
 import static com.swirlds.platform.event.tipset.TipsetAdvancementWeight.ZERO_ADVANCEMENT_WEIGHT;
@@ -69,7 +70,11 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
     private final ChildlessEventTracker childlessOtherEventTracker;
     private final TransactionSupplier transactionSupplier;
     private final SoftwareVersion softwareVersion;
-    /** The address book for the current network. */
+    private long minimumGenerationNonAncient = FIRST_GENERATION;
+
+    /**
+     * The address book for the current network.
+     */
     private final AddressBook addressBook;
 
     private final int networkSize;
@@ -196,6 +201,7 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
      */
     @Override
     public void setMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
+        this.minimumGenerationNonAncient = minimumGenerationNonAncient;
         tipsetTracker.setMinimumGenerationNonAncient(minimumGenerationNonAncient);
         childlessOtherEventTracker.pruneOldEvents(minimumGenerationNonAncient);
     }
@@ -268,16 +274,20 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
             }
         }
 
-        if (lastSelfEvent != null && bestOtherParent == null) {
-            // There exist no parents that can advance consensus, and this is not our first event.
-            // The only time it's ok to create an event with no other parent is when we are creating
-            // our first event.
-            return null;
+        if (bestOtherParent == null) {
+            // If there are no available other parents, it is only legal to create a new event if we are
+            // creating a genesis event. In order to create a genesis event, we must have never created
+            // an event before and the current minimum generation non ancient must have never been advanced.
+            if (minimumGenerationNonAncient > GENERATION_UNDEFINED + 1 || lastSelfEvent != null) {
+                // event creation isn't legal
+                return null;
+            }
+
+            // we are creating a genesis event, so we can use a null other parent
+            return buildAndProcessEvent(null);
         }
 
-        if (bestOtherParent != null) {
-            tipsetMetrics.getTipsetParentMetric(bestOtherParent.getCreator()).cycle();
-        }
+        tipsetMetrics.getTipsetParentMetric(bestOtherParent.getCreator()).cycle();
         return buildAndProcessEvent(bestOtherParent);
     }
 

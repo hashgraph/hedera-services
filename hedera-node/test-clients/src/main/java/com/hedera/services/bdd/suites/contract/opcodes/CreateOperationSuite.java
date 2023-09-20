@@ -39,6 +39,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 
 import com.esaulpaugh.headlong.abi.Address;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
@@ -102,6 +103,7 @@ public class CreateOperationSuite extends HapiSuite {
                 .then(getContractBytecode(contract).hasCostAnswerPrecheck(CONTRACT_DELETED));
     }
 
+    @HapiTest
     private HapiSpec factoryQuickSelfDestructContract() {
         final var contract = "FactoryQuickSelfDestruct";
         final var sender = "sender";

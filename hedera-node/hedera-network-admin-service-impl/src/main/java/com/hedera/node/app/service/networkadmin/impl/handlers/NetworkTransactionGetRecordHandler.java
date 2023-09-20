@@ -85,8 +85,8 @@ public class NetworkTransactionGetRecordHandler extends PaidQueryHandler {
         }
 
         final var recordCache = context.recordCache();
-        final var record = recordCache.getReceipt(txnId);
-        mustExist(record, INVALID_TRANSACTION_ID);
+        final var receipt = recordCache.getReceipt(txnId);
+        mustExist(receipt, INVALID_TRANSACTION_ID);
     }
 
     @Override

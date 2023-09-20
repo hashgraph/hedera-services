@@ -30,6 +30,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 import static java.lang.Thread.sleep;
 import static java.util.stream.Collectors.toList;
 
+import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -417,7 +418,7 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
         return self();
     }
 
-    public T hasExpectedLedgerId(String ledgerId) {
+    public T hasEncodedLedgerId(ByteString ledgerId) {
         this.expectedLedgerId = Optional.of(ledgerId);
         return self();
     }

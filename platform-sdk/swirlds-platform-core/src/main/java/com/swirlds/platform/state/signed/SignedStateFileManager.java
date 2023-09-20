@@ -50,6 +50,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -179,15 +180,12 @@ public class SignedStateFileManager implements Startable {
                 .setHandler(Runnable::run)
                 .build();
 
-        final SavedStateInfo[] savedStates = getSavedStateFiles(mainClassName, selfId, swirldName);
-        if (savedStates.length > 0) {
-            final Long generationNonAncient =
-                    savedStates[savedStates.length - 1].getMetadata().minimumGenerationNonAncient();
-            if (generationNonAncient != null) {
-                minimumGenerationNonAncientForOldestState = generationNonAncient;
-                minimumGenerationNonAncientConsumer.newMinimumGenerationNonAncient(
-                        minimumGenerationNonAncientForOldestState);
-            }
+        final List<SavedStateInfo> savedStates = getSavedStateFiles(mainClassName, selfId, swirldName);
+        if (!savedStates.isEmpty()) {
+            minimumGenerationNonAncientForOldestState =
+                    savedStates.get(savedStates.size() - 1).metadata().minimumGenerationNonAncient();
+            minimumGenerationNonAncientConsumer.newMinimumGenerationNonAncient(
+                    minimumGenerationNonAncientForOldestState);
         }
     }
 
@@ -551,16 +549,16 @@ public class SignedStateFileManager implements Startable {
      * Purge old states on the disk.
      */
     private synchronized void deleteOldStates() {
-        final SavedStateInfo[] savedStates = getSavedStateFiles(mainClassName, selfId, swirldName);
+        final List<SavedStateInfo> savedStates = getSavedStateFiles(mainClassName, selfId, swirldName);
 
         // States are returned newest to oldest. So delete from the end of the list to delete the oldest states.
-        int index = savedStates.length - 1;
+        int index = savedStates.size() - 1;
         final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
         for (; index >= stateConfig.signedStateDisk(); index--) {
 
-            final SavedStateInfo savedStateInfo = savedStates[index];
+            final SavedStateInfo savedStateInfo = savedStates.get(index);
             try {
-                deleteDirectoryAndLog(savedStateInfo.getDir());
+                deleteDirectoryAndLog(savedStateInfo.getDirectory());
             } catch (final IOException e) {
                 // Intentionally ignored, deleteDirectoryAndLog will log any exceptions that happen
             }
@@ -568,12 +566,9 @@ public class SignedStateFileManager implements Startable {
 
         // Keep the minimum generation non-ancient for the oldest state up to date
         if (index >= 0) {
-            final SavedStateMetadata oldestStateMetadata = savedStates[index].getMetadata();
-
-            final long oldestStateMinimumGeneration = oldestStateMetadata.minimumGenerationNonAncient() == null
-                    ? -1L
-                    : oldestStateMetadata.minimumGenerationNonAncient();
-
+            final SavedStateMetadata oldestStateMetadata =
+                    savedStates.get(index).metadata();
+            final long oldestStateMinimumGeneration = oldestStateMetadata.minimumGenerationNonAncient();
             if (minimumGenerationNonAncientForOldestState < oldestStateMinimumGeneration) {
                 minimumGenerationNonAncientForOldestState = oldestStateMinimumGeneration;
                 minimumGenerationNonAncientConsumer.newMinimumGenerationNonAncient(oldestStateMinimumGeneration);

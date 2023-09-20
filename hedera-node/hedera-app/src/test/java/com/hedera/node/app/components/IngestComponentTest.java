@@ -35,10 +35,10 @@ import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.throttle.ThrottleManager;
 import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.app.workflows.handle.SystemFileUpdateFacility;
+import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.Platform;
@@ -100,12 +100,12 @@ class IngestComponentTest {
                         new SystemFileUpdateFacility(configProvider, throttleManager, exchangeRateManager))
                 .throttleManager(throttleManager)
                 .self(selfNodeInfo)
-                .initialHash(new Hash())
                 .maxSignedTxnSize(1024)
                 .currentPlatformStatus(() -> PlatformStatus.ACTIVE)
                 .servicesRegistry(Set::of)
                 .instantSource(InstantSource.system())
                 .exchangeRateManager(exchangeRateManager)
+                .genesisRecordsConsensusHook(mock(GenesisRecordsConsensusHook.class))
                 .build();
 
         final var state = new FakeHederaState();

@@ -250,7 +250,8 @@ class ProxyWorldUpdaterTest {
 
     @Test
     void cannotCreateWithNonZeroBalance() {
-        assertThrows(IllegalStateException.class, () -> subject.createAccount(NEXT_LONG_ZERO_ADDRESS, 1, Wei.of(123)));
+        final var balance = Wei.of(123);
+        assertThrows(IllegalStateException.class, () -> subject.createAccount(NEXT_LONG_ZERO_ADDRESS, 1, balance));
     }
 
     @Test
@@ -478,5 +479,11 @@ class ProxyWorldUpdaterTest {
 
         subject.externalizeSystemContractResults(contractFunctionResult, ResultStatus.IS_SUCCESS);
         verify(systemContractOperations).externalizeResult(contractFunctionResult, ResultStatus.IS_SUCCESS);
+    }
+
+    @Test
+    void currentExchangeRateTest() {
+        subject.currentExchangeRate();
+        verify(systemContractOperations).currentExchangeRate();
     }
 }

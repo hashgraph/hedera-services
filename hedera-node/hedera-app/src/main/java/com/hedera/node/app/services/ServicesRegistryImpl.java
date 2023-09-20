@@ -16,26 +16,64 @@
 
 package com.hedera.node.app.services;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.app.spi.Service;
+import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
+import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
+import com.swirlds.common.constructable.ConstructableRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
-import java.util.Set;
+import java.util.Comparator;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
  * A simple implementation of {@link ServicesRegistry}.
- *
- * @param services The services that are registered
  */
 @Singleton
-public record ServicesRegistryImpl(@NonNull Set<Service> services) implements ServicesRegistry {
+public final class ServicesRegistryImpl implements ServicesRegistry {
     private static final Logger logger = LogManager.getLogger(ServicesRegistryImpl.class);
+    /** We have to register with the {@link ConstructableRegistry} based on the schemas of the services */
+    private final ConstructableRegistry constructableRegistry;
+    /** The set of registered services */
+    private final SortedSet<Registration> entries;
 
-    public ServicesRegistryImpl(@NonNull final Set<Service> services) {
-        this.services = Collections.unmodifiableSet(services);
-        this.services.forEach(service -> logger.info(
-                "Registered service {} with implementation {}", service.getServiceName(), service.getClass()));
+    private final GenesisRecordsBuilder genesisRecords;
+
+    /**
+     * Creates a new registry.
+     */
+    public ServicesRegistryImpl(
+            @NonNull final ConstructableRegistry constructableRegistry,
+            @NonNull final GenesisRecordsBuilder genesisRecords) {
+        this.constructableRegistry = requireNonNull(constructableRegistry);
+        this.genesisRecords = requireNonNull(genesisRecords);
+        this.entries = new TreeSet<>(Comparator.comparing(r -> r.service().getServiceName()));
+    }
+
+    /**
+     * Register the given service.
+     *
+     * @param service The service to register
+     */
+    public void register(@NonNull final Service service) {
+        final var serviceName = service.getServiceName();
+
+        logger.debug("Registering schemas for service {}", serviceName);
+        final var registry = new MerkleSchemaRegistry(constructableRegistry, serviceName, genesisRecords);
+        service.registerSchemas(registry);
+
+        entries.add(new Registration(service, registry));
+        logger.info("Registered service {} with implementation {}", service.getServiceName(), service.getClass());
+    }
+
+    @NonNull
+    @Override
+    public SortedSet<Registration> registrations() {
+        return Collections.unmodifiableSortedSet(entries);
     }
 }

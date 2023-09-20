@@ -22,6 +22,11 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.SAME_NODE;
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartEvent;
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartRound;
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransaction;
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP2;
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP3;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.NODE_DUE_DILIGENCE_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE_HANDLE_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
@@ -61,6 +66,7 @@ import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
@@ -74,6 +80,7 @@ import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.system.Round;
+import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.config.api.Configuration;
@@ -105,11 +112,13 @@ public class HandleWorkflow {
     private final ServiceScopeLookup serviceScopeLookup;
     private final ConfigProvider configProvider;
     private final HederaRecordCache recordCache;
+    private final GenesisRecordsConsensusHook genesisRecordsTimeHook;
     private final StakingPeriodTimeHook stakingPeriodTimeHook;
     private final FeeManager feeManager;
     private final ExchangeRateManager exchangeRateManager;
     private final ParentRecordFinalizer transactionFinalizer;
     private final SystemFileUpdateFacility systemFileUpdateFacility;
+    private final DualStateUpdateFacility dualStateUpdateFacility;
     private final SolvencyPreCheck solvencyPreCheck;
     private final Authorizer authorizer;
 
@@ -125,11 +134,13 @@ public class HandleWorkflow {
             @NonNull final ServiceScopeLookup serviceScopeLookup,
             @NonNull final ConfigProvider configProvider,
             @NonNull final HederaRecordCache recordCache,
+            @NonNull final GenesisRecordsConsensusHook genesisRecordsTimeHook,
             @NonNull final StakingPeriodTimeHook stakingPeriodTimeHook,
             @NonNull final FeeManager feeManager,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final ParentRecordFinalizer transactionFinalizer,
             @NonNull final SystemFileUpdateFacility systemFileUpdateFacility,
+            @NonNull final DualStateUpdateFacility dualStateUpdateFacility,
             @NonNull final SolvencyPreCheck solvencyPreCheck,
             @NonNull final Authorizer authorizer) {
         this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
@@ -142,12 +153,15 @@ public class HandleWorkflow {
         this.serviceScopeLookup = requireNonNull(serviceScopeLookup, "serviceScopeLookup must not be null");
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
         this.recordCache = requireNonNull(recordCache, "recordCache must not be null");
+        this.genesisRecordsTimeHook = requireNonNull(genesisRecordsTimeHook, "genesisRecordsTimeHook must not be null");
         this.stakingPeriodTimeHook = requireNonNull(stakingPeriodTimeHook, "stakingPeriodTimeHook must not be null");
         this.feeManager = requireNonNull(feeManager, "feeManager must not be null");
         this.exchangeRateManager = requireNonNull(exchangeRateManager, "exchangeRateManager must not be null");
         this.transactionFinalizer = requireNonNull(transactionFinalizer, "transactionFinalizer must not be null");
         this.systemFileUpdateFacility =
                 requireNonNull(systemFileUpdateFacility, "systemFileUpdateFacility must not be null");
+        this.dualStateUpdateFacility =
+                requireNonNull(dualStateUpdateFacility, "dualStateUpdateFacility must not be null");
         this.solvencyPreCheck = requireNonNull(solvencyPreCheck, "solvencyPreCheck must not be null");
         this.authorizer = requireNonNull(authorizer, "authorizer must not be null");
     }
@@ -158,10 +172,14 @@ public class HandleWorkflow {
      * @param state the writable {@link HederaState} that this round will work on
      * @param round the next {@link Round} that needs to be processed
      */
-    public void handleRound(@NonNull final HederaState state, @NonNull final Round round) {
+    public void handleRound(
+            @NonNull final HederaState state, @NonNull final SwirldDualState dualState, @NonNull final Round round) {
         // Keep track of whether any user transactions were handled. If so, then we will need to close the round
         // with the block record manager.
         final var userTransactionsHandled = new AtomicBoolean(false);
+
+        // log start of round to transaction state log
+        logStartRound(round);
 
         // handle each event in the round
         for (final ConsensusEvent event : round) {
@@ -176,6 +194,9 @@ public class HandleWorkflow {
                 return;
             }
 
+            // log start of event to transaction state log
+            logStartEvent(event, creator);
+
             // handle each transaction of the event
             for (final var it = event.consensusTransactionIterator(); it.hasNext(); ) {
                 final var platformTxn = it.next();
@@ -183,7 +204,7 @@ public class HandleWorkflow {
                     // skip system transactions
                     if (!platformTxn.isSystem()) {
                         userTransactionsHandled.set(true);
-                        handlePlatformTransaction(state, event, creator, platformTxn);
+                        handlePlatformTransaction(state, dualState, event, creator, platformTxn);
                     }
                 } catch (final Exception e) {
                     logger.fatal(
@@ -205,15 +226,15 @@ public class HandleWorkflow {
 
     private void handlePlatformTransaction(
             @NonNull final HederaState state,
+            @NonNull final SwirldDualState dualState,
             @NonNull final ConsensusEvent platformEvent,
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction platformTxn) {
-
         // Get the consensus timestamp
         final Instant consensusNow = platformTxn.getConsensusTimestamp();
 
         // handle user transaction
-        handleUserTransaction(consensusNow, state, platformEvent, creator, platformTxn);
+        handleUserTransaction(consensusNow, state, dualState, platformEvent, creator, platformTxn);
 
         // TODO: handle long scheduled transactions
 
@@ -224,6 +245,7 @@ public class HandleWorkflow {
     private void handleUserTransaction(
             @NonNull final Instant consensusNow,
             @NonNull final HederaState state,
+            @NonNull final SwirldDualState dualState,
             @NonNull final ConsensusEvent platformEvent,
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction platformTxn) {
@@ -238,7 +260,10 @@ public class HandleWorkflow {
         final var readableStoreFactory = new ReadableStoreFactory(stack);
         final var feeAccumulator = createFeeAccumulator(stack, configuration, recordBuilder);
 
-        final var tokenServiceContext = new TokenServiceContextImpl(configuration, stack, recordListBuilder);
+        final var tokenServiceContext = new TokenContextImpl(configuration, stack, recordListBuilder);
+        // It's awful that we have to check this every time a transaction is handled, especially since this mostly
+        // applies to non-production cases. Let's find a way to 💥💥 remove this 💥💥
+        genesisRecordsTimeHook.process(tokenServiceContext);
         try {
             // If this is the first user transaction after midnight, then handle staking updates prior to handling the
             // transaction itself.
@@ -260,7 +285,7 @@ public class HandleWorkflow {
 
             if (transactionInfo == null) {
                 // FUTURE: Charge node generic penalty, set values in record builder, and remove log statement
-                logger.error("Non-parsable transaction from creator {}", creator);
+                logger.error("Bad transaction from creator {}", creator);
                 return;
             }
 
@@ -277,6 +302,16 @@ public class HandleWorkflow {
                 transactionBytes = Transaction.PROTOBUF.toBytes(transaction);
             }
 
+            // Log start of user transaction to transaction state log
+            logStartUserTransaction(platformTxn, txBody, payer);
+            logStartUserTransactionPreHandleResultP2(
+                    preHandleResult.payer(),
+                    preHandleResult.payerKey(),
+                    preHandleResult.status(),
+                    preHandleResult.responseCode());
+            logStartUserTransactionPreHandleResultP3(
+                    preHandleResult.txInfo(), preHandleResult.requiredKeys(), preHandleResult.verificationResults());
+
             // Initialize record builder list
             recordBuilder
                     .transaction(transactionInfo.transaction())
@@ -291,6 +326,7 @@ public class HandleWorkflow {
 
             // Setup context
             final var context = new HandleContextImpl(
+                    txBody,
                     transactionInfo,
                     payer,
                     preHandleResult.payerKey(),
@@ -307,6 +343,7 @@ public class HandleWorkflow {
                     blockRecordManager,
                     recordCache,
                     feeManager,
+                    exchangeRateManager,
                     consensusNow);
 
             // Calculate the fee
@@ -321,22 +358,39 @@ public class HandleWorkflow {
                     fees,
                     platformEvent.getCreatorId().id());
             if (validationResult.status() != SO_FAR_SO_GOOD) {
-                if (validationResult.status() == NODE_DUE_DILIGENCE_FAILURE) {
-                    payer = creator.accountId();
-                }
-                final var penaltyFee = new Fees(fees.nodeFee(), fees.networkFee(), 0L);
-                feeAccumulator.charge(payer, penaltyFee);
                 recordBuilder.status(validationResult.responseCodeEnum());
+                try {
+                    final var penaltyPayerID =
+                            validationResult.status() == NODE_DUE_DILIGENCE_FAILURE ? creator.accountId() : payer;
+                    final var penaltyFee = new Fees(fees.nodeFee(), fees.networkFee(), 0L);
+                    feeAccumulator.charge(penaltyPayerID, penaltyFee);
+                } catch (HandleException ex) {
+                    final var identifier = validationResult.status == NODE_DUE_DILIGENCE_FAILURE
+                            ? "node " + creator.nodeId()
+                            : "account " + payer;
+                    logger.error(
+                            "Unable to charge {} a penalty after {} happened. Cause of the failed charge:",
+                            identifier,
+                            validationResult.responseCodeEnum,
+                            ex);
+                }
 
             } else {
-                feeAccumulator.charge(payer, fees);
+                if (authorizer.hasPrivilegedAuthorization(payer, transactionInfo.functionality(), txBody)
+                        != SystemPrivilege.AUTHORIZED) {
+                    // privileged transactions are not charged fees
+                    feeAccumulator.charge(payer, fees);
+                }
                 try {
                     // Dispatch the transaction to the handler
                     dispatcher.dispatchHandle(context);
                     recordBuilder.status(SUCCESS);
 
                     // Notify responsible facility if system-file was uploaded
-                    systemFileUpdateFacility.handleTxBody(stack, txBody);
+                    systemFileUpdateFacility.handleTxBody(stack, txBody, recordBuilder);
+
+                    // Notify if dual state was updated
+                    dualStateUpdateFacility.handleTxBody(stack, dualState, txBody);
 
                 } catch (final HandleException e) {
                     rollback(e.getStatus(), stack, recordListBuilder);
@@ -347,7 +401,15 @@ public class HandleWorkflow {
             logger.error("An unexpected exception was thrown during handle", e);
             rollback(ResponseCodeEnum.FAIL_INVALID, stack, recordListBuilder);
             if (payer != null && fees != null) {
-                feeAccumulator.charge(payer, fees);
+                try {
+                    feeAccumulator.charge(payer, fees);
+                } catch (HandleException chargeException) {
+                    logger.error(
+                            "Unable to charge account {} a penalty after an unexpected exception {}. Cause of the failed charge:",
+                            payer,
+                            e,
+                            chargeException);
+                }
             }
         }
 
@@ -356,7 +418,7 @@ public class HandleWorkflow {
         // Commit all state changes
         stack.commitFullStack();
 
-        // store all records at once
+        // store all records at once, build() records end of transaction to log
         final var recordListResult = recordListBuilder.build();
         recordCache.add(
                 creator.nodeId(),
@@ -383,8 +445,9 @@ public class HandleWorkflow {
             @NonNull final ReadableStoreFactory storeFactory,
             @NonNull final Fees fees,
             final long nodeID) {
-        final var payerID = preHandleResult.payer();
+
         final var txInfo = preHandleResult.txInfo();
+        final var payerID = txInfo.payerID();
         final var functionality = txInfo.functionality();
         final var txBody = txInfo.txBody();
 
