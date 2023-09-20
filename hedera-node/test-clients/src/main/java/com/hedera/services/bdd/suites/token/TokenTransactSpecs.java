@@ -213,6 +213,9 @@ public class TokenTransactSpecs extends HapiSuite {
                 customFeesHaveExpectedAutoCreateInteractions());
     }
 
+    // FAIL
+    // 2023-09-18 15:00:09.452 WARN  262  HapiSpecOperation - 'CustomFeesHaveExpectedAutoCreateInteractions' - HapiCryptoTransfer{sigs=2, node=0.0.3, transfers=[]} failed - Wrong status! Expected INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE, was FAIL_INVALID!
+    @HapiTest
     private HapiSpec customFeesHaveExpectedAutoCreateInteractions() {
         final var nftWithRoyaltyNoFallback = "nftWithRoyaltyNoFallback";
         final var nftWithRoyaltyPlusHtsFallback = "nftWithRoyaltyPlusFallback";
@@ -275,9 +278,11 @@ public class TokenTransactSpecs extends HapiSuite {
                                         moving(10_000, ftWithNonNetOfTransfersFractional)
                                                 .between(CIVILIAN, finalReceiverKey),
                                         movingUnique(nftWithRoyaltyPlusHtsFallback, 1L)
-                                                .between(CIVILIAN, finalReceiverKey))
+                                                .between(CIVILIAN, finalReceiverKey)
+                        )
                                 .hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE)
-                                .via(finalTxn));
+                                .via(finalTxn)
+                );
     }
 
     private HapiSpecOperation autoCreateWithFungible(final String token) {
@@ -302,6 +307,7 @@ public class TokenTransactSpecs extends HapiSuite {
                 getTxnRecord(txn).assertingKnownEffectivePayers());
     }
 
+    @HapiTest
     public HapiSpec autoAssociationWithFrozenByDefaultTokenHasNoSideEffectsOrHistory() {
         final var beneficiary = BENEFICIARY;
         final var uniqueToken = UNIQUE;
@@ -350,6 +356,7 @@ public class TokenTransactSpecs extends HapiSuite {
                         cryptoTransfer(moving(500, otherFungibleToken).between(beneficiary, TOKEN_TREASURY)));
     }
 
+    @HapiTest
     public HapiSpec autoAssociationWithKycTokenHasNoSideEffectsOrHistory() {
         final var beneficiary = BENEFICIARY;
         final var uniqueToken = UNIQUE;
@@ -397,6 +404,7 @@ public class TokenTransactSpecs extends HapiSuite {
                         cryptoTransfer(moving(500, otherFungibleToken).between(beneficiary, TOKEN_TREASURY)));
     }
 
+    @HapiTest
     public HapiSpec failedAutoAssociationHasNoSideEffectsOrHistoryForUnrelatedProblem() {
         final var beneficiary = BENEFICIARY;
         final var unluckyBeneficiary = "unluckyBeneficiary";
@@ -749,6 +757,9 @@ public class TokenTransactSpecs extends HapiSuite {
                         getAccountBalance(theContract).hasTokenBalance(A_TOKEN, 1L));
     }
 
+    // FAIL
+    // 2023-09-18 15:02:28.917 WARN  262  HapiSpecOperation - 'autoAssociationWorksForContracts' - HapiContractCreate{sigs=2, node=0.0.3, contract=CreateDonor, bytecode=CreateDonor, created=0, contract=CreateDonor, bytecode=CreateDonor, created=0} failed - Wrong status! Expected SUCCESS, was NOT_SUPPORTED!
+    @HapiTest
     public HapiSpec autoAssociationWorksForContracts() {
         final var theContract = "CreateDonor";
         final String tokenA = "tokenA";
@@ -854,6 +865,7 @@ public class TokenTransactSpecs extends HapiSuite {
                                 .hasKnownStatus(INSUFFICIENT_ACCOUNT_BALANCE));
     }
 
+    @HapiTest
     public HapiSpec accountsMustBeExplicitlyUnfrozenOnlyIfDefaultFreezeIsTrue() {
         return defaultHapiSpec("AccountsMustBeExplicitlyUnfrozenOnlyIfDefaultFreezeIsTrue")
                 .given(
@@ -926,6 +938,7 @@ public class TokenTransactSpecs extends HapiSuite {
                                 .payingWith(PAYER));
     }
 
+    @HapiTest
     public HapiSpec senderSigsAreValid() {
         return defaultHapiSpec("SenderSigsAreValid")
                 .given(
@@ -1256,6 +1269,9 @@ public class TokenTransactSpecs extends HapiSuite {
                         .hasKnownStatus(TOKEN_WAS_DELETED));
     }
 
+    // FAIL
+    // 2023-09-18 15:00:02.747 WARN  262  HapiSpecOperation - 'FixedHbarCaseStudy' - HapiGetTxnRecord{sigs=1, node=0.0.3, txn=txnFromTreasury} failed - Cannot find TokenID: tokenNum: 1048
+    @HapiTest
     public HapiSpec fixedHbarCaseStudy() {
         final var alice = "Alice";
         final var bob = "Bob";
@@ -1587,6 +1603,9 @@ public class TokenTransactSpecs extends HapiSuite {
                                 .hasTokenBalance(tokenWithFractionalFee, Long.MAX_VALUE - 1_000L + 1L));
     }
 
+    // FAIL
+    // 2023-09-18 14:59:57.055 WARN  262  HapiSpecOperation - 'MultipleRoyaltyFallbackCaseStudy' - HapiCryptoTransfer{sigs=2, payer=zephyr, node=0.0.3, transfers=[], tokenTransfers=0.0.1044([])([serialNumber:1 senderAccountID:0.0.1037 receiverAccountId:0.0.1038])} failed - Wrong status! Expected INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE, was INSUFFICIENT_TOKEN_BALANCE!
+    @HapiTest
     public HapiSpec multipleRoyaltyFallbackCaseStudy() {
         final var zephyr = "zephyr";
         final var amelie = AMELIE;
@@ -1650,6 +1669,7 @@ public class TokenTransactSpecs extends HapiSuite {
                         getTxnRecord(txnFromZephyr).logged());
     }
 
+    @HapiTest
     public HapiSpec respondsCorrectlyWhenNonFungibleTokenWithRoyaltyUsedInTransferList() {
         final var supplyKey = "misc";
         final var nonfungible = "nonfungible";
@@ -1678,6 +1698,9 @@ public class TokenTransactSpecs extends HapiSuite {
                         .hasKnownStatus(ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON));
     }
 
+    // FAIL
+    // 2023-09-18 15:02:21.269 WARN  262  HapiSpecOperation - 'RoyaltyAndFractionalTogetherCaseStudy' - HapiCryptoTransfer{sigs=2, payer=amelie, node=0.0.3, transfers=[0.0.1177 -> -100000000000, 0.0.1178 <- +100000000000], tokenTransfers=0.0.1182([0.0.1177 -> -200, 0.0.1178 <- +200])([]), 0.0.1183([])([serialNumber:1 senderAccountID:0.0.1178 receiverAccountId:0.0.1177])} failed - Wrong status! Expected SUCCESS, was FAIL_INVALID!
+    @HapiTest
     public HapiSpec royaltyAndFractionalTogetherCaseStudy() {
         final var alice = "alice";
         final var amelie = AMELIE;
@@ -1731,6 +1754,9 @@ public class TokenTransactSpecs extends HapiSuite {
                 .then(getTxnRecord(txnFromAmelie).logged());
     }
 
+    // FAIL
+    // 2023-09-18 14:59:48.303 WARN  262  HapiSpecOperation - 'NormalRoyaltyCaseStudy' - HapiCryptoTransfer{sigs=2, payer=amelie, node=0.0.3, transfers=[0.0.1032 <- +100000000000, 0.0.1031 -> -100000000000], tokenTransfers=0.0.1035([0.0.1032 <- +200, 0.0.1031 -> -200])([]), 0.0.1036([])([serialNumber:1 senderAccountID:0.0.1032 receiverAccountId:0.0.1031])} failed - Wrong status! Expected SUCCESS, was FAIL_INVALID!
+    @HapiTest
     public HapiSpec normalRoyaltyCaseStudy() {
         final var alice = "alice";
         final var amelie = AMELIE;
@@ -1853,6 +1879,9 @@ public class TokenTransactSpecs extends HapiSuite {
                         getAccountBalance(DEFAULT_PAYER).hasTokenBalance(feeToken, Long.MAX_VALUE - 1_000L));
     }
 
+    // FAIL
+    // 2023-09-18 14:59:14.893 WARN  262  HapiSpecOperation - 'CanTransactInTokenWithSelfDenominatedFixedFee' - HapiTokenCreate{sigs=2, node=0.0.3, token=protocolToken} failed - Wrong status! Expected SUCCESS, was TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT!
+    @HapiTest
     public HapiSpec canTransactInTokenWithSelfDenominatedFixedFee() {
         final var protocolToken = "protocolToken";
         final var gabriella = "gabriella";
@@ -1948,6 +1977,9 @@ public class TokenTransactSpecs extends HapiSuite {
                         getTokenNftInfo(artToken, 1L).hasAccountID(harry));
     }
 
+    // FAIL
+    // 2023-09-18 15:00:32.878 WARN  262  HapiSpecOperation - 'treasuriesAreExemptFromAllCustomFees' - HapiCryptoTransfer{sigs=2, payer=treasury, node=0.0.3, transfers=[], tokenTransfers=0.0.1078([0.0.1072 <- +1000, 0.0.1073 -> -1000])([])} failed - Wrong status! Expected SUCCESS, was TOKEN_NOT_ASSOCIATED_TO_ACCOUNT!
+    @HapiTest
     public HapiSpec treasuriesAreExemptFromAllCustomFees() {
         final var edgar = EDGAR;
         final var feeToken = "FeeToken";
@@ -2028,6 +2060,9 @@ public class TokenTransactSpecs extends HapiSuite {
                                 .hasTokenBalance(feeToken, 1_000L - 50L));
     }
 
+    // FAIL
+    // 2023-09-18 15:00:37.579 WARN  262  HapiSpecOperation - 'CollectorsAreExemptFromTheirOwnFeesButNotOthers' - HapiCryptoTransfer{sigs=4, node=0.0.3, transfers=[], tokenTransfers=0.0.1084([0.0.1081 -> -2000, 0.0.1083 <- +1000, 0.0.1082 <- +1000])([])} failed - Wrong status! Expected SUCCESS, was TOKEN_NOT_ASSOCIATED_TO_ACCOUNT!
+    @HapiTest
     public HapiSpec collectorsAreExemptFromTheirOwnFeesButNotOthers() {
         final var edgar = EDGAR;
         final var topLevelToken = "TopLevelToken";
@@ -2111,6 +2146,9 @@ public class TokenTransactSpecs extends HapiSuite {
                                 .logged());
     }
 
+    // FAIL
+    // 2023-09-18 15:02:58.607 WARN  259  HapiSpecOperation - 'CollectorIsChargedFractionalFeeUnlessExempt' - HapiGetTxnRecord{sigs=1, node=0.0.3, txn=collectorNonExempt} failed - java.lang.Exception: Bad priority record! :: Bad assessedCustomFeesList! :: Wrong # of custom fees: expected: <1> but was: <2>
+    @HapiTest
     public HapiSpec collectorIsChargedFractionalFeeUnlessExempt() {
         return defaultHapiSpec("CollectorIsChargedFractionalFeeUnlessExempt")
                 .given(
@@ -2167,6 +2205,9 @@ public class TokenTransactSpecs extends HapiSuite {
                                 .logged());
     }
 
+    // FAIL
+    // 2023-09-18 14:59:40.777 WARN  262  HapiSpecOperation - 'CollectorIsChargedRoyaltyFeeUnlessExempt' - HapiCryptoTransfer{sigs=2, node=0.0.3, transfers=[0.0.1030 -> -1000000000, 0.0.1028 <- +1000000000], tokenTransfers=0.0.1029([])([serialNumber:1 senderAccountID:0.0.1028 receiverAccountId:0.0.1030])} failed - Wrong status! Expected SUCCESS, was FAIL_INVALID!
+    @HapiTest
     public HapiSpec collectorIsChargedRoyaltyFeeUnlessExempt() {
         return defaultHapiSpec("CollectorIsChargedRoyaltyFeeUnlessExempt")
                 .given(

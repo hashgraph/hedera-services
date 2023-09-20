@@ -16,11 +16,14 @@
 
 package com.hedera.node.app.service.token.impl.handlers.transfer;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFeeMeta.customFeeMetaFrom;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
+import static com.hedera.hapi.node.base.TokenType.FUNGIBLE_COMMON;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
@@ -267,6 +270,10 @@ public class CustomFeeAssessmentStep {
 
             for (final var aa : ftTransfers) {
                 final var adjustment = aa.amount();
+
+                boolean isFungible = token.tokenType().equals(FUNGIBLE_COMMON);
+                validateFalse(!isFungible && adjustment != 0, ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON);
+
                 if (adjustment < 0) {
                     final var sender = aa.accountID();
                     // If sender for this adjustment is same as treasury for token
