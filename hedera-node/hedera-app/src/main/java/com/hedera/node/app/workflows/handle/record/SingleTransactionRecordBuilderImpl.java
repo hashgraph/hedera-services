@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.handle.record;
 
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logEndTransactionRecord;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
@@ -53,6 +54,7 @@ import com.hedera.node.app.service.token.records.ChildRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoDeleteRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
+import com.hedera.node.app.service.token.records.GenesisAccountRecordBuilder;
 import com.hedera.node.app.service.token.records.NodeStakeUpdateRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenCreateRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenMintRecordBuilder;
@@ -107,7 +109,8 @@ public class SingleTransactionRecordBuilderImpl
                 CryptoDeleteRecordBuilder,
                 TokenUpdateRecordBuilder,
                 NodeStakeUpdateRecordBuilder,
-                FeeRecordBuilder {
+                FeeRecordBuilder,
+                GenesisAccountRecordBuilder {
     // base transaction data
     private Transaction transaction;
     private Bytes transactionBytes = Bytes.EMPTY;
@@ -205,6 +208,9 @@ public class SingleTransactionRecordBuilderImpl
                         pair.getValue(),
                         new OneOf<>(TransactionSidecarRecord.SidecarRecordsOneOfType.BYTECODE, pair.getKey())))
                 .forEach(transactionSidecarRecords::add);
+
+        // Log end of user transaction to transaction state log
+        logEndTransactionRecord(transactionID, transactionRecord);
 
         return new SingleTransactionRecord(transaction, transactionRecord, transactionSidecarRecords);
     }

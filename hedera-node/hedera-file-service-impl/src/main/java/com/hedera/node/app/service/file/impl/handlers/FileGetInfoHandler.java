@@ -169,7 +169,10 @@ public class FileGetInfoHandler extends FileQueryBase {
                         file.keys(),
                         Bytes.EMPTY,
                         upgradeHash,
-                        file.deleted());
+                        file.deleted(),
+                        Timestamp.newBuilder()
+                                .seconds(file.preSystemDeleteExpirationSecond())
+                                .build());
             }
         } else {
             meta = fileStore.getFileMetadata(fileID);
