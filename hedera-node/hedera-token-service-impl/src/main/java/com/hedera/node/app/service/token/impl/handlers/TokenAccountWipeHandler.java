@@ -194,9 +194,15 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
     @Override
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
         final var op = feeContext.body();
+        final var readableTokenStore = feeContext.readableStore(ReadableTokenStore.class);
+        final var tokenType =
+                readableTokenStore.get(op.tokenWipeOrThrow().tokenOrThrow()).tokenType();
         final var meta = TOKEN_OPS_USAGE_UTILS.tokenWipeUsageFrom(fromPbj(op));
         return feeContext
-                .feeCalculator(SubType.fromProtobufOrdinal(meta.getSubType().ordinal()))
+                .feeCalculator(
+                        tokenType.equals(TokenType.FUNGIBLE_COMMON)
+                                ? SubType.TOKEN_FUNGIBLE_COMMON
+                                : SubType.TOKEN_NON_FUNGIBLE_UNIQUE)
                 .addBytesPerTransaction(meta.getBpt())
                 .addNetworkRamByteSeconds(meta.getTransferRecordDb() * USAGE_PROPERTIES.legacyReceiptStorageSecs())
                 .calculate();
