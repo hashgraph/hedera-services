@@ -35,7 +35,7 @@ public class PreCheckException extends Exception {
      * @throws NullPointerException if {@code responseCode} is {@code null}
      */
     public PreCheckException(@NonNull final ResponseCodeEnum responseCode) {
-        super();
+        super(responseCode.protoName());
         this.responseCode = Objects.requireNonNull(responseCode);
     }
 

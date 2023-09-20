@@ -60,6 +60,10 @@ public class ContractCreateHandler implements TransactionHandler {
                 .contractCreateResult(outcome.result())
                 .contractID(outcome.recipientIdIfCreated())
                 .status(outcome.status());
+
+        if (!outcome.isSuccess()) {
+            throw new HandleException(outcome.status());
+        }
     }
 
     @Override
