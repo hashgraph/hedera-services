@@ -27,7 +27,14 @@ import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.*;
+import com.hedera.hapi.node.base.Duration;
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.QueryHeader;
+import com.hedera.hapi.node.base.ResponseHeader;
+import com.hedera.hapi.node.base.ResponseType;
+import com.hedera.hapi.node.base.SubType;
+import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.consensus.ConsensusGetTopicInfoQuery;
 import com.hedera.hapi.node.consensus.ConsensusGetTopicInfoResponse;
 import com.hedera.hapi.node.consensus.ConsensusTopicInfo;
