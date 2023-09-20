@@ -94,8 +94,6 @@ public final class PlatformBuilder {
     private final NodeId selfId;
     private final String swirldName;
 
-    private ConfigurationBuilder configBuilder;
-
     private ConfigurationBuilder configurationBuilder;
 
     /**
@@ -138,7 +136,7 @@ public final class PlatformBuilder {
      * @return this
      */
     @NonNull
-    public PlatformBuilder withConfigBuilder(@Nullable final ConfigurationBuilder configurationBuilder) {
+    public PlatformBuilder withConfigurationBuilder(@Nullable final ConfigurationBuilder configurationBuilder) {
         this.configurationBuilder = configurationBuilder;
         return this;
     }
@@ -205,17 +203,17 @@ public final class PlatformBuilder {
      */
     @NonNull
     private Configuration buildConfiguration() {
-        if (configBuilder == null) {
-            configBuilder = ConfigurationBuilder.create();
+        if (configurationBuilder == null) {
+            configurationBuilder = ConfigurationBuilder.create();
         }
         ConfigUtils.scanAndRegisterAllConfigTypes(configurationBuilder, Set.of(SWIRLDS_PACKAGE));
         final ConfigurationBuilder bootstrapConfigBuilder =
                 ConfigurationBuilder.create().withConfigDataType(PathsConfig.class);
         final Configuration bootstrapConfig = bootstrapConfigBuilder.build();
         final PathsConfig bootstrapPaths = bootstrapConfig.getConfigData(PathsConfig.class);
-        rethrowIO(() -> BootstrapUtils.setupConfigBuilder(configBuilder, bootstrapPaths));
+        rethrowIO(() -> BootstrapUtils.setupConfigBuilder(configurationBuilder, bootstrapPaths));
 
-        final Configuration configuration = configBuilder.build();
+        final Configuration configuration = configurationBuilder.build();
         PlatformConfigUtils.checkConfiguration(configuration);
 
         return configuration;

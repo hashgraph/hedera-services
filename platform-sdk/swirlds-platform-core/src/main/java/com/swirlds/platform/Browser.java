@@ -188,7 +188,7 @@ public class Browser {
                     nodeId);
 
             final SwirldsPlatform platform =
-                    builder.withConfigBuilder(configBuilder).build();
+                    builder.withConfigurationBuilder(configBuilder).build();
             platforms.put(nodeId, platform);
 
             new InfoMember(infoSwirld, platform);

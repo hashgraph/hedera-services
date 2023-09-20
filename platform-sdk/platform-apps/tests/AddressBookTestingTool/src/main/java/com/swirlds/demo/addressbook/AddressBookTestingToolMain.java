@@ -130,7 +130,8 @@ public class AddressBookTestingToolMain implements SwirldMain {
 
         final Configuration configuration = configurationBuilder.build();
 
-        final int version = configuration.getConfigData(AddressBookTestingToolConfig.class).softwareVersion();
+        final int version =
+                configuration.getConfigData(AddressBookTestingToolConfig.class).softwareVersion();
         this.softwareVersion = new BasicSoftwareVersion(version);
 
         logger.info(STARTUP.getMarker(), "returning software version {}", softwareVersion);

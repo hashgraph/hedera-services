@@ -258,7 +258,7 @@ public final class Hedera {
 
         final PlatformBuilder builder =
                 new PlatformBuilder(Hedera.APP_NAME, Hedera.SWIRLD_NAME, getSoftwareVersion(), this::newState, selfId);
-        platform = builder.withConfigBuilder(configBuilder).build();
+        platform = builder.withConfigurationBuilder(configBuilder).build();
         init(platform, selfId);
     }
 
