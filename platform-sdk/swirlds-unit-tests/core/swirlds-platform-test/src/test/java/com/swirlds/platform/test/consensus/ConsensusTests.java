@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.test.consensus;
 
-import static com.swirlds.common.test.fixtures.WeightGenerators.RANDOM;
-import static com.swirlds.platform.test.consensus.ConsensusTestArgs.RANDOM_WEIGHT_DESC;
 import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 
 import com.swirlds.test.framework.TestComponentTags;

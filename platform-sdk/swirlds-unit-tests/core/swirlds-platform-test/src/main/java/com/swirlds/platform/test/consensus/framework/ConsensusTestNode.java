@@ -23,9 +23,7 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.test.consensus.ConsensusUtils;
 import com.swirlds.platform.test.consensus.TestIntake;
 import com.swirlds.platform.test.event.emitter.EventEmitter;
-import com.swirlds.platform.test.fixtures.event.EventUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Objects;
 import java.util.Random;
 
 /** A type which is responsible for managing a node in a consensus test */
@@ -70,11 +68,11 @@ public class ConsensusTestNode {
         // Since restart/reconnect works differently with snapshots, these tests are not compatible with
         // the current implementation
         //
-//        final ConsensusSnapshot snapshot = Objects.requireNonNull(
-//                        getOutput().getConsensusRounds().peekLast())
-//                .getSnapshot();
+        //        final ConsensusSnapshot snapshot = Objects.requireNonNull(
+        //                        getOutput().getConsensusRounds().peekLast())
+        //                .getSnapshot();
         intake.reset();
-//        intake.loadSnapshot(snapshot);
+        //        intake.loadSnapshot(snapshot);
     }
 
     /**
@@ -95,9 +93,9 @@ public class ConsensusTestNode {
         // Since restart/reconnect works differently with snapshots, these tests are not compatible with
         // the current implementation
         //
-//        consensusTestNode.intake.loadSnapshot(
-//                Objects.requireNonNull(getOutput().getConsensusRounds().peekLast())
-//                        .getSnapshot());
+        //        consensusTestNode.intake.loadSnapshot(
+        //                Objects.requireNonNull(getOutput().getConsensusRounds().peekLast())
+        //                        .getSnapshot());
 
         assertTrue(consensusTestNode.intake.getConsensusRounds().isEmpty(), "we should not have reached consensus yet");
 

@@ -51,7 +51,6 @@ import java.util.Deque;
 import java.util.List;
 import java.util.function.BiConsumer;
 
-
 /** Event intake with consensus and shadowgraph, used for testing */
 public class TestIntake implements LoadableFromSignedState {
     private static final BiConsumer<Long, Long> NOOP_MINGEN = (l1, l2) -> {};
@@ -90,7 +89,8 @@ public class TestIntake implements LoadableFromSignedState {
      * @param time the time used by this intake
      * @param consensusConfig the consensus config used by this intake
      */
-    public TestIntake(@NonNull final AddressBook ab, @NonNull final Time time, @NonNull final ConsensusConfig consensusConfig) {
+    public TestIntake(
+            @NonNull final AddressBook ab, @NonNull final Time time, @NonNull final ConsensusConfig consensusConfig) {
         this.ab = ab;
         this.consensusConfig = consensusConfig;
         consensus = new ConsensusImpl(consensusConfig, ConsensusUtils.NOOP_CONSENSUS_METRICS, NOOP_MINGEN, ab);
@@ -183,12 +183,11 @@ public class TestIntake implements LoadableFromSignedState {
 
     @Override
     public void loadFromSignedState(@NonNull final SignedState signedState) {
-        consensus = new ConsensusImpl(
-                consensusConfig, ConsensusUtils.NOOP_CONSENSUS_METRICS, NOOP_MINGEN, ab, signedState);
+        consensus =
+                new ConsensusImpl(consensusConfig, ConsensusUtils.NOOP_CONSENSUS_METRICS, NOOP_MINGEN, ab, signedState);
         shadowGraph.clear();
         shadowGraph.initFromEvents(Arrays.asList(signedState.getEvents()), consensus.getMinRoundGeneration());
     }
-
 
     public int getNumEventsAdded() {
         return numEventsAdded;
