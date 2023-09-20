@@ -93,7 +93,6 @@ class IngestComponentTest {
         final var dualState = mock(SwirldDualState.class);
         app = DaggerHederaInjectionComponent.builder()
                 .initTrigger(InitTrigger.GENESIS)
-                .platform(platform)
                 .crypto(CryptographyHolder.get())
                 .bootstrapProps(new BootstrapProperties())
                 .configuration(configProvider)

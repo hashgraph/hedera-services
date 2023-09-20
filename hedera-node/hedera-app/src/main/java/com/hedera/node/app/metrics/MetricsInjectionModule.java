@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.metrics;
 
+import com.hedera.node.app.platform.PlatformAccessor;
 import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.system.Platform;
 import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -28,7 +28,7 @@ import javax.inject.Singleton;
 public interface MetricsInjectionModule {
     @Provides
     @Singleton
-    static Metrics provideMetrics(@NonNull final Platform platform) {
-        return platform.getContext().getMetrics();
+    static Metrics provideMetrics(@NonNull final PlatformAccessor platformAccessor) {
+        return platformAccessor.getPlatform().getContext().getMetrics();
     }
 }

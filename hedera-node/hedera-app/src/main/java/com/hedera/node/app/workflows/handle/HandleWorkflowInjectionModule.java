@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.handle;
 
+import com.hedera.node.app.platform.PlatformAccessor;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.sigs.Expansion;
 import com.hedera.node.app.service.mono.sigs.PlatformSigOps;
@@ -28,7 +29,6 @@ import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.handle.validation.MonoExpiryValidator;
 import com.hedera.node.app.workflows.handle.validation.StandardizedAttributeValidator;
-import com.swirlds.common.system.Platform;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import dagger.Binds;
 import dagger.Module;
@@ -61,15 +61,17 @@ public interface HandleWorkflowInjectionModule {
 
     @Provides
     @SuppressWarnings({"unchecked", "rawtypes"})
-    static Supplier<AutoCloseableWrapper<HederaState>> provideStateSupplier(@NonNull final Platform platform) {
+    static Supplier<AutoCloseableWrapper<HederaState>> provideStateSupplier(
+            @NonNull final PlatformAccessor platformAccessor) {
         // Always return the latest immutable state until we support state proofs
-        return () ->
-                (AutoCloseableWrapper) platform.getLatestImmutableState(HandleWorkflowInjectionModule.class.getName());
+        return () -> (AutoCloseableWrapper)
+                platformAccessor.getPlatform().getLatestImmutableState(HandleWorkflowInjectionModule.class.getName());
     }
 
     @Provides
     @SuppressWarnings({"unchecked", "rawtypes"})
-    static NonAtomicReference<HederaState> provideMutableStateSupplier(@NonNull final Platform platform) {
+    static NonAtomicReference<HederaState> provideMutableStateSupplier(
+            @NonNull final PlatformAccessor platformAccessor) {
         // Always return the latest mutable state until we support state proofs
         return new NonAtomicReference<>();
     }

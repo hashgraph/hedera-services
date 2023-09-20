@@ -28,6 +28,7 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.UncheckedSubmitBody;
 import com.hedera.node.app.AppTestBase;
+import com.hedera.node.app.platform.PlatformAccessor;
 import com.hedera.node.app.service.mono.context.properties.Profile;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -68,13 +69,17 @@ final class SubmissionManagerTest extends AppTestBase {
     @DisplayName("Null cannot be provided as any of the constructor args")
     @SuppressWarnings("ConstantConditions")
     void testConstructorWithIllegalParameters() {
+
+        final PlatformAccessor platformAccessor = new PlatformAccessor();
+        platformAccessor.setPlatform(platform);
+
         assertThatThrownBy(() -> new SubmissionManager(null, deduplicationCache, config, metrics))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new SubmissionManager(platform, null, config, metrics))
+        assertThatThrownBy(() -> new SubmissionManager(platformAccessor, null, config, metrics))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new SubmissionManager(platform, deduplicationCache, null, metrics))
+        assertThatThrownBy(() -> new SubmissionManager(platformAccessor, deduplicationCache, null, metrics))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new SubmissionManager(platform, deduplicationCache, config, null))
+        assertThatThrownBy(() -> new SubmissionManager(platformAccessor, deduplicationCache, config, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -106,9 +111,12 @@ final class SubmissionManagerTest extends AppTestBase {
 
         @BeforeEach
         void setup() {
+            final PlatformAccessor platformAccessor = new PlatformAccessor();
+            platformAccessor.setPlatform(platform);
+
             bytes = randomBytes(25);
             when(mockedMetrics.getOrCreate(any())).thenReturn(platformTxnRejections);
-            submissionManager = new SubmissionManager(platform, deduplicationCache, config, mockedMetrics);
+            submissionManager = new SubmissionManager(platformAccessor, deduplicationCache, config, mockedMetrics);
             txBody = TransactionBody.newBuilder()
                     .transactionID(TransactionID.newBuilder()
                             .transactionValidStart(asTimestamp(Instant.now()))
@@ -199,13 +207,16 @@ final class SubmissionManagerTest extends AppTestBase {
 
         @BeforeEach
         void setup() {
+            final PlatformAccessor platformAccessor = new PlatformAccessor();
+            platformAccessor.setPlatform(platform);
+
             config = () -> new VersionedConfigImpl(
                     HederaTestConfigBuilder.create()
                             .withValue("hedera.profiles.active", Profile.TEST.toString())
                             .getOrCreateConfig(),
                     1);
             when(mockedMetrics.getOrCreate(any())).thenReturn(platformTxnRejections);
-            submissionManager = new SubmissionManager(platform, deduplicationCache, config, mockedMetrics);
+            submissionManager = new SubmissionManager(platformAccessor, deduplicationCache, config, mockedMetrics);
 
             bytes = randomBytes(25);
 
@@ -241,13 +252,16 @@ final class SubmissionManagerTest extends AppTestBase {
         @Test
         @DisplayName("An unchecked transaction in PROD mode WILL FAIL")
         void testUncheckedSubmitInProdFails() {
+            final PlatformAccessor platformAccessor = new PlatformAccessor();
+            platformAccessor.setPlatform(platform);
+
             // Given we are in PROD mode
             config = () -> new VersionedConfigImpl(
                     HederaTestConfigBuilder.create()
                             .withValue("hedera.profiles.active", Profile.PROD.toString())
                             .getOrCreateConfig(),
                     1);
-            submissionManager = new SubmissionManager(platform, deduplicationCache, config, mockedMetrics);
+            submissionManager = new SubmissionManager(platformAccessor, deduplicationCache, config, mockedMetrics);
 
             // When we submit an unchecked transaction, and separate bytes, then the
             // submission FAILS because we are in PROD mode
@@ -268,13 +282,16 @@ final class SubmissionManagerTest extends AppTestBase {
         @Test
         @DisplayName("Send bogus bytes as an unchecked transaction and verify it fails with a PreCheckException")
         void testBogusBytes() {
+            final PlatformAccessor platformAccessor = new PlatformAccessor();
+            platformAccessor.setPlatform(platform);
+
             // Given we are in TEST mode and have a transaction with bogus bytes
             config = () -> new VersionedConfigImpl(
                     HederaTestConfigBuilder.create()
                             .withValue("hedera.profiles.active", Profile.TEST.toString())
                             .getOrCreateConfig(),
                     1);
-            submissionManager = new SubmissionManager(platform, deduplicationCache, config, mockedMetrics);
+            submissionManager = new SubmissionManager(platformAccessor, deduplicationCache, config, mockedMetrics);
             txBody = TransactionBody.newBuilder()
                     .transactionID(TransactionID.newBuilder()
                             .transactionValidStart(asTimestamp(Instant.now()))

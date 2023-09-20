@@ -448,12 +448,16 @@ public final class Hedera {
      * state).
      */
     @SuppressWarnings("java:S1181") // catching Throwable instead of Exception when we do a direct System.exit()
-    public void init(@NonNull final Platform platform, @NonNull final NodeId nodeId) {
+    private void init(@NonNull final Platform platform, @NonNull final NodeId nodeId) {
         if (this.platform != platform) {
             throw new IllegalArgumentException("Platform must be the same instance");
         }
         logger.info("Initializing Hedera app with HederaNode#{}", nodeId);
         platformAddressBook = platform.getAddressBook();
+
+        daggerApp.platformAccessor().setPlatform(platform);
+        ((CurrentPlatformStatusImpl) daggerApp.currentPlatformStatus())
+                .wireNotification(platform.getNotificationEngine());
 
         // Check that UTF-8 is in use. Otherwise, the node will be subject to subtle bugs in string handling that will
         // lead to ISS.
@@ -744,9 +748,8 @@ public final class Hedera {
 
     private void initializeDagger(@NonNull final MerkleHederaState state, @NonNull final InitTrigger trigger) {
         logger.debug("Initializing dagger");
-        final var selfId = platform.getSelfId();
         if (daggerApp == null) {
-            final var nodeAddress = platform.getAddressBook().getAddress(selfId);
+            final var nodeAddress = platformAddressBook.getAddress(selfId);
             // Fully qualified so as to not confuse javadoc
             daggerApp = com.hedera.node.app.DaggerHederaInjectionComponent.builder()
                     .initTrigger(trigger)
@@ -756,10 +759,9 @@ public final class Hedera {
                     .systemFileUpdateFacility(
                             new SystemFileUpdateFacility(configProvider, throttleManager, exchangeRateManager))
                     .self(SelfNodeInfoImpl.of(nodeAddress, version))
-                    .platform(platform)
                     .maxSignedTxnSize(MAX_SIGNED_TXN_SIZE)
                     .crypto(CryptographyHolder.get())
-                    .currentPlatformStatus(new CurrentPlatformStatusImpl(platform))
+                    .currentPlatformStatus(new CurrentPlatformStatusImpl())
                     .servicesRegistry(servicesRegistry)
                     .bootstrapProps(new BootstrapProperties(false)) // TBD REMOVE
                     .instantSource(InstantSource.system())
