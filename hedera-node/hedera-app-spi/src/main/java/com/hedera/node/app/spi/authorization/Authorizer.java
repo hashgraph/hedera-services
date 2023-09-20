@@ -63,17 +63,4 @@ public interface Authorizer {
     SystemPrivilege hasPrivilegedAuthorization(
             @NonNull AccountID id, @NonNull HederaFunctionality functionality, @NonNull TransactionBody txBody);
 
-    enum SystemPrivilege {
-        /** The operation does not require any system privileges. */
-        UNNECESSARY,
-
-        /** The operation requires system privileges that its payer does not have. */
-        UNAUTHORIZED,
-
-        /** The operation cannot be performed, no matter the privileges of its payer. */
-        IMPERMISSIBLE,
-
-        /** The operation requires system privileges, and its payer has those privileges. */
-        AUTHORIZED;
-    }
 }
