@@ -17,6 +17,7 @@ module com.hedera.node.app.service.token.impl {
     requires org.apache.logging.log4j;
     requires org.slf4j;
     requires static com.github.spotbugs.annotations;
+    requires org.bouncycastle.provider;
 
     provides com.hedera.node.app.service.token.TokenService with
             com.hedera.node.app.service.token.impl.TokenServiceImpl;

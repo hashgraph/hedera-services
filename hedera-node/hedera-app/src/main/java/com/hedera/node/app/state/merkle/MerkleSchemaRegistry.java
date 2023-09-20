@@ -41,6 +41,7 @@ import com.hedera.node.app.state.merkle.singleton.SingletonNode;
 import com.hedera.node.app.state.merkle.singleton.StringLeaf;
 import com.hedera.node.app.state.merkle.singleton.ValueLeaf;
 import com.hedera.node.app.workflows.handle.record.MigrationContextImpl;
+import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -216,16 +217,27 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             remainingStates.removeAll(statesToRemove);
             final var newStates = new FilteredWritableStates(writeableStates, remainingStates);
 
-            final var migrationContext =
-                    new MigrationContextImpl(previousStates, newStates, config, networkInfo, genesisRecordsBuilder);
+            // For any changes to state that depend on other services outside the current service, we need a reference
+            // to the overall state that we can pass into the context. This reference to overall state will be strictly
+            // controlled via the MigrationContext API so that only changes explicitly specified in the interface can be
+            // made (instead of allowing any arbitrary change to overall state). As above, we won't commit anything
+            // until after this service's migration
+            final var migrationStack = new SavepointStackImpl(hederaState);
+
+            final var migrationContext = new MigrationContextImpl(
+                    previousStates, newStates, config, networkInfo, genesisRecordsBuilder, migrationStack);
             if (updateInsteadOfMigrate) {
                 schema.restart(migrationContext);
             } else {
                 schema.migrate(migrationContext);
             }
+            // Now we commit all the service-specific changes made during this service's update or migration
             if (writeableStates instanceof MerkleHederaState.MerkleWritableStates mws) {
                 mws.commit();
             }
+            // And commit any changes that were made to any state belonging to other services
+            migrationStack.createSavepoint();
+            migrationStack.commit();
 
             // And finally we can remove any states we need to remove
             statesToRemove.forEach(stateKey -> hederaState.removeServiceState(serviceName, stateKey));

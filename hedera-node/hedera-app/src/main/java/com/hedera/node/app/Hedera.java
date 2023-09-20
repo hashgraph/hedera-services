@@ -219,6 +219,7 @@ public final class Hedera implements SwirldMain {
                         new UtilServiceImpl(),
                         new RecordCacheService(),
                         new BlockRecordService(),
+                        // todo there should be a problem with this being after token service...???
                         new EntityIdService(),
                         new FeeService())
                 .forEach(servicesRegistry::register);

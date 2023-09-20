@@ -34,8 +34,8 @@ import java.util.Set;
 @SuppressWarnings("rawtypes")
 public class EntityIdService implements Service {
     public static final String NAME = "EntityIdService";
+    public static final String ENTITY_ID_STATE_KEY = "ENTITY_ID";
     private static final SemanticVersion GENESIS_VERSION = SemanticVersion.DEFAULT;
-    static final String ENTITY_ID_STATE_KEY = "ENTITY_ID";
 
     /** {@inheritDoc} */
     @NonNull

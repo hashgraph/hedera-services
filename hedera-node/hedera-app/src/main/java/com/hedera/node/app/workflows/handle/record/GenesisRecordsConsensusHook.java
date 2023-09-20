@@ -55,6 +55,7 @@ public class GenesisRecordsConsensusHook implements GenesisRecordsBuilder, Conse
     private Map<Account, CryptoCreateTransactionBody.Builder> stakingAccounts = new HashMap<>();
     private Map<Account, CryptoCreateTransactionBody.Builder> miscAccounts = new HashMap<>();
     private Map<Account, CryptoCreateTransactionBody.Builder> treasuryClones = new HashMap<>();
+    private Map<Account, CryptoCreateTransactionBody.Builder> blocklistAccounts = new HashMap<>();
 
     private Instant consensusTimeOfLastHandledTxn = null;
 
@@ -94,6 +95,11 @@ public class GenesisRecordsConsensusHook implements GenesisRecordsBuilder, Conse
             createAccountRecordBuilders(treasuryClones, context, TREASURY_CLONE_MEMO);
             treasuryClones = Collections.emptyMap();
         }
+
+        if (!blocklistAccounts.isEmpty()) {
+            createAccountRecordBuilders(blocklistAccounts, context, null);
+            blocklistAccounts = Collections.emptyMap();
+        }
     }
 
     @Override
@@ -114,6 +120,11 @@ public class GenesisRecordsConsensusHook implements GenesisRecordsBuilder, Conse
     @Override
     public void treasuryClones(@NonNull final Map<Account, CryptoCreateTransactionBody.Builder> accounts) {
         treasuryClones.putAll(requireNonNull(accounts));
+    }
+
+    @Override
+    public void blocklistAccounts(@NonNull final Map<Account, CryptoCreateTransactionBody.Builder> accounts) {
+        blocklistAccounts.putAll(requireNonNull(accounts));
     }
 
     @VisibleForTesting

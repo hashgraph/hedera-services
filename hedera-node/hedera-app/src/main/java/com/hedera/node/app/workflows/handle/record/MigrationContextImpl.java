@@ -18,11 +18,15 @@ package com.hedera.node.app.workflows.handle.record;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.ids.EntityIdService;
+import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
+import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
+import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -33,13 +37,15 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param newStates The new states, preloaded with any new state definitions.
  * @param configuration The configuration to use
  * @param genesisRecordsBuilder The instance responsible for genesis records
+ * @param savepointStack todo
  */
 public record MigrationContextImpl(
         @NonNull ReadableStates previousStates,
         @NonNull WritableStates newStates,
         @NonNull Configuration configuration,
         @NonNull NetworkInfo networkInfo,
-        @NonNull GenesisRecordsBuilder genesisRecordsBuilder)
+        @NonNull GenesisRecordsBuilder genesisRecordsBuilder,
+        @NonNull SavepointStackImpl savepointStack)
         implements MigrationContext {
 
     public MigrationContextImpl {
@@ -48,5 +54,12 @@ public record MigrationContextImpl(
         requireNonNull(configuration);
         requireNonNull(networkInfo);
         requireNonNull(genesisRecordsBuilder);
+        requireNonNull(savepointStack);
+    }
+
+    @Override
+    public long newEntityNum() {
+        final var entityIdsFactory = new WritableStoreFactory(savepointStack, EntityIdService.NAME);
+        return entityIdsFactory.getStore(WritableEntityIdStore.class).incrementAndGet();
     }
 }

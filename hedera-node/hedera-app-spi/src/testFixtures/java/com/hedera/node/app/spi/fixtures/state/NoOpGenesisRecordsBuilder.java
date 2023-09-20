@@ -58,4 +58,9 @@ public class NoOpGenesisRecordsBuilder implements GenesisRecordsBuilder {
     public void treasuryClones(@NonNull final Map<Account, CryptoCreateTransactionBody.Builder> accounts) {
         // Intentional no-op
     }
+
+    @Override
+    public void blocklistAccounts(@NonNull Map<Account, CryptoCreateTransactionBody.Builder> accounts) {
+        // Intentional no-op
+    }
 }
