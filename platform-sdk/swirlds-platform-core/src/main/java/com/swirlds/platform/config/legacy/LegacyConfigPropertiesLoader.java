@@ -56,8 +56,7 @@ public final class LegacyConfigPropertiesLoader {
     private static final String SWIRLD_PROPERTY_NAME = "swirld";
     private static final String GENESIS_FREEZE_TIME_PROPERTY_NAME = "genesisfreezetime";
 
-    public static final String ERROR_CONFIG_TXT_NOT_FOUND =
-            "ERROR: Browser.startPlatforms called on non-existent config.txt";
+    public static final String ERROR_CONFIG_TXT_NOT_FOUND = "ERROR: Browser.startPlatforms called on non-existent %s";
     public static final String ERROR_CONFIG_TXT_NOT_FOUND_BUT_EXISTS =
             "Config.txt file was not found but File#exists() claimed the file does exist";
     public static final String ERROR_MORE_THAN_ONE_APP =
@@ -72,13 +71,13 @@ public final class LegacyConfigPropertiesLoader {
 
     private LegacyConfigPropertiesLoader() {}
 
-    public static LegacyConfigProperties loadConfigFile(Path configPath) throws ConfigurationException {
+    public static LegacyConfigProperties loadConfigFile(@NonNull final Path configPath) throws ConfigurationException {
         CommonUtils.throwArgNull(configPath, "configPath");
 
         // Load config.txt file, parse application jar file name, main class name, address book, and parameters
         if (!Files.exists(configPath)) {
-            logger.error(EXCEPTION.getMarker(), ERROR_CONFIG_TXT_NOT_FOUND);
-            throw new ConfigurationException(ERROR_CONFIG_TXT_NOT_FOUND);
+            logger.error(EXCEPTION.getMarker(), ERROR_CONFIG_TXT_NOT_FOUND.formatted(configPath.toString()));
+            throw new ConfigurationException(ERROR_CONFIG_TXT_NOT_FOUND.formatted(configPath.toString()));
         }
 
         final LegacyConfigProperties configurationProperties = new LegacyConfigProperties();
