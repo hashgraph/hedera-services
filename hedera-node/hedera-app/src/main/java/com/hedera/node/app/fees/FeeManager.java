@@ -155,7 +155,12 @@ public final class FeeManager {
 
         // Create the fee calculator
         return new FeeCalculatorImpl(
-                txBody, payerKey, numVerifications, signatureMapSize, feeData, exchangeRateManager.activeRate(consensusTime));
+                txBody,
+                payerKey,
+                numVerifications,
+                signatureMapSize,
+                feeData,
+                exchangeRateManager.activeRate(consensusTime));
     }
 
     /**

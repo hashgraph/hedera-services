@@ -709,9 +709,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             final var accountsState = new MapWritableKVState<AccountID, Account>("ACCOUNTS");
             accountsState.put(ALICE.accountID(), ALICE.account());
             when(baseState.createWritableStates(TokenService.NAME))
-                    .thenReturn(MapWritableStates.builder()
-                            .state(accountsState)
-                            .build());
+                    .thenReturn(MapWritableStates.builder().state(accountsState).build());
 
             doAnswer(invocation -> {
                         final var childContext = invocation.getArgument(0, HandleContext.class);

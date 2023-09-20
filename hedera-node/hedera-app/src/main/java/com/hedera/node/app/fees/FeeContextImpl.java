@@ -80,7 +80,14 @@ public class FeeContextImpl implements FeeContext {
         // FUTURE: Do we want to extract the exact number of verifications?
         final var numVerifications = 1;
         final var signatureMapSize = SignatureMap.PROTOBUF.measureRecord(txInfo.signatureMap());
-        return feeManager.createFeeCalculator(txInfo.txBody(), payerKey, txInfo.functionality(), numVerifications, signatureMapSize, consensusTime, subType);
+        return feeManager.createFeeCalculator(
+                txInfo.txBody(),
+                payerKey,
+                txInfo.functionality(),
+                numVerifications,
+                signatureMapSize,
+                consensusTime,
+                subType);
     }
 
     @NonNull

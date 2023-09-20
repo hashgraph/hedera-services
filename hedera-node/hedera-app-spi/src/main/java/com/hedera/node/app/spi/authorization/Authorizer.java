@@ -62,5 +62,4 @@ public interface Authorizer {
      */
     SystemPrivilege hasPrivilegedAuthorization(
             @NonNull AccountID id, @NonNull HederaFunctionality functionality, @NonNull TransactionBody txBody);
-
 }

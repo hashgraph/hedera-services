@@ -193,7 +193,13 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             this.feeAccumulator = NoOpFeeAccumulator.INSTANCE;
         } else {
             this.feeCalculatorCreator = subType -> feeManager.createFeeCalculator(
-                    txBody, payerKey, functionality, verifier.numSignaturesVerified(), signatureMapSize, userTransactionConsensusTime, subType);
+                    txBody,
+                    payerKey,
+                    functionality,
+                    verifier.numSignaturesVerified(),
+                    signatureMapSize,
+                    userTransactionConsensusTime,
+                    subType);
             final var tokenApi = serviceApiFactory.getApi(TokenServiceApi.class);
             this.feeAccumulator = new FeeAccumulatorImpl(tokenApi, recordBuilder);
         }
@@ -522,7 +528,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         if (transactionID != null) {
             final var accountStore = readableStoreFactory().getStore(ReadableAccountStore.class);
             try {
-                childPayerKey = accountStore.getAccountById(transactionID.accountID()).key();
+                childPayerKey =
+                        accountStore.getAccountById(transactionID.accountID()).key();
             } catch (NullPointerException ex) {
                 childRecordBuilder.status(ResponseCodeEnum.INVALID_TRANSACTION_ID);
                 return;
