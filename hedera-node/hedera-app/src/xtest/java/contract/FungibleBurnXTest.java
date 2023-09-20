@@ -55,6 +55,17 @@ public class FungibleBurnXTest extends AbstractContractXTest {
                         .array()),
                 assertSuccess());
 
+        // BURN_TOKEN_V2
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(BurnTranslator.BURN_TOKEN_V2
+                        .encodeCallWithArgs(
+                                ERC20_TOKEN_ADDRESS,
+                                TOKENS_TO_BURN,
+                                new long[] {})
+                        .array()),
+                assertSuccess());
+
         // should revert when token has no supplyKey
         runHtsCallAndExpectRevert(
                 SENDER_BESU_ADDRESS,
@@ -94,7 +105,8 @@ public class FungibleBurnXTest extends AbstractContractXTest {
                 .accountId(OWNER_ID)
                 .build());
         assertNotNull(tokenRelation);
-        assertEquals(TOKEN_BALANCE - TOKENS_TO_BURN, tokenRelation.balance());
+        // one token burnt from V1 and one token burnt from V2
+        assertEquals(TOKEN_BALANCE - (TOKENS_TO_BURN + TOKENS_TO_BURN), tokenRelation.balance());
     }
 
     @Override

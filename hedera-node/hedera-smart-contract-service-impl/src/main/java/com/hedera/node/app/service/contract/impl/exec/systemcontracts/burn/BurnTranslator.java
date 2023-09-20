@@ -33,10 +33,13 @@ public class BurnTranslator extends AbstractHtsCallTranslator {
     public FungibleBurnCall callFrom(@NonNull final HtsCallAttempt attempt) {
         final var selector = attempt.selector();
         final Tuple call;
+        final long amount;
         if (Arrays.equals(selector, BurnTranslator.BURN_TOKEN_V1.selector())) {
             call = BurnTranslator.BURN_TOKEN_V1.decodeCall(attempt.input().toArrayUnsafe());
+            amount = ((BigInteger) call.get(1)).longValueExact();
         } else {
             call = BurnTranslator.BURN_TOKEN_V2.decodeCall(attempt.input().toArrayUnsafe());
+            amount = call.get(1);
         }
         final var token = attempt.linkedToken(Address.fromHexString(call.get(0).toString()));
         if (token == null) {
@@ -46,7 +49,7 @@ public class BurnTranslator extends AbstractHtsCallTranslator {
                     ? new FungibleBurnCall(
                             attempt.enhancement(),
                             ConversionUtils.asTokenId(call.get(0)),
-                            ((BigInteger) call.get(1)).longValue(),
+                            amount,
                             attempt.defaultVerificationStrategy(),
                             attempt.senderAddress(),
                             attempt.addressIdConverter())
