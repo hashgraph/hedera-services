@@ -41,7 +41,6 @@ import com.hederahashgraph.api.proto.java.KeyList;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.math.BigInteger;
 import java.nio.file.Files;
@@ -156,21 +155,23 @@ public class BlocklistAccountCreator {
     private List<String> readPrivateKeyBlocklist(
             final @NonNull String defaultResource, final @NonNull String resourcePath) {
         log.info("Bootstrapping blocklist from '{}'", resourcePath);
-        InputStream externalResourceStream = null;
-        try {
-            externalResourceStream = Files.newInputStream(Paths.get(resourcePath));
+        try (var externalResourceStream = Files.newInputStream(Paths.get(resourcePath));
+                var externalResourceReader = new BufferedReader(new InputStreamReader(externalResourceStream))) {
+            return externalResourceReader.lines().toList();
         } catch (IOException e) {
             log.warn("Could not read external properties file {}", resourcePath);
         }
 
-        if (externalResourceStream != null) {
-            final var externalResourceReader = new BufferedReader(new InputStreamReader(externalResourceStream));
-            return externalResourceReader.lines().toList();
-        } else {
-            log.info("Bootstrapping blocklist from default resource '{}'", defaultResource);
-            final var inputStream = getClass().getClassLoader().getResourceAsStream(defaultResource);
+        log.info("Bootstrapping blocklist from default resource '{}'", defaultResource);
+        try (final var inputStream = getClass().getClassLoader().getResourceAsStream(defaultResource)) {
+            if (inputStream == null) {
+                throw new IOException("Could not find default resource " + defaultResource);
+            }
             final var reader = new BufferedReader(new InputStreamReader(inputStream));
             return reader.lines().toList();
+        } catch (IOException e) {
+            log.warn("Could not read from default resource {}", defaultResource);
+            return Collections.emptyList();
         }
     }
 
