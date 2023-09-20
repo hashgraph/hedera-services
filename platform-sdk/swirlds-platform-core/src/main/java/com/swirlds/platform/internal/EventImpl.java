@@ -760,14 +760,4 @@ public class EventImpl extends EventMetadata
         }
         return getHash().toMnemonic();
     }
-
-    public boolean isJudge() {
-        throw new IllegalStateException(
-                "Not implemented yet, this is a placeholder needed for the new consensus algorithm");
-    }
-
-    public void setJudgeTrue() {
-        throw new IllegalStateException(
-                "Not implemented yet, this is a placeholder needed for the new consensus algorithm");
-    }
 }
