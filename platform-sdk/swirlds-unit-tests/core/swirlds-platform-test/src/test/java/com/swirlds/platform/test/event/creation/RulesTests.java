@@ -89,10 +89,10 @@ class RulesTests {
         assertEquals(EventCreationRuleResponse.PASS, tracker.shouldCreateEvent(null, null), "null should always pass");
 
         final GossipEventBuilder myBuilder = GossipEventBuilder.builder().setCreatorId(new NodeId(1));
-        final GossipEventBuilder otherBuilder = GossipEventBuilder.builder().setCreatorId(new NodeId(1));
+        final GossipEventBuilder otherBuilder = GossipEventBuilder.builder().setCreatorId(new NodeId(2));
 
-        final GossipEvent other1 = otherBuilder.buildGossipEvent();
-        final GossipEvent self1 = otherBuilder.buildGossipEvent();
+        final GossipEvent other1 = otherBuilder.buildEvent();
+        final GossipEvent self1 = otherBuilder.buildEvent();
 
         assertEquals(
                 EventCreationRuleResponse.PASS,
@@ -105,7 +105,7 @@ class RulesTests {
                 tracker.shouldCreateEvent(self1, other1),
                 "self1 had no parents, so it should not affect anything");
 
-        final GossipEvent self2 = otherBuilder.setOtherParent(other1).buildGossipEvent();
+        final GossipEvent self2 = otherBuilder.setOtherParent(other1).buildEvent();
         // track self2 which has an other parent of other1
         tracker.track(self2);
 

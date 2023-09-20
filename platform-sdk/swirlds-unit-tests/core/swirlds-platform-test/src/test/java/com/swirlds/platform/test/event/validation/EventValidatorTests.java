@@ -79,7 +79,7 @@ class EventValidatorTests {
 
     @Test
     void baseEventValidators() {
-        final GossipEvent event = GossipEventBuilder.builder().buildGossipEvent();
+        final GossipEvent event = GossipEventBuilder.builder().buildEvent();
         assertTrue(new GossipEventValidators(List.of()).isEventValid(event));
         assertTrue(new GossipEventValidators(List.of(VALID)).isEventValid(event));
         assertTrue(new GossipEventValidators(List.of(VALID, VALID, VALID)).isEventValid(event));
@@ -92,12 +92,12 @@ class EventValidatorTests {
         final AtomicBoolean isValid = new AtomicBoolean(true);
         final EventValidator eventValidator = new EventValidator((e) -> isValid.get(), intakeEvents::add);
 
-        final GossipEvent validEvent = GossipEventBuilder.builder().buildGossipEvent();
+        final GossipEvent validEvent = GossipEventBuilder.builder().buildEvent();
         eventValidator.validateEvent(validEvent);
         assertTrue(intakeEvents.contains(validEvent), "event should have been passed to intake");
 
         isValid.set(false);
-        final GossipEvent invalidEvent = GossipEventBuilder.builder().buildGossipEvent();
+        final GossipEvent invalidEvent = GossipEventBuilder.builder().buildEvent();
         eventValidator.validateEvent(invalidEvent);
         assertFalse(intakeEvents.contains(invalidEvent), "event should not have been passed to intake");
     }
@@ -107,7 +107,7 @@ class EventValidatorTests {
         final AtomicBoolean isDuplicate = new AtomicBoolean(true);
         final EventIntakeMetrics metrics = mock(EventIntakeMetrics.class);
         final EventDeduplication deduplication = new EventDeduplication(e -> isDuplicate.get(), metrics);
-        final GossipEvent event = GossipEventBuilder.builder().buildGossipEvent();
+        final GossipEvent event = GossipEventBuilder.builder().buildEvent();
 
         assertFalse(deduplication.isEventValid(event), "it should be a duplicate, so not valid");
         verify(metrics, description("metrics should have recorded the duplicate event"))
@@ -131,7 +131,7 @@ class EventValidatorTests {
         final GossipEventValidator validator = new TransactionSizeValidator(maxTransactionBytesPerEvent);
         final GossipEvent event = GossipEventBuilder.builder()
                 .setNumberOfTransactions(transAmount)
-                .buildGossipEvent();
+                .buildEvent();
 
         int eventTransSize = 0;
         for (final Transaction t : event.getHashedData().getTransactions()) {
@@ -214,19 +214,19 @@ class EventValidatorTests {
     void invalidCreationTime() {
         final Instant time = Instant.now();
         final GossipEvent gossipEvent =
-                GossipEventBuilder.builder().setTimestamp(time).buildGossipEvent();
+                GossipEventBuilder.builder().setTimestamp(time).buildEvent();
         final EventImpl event = new EventImpl(gossipEvent, null, null);
 
         event.setSelfParent(new EventImpl(
-                GossipEventBuilder.builder().setTimestamp(time.plusNanos(100)).buildGossipEvent(), null, null));
+                GossipEventBuilder.builder().setTimestamp(time.plusNanos(100)).buildEvent(), null, null));
         assertFalse(StaticValidators.isValidTimeCreated(event), "should be invalid");
 
         event.setSelfParent(new EventImpl(
-                GossipEventBuilder.builder().setTimestamp(time.plusNanos(1)).buildGossipEvent(), null, null));
+                GossipEventBuilder.builder().setTimestamp(time.plusNanos(1)).buildEvent(), null, null));
         assertFalse(StaticValidators.isValidTimeCreated(event), "should be invalid");
 
         event.setSelfParent(
-                new EventImpl(GossipEventBuilder.builder().setTimestamp(time).buildGossipEvent(), null, null));
+                new EventImpl(GossipEventBuilder.builder().setTimestamp(time).buildEvent(), null, null));
         assertFalse(StaticValidators.isValidTimeCreated(event), "should be invalid");
     }
 }
