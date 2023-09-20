@@ -19,15 +19,17 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.defau
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.defaultfreezestatus.DefaultFreezeStatusTranslator.DEFAULT_FREEZE_STATUS;
+import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.token.Token;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractTokenViewCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractNonRevertibleTokenViewCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
-public class DefaultFreezeStatusCall extends AbstractTokenViewCall {
+public class DefaultFreezeStatusCall extends AbstractNonRevertibleTokenViewCall {
     public DefaultFreezeStatusCall(
             @NonNull final HederaWorldUpdater.Enhancement enhancement, @Nullable final Token token) {
         super(enhancement, token);
@@ -37,13 +39,23 @@ public class DefaultFreezeStatusCall extends AbstractTokenViewCall {
      * {@inheritDoc}
      */
     @Override
-    protected @NonNull HederaSystemContract.FullResult resultOfViewingToken(@Nullable final Token token) {
+    protected @NonNull FullResult resultOfViewingToken(@NonNull final Token token) {
+        requireNonNull(token);
         // TODO - gas calculation
 
+        return fullResultsFor(SUCCESS, 0L, token.accountsFrozenByDefault());
+    }
+
+    @Override
+    protected @NonNull FullResult viewCallResultWith(@NonNull ResponseCodeEnum status, long gasRequirement) {
+        return fullResultsFor(status, gasRequirement, false);
+    }
+
+    private @NonNull FullResult fullResultsFor(@NonNull ResponseCodeEnum status, long gasRequirement, boolean freezeStatus) {
         return successResult(
                 DEFAULT_FREEZE_STATUS
                         .getOutputs()
-                        .encodeElements(SUCCESS.protoOrdinal(), token.accountsFrozenByDefault()),
-                0L);
+                        .encodeElements(status.protoOrdinal(), freezeStatus),
+                gasRequirement);
     }
 }

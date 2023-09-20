@@ -17,10 +17,10 @@
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.iskyc;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN_HEADLONG_ADDRESS;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.revertOutputFor;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mockStatic;
@@ -41,16 +41,6 @@ class IsKycCallTest extends HtsCallTestBase {
     private IsKycCall subject;
 
     @Test
-    void revertsWithMissingToken() {
-        subject = new IsKycCall(mockEnhancement(), FUNGIBLE_TOKEN, FUNGIBLE_TOKEN_HEADLONG_ADDRESS);
-
-        final var result = subject.execute().fullResult().result();
-
-        assertEquals(MessageFrame.State.REVERT, result.getState());
-        assertEquals(revertOutputFor(INVALID_ACCOUNT_ID), result.getOutput());
-    }
-
-    @Test
     void returnsIsKycForPresentToken() {
         subject = new IsKycCall(mockEnhancement(), FUNGIBLE_TOKEN, FUNGIBLE_TOKEN_HEADLONG_ADDRESS);
 
@@ -67,6 +57,48 @@ class IsKycCallTest extends HtsCallTestBase {
                 Bytes.wrap(IsKycTranslator.IS_KYC
                         .getOutputs()
                         .encodeElements(SUCCESS.protoOrdinal(), false)
+                        .array()),
+                result.getOutput());
+    }
+
+    @Test
+    void returnsIsKycForMissingToken() {
+        subject = new IsKycCall(mockEnhancement(), null, FUNGIBLE_TOKEN_HEADLONG_ADDRESS);
+
+        MockedStatic<ConversionUtils> conversionUtilsMockStatic = mockStatic(ConversionUtils.class);
+        conversionUtilsMockStatic
+                .when(() -> ConversionUtils.accountNumberForEvmReference(any(), any()))
+                .thenReturn(1L);
+
+        final var result = subject.execute().fullResult().result();
+        conversionUtilsMockStatic.close();
+
+        assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
+        assertEquals(
+                Bytes.wrap(IsKycTranslator.IS_KYC
+                        .getOutputs()
+                        .encodeElements(INVALID_TOKEN_ID.protoOrdinal(), false)
+                        .array()),
+                result.getOutput());
+    }
+
+    @Test
+    void returnsIsFrozenForMissingAccount() {
+        subject = new IsKycCall(mockEnhancement(), FUNGIBLE_TOKEN, FUNGIBLE_TOKEN_HEADLONG_ADDRESS);
+
+        MockedStatic<ConversionUtils> conversionUtilsMockStatic = mockStatic(ConversionUtils.class);
+        conversionUtilsMockStatic
+                .when(() -> ConversionUtils.accountNumberForEvmReference(any(), any()))
+                .thenReturn(-1L);
+
+        final var result = subject.execute().fullResult().result();
+        conversionUtilsMockStatic.close();
+
+        assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
+        assertEquals(
+                Bytes.wrap(IsKycTranslator.IS_KYC
+                        .getOutputs()
+                        .encodeElements(INVALID_ACCOUNT_ID.protoOrdinal(), false)
                         .array()),
                 result.getOutput());
     }

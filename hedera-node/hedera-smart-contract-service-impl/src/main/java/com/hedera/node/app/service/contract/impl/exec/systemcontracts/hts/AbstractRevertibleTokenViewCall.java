@@ -28,12 +28,13 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * Implementation support for view calls that require an extant token.
+ * ERC view function calls are generally revertible.
  */
-public abstract class AbstractTokenViewCall extends AbstractHtsCall {
+public abstract class AbstractRevertibleTokenViewCall extends AbstractHtsCall {
     @Nullable
     private final Token token;
 
-    protected AbstractTokenViewCall(
+    protected AbstractRevertibleTokenViewCall(
             @NonNull final HederaWorldUpdater.Enhancement enhancement, @Nullable final Token token) {
         super(enhancement);
         this.token = token;

@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.defaultfreezestatus;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -39,19 +40,28 @@ class DefaultFreezeStatusCallTest extends HtsCallTestBase {
     void returnsDefaultFreezeStatusForPresentToken() {
         var subject = new DefaultFreezeStatusCall(mockEnhancement(), FUNGIBLE_TOKEN);
 
-        MockedStatic<ConversionUtils> conversionUtilsMockStatic = mockStatic(ConversionUtils.class);
-        conversionUtilsMockStatic
-                .when(() -> ConversionUtils.accountNumberForEvmReference(any(), any()))
-                .thenReturn(1L);
-
         final var result = subject.execute().fullResult().result();
-        conversionUtilsMockStatic.close();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
                 Bytes.wrap(DefaultFreezeStatusTranslator.DEFAULT_FREEZE_STATUS
                         .getOutputs()
                         .encodeElements(SUCCESS.protoOrdinal(), false)
+                        .array()),
+                result.getOutput());
+    }
+
+    @Test
+    void returnsDefaultFreezeStatusForMissingToken() {
+        var subject = new DefaultFreezeStatusCall(mockEnhancement(), null);
+
+        final var result = subject.execute().fullResult().result();
+
+        assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
+        assertEquals(
+                Bytes.wrap(DefaultFreezeStatusTranslator.DEFAULT_FREEZE_STATUS
+                        .getOutputs()
+                        .encodeElements(INVALID_TOKEN_ID.protoOrdinal(), false)
                         .array()),
                 result.getOutput());
     }

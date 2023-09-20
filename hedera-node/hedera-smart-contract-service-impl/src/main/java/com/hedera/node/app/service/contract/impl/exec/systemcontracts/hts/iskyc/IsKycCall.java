@@ -20,19 +20,23 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.defaultfreezestatus.DefaultFreezeStatusTranslator.DEFAULT_FREEZE_STATUS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.iskyc.IsKycTranslator.IS_KYC;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.accountNumberForEvmReference;
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Address;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractTokenViewCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractNonRevertibleTokenViewCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractRevertibleTokenViewCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
-public class IsKycCall extends AbstractTokenViewCall {
+public class IsKycCall extends AbstractNonRevertibleTokenViewCall {
     private final Address account;
 
     public IsKycCall(
@@ -53,11 +57,24 @@ public class IsKycCall extends AbstractTokenViewCall {
 
         final var accountNum = accountNumberForEvmReference(account, nativeOperations());
         if (accountNum < 0) {
-            return revertResult(INVALID_ACCOUNT_ID, 0L);
+            return fullResultsFor(INVALID_ACCOUNT_ID, 0L, false);
         }
         var tokenRel = nativeOperations()
                 .getTokenRelation(accountNum, token.tokenIdOrThrow().tokenNum());
         var result = tokenRel == null ? false : tokenRel.kycGranted();
-        return successResult(IS_KYC.getOutputs().encodeElements(SUCCESS.protoOrdinal(), result), 0L);
+        return fullResultsFor(SUCCESS, 0L, result);
+    }
+
+    @Override
+    protected @NonNull FullResult viewCallResultWith(@NonNull ResponseCodeEnum status, long gasRequirement) {
+        return fullResultsFor(status, gasRequirement, false);
+    }
+
+    private @NonNull FullResult fullResultsFor(@NonNull ResponseCodeEnum status, long gasRequirement, boolean isKyc) {
+        return successResult(
+                DEFAULT_FREEZE_STATUS
+                        .getOutputs()
+                        .encodeElements(status.protoOrdinal(), isKyc),
+                gasRequirement);
     }
 }
