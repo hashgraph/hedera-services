@@ -110,4 +110,5 @@ moduleInfo {
     version("tuweni.units", tuweniVersion)
     version("uk.org.webcompere.systemstubs.core", systemStubsVersion)
     version("uk.org.webcompere.systemstubs.jupiter", systemStubsVersion)
+    version("jakarta.inject", "2.0.1")
 }
