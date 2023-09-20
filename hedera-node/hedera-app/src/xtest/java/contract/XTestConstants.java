@@ -108,6 +108,7 @@ class XTestConstants {
     static final Key AN_ED25519_KEY = Key.newBuilder()
             .ed25519(Bytes.fromHex("0101010101010101010101010101010101010101010101010101010101010101"))
             .build();
+
     public static void addErc721Relation(
             final Map<EntityIDPair, TokenRelation> tokenRelationships, final AccountID accountID, final long balance) {
         tokenRelationships.put(

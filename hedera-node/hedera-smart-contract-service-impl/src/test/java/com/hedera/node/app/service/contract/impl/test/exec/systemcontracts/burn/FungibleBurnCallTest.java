@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.burn;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -29,10 +45,13 @@ import org.mockito.Mock;
 public class FungibleBurnCallTest extends HtsCallTestBase {
 
     private static final org.hyperledger.besu.datatypes.Address FRAME_SENDER_ADDRESS = EIP_1014_ADDRESS;
+
     @Mock
     private VerificationStrategy verificationStrategy;
+
     @Mock
     private AddressIdConverter addressIdConverter;
+
     @Mock
     private TokenBurnRecordBuilder recordBuilder;
 
@@ -44,12 +63,7 @@ public class FungibleBurnCallTest extends HtsCallTestBase {
     @Test
     void revertsOnMissingToken() {
         subject = new FungibleBurnCall(
-                mockEnhancement(),
-                null,
-                1234,
-                verificationStrategy,
-                FRAME_SENDER_ADDRESS,
-                addressIdConverter);
+                mockEnhancement(), null, 1234, verificationStrategy, FRAME_SENDER_ADDRESS, addressIdConverter);
 
         final var result = subject.execute().fullResult().result();
 
@@ -59,12 +73,13 @@ public class FungibleBurnCallTest extends HtsCallTestBase {
 
     @Test
     void burnTokenHappyPath() {
-        given(addressIdConverter.convert(asHeadlongAddress(FRAME_SENDER_ADDRESS))).willReturn(A_NEW_ACCOUNT_ID);
+        given(addressIdConverter.convert(asHeadlongAddress(FRAME_SENDER_ADDRESS)))
+                .willReturn(A_NEW_ACCOUNT_ID);
         given(systemContractOperations.dispatch(
-                any(TransactionBody.class),
-                eq(verificationStrategy),
-                eq(A_NEW_ACCOUNT_ID),
-                eq(TokenBurnRecordBuilder.class)))
+                        any(TransactionBody.class),
+                        eq(verificationStrategy),
+                        eq(A_NEW_ACCOUNT_ID),
+                        eq(TokenBurnRecordBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
         given(nativeOperations.getToken(FUNGIBLE_TOKEN_ID.tokenNum())).willReturn(token);
@@ -75,11 +90,14 @@ public class FungibleBurnCallTest extends HtsCallTestBase {
         final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
-        assertEquals(asBytesResult(BURN_TOKEN_V1.getOutputs()
-                .encodeElements(BigInteger.valueOf(22), BigInteger.valueOf(token.totalSupply()))), result.getOutput());
+        assertEquals(
+                asBytesResult(BURN_TOKEN_V1
+                        .getOutputs()
+                        .encodeElements(BigInteger.valueOf(22), BigInteger.valueOf(token.totalSupply()))),
+                result.getOutput());
     }
 
-    //@TODO add test for V2
+    // @TODO add test for V2
 
     private FungibleBurnCall subjectForBurn(final long amount) {
         return new FungibleBurnCall(
@@ -90,5 +108,4 @@ public class FungibleBurnCallTest extends HtsCallTestBase {
                 FRAME_SENDER_ADDRESS,
                 addressIdConverter);
     }
-
 }

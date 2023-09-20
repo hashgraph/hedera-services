@@ -14,17 +14,8 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.token.records;
+package com.hedera.node.app.service.contract.impl.exec.systemcontracts.burn;
 
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.List;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
 
-public interface TokenBurnRecordBuilder extends SingleTransactionRecordBuilder {
-
-    @NonNull
-    TokenMintRecordBuilder newTotalSupply(final long newTotalSupply);
-
-    @NonNull
-    TokenMintRecordBuilder serialNumbers(@NonNull List<Long> serialNumbers);
-}
+public interface BurnCall extends HtsCall {}

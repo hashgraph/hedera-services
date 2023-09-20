@@ -35,31 +35,29 @@ import com.hedera.node.app.service.token.records.TokenBurnRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
+import java.util.List;
 
-public class FungibleBurnCall extends AbstractHtsCall implements BurnCall {
+public class NonFungibleBurnCall extends AbstractHtsCall implements BurnCall {
 
-    private final long amount;
-
-    @Nullable
+    private final List<Long> serialNo;
     private final TokenID tokenId;
-
     private final AddressIdConverter addressIdConverter;
     private final VerificationStrategy verificationStrategy;
     private final org.hyperledger.besu.datatypes.Address spender;
 
-    public FungibleBurnCall(
+    public NonFungibleBurnCall(
+            final List<Long> serialNo,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             @Nullable final TokenID tokenId,
-            final long amount,
             @NonNull final VerificationStrategy verificationStrategy,
             @NonNull final org.hyperledger.besu.datatypes.Address spender,
             @NonNull final AddressIdConverter addressIdConverter) {
         super(enhancement);
         this.tokenId = requireNonNull(tokenId);
-        this.amount = amount;
         this.verificationStrategy = requireNonNull(verificationStrategy);
         this.spender = requireNonNull(spender);
         this.addressIdConverter = requireNonNull(addressIdConverter);
+        this.serialNo = serialNo;
     }
 
     @Override
@@ -69,17 +67,10 @@ public class FungibleBurnCall extends AbstractHtsCall implements BurnCall {
         }
         final var spenderId = addressIdConverter.convert(asHeadlongAddress(spender.toArrayUnsafe()));
         final var recordBuilder = systemContractOperations()
-                .dispatch(
-                        syntheticBurnUnits(tokenId, amount),
-                        verificationStrategy,
-                        spenderId,
-                        TokenBurnRecordBuilder.class);
-        final var newTotalSupply =
-                nativeOperations().getToken(tokenId.tokenNum()).totalSupply();
+                .dispatch(syntheticBurnNonFungible(), verificationStrategy, spenderId, TokenBurnRecordBuilder.class);
         if (recordBuilder.status() != ResponseCodeEnum.SUCCESS) {
             return gasOnly(revertResult(recordBuilder.status(), 0L));
         } else {
-            // @TODO implementation for V1 and V2 versions
             final var encodedOutput = BurnTranslator.BURN_TOKEN_V1
                     .getOutputs()
                     .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()));
@@ -87,11 +78,11 @@ public class FungibleBurnCall extends AbstractHtsCall implements BurnCall {
         }
     }
 
-    private TransactionBody syntheticBurnUnits(@NonNull final TokenID tokenId, final long amount) {
+    private TransactionBody syntheticBurnNonFungible() {
         return TransactionBody.newBuilder()
                 .tokenBurn(TokenBurnTransactionBody.newBuilder()
                         .token(tokenId)
-                        .amount(amount)
+                        .serialNumbers(serialNo)
                         .build())
                 .build();
     }

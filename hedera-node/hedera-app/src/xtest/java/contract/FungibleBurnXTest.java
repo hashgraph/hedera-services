@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package contract;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
@@ -7,26 +23,35 @@ import static contract.AssociationsXTestConstants.A_TOKEN_ADDRESS;
 import static contract.AssociationsXTestConstants.A_TOKEN_ID;
 import static contract.AssociationsXTestConstants.B_TOKEN_ADDRESS;
 import static contract.AssociationsXTestConstants.B_TOKEN_ID;
+import static contract.HtsErc721TransferXTestConstants.APPROVED_ID;
+import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_ADDRESS;
+import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_ID;
 import static contract.XTestConstants.AN_ED25519_KEY;
 import static contract.XTestConstants.ERC20_TOKEN_ADDRESS;
 import static contract.XTestConstants.ERC20_TOKEN_ID;
+import static contract.XTestConstants.ERC721_TOKEN_ADDRESS;
+import static contract.XTestConstants.ERC721_TOKEN_ID;
 import static contract.XTestConstants.OWNER_ADDRESS;
 import static contract.XTestConstants.OWNER_ID;
 import static contract.XTestConstants.SENDER_ADDRESS;
 import static contract.XTestConstants.SENDER_BESU_ADDRESS;
 import static contract.XTestConstants.SENDER_CONTRACT_ID_KEY;
 import static contract.XTestConstants.SENDER_ID;
+import static contract.XTestConstants.SN_1234;
+import static contract.XTestConstants.SN_1234_METADATA;
 import static contract.XTestConstants.addErc20Relation;
 import static contract.XTestConstants.assertSuccess;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.burn.BurnTranslator;
@@ -34,6 +59,7 @@ import com.hedera.node.app.spi.state.ReadableKVState;
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import org.apache.tuweni.bytes.Bytes;
 import org.jetbrains.annotations.NotNull;
 
@@ -48,10 +74,7 @@ public class FungibleBurnXTest extends AbstractContractXTest {
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(BurnTranslator.BURN_TOKEN_V1
-                        .encodeCallWithArgs(
-                                ERC20_TOKEN_ADDRESS,
-                                BigInteger.valueOf(TOKENS_TO_BURN),
-                                new long[] {})
+                        .encodeCallWithArgs(ERC20_TOKEN_ADDRESS, BigInteger.valueOf(TOKENS_TO_BURN), new long[] {})
                         .array()),
                 assertSuccess());
 
@@ -59,10 +82,7 @@ public class FungibleBurnXTest extends AbstractContractXTest {
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(BurnTranslator.BURN_TOKEN_V2
-                        .encodeCallWithArgs(
-                                ERC20_TOKEN_ADDRESS,
-                                TOKENS_TO_BURN,
-                                new long[] {})
+                        .encodeCallWithArgs(ERC20_TOKEN_ADDRESS, TOKENS_TO_BURN, new long[] {})
                         .array()),
                 assertSuccess());
 
@@ -70,31 +90,34 @@ public class FungibleBurnXTest extends AbstractContractXTest {
         runHtsCallAndExpectRevert(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(BurnTranslator.BURN_TOKEN_V1
-                        .encodeCallWithArgs(
-                                A_TOKEN_ADDRESS,
-                                BigInteger.valueOf(TOKENS_TO_BURN),
-                                new long[]{})
-                        .array()), TOKEN_HAS_NO_SUPPLY_KEY);
+                        .encodeCallWithArgs(A_TOKEN_ADDRESS, BigInteger.valueOf(TOKENS_TO_BURN), new long[] {})
+                        .array()),
+                TOKEN_HAS_NO_SUPPLY_KEY);
 
         // should revert when token is not associated to account
         runHtsCallAndExpectRevert(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(BurnTranslator.BURN_TOKEN_V1
-                        .encodeCallWithArgs(
-                                B_TOKEN_ADDRESS,
-                                BigInteger.valueOf(TOKENS_TO_BURN),
-                                new long[]{})
-                        .array()), TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
+                        .encodeCallWithArgs(B_TOKEN_ADDRESS, BigInteger.valueOf(TOKENS_TO_BURN), new long[] {})
+                        .array()),
+                TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
 
         // should revert on totalSupply < amountToBurn
         runHtsCallAndExpectRevert(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(BurnTranslator.BURN_TOKEN_V1
+                        .encodeCallWithArgs(ERC20_TOKEN_ADDRESS, BigInteger.valueOf(TOKEN_BALANCE + 1), new long[] {})
+                        .array()),
+                INVALID_TOKEN_BURN_AMOUNT);
+
+        // BURN_TOKEN_V1 NFT
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(BurnTranslator.BURN_TOKEN_V1
                         .encodeCallWithArgs(
-                                ERC20_TOKEN_ADDRESS,
-                                BigInteger.valueOf(TOKEN_BALANCE + 1),
-                                new long[]{})
-                        .array()), INVALID_TOKEN_BURN_AMOUNT);
+                                ERC721_TOKEN_ADDRESS, BigInteger.valueOf(0L), new long[] {SN_1234.serialNumber()})
+                        .array()),
+                assertSuccess());
     }
 
     @Override
@@ -107,6 +130,13 @@ public class FungibleBurnXTest extends AbstractContractXTest {
         assertNotNull(tokenRelation);
         // one token burnt from V1 and one token burnt from V2
         assertEquals(TOKEN_BALANCE - (TOKENS_TO_BURN + TOKENS_TO_BURN), tokenRelation.balance());
+
+        // asserts one NFT is burned
+        final var receiverRelation = Objects.requireNonNull(tokenRelationships.get(EntityIDPair.newBuilder()
+                .tokenId(ERC721_TOKEN_ID)
+                .accountId(UNAUTHORIZED_SPENDER_ID)
+                .build()));
+        assertEquals(TOKEN_BALANCE - 1L, receiverRelation.balance());
     }
 
     @Override
@@ -146,13 +176,36 @@ public class FungibleBurnXTest extends AbstractContractXTest {
                         .supplyKey(AN_ED25519_KEY)
                         .totalSupply(TOKEN_BALANCE)
                         .build());
+        tokens.put(
+                ERC721_TOKEN_ID,
+                Token.newBuilder()
+                        .tokenId(ERC721_TOKEN_ID)
+                        .treasuryAccountId(UNAUTHORIZED_SPENDER_ID)
+                        .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                        .supplyKey(AN_ED25519_KEY)
+                        .totalSupply(TOKEN_BALANCE)
+                        .build());
         return tokens;
+    }
+
+    @Override
+    protected Map<NftID, Nft> initialNfts() {
+        final var nfts = new HashMap<NftID, Nft>();
+        nfts.put(
+                SN_1234,
+                Nft.newBuilder()
+                        .nftId(SN_1234)
+                        .spenderId(APPROVED_ID)
+                        .metadata(SN_1234_METADATA)
+                        .build());
+        return nfts;
     }
 
     @Override
     protected Map<EntityIDPair, TokenRelation> initialTokenRelationships() {
         final var tokenRelationships = new HashMap<EntityIDPair, TokenRelation>();
         addErc20Relation(tokenRelationships, OWNER_ID, TOKEN_BALANCE);
+        XTestConstants.addErc721Relation(tokenRelationships, UNAUTHORIZED_SPENDER_ID, TOKEN_BALANCE);
         return tokenRelationships;
     }
 
@@ -172,6 +225,12 @@ public class FungibleBurnXTest extends AbstractContractXTest {
                         .accountId(OWNER_ID)
                         .alias(OWNER_ADDRESS)
                         .key(SENDER_CONTRACT_ID_KEY)
+                        .build());
+        accounts.put(
+                UNAUTHORIZED_SPENDER_ID,
+                Account.newBuilder()
+                        .accountId(UNAUTHORIZED_SPENDER_ID)
+                        .alias(UNAUTHORIZED_SPENDER_ADDRESS)
                         .build());
         return accounts;
     }
