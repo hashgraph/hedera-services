@@ -521,10 +521,6 @@ public final class ConsensusTestDefinitions {
                 Validations.standard().ratios(EventRatioValidation.blank().setMinimumConsensusRatio(0.5)));
         orchestrator.addReconnectNode();
 
-        // now both consensus objects should be in the same state
-        // ConsensusUtils.checkGenerations(original.getConsensus(), reconnect.getConsensus(), true);
-        // TODO why is this commented out
-
         orchestrator.clearOutput();
         orchestrator.generateEvents(0.5);
         orchestrator.validateAndClear(

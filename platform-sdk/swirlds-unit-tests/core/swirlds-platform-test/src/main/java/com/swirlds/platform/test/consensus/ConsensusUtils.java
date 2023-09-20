@@ -72,27 +72,6 @@ public abstract class ConsensusUtils {
                 ConfigurationHolder.getConfigData(ConsensusConfig.class), NOOP_CONSENSUS_METRICS, addressBook);
     }
 
-    public static void checkGenerations(
-            final GraphGenerations gg1, final GraphGenerations gg2, final boolean skipMinRound) {
-        assertTrue(
-                gg1.getMinRoundGeneration() >= GraphGenerations.FIRST_GENERATION,
-                "minRoundGeneration cannot be smaller than " + GraphGenerations.FIRST_GENERATION);
-        assertTrue(
-                gg1.getMinGenerationNonAncient() >= gg1.getMinRoundGeneration(),
-                "minGenNonAncient cannot be smaller than minRoundGeneration");
-        assertTrue(
-                gg1.getMaxRoundGeneration() >= gg1.getMinGenerationNonAncient(),
-                "maxRoundGeneration cannot be smaller than minGenNonAncient");
-
-        if (!skipMinRound) { // after a restart, min round will not be equal
-            assertEquals(
-                    gg1.getMinRoundGeneration(), gg2.getMinRoundGeneration(), "minRoundGeneration should be equal");
-        }
-        assertEquals(
-                gg1.getMinGenerationNonAncient(), gg2.getMinGenerationNonAncient(), "minGenNonAncient should be equal");
-        assertEquals(gg1.getMaxRoundGeneration(), gg2.getMaxRoundGeneration(), "maxRoundGeneration should be equal");
-    }
-
     /**
      * Load events from a signed state into a generator, so that they can be used as other parents
      *
