@@ -561,6 +561,13 @@ public class HapiSpecRegistry {
     }
 
     public void saveAccountId(String name, AccountID id) {
+        System.out.println("Printing stack trace: " + name + " " + id);
+        StackTraceElement[] elements = Thread.currentThread().getStackTrace();
+        for (int i = 1; i < elements.length; i++) {
+            StackTraceElement s = elements[i];
+            System.out.println("\tat " + s.getClassName() + "." + s.getMethodName()
+                    + "(" + s.getFileName() + ":" + s.getLineNumber() + ")");
+        }
         put(name, id);
         put(asAccountString(id), name);
     }
