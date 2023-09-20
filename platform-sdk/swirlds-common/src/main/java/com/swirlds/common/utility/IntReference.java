@@ -16,6 +16,7 @@
 
 package com.swirlds.common.utility;
 
+import com.swirlds.base.utility.ToStringBuilder;
 import java.util.Objects;
 
 /**
@@ -70,10 +71,10 @@ public class IntReference {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        IntReference that = (IntReference) o;
+        final IntReference that = (IntReference) o;
         return equalsInt(that.value);
     }
 
@@ -84,6 +85,6 @@ public class IntReference {
 
     @Override
     public String toString() {
-        return "IntReference{" + "value=" + value + '}';
+        return new ToStringBuilder(this).append("value", value).toString();
     }
 }

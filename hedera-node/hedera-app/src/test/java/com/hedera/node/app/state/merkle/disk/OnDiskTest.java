@@ -18,11 +18,13 @@ package com.hedera.node.app.state.merkle.disk;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.StateDefinition;
+import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
 import com.hedera.node.app.state.merkle.MerkleTestBase;
 import com.hedera.node.app.state.merkle.StateMetadata;
@@ -41,7 +43,6 @@ import java.nio.file.Path;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 /**
  * A variety of robust tests for the on-disk merkle data structure, especially including
@@ -94,8 +95,8 @@ class OnDiskTest extends MerkleTestBase {
         final var dsBuilder = new MerkleDbDataSourceBuilder<>(storageDir, tableConfig);
         virtualMap = new VirtualMap<>(StateUtils.computeLabel(SERVICE_NAME, ACCOUNT_STATE_KEY), dsBuilder);
 
-        this.config = Mockito.mock(Configuration.class);
-        final var hederaConfig = Mockito.mock(HederaConfig.class);
+        this.config = mock(Configuration.class);
+        final var hederaConfig = mock(HederaConfig.class);
         lenient().when(config.getConfigData(HederaConfig.class)).thenReturn(hederaConfig);
     }
 
@@ -149,7 +150,7 @@ class OnDiskTest extends MerkleTestBase {
 
         // Before we can read the data back, we need to register the data types
         // I plan to deserialize.
-        final var r = new MerkleSchemaRegistry(registry, SERVICE_NAME);
+        final var r = new MerkleSchemaRegistry(registry, SERVICE_NAME, mock(GenesisRecordsBuilder.class));
         r.register(schema);
 
         // read it back now as our map and validate the data come back fine

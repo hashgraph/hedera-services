@@ -161,6 +161,10 @@ public class GossipEventBuilder {
         return sp.isAfter(op) ? sp : op;
     }
 
+    public GossipEvent buildEvent() {
+        return buildGossipEvent();
+    }
+
     public GossipEvent buildGossipEvent() {
         final ConsensusTransactionImpl[] tr = new ConsensusTransactionImpl[numberOfTransactions];
         for (int i = 0; i < tr.length; ++i) {

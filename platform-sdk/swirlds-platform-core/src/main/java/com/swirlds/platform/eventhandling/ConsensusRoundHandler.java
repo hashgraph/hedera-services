@@ -78,6 +78,11 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
     private static final Logger logger = LogManager.getLogger(ConsensusRoundHandler.class);
 
     /**
+     * The name of the thread that handles consensus events
+     */
+    public static final String THREAD_CONS_NAME = "thread-cons";
+
+    /**
      * The class responsible for all interactions with the swirld state
      */
     private final SwirldStateManager swirldStateManager;
@@ -196,7 +201,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
                 .setNodeId(selfId)
                 .setHandler(this::applyConsensusRoundToState)
                 .setComponent(PLATFORM_THREAD_POOL_NAME)
-                .setThreadName("thread-cons")
+                .setThreadName(THREAD_CONS_NAME)
                 .setStopBehavior(swirldStateManager.getStopBehavior())
                 .setLogAfterPauseDuration(threadConfig.logStackTracePauseDuration())
                 .setMetricsConfiguration(

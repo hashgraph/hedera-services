@@ -33,6 +33,7 @@ public class HandleException extends RuntimeException {
     private final ResponseCodeEnum status;
 
     public HandleException(final ResponseCodeEnum status) {
+        super(status.protoName());
         this.status = status;
     }
 

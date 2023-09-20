@@ -50,6 +50,11 @@ public class ResettableRandom extends Random {
         setSeed(initialSeed);
     }
 
+    /**
+     * Get the initial seed used to create this object.
+     *
+     * @return the initial seed
+     */
     public long getInitialSeed() {
         return initialSeed;
     }

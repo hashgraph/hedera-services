@@ -21,6 +21,7 @@ import static com.swirlds.logging.LogMarker.CONSENSUS_VOTING;
 import com.swirlds.common.utility.IntReference;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -41,8 +42,8 @@ public final class CandidateWitness {
      */
     public CandidateWitness(
             @NonNull final EventImpl witness, @NonNull final IntReference numUnknownFame, final int electionIndex) {
-        this.witness = witness;
-        this.numUnknownFame = numUnknownFame;
+        this.witness = Objects.requireNonNull(witness);
+        this.numUnknownFame = Objects.requireNonNull(numUnknownFame);
         this.electionIndex = electionIndex;
         this.decided = false;
         this.famous = false;
