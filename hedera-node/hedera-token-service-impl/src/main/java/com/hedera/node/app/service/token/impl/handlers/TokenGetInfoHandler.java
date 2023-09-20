@@ -28,6 +28,7 @@ import static com.hedera.hapi.node.base.TokenKycStatus.REVOKED;
 import static com.hedera.hapi.node.base.TokenPauseStatus.PAUSED;
 import static com.hedera.hapi.node.base.TokenPauseStatus.PAUSE_NOT_APPLICABLE;
 import static com.hedera.hapi.node.base.TokenPauseStatus.UNPAUSED;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
@@ -37,13 +38,16 @@ import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseHeader;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.token.TokenGetInfoResponse;
 import com.hedera.hapi.node.token.TokenInfo;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
+import com.hedera.node.app.service.mono.fees.calculation.token.queries.GetTokenInfoResourceUsage;
 import com.hedera.node.app.service.token.ReadableTokenStore;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
@@ -192,5 +196,19 @@ public class TokenGetInfoHandler extends PaidQueryHandler {
 
             return Optional.of(info.build());
         }
+    }
+
+    @NonNull
+    @Override
+    public Fees computeFees(@NonNull final QueryContext queryContext) {
+        final var query = queryContext.query();
+        final var tokenStore = queryContext.createStore(ReadableTokenStore.class);
+        final var op = query.tokenGetInfoOrThrow();
+        final var tokenId = op.tokenOrThrow();
+        final var token = tokenStore.get(tokenId);
+
+        return queryContext
+                .feeCalculator(SubType.DEFAULT)
+                .legacyCalculate(sigValueObj -> new GetTokenInfoResourceUsage().usageGiven(fromPbj(query), token));
     }
 }
