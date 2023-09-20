@@ -37,7 +37,6 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
@@ -118,9 +117,6 @@ public final class DataFileCommon {
     /** Comparator for comparing DataFileReaders by file creation time */
     private static final Comparator<DataFileReader> DATA_FILE_READER_CREATION_TIME_COMPARATOR =
             Comparator.comparing(o -> o.getMetadata().getCreationDate());
-    /** Comparator for comparing DataFileReaders by file creation time reversed */
-    private static final Comparator<DataFileReader> DATA_FILE_READER_CREATION_TIME_COMPARATOR_REVERSED =
-            DATA_FILE_READER_CREATION_TIME_COMPARATOR.reversed();
 
     static final FieldDefinition FIELD_DATAFILE_INDEX =
             new FieldDefinition("index", FieldType.UINT32, false, true, false, 1);
