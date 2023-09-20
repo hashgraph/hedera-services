@@ -35,11 +35,11 @@ public enum EventIntakePhase {
     /**
      * Event-received dispatch is being performed
      */
-    PERFORMING_EVENT_RECEIVED_DISPATCH,
+    EVENT_RECEIVED_DISPATCH,
     /**
      * Pre-consensus dispatch is being performed
      */
-    PERFORMING_PRECONSENSUS_DISPATCH,
+    PRECONSENSUS_DISPATCH,
     /**
      * Events are being linked
      */
@@ -61,7 +61,7 @@ public enum EventIntakePhase {
     /**
      * Event-added dispatch is being performed
      */
-    PERFORMING_EVENT_ADDED_DISPATCH,
+    EVENT_ADDED_DISPATCH,
     /**
      * Stale events are being handled
      */

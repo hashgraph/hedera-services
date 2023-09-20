@@ -151,7 +151,7 @@ public class EventIntake {
      * @param event the event
      */
     public void addUnlinkedEvent(final GossipEvent event) {
-        phaseTimer.activatePhase(EventIntakePhase.PERFORMING_EVENT_RECEIVED_DISPATCH);
+        phaseTimer.activatePhase(EventIntakePhase.EVENT_RECEIVED_DISPATCH);
         dispatcher.receivedEvent(event);
 
         phaseTimer.activatePhase(EventIntakePhase.LINKING);
@@ -182,7 +182,7 @@ public class EventIntake {
 
         logger.debug(SYNC.getMarker(), "{} sees {}", selfId, event);
 
-        phaseTimer.activatePhase(EventIntakePhase.PERFORMING_PRECONSENSUS_DISPATCH);
+        phaseTimer.activatePhase(EventIntakePhase.PRECONSENSUS_DISPATCH);
         dispatcher.preConsensusEvent(event);
 
         logger.debug(INTAKE_EVENT.getMarker(), "Adding {} ", event::toShortString);
@@ -220,7 +220,7 @@ public class EventIntake {
         // after we calculate roundCreated, we set its value in GossipEvent so that it can be shared with other nodes
         event.getBaseEvent().setRoundCreated(event.getRoundCreated());
 
-        phaseTimer.activatePhase(EventIntakePhase.PERFORMING_EVENT_ADDED_DISPATCH);
+        phaseTimer.activatePhase(EventIntakePhase.EVENT_ADDED_DISPATCH);
         dispatcher.eventAdded(event);
 
         if (consRounds != null) {
