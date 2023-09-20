@@ -227,8 +227,6 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest {
                         .balance((RANDOM.nextInt((int) ONE_HBAR) + MIN_ACCOUNT_BALANCE))
                         .key(GENESIS)
                         .fee(ONE_HUNDRED_HBARS)
-                        .withRecharging()
-                        .rechargeWindow(30)
                         .hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
                         .hasPrecheckFrom(DUPLICATE_TRANSACTION, OK)
                         .hasKnownStatusFrom(SUCCESS)
