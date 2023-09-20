@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.as
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToBesuAddress;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
@@ -36,6 +37,8 @@ public class HtsErc721TransferXTestConstants {
     static final com.esaulpaugh.headlong.abi.Address APPROVED_HEADLONG_ADDRESS =
             asHeadlongAddress(APPROVED_ADDRESS.toByteArray());
     static final Address APPROVED_BESU_ADDRESS = pbjToBesuAddress(APPROVED_ADDRESS);
+
+   static final Account spenderAccount = Account.newBuilder().accountId(APPROVED_ID).build();
 
     static final AccountID OPERATOR_ID =
             AccountID.newBuilder().accountNum(7773777L).build();
