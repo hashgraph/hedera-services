@@ -116,7 +116,7 @@ public abstract class HapiSpecOperation {
     protected boolean useRandomNode = false;
     protected boolean unavailableNode = false;
     protected Set<HederaFunctionality> skipIfAutoScheduling = Collections.emptySet();
-    protected Optional<String> expectedLedgerId = Optional.empty();
+    protected Optional<ByteString> expectedLedgerId = Optional.empty();
     protected Optional<Integer> hardcodedNumPayerKeys = Optional.empty();
     protected Optional<SigMapGenerator> sigMapGen = Optional.empty();
     protected Optional<List<Function<HapiSpec, Key>>> signers = Optional.empty();
