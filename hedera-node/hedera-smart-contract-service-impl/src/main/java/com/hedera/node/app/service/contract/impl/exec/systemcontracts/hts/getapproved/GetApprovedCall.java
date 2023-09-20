@@ -22,7 +22,7 @@ public class GetApprovedCall extends AbstractTokenViewCall {
     private final long serialNo;
     private final boolean isErcCall;
 
-    protected GetApprovedCall(@NonNull HederaWorldUpdater.Enhancement enhancement, @Nullable Token token, final long serialNo, final boolean isErcCall) {
+    public GetApprovedCall(@NonNull HederaWorldUpdater.Enhancement enhancement, @Nullable Token token, final long serialNo, final boolean isErcCall) {
         super(enhancement, token);
         this.serialNo = serialNo;
         this.isErcCall = isErcCall;
