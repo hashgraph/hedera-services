@@ -106,7 +106,6 @@ public interface LongGauge extends Metric {
         /**
          * Constructor of {@code LongGauge.Config}
          * <p>
-         * <p>
          * The {@link #getInitialValue() initialValue} is by default set to {@code 0L}, the {@link #getFormat() format}
          * is set to "%d".
          *
