@@ -27,6 +27,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.token.NftAllowance;
 import com.hedera.hapi.node.token.TokenAllowance;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -71,6 +72,7 @@ class GrantApprovalDecoderTest {
                 .array();
         given(attempt.inputBytes()).willReturn(encoded);
         given(attempt.redirectTokenId()).willReturn(FUNGIBLE_TOKEN_ID);
+        given(attempt.redirectTokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
         given(attempt.addressIdConverter()).willReturn(addressIdConverter);
         given(addressIdConverter.convert(UNAUTHORIZED_SPENDER_HEADLONG_ADDRESS)).willReturn(UNAUTHORIZED_SPENDER_ID);
         final var body = subject.decodeErcGrantApproval(attempt);
