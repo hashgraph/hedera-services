@@ -153,8 +153,7 @@ public class TokenGetNftInfoHandler extends PaidQueryHandler {
         final var nftId = op.nftIDOrThrow();
         final var nft = nftStore.get(nftId);
 
-        return queryContext
-                .feeCalculator()
-                .legacyCalculate(sigValueObj -> new GetTokenNftInfoResourceUsage().usageGiven(query, nft));
+        return queryContext.feeCalculator().legacyCalculate(sigValueObj -> new GetTokenNftInfoResourceUsage()
+                .usageGiven(query, nft));
     }
 }

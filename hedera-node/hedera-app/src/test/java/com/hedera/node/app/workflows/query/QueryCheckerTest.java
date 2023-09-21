@@ -97,15 +97,19 @@ class QueryCheckerTest extends AppTestBase {
     @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithIllegalArguments() {
-        assertThatThrownBy(() -> new QueryChecker(null, cryptoTransferHandler, solvencyPreCheck, expiryValidation, feeManager))
+        assertThatThrownBy(() ->
+                        new QueryChecker(null, cryptoTransferHandler, solvencyPreCheck, expiryValidation, feeManager))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryChecker(authorizer, null, solvencyPreCheck, expiryValidation, feeManager))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new QueryChecker(authorizer, cryptoTransferHandler, null, expiryValidation, feeManager))
+        assertThatThrownBy(
+                        () -> new QueryChecker(authorizer, cryptoTransferHandler, null, expiryValidation, feeManager))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new QueryChecker(authorizer, cryptoTransferHandler, solvencyPreCheck, null, feeManager))
+        assertThatThrownBy(
+                        () -> new QueryChecker(authorizer, cryptoTransferHandler, solvencyPreCheck, null, feeManager))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new QueryChecker(authorizer, cryptoTransferHandler, solvencyPreCheck, expiryValidation, null))
+        assertThatThrownBy(() ->
+                        new QueryChecker(authorizer, cryptoTransferHandler, solvencyPreCheck, expiryValidation, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -463,7 +467,8 @@ class QueryCheckerTest extends AppTestBase {
         when(cryptoTransferHandler.calculateFees(any())).thenReturn(fees);
 
         // when
-        final var result = checker.estimateTxFees(storeFactory, consensusNow, txInfo, ALICE.account().key(), configuration);
+        final var result = checker.estimateTxFees(
+                storeFactory, consensusNow, txInfo, ALICE.account().key(), configuration);
 
         // then
         assertThat(result).isEqualTo(fees.totalFee());

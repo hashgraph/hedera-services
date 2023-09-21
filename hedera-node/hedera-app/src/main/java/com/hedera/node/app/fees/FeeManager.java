@@ -147,7 +147,8 @@ public final class FeeManager {
         }
 
         // Determine which fee schedule to use, based on the consensus time
-        // If it is not known, that is, if we have no fee data for that transaction, then we MUST NOT execute that transaction! We will not be able to charge appropriately for it.
+        // If it is not known, that is, if we have no fee data for that transaction, then we MUST NOT execute that
+        // transaction! We will not be able to charge appropriately for it.
         final var feeData = getFeeData(txInfo.functionality(), consensusTime, subType);
         if (feeData == null) {
             throw new IllegalStateException("No fee data found for transaction type " + txInfo.functionality());
@@ -160,8 +161,7 @@ public final class FeeManager {
 
     @NonNull
     public FeeCalculator createFeeCalculator(
-            @NonNull final HederaFunctionality functionality,
-            @NonNull final Instant consensusTime) {
+            @NonNull final HederaFunctionality functionality, @NonNull final Instant consensusTime) {
         // Determine which fee schedule to use, based on the consensus time
         final var feeData = getFeeData(functionality, consensusTime, SubType.DEFAULT);
 

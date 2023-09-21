@@ -166,10 +166,7 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
         final var responseType = op.headerOrElse(QueryHeader.DEFAULT).responseType();
         final var topic = topicStore.getTopic(topicId);
 
-        return queryContext
-                .feeCalculator()
-                .legacyCalculate(sigValueObj -> new GetTopicInfoResourceUsage()
-                        .usageGivenTypeAndTopic(
-                                topic != null ? pbjToState(topic) : null, fromPbjResponseType(responseType)));
+        return queryContext.feeCalculator().legacyCalculate(sigValueObj -> new GetTopicInfoResourceUsage()
+                .usageGivenTypeAndTopic(topic != null ? pbjToState(topic) : null, fromPbjResponseType(responseType)));
     }
 }

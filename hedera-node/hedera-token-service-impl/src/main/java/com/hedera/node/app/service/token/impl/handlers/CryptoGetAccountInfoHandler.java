@@ -186,9 +186,8 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
         final var accountId = op.accountIDOrThrow();
         final var account = accountStore.getAccountById(accountId);
 
-        return queryContext
-                .feeCalculator()
-                .legacyCalculate(sigValueObj ->
-                        new GetAccountInfoResourceUsage(cryptoOpsUsage, null, null, null).usageGiven(query, account));
+        return queryContext.feeCalculator().legacyCalculate(sigValueObj -> new GetAccountInfoResourceUsage(
+                        cryptoOpsUsage, null, null, null)
+                .usageGiven(query, account));
     }
 }

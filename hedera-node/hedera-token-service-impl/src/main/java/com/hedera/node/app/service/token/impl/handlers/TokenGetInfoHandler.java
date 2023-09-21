@@ -206,8 +206,7 @@ public class TokenGetInfoHandler extends PaidQueryHandler {
         final var tokenId = op.tokenOrThrow();
         final var token = tokenStore.get(tokenId);
 
-        return queryContext
-                .feeCalculator()
-                .legacyCalculate(sigValueObj -> new GetTokenInfoResourceUsage().usageGiven(fromPbj(query), token));
+        return queryContext.feeCalculator().legacyCalculate(sigValueObj -> new GetTokenInfoResourceUsage()
+                .usageGiven(fromPbj(query), token));
     }
 }

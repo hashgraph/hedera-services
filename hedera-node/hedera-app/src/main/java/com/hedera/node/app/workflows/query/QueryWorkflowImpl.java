@@ -193,7 +193,14 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 // get payer
                 final var payerID = transactionInfo.payerID();
                 context = new QueryContextImpl(
-                        state, storeFactory, query, configuration, recordCache, exchangeRateManager, feeCalculator, payerID);
+                        state,
+                        storeFactory,
+                        query,
+                        configuration,
+                        recordCache,
+                        exchangeRateManager,
+                        feeCalculator,
+                        payerID);
 
                 // A super-user does not have to pay for a query and has all permissions
                 if (!authorizer.isSuperUser(payerID)) {
@@ -214,7 +221,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
 
                     // 4.iv Calculate costs
                     final var queryFees = handler.computeFees(context).totalFee();
-                    final var txFees = queryChecker.estimateTxFees(storeFactory, consensusTime, transactionInfo, payer.keyOrThrow(), configuration);
+                    final var txFees = queryChecker.estimateTxFees(
+                            storeFactory, consensusTime, transactionInfo, payer.keyOrThrow(), configuration);
                     final var totalFees = Math.addExact(queryFees, txFees);
 
                     // 4.v Check account balances

@@ -119,9 +119,7 @@ public class FeeCalculatorImpl implements FeeCalculator {
         usage.resetForTransaction(baseMeta, sigUsage);
     }
 
-    public FeeCalculatorImpl(
-            @Nullable final FeeData feeData,
-            @NonNull final ExchangeRate currentRate) {
+    public FeeCalculatorImpl(@Nullable final FeeData feeData, @NonNull final ExchangeRate currentRate) {
         if (feeData == null) {
             this.feeData = null;
             this.usage = null;

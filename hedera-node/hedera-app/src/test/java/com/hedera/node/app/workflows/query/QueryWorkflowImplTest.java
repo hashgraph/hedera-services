@@ -240,7 +240,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                         recordCache,
                         authorizer,
                         exchangeRateManager,
-                feeManager))
+                        feeManager))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -254,7 +254,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                         recordCache,
                         authorizer,
                         exchangeRateManager,
-                feeManager))
+                        feeManager))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -268,7 +268,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                         recordCache,
                         authorizer,
                         exchangeRateManager,
-                feeManager))
+                        feeManager))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -282,7 +282,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                         recordCache,
                         authorizer,
                         exchangeRateManager,
-                feeManager))
+                        feeManager))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -296,7 +296,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                         recordCache,
                         authorizer,
                         exchangeRateManager,
-                feeManager))
+                        feeManager))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -310,7 +310,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                         recordCache,
                         authorizer,
                         exchangeRateManager,
-                feeManager))
+                        feeManager))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -324,7 +324,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                         recordCache,
                         authorizer,
                         exchangeRateManager,
-                feeManager))
+                        feeManager))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -338,7 +338,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                         null,
                         authorizer,
                         exchangeRateManager,
-                feeManager))
+                        feeManager))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -352,7 +352,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                         recordCache,
                         null,
                         exchangeRateManager,
-                feeManager))
+                        feeManager))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -366,21 +366,21 @@ class QueryWorkflowImplTest extends AppTestBase {
                         recordCache,
                         authorizer,
                         null,
-                feeManager))
+                        feeManager))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
-                stateAccessor,
-                throttleAccumulator,
-                submissionManager,
-                queryChecker,
-                ingestChecker,
-                dispatcher,
-                queryParser,
-                configProvider,
-                recordCache,
-                authorizer,
-                exchangeRateManager,
-                null))
+                        stateAccessor,
+                        throttleAccumulator,
+                        submissionManager,
+                        queryChecker,
+                        ingestChecker,
+                        dispatcher,
+                        queryParser,
+                        configProvider,
+                        recordCache,
+                        authorizer,
+                        exchangeRateManager,
+                        null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -438,7 +438,8 @@ class QueryWorkflowImplTest extends AppTestBase {
     @Test
     void testSuccessIfCostOnly() throws IOException {
         // given
-        final var queryHeader = QueryHeader.newBuilder().responseType(COST_ANSWER).build();
+        final var queryHeader =
+                QueryHeader.newBuilder().responseType(COST_ANSWER).build();
         final var query = Query.newBuilder()
                 .fileGetInfo(FileGetInfoQuery.newBuilder().header(queryHeader))
                 .build();
@@ -651,7 +652,8 @@ class QueryWorkflowImplTest extends AppTestBase {
         // given
         given(handler.computeFees(any(QueryContext.class))).willReturn(new Fees(1L, 20L, 300L));
         when(handler.requiresNodePayment(ANSWER_ONLY)).thenReturn(true);
-        when(queryChecker.estimateTxFees(any(), any(), eq(transactionInfo), eq(ALICE.account().key()), eq(configuration)))
+        when(queryChecker.estimateTxFees(
+                        any(), any(), eq(transactionInfo), eq(ALICE.account().key()), eq(configuration)))
                 .thenReturn(4000L);
         doThrow(new InsufficientBalanceException(INSUFFICIENT_TX_FEE, 12345L))
                 .when(queryChecker)
@@ -674,9 +676,11 @@ class QueryWorkflowImplTest extends AppTestBase {
             throws IOException {
         // given
         final var localRequestBuffer = newEmptyBuffer();
-        final var localQueryHeader = QueryHeader.newBuilder().responseType(COST_ANSWER).build();
+        final var localQueryHeader =
+                QueryHeader.newBuilder().responseType(COST_ANSWER).build();
         final var localQuery = Query.newBuilder()
-                .networkGetExecutionTime(NetworkGetExecutionTimeQuery.newBuilder().header(localQueryHeader))
+                .networkGetExecutionTime(
+                        NetworkGetExecutionTimeQuery.newBuilder().header(localQueryHeader))
                 .build();
 
         final var requestBytes = PbjConverter.asBytes(localRequestBuffer);
@@ -721,8 +725,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         // then
         final Response response = parseResponse(responseBuffer);
         final var header = response.fileGetInfoOrThrow().headerOrThrow();
-        assertThat(header.nodeTransactionPrecheckCode())
-                .isEqualTo(ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN);
+        assertThat(header.nodeTransactionPrecheckCode()).isEqualTo(ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN);
         assertThat(header.responseType()).isEqualTo(ANSWER_ONLY);
         assertThat(header.cost()).isZero();
         final var queryContext = captor.getValue();
