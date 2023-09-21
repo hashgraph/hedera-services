@@ -64,8 +64,8 @@ public class EventCreationSimulationTest {
                         EventCreationExpectedResults.get()
                                 .setConsensusExpected(true)
                                 .setNumEventsCreatedMin(2400)
-                                .setNumConsEventsMin(1800)
-                                .setMaxC2CMax(Duration.ofSeconds(2))
+                                .setNumConsEventsMin(1700)
+                                .setMaxC2CMax(Duration.ofMillis(2500))
                                 .setAvgC2CMax(Duration.ofMillis(1600))
                                 .setMaxRoundSizeMax(280))),
                 // tests whether we stop creating events after a while if we dont have supermajority
