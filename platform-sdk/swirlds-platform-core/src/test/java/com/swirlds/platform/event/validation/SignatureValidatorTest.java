@@ -19,6 +19,7 @@ package com.swirlds.platform.event.validation;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
@@ -48,7 +49,7 @@ class SignatureValidatorTest {
         final SignatureVerifier signatureVerifier = (data, signature, publicKey) -> true;
         final SoftwareVersion currentSoftwareVersion = new BasicSoftwareVersion(1);
         final SignatureValidator validator =
-                new SignatureValidator(reduced, full, currentSoftwareVersion, signatureVerifier);
+                new SignatureValidator(reduced, full, currentSoftwareVersion, signatureVerifier, Time.getCurrent());
         for (final Address address : full) {
             assertTrue(
                     validator.isEventValid(createEvent(address.getNodeId(), currentSoftwareVersion)),

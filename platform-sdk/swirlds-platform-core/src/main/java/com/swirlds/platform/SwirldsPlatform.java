@@ -567,7 +567,7 @@ public class SwirldsPlatform implements Platform, Startable {
         // address book but are in the previous one, so we need both for signature validation
         if (basicConfig.verifyEventSigs()) {
             validators.add(new SignatureValidator(
-                    previousAddressBook, currentAddressBook, appVersion, CryptoStatic::verifySignature));
+                    previousAddressBook, currentAddressBook, appVersion, CryptoStatic::verifySignature, time));
         }
         final GossipEventValidators eventValidators = new GossipEventValidators(validators);
 

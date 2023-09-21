@@ -20,18 +20,21 @@ import static com.swirlds.logging.LogMarker.EVENT_SIG;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.INVALID_EVENT_ERROR;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.BaseEvent;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.crypto.SignatureVerifier;
 import com.swirlds.platform.event.GossipEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.PublicKey;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -47,18 +50,21 @@ public class SignatureValidator implements GossipEventValidator {
     private final Map<NodeId, PublicKey> previousKeyMap = new HashMap<>();
     private final Map<NodeId, PublicKey> currentKeyMap = new HashMap<>();
     private final SoftwareVersion currentSoftwareVersion;
+    private final RateLimitedLogger versionRateLimitedLogger;
 
     /**
      * @param previousAddressBook    the previous address book
      * @param currentAddressBook     the current address book
      * @param currentSoftwareVersion the current software version
      * @param signatureVerifier      the signature verifier
+     * @param time                   the time
      */
     public SignatureValidator(
             @Nullable final AddressBook previousAddressBook,
             @NonNull final AddressBook currentAddressBook,
             @NonNull final SoftwareVersion currentSoftwareVersion,
-            @NonNull final SignatureVerifier signatureVerifier) {
+            @NonNull final SignatureVerifier signatureVerifier,
+            @NonNull final Time time) {
         this.signatureVerifier = Objects.requireNonNull(signatureVerifier);
         this.currentSoftwareVersion = Objects.requireNonNull(currentSoftwareVersion);
         if (previousAddressBook != null) {
@@ -69,6 +75,7 @@ public class SignatureValidator implements GossipEventValidator {
         for (final Address address : Objects.requireNonNull(currentAddressBook)) {
             currentKeyMap.put(address.getNodeId(), address.getSigPublicKey());
         }
+        this.versionRateLimitedLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
     }
 
     /**
@@ -119,7 +126,7 @@ public class SignatureValidator implements GossipEventValidator {
         final PublicKey publicKey;
         if (softwareComparison < 0) {
             // current software version is less than event software version
-            logger.error(
+            versionRateLimitedLogger.error(
                     EXCEPTION.getMarker(),
                     "Cannot validate events for software version {} that is greater than the current software version {}",
                     eventSoftwareVersion,
