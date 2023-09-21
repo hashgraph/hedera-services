@@ -235,11 +235,6 @@ public class HandleWorkflow {
 
         // handle user transaction
         handleUserTransaction(consensusNow, state, dualState, platformEvent, creator, platformTxn);
-
-        // TODO: handle long scheduled transactions
-
-        // TODO: handle system tasks. System tasks should be outside the blockRecordManager start/end user transaction
-        // TODO: and have their own start/end. So system transactions are handled like separate user transactions.
     }
 
     private void handleUserTransaction(
@@ -585,7 +580,6 @@ public class HandleWorkflow {
      * any keys need to be added. If so, we trigger the signature verification for the new keys and collect all
      * results.
      */
-    // TODO: Need to re-use expandAndVerifySignatures from PreHandleWorkflowImpl instead of duplicating this code
     @NonNull
     private PreHandleResult addMissingSignatures(
             @NonNull final ReadableStoreFactory storeFactory,
