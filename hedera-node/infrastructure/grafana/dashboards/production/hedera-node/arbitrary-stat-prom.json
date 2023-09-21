@@ -14,9 +14,7 @@
         "target": {
           "limit": 100,
           "matchAny": false,
-          "tags": [
-            "Platform"
-          ],
+          "tags": [],
           "type": "dashboard"
         },
         "type": "dashboard"
@@ -26,8 +24,23 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 38,
-  "links": [],
+  "id": 62,
+  "links": [
+    {
+      "asDropdown": true,
+      "icon": "external link",
+      "includeVars": true,
+      "keepTime": true,
+      "tags": [
+        "Platform"
+      ],
+      "targetBlank": true,
+      "title": "Platform Dashboards",
+      "tooltip": "",
+      "type": "dashboards",
+      "url": ""
+    }
+  ],
   "liveNow": false,
   "panels": [
     {
@@ -45,6 +58,7 @@
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
+            "axisShow": false,
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 0,
@@ -54,6 +68,7 @@
               "tooltip": false,
               "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 1,
             "pointSize": 5,
@@ -123,16 +138,18 @@
       "type": "timeseries"
     }
   ],
-  "schemaVersion": 37,
-  "style": "dark",
-  "tags": [],
+  "refresh": "",
+  "schemaVersion": 38,
+  "tags": [
+    "Platform"
+  ],
   "templating": {
     "list": [
       {
         "current": {
-          "selected": false,
-          "text": "grafanacloud-swirldslabspreproduction-prom",
-          "value": "grafanacloud-swirldslabspreproduction-prom"
+          "selected": true,
+          "text": "grafanacloud-swirldslabsproduction-prom",
+          "value": "grafanacloud-prom"
         },
         "hide": 0,
         "includeAll": false,
@@ -140,6 +157,7 @@
         "name": "Datasource",
         "options": [],
         "query": "prometheus",
+        "queryValue": "",
         "refresh": 1,
         "regex": "/^.*-prom/",
         "skipUrlSync": false,
@@ -147,9 +165,9 @@
       },
       {
         "current": {
-          "selected": false,
-          "text": "dev",
-          "value": "dev"
+          "selected": true,
+          "text": "mainnet",
+          "value": "mainnet"
         },
         "datasource": {
           "type": "prometheus",
@@ -247,13 +265,13 @@
     ]
   },
   "time": {
-    "from": "now-1h",
+    "from": "now-6h",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "",
   "title": "Any Stat (Prometheus)",
   "uid": "any-stat-prom",
-  "version": 6,
+  "version": 8,
   "weekStart": ""
 }
