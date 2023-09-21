@@ -21,6 +21,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_ONLY;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
+import static com.hedera.node.app.service.consensus.impl.codecs.ConsensusServiceStateTranslator.pbjToState;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbjResponseType;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static java.util.Objects.requireNonNull;
@@ -30,6 +32,7 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseHeader;
 import com.hedera.hapi.node.base.ResponseType;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.consensus.ConsensusGetTopicInfoQuery;
@@ -38,6 +41,8 @@ import com.hedera.hapi.node.consensus.ConsensusTopicInfo;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
+import com.hedera.node.app.service.mono.fees.calculation.consensus.queries.GetTopicInfoResourceUsage;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
@@ -89,7 +94,7 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
         final ConsensusGetTopicInfoQuery op = query.consensusGetTopicInfoOrThrow();
         if (op.hasTopicID()) {
             // The topic must exist
-            final var topic = topicStore.getTopic(op.topicID());
+            final var topic = topicStore.getTopic(op.topicIDOrElse(TopicID.DEFAULT));
             mustExist(topic, INVALID_TOPIC_ID);
             if (topic.deleted()) {
                 throw new PreCheckException(INVALID_TOPIC_ID);
@@ -150,5 +155,22 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
             info.ledgerId(config.id());
             return Optional.of(info.build());
         }
+    }
+
+    @NonNull
+    @Override
+    public Fees computeFees(@NonNull QueryContext queryContext) {
+        final var query = queryContext.query();
+        final var topicStore = queryContext.createStore(ReadableTopicStore.class);
+        final var op = query.consensusGetTopicInfoOrThrow();
+        final var topicId = op.topicIDOrElse(TopicID.DEFAULT);
+        final var responseType = op.headerOrElse(QueryHeader.DEFAULT).responseType();
+        final var topic = topicStore.getTopic(topicId);
+
+        return queryContext
+                .feeCalculator(SubType.DEFAULT)
+                .legacyCalculate(sigValueObj -> new GetTopicInfoResourceUsage()
+                        .usageGivenTypeAndTopic(
+                                topic != null ? pbjToState(topic) : null, fromPbjResponseType(responseType)));
     }
 }
