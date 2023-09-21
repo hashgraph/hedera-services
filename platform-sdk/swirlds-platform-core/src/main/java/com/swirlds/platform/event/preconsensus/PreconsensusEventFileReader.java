@@ -64,9 +64,6 @@ public final class PreconsensusEventFileReader {
             throws IOException {
 
         try (final Stream<Path> fileStream = Files.walk(rootDirectory)) {
-
-            //            fileStream.forEachOrdered(System.out::println);
-
             fileStream
                     .filter(f -> !Files.isDirectory(f))
                     .map(PreconsensusEventFileReader::parseFile)
