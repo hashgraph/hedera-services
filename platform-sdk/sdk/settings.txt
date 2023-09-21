@@ -27,6 +27,7 @@ platformStatus.observingStatusDelay,      1s
                                           #        Event Stream       #
                                           #############################
 
+# TODO revert
 event.enableEventStreaming,               true
 event.preconsensus.enableReplay,          true
 event.preconsensus.enableStorage,         true

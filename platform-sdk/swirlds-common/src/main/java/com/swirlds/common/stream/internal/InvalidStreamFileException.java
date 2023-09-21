@@ -19,7 +19,7 @@ package com.swirlds.common.stream.internal;
 /**
  * Thrown when parsing an invalid stream file.
  */
-public class InvalidStreamFileException extends Exception {
+public class InvalidStreamFileException extends RuntimeException {
     /**
      * Constructs a new exception with the specified detail message and
      * cause.

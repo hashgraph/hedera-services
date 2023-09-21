@@ -1039,6 +1039,7 @@ platform-sdk/sdk/*.csv
 platform-sdk/sdk/*.log
 platform-sdk/sdk/settingsUsed.txt
 platform-sdk/sdk/metricsDoc.tsv
+platform-sdk/sdk/eventstreams/*
 
 # Mermaid Files
 **/platform-components.mermaid
