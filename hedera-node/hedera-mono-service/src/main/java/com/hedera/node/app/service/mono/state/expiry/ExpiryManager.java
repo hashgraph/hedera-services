@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.service.mono.state.expiry;
 
-import static com.hedera.node.app.service.mono.state.logic.AwareNodeDiligenceScreen.DUE_DILIGENCE_FAILURE_STATUSES;
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
 import static java.util.Comparator.comparing;
 import static java.util.Objects.requireNonNull;
 
@@ -103,7 +103,7 @@ public class ExpiryManager {
             requireNonNull(savedRecords.getRecords()).forEach(savedRecord -> {
                 stage(savedRecord);
                 EntityNum queryableAccountNum = MISSING_NUM;
-                if (DUE_DILIGENCE_FAILURE_STATUSES.contains(savedRecord.getEnumStatus())) {
+                if (nodeAccountWasPayer(savedRecord)) {
                     final var nodeId = savedRecord.getSubmittingMember();
                     try {
                         queryableAccountNum = nodeInfo.accountKeyOf(nodeId);
@@ -148,7 +148,7 @@ public class ExpiryManager {
             }
             curRecords.poll();
             purgeHistoryFor(nextRecord, now);
-            if (DUE_DILIGENCE_FAILURE_STATUSES.contains(nextRecord.getEnumStatus())) {
+            if (nodeAccountWasPayer(nextRecord)) {
                 try {
                     final var nodeNum = nodeInfo.accountKeyOf(nextRecord.getSubmittingMember());
                     purgeQueryableRecord(nodeNum, nextRecord, curQueryableRecords);
@@ -238,5 +238,11 @@ public class ExpiryManager {
             log.info("Using {} strategy for record storage", strategyInUse);
         }
         return strategyInUse;
+    }
+
+    private boolean nodeAccountWasPayer(final ExpirableTxnRecord expirableTxnRecord) {
+        return INVALID_PAYER_SIGNATURE
+                .name()
+                .equals(expirableTxnRecord.getReceipt().getStatus());
     }
 }

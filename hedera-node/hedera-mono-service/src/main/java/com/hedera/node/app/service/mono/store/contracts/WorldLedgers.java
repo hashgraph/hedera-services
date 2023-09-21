@@ -179,7 +179,7 @@ public class WorldLedgers {
         if (staticEntityAccess != null) {
             return staticEntityAccess.infoForNft(target);
         } else {
-            final var tokenId = EntityNum.fromTokenId(target.getTokenId());
+            final var tokenId = EntityNum.fromTokenId(target.getTokenID());
             final var targetKey = NftId.withDefaultShardRealm(tokenId.longValue(), target.getSerialNumber());
             if (!nftsLedger.contains(targetKey)) {
                 return Optional.empty();
@@ -188,7 +188,7 @@ public class WorldLedgers {
             var accountId = targetNft.getOwner().toGrpcAccountId();
 
             if (WILDCARD_OWNER.equals(accountId)) {
-                var merkleToken = tokensLedger.getImmutableRef(target.getTokenId());
+                var merkleToken = tokensLedger.getImmutableRef(target.getTokenID());
                 if (merkleToken == null) {
                     return Optional.empty();
                 }

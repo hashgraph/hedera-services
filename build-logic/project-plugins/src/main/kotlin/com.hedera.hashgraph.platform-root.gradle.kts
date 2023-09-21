@@ -14,34 +14,23 @@
  * limitations under the License.
  */
 
-import com.hedera.hashgraph.gradlebuild.lifecycle.LifecycleSupport.Companion.configureLifecycleTask
+import com.hedera.hashgraph.gradlebuild.lifecycle.configureLifecycleTask
 
-plugins { id("com.hedera.hashgraph.root") }
+plugins {
+    id("com.hedera.hashgraph.root")
+    id("com.hedera.hashgraph.mock-release-tasks")
+}
 
-tasks.register("releaseDevelopSnapshot") { group = "release" }
+configureLifecycleTask("releaseMavenCentral")
 
-tasks.register("releaseDevelopDailySnapshot") { group = "release" }
+configureLifecycleTask("releaseMavenCentralSnapshot")
 
-tasks.register("releaseDevelopCommit") { group = "release" }
+configureLifecycleTask("releaseDevelopSnapshot")
 
-tasks.register("releaseAdhocCommit") { group = "release" }
+configureLifecycleTask("releaseDevelopDailySnapshot")
 
-tasks.register("releasePrereleaseChannel") { group = "release" }
+configureLifecycleTask("releaseDevelopCommit")
 
-tasks.register("releaseMavenCentral") { group = "release" }
+configureLifecycleTask("releaseAdhocCommit")
 
-tasks.register("releaseMavenCentralSnapshot") { group = "release" }
-
-configureLifecycleTask(project, "releaseMavenCentral")
-
-configureLifecycleTask(project, "releaseMavenCentralSnapshot")
-
-configureLifecycleTask(project, "releaseDevelopSnapshot")
-
-configureLifecycleTask(project, "releaseDevelopDailySnapshot")
-
-configureLifecycleTask(project, "releaseDevelopCommit")
-
-configureLifecycleTask(project, "releaseAdhocCommit")
-
-configureLifecycleTask(project, "releasePrereleaseChannel")
+configureLifecycleTask("releasePrereleaseChannel")

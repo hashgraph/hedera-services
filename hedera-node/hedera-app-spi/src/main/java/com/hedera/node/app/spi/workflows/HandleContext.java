@@ -20,6 +20,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.FeeCalculator;
@@ -240,6 +241,20 @@ public interface HandleContext {
      */
     @NonNull
     SignatureVerification verificationFor(@NonNull final Bytes evmAlias);
+
+    /**
+     * Checks whether the payer of the current transaction refers to a superuser.
+     *
+     * @return {@code true} if the payer is a superuser, otherwise {@code false
+     */
+    boolean isSuperUser();
+
+    /**
+     * Checks whether the current transaction is a privileged transaction and the payer has sufficient rights.
+     *
+     * @return the {@code SystemPrivilege} of the current transaction
+     */
+    SystemPrivilege hasPrivilegedAuthorization();
 
     /** Gets the {@link RecordCache}. */
     @NonNull

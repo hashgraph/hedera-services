@@ -22,9 +22,11 @@ import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.ThrottleManager;
 import com.hedera.node.app.util.FileUtilities;
+import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -66,9 +68,13 @@ public class SystemFileUpdateFacility {
      * @param state the current state (the updated file content needs to be committed to the state)
      * @param txBody the transaction body
      */
-    public void handleTxBody(@NonNull final HederaState state, @NonNull final TransactionBody txBody) {
+    public void handleTxBody(
+            @NonNull final HederaState state,
+            @NonNull final TransactionBody txBody,
+            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder) {
         requireNonNull(state, "state must not be null");
         requireNonNull(txBody, "txBody must not be null");
+        requireNonNull(recordBuilder, "recordBuilder must not be null");
 
         // Try to extract the file ID from the transaction body, if it is FileUpdate or FileAppend.
         final FileID fileID;
@@ -84,6 +90,7 @@ public class SystemFileUpdateFacility {
         final var configuration = configProvider.getConfiguration();
         final var ledgerConfig = configuration.getConfigData(LedgerConfig.class);
         final var fileNum = fileID.fileNum();
+        final var payer = txBody.transactionIDOrThrow().accountIDOrThrow();
         if (fileNum > ledgerConfig.numReservedSystemEntities()) {
             return;
         }
@@ -99,7 +106,7 @@ public class SystemFileUpdateFacility {
             } else if (fileNum == config.feeSchedules()) {
                 logger.error("Update of fee schedules not implemented");
             } else if (fileNum == config.exchangeRates()) {
-                exchangeRateManager.update(FileUtilities.getFileContent(state, fileID));
+                exchangeRateManager.update(FileUtilities.getFileContent(state, fileID), payer);
             } else if (fileNum == config.networkProperties()) {
                 configProvider.update(FileUtilities.getFileContent(state, fileID));
             } else if (fileNum == config.hapiPermissions()) {
@@ -109,6 +116,9 @@ public class SystemFileUpdateFacility {
             } else if (fileNum == config.upgradeFileNumber()) {
                 logger.error("Update of file number not implemented");
             }
+        } catch (HandleException e) {
+            // handle exception suppose to propagate the exception to the caller
+            throw e;
         } catch (final RuntimeException e) {
             logger.warn(
                     "Exception while calling updater for file {}. " + "If the file is incomplete, this is expected.",

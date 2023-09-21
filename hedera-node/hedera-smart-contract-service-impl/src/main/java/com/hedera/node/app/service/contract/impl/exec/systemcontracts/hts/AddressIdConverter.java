@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asHeadlongAddress;
+
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.hapi.node.base.AccountID;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -30,6 +32,17 @@ public interface AddressIdConverter {
      */
     @NonNull
     AccountID convert(@NonNull Address address);
+
+    /**
+     * Given a Besu sender address to be referenced in a synthetic {@link com.hedera.hapi.node.transaction.TransactionBody},
+     * returns the {@link AccountID} that should be used in the synthetic transaction.
+     *
+     * @param address the address to be used in the synthetic transaction
+     * @return the {@link AccountID} that should be used in the synthetic transaction
+     */
+    default AccountID convertSender(@NonNull org.hyperledger.besu.datatypes.Address address) {
+        return convert(asHeadlongAddress(address.toArrayUnsafe()));
+    }
 
     /**
      * Given an address to be credited in a synthetic {@link com.hedera.hapi.node.token.CryptoTransferTransactionBody},

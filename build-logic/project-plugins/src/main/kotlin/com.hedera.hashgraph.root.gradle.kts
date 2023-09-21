@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-import com.hedera.hashgraph.gradlebuild.lifecycle.LifecycleSupport.Companion.configureLifecycleTask
+import com.hedera.hashgraph.gradlebuild.lifecycle.configureLifecycleTask
+import com.hedera.hashgraph.gradlebuild.lifecycle.registerLifecycleTask
 
 plugins {
     id("com.hedera.hashgraph.aggregate-reports")
@@ -31,22 +32,22 @@ plugins {
 // corresponding lifecycle tasks in the other builds.
 // https://docs.gradle.org/current/userguide/structuring_software_products_details.html#using_an_umbrella_build
 
-tasks.register("checkAllModuleInfo")
+registerLifecycleTask("checkAllModuleInfo")
 
-tasks.register("jacocoTestReport") { group = "verification" }
+registerLifecycleTask("jacocoTestReport", "verification")
 
-configureLifecycleTask(project, "clean")
+configureLifecycleTask("clean")
 
-configureLifecycleTask(project, "assemble")
+configureLifecycleTask("assemble")
 
-configureLifecycleTask(project, "check")
+configureLifecycleTask("check")
 
-configureLifecycleTask(project, "build")
+configureLifecycleTask("build")
 
-configureLifecycleTask(project, "spotlessCheck")
+configureLifecycleTask("spotlessCheck")
 
-configureLifecycleTask(project, "spotlessApply")
+configureLifecycleTask("spotlessApply")
 
-configureLifecycleTask(project, "checkAllModuleInfo")
+configureLifecycleTask("checkAllModuleInfo")
 
-configureLifecycleTask(project, "jacocoTestReport")
+configureLifecycleTask("jacocoTestReport")

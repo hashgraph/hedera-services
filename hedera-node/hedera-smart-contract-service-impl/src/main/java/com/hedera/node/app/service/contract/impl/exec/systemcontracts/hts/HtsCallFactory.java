@@ -21,7 +21,9 @@ import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.pr
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsCallTranslator;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.tuweni.bytes.Bytes;
@@ -34,19 +36,19 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 public class HtsCallFactory {
     private final SyntheticIds syntheticIds;
     private final HtsCallAddressChecks addressChecks;
-    private final DecodingStrategies decodingStrategies;
     private final VerificationStrategies verificationStrategies;
+    private final List<HtsCallTranslator> callTranslators;
 
     @Inject
     public HtsCallFactory(
             @NonNull final SyntheticIds syntheticIds,
             @NonNull final HtsCallAddressChecks addressChecks,
-            @NonNull final DecodingStrategies decodingStrategies,
-            @NonNull final VerificationStrategies verificationStrategies) {
-        this.syntheticIds = syntheticIds;
+            @NonNull final VerificationStrategies verificationStrategies,
+            @NonNull final List<HtsCallTranslator> callTranslators) {
+        this.syntheticIds = requireNonNull(syntheticIds);
         this.addressChecks = requireNonNull(addressChecks);
-        this.decodingStrategies = decodingStrategies;
         this.verificationStrategies = requireNonNull(verificationStrategies);
+        this.callTranslators = requireNonNull(callTranslators);
     }
 
     /**
@@ -63,11 +65,13 @@ public class HtsCallFactory {
         final var enhancement = proxyUpdaterFor(frame).enhancement();
         final var attempt = new HtsCallAttempt(
                 input,
+                frame.getSenderAddress(),
+                addressChecks.hasParentDelegateCall(frame),
                 enhancement,
                 configOf(frame),
-                decodingStrategies,
                 syntheticIds.converterFor(enhancement.nativeOperations()),
-                verificationStrategies);
-        return requireNonNull(attempt.asCallFrom(frame.getSenderAddress(), addressChecks.hasParentDelegateCall(frame)));
+                verificationStrategies,
+                callTranslators);
+        return requireNonNull(attempt.asExecutableCall());
     }
 }
