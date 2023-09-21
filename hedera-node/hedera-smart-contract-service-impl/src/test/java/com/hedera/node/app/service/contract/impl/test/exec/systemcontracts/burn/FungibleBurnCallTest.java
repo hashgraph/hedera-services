@@ -106,10 +106,10 @@ public class FungibleBurnCallTest extends HtsCallTestBase {
         given(addressIdConverter.convert(asHeadlongAddress(FRAME_SENDER_ADDRESS)))
                 .willReturn(A_NEW_ACCOUNT_ID);
         given(systemContractOperations.dispatch(
-                any(TransactionBody.class),
-                eq(verificationStrategy),
-                eq(A_NEW_ACCOUNT_ID),
-                eq(TokenBurnRecordBuilder.class)))
+                        any(TransactionBody.class),
+                        eq(verificationStrategy),
+                        eq(A_NEW_ACCOUNT_ID),
+                        eq(TokenBurnRecordBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(INVALID_TOKEN_BURN_AMOUNT);
 
@@ -125,10 +125,10 @@ public class FungibleBurnCallTest extends HtsCallTestBase {
         given(addressIdConverter.convert(asHeadlongAddress(FRAME_SENDER_ADDRESS)))
                 .willReturn(A_NEW_ACCOUNT_ID);
         given(systemContractOperations.dispatch(
-                any(TransactionBody.class),
-                eq(verificationStrategy),
-                eq(A_NEW_ACCOUNT_ID),
-                eq(TokenBurnRecordBuilder.class)))
+                        any(TransactionBody.class),
+                        eq(verificationStrategy),
+                        eq(A_NEW_ACCOUNT_ID),
+                        eq(TokenBurnRecordBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
     }

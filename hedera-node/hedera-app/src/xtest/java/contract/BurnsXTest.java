@@ -124,8 +124,7 @@ public class BurnsXTest extends AbstractContractXTest {
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(BurnTranslator.BURN_TOKEN_V2
-                        .encodeCallWithArgs(
-                                ERC721_TOKEN_ADDRESS, 0L, new long[] {SN_2345.serialNumber()})
+                        .encodeCallWithArgs(ERC721_TOKEN_ADDRESS, 0L, new long[] {SN_2345.serialNumber()})
                         .array()),
                 assertSuccess());
     }
