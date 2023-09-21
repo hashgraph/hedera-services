@@ -282,7 +282,9 @@ public class TokenCreateSpecs extends HapiSuite {
                         cryptoCreate(deletingAccount).balance(0L))
                 .when(
                         cryptoDelete(deletingAccount),
-                        tokenCreate(PRIMARY).autoRenewAccount(deletingAccount).hasKnownStatus(ACCOUNT_DELETED),
+                        tokenCreate(PRIMARY)
+                                .autoRenewAccount(deletingAccount)
+                                .hasKnownStatus(INVALID_AUTORENEW_ACCOUNT),
                         tokenCreate(PRIMARY)
                                 .signedBy(GENESIS)
                                 .autoRenewAccount("1.2.3")
@@ -956,7 +958,9 @@ public class TokenCreateSpecs extends HapiSuite {
         return defaultHapiSpec("CreationValidatesTreasuryAccount")
                 .given(cryptoCreate(TOKEN_TREASURY).balance(0L))
                 .when(cryptoDelete(TOKEN_TREASURY))
-                .then(tokenCreate("shouldntWork").treasury(TOKEN_TREASURY).hasKnownStatus(ACCOUNT_DELETED));
+                .then(tokenCreate("shouldntWork")
+                        .treasury(TOKEN_TREASURY)
+                        .hasKnownStatus(INVALID_TREASURY_ACCOUNT_FOR_TOKEN));
     }
 
     @HapiTest

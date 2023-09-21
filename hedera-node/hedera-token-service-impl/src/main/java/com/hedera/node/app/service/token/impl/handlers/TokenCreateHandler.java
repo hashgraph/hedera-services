@@ -305,7 +305,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
 
         // validate auto-renew account exists
         if (resolvedExpiryMeta.hasAutoRenewAccountId()) {
-            TokenHandlerHelper.getIfUsable(
+            TokenHandlerHelper.getIfUsableForAutoRenew(
                     resolvedExpiryMeta.autoRenewAccountId(),
                     accountStore,
                     context.expiryValidator(),
@@ -346,7 +346,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
                 if (royaltyFee.hasFallbackFee()) {
                     final var fFee = royaltyFee.fallbackFeeOrThrow();
                     alwaysAdd = fFee.hasDenominatingTokenId()
-                        && fFee.denominatingTokenIdOrThrow().tokenNum() == 0;
+                            && fFee.denominatingTokenIdOrThrow().tokenNum() == 0;
                 }
                 addAccount(context, collector, alwaysAdd);
             }
