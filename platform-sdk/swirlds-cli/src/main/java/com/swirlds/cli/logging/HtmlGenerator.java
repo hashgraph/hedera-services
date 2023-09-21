@@ -135,6 +135,17 @@ public class HtmlGenerator {
     public static final String LOG_TABLE_LABEL = "log-table";
 
     /**
+     * The labels to use for styling log levels.
+     */
+    private static final Map<String, String> logLevelLabels = Map.of(
+            "TRACE", "trace-label",
+            "DEBUG", "debug-label",
+            "INFO", "info-label",
+            "WARN", "warn-label",
+            "ERROR", "error-label",
+            "FATAL", "fatal-label");
+
+    /**
      * The javascript that is used to hide/show elements when the filter checkboxes are clicked
      */
     public static final String FILTER_JS =
@@ -694,13 +705,6 @@ public class HtmlGenerator {
                 CLASS_NAME_COLUMN_LABEL,
                 REMAINDER_OF_LINE_COLUMN_LABEL)));
 
-        final Map<String, String> logLevelLabels = Map.of(
-                "TRACE", "trace-label",
-                "DEBUG", "debug-label",
-                "INFO", "info-label",
-                "WARN", "warn-label",
-                "ERROR", "error-label",
-                "FATAL", "fatal-label");
         logLevelLabels.forEach((logLevel, labelClass) -> cssFactory.addRule(
                 "." + labelClass, new CssDeclaration("color", getHtmlColor(getLogLevelColor(logLevel)))));
         filterDivBuilder
