@@ -75,7 +75,7 @@ public class FungibleBurnCall extends AbstractHtsCall implements BurnCall {
                         spenderId,
                         TokenBurnRecordBuilder.class);
         if (recordBuilder.status() != ResponseCodeEnum.SUCCESS) {
-            return gasOnly(revertResult(recordBuilder.status(), recordBuilder.getNewTotalSupply()));
+            return gasOnly(revertResult(recordBuilder.status(), 0L));
         } else {
             final var encodedOutput = BurnTranslator.BURN_TOKEN_V1
                     .getOutputs()
