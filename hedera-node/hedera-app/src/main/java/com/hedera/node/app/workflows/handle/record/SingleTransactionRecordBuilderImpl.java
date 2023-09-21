@@ -46,6 +46,7 @@ import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRe
 import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractDeleteRecordBuilder;
 import com.hedera.node.app.service.contract.impl.records.EthereumTransactionRecordBuilder;
 import com.hedera.node.app.service.file.impl.records.CreateFileRecordBuilder;
 import com.hedera.node.app.service.schedule.ScheduleRecordBuilder;
@@ -112,6 +113,7 @@ public class SingleTransactionRecordBuilderImpl
                 TokenUpdateRecordBuilder,
                 NodeStakeUpdateRecordBuilder,
                 FeeRecordBuilder,
+                ContractDeleteRecordBuilder,
                 GenesisAccountRecordBuilder {
     // base transaction data
     private Transaction transaction;
