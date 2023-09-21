@@ -29,13 +29,15 @@ import java.util.Arrays;
 import javax.inject.Inject;
 
 /**
- * Translates setApprovalForAll call to the HTS system contract. There are no special cases for
- * these calls, so the returned {@link HtsCall} is simply an instance of {@link DispatchForResponseCodeHtsCall}.
+ * Translates setApprovalForAll (including ERC) call to the HTS system contract. There are no special cases for these
+ * calls, so the returned {@link HtsCall} is simply an instance of {@link DispatchForResponseCodeHtsCall}.
  */
 public class SetApprovalForAllTranslator extends AbstractHtsCallTranslator {
 
     public static final Function SET_APPROVAL_FOR_ALL =
             new Function("setApprovalForAll(address,address,bool)", ReturnTypes.INT);
+    public static final Function ERC721_SET_APPROVAL_FOR_ALL =
+            new Function("setApprovalForAll(address,bool)", ReturnTypes.INT);
 
     private final SetApprovalForAllDecoder decoder;
 
@@ -49,7 +51,8 @@ public class SetApprovalForAllTranslator extends AbstractHtsCallTranslator {
      */
     @Override
     public boolean matches(@NonNull final HtsCallAttempt attempt) {
-        return Arrays.equals(attempt.selector(), SET_APPROVAL_FOR_ALL.selector());
+        return selectorMatches(attempt, SET_APPROVAL_FOR_ALL)
+                || (attempt.isTokenRedirect() && selectorMatches(attempt, ERC721_SET_APPROVAL_FOR_ALL));
     }
 
     /**
@@ -62,6 +65,13 @@ public class SetApprovalForAllTranslator extends AbstractHtsCallTranslator {
     }
 
     private TransactionBody bodyForClassic(@NonNull final HtsCallAttempt attempt) {
-        return decoder.decodeSetApprovalForAll(attempt);
+        if (selectorMatches(attempt, SET_APPROVAL_FOR_ALL)) {
+            return decoder.decodeSetApprovalForAll(attempt);
+        }
+        return decoder.decodeSetApprovalForAllERC(attempt);
+    }
+
+    private boolean selectorMatches(final HtsCallAttempt attempt, final Function function) {
+        return Arrays.equals(attempt.selector(), function.selector());
     }
 }

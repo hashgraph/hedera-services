@@ -24,6 +24,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.setapproval.SetApprovalForAllDecoder;
@@ -60,25 +61,61 @@ public class SetApprovalForAllDecoderTest {
                 .array();
         given(attempt.inputBytes()).willReturn(encodedInput);
 
+        // when
+        final var transactionBody = subject.decodeSetApprovalForAll(attempt);
+
         // then
-        verifyDecoding(true);
+        verifyDecoding(true, transactionBody);
     }
 
     @Test
-    void wipeNonFungibleToken_false_Works() {
+    void setApprovalForAllToken_false_Works() {
         // given
         final var encodedInput = SetApprovalForAllTranslator.SET_APPROVAL_FOR_ALL
                 .encodeCallWithArgs(NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS, APPROVED_HEADLONG_ADDRESS, false)
                 .array();
         given(attempt.inputBytes()).willReturn(encodedInput);
 
+        // when
+        final var transactionBody = subject.decodeSetApprovalForAll(attempt);
+
         // then
-        verifyDecoding(false);
+        verifyDecoding(false, transactionBody);
     }
 
-    private void verifyDecoding(final boolean expectedApproval) {
-        final var body = subject.decodeSetApprovalForAll(attempt);
+    @Test
+    void setApprovalForAllTokenERC_true_Works() {
+        // given
+        final var encodedInput = SetApprovalForAllTranslator.ERC721_SET_APPROVAL_FOR_ALL
+                .encodeCallWithArgs(APPROVED_HEADLONG_ADDRESS, true)
+                .array();
+        given(attempt.inputBytes()).willReturn(encodedInput);
+        given(attempt.redirectTokenId()).willReturn(NON_FUNGIBLE_TOKEN_ID);
 
+        // when
+        final var transactionBody = subject.decodeSetApprovalForAllERC(attempt);
+
+        // then
+        verifyDecoding(true, transactionBody);
+    }
+
+    @Test
+    void setApprovalForAllTokenERC_false_Works() {
+        // given
+        final var encodedInput = SetApprovalForAllTranslator.ERC721_SET_APPROVAL_FOR_ALL
+                .encodeCallWithArgs(APPROVED_HEADLONG_ADDRESS, false)
+                .array();
+        given(attempt.inputBytes()).willReturn(encodedInput);
+        given(attempt.redirectTokenId()).willReturn(NON_FUNGIBLE_TOKEN_ID);
+
+        // when
+        final var transactionBody = subject.decodeSetApprovalForAllERC(attempt);
+
+        // then
+        verifyDecoding(false, transactionBody);
+    }
+
+    private void verifyDecoding(final boolean expectedApproval, final TransactionBody body) {
         final var cryptoApproveAllowance = body.cryptoApproveAllowance();
         assertThat(cryptoApproveAllowance).isNotNull();
 

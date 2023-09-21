@@ -17,11 +17,13 @@
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.setapproval;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.setapproval.SetApprovalForAllDecoder;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.setapproval.SetApprovalForAllTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersTranslator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,9 +46,24 @@ public class SetApprovalForAllTranslatorTest {
     }
 
     @Test
-    void matchesTest() {
+    void matchesClassicalSelectorTest() {
         given(attempt.selector()).willReturn(SetApprovalForAllTranslator.SET_APPROVAL_FOR_ALL.selector());
         final var matches = subject.matches(attempt);
         assertThat(matches).isTrue();
+    }
+
+    @Test
+    void matchesERCSelectorTest() {
+        given(attempt.selector()).willReturn(SetApprovalForAllTranslator.ERC721_SET_APPROVAL_FOR_ALL.selector());
+        given(attempt.isTokenRedirect()).willReturn(true);
+        final var matches = subject.matches(attempt);
+        assertThat(matches).isTrue();
+    }
+
+    @Test
+    void falseOnInvalidSelector() {
+        given(attempt.selector()).willReturn(ClassicTransfersTranslator.CRYPTO_TRANSFER.selector());
+        final var matches = subject.matches(attempt);
+        assertFalse(matches);
     }
 }

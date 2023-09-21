@@ -68,9 +68,11 @@ import org.jetbrains.annotations.NotNull;
  *     <li>Transfer {@code ERC721_TOKEN} serialN 1234 from Owner's account. Should fail with SPENDER_DOES_NOT_HAVE_ALLOWANCE</li>
  *     <li>SetApprovalForAll to true and verify successful operation</li>
  *     <li>Transfer {@code ERC721_TOKEN} serialN 1234 from Owner's account and verify successful operation</li>
- *     <li>Transfer {@code ERC721_TOKEN} serialN 2345 from Owner's account and verify successful operation</li>
  *     <li>SetApprovalForAll to false and verify successful operation</li>
  *     <li>Transfer {@code ERC721_TOKEN} serialN 2345 from Owner's account. Should fail with SPENDER_DOES_NOT_HAVE_ALLOWANCE</li>
+ *     <li>SetApprovalForAll with ERC call to true and verify successful operation</li>
+ *     <li>Transfer {@code ERC721_TOKEN} serialN 2345 from Owner's account and verify successful operation</li>
+ *     <li>SetApprovalForAll with ERC call to false and verify successful operation</li>
  *     <li>Via {@code assertExpectedAccounts} verify that 2 NFTs have been transferred from the OWNER to the RECEIVER</li>
  * </ol>
  */
@@ -115,18 +117,6 @@ public class SetApprovalForAllXTest extends AbstractContractXTest {
                         .array()),
                 assertSuccess());
 
-        // Transfer series 2345 of ERC721_TOKEN to RECEIVER
-        runHtsCallAndExpectOnSuccess(
-                SENDER_BESU_ADDRESS,
-                Bytes.wrap(ClassicTransfersTranslator.TRANSFER_NFT
-                        .encodeCallWithArgs(
-                                ERC721_TOKEN_ADDRESS,
-                                OWNER_HEADLONG_ADDRESS,
-                                RECEIVER_HEADLONG_ADDRESS,
-                                SN_2345.serialNumber())
-                        .array()),
-                assertSuccess());
-
         // Set approval for all to false
         runHtsCallAndExpectOnSuccess(
                 OWNER_BESU_ADDRESS,
@@ -149,6 +139,36 @@ public class SetApprovalForAllXTest extends AbstractContractXTest {
                         Bytes.wrap(ReturnTypes.encodedRc(SPENDER_DOES_NOT_HAVE_ALLOWANCE)
                                 .array()),
                         output));
+
+        // Set approval for all to true via ERC call
+        runHtsCallAndExpectOnSuccess(
+                OWNER_BESU_ADDRESS,
+                bytesForRedirect(
+                        SetApprovalForAllTranslator.ERC721_SET_APPROVAL_FOR_ALL.encodeCallWithArgs(
+                                SENDER_HEADLONG_ADDRESS, true),
+                        ERC721_TOKEN_ID),
+                assertSuccess());
+
+        // Transfer series 2345 of ERC721_TOKEN to RECEIVER
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(ClassicTransfersTranslator.TRANSFER_NFT
+                        .encodeCallWithArgs(
+                                ERC721_TOKEN_ADDRESS,
+                                OWNER_HEADLONG_ADDRESS,
+                                RECEIVER_HEADLONG_ADDRESS,
+                                SN_2345.serialNumber())
+                        .array()),
+                assertSuccess());
+
+        // Set approval for all to false via ERC call
+        runHtsCallAndExpectOnSuccess(
+                OWNER_BESU_ADDRESS,
+                bytesForRedirect(
+                        SetApprovalForAllTranslator.ERC721_SET_APPROVAL_FOR_ALL.encodeCallWithArgs(
+                                SENDER_HEADLONG_ADDRESS, false),
+                        ERC721_TOKEN_ID),
+                assertSuccess());
     }
 
     @Override
