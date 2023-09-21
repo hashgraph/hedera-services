@@ -75,26 +75,10 @@ public interface LongGauge extends Metric {
     /**
      * Set the current value
      *
-     * @param newValue the new value
+     * @param newValue
+     * 		the new value
      */
     void set(final long newValue);
-
-    /**
-     * Add to the current value.
-     *
-     * @param delta the amount to add (negative values permitted)
-     */
-    void add(final long delta);
-
-    /**
-     * Add one to the current value. Equivalent to {@link #add(long) add(1)}.
-     */
-    void increment();
-
-    /**
-     * Subtract one from the current value. Equivalent to {@link #add(long) add(-1)}.
-     */
-    void decrement();
 
     /**
      * Configuration of a {@link LongGauge}
@@ -105,13 +89,17 @@ public interface LongGauge extends Metric {
 
         /**
          * Constructor of {@code LongGauge.Config}
-         * <p>
-         * The {@link #getInitialValue() initialValue} is by default set to {@code 0L}, the {@link #getFormat() format}
-         * is set to "%d".
          *
-         * @param category the kind of metric (metrics are grouped or filtered by this)
-         * @param name     a short name for the metric
-         * @throws IllegalArgumentException if one of the parameters is {@code null} or consists only of whitespaces
+         *
+         * The {@link #getInitialValue() initialValue} is by default set to {@code 0L},
+         * the {@link #getFormat() format} is set to "%d".
+         *
+         * @param category
+         * 		the kind of metric (metrics are grouped or filtered by this)
+         * @param name
+         * 		a short name for the metric
+         * @throws IllegalArgumentException
+         * 		if one of the parameters is {@code null} or consists only of whitespaces
          */
         public Config(final String category, final String name) {
             super(category, name, "%d");
@@ -151,9 +139,11 @@ public interface LongGauge extends Metric {
         /**
          * Sets the {@link Metric#getFormat() Metric.format} in fluent style.
          *
-         * @param format the format-string
+         * @param format
+         * 		the format-string
          * @return a new configuration-object with updated {@code format}
-         * @throws IllegalArgumentException if {@code format} is {@code null} or consists only of whitespaces
+         * @throws IllegalArgumentException
+         * 		if {@code format} is {@code null} or consists only of whitespaces
          */
         public LongGauge.Config withFormat(final String format) {
             return new LongGauge.Config(
@@ -172,7 +162,8 @@ public interface LongGauge extends Metric {
         /**
          * Fluent-style setter of the initial value.
          *
-         * @param initialValue the initial value
+         * @param initialValue
+         * 		the initial value
          * @return a new configuration-object with updated {@code initialValue}
          */
         public LongGauge.Config withInitialValue(final long initialValue) {

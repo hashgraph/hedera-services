@@ -26,6 +26,7 @@ import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
 import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.metrics.LongAccumulator;
 import com.swirlds.common.metrics.LongGauge;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
@@ -35,6 +36,7 @@ import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.StaleEventObserver;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
+import java.util.function.LongBinaryOperator;
 
 /**
  * Collection of metrics related to event intake
@@ -70,34 +72,35 @@ public class EventIntakeMetrics implements StaleEventObserver {
             new RunningAverageMetric.Config(INTERNAL_CATEGORY, "shouldCreateEvent").withFormat(FORMAT_10_1);
     private final RunningAverageMetric shouldCreateEvent;
 
-    private static final LongGauge.Config STALE_EVENTS_CONFIG = new LongGauge.Config(INTERNAL_CATEGORY, "staleEvents")
-            .withDescription("number of stale events since the node booted up");
-    private final LongGauge staleEventCount;
+    private static final LongAccumulator.Config STALE_EVENTS_CONFIG = new LongAccumulator.Config(INTERNAL_CATEGORY, "staleEvents")
+            .withAccumulator(Long::sum)
+            .withDescription("number of stale events");
+    private final LongAccumulator staleEventCount;
 
-    private static final LongGauge.Config STALE_SELF_EVENTS_CONFIG = new LongGauge.Config(
+    private static final LongAccumulator.Config STALE_SELF_EVENTS_CONFIG = new LongAccumulator.Config(
                     INTERNAL_CATEGORY, "staleSelfEvents")
-            .withDescription("number of stale self events since the node booted up");
-    private final LongGauge staleSelfEventCount;
+            .withDescription("number of stale self events");
+    private final LongAccumulator staleSelfEventCount;
 
-    private static final LongGauge.Config STALE_APP_TRANSACTIONS_CONFIG = new LongGauge.Config(
+    private static final LongAccumulator.Config STALE_APP_TRANSACTIONS_CONFIG = new LongAccumulator.Config(
                     INTERNAL_CATEGORY, "staleAppTransactions")
-            .withDescription("number of application transactions in stale events since the node booted up");
-    private final LongGauge staleAppTransactionCount;
+            .withDescription("number of application transactions in stale events");
+    private final LongAccumulator staleAppTransactionCount;
 
-    private static final LongGauge.Config STALE_SELF_APP_TRANSACTIONS_CONFIG = new LongGauge.Config(
+    private static final LongAccumulator.Config STALE_SELF_APP_TRANSACTIONS_CONFIG = new LongAccumulator.Config(
                     INTERNAL_CATEGORY, "staleSelfAppTransactions")
-            .withDescription("number of application transactions in stale self events since the node booted up");
-    private final LongGauge staleSelfAppTransactionCount;
+            .withDescription("number of application transactions in stale self events");
+    private final LongAccumulator staleSelfAppTransactionCount;
 
-    private static final LongGauge.Config STALE_SYSTEM_TRANSACTIONS_CONFIG = new LongGauge.Config(
+    private static final LongAccumulator.Config STALE_SYSTEM_TRANSACTIONS_CONFIG = new LongAccumulator.Config(
                     INTERNAL_CATEGORY, "staleSystemTransactions")
-            .withDescription("number of system transactions in stale events since the node booted up");
-    private final LongGauge staleSystemTransactionCount;
+            .withDescription("number of system transactions in stale events");
+    private final LongAccumulator staleSystemTransactionCount;
 
-    private static final LongGauge.Config STALE_SELF_SYSTEM_TRANSACTIONS_CONFIG = new LongGauge.Config(
+    private static final LongAccumulator.Config STALE_SELF_SYSTEM_TRANSACTIONS_CONFIG = new LongAccumulator.Config(
                     INTERNAL_CATEGORY, "staleSelfSystemTransactions")
-            .withDescription("number of system transactions in stale self events since the node booted up");
-    private final LongGauge staleSelfSystemTransactionCount;
+            .withDescription("number of system transactions in stale self events");
+    private final LongAccumulator staleSelfSystemTransactionCount;
 
     private final Time time;
     private final NodeId selfId;
@@ -180,14 +183,14 @@ public class EventIntakeMetrics implements StaleEventObserver {
         final int applicationTransactionCount = event.getNumAppTransactions();
         final int systemTransactionCount = event.getNumTransactions() - applicationTransactionCount;
 
-        staleEventCount.add(1);
-        staleAppTransactionCount.add(applicationTransactionCount);
-        staleSystemTransactionCount.add(systemTransactionCount);
+        staleEventCount.update(1);
+        staleAppTransactionCount.update(applicationTransactionCount);
+        staleSystemTransactionCount.update(systemTransactionCount);
 
         if (event.getCreatorId().equals(selfId)) {
-            staleSelfEventCount.add(1);
-            staleSelfAppTransactionCount.add(applicationTransactionCount);
-            staleSelfSystemTransactionCount.add(systemTransactionCount);
+            staleSelfEventCount.update(1);
+            staleSelfAppTransactionCount.update(applicationTransactionCount);
+            staleSelfSystemTransactionCount.update(systemTransactionCount);
         }
     }
 }
