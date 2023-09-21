@@ -22,7 +22,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FEE_SCHEDULE_KEY;
 import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsage.LONG_BASIC_ENTITY_ID_SIZE;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
@@ -36,7 +35,7 @@ import com.hedera.hapi.node.token.TokenFeeScheduleUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsage;
-import com.hedera.node.app.hapi.fees.usage.token.meta.FeeScheduleUpdateMeta;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
@@ -157,28 +156,21 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
         final var body = feeContext.body();
         final var op = body.tokenFeeScheduleUpdateOrThrow();
-        final var readableTokenStore = feeContext.readableStore(ReadableTokenStore.class);
-        final var token = readableTokenStore.get(op.tokenIdOrThrow());
+        final var token = feeContext.readableStore(ReadableTokenStore.class).get(op.tokenIdOrThrow());
         final var tokenOpsUsage = new TokenOpsUsage();
-        final var pbjCustomFees = op.customFeesOrElse(Collections.emptyList());
+        final var pbjFees = op.customFeesOrElse(Collections.emptyList());
 
-        final var newFeeSchedule =
-                pbjCustomFees.stream().map(fee -> fromPbj(fee)).toList();
-        final var newReprBytes = tokenOpsUsage.bytesNeededToRepr(newFeeSchedule);
-        final var meta = new FeeScheduleUpdateMeta(
-                body.transactionID().transactionValidStart().seconds(), newReprBytes);
-        final var lifetime = Math.max(0, token.expirationSecond() - meta.effConsensusTime());
-        final var currentFeeScheduleSize = currentFeeScheduleSize(pbjCustomFees, tokenOpsUsage);
-        final var rbsDelta = ESTIMATOR_UTILS.changeInBsUsage(
-                currentFeeScheduleSize,
-                lifetime,
-                tokenOpsUsage.bytesNeededToRepr(token.customFeesOrElse(emptyList()).stream()
-                        .map(fee -> fromPbj(fee))
-                        .toList()),
-                lifetime);
+        final var newReprBytes = tokenOpsUsage.bytesNeededToRepr(
+                pbjFees.stream().map(PbjConverter::fromPbj).toList());
+        final var effConsTime = body.transactionID().transactionValidStart().seconds();
+        final var lifetime = Math.max(0, token.expirationSecond() - effConsTime);
+        final var existingFeeReprBytes = tokenOpsUsage.bytesNeededToRepr(token.customFeesOrElse(emptyList()).stream()
+                .map(PbjConverter::fromPbj)
+                .toList());
+        final var rbsDelta = ESTIMATOR_UTILS.changeInBsUsage(newReprBytes, lifetime, existingFeeReprBytes, lifetime);
         return feeContext
                 .feeCalculator(SubType.DEFAULT)
-                .addBytesPerTransaction(LONG_BASIC_ENTITY_ID_SIZE + meta.numBytesInNewFeeScheduleRepr())
+                .addBytesPerTransaction(LONG_BASIC_ENTITY_ID_SIZE + newReprBytes)
                 .addRamByteSeconds(rbsDelta)
                 .calculate();
     }
