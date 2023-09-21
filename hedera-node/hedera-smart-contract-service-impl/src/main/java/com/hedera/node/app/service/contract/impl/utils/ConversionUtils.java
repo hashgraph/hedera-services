@@ -645,4 +645,15 @@ public class ConversionUtils {
                 ? account.alias().toByteArray()
                 : asEvmAddress(account.accountIdOrThrow().accountNumOrThrow());
     }
+
+    /**
+     * Given a headlong address, converts it to a Besu {@link Address}.
+     *
+     * @param address the headlong address
+     * @return the Besu {@link Address}
+     */
+    public static Address fromHeadlongAddress(@NonNull final com.esaulpaugh.headlong.abi.Address address) {
+        requireNonNull(address);
+        return Address.fromHexString(address.toString());
+    }
 }
