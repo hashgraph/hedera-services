@@ -20,11 +20,28 @@ import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
+/**
+ * A {@code RecordBuilder} specialization for tracking the side effects of a {@code TokenBurn}
+ * transaction.
+ */
 public interface TokenBurnRecordBuilder extends SingleTransactionRecordBuilder {
 
-    @NonNull
-    TokenMintRecordBuilder newTotalSupply(final long newTotalSupply);
+    /**
+     * Gets the new total supply of a token
+     * @return new total supply of a token
+     */
+    long getNewTotalSupply();
 
+    /**
+     * Sets the new total supply of a token
+     * @param newTotalSupply the new total supply of a token
+     */@NonNull
+    TokenBurnRecordBuilder newTotalSupply(final long newTotalSupply);
+
+    /**
+     * Sets the list of serial numbers burned
+     * @param serialNumbers list of serial numbers burned
+     */
     @NonNull
-    TokenMintRecordBuilder serialNumbers(@NonNull List<Long> serialNumbers);
+    TokenBurnRecordBuilder serialNumbers(@NonNull List<Long> serialNumbers);
 }
