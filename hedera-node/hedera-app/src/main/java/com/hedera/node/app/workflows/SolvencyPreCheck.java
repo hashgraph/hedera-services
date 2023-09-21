@@ -35,7 +35,7 @@ import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.authorization.Authorizer;
-import com.hedera.node.app.spi.authorization.Authorizer.SystemPrivilege;
+import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.validation.ExpiryValidation;
@@ -91,7 +91,7 @@ public class SolvencyPreCheck {
         }
 
         if (account.deleted()) {
-            throw new PreCheckException(ResponseCodeEnum.ACCOUNT_DELETED);
+            throw new PreCheckException(ResponseCodeEnum.PAYER_ACCOUNT_DELETED);
         }
 
         if (account.smartContract()) {

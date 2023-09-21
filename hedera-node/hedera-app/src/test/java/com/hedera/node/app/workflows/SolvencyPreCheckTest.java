@@ -47,7 +47,7 @@ import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.authorization.Authorizer;
-import com.hedera.node.app.spi.authorization.Authorizer.SystemPrivilege;
+import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.validation.ExpiryValidation;
@@ -149,7 +149,7 @@ class SolvencyPreCheckTest extends AppTestBase {
             // then
             assertThatThrownBy(() -> subject.getPayerAccount(storeFactory, ALICE.accountID()))
                     .isInstanceOf(PreCheckException.class)
-                    .has(responseCode(ResponseCodeEnum.ACCOUNT_DELETED));
+                    .has(responseCode(ResponseCodeEnum.PAYER_ACCOUNT_DELETED));
         }
 
         @Test

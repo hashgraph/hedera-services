@@ -17,9 +17,9 @@
 package com.hedera.node.app.service.token.impl.handlers.staking;
 
 import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakingUtils.NOT_REWARDED_SINCE_LAST_STAKING_META_CHANGE;
+import static com.hedera.node.app.service.token.api.AccountSummariesApi.SENTINEL_NODE_ID;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakeIdChangeType.FROM_ACCOUNT_TO_ACCOUNT;
-import static com.hedera.node.app.service.token.impl.handlers.staking.StakeInfoHelper.SENTINEL_NODE_ID;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper.getPossibleRewardReceivers;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtilities.hasStakeMetaChanges;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtilities.roundedToHbar;
@@ -32,8 +32,8 @@ import com.hedera.node.app.service.token.ReadableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
-import com.hedera.node.app.service.token.records.CryptoDeleteRecordBuilder;
 import com.hedera.node.app.service.token.records.FinalizeContext;
+import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
 import com.hedera.node.config.data.AccountsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -72,16 +72,13 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
         final var stakingRewardAccountId = asAccount(accountsConfig.stakingRewardAccount());
         final var consensusNow = context.consensusTime();
 
-        // TODO: confirm if the getDeletedAccountBeneficiaries should be in
-        //  SingleTransactionRecordBuilder interface instead
-        final var recordBuilder = context.userTransactionRecordBuilder(CryptoDeleteRecordBuilder.class);
-
         // Apply all changes related to stakedId changes, and adjust stakedToMe
         // for all accounts staking to an account
         adjustStakedToMeForAccountStakees(writableStore);
         // Get list of possible reward receivers and pay rewards to them
         final var rewardReceivers = getPossibleRewardReceivers(writableStore);
         // Pay rewards to all possible reward receivers, returns all rewards paid
+        final var recordBuilder = context.userTransactionRecordBuilder(DeleteCapableTransactionRecordBuilder.class);
         final var rewardsPaid = rewardsPayer.payRewardsIfPending(
                 rewardReceivers, writableStore, stakingRewardsStore, stakingInfoStore, consensusNow, recordBuilder);
         // Adjust stakes for nodes

@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.service.mono.fees.calculation.file.queries;
 
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
+
+import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.hapi.fees.usage.file.ExtantFileContext;
 import com.hedera.node.app.hapi.fees.usage.file.FileOpsUsage;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
@@ -57,6 +60,17 @@ public final class GetFileInfoResourceUsage implements QueryResourceUsageEstimat
                 .setCurrentWacl(details.getKeys())
                 .setCurrentMemo(details.getMemo())
                 .setCurrentExpiry(details.getExpirationTime().getSeconds())
+                .build();
+        return fileOpsUsage.fileInfoUsage(query, ctx);
+    }
+
+    public FeeData usageGiven(final Query query, final File file) {
+        final com.hederahashgraph.api.proto.java.File details = fromPbj(file);
+        final var ctx = ExtantFileContext.newBuilder()
+                .setCurrentSize(details.getContents().toByteArray().length)
+                .setCurrentWacl(details.getKeys())
+                .setCurrentMemo(details.getMemo())
+                .setCurrentExpiry(details.getExpirationSecond())
                 .build();
         return fileOpsUsage.fileInfoUsage(query, ctx);
     }

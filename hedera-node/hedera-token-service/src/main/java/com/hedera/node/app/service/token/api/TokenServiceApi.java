@@ -22,7 +22,9 @@ import com.hedera.hapi.node.contract.ContractNonceInfo;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.info.NetworkInfo;
+import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -36,6 +38,21 @@ import java.util.Set;
  * If, for example, we extract a {@code StakingService}, this API would likely need to expand.
  */
 public interface TokenServiceApi {
+    /**
+     * Deletes the account with the given id and transfers any remaining hbar balance to the given obtainer id.
+     *
+     * @param deletedId the id of the account to delete
+     * @param obtainerId the id of the account to transfer the remaining hbar balance to
+     * @param expiryValidator the expiry validator to use
+     * @param recordBuilder the record builder to record the transfer in
+     * @throws HandleException if the account could not be deleted for some reason
+     */
+    void deleteAndTransfer(
+            @NonNull AccountID deletedId,
+            @NonNull AccountID obtainerId,
+            @NonNull ExpiryValidator expiryValidator,
+            @NonNull DeleteCapableTransactionRecordBuilder recordBuilder);
+
     /**
      * Validates the given staking election relative to the given account store, network info, and staking config.
      *
@@ -60,7 +77,7 @@ public interface TokenServiceApi {
      * Marks an account as a contract.
      *
      */
-    void markAsContract(@NonNull AccountID accountId);
+    void markAsContract(@NonNull AccountID accountId, @Nullable AccountID autoRenewAccountId);
 
     /**
      * Finalizes a hollow account as a contract.

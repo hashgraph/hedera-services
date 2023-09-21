@@ -25,10 +25,18 @@ import static org.mockito.Mockito.times;
 
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
+import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
+import com.hedera.node.app.service.mono.state.migration.TokenRelStorageAdapter;
+import com.hedera.node.app.service.mono.state.migration.UniqueTokenMapAdapter;
 import com.hedera.node.app.service.mono.state.virtual.ContractKey;
+import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
+import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKey;
+import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValue;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
+import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
+import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
 import com.hedera.node.app.service.mono.utils.Pause;
 import com.hedera.node.app.service.mono.utils.SleepingPause;
 import com.swirlds.common.context.PlatformContext;
@@ -82,6 +90,15 @@ class ServicesStatsManagerTest {
     private VirtualMap<VirtualBlobKey, VirtualBlobValue> bytecode;
 
     @Mock
+    private VirtualMap<EntityNumVirtualKey, OnDiskAccount> accounts;
+
+    @Mock
+    private VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> tokenRels;
+
+    @Mock
+    private VirtualMap<UniqueTokenKey, UniqueTokenValue> uniqueTokens;
+
+    @Mock
     private ThrottleGauges throttleGauges;
 
     @Mock
@@ -112,7 +129,10 @@ class ServicesStatsManagerTest {
                 speedometers,
                 properties,
                 () -> VirtualMapLike.from(storage),
-                () -> VirtualMapLike.from(bytecode));
+                () -> VirtualMapLike.from(bytecode),
+                () -> AccountStorageAdapter.fromOnDisk(VirtualMapLike.from(accounts)),
+                () -> TokenRelStorageAdapter.fromOnDisk(VirtualMapLike.from(tokenRels)),
+                () -> UniqueTokenMapAdapter.wrap(VirtualMapLike.from(uniqueTokens)));
     }
 
     @AfterEach

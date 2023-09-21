@@ -426,8 +426,8 @@ class RandomAccessDequeTests {
         assertThrows(IllegalStateException.class, () -> deque.set(1, 0));
 
         final Iterator<Integer> it2 = deque.iterator();
-        it1.next();
-        assertThrows(NoSuchElementException.class, it1::next);
+        it2.next();
+        assertThrows(NoSuchElementException.class, it2::next);
     }
 
     @Test
@@ -444,5 +444,24 @@ class RandomAccessDequeTests {
         for (int i = 0; i < 100; i++) {
             assertEquals(i, iterator.next());
         }
+    }
+
+    @Test
+    @DisplayName("clear() method Test")
+    void clearTest() {
+        final RandomAccessDeque<Integer> deque = new RandomAccessDeque<>(100);
+        for (int i = 0; i < 10; i++) {
+            deque.addLast(i);
+        }
+        for (int i = 10; i < 20; i++) {
+            deque.addFirst(i);
+        }
+        deque.removeFirst();
+        deque.removeLast();
+
+        deque.clear();
+
+        assertEquals(0, deque.size());
+        assertFalse(deque.iterator().hasNext());
     }
 }

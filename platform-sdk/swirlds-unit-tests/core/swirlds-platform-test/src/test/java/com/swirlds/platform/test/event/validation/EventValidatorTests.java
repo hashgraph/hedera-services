@@ -24,6 +24,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.metrics.extensions.PhaseTimer;
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.BaseEventHashedData;
@@ -90,7 +91,8 @@ class EventValidatorTests {
     void eventValidator() {
         final Set<GossipEvent> intakeEvents = new HashSet<>();
         final AtomicBoolean isValid = new AtomicBoolean(true);
-        final EventValidator eventValidator = new EventValidator((e) -> isValid.get(), intakeEvents::add);
+        final EventValidator eventValidator =
+                new EventValidator((e) -> isValid.get(), intakeEvents::add, mock(PhaseTimer.class));
 
         final GossipEvent validEvent = GossipEventBuilder.builder().buildEvent();
         eventValidator.validateEvent(validEvent);

@@ -35,8 +35,10 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.ResponseType;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.SignatureMap;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TopicID;
@@ -51,6 +53,7 @@ import com.hedera.hapi.node.transaction.FractionalFee;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.RoyaltyFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 import com.hedera.node.app.spi.key.HederaKey;
@@ -190,6 +193,21 @@ public final class PbjConverter {
         } catch (InvalidProtocolBufferException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static @NonNull com.hederahashgraph.api.proto.java.TransactionRecord fromPbj(@NonNull TransactionRecord tx) {
+        requireNonNull(tx);
+        try {
+            final var bytes = asBytes(TransactionRecord.PROTOBUF, tx);
+            return com.hederahashgraph.api.proto.java.TransactionRecord.parseFrom(bytes);
+        } catch (InvalidProtocolBufferException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static @NonNull com.hederahashgraph.api.proto.java.SubType fromPbj(@NonNull SubType subType) {
+        requireNonNull(subType);
+        return com.hederahashgraph.api.proto.java.SubType.valueOf(subType.name());
     }
 
     public static @NonNull com.hederahashgraph.api.proto.java.AccountAmount fromPbj(@NonNull AccountAmount a) {
@@ -1352,6 +1370,21 @@ public final class PbjConverter {
         }
     }
 
+    /**
+     * Tries to convert a PBJ {@link ResponseType} to a {@link com.hederahashgraph.api.proto.java.ResponseType}
+     * @param responseType the PBJ {@link ResponseType} to convert
+     * @return the converted {@link com.hederahashgraph.api.proto.java.ResponseType} if valid
+     */
+    public static @NonNull com.hederahashgraph.api.proto.java.ResponseType fromPbjResponseType(
+            @NonNull final ResponseType responseType) {
+        return switch (requireNonNull(responseType)) {
+            case ANSWER_ONLY -> com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
+            case ANSWER_STATE_PROOF -> com.hederahashgraph.api.proto.java.ResponseType.ANSWER_STATE_PROOF;
+            case COST_ANSWER -> com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
+            case COST_ANSWER_STATE_PROOF -> com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER_STATE_PROOF;
+        };
+    }
+
     public static @NonNull Optional<SchedulableTransactionBody> toPbj(
             @Nullable final com.hederahashgraph.api.proto.java.SchedulableTransactionBody schedulableTransactionBody) {
         if (schedulableTransactionBody == null) {
@@ -1477,9 +1510,10 @@ public final class PbjConverter {
     public static com.hederahashgraph.api.proto.java.File fromPbj(@Nullable File file) {
         var builder = com.hederahashgraph.api.proto.java.File.newBuilder();
         if (file != null) {
-            builder.setFileId(fromPbj(file.fileId()));
+            builder.setFileId(fromPbj(file.fileIdOrThrow()));
             builder.setExpirationSecond(file.expirationSecond());
-            builder.setKeys(pbjToProto(file.keys(), KeyList.class, com.hederahashgraph.api.proto.java.KeyList.class));
+            builder.setKeys(pbjToProto(
+                    file.keysOrElse(KeyList.DEFAULT), KeyList.class, com.hederahashgraph.api.proto.java.KeyList.class));
             builder.setContents(ByteString.copyFrom(file.contents().toByteArray()));
             builder.setMemo(file.memo());
             builder.setDeleted(file.deleted());

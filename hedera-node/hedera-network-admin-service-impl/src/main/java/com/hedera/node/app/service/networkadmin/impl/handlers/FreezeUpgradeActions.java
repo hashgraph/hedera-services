@@ -32,9 +32,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Comparator;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
-import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -56,22 +56,24 @@ public class FreezeUpgradeActions {
     private final NetworkAdminConfig adminServiceConfig;
     private final WritableFreezeStore freezeStore;
 
-    @Inject
+    private final Executor executor;
+
     public FreezeUpgradeActions(
-            @NonNull final NetworkAdminConfig adminServiceConfig, @NonNull final WritableFreezeStore freezeStore) {
+            @NonNull final NetworkAdminConfig adminServiceConfig,
+            @NonNull final WritableFreezeStore freezeStore,
+            @NonNull final Executor executor) {
         requireNonNull(adminServiceConfig);
         requireNonNull(freezeStore);
+        requireNonNull(executor);
 
         this.adminServiceConfig = adminServiceConfig;
         this.freezeStore = freezeStore;
+        this.executor = executor;
     }
 
     public void externalizeFreezeIfUpgradePending() {
-        // @todo('Issue #6201'): call networkCtx.hasPreparedUpgrade()
-        // final var isUpgradePrepared = networkCtx.hasPreparedUpgrade();
-        final boolean isUpgradePrepared = true;
-
-        if (isUpgradePrepared) {
+        // @todo('Issue #8660') this code is not currently triggered anywhere
+        if (freezeStore.updateFileHash() != null) {
             writeCheckMarker(NOW_FROZEN_MARKER);
         }
     }
@@ -87,26 +89,23 @@ public class FreezeUpgradeActions {
         return extractNow(archiveData, PREPARE_UPGRADE_DESC, EXEC_IMMEDIATE_MARKER, null);
     }
 
-    public CompletableFuture<Void> scheduleFreezeOnlyAt(@NonNull final Timestamp freezeTime) {
+    public void scheduleFreezeOnlyAt(@NonNull final Timestamp freezeTime) {
         requireNonNull(freezeTime);
         requireNonNull(freezeStore, "Cannot schedule freeze without access to the dual state");
         freezeStore.freezeTime(freezeTime);
-        return CompletableFuture.completedFuture(null); // return a future which completes immediately
     }
 
-    public CompletableFuture<Void> scheduleFreezeUpgradeAt(@NonNull final Timestamp freezeTime) {
+    public void scheduleFreezeUpgradeAt(@NonNull final Timestamp freezeTime) {
         requireNonNull(freezeTime);
         requireNonNull(freezeStore, "Cannot schedule freeze without access to the dual state");
         freezeStore.freezeTime(freezeTime);
         writeSecondMarker(FREEZE_SCHEDULED_MARKER, freezeTime);
-        return CompletableFuture.completedFuture(null); // return a future which completes immediately
     }
 
-    public CompletableFuture<Void> abortScheduledFreeze() {
+    public void abortScheduledFreeze() {
         requireNonNull(freezeStore, "Cannot abort freeze without access to the dual state");
         freezeStore.freezeTime(null);
         writeCheckMarker(FREEZE_ABORTED_MARKER);
-        return CompletableFuture.completedFuture(null); // return a future which completes immediately
     }
 
     public boolean isFreezeScheduled() {
@@ -134,7 +133,7 @@ public class FreezeUpgradeActions {
         log.info("About to unzip {} bytes for {} update into {}", size, desc, artifactsLoc);
         // we spin off a separate thread to avoid blocking handleTransaction
         // if we block handle, there could be a dramatic spike in E2E latency at the time of PREPARE_UPGRADE
-        return runAsync(() -> extractAndReplaceArtifacts(artifactsLoc, archiveData, size, desc, marker, now));
+        return runAsync(() -> extractAndReplaceArtifacts(artifactsLoc, archiveData, size, desc, marker, now), executor);
     }
 
     private void extractAndReplaceArtifacts(

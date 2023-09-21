@@ -175,7 +175,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(tokenRel.deleted()).isFalse();
         assertThat(tokenRel.tokenId()).isEqualTo(newTokenId);
         assertThat(tokenRel.accountId()).isEqualTo(treasuryId);
-        assertThat(tokenRel.kycGranted()).isFalse();
+        assertThat(tokenRel.kycGranted()).isTrue();
         assertThat(tokenRel.automaticAssociation()).isFalse();
         assertThat(tokenRel.frozen()).isFalse();
         assertThat(tokenRel.nextToken()).isNull();
@@ -232,7 +232,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(tokenRel.deleted()).isFalse();
         assertThat(tokenRel.tokenId()).isEqualTo(newTokenId);
         assertThat(tokenRel.accountId()).isEqualTo(treasuryId);
-        assertThat(tokenRel.kycGranted()).isFalse();
+        assertThat(tokenRel.kycGranted()).isTrue();
         assertThat(tokenRel.automaticAssociation()).isFalse();
         assertThat(tokenRel.frozen()).isFalse();
         assertThat(tokenRel.nextToken()).isNull();
@@ -420,7 +420,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(tokenRel.deleted()).isFalse();
         assertThat(tokenRel.tokenId()).isEqualTo(newTokenId);
         assertThat(tokenRel.accountId()).isEqualTo(treasuryId);
-        assertThat(tokenRel.kycGranted()).isFalse();
+        assertThat(tokenRel.kycGranted()).isTrue();
         assertThat(tokenRel.automaticAssociation()).isFalse();
         assertThat(tokenRel.frozen()).isFalse();
         assertThat(tokenRel.nextToken()).isNull();

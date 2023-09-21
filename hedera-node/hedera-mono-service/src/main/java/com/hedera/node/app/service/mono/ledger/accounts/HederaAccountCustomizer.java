@@ -81,7 +81,10 @@ public final class HederaAccountCustomizer
             op.setDeclineReward((boolean) changes.get(AccountProperty.DECLINE_REWARD));
         }
         if (changes.containsKey(AccountProperty.AUTO_RENEW_ACCOUNT_ID)) {
-            op.setAutoRenewAccountId(((EntityId) changes.get(AccountProperty.AUTO_RENEW_ACCOUNT_ID)).toGrpcAccountId());
+            final var autoRenewAccountId = (EntityId) changes.get(AccountProperty.AUTO_RENEW_ACCOUNT_ID);
+            if (!EntityId.MISSING_ENTITY_ID.equals(autoRenewAccountId)) {
+                op.setAutoRenewAccountId(autoRenewAccountId.toGrpcAccountId());
+            }
         }
         if (changes.containsKey(AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS)) {
             op.setMaxAutomaticTokenAssociations(((int) changes.get(AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS)));

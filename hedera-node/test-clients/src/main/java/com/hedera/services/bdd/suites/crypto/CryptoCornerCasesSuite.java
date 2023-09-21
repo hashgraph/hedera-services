@@ -140,6 +140,7 @@ public class CryptoCornerCasesSuite extends HapiSuite {
         return TxnUtils.replaceTxnPayerAccount(txn, badPayerAccount);
     }
 
+    @HapiTest
     public static HapiSpec invalidTransactionPayerAccountNotFound() {
         return defaultHapiSpec("InvalidTransactionDuration")
                 .given()

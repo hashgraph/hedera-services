@@ -16,9 +16,6 @@
 
 package com.hedera.node.app.state.merkle;
 
-import static com.swirlds.common.io.utility.FileUtils.deleteDirectory;
-import static com.swirlds.common.io.utility.TemporaryFileBuilder.getTemporaryFileLocation;
-
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.spi.fixtures.state.StateTestBase;
 import com.hedera.node.app.spi.fixtures.state.TestSchema;
@@ -52,9 +49,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.nio.file.Path;
-import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 
 /**
@@ -313,12 +308,7 @@ public class MerkleTestBase extends StateTestBase {
     }
 
     @AfterEach
-    void cleanUp() throws IOException, NoSuchFieldException, IllegalAccessException {
-        // We need to make sure that the test cleans up after itself to prevent interference with the other tests
-        Field field = MerkleDb.class.getDeclaredField("instances");
-        field.setAccessible(true);
-        ((Map<?, ?>) field.get(null)).clear();
-
-        deleteDirectory(getTemporaryFileLocation());
+    void cleanUp() {
+        MerkleDb.resetDefaultInstancePath();
     }
 }

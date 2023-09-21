@@ -14,7 +14,7 @@
 # limitations under the License.
 ##
 
-name: "ZXC: [Node] Build Release Artifact"
+name: "ZXC: [Node] Deploy Release Artifacts"
 on:
   workflow_call:
     inputs:
@@ -191,7 +191,7 @@ jobs:
           echo "number=${EFF_VERSION}" >>"${GITHUB_OUTPUT}"
 
       - name: Cache Build Version
-        uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
+        uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84 # v3.3.2
         with:
           path: version.txt
           key: node-build-version-${{ steps.effective-version.outputs.number }}-${{ github.sha }}
@@ -268,14 +268,14 @@ jobs:
           gradle-version: ${{ inputs.gradle-version }}
 
       - name: Restore Build Version
-        uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
+        uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84 # v3.3.2
         with:
           fail-on-cache-miss: true
           path: version.txt
           key: node-build-version-${{ needs.validate.outputs.version }}-${{ github.sha }}
 
       - name: Cache Build Artifacts
-        uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
+        uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84 # v3.3.2
         with:
           path: ~/artifact-build
           key: node-build-artifacts-${{ needs.validate.outputs.version }}-${{ github.sha }}
@@ -410,17 +410,17 @@ jobs:
          DOCKER_TAG_BASE="gcr.io/hedera-registry"
          if [[ "${{ inputs.version-policy }}" == "branch-commit" && "${{ inputs.dry-run-enabled }}" != true ]]; then
             DOCKER_TAG_BASE="us-docker.pkg.dev/swirlds-registry/local-node"
-         else
+         elif [[ "${{ inputs.dry-run-enabled }}" == true ]]; then
             DOCKER_TAG_BASE="localhost:5000"
          fi
 
          echo "docker-tag-base=${DOCKER_TAG_BASE}" >>"${GITHUB_OUTPUT}"
 
       - name: Setup QEmu Support
-        uses: docker/setup-qemu-action@2b82ce82d56a2a04d2637cd93a637ae1b359c0a7 # v2.2.0
+        uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # v3.0.0
 
       - name: Setup Docker Buildx Support
-        uses: docker/setup-buildx-action@885d1462b80bc1c1c7f0b00334ad271f09369c55 # v2.10.0
+        uses: docker/setup-buildx-action@f95db51fddba0c2d1ec667646a06c2ce06100226 # v3.0.0
         with:
           driver-opts: network=host
 
@@ -429,7 +429,7 @@ jobs:
         run: docker run -d -p 5000:5000 --restart=always --name registry registry:latest
 
       - name: Docker Login
-        uses: docker/login-action@465a07811f14bebb1938fbed4728c6a1ff8901fc # v2.2.0
+        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
         if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
         with:
           registry: ${{ steps.set-registry.outputs.docker-registry }}
@@ -437,7 +437,7 @@ jobs:
           password: ${{ steps.google-auth.outputs.access_token }}
 
       - name: Restore Build Artifacts
-        uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
+        uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84 # v3.3.2
         with:
           fail-on-cache-miss: true
           path: ~/artifact-build
@@ -449,7 +449,7 @@ jobs:
           cp -rvf ~/artifact-build/* hedera-node/infrastructure/docker/containers/local-node/main-network-node/sdk/
 
       - name: Build Haveged Image
-        uses: docker/build-push-action@2eb1c1961a95fc15694676618e422e8ba1d63825 # v4.1.1
+        uses: docker/build-push-action@0565240e2d4ab88bba5387d719585280857ece09 # v5.0.0
         with:
           push: true
           platforms: linux/amd64,linux/arm64
@@ -457,7 +457,7 @@ jobs:
           tags: ${{ steps.set-registry.outputs.docker-tag-base }}/network-node-haveged:${{ needs.validate.outputs.version }}
 
       - name: Build Base Image
-        uses: docker/build-push-action@2eb1c1961a95fc15694676618e422e8ba1d63825 # v4.1.1
+        uses: docker/build-push-action@0565240e2d4ab88bba5387d719585280857ece09 # v5.0.0
         with:
           push: true
           platforms: linux/amd64,linux/arm64
@@ -465,7 +465,7 @@ jobs:
           tags: ${{ steps.set-registry.outputs.docker-tag-base }}/network-node-base:${{ needs.validate.outputs.version }}
 
       - name: Build Network Node Image
-        uses: docker/build-push-action@2eb1c1961a95fc15694676618e422e8ba1d63825 # v4.1.1
+        uses: docker/build-push-action@0565240e2d4ab88bba5387d719585280857ece09 # v5.0.0
         with:
           push: true
           platforms: linux/amd64,linux/arm64
@@ -533,7 +533,7 @@ jobs:
 
       - name: Import GPG key
         id: gpg_key
-        uses: crazy-max/ghaction-import-gpg@d6f3f49f3345e29369fe57596a3ca8f94c4d2ca7 # v5.4.0
+        uses: crazy-max/ghaction-import-gpg@82a020f1f7f605c65dd2449b392a52c3fcfef7ef # v6.0.0
         if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
         with:
           gpg_private_key: ${{ secrets.svcs-gpg-key-contents }}
@@ -555,7 +555,7 @@ jobs:
           gradle-version: ${{ inputs.gradle-version }}
 
       - name: Restore Build Version
-        uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
+        uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84 # v3.3.2
         with:
           fail-on-cache-miss: true
           path: version.txt
@@ -602,7 +602,7 @@ jobs:
           arguments: ":hedera-node:app-service-evm:releaseMavenCentralSnapshot --scan -PpublishSigningEnabled=true"
 
   sdk-mc-publish:
-    name: Publish Platform to ${{ inputs.version-policy == 'specified' && 'Maven Central' || 'GAR' }}
+    name: Publish Platform to ${{ inputs.version-policy == 'specified' && 'Maven Central' || 'GCP Registry' }}
     runs-on: [ self-hosted, Linux, large, ephemeral ]
     needs:
       - validate
@@ -625,7 +625,7 @@ jobs:
 
       - name: Import GPG key
         id: gpg_key
-        uses: crazy-max/ghaction-import-gpg@d6f3f49f3345e29369fe57596a3ca8f94c4d2ca7 # v5.4.0
+        uses: crazy-max/ghaction-import-gpg@82a020f1f7f605c65dd2449b392a52c3fcfef7ef # v6.0.0
         with:
           gpg_private_key: ${{ secrets.sdk-gpg-key-contents }}
           passphrase: ${{ secrets.sdk-gpg-key-passphrase }}
@@ -657,7 +657,7 @@ jobs:
           gradle-version: ${{ inputs.gradle-version }}
 
       - name: Restore Build Version
-        uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
+        uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84 # v3.3.2
         with:
           fail-on-cache-miss: true
           path: version.txt
@@ -755,7 +755,7 @@ jobs:
           OSSRH_PASSWORD: ${{ secrets.sdk-ossrh-password }}
         with:
           gradle-version: ${{ inputs.gradle-version }}
-          arguments: ":swirlds-platform:release{{ inputs.sdk-release-profile }} --scan -PpublishSigningEnabled=true"
+          arguments: ":platform-sdk:release${{ inputs.sdk-release-profile }} --scan -PpublishSigningEnabled=true"
 
       - name: Upload SDK Release Archives
         if: ${{ inputs.dry-run-enabled != true && inputs.version-policy == 'specified' && !cancelled() && !failure() }}

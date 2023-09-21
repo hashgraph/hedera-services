@@ -20,15 +20,11 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.as
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToBesuAddress;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
 public class HtsErc721TransferXTestConstants {
-    static final AccountID OWNER_ID = AccountID.newBuilder().accountNum(121212L).build();
-    static final Bytes OWNER_ADDRESS = Bytes.fromHex("a213624b8b83a724438159ba7c0d333a2b6b3990");
-    static final com.esaulpaugh.headlong.abi.Address OWNER_HEADLONG_ADDRESS =
-            asHeadlongAddress(OWNER_ADDRESS.toByteArray());
-    static final Address OWNER_BESU_ADDRESS = pbjToBesuAddress(OWNER_ADDRESS);
     static final AccountID UNAUTHORIZED_SPENDER_ID =
             AccountID.newBuilder().accountNum(999999L).build();
     static final Bytes UNAUTHORIZED_SPENDER_ADDRESS = Bytes.fromHex("b284224b8b83a724438cc3cc7c0d333a2b6b3222");
@@ -41,6 +37,9 @@ public class HtsErc721TransferXTestConstants {
     static final com.esaulpaugh.headlong.abi.Address APPROVED_HEADLONG_ADDRESS =
             asHeadlongAddress(APPROVED_ADDRESS.toByteArray());
     static final Address APPROVED_BESU_ADDRESS = pbjToBesuAddress(APPROVED_ADDRESS);
+
+    static final Account spenderAccount =
+            Account.newBuilder().accountId(APPROVED_ID).build();
 
     static final AccountID OPERATOR_ID =
             AccountID.newBuilder().accountNum(7773777L).build();

@@ -22,6 +22,11 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.SAME_NODE;
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartEvent;
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartRound;
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransaction;
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP2;
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP3;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.NODE_DUE_DILIGENCE_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE_HANDLE_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
@@ -29,8 +34,10 @@ import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.ExchangeRateManager;
@@ -46,7 +53,7 @@ import com.hedera.node.app.signature.SignatureExpander;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.signature.SignatureVerifier;
 import com.hedera.node.app.spi.authorization.Authorizer;
-import com.hedera.node.app.spi.authorization.Authorizer.SystemPrivilege;
+import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.info.NetworkInfo;
@@ -61,6 +68,7 @@ import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
@@ -106,6 +114,7 @@ public class HandleWorkflow {
     private final ServiceScopeLookup serviceScopeLookup;
     private final ConfigProvider configProvider;
     private final HederaRecordCache recordCache;
+    private final GenesisRecordsConsensusHook genesisRecordsTimeHook;
     private final StakingPeriodTimeHook stakingPeriodTimeHook;
     private final FeeManager feeManager;
     private final ExchangeRateManager exchangeRateManager;
@@ -127,6 +136,7 @@ public class HandleWorkflow {
             @NonNull final ServiceScopeLookup serviceScopeLookup,
             @NonNull final ConfigProvider configProvider,
             @NonNull final HederaRecordCache recordCache,
+            @NonNull final GenesisRecordsConsensusHook genesisRecordsTimeHook,
             @NonNull final StakingPeriodTimeHook stakingPeriodTimeHook,
             @NonNull final FeeManager feeManager,
             @NonNull final ExchangeRateManager exchangeRateManager,
@@ -145,6 +155,7 @@ public class HandleWorkflow {
         this.serviceScopeLookup = requireNonNull(serviceScopeLookup, "serviceScopeLookup must not be null");
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
         this.recordCache = requireNonNull(recordCache, "recordCache must not be null");
+        this.genesisRecordsTimeHook = requireNonNull(genesisRecordsTimeHook, "genesisRecordsTimeHook must not be null");
         this.stakingPeriodTimeHook = requireNonNull(stakingPeriodTimeHook, "stakingPeriodTimeHook must not be null");
         this.feeManager = requireNonNull(feeManager, "feeManager must not be null");
         this.exchangeRateManager = requireNonNull(exchangeRateManager, "exchangeRateManager must not be null");
@@ -169,6 +180,9 @@ public class HandleWorkflow {
         // with the block record manager.
         final var userTransactionsHandled = new AtomicBoolean(false);
 
+        // log start of round to transaction state log
+        logStartRound(round);
+
         // handle each event in the round
         for (final ConsensusEvent event : round) {
             final var creator = networkInfo.nodeInfo(event.getCreatorId().id());
@@ -181,6 +195,9 @@ public class HandleWorkflow {
                 logger.warn("Received event from node {} which is not in the address book", event.getCreatorId());
                 return;
             }
+
+            // log start of event to transaction state log
+            logStartEvent(event, creator);
 
             // handle each transaction of the event
             for (final var it = event.consensusTransactionIterator(); it.hasNext(); ) {
@@ -215,7 +232,6 @@ public class HandleWorkflow {
             @NonNull final ConsensusEvent platformEvent,
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction platformTxn) {
-
         // Get the consensus timestamp
         final Instant consensusNow = platformTxn.getConsensusTimestamp();
 
@@ -246,7 +262,10 @@ public class HandleWorkflow {
         final var readableStoreFactory = new ReadableStoreFactory(stack);
         final var feeAccumulator = createFeeAccumulator(stack, configuration, recordBuilder);
 
-        final var tokenServiceContext = new TokenServiceContextImpl(configuration, stack, recordListBuilder);
+        final var tokenServiceContext = new TokenContextImpl(configuration, stack, recordListBuilder);
+        // It's awful that we have to check this every time a transaction is handled, especially since this mostly
+        // applies to non-production cases. Let's find a way to 💥💥 remove this 💥💥
+        genesisRecordsTimeHook.process(tokenServiceContext);
         try {
             // If this is the first user transaction after midnight, then handle staking updates prior to handling the
             // transaction itself.
@@ -285,6 +304,16 @@ public class HandleWorkflow {
                 transactionBytes = Transaction.PROTOBUF.toBytes(transaction);
             }
 
+            // Log start of user transaction to transaction state log
+            logStartUserTransaction(platformTxn, txBody, payer);
+            logStartUserTransactionPreHandleResultP2(
+                    preHandleResult.payer(),
+                    preHandleResult.payerKey(),
+                    preHandleResult.status(),
+                    preHandleResult.responseCode());
+            logStartUserTransactionPreHandleResultP3(
+                    preHandleResult.txInfo(), preHandleResult.requiredKeys(), preHandleResult.verificationResults());
+
             // Initialize record builder list
             recordBuilder
                     .transaction(transactionInfo.transaction())
@@ -296,11 +325,13 @@ public class HandleWorkflow {
             // Set up the verifier
             final var hederaConfig = configuration.getConfigData(HederaConfig.class);
             final var verifier = new BaseHandleContextVerifier(hederaConfig, preHandleResult.verificationResults());
+            final var signatureMapSize = SignatureMap.PROTOBUF.measureRecord(transactionInfo.signatureMap());
 
             // Setup context
             final var context = new HandleContextImpl(
                     txBody,
-                    transactionInfo,
+                    transactionInfo.functionality(),
+                    signatureMapSize,
                     payer,
                     preHandleResult.payerKey(),
                     networkInfo,
@@ -317,7 +348,8 @@ public class HandleWorkflow {
                     recordCache,
                     feeManager,
                     exchangeRateManager,
-                    consensusNow);
+                    consensusNow,
+                    authorizer);
 
             // Calculate the fee
             fees = dispatcher.dispatchComputeFees(context);
@@ -331,22 +363,36 @@ public class HandleWorkflow {
                     fees,
                     platformEvent.getCreatorId().id());
             if (validationResult.status() != SO_FAR_SO_GOOD) {
-                if (validationResult.status() == NODE_DUE_DILIGENCE_FAILURE) {
-                    payer = creator.accountId();
-                }
-                final var penaltyFee = new Fees(fees.nodeFee(), fees.networkFee(), 0L);
-                feeAccumulator.charge(payer, penaltyFee);
                 recordBuilder.status(validationResult.responseCodeEnum());
+                try {
+                    final var penaltyPayerID =
+                            validationResult.status() == NODE_DUE_DILIGENCE_FAILURE ? creator.accountId() : payer;
+                    final var penaltyFee = new Fees(fees.nodeFee(), fees.networkFee(), 0L);
+                    feeAccumulator.charge(penaltyPayerID, penaltyFee);
+                } catch (HandleException ex) {
+                    final var identifier = validationResult.status == NODE_DUE_DILIGENCE_FAILURE
+                            ? "node " + creator.nodeId()
+                            : "account " + payer;
+                    logger.error(
+                            "Unable to charge {} a penalty after {} happened. Cause of the failed charge:",
+                            identifier,
+                            validationResult.responseCodeEnum,
+                            ex);
+                }
 
             } else {
-                feeAccumulator.charge(payer, fees);
+                if (authorizer.hasPrivilegedAuthorization(payer, transactionInfo.functionality(), txBody)
+                        != SystemPrivilege.AUTHORIZED) {
+                    // privileged transactions are not charged fees
+                    feeAccumulator.charge(payer, fees);
+                }
                 try {
                     // Dispatch the transaction to the handler
                     dispatcher.dispatchHandle(context);
                     recordBuilder.status(SUCCESS);
 
                     // Notify responsible facility if system-file was uploaded
-                    systemFileUpdateFacility.handleTxBody(stack, txBody);
+                    systemFileUpdateFacility.handleTxBody(stack, txBody, recordBuilder);
 
                     // Notify if dual state was updated
                     dualStateUpdateFacility.handleTxBody(stack, dualState, txBody);
@@ -360,7 +406,15 @@ public class HandleWorkflow {
             logger.error("An unexpected exception was thrown during handle", e);
             rollback(ResponseCodeEnum.FAIL_INVALID, stack, recordListBuilder);
             if (payer != null && fees != null) {
-                feeAccumulator.charge(payer, fees);
+                try {
+                    feeAccumulator.charge(payer, fees);
+                } catch (HandleException chargeException) {
+                    logger.error(
+                            "Unable to charge account {} a penalty after an unexpected exception {}. Cause of the failed charge:",
+                            payer,
+                            e,
+                            chargeException);
+                }
             }
         }
 
@@ -369,7 +423,7 @@ public class HandleWorkflow {
         // Commit all state changes
         stack.commitFullStack();
 
-        // store all records at once
+        // store all records at once, build() records end of transaction to log
         final var recordListResult = recordListBuilder.build();
         recordCache.add(
                 creator.nodeId(),
@@ -396,8 +450,9 @@ public class HandleWorkflow {
             @NonNull final ReadableStoreFactory storeFactory,
             @NonNull final Fees fees,
             final long nodeID) {
-        final var payerID = preHandleResult.payer();
+
         final var txInfo = preHandleResult.txInfo();
+        final var payerID = txInfo.payerID();
         final var functionality = txInfo.functionality();
         final var txBody = txInfo.txBody();
 
@@ -435,6 +490,9 @@ public class HandleWorkflow {
 
         // Check if the payer has the required permissions
         if (!authorizer.isAuthorized(payerID, functionality)) {
+            if (functionality == HederaFunctionality.SYSTEM_DELETE) {
+                return new ValidationResult(PRE_HANDLE_FAILURE, ResponseCodeEnum.NOT_SUPPORTED);
+            }
             return new ValidationResult(PRE_HANDLE_FAILURE, ResponseCodeEnum.UNAUTHORIZED);
         }
 
