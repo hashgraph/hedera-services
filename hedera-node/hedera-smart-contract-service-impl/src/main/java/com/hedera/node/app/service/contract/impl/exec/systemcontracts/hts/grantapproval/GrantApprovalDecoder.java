@@ -16,8 +16,11 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantapproval;
 
+import static java.util.Objects.requireNonNull;
+
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.token.CryptoApproveAllowanceTransactionBody;
 import com.hedera.hapi.node.token.NftAllowance;
@@ -28,7 +31,6 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCal
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
-import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -66,8 +68,11 @@ public class GrantApprovalDecoder {
                 .transactionID(
                         TransactionID.newBuilder().accountID(attempt.senderId()).build())
                 .cryptoApproveAllowance(ERCGrantApproval(
-                        attempt.addressIdConverter(), Objects.requireNonNull(attempt.redirectTokenId()),
-                        call.get(0), call.get(1)))
+                        attempt.addressIdConverter(),
+                        requireNonNull(attempt.redirectTokenId()),
+                        call.get(0),
+                        call.get(1),
+                        requireNonNull(attempt.redirectTokenType())))
                 .build();
     }
 
@@ -89,14 +94,23 @@ public class GrantApprovalDecoder {
             @NonNull final AddressIdConverter addressIdConverter,
             @NonNull final TokenID token,
             @NonNull final Address spender,
-            @NonNull final BigInteger amount) {
-        return CryptoApproveAllowanceTransactionBody.newBuilder()
-                .tokenAllowances(TokenAllowance.newBuilder()
-                        .tokenId(token)
-                        .spender(addressIdConverter.convert(spender))
-                        .amount(amount.longValue())
-                        .build())
-                .build();
+            @NonNull final BigInteger amount,
+            @NonNull final TokenType tokenType) {
+        return tokenType.equals(TokenType.FUNGIBLE_COMMON)
+                ? CryptoApproveAllowanceTransactionBody.newBuilder()
+                        .tokenAllowances(TokenAllowance.newBuilder()
+                                .tokenId(token)
+                                .spender(addressIdConverter.convert(spender))
+                                .amount(amount.longValue())
+                                .build())
+                        .build()
+                : CryptoApproveAllowanceTransactionBody.newBuilder()
+                        .nftAllowances(NftAllowance.newBuilder()
+                                .tokenId(token)
+                                .spender(addressIdConverter.convert(spender))
+                                .serialNumbers(amount.longValue())
+                                .build())
+                        .build();
     }
 
     private CryptoApproveAllowanceTransactionBody grantApprovalNFT(

@@ -39,6 +39,8 @@ import static contract.XTestConstants.SENDER_CONTRACT_ID_KEY;
 import static contract.XTestConstants.SENDER_ID;
 import static contract.XTestConstants.SN_1234;
 import static contract.XTestConstants.SN_1234_METADATA;
+import static contract.XTestConstants.SN_2345;
+import static contract.XTestConstants.SN_2345_METADATA;
 import static contract.XTestConstants.addErc20Relation;
 import static contract.XTestConstants.addErc721Relation;
 import static contract.XTestConstants.assertSuccess;
@@ -76,6 +78,10 @@ import org.apache.tuweni.bytes.Bytes;
  *     <li>Approve NFT {@code ERC721_TOKEN} via {@link com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantapproval.GrantApprovalTranslator#GRANT_APPROVAL_NFT}.
  *     This should fail with code INVALID_TOKEN_NFT_SERIAL_NUMBER.</li>
  *     <li>Approve NFT {@code ERC721_TOKEN} via {@link com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantapproval.GrantApprovalTranslator#GRANT_APPROVAL_NFT}.</li>
+ *     <li>Transfer {@code ERC721_TOKEN} from  SENDER to RECEIVER. This should now succeed.</li>
+ *     <li> ERC Approve {@code ERC20_TOKEN} via {@link com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantapproval.GrantApprovalTranslator#ERC_GRANT_APPROVAL}.</li>
+ *     <li>Transfer {@code ERC20_TOKEN} from  SENDER to RECEIVER. This should now succeed.</li>
+ *     <li> ERC Approve {@code ERC721_TOKEN} via {@link com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantapproval.GrantApprovalTranslator#ERC_GRANT_APPROVAL}.</li>
  *     <li>Transfer {@code ERC721_TOKEN} from  SENDER to RECEIVER. This should now succeed.</li>
  * </ol>
  */
@@ -165,6 +171,25 @@ public class GrantApprovalXTest extends AbstractContractXTest {
                         ERC20_TOKEN_ID),
                 output -> assertEquals(
                         asBytesResult(ERC_20_TRANSFER_FROM.getOutputs().encodeElements(true)), output));
+        // ERC APPROVE NFT
+        runHtsCallAndExpectOnSuccess(
+                OWNER_BESU_ADDRESS,
+                bytesForRedirect(
+                        GrantApprovalTranslator.ERC_GRANT_APPROVAL.encodeCallWithArgs(
+                                UNAUTHORIZED_SPENDER_HEADLONG_ADDRESS, BigInteger.valueOf(SN_2345.serialNumber())),
+                        ERC721_TOKEN_ID),
+                assertSuccess());
+        // TRANSFER NFT
+        runHtsCallAndExpectOnSuccess(
+                UNAUTHORIZED_SPENDER_BESU_ADDRESS,
+                Bytes.wrap(ClassicTransfersTranslator.TRANSFER_NFT
+                        .encodeCallWithArgs(
+                                ERC721_TOKEN_ADDRESS,
+                                OWNER_HEADLONG_ADDRESS,
+                                RECEIVER_HEADLONG_ADDRESS,
+                                SN_2345.serialNumber())
+                        .array()),
+                assertSuccess());
     }
 
     @Override
@@ -248,6 +273,14 @@ public class GrantApprovalXTest extends AbstractContractXTest {
                                 .ownerId(OWNER_ID)
                                 .spenderId(SENDER_ID)
                                 .metadata(SN_1234_METADATA)
+                                .build());
+                put(
+                        SN_2345,
+                        Nft.newBuilder()
+                                .nftId(SN_2345)
+                                .ownerId(OWNER_ID)
+                                .spenderId(SENDER_ID)
+                                .metadata(SN_2345_METADATA)
                                 .build());
             }
         };
