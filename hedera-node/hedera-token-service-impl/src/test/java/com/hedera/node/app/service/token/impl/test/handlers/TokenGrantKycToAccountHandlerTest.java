@@ -235,7 +235,7 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
 
         @Test
         @DisplayName("When TokenRelStore.get() returns empty, should not put or commit")
-        void emptyGetForModifyShouldNotPersist() {
+        void emptyGetShouldNotPersist() {
             given(readableAccountStore.getAccountById(payerId))
                     .willReturn(Account.newBuilder().accountId(payerId).build());
             given(readableTokenStore.get(tokenId)).willReturn(newToken531);
