@@ -18,6 +18,7 @@ package com.hedera.node.app.service.file.impl.test.schemas;
 
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.Key;
@@ -32,6 +33,7 @@ import com.hedera.node.app.spi.state.EmptyReadableStates;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
 import com.hedera.node.app.workflows.handle.record.MigrationContextImpl;
+import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import org.junit.jupiter.api.BeforeEach;
@@ -67,7 +69,12 @@ final class GenesisSchemaTest {
 
         // When we migrate
         schema.migrate(new MigrationContextImpl(
-                prevStates, newStates, config, networkInfo, new GenesisRecordsConsensusHook()));
+                prevStates,
+                newStates,
+                config,
+                networkInfo,
+                new GenesisRecordsConsensusHook(),
+                mock(SavepointStackImpl.class)));
 
         // Then the new state has empty bytes for files 151-158 and proper values
         final var files = newStates.<FileID, File>get(FileServiceImpl.BLOBS_KEY);
