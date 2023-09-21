@@ -20,10 +20,18 @@ import static com.hedera.node.app.service.mono.utils.SleepingPause.SLEEPING_PAUS
 
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
+import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
+import com.hedera.node.app.service.mono.state.migration.TokenRelStorageAdapter;
+import com.hedera.node.app.service.mono.state.migration.UniqueTokenMapAdapter;
 import com.hedera.node.app.service.mono.state.virtual.ContractKey;
+import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
+import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKey;
+import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValue;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
+import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
+import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
 import com.hedera.node.app.service.mono.utils.Pause;
 import com.swirlds.common.system.Platform;
 import java.util.concurrent.atomic.AtomicLong;
@@ -58,6 +66,9 @@ public class ServicesStatsManager {
     private final EntityUtilGauges entityUtilGauges;
     private final Supplier<VirtualMapLike<ContractKey, IterableContractValue>> storage;
     private final Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> bytecode;
+    private final Supplier<AccountStorageAdapter> accounts;
+    private final Supplier<TokenRelStorageAdapter> tokenRels;
+    private final Supplier<UniqueTokenMapAdapter> uniqueTokens;
 
     @Inject
     public ServicesStatsManager(
@@ -70,9 +81,15 @@ public class ServicesStatsManager {
             final HapiOpSpeedometers opSpeedometers,
             final NodeLocalProperties localProperties,
             final Supplier<VirtualMapLike<ContractKey, IterableContractValue>> storage,
-            final Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> bytecode) {
+            final Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> bytecode,
+            final Supplier<AccountStorageAdapter> accounts,
+            final Supplier<TokenRelStorageAdapter> tokenRels,
+            final Supplier<UniqueTokenMapAdapter> uniqueTokens) {
         this.storage = storage;
         this.bytecode = bytecode;
+        this.accounts = accounts;
+        this.tokenRels = tokenRels;
+        this.uniqueTokens = uniqueTokens;
         this.localProperties = localProperties;
         this.expiryStats = expiryStats;
         this.opCounters = opCounters;
@@ -93,6 +110,21 @@ public class ServicesStatsManager {
         entityUtilGauges.registerWith(platform);
         storage.get().registerMetrics(platform.getContext().getMetrics());
         bytecode.get().registerMetrics(platform.getContext().getMetrics());
+        final VirtualMapLike<EntityNumVirtualKey, OnDiskAccount> accountsOnDisk =
+                accounts.get().getOnDiskAccounts();
+        if (accountsOnDisk != null) {
+            accountsOnDisk.registerMetrics(platform.getContext().getMetrics());
+        }
+        final VirtualMapLike<EntityNumVirtualKey, OnDiskTokenRel> tokenRelsOnDisk =
+                tokenRels.get().getOnDiskRels();
+        if (tokenRelsOnDisk != null) {
+            tokenRelsOnDisk.registerMetrics(platform.getContext().getMetrics());
+        }
+        final VirtualMapLike<UniqueTokenKey, UniqueTokenValue> uniqueTokensOnDisk =
+                uniqueTokens.get().getOnDiskNfts();
+        if (uniqueTokensOnDisk != null) {
+            uniqueTokensOnDisk.registerMetrics(platform.getContext().getMetrics());
+        }
 
         final var hapiOpsUpdateIntervalMs =
                 Math.max(MIN_STAT_INTERVAL_UPDATE_MS, localProperties.hapiOpsStatsUpdateIntervalMs());
