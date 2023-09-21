@@ -151,8 +151,9 @@ public class GrantApprovalXTest extends AbstractContractXTest {
         // ERC APPROVE FUNGIBLE
         runHtsCallAndExpectOnSuccess(
                 OWNER_BESU_ADDRESS,
-                bytesForRedirect(GrantApprovalTranslator.ERC_GRANT_APPROVAL
-                                .encodeCallWithArgs(UNAUTHORIZED_SPENDER_HEADLONG_ADDRESS, BigInteger.valueOf(100L)),
+                bytesForRedirect(
+                        GrantApprovalTranslator.ERC_GRANT_APPROVAL.encodeCallWithArgs(
+                                UNAUTHORIZED_SPENDER_HEADLONG_ADDRESS, BigInteger.valueOf(100L)),
                         ERC20_TOKEN_ID),
                 assertSuccess());
         // TRY TRANSFER AND EXPECT SUCCESS

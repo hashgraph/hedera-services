@@ -65,10 +65,9 @@ public class GrantApprovalDecoder {
         return TransactionBody.newBuilder()
                 .transactionID(
                         TransactionID.newBuilder().accountID(attempt.senderId()).build())
-                .cryptoApproveAllowance(
-                        ERCGrantApproval(
-                                attempt.addressIdConverter(), Objects.requireNonNull(attempt.redirectTokenId()),
-                                call.get(0), call.get(1)))
+                .cryptoApproveAllowance(ERCGrantApproval(
+                        attempt.addressIdConverter(), Objects.requireNonNull(attempt.redirectTokenId()),
+                        call.get(0), call.get(1)))
                 .build();
     }
 
