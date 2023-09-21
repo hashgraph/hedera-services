@@ -158,7 +158,7 @@ public class BlocklistAccountCreator {
         try (var externalResourceStream = Files.newInputStream(Paths.get(resourcePath));
                 var externalResourceReader = new BufferedReader(new InputStreamReader(externalResourceStream))) {
             return externalResourceReader.lines().toList();
-        } catch (IOException e) {
+        } catch (final IOException e) {
             log.warn("Could not read external properties file {}", resourcePath);
         }
 
@@ -169,7 +169,7 @@ public class BlocklistAccountCreator {
             }
             final var reader = new BufferedReader(new InputStreamReader(inputStream));
             return reader.lines().toList();
-        } catch (IOException e) {
+        } catch (final IOException e) {
             log.warn("Could not read from default resource {}", defaultResource);
             return Collections.emptyList();
         }
