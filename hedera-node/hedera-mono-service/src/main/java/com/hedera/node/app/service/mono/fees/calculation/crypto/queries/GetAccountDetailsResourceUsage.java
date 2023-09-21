@@ -74,6 +74,7 @@ public final class GetAccountDetailsResourceUsage implements QueryResourceUsageE
                 .setCurrentCryptoAllowances(details.getGrantedCryptoAllowancesList())
                 .setCurrentTokenAllowances(details.getGrantedTokenAllowancesList())
                 .setCurrentApproveForAllNftAllowances(details.getGrantedNftAllowancesList())
+                .setCurrentlyHasProxy(false)
                 .build();
         return cryptoOpsUsage.accountDetailsUsage(query, ctx);
     }
