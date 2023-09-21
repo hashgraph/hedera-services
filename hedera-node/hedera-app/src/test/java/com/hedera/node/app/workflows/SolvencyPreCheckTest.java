@@ -48,6 +48,7 @@ import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.validation.ExpiryValidation;
@@ -178,8 +179,10 @@ class SolvencyPreCheckTest extends AppTestBase {
             final var payer = ALICE.account().copyBuilder().tinybarBalance(FEE).build();
 
             // then
-            assertThatThrownBy(() -> subject.checkSolvency(null, payer, FEE)).isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() -> subject.checkSolvency(txInfo, null, FEE)).isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> subject.checkSolvency(null, payer, new Fees(FEE, 0, 0)))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> subject.checkSolvency(txInfo, null, new Fees(FEE, 0, 0)))
+                    .isInstanceOf(NullPointerException.class);
         }
 
         @Test
@@ -189,7 +192,8 @@ class SolvencyPreCheckTest extends AppTestBase {
             final var payer = ALICE.account().copyBuilder().tinybarBalance(FEE).build();
 
             // then
-            assertThatCode(() -> subject.checkSolvency(txInfo, payer, FEE)).doesNotThrowAnyException();
+            assertThatCode(() -> subject.checkSolvency(txInfo, payer, new Fees(FEE, 0, 0)))
+                    .doesNotThrowAnyException();
         }
 
         @Test
@@ -199,7 +203,7 @@ class SolvencyPreCheckTest extends AppTestBase {
             final var payer = ALICE.account().copyBuilder().tinybarBalance(FEE).build();
 
             // then
-            assertThatThrownBy(() -> subject.checkSolvency(txInfo, payer, FEE))
+            assertThatThrownBy(() -> subject.checkSolvency(txInfo, payer, new Fees(FEE, 0, 0)))
                     .isInstanceOf(InsufficientBalanceException.class)
                     .has(responseCode(ResponseCodeEnum.INSUFFICIENT_TX_FEE))
                     .has(estimatedFee(FEE));
@@ -215,7 +219,8 @@ class SolvencyPreCheckTest extends AppTestBase {
                     .thenReturn(SystemPrivilege.AUTHORIZED);
 
             // then
-            assertThatCode(() -> subject.checkSolvency(txInfo, payer, FEE)).doesNotThrowAnyException();
+            assertThatCode(() -> subject.checkSolvency(txInfo, payer, new Fees(FEE, 0, 0)))
+                    .doesNotThrowAnyException();
         }
 
         @Test
@@ -226,7 +231,7 @@ class SolvencyPreCheckTest extends AppTestBase {
                     ALICE.account().copyBuilder().tinybarBalance(FEE - 1).build();
 
             // then
-            assertThatThrownBy(() -> subject.checkSolvency(txInfo, payer, FEE))
+            assertThatThrownBy(() -> subject.checkSolvency(txInfo, payer, new Fees(FEE, 0, 0)))
                     .isInstanceOf(InsufficientBalanceException.class)
                     .has(responseCode(ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE))
                     .has(estimatedFee(FEE));
@@ -242,7 +247,7 @@ class SolvencyPreCheckTest extends AppTestBase {
                     .checkAccountExpiry(payer);
 
             // then
-            assertThatThrownBy(() -> subject.checkSolvency(txInfo, payer, FEE))
+            assertThatThrownBy(() -> subject.checkSolvency(txInfo, payer, new Fees(FEE, 0, 0)))
                     .isInstanceOf(PreCheckException.class)
                     .has(responseCode(ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
         }
@@ -262,7 +267,8 @@ class SolvencyPreCheckTest extends AppTestBase {
                     ALICE.account().copyBuilder().tinybarBalance(FEE + 1L).build();
 
             // then
-            assertThatCode(() -> subject.checkSolvency(txInfo, payer, FEE)).doesNotThrowAnyException();
+            assertThatCode(() -> subject.checkSolvency(txInfo, payer, new Fees(FEE, 0, 0)))
+                    .doesNotThrowAnyException();
         }
 
         @Test
@@ -275,7 +281,7 @@ class SolvencyPreCheckTest extends AppTestBase {
             final var payer = ALICE.account().copyBuilder().tinybarBalance(FEE).build();
 
             // then
-            assertThatThrownBy(() -> subject.checkSolvency(txInfo, payer, FEE))
+            assertThatThrownBy(() -> subject.checkSolvency(txInfo, payer, new Fees(FEE, 0, 0)))
                     .isInstanceOf(InsufficientBalanceException.class)
                     .has(responseCode(ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE))
                     .has(estimatedFee(FEE));
@@ -297,7 +303,8 @@ class SolvencyPreCheckTest extends AppTestBase {
             final var txInfo = createTransactionInfo(FEE, START, CRYPTO_TRANSFER, builder);
 
             // then
-            assertThatCode(() -> subject.checkSolvency(txInfo, payer, FEE)).doesNotThrowAnyException();
+            assertThatCode(() -> subject.checkSolvency(txInfo, payer, new Fees(FEE, 0, 0)))
+                    .doesNotThrowAnyException();
         }
 
         @Test
@@ -310,7 +317,7 @@ class SolvencyPreCheckTest extends AppTestBase {
             final var txInfo = createTransactionInfo(FEE, START, CRYPTO_TRANSFER, builder);
 
             // then
-            assertThatThrownBy(() -> subject.checkSolvency(txInfo, payer, FEE))
+            assertThatThrownBy(() -> subject.checkSolvency(txInfo, payer, new Fees(FEE, 0, 0)))
                     .isInstanceOf(InsufficientBalanceException.class)
                     .has(responseCode(ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE))
                     .has(estimatedFee(FEE));
@@ -326,7 +333,8 @@ class SolvencyPreCheckTest extends AppTestBase {
             final var txInfo = createTransactionInfo(FEE, START, CRYPTO_TRANSFER, builder);
 
             // then
-            assertThatCode(() -> subject.checkSolvency(txInfo, payer, FEE)).doesNotThrowAnyException();
+            assertThatCode(() -> subject.checkSolvency(txInfo, payer, new Fees(FEE, 0, 0)))
+                    .doesNotThrowAnyException();
         }
 
         @Test
@@ -341,7 +349,8 @@ class SolvencyPreCheckTest extends AppTestBase {
             final var txInfo = createTransactionInfo(FEE, START, CRYPTO_TRANSFER, builder);
 
             // then
-            assertThatCode(() -> subject.checkSolvency(txInfo, payer, FEE)).doesNotThrowAnyException();
+            assertThatCode(() -> subject.checkSolvency(txInfo, payer, new Fees(FEE, 0, 0)))
+                    .doesNotThrowAnyException();
         }
 
         @Test
@@ -355,7 +364,7 @@ class SolvencyPreCheckTest extends AppTestBase {
             final var txInfo = createTransactionInfo(FEE, START, CRYPTO_TRANSFER, builder);
 
             // then
-            assertThatThrownBy(() -> subject.checkSolvency(txInfo, payer, FEE))
+            assertThatThrownBy(() -> subject.checkSolvency(txInfo, payer, new Fees(FEE, 0, 0)))
                     .isInstanceOf(InsufficientBalanceException.class)
                     .has(responseCode(ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE))
                     .has(estimatedFee(FEE));
@@ -387,7 +396,8 @@ class SolvencyPreCheckTest extends AppTestBase {
                     ALICE.account().copyBuilder().tinybarBalance(FEE + 1L).build();
 
             // then
-            assertThatCode(() -> subject.checkSolvency(txInfo, payer, FEE)).doesNotThrowAnyException();
+            assertThatCode(() -> subject.checkSolvency(txInfo, payer, new Fees(FEE, 0, 0)))
+                    .doesNotThrowAnyException();
         }
 
         @Test
@@ -399,7 +409,7 @@ class SolvencyPreCheckTest extends AppTestBase {
             final var payer = ALICE.account().copyBuilder().tinybarBalance(FEE).build();
 
             // then
-            assertThatThrownBy(() -> subject.checkSolvency(txInfo, payer, FEE))
+            assertThatThrownBy(() -> subject.checkSolvency(txInfo, payer, new Fees(FEE, 0, 0)))
                     .isInstanceOf(InsufficientBalanceException.class)
                     .has(responseCode(ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE))
                     .has(estimatedFee(FEE));

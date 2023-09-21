@@ -31,6 +31,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.estimatedFee;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
+import static com.hedera.node.app.spi.workflows.InsufficientBalanceType.OTHER_COSTS_NOT_COVERED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -402,15 +403,10 @@ class IngestCheckerTest extends AppTestBase {
         @DisplayName("If the payer has insufficient funds, the transaction should be rejected")
         void payerAccountStatusFails(ResponseCodeEnum failureReason)
                 throws PreCheckException, ExecutionException, InterruptedException, TimeoutException {
-            final var verificationResultFuture = mock(SignatureVerificationFuture.class);
-            final var verificationResult = mock(SignatureVerification.class);
-            when(verificationResult.passed()).thenReturn(true);
-            when(verificationResultFuture.get(anyLong(), any())).thenReturn(verificationResult);
-            when(signatureVerifier.verify(any(), any()))
-                    .thenReturn(Map.of(ALICE.account().keyOrThrow(), verificationResultFuture));
-            doThrow(new InsufficientBalanceException(failureReason, 123L))
+            givenValidPayerSignature();
+            doThrow(new InsufficientBalanceException(failureReason, 123L, OTHER_COSTS_NOT_COVERED))
                     .when(solvencyPreCheck)
-                    .checkSolvency(any(), any(), anyLong());
+                    .checkSolvency(any(), any(), any());
 
             assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))
                     .isInstanceOf(InsufficientBalanceException.class)
@@ -422,20 +418,24 @@ class IngestCheckerTest extends AppTestBase {
         @DisplayName("If some random exception is thrown from checking solvency, the exception is bubbled up")
         void randomException() throws PreCheckException, ExecutionException, InterruptedException, TimeoutException {
             // Given an IngestChecker that will throw a RuntimeException from checkPayerSignature
+            givenValidPayerSignature();
+            doThrow(new RuntimeException("checkSolvency exception"))
+                    .when(solvencyPreCheck)
+                    .checkSolvency(any(), any(), any());
+
+            // When the transaction is submitted, then the exception is bubbled up
+            assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))
+                    .isInstanceOf(RuntimeException.class)
+                    .hasMessageContaining("checkSolvency exception");
+        }
+
+        private void givenValidPayerSignature() throws ExecutionException, InterruptedException, TimeoutException {
             final var verificationResultFuture = mock(SignatureVerificationFuture.class);
             final var verificationResult = mock(SignatureVerification.class);
             when(verificationResult.passed()).thenReturn(true);
             when(verificationResultFuture.get(anyLong(), any())).thenReturn(verificationResult);
             when(signatureVerifier.verify(any(), any()))
                     .thenReturn(Map.of(ALICE.account().keyOrThrow(), verificationResultFuture));
-            doThrow(new RuntimeException("checkSolvency exception"))
-                    .when(solvencyPreCheck)
-                    .checkSolvency(any(), any(), anyLong());
-
-            // When the transaction is submitted, then the exception is bubbled up
-            assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))
-                    .isInstanceOf(RuntimeException.class)
-                    .hasMessageContaining("checkSolvency exception");
         }
     }
 

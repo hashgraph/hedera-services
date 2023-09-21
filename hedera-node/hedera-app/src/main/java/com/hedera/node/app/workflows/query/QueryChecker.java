@@ -24,6 +24,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
+import static com.hedera.node.app.spi.workflows.InsufficientBalanceType.OTHER_COSTS_NOT_COVERED;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -32,6 +33,7 @@ import com.hedera.hapi.node.transaction.Query;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
 import com.hedera.node.app.spi.authorization.Authorizer;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.validation.ExpiryValidation;
@@ -118,7 +120,7 @@ public class QueryChecker {
 
         // FUTURE: Currently we check the solvency twice: once with and once without service fees (in IngestChecker)
         // https://github.com/hashgraph/hedera-services/issues/8356
-        solvencyPreCheck.checkSolvency(txInfo, payer, fee);
+        solvencyPreCheck.checkSolvency(txInfo, payer, new Fees(fee, 0, 0));
 
         if (transfers.isEmpty()) {
             throw new PreCheckException(INVALID_ACCOUNT_AMOUNTS);
@@ -145,14 +147,14 @@ public class QueryChecker {
                 if (amount < 0 && account.tinybarBalance() < -amount) {
                     // FUTURE: Expiry should probably be checked earlier
                     expiryValidation.checkAccountExpiry(account);
-                    throw new InsufficientBalanceException(INSUFFICIENT_PAYER_BALANCE, fee);
+                    throw new InsufficientBalanceException(INSUFFICIENT_PAYER_BALANCE, fee, OTHER_COSTS_NOT_COVERED);
                 }
 
                 // Make sure the node receives enough
                 if (amount >= 0 && nodeAccountID.equals(transfer.accountIDOrThrow())) {
                     nodeReceivesSome = true;
                     if (amount < fee) {
-                        throw new InsufficientBalanceException(INSUFFICIENT_TX_FEE, fee);
+                        throw new InsufficientBalanceException(INSUFFICIENT_TX_FEE, fee, OTHER_COSTS_NOT_COVERED);
                     }
                 }
             }

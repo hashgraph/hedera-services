@@ -37,7 +37,6 @@ import com.hedera.node.app.signature.ExpandedSignaturePair;
 import com.hedera.node.app.signature.SignatureExpander;
 import com.hedera.node.app.signature.SignatureVerifier;
 import com.hedera.node.app.spi.authorization.Authorizer;
-import com.hedera.node.app.spi.authorization.Authorizer.SystemPrivilege;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.DeduplicationCache;
@@ -187,15 +186,11 @@ public final class IngestChecker {
         // 6. Verify payer's signatures
         verifyPayerSignature(txInfo, payerKey);
 
-        // 7. Check account balance
-        if (authorizer.hasPrivilegedAuthorization(txInfo.payerID(), txInfo.functionality(), txBody)
-                        != SystemPrivilege.AUTHORIZED
-                && !authorizer.isSuperUser(txInfo.payerID())) {
-            final FeeContext feeContext =
-                    new FeeContextImpl(consensusTime, txInfo, payerKey, feeManager, storeFactory, configuration);
-            final var fees = dispatcher.dispatchComputeFees(feeContext);
-            solvencyPreCheck.checkSolvency(txInfo, payer, fees.totalWithoutServiceFee());
-        }
+        // 7. Check payer solvency
+        final FeeContext feeContext =
+                new FeeContextImpl(consensusTime, txInfo, payerKey, feeManager, storeFactory, configuration);
+        final var fees = dispatcher.dispatchComputeFees(feeContext);
+        solvencyPreCheck.checkSolvency(txInfo, payer, fees);
 
         return txInfo;
     }
