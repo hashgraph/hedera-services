@@ -132,7 +132,6 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.gossip.shadowgraph;
     exports com.swirlds.platform.recovery.emergencyfile;
     exports com.swirlds.platform.event;
-    exports com.swirlds.platform.event.stream.validation;
 
     requires transitive com.fasterxml.jackson.annotation;
     requires transitive com.fasterxml.jackson.databind;
