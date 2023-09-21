@@ -35,6 +35,7 @@ import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SignatureMap;
@@ -504,6 +505,9 @@ public class HandleWorkflow {
 
         // Check if the payer has the required permissions
         if (!authorizer.isAuthorized(payerID, functionality)) {
+            if (functionality == HederaFunctionality.SYSTEM_DELETE) {
+                return new ValidationResult(PRE_HANDLE_FAILURE, ResponseCodeEnum.NOT_SUPPORTED);
+            }
             return new ValidationResult(PRE_HANDLE_FAILURE, ResponseCodeEnum.UNAUTHORIZED);
         }
 

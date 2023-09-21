@@ -23,6 +23,7 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.metrics.extensions.PhaseTimer;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.Consensus;
@@ -117,7 +118,7 @@ public class TestIntake implements LoadableFromSignedState {
                 this::getConsensus,
                 ab,
                 dispatcher,
-                ConsensusUtils.NOOP_INTAKE_CYCLE_STATS,
+                mock(PhaseTimer.class),
                 shadowGraph,
                 e -> {});
     }
