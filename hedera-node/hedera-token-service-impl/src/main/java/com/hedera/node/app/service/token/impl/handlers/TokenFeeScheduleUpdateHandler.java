@@ -158,16 +158,16 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
         final var op = body.tokenFeeScheduleUpdateOrThrow();
         final var token = feeContext.readableStore(ReadableTokenStore.class).get(op.tokenIdOrThrow());
         final var tokenOpsUsage = new TokenOpsUsage();
-        final var pbjFees = op.customFeesOrElse(Collections.emptyList());
+        final var newFees = op.customFeesOrElse(Collections.emptyList());
 
         final var newReprBytes = tokenOpsUsage.bytesNeededToRepr(
-                pbjFees.stream().map(PbjConverter::fromPbj).toList());
-        final var effConsTime = body.transactionID().transactionValidStart().seconds();
-        final var lifetime = Math.max(0, token.expirationSecond() - effConsTime);
-        final var existingFeeReprBytes = tokenOpsUsage.bytesNeededToRepr(token.customFeesOrElse(emptyList()).stream()
-                .map(PbjConverter::fromPbj)
-                .toList());
-        final var rbsDelta = ESTIMATOR_UTILS.changeInBsUsage(newReprBytes, lifetime, existingFeeReprBytes, lifetime);
+                newFees.stream().map(PbjConverter::fromPbj).toList());
+        final var effConsTime =
+                body.transactionIDOrThrow().transactionValidStartOrThrow().seconds();
+        final var lifetime = Math.max(0, token == null ? 0 : token.expirationSecond() - effConsTime);
+
+        final var existingFeeReprBytes = currentFeeScheduleSize(token.customFeesOrElse(emptyList()), tokenOpsUsage);
+        final var rbsDelta = ESTIMATOR_UTILS.changeInBsUsage(existingFeeReprBytes, lifetime, newReprBytes, lifetime);
         return feeContext
                 .feeCalculator(SubType.DEFAULT)
                 .addBytesPerTransaction(LONG_BASIC_ENTITY_ID_SIZE + newReprBytes)

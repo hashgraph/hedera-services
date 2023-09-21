@@ -249,11 +249,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
             final long consensusTime,
             @NonNull final TokenCreateTransactionBody op,
             @NonNull final HandleContext context) {
-        final var maxEntityLifetime =
-                context.configuration().getConfigData(EntitiesConfig.class).maxLifetime();
-        final var impliedExpiry = op.hasAutoRenewPeriod()
-                ? consensusTime + op.autoRenewPeriod().seconds()
-                : consensusTime + maxEntityLifetime;
+        final var impliedExpiry = op.hasExpiry() ? op.expiry().seconds() : NA;
 
         return new ExpiryMeta(
                 impliedExpiry,
