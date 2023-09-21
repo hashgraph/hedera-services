@@ -14,12 +14,23 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.token.records;
+package com.hedera.node.app.service.contract.impl.records;
 
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
- * A {@code RecordBuilder} specialization for tracking the side effects of a {@code CryptoDelete}
- * transaction.
+ * A {@code RecordBuilder} specialization for tracking the side effects of a {@code ContractDelete}.
  */
-public interface CryptoDeleteRecordBuilder extends DeleteCapableTransactionRecordBuilder {}
+public interface ContractDeleteRecordBuilder extends DeleteCapableTransactionRecordBuilder {
+    /**
+     * Tracks the contract id deleted by a successful top-level contract deletion.
+     *
+     * @param contractId the {@link ContractID} of the deleted top-level contract
+     * @return this builder
+     */
+    @NonNull
+    ContractDeleteRecordBuilder contractID(@Nullable ContractID contractId);
+}
