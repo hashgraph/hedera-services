@@ -82,7 +82,7 @@ public class JtrUtils {
         final Instant now = Instant.now();
 
         final boolean hasSlash = bucketPrefix.endsWith("/") || testDirectory.startsWith("/");
-        final String rootDirectory =  bucketPrefix + (hasSlash ? "" : "/") + testDirectory;
+        final String rootDirectory = bucketPrefix + (hasSlash ? "" : "/") + testDirectory;
 
         return findTestResults(
                 terminal, Executors.newFixedThreadPool(threads), rootDirectory, now, Duration.ofDays(days));
