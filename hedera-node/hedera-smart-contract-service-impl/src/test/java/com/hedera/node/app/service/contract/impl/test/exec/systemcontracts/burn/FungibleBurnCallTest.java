@@ -61,7 +61,7 @@ public class FungibleBurnCallTest extends HtsCallTestBase {
     @Test
     void revertsOnMissingToken() {
         subject = new FungibleBurnCall(
-                mockEnhancement(), null, 1234, verificationStrategy, FRAME_SENDER_ADDRESS, addressIdConverter);
+                1234, mockEnhancement(), null, verificationStrategy, FRAME_SENDER_ADDRESS, addressIdConverter);
 
         final var result = subject.execute().fullResult().result();
 
@@ -135,9 +135,9 @@ public class FungibleBurnCallTest extends HtsCallTestBase {
 
     private FungibleBurnCall subjectForBurn(final long amount) {
         return new FungibleBurnCall(
+                amount,
                 mockEnhancement(),
                 FUNGIBLE_TOKEN_ID,
-                amount,
                 verificationStrategy,
                 FRAME_SENDER_ADDRESS,
                 addressIdConverter);

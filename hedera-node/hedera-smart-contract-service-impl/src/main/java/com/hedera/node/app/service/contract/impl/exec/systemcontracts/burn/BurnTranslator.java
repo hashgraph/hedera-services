@@ -64,9 +64,9 @@ public class BurnTranslator extends AbstractHtsCallTranslator {
         } else {
             return token.tokenType() == TokenType.FUNGIBLE_COMMON
                     ? new FungibleBurnCall(
+                            amount,
                             attempt.enhancement(),
                             ConversionUtils.asTokenId(call.get(0)),
-                            amount,
                             attempt.defaultVerificationStrategy(),
                             attempt.senderAddress(),
                             attempt.addressIdConverter())

@@ -48,15 +48,15 @@ public class FungibleBurnCall extends AbstractHtsCall implements BurnCall {
     private final org.hyperledger.besu.datatypes.Address spender;
 
     public FungibleBurnCall(
+            final long amount,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             @Nullable final TokenID tokenId,
-            final long amount,
             @NonNull final VerificationStrategy verificationStrategy,
             @NonNull final org.hyperledger.besu.datatypes.Address spender,
             @NonNull final AddressIdConverter addressIdConverter) {
         super(enhancement);
-        this.tokenId = tokenId;
         this.amount = amount;
+        this.tokenId = tokenId;
         this.verificationStrategy = requireNonNull(verificationStrategy);
         this.spender = requireNonNull(spender);
         this.addressIdConverter = requireNonNull(addressIdConverter);
@@ -77,7 +77,6 @@ public class FungibleBurnCall extends AbstractHtsCall implements BurnCall {
         if (recordBuilder.status() != ResponseCodeEnum.SUCCESS) {
             return gasOnly(revertResult(recordBuilder.status(), 0L));
         } else {
-            // @TODO implementation for V1 and V2 versions
             final var encodedOutput = BurnTranslator.BURN_TOKEN_V1
                     .getOutputs()
                     .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()));
