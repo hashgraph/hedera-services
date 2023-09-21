@@ -26,9 +26,9 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TransactionFeeSchedule;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -138,22 +138,29 @@ public final class FeeManager {
      */
     @NonNull
     public FeeCalculator createFeeCalculator(
-            @Nullable final TransactionInfo txInfo,
+            @Nullable final TransactionBody txBody,
             @Nullable final Key payerKey,
+            @Nullable final HederaFunctionality functionality,
             final int numVerifications,
+            final int signatureMapSize,
             @NonNull final Instant consensusTime,
             @NonNull final SubType subType) {
 
-        if (txInfo == null || payerKey == null) {
+        if (txBody == null || payerKey == null) {
             return NoOpFeeCalculator.INSTANCE;
         }
 
         // Determine which fee schedule to use, based on the consensus time
-        final var feeData = getFeeData(txInfo.functionality(), consensusTime, subType);
+        final var feeData = getFeeData(functionality, consensusTime, subType);
 
         // Create the fee calculator
         return new FeeCalculatorImpl(
-                txInfo, payerKey, numVerifications, feeData, exchangeRateManager.activeRate(consensusTime));
+                txBody,
+                payerKey,
+                numVerifications,
+                signatureMapSize,
+                feeData,
+                exchangeRateManager.activeRate(consensusTime));
     }
 
     /**
