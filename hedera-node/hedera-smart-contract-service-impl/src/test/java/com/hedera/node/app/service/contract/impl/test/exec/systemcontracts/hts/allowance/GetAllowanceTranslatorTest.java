@@ -90,7 +90,7 @@ public class GetAllowanceTranslatorTest {
         final Bytes inputBytes = Bytes.wrapByteBuffer(GetAllowanceTranslator.GET_ALLOWANCE.encodeCall(
                 Tuple.of(FUNGIBLE_TOKEN_HEADLONG_ADDRESS, OWNER_HEADLONG_ADDRESS, APPROVED_HEADLONG_ADDRESS)));
         given(attempt.selector()).willReturn(GetAllowanceTranslator.GET_ALLOWANCE.selector());
-        given(attempt.input()).willReturn(inputBytes);
+        given(attempt.inputBytes()).willReturn(inputBytes.toArray());
         given(attempt.enhancement()).willReturn(enhancement);
 
         final var call = subject.callFrom(attempt);
