@@ -219,9 +219,10 @@ public class CustomFeesValidator {
             @NonNull final WritableTokenStore tokenStore,
             @NonNull final Set<CustomFee> feesWithCollectorsToAutoAssociate) {
         final var fixedFee = fee.fixedFeeOrThrow();
-        if (fixedFee.hasDenominatingTokenId()) {
-            validateTrue(fixedFee.amount() > 0, CUSTOM_FEE_MUST_BE_POSITIVE);
 
+        validateTrue(fixedFee.amount() > 0, CUSTOM_FEE_MUST_BE_POSITIVE);
+
+        if (fixedFee.hasDenominatingTokenId()) {
             // If the denominating token id is set to sentinel value 0.0.0, then the fee is
             // denominated in the same token as the token being created.
             // For these fees the collector should be auto-associated to the token.

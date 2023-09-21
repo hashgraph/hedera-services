@@ -554,13 +554,7 @@ public class TokenCreateSpecs extends HapiSuite {
         return defaultHapiSpec("CreationValidatesExpiry")
                 .given()
                 .when()
-                .then(tokenCreate(PRIMARY)
-                        .expiry(1000)
-                        // Either fail pre-check with INVALID_EXPIRATION_TIME (mono)
-                        // or post-consensus (modular). When we only have modular code left,
-                        // we can just check hasKnownStatus.
-                        .hasPrecheckFrom(OK, INVALID_EXPIRATION_TIME)
-                        .hasKnownStatus(INVALID_EXPIRATION_TIME));
+                .then(tokenCreate(PRIMARY).expiry(1000).hasPrecheck(INVALID_EXPIRATION_TIME));
     }
 
     @HapiTest
@@ -869,14 +863,7 @@ public class TokenCreateSpecs extends HapiSuite {
                         recordSystemProperty("tokens.maxTokenNameUtf8Bytes", Integer::parseInt, maxUtf8Bytes::set))
                 .when()
                 .then(
-                        tokenCreate(PRIMARY)
-                                .name("")
-                                .logged()
-                                // Either fail pre-check with MISSING_TOKEN_NAME (mono)
-                                // or post-consensus (modular). When we only have modular code left,
-                                // we can just check hasKnownStatus.
-                                .hasPrecheckFrom(OK, MISSING_TOKEN_NAME)
-                                .hasKnownStatus(MISSING_TOKEN_NAME),
+                        tokenCreate(PRIMARY).name("").logged().hasPrecheck(MISSING_TOKEN_NAME),
                         tokenCreate(PRIMARY).name("T\u0000ken").logged().hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
                         sourcing(() -> tokenCreate("tooLong")
                                 .name(TxnUtils.nAscii(maxUtf8Bytes.get() + 1))
@@ -896,13 +883,7 @@ public class TokenCreateSpecs extends HapiSuite {
                         recordSystemProperty("tokens.maxSymbolUtf8Bytes", Integer::parseInt, maxUtf8Bytes::set))
                 .when()
                 .then(
-                        tokenCreate("missingSymbol")
-                                .symbol("")
-                                // Either fail pre-check with MISSING_TOKEN_SYMBOL (mono)
-                                // or post-consensus (modular). When we only have modular code left,
-                                // we can just check hasKnownStatus.
-                                .hasPrecheckFrom(OK, MISSING_TOKEN_SYMBOL)
-                                .hasKnownStatus(MISSING_TOKEN_SYMBOL),
+                        tokenCreate("missingSymbol").symbol("").hasPrecheck(MISSING_TOKEN_SYMBOL),
                         tokenCreate(PRIMARY).name("T\u0000ken").logged().hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
                         sourcing(() -> tokenCreate("tooLong")
                                 .symbol(TxnUtils.nAscii(maxUtf8Bytes.get() + 1))
@@ -1041,12 +1022,7 @@ public class TokenCreateSpecs extends HapiSuite {
                                 .hasKnownStatus(EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS),
                         cryptoTransfer(moving(10, A_TOKEN).from(TOKEN_TREASURY))
                                 .hasPrecheck(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN),
-                        cryptoTransfer(moving(10, A_TOKEN).empty())
-                                // Either fail pre-check with EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS (mono)
-                                // or post-consensus (modular). When we only have modular code left,
-                                // we can just check hasKnownStatus.
-                                .hasPrecheckFrom(OK, EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS)
-                                .hasKnownStatus(EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS));
+                        cryptoTransfer(moving(10, A_TOKEN).empty()).hasPrecheck(EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS));
     }
 
     @Override
