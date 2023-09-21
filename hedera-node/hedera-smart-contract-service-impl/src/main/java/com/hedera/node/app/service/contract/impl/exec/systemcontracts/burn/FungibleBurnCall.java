@@ -55,7 +55,7 @@ public class FungibleBurnCall extends AbstractHtsCall implements BurnCall {
             @NonNull final org.hyperledger.besu.datatypes.Address spender,
             @NonNull final AddressIdConverter addressIdConverter) {
         super(enhancement);
-        this.tokenId = requireNonNull(tokenId);
+        this.tokenId = tokenId;
         this.amount = amount;
         this.verificationStrategy = requireNonNull(verificationStrategy);
         this.spender = requireNonNull(spender);
@@ -74,8 +74,6 @@ public class FungibleBurnCall extends AbstractHtsCall implements BurnCall {
                         verificationStrategy,
                         spenderId,
                         TokenBurnRecordBuilder.class);
-        final var newTotalSupply =
-                nativeOperations().getToken(tokenId.tokenNum()).totalSupply();
         if (recordBuilder.status() != ResponseCodeEnum.SUCCESS) {
             return gasOnly(revertResult(recordBuilder.status(), 0L));
         } else {

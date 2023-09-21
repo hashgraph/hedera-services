@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.burn;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.burn.BurnTranslator.BURN_TOKEN_V1;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_ACCOUNT_ID;
@@ -29,7 +30,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.burn.FungibleBurnCall;
@@ -55,9 +55,6 @@ public class FungibleBurnCallTest extends HtsCallTestBase {
     @Mock
     private TokenBurnRecordBuilder recordBuilder;
 
-    @Mock
-    private Token token;
-
     private FungibleBurnCall subject;
 
     @Test
@@ -72,7 +69,7 @@ public class FungibleBurnCallTest extends HtsCallTestBase {
     }
 
     @Test
-    void burnTokenHappyPath() {
+    void burnTokenHappyPathV1() {
         given(addressIdConverter.convert(asHeadlongAddress(FRAME_SENDER_ADDRESS)))
                 .willReturn(A_NEW_ACCOUNT_ID);
         given(systemContractOperations.dispatch(
@@ -82,8 +79,6 @@ public class FungibleBurnCallTest extends HtsCallTestBase {
                         eq(TokenBurnRecordBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
-        given(nativeOperations.getToken(FUNGIBLE_TOKEN_ID.tokenNum())).willReturn(token);
-        given(nativeOperations.getToken(9876L).totalSupply()).willReturn(100L);
 
         subject = subjectForBurn(10L);
 
@@ -93,8 +88,28 @@ public class FungibleBurnCallTest extends HtsCallTestBase {
         assertEquals(
                 asBytesResult(BURN_TOKEN_V1
                         .getOutputs()
-                        .encodeElements(BigInteger.valueOf(22), BigInteger.valueOf(token.totalSupply()))),
+                        .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()))),
                 result.getOutput());
+    }
+
+    @Test
+    void unhappyPathRevertsWithReason() {
+        given(addressIdConverter.convert(asHeadlongAddress(FRAME_SENDER_ADDRESS)))
+                .willReturn(A_NEW_ACCOUNT_ID);
+        given(systemContractOperations.dispatch(
+                any(TransactionBody.class),
+                eq(verificationStrategy),
+                eq(A_NEW_ACCOUNT_ID),
+                eq(TokenBurnRecordBuilder.class)))
+                .willReturn(recordBuilder);
+        given(recordBuilder.status()).willReturn(INVALID_TOKEN_BURN_AMOUNT);
+
+        subject = subjectForBurn(1L);
+
+        final var result = subject.execute().fullResult().result();
+
+        assertEquals(MessageFrame.State.REVERT, result.getState());
+        assertEquals(Bytes.wrap(INVALID_TOKEN_BURN_AMOUNT.protoName().getBytes()), result.getOutput());
     }
 
     // @TODO add test for V2
