@@ -619,7 +619,6 @@ public class TokenCreateSpecs extends HapiSuite {
                                 .hasPrecheck(INVALID_TOKEN_INITIAL_SUPPLY));
     }
 
-    @HapiTest
     public HapiSpec onlyValidCustomFeeScheduleCanBeCreated() {
         return defaultHapiSpec("OnlyValidCustomFeeScheduleCanBeCreated")
                 .given(
@@ -783,7 +782,7 @@ public class TokenCreateSpecs extends HapiSuite {
                 .then(getTokenInfo(token)
                         .hasCustom(fixedHbarFeeInSchedule(hbarAmount, hbarCollector))
                         .hasCustom(fixedHtsFeeInSchedule(htsAmount, feeDenom, htsCollector))
-                        .hasCustom(fixedHtsFeeInSchedule(htsAmount, SENTINEL_VALUE, htsCollector))
+                        .hasCustom(fixedHtsFeeInSchedule(htsAmount, token, htsCollector))
                         .hasCustom(fractionalFeeInSchedule(
                                 numerator,
                                 denominator,
