@@ -70,32 +70,31 @@ public class EventIntakeMetrics implements StaleEventObserver {
             new RunningAverageMetric.Config(INTERNAL_CATEGORY, "shouldCreateEvent").withFormat(FORMAT_10_1);
     private final RunningAverageMetric shouldCreateEvent;
 
-    private static final LongGauge.Config STALE_EVENTS_PER_SECOND_CONFIG = new LongGauge.Config(
-                    INTERNAL_CATEGORY, "staleEvents")
+    private static final LongGauge.Config STALE_EVENTS_CONFIG = new LongGauge.Config(INTERNAL_CATEGORY, "staleEvents")
             .withDescription("number of stale events since the node booted up");
     private final LongGauge staleEventCount;
 
-    private static final LongGauge.Config STALE_SELF_EVENTS_PER_SECOND_CONFIG = new LongGauge.Config(
+    private static final LongGauge.Config STALE_SELF_EVENTS_CONFIG = new LongGauge.Config(
                     INTERNAL_CATEGORY, "staleSelfEvents")
             .withDescription("number of stale self events since the node booted up");
     private final LongGauge staleSelfEventCount;
 
-    private static final LongGauge.Config STALE_APP_TRANSACTIONS_PER_SECOND_CONFIG = new LongGauge.Config(
+    private static final LongGauge.Config STALE_APP_TRANSACTIONS_CONFIG = new LongGauge.Config(
                     INTERNAL_CATEGORY, "staleAppTransactions")
             .withDescription("number of application transactions in stale events since the node booted up");
     private final LongGauge staleAppTransactionCount;
 
-    private static final LongGauge.Config STALE_SELF_APP_TRANSACTIONS_PER_SECOND_CONFIG = new LongGauge.Config(
+    private static final LongGauge.Config STALE_SELF_APP_TRANSACTIONS_CONFIG = new LongGauge.Config(
                     INTERNAL_CATEGORY, "staleSelfAppTransactions")
             .withDescription("number of application transactions in stale self events since the node booted up");
     private final LongGauge staleSelfAppTransactionCount;
 
-    private static final LongGauge.Config STALE_SYSTEM_TRANSACTIONS_PER_SECOND_CONFIG = new LongGauge.Config(
+    private static final LongGauge.Config STALE_SYSTEM_TRANSACTIONS_CONFIG = new LongGauge.Config(
                     INTERNAL_CATEGORY, "staleSystemTransactions")
             .withDescription("number of system transactions in stale events since the node booted up");
     private final LongGauge staleSystemTransactionCount;
 
-    private static final LongGauge.Config STALE_SELF_SYSTEM_TRANSACTIONS_PER_SECOND_CONFIG = new LongGauge.Config(
+    private static final LongGauge.Config STALE_SELF_SYSTEM_TRANSACTIONS_CONFIG = new LongGauge.Config(
                     INTERNAL_CATEGORY, "staleSelfSystemTransactions")
             .withDescription("number of system transactions in stale self events since the node booted up");
     private final LongGauge staleSelfSystemTransactionCount;
@@ -121,12 +120,12 @@ public class EventIntakeMetrics implements StaleEventObserver {
         avgDuplicatePercent = metrics.getOrCreate(AVG_DUPLICATE_PERCENT_CONFIG);
         timeFracAdd = metrics.getOrCreate(TIME_FRAC_ADD_CONFIG);
         shouldCreateEvent = metrics.getOrCreate(SHOULD_CREATE_EVENT_CONFIG);
-        staleEventCount = metrics.getOrCreate(STALE_EVENTS_PER_SECOND_CONFIG);
-        staleSelfEventCount = metrics.getOrCreate(STALE_SELF_EVENTS_PER_SECOND_CONFIG);
-        staleAppTransactionCount = metrics.getOrCreate(STALE_APP_TRANSACTIONS_PER_SECOND_CONFIG);
-        staleSelfAppTransactionCount = metrics.getOrCreate(STALE_SELF_APP_TRANSACTIONS_PER_SECOND_CONFIG);
-        staleSystemTransactionCount = metrics.getOrCreate(STALE_SYSTEM_TRANSACTIONS_PER_SECOND_CONFIG);
-        staleSelfSystemTransactionCount = metrics.getOrCreate(STALE_SELF_SYSTEM_TRANSACTIONS_PER_SECOND_CONFIG);
+        staleEventCount = metrics.getOrCreate(STALE_EVENTS_CONFIG);
+        staleSelfEventCount = metrics.getOrCreate(STALE_SELF_EVENTS_CONFIG);
+        staleAppTransactionCount = metrics.getOrCreate(STALE_APP_TRANSACTIONS_CONFIG);
+        staleSelfAppTransactionCount = metrics.getOrCreate(STALE_SELF_APP_TRANSACTIONS_CONFIG);
+        staleSystemTransactionCount = metrics.getOrCreate(STALE_SYSTEM_TRANSACTIONS_CONFIG);
+        staleSelfSystemTransactionCount = metrics.getOrCreate(STALE_SELF_SYSTEM_TRANSACTIONS_CONFIG);
     }
 
     /**
