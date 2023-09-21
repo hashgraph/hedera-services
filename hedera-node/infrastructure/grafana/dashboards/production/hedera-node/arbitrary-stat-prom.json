@@ -34,7 +34,7 @@
       "tags": [
         "Platform"
       ],
-      "targetBlank": true,
+      "targetBlank": false,
       "title": "Platform Dashboards",
       "tooltip": "",
       "type": "dashboards",
@@ -147,7 +147,7 @@
     "list": [
       {
         "current": {
-          "selected": true,
+          "selected": false,
           "text": "grafanacloud-swirldslabsproduction-prom",
           "value": "grafanacloud-prom"
         },
@@ -157,7 +157,6 @@
         "name": "Datasource",
         "options": [],
         "query": "prometheus",
-        "queryValue": "",
         "refresh": 1,
         "regex": "/^.*-prom/",
         "skipUrlSync": false,
@@ -165,7 +164,7 @@
       },
       {
         "current": {
-          "selected": true,
+          "selected": false,
           "text": "mainnet",
           "value": "mainnet"
         },
@@ -272,6 +271,6 @@
   "timezone": "",
   "title": "Any Stat (Prometheus)",
   "uid": "any-stat-prom",
-  "version": 8,
+  "version": 9,
   "weekStart": ""
 }

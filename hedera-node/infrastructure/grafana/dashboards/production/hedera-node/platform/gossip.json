@@ -21,7 +21,7 @@
   "id": 77,
   "links": [
     {
-      "asDropdown": false,
+      "asDropdown": true,
       "icon": "external link",
       "includeVars": true,
       "keepTime": true,
@@ -275,7 +275,7 @@
               },
               {
                 "color": "red",
-                "value": 80
+                "value": 95
               }
             ]
           }
@@ -347,7 +347,7 @@
               },
               {
                 "color": "red",
-                "value": 80
+                "value": 95
               }
             ]
           }
@@ -1572,7 +1572,7 @@
       },
       {
         "current": {
-          "selected": false,
+          "selected": true,
           "text": [
             "All"
           ],
@@ -1611,6 +1611,6 @@
   "timezone": "",
   "title": "Gossip",
   "uid": "e857b70d-9a9f-485b-bd3d-a359c55c8efc",
-  "version": 23,
+  "version": 24,
   "weekStart": ""
 }

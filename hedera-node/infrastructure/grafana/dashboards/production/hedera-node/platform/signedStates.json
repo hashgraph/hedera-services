@@ -21,7 +21,7 @@
   "id": 81,
   "links": [
     {
-      "asDropdown": false,
+      "asDropdown": true,
       "icon": "external link",
       "includeVars": true,
       "keepTime": true,
@@ -29,7 +29,7 @@
         "Platform"
       ],
       "targetBlank": false,
-      "title": "",
+      "title": "Platform Dashboards",
       "tooltip": "",
       "type": "dashboards",
       "url": ""
@@ -550,8 +550,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "#EAB839",
@@ -622,8 +621,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "#EAB839",
@@ -1386,6 +1384,6 @@
   "timezone": "",
   "title": "Signed States",
   "uid": "b9dde471-a093-42b6-b633-1755b3fc18d3",
-  "version": 12,
+  "version": 15,
   "weekStart": ""
 }

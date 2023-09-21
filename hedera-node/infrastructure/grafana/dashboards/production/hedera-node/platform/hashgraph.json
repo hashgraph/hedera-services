@@ -21,7 +21,7 @@
   "id": 78,
   "links": [
     {
-      "asDropdown": false,
+      "asDropdown": true,
       "icon": "external link",
       "includeVars": true,
       "keepTime": true,
@@ -29,7 +29,7 @@
         "Platform"
       ],
       "targetBlank": false,
-      "title": "Network Health",
+      "title": "Platform Dashboards",
       "tooltip": "",
       "type": "dashboards",
       "url": ""
@@ -94,7 +94,7 @@
               },
               {
                 "color": "semi-dark-green",
-                "value": 1
+                "value": 0.75
               }
             ]
           }
@@ -167,7 +167,7 @@
               },
               {
                 "color": "semi-dark-green",
-                "value": 1
+                "value": 0.75
               }
             ]
           }
@@ -593,6 +593,7 @@
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
+            "axisShow": false,
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 0,
@@ -694,6 +695,7 @@
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
+            "axisShow": false,
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 0,
@@ -774,6 +776,7 @@
             "axisColorMode": "text",
             "axisLabel": "# of coin rounds",
             "axisPlacement": "auto",
+            "axisShow": false,
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 0,
@@ -900,6 +903,8 @@
       },
       "id": 8,
       "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
         "orientation": "auto",
         "reduceOptions": {
           "calcs": [
@@ -911,7 +916,7 @@
         "showThresholdLabels": false,
         "showThresholdMarkers": true
       },
-      "pluginVersion": "10.2.0-59542pre",
+      "pluginVersion": "10.2.0-60853",
       "targets": [
         {
           "datasource": {
@@ -949,6 +954,7 @@
             "axisColorMode": "text",
             "axisLabel": "score",
             "axisPlacement": "auto",
+            "axisShow": false,
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 0,
@@ -984,11 +990,11 @@
               },
               {
                 "color": "semi-dark-yellow",
-                "value": 0.2
+                "value": 0.1
               },
               {
                 "color": "semi-dark-green",
-                "value": 1
+                "value": 0.15
               }
             ]
           }
@@ -1056,11 +1062,11 @@
               },
               {
                 "color": "semi-dark-yellow",
-                "value": 0.2
+                "value": 0.1
               },
               {
                 "color": "semi-dark-green",
-                "value": 1
+                "value": 0.15
               }
             ]
           }
@@ -1075,6 +1081,8 @@
       },
       "id": 10,
       "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
         "orientation": "auto",
         "reduceOptions": {
           "calcs": [
@@ -1086,7 +1094,7 @@
         "showThresholdLabels": false,
         "showThresholdMarkers": true
       },
-      "pluginVersion": "10.2.0-59542pre",
+      "pluginVersion": "10.2.0-60853",
       "targets": [
         {
           "datasource": {
@@ -1124,6 +1132,7 @@
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
+            "axisShow": false,
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 0,
@@ -1159,11 +1168,11 @@
               },
               {
                 "color": "semi-dark-yellow",
-                "value": 0.4
+                "value": 2
               },
               {
                 "color": "semi-dark-red",
-                "value": 0.67
+                "value": 5
               }
             ]
           }
@@ -1209,6 +1218,114 @@
       ],
       "title": "bullyScore",
       "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "grafanacloud-prom"
+      },
+      "description": "The score, based on tipset advancements, of how much of a 'bully' this node is being to other nodes. Bullying is defined as refusing to use a node's events as other parents.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "semi-dark-green"
+              },
+              {
+                "color": "semi-dark-yellow",
+                "value": 2
+              },
+              {
+                "color": "semi-dark-red",
+                "value": 5
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 9,
+        "x": 15,
+        "y": 48
+      },
+      "id": 14,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "pluginVersion": "10.2.0-60853",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "grafanacloud-prom"
+          },
+          "disableTextWrap": false,
+          "editorMode": "builder",
+          "expr": "min(min_over_time(platform_bullyScore{environment=\"$Environment\", node_id=~\"$NodeID\", type=\"mean\"}[$__range]))",
+          "fullMetaSearch": false,
+          "includeNullMetadata": true,
+          "instant": false,
+          "legendFormat": "Min",
+          "range": true,
+          "refId": "Min",
+          "useBackend": false
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "grafanacloud-prom"
+          },
+          "disableTextWrap": false,
+          "editorMode": "builder",
+          "expr": "avg(avg_over_time(platform_bullyScore{environment=\"$Environment\", node_id=~\"$NodeID\", type=\"mean\"}[$__range]))",
+          "fullMetaSearch": false,
+          "hide": false,
+          "includeNullMetadata": true,
+          "instant": false,
+          "legendFormat": "Avg",
+          "range": true,
+          "refId": "Avg",
+          "useBackend": false
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "grafanacloud-prom"
+          },
+          "disableTextWrap": false,
+          "editorMode": "builder",
+          "expr": "max(max_over_time(platform_bullyScore{environment=\"$Environment\", node_id=~\"$NodeID\", type=\"mean\"}[$__range]))",
+          "fullMetaSearch": false,
+          "hide": false,
+          "includeNullMetadata": true,
+          "instant": false,
+          "legendFormat": "Max",
+          "range": true,
+          "refId": "A",
+          "useBackend": false
+        }
+      ],
+      "title": "bullyScore",
+      "type": "gauge"
     }
   ],
   "refresh": "5s",
@@ -1247,7 +1364,7 @@
       },
       {
         "current": {
-          "selected": false,
+          "selected": true,
           "text": [
             "All"
           ],
@@ -1286,6 +1403,6 @@
   "timezone": "",
   "title": "Hashgraph",
   "uid": "c84ad8dc-c57e-4e01-b150-1732b151e317",
-  "version": 16,
+  "version": 21,
   "weekStart": ""
 }

@@ -21,7 +21,7 @@
   "id": 76,
   "links": [
     {
-      "asDropdown": false,
+      "asDropdown": true,
       "icon": "external link",
       "includeVars": true,
       "keepTime": true,
@@ -29,7 +29,7 @@
         "Platform"
       ],
       "targetBlank": false,
-      "title": "Dashboard",
+      "title": "Platform Dashboards",
       "tooltip": "",
       "type": "dashboards",
       "url": ""
@@ -225,7 +225,7 @@
               },
               {
                 "color": "semi-dark-yellow",
-                "value": 0.75
+                "value": 0.66667
               },
               {
                 "color": "semi-dark-green",
@@ -688,7 +688,7 @@
         "showThresholdLabels": false,
         "showThresholdMarkers": true
       },
-      "pluginVersion": "10.2.0-60477",
+      "pluginVersion": "10.2.0-60853",
       "targets": [
         {
           "datasource": {
@@ -799,11 +799,11 @@
               },
               {
                 "color": "semi-dark-yellow",
-                "value": 10
+                "value": 5
               },
               {
                 "color": "dark-green",
-                "value": 20
+                "value": 10
               }
             ]
           }
@@ -871,11 +871,11 @@
               },
               {
                 "color": "dark-yellow",
-                "value": 10
+                "value": 5
               },
               {
                 "color": "green",
-                "value": 20
+                "value": 10
               }
             ]
           }
@@ -903,7 +903,7 @@
         "showThresholdLabels": false,
         "showThresholdMarkers": true
       },
-      "pluginVersion": "10.2.0-60477",
+      "pluginVersion": "10.2.0-60853",
       "targets": [
         {
           "datasource": {
@@ -1051,7 +1051,7 @@
         "showThresholdLabels": false,
         "showThresholdMarkers": true
       },
-      "pluginVersion": "10.2.0-60477",
+      "pluginVersion": "10.2.0-60853",
       "targets": [
         {
           "datasource": {
@@ -1268,7 +1268,7 @@
         "showThresholdLabels": false,
         "showThresholdMarkers": true
       },
-      "pluginVersion": "10.2.0-60477",
+      "pluginVersion": "10.2.0-60853",
       "targets": [
         {
           "datasource": {
@@ -1475,7 +1475,7 @@
         "showThresholdLabels": false,
         "showThresholdMarkers": true
       },
-      "pluginVersion": "10.2.0-60477",
+      "pluginVersion": "10.2.0-60853",
       "targets": [
         {
           "datasource": {
@@ -1533,7 +1533,7 @@
       "type": "gauge"
     }
   ],
-  "refresh": "5s",
+  "refresh": "",
   "schemaVersion": 38,
   "tags": [
     "Platform"
@@ -1571,7 +1571,7 @@
       {
         "allValue": "",
         "current": {
-          "selected": false,
+          "selected": true,
           "text": [
             "All"
           ],
@@ -1610,6 +1610,6 @@
   "timezone": "",
   "title": "Network Health",
   "uid": "ec9413c6-6f17-49fc-951b-51cbc21a1eef",
-  "version": 53,
+  "version": 57,
   "weekStart": ""
 }

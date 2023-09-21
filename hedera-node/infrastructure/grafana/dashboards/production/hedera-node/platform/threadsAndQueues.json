@@ -22,7 +22,7 @@
   "id": 79,
   "links": [
     {
-      "asDropdown": false,
+      "asDropdown": true,
       "icon": "external link",
       "includeVars": true,
       "keepTime": true,
@@ -30,7 +30,7 @@
         "Platform"
       ],
       "targetBlank": false,
-      "title": "Dashboard",
+      "title": "Platform Dashboards",
       "tooltip": "",
       "type": "dashboards",
       "url": ""
@@ -2255,6 +2255,6 @@
   "timezone": "",
   "title": "Threads & Queues",
   "uid": "daf603b7-4578-4641-92b3-aa4f0f146876",
-  "version": 19,
+  "version": 20,
   "weekStart": ""
 }
