@@ -64,6 +64,7 @@ public class ShuffledEventEmitter extends BufferingEventEmitter<ShuffledEventEmi
         // will match the creator weights of the graph generator unless one of those weights is zero.
 
         // Emit the next event from that node if possible, otherwise choose another random event.
+        int attempts = 0;
         while (true) {
             final int nodeIndex = random.nextInt(getGraphGenerator().getNumberOfSources());
             final NodeId nodeID = getGraphGenerator().getAddressBook().getNodeId(nodeIndex);
@@ -71,6 +72,10 @@ public class ShuffledEventEmitter extends BufferingEventEmitter<ShuffledEventEmi
             if (isReadyToEmitEvent(nodeID)) {
                 eventEmittedFromBuffer();
                 return events.get(nodeID).remove();
+            }
+            attempts++;
+            if (attempts > 1000) {
+                throw new RuntimeException("Cannot find event to emit");
             }
         }
     }
