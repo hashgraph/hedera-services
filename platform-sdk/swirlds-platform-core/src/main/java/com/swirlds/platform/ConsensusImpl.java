@@ -31,7 +31,7 @@ import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.ConsensusSorter;
 import com.swirlds.platform.consensus.ConsensusUtils;
 import com.swirlds.platform.consensus.CountingVote;
-import com.swirlds.platform.consensus.ElectionRound;
+import com.swirlds.platform.consensus.RoundElections;
 import com.swirlds.platform.consensus.InitJudges;
 import com.swirlds.platform.consensus.SequentialRingBuffer;
 import com.swirlds.platform.consensus.ThreadSafeConsensusInfo;
@@ -387,8 +387,8 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         // can find their common ancestors and mark them as having reached consensus. once we have
         // done this, we can find the consensus events for the next round, which in this case would
         // be the election round. if we didn't do that, then an event could reach consensus twice.
-        final ElectionRound electionRound = rounds.getElectionRound();
-        if (electionRound.isDecided() && noInitJudgesMissing()) {
+        final RoundElections roundElections = rounds.getElectionRound();
+        if (roundElections.isDecided() && noInitJudgesMissing()) {
             // all famous witnesses for this round are now known. None will ever be added again. We
             // know this round has at least one witness. We know they all have fame decided. We
             // know the next 2 rounds have events in them, because otherwise we couldn't have
@@ -396,7 +396,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
             // will be instantly decided as not famous. Therefore, the set of famous witnesses
             // in this round is now completely known and immutable. So we can call the following, to
             // record that fact, and propagate appropriately.
-            return roundDecided(electionRound);
+            return roundDecided(roundElections);
         }
         return null;
     }
@@ -477,15 +477,15 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
      * @param votingWitness the event that will vote
      */
     private void voteInAllElections(@NonNull final EventImpl votingWitness) {
-        final ElectionRound electionRound = rounds.getElectionRound();
-        votingWitness.initVoting(electionRound.numElections());
-        final long diff = round(votingWitness) - electionRound.getRound();
+        final RoundElections roundElections = rounds.getElectionRound();
+        votingWitness.initVoting(roundElections.numElections());
+        final long diff = round(votingWitness) - roundElections.getRound();
         if (diff <= 0) {
             // this should never happen, but just in case
             return;
         }
         if (diff == 1) {
-            for (final Iterator<CandidateWitness> it = electionRound.undecidedWitnesses(); it.hasNext(); ) {
+            for (final Iterator<CandidateWitness> it = roundElections.undecidedWitnesses(); it.hasNext(); ) {
                 final CandidateWitness candidateWitness = it.next();
                 final boolean firstVote = firstVote(votingWitness, candidateWitness.getWitness());
                 votingWitness.setVote(candidateWitness, firstVote);
@@ -498,7 +498,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         // the majority of witnesses strongly seen.
         final List<EventImpl> stronglySeen = getStronglySeenInPreviousRound(votingWitness);
 
-        for (final Iterator<CandidateWitness> it = electionRound.undecidedWitnesses(); it.hasNext(); ) {
+        for (final Iterator<CandidateWitness> it = roundElections.undecidedWitnesses(); it.hasNext(); ) {
             final CandidateWitness candidateWitness = it.next();
 
             final CountingVote countingVote = getCountingVote(candidateWitness, stronglySeen);
@@ -521,7 +521,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
             if (countingVote.isSupermajority()) {
                 // we've decided one famous event. Set it as famous.
                 candidateWitness.fameDecided(votingWitness.getVote(candidateWitness));
-                if (electionRound.isDecided()) {
+                if (roundElections.isDecided()) {
                     // this round has been decided
                     consensusMetrics.lastFamousInRound(candidateWitness.getWitness());
                     // no need to vote anymore until we create elections for the next round
@@ -662,17 +662,17 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
      * stamps for events in earlier rounds. If it's an ancestor of all the famous witnesses, then it
      * reaches consensus.
      *
-     * @param electionRound the round information of the decided round
+     * @param roundElections the round information of the decided round
      * @return the consensus round
      */
-    private @NonNull ConsensusRound roundDecided(final ElectionRound electionRound) {
+    private @NonNull ConsensusRound roundDecided(final RoundElections roundElections) {
         // if migration was enabled, we can turn it off now since we've decided fame for this round
         migrationMode = false;
         // the current round just had its fame decided.
         // Note: more witnesses may be added to this round in the future, but they'll all be
         // instantly marked as not
         // famous.
-        final List<EventImpl> judges = electionRound.findAllJudges();
+        final List<EventImpl> judges = roundElections.findAllJudges();
         final long decidedRoundNumber = rounds.getElectionRoundNumber();
 
         // update the round and generation values since fame has been decided for a new round

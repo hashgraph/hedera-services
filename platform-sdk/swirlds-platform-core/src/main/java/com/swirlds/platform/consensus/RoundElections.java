@@ -40,8 +40,8 @@ import org.apache.logging.log4j.Logger;
  * A round whose witnesses are currently having their fame voted on in elections. This class tracks
  * the witnesses and their decided status.
  */
-public class ElectionRound {
-    private static final Logger logger = LogManager.getLogger(ElectionRound.class);
+public class RoundElections {
+    private static final Logger logger = LogManager.getLogger(RoundElections.class);
     /** the round number of witnesses we are voting on */
     private long round = ConsensusConstants.ROUND_FIRST;
     /** number of known witnesses in this round with unknown fame */
@@ -142,7 +142,7 @@ public class ElectionRound {
                 continue;
             }
             uniqueFamous.merge(
-                    election.getWitness().getCreatorId(), election.getWitness(), ElectionRound::uniqueFamous);
+                    election.getWitness().getCreatorId(), election.getWitness(), RoundElections::uniqueFamous);
         }
         final List<EventImpl> allJudges = new ArrayList<>(uniqueFamous.values());
         allJudges.sort(Comparator.comparingLong(e -> e.getCreatorId().id()));
