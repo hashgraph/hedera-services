@@ -29,7 +29,6 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseHeader;
-import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.token.CryptoGetAccountRecordsResponse;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
@@ -123,7 +122,7 @@ public class CryptoGetAccountRecordsHandler extends PaidQueryHandler {
 
         final var records = recordCache.getRecords(accountId);
         return queryContext
-                .feeCalculator(SubType.DEFAULT)
+                .feeCalculator()
                 .legacyCalculate(sigValueObj -> new GetAccountRecordsResourceUsage(null, new CryptoFeeBuilder())
                         .usageGivenFor(account, records));
     }

@@ -32,7 +32,6 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseHeader;
 import com.hedera.hapi.node.base.ResponseType;
-import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.consensus.ConsensusGetTopicInfoQuery;
@@ -168,7 +167,7 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
         final var topic = topicStore.getTopic(topicId);
 
         return queryContext
-                .feeCalculator(SubType.DEFAULT)
+                .feeCalculator()
                 .legacyCalculate(sigValueObj -> new GetTopicInfoResourceUsage()
                         .usageGivenTypeAndTopic(
                                 topic != null ? pbjToState(topic) : null, fromPbjResponseType(responseType)));
