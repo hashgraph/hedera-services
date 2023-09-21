@@ -23,6 +23,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseHeader;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.contract.ContractCallLocalQuery;
 import com.hedera.hapi.node.contract.ContractCallLocalResponse;
 import com.hedera.hapi.node.transaction.Query;
@@ -30,6 +31,7 @@ import com.hedera.hapi.node.transaction.Response;
 import com.hedera.node.app.service.contract.impl.exec.QueryComponent;
 import com.hedera.node.app.service.contract.impl.exec.QueryComponent.Factory;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
@@ -71,11 +73,20 @@ public class ContractCallLocalHandler extends PaidQueryHandler {
         final ContractCallLocalQuery op = query.contractCallLocalOrThrow();
         final var contractID = op.contractID();
         mustExist(contractID, INVALID_CONTRACT_ID);
-        // A contract corresponding to that contract ID must exist in state (otherwise we have nothing to call)
+        // A contract or token contract corresponding to that contract ID must exist in state (otherwise we have nothing
+        // to call)
         final var contract = context.createStore(ReadableAccountStore.class).getContractById(contractID);
-        mustExist(contract, INVALID_CONTRACT_ID);
-        if (contract.deleted()) {
-            throw new PreCheckException(INVALID_CONTRACT_ID);
+        if (contract != null) {
+            if (contract.deleted()) {
+                throw new PreCheckException(INVALID_CONTRACT_ID);
+            }
+        } else {
+            final var tokenID =
+                    TokenID.newBuilder().tokenNum(contractID.contractNum()).build();
+
+            final var tokenContract =
+                    context.createStore(ReadableTokenStore.class).get(tokenID);
+            mustExist(tokenContract, INVALID_CONTRACT_ID);
         }
     }
 
@@ -87,8 +98,13 @@ public class ContractCallLocalHandler extends PaidQueryHandler {
         var component = provider.get().create(context, Instant.now());
         final var outcome = component.contextQueryProcessor().call();
 
+        final var responseHeader = outcome.isSuccess()
+                ? header
+                : header.copyBuilder()
+                        .nodeTransactionPrecheckCode(outcome.status())
+                        .build();
         var response = ContractCallLocalResponse.newBuilder();
-        response.header(header);
+        response.header(responseHeader);
         response.functionResult(outcome.result());
 
         return Response.newBuilder().contractCallLocal(response).build();

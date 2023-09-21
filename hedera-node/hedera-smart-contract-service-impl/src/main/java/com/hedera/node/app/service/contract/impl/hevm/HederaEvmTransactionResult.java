@@ -24,6 +24,7 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.bl
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjLogsFrom;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static java.util.Objects.requireNonNull;
+import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.ILLEGAL_STATE_CHANGE;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -100,7 +101,7 @@ public record HederaEvmTransactionResult(
      */
     public ContractFunctionResult asQueryResultOf() {
         if (haltReason != null) {
-            throw new AssertionError("Not implemented");
+            return null;
         } else if (revertReason != null) {
             throw new AssertionError("Not implemented");
         } else {
@@ -119,6 +120,8 @@ public record HederaEvmTransactionResult(
                 return ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
             } else if (haltReason.equals(INSUFFICIENT_GAS.toString())) {
                 return ResponseCodeEnum.INSUFFICIENT_GAS;
+            } else if (haltReason.equals(ILLEGAL_STATE_CHANGE.toString())) {
+                return ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION;
             } else {
                 throw new AssertionError("Not implemented");
             }
