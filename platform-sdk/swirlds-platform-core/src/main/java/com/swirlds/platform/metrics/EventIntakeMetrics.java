@@ -79,26 +79,31 @@ public class EventIntakeMetrics implements StaleEventObserver {
 
     private static final LongAccumulator.Config STALE_SELF_EVENTS_CONFIG = new LongAccumulator.Config(
                     INTERNAL_CATEGORY, "staleSelfEvents")
+            .withAccumulator(Long::sum)
             .withDescription("number of stale self events");
     private final LongAccumulator staleSelfEventCount;
 
     private static final LongAccumulator.Config STALE_APP_TRANSACTIONS_CONFIG = new LongAccumulator.Config(
                     INTERNAL_CATEGORY, "staleAppTransactions")
+            .withAccumulator(Long::sum)
             .withDescription("number of application transactions in stale events");
     private final LongAccumulator staleAppTransactionCount;
 
     private static final LongAccumulator.Config STALE_SELF_APP_TRANSACTIONS_CONFIG = new LongAccumulator.Config(
                     INTERNAL_CATEGORY, "staleSelfAppTransactions")
+            .withAccumulator(Long::sum)
             .withDescription("number of application transactions in stale self events");
     private final LongAccumulator staleSelfAppTransactionCount;
 
     private static final LongAccumulator.Config STALE_SYSTEM_TRANSACTIONS_CONFIG = new LongAccumulator.Config(
                     INTERNAL_CATEGORY, "staleSystemTransactions")
+            .withAccumulator(Long::sum)
             .withDescription("number of system transactions in stale events");
     private final LongAccumulator staleSystemTransactionCount;
 
     private static final LongAccumulator.Config STALE_SELF_SYSTEM_TRANSACTIONS_CONFIG = new LongAccumulator.Config(
                     INTERNAL_CATEGORY, "staleSelfSystemTransactions")
+            .withAccumulator(Long::sum)
             .withDescription("number of system transactions in stale self events");
     private final LongAccumulator staleSelfSystemTransactionCount;
 
