@@ -27,8 +27,8 @@ class InsufficientBalanceExceptionTest {
     @Test
     void testConstructor() {
         // when
-        final InsufficientBalanceException exception =
-                new InsufficientBalanceException(ResponseCodeEnum.UNAUTHORIZED, 42L);
+        final InsufficientBalanceException exception = new InsufficientBalanceException(
+                ResponseCodeEnum.UNAUTHORIZED, 42L, InsufficientBalanceType.OTHER_COSTS_NOT_COVERED);
 
         // then
         assertThat(exception.responseCode()).isEqualTo(ResponseCodeEnum.UNAUTHORIZED);
@@ -39,6 +39,8 @@ class InsufficientBalanceExceptionTest {
     @SuppressWarnings({"ThrowableNotThrown", "ConstantConditions"})
     @Test
     void testConstructorWithIllegalParameters() {
-        assertThatThrownBy(() -> new InsufficientBalanceException(null, 42L)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() ->
+                        new InsufficientBalanceException(null, 42L, InsufficientBalanceType.NETWORK_FEE_NOT_COVERED))
+                .isInstanceOf(NullPointerException.class);
     }
 }
