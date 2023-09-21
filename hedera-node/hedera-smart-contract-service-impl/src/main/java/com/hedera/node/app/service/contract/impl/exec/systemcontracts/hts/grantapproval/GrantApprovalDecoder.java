@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantapproval;
 
 import com.esaulpaugh.headlong.abi.Address;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.token.CryptoApproveAllowanceTransactionBody;
 import com.hedera.hapi.node.token.NftAllowance;
@@ -27,6 +28,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCal
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
+import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -58,6 +60,18 @@ public class GrantApprovalDecoder {
                 .build();
     }
 
+    public TransactionBody decodeErcGrantApproval(@NonNull final HtsCallAttempt attempt) {
+        final var call = GrantApprovalTranslator.ERC_GRANT_APPROVAL.decodeCall(attempt.inputBytes());
+        return TransactionBody.newBuilder()
+                .transactionID(
+                        TransactionID.newBuilder().accountID(attempt.senderId()).build())
+                .cryptoApproveAllowance(
+                        ERCGrantApproval(
+                                attempt.addressIdConverter(), Objects.requireNonNull(attempt.redirectTokenId()),
+                                call.get(0), call.get(1)))
+                .build();
+    }
+
     private CryptoApproveAllowanceTransactionBody grantApproval(
             @NonNull final AddressIdConverter addressIdConverter,
             @NonNull final Address token,
@@ -66,6 +80,20 @@ public class GrantApprovalDecoder {
         return CryptoApproveAllowanceTransactionBody.newBuilder()
                 .tokenAllowances(TokenAllowance.newBuilder()
                         .tokenId(ConversionUtils.asTokenId(token))
+                        .spender(addressIdConverter.convert(spender))
+                        .amount(amount.longValue())
+                        .build())
+                .build();
+    }
+
+    private CryptoApproveAllowanceTransactionBody ERCGrantApproval(
+            @NonNull final AddressIdConverter addressIdConverter,
+            @NonNull final TokenID token,
+            @NonNull final Address spender,
+            @NonNull final BigInteger amount) {
+        return CryptoApproveAllowanceTransactionBody.newBuilder()
+                .tokenAllowances(TokenAllowance.newBuilder()
+                        .tokenId(token)
                         .spender(addressIdConverter.convert(spender))
                         .amount(amount.longValue())
                         .build())

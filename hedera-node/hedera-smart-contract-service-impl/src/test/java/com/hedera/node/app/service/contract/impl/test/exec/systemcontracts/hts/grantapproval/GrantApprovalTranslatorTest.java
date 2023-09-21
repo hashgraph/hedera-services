@@ -52,6 +52,13 @@ class GrantApprovalTranslatorTest {
     }
 
     @Test
+    void ERCGrantApprovalMatches() {
+        given(attempt.selector()).willReturn(GrantApprovalTranslator.ERC_GRANT_APPROVAL.selector());
+        final var matches = subject.matches(attempt);
+        assertTrue(matches);
+    }
+
+    @Test
     void grantApprovalNFTMatches() {
         given(attempt.selector()).willReturn(GrantApprovalTranslator.GRANT_APPROVAL_NFT.selector());
         final var matches = subject.matches(attempt);

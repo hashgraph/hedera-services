@@ -34,6 +34,8 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class GrantApprovalTranslator extends AbstractHtsCallTranslator {
+
+    public static final Function ERC_GRANT_APPROVAL = new Function("approve(address,uint256)", ReturnTypes.BOOL);
     public static final Function GRANT_APPROVAL = new Function("approve(address,address,uint256)", ReturnTypes.INT_64);
     public static final Function GRANT_APPROVAL_NFT =
             new Function("approveNFT(address,address,uint256)", ReturnTypes.INT_64);
@@ -49,7 +51,7 @@ public class GrantApprovalTranslator extends AbstractHtsCallTranslator {
      */
     @Override
     public boolean matches(@NonNull final HtsCallAttempt attempt) {
-        return matchesClassicSelector(attempt.selector());
+        return matchesClassicSelector(attempt.selector()) || matchesErcSelector(attempt.selector());
     }
 
     /**
@@ -66,8 +68,14 @@ public class GrantApprovalTranslator extends AbstractHtsCallTranslator {
                 || Arrays.equals(selector, GRANT_APPROVAL_NFT.selector());
     }
 
+    private boolean matchesErcSelector(@NonNull final byte[] selector) {
+        return Arrays.equals(selector, ERC_GRANT_APPROVAL.selector());
+    }
+
     private TransactionBody bodyForClassic(final HtsCallAttempt attempt) {
-        if (Arrays.equals(attempt.selector(), GRANT_APPROVAL.selector())) {
+        if (Arrays.equals(attempt.selector(), ERC_GRANT_APPROVAL.selector())) {
+            return decoder.decodeErcGrantApproval(attempt);
+        } else if (Arrays.equals(attempt.selector(), GRANT_APPROVAL.selector())) {
             return decoder.decodeGrantApproval(attempt);
         } else {
             return decoder.decodeGrantApprovalNFT(attempt);

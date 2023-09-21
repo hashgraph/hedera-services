@@ -148,6 +148,22 @@ public class GrantApprovalXTest extends AbstractContractXTest {
                                 SN_1234.serialNumber())
                         .array()),
                 assertSuccess());
+        // ERC APPROVE FUNGIBLE
+        runHtsCallAndExpectOnSuccess(
+                OWNER_BESU_ADDRESS,
+                bytesForRedirect(GrantApprovalTranslator.ERC_GRANT_APPROVAL
+                                .encodeCallWithArgs(UNAUTHORIZED_SPENDER_HEADLONG_ADDRESS, BigInteger.valueOf(100L)),
+                        ERC20_TOKEN_ID),
+                assertSuccess());
+        // TRY TRANSFER AND EXPECT SUCCESS
+        runHtsCallAndExpectOnSuccess(
+                UNAUTHORIZED_SPENDER_BESU_ADDRESS,
+                bytesForRedirect(
+                        ERC_20_TRANSFER_FROM.encodeCallWithArgs(
+                                OWNER_HEADLONG_ADDRESS, RECEIVER_HEADLONG_ADDRESS, BigInteger.valueOf(100L)),
+                        ERC20_TOKEN_ID),
+                output -> assertEquals(
+                        asBytesResult(ERC_20_TRANSFER_FROM.getOutputs().encodeElements(true)), output));
     }
 
     @Override
@@ -191,7 +207,7 @@ public class GrantApprovalXTest extends AbstractContractXTest {
     protected Map<EntityIDPair, TokenRelation> initialTokenRelationships() {
         final var tokenRelationships = new HashMap<EntityIDPair, TokenRelation>();
         addErc20Relation(tokenRelationships, OWNER_ID, 1_000L);
-        addErc20Relation(tokenRelationships, UNAUTHORIZED_SPENDER_ID, 1234L);
+        addErc20Relation(tokenRelationships, UNAUTHORIZED_SPENDER_ID, 0L);
         addErc20Relation(tokenRelationships, RECEIVER_ID, 0L);
         addErc721Relation(tokenRelationships, OWNER_ID, 3L);
         addErc721Relation(tokenRelationships, RECEIVER_ID, 0L);

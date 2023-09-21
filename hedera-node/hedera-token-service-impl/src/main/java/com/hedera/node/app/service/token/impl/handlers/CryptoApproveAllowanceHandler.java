@@ -16,7 +16,11 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_ALLOWANCES;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_DELEGATING_SPENDER;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hedera.node.app.service.token.impl.validators.AllowanceValidator.isValidOwner;
 import static com.hedera.node.app.service.token.impl.validators.AllowanceValidator.validateAllowanceLimit;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -40,7 +44,11 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.validators.ApproveAllowanceValidator;
-import com.hedera.node.app.spi.workflows.*;
+import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.HederaConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -395,7 +403,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
             final var nft = uniqueTokenStore.get(tokenId, serialNum);
             final var token = tokenStore.get(tokenId);
 
-            AccountID accountOwner = owner.accountId();
+            final AccountID accountOwner = owner.accountId();
             validateTrue(isValidOwner(nft, accountOwner, token), SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
             final var copy = nft.copyBuilder().spenderId(spenderId).build();
             uniqueTokenStore.put(copy);
@@ -433,7 +441,10 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
             final TokenID tokenId) {
         for (int i = 0; i < ownerAllowances.size(); i++) {
             final var allowance = ownerAllowances.get(i);
-            if (allowance.spenderId() == spenderId && allowance.tokenId() == tokenId) {
+            if (allowance.tokenId() != null
+                    && allowance.spenderId() != null
+                    && allowance.spenderId().equals(spenderId)
+                    && allowance.tokenId().equals(tokenId)) {
                 return i;
             }
         }
