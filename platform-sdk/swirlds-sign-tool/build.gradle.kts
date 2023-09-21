@@ -15,21 +15,14 @@
  */
 
 plugins {
-    id("com.swirlds.platform.conventions")
-    `java-library`
-    id("com.swirlds.platform.maven-publish")
-    id("com.swirlds.platform.application")
+    id("com.hedera.hashgraph.application")
+    id("com.hedera.hashgraph.platform-maven-publish")
 }
 
-dependencies {
-    // Individual Dependencies
-    implementation(project(":swirlds-common"))
-    implementation(project(":swirlds-base"))
-    implementation(project(":swirlds-logging"))
-    implementation(libs.bundles.logging.impl)
-    implementation(libs.jackson.databind)
-    implementation(libs.jackson.datatype.jsr310)
-    compileOnly(libs.spotbugs.annotations)
+application.mainClass.set("com.swirlds.signingtool.FileSignTool")
 
-    testImplementation(project(":swirlds-unit-tests:common:swirlds-test-framework"))
+testModuleInfo {
+    requires("com.swirlds.base")
+    requires("com.swirlds.test.framework")
+    requires("org.junit.jupiter.api")
 }

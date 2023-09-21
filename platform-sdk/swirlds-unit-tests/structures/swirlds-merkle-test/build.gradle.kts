@@ -15,27 +15,12 @@
  */
 
 plugins {
-    id("com.swirlds.platform.conventions")
-    `java-library`
+    id("com.hedera.hashgraph.sdk.conventions")
+    id("com.hedera.hashgraph.mock-release-tasks")
 }
 
-dependencies {
-    // Individual Dependencies
-    implementation(project(":swirlds-merkle"))
-    compileOnly(libs.spotbugs.annotations)
-
-    // Bundle Dependencies
-    implementation(libs.bundles.logging.impl)
-
-    // Test Dependencies
-
-    // These should not be implementation() based deps, but this requires refactoring to eliminate.
-    implementation(project(":swirlds-unit-tests:common:swirlds-test-framework"))
-    implementation(project(":swirlds-unit-tests:common:swirlds-common-test"))
-    implementation(testFixtures(project(":swirlds-common")))
-    implementation(testLibs.junit.jupiter.api)
-
-    testImplementation(libs.commons.io)
-    testImplementation(testLibs.bundles.junit)
-    testImplementation(testFixtures(project(":swirlds-common")))
+testModuleInfo {
+    requires("com.swirlds.test.framework")
+    requires("org.junit.jupiter.api")
+    requires("org.junit.jupiter.params")
 }

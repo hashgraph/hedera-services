@@ -113,7 +113,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         requireNonNull(context);
         final var txn = context.body();
         final var op = txn.cryptoTransferOrThrow();
-        final var topLevelPayer = txn.transactionIDOrThrow().accountIDOrThrow();
+        final var topLevelPayer = context.payer();
 
         final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
         final var hederaConfig = context.configuration().getConfigData(HederaConfig.class);

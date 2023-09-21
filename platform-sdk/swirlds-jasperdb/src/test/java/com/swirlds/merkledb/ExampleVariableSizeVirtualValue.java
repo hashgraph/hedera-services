@@ -18,7 +18,6 @@ package com.swirlds.merkledb;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.jasperdb.SelfSerializableSupplier;
 import com.swirlds.virtualmap.VirtualValue;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -27,8 +26,7 @@ import java.util.Objects;
 import java.util.Random;
 
 @SuppressWarnings("ResultOfMethodCallIgnored")
-public final class ExampleVariableSizeVirtualValue extends ExampleByteArrayVirtualValue
-        implements SelfSerializableSupplier<ExampleVariableSizeVirtualValue> {
+public final class ExampleVariableSizeVirtualValue extends ExampleByteArrayVirtualValue {
 
     private static final int RANDOM_BYTES = 1024;
     private static final byte[] RANDOM_DATA = new byte[RANDOM_BYTES];
@@ -103,11 +101,6 @@ public final class ExampleVariableSizeVirtualValue extends ExampleByteArrayVirtu
 
     @Override
     public VirtualValue copy() {
-        return this;
-    }
-
-    @Override
-    public ExampleVariableSizeVirtualValue get() {
         return this;
     }
 

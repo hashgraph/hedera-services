@@ -29,11 +29,14 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseHeader;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.token.TokenGetNftInfoResponse;
 import com.hedera.hapi.node.token.TokenNftInfo;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
+import com.hedera.node.app.service.mono.fees.calculation.token.queries.GetTokenNftInfoResourceUsage;
 import com.hedera.node.app.service.token.ReadableNftStore;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
@@ -140,5 +143,19 @@ public class TokenGetNftInfoHandler extends PaidQueryHandler {
                     .build();
             return Optional.of(info);
         }
+    }
+
+    @NonNull
+    @Override
+    public Fees computeFees(@NonNull final QueryContext queryContext) {
+        final var query = queryContext.query();
+        final var nftStore = queryContext.createStore(ReadableNftStore.class);
+        final var op = query.tokenGetNftInfoOrThrow();
+        final var nftId = op.nftIDOrThrow();
+        final var nft = nftStore.get(nftId);
+
+        return queryContext
+                .feeCalculator(SubType.DEFAULT)
+                .legacyCalculate(sigValueObj -> new GetTokenNftInfoResourceUsage().usageGiven(query, nft));
     }
 }

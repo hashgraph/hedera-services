@@ -62,6 +62,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.LongSupplier;
+import java.util.function.Predicate;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -190,10 +191,12 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
     protected void givenTxn(CryptoTransferTransactionBody txnBody, AccountID payerId) {
         body = txnBody;
         txn = asTxn(body, payerId);
+        given(handleContext.payer()).willReturn(payerId);
         given(handleContext.body()).willReturn(txn);
         given(handleContext.configuration()).willReturn(configuration);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
-        given(handleContext.dispatchRemovableChildTransaction(any(), eq(CryptoCreateRecordBuilder.class)))
+        given(handleContext.dispatchRemovableChildTransaction(
+                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(payerId)))
                 .willReturn(cryptoCreateRecordBuilder);
         transferContext = new TransferContextImpl(handleContext);
         given(configProvider.getConfiguration()).willReturn(versionedConfig);
@@ -202,7 +205,12 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
     }
 
     protected void givenAutoCreationDispatchEffects() {
-        given(handleContext.dispatchRemovableChildTransaction(any(), eq(CryptoCreateRecordBuilder.class)))
+        givenAutoCreationDispatchEffects(spenderId);
+    }
+
+    protected void givenAutoCreationDispatchEffects(AccountID syntheticPayer) {
+        given(handleContext.dispatchRemovableChildTransaction(
+                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(syntheticPayer)))
                 .will((invocation) -> {
                     final var copy = account.copyBuilder()
                             .alias(ecKeyAlias.value())

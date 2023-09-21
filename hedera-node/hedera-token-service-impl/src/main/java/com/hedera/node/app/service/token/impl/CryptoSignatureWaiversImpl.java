@@ -19,14 +19,15 @@ package com.hedera.node.app.service.token.impl;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.service.token.TokenService;
-import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
+import com.hedera.node.app.spi.authorization.Authorizer;
+import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.commons.lang3.NotImplementedException;
 
 /**
  * A Singleton implementation of signature waivers needed for transactions in {@link TokenService}. NOTE: FUTURE - These
@@ -34,19 +35,29 @@ import org.apache.commons.lang3.NotImplementedException;
  */
 @Singleton
 public class CryptoSignatureWaiversImpl implements CryptoSignatureWaivers {
+    private final Authorizer authorizer;
 
     @Inject
-    public CryptoSignatureWaiversImpl(@NonNull final HederaAccountNumbers accountNumbers) {
-        requireNonNull(accountNumbers);
+    public CryptoSignatureWaiversImpl(@NonNull final Authorizer authorizer) {
+        this.authorizer = requireNonNull(authorizer);
     }
 
     @Override
     public boolean isTargetAccountSignatureWaived(final TransactionBody cryptoUpdateTxn, final AccountID payer) {
-        throw new NotImplementedException();
+        return authorizer.hasPrivilegedAuthorization(payer, HederaFunctionality.CRYPTO_UPDATE, cryptoUpdateTxn)
+                == SystemPrivilege.AUTHORIZED;
     }
 
     @Override
     public boolean isNewKeySignatureWaived(final TransactionBody cryptoUpdateTxn, final AccountID payer) {
-        throw new NotImplementedException();
+        final var isAuthorized =
+                authorizer.hasPrivilegedAuthorization(payer, HederaFunctionality.CRYPTO_UPDATE, cryptoUpdateTxn)
+                        == SystemPrivilege.AUTHORIZED;
+        if (!isAuthorized) {
+            return false;
+        } else {
+            final var targetNum = cryptoUpdateTxn.cryptoUpdateAccountOrThrow().accountIDToUpdateOrThrow();
+            return !authorizer.isTreasury(targetNum);
+        }
     }
 }

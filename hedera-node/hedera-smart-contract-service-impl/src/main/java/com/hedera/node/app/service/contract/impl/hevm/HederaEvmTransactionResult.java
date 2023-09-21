@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.hevm;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.errorMessageFor;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.accessTrackerFor;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asPbjStateChanges;
@@ -31,6 +32,7 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
+import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
 import com.hedera.node.app.service.contract.impl.state.RootProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
@@ -40,6 +42,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.log.Log;
 
@@ -50,7 +53,7 @@ public record HederaEvmTransactionResult(
         @Nullable ContractID recipientId,
         @Nullable ContractID recipientEvmAddress,
         @NonNull Bytes output,
-        @Nullable String haltReason,
+        @Nullable ExceptionalHaltReason haltReason,
         @Nullable Bytes revertReason,
         @NonNull List<Log> logs,
         @Nullable ContractStateChanges stateChanges) {
@@ -82,11 +85,27 @@ public record HederaEvmTransactionResult(
     public ContractFunctionResult asProtoResultOf(
             @Nullable final EthTxData ethTxData, @NonNull final RootProxyWorldUpdater updater) {
         if (haltReason != null) {
+            return withMaybeEthFields(asUncommittedFailureResult(errorMessageFor(haltReason)), ethTxData);
+        } else if (revertReason != null) {
+            return null;
+        } else {
+            return withMaybeEthFields(asSuccessResultForCommitted(updater), ethTxData);
+        }
+    }
+
+    /**
+     * Converts this result to a {@link ContractFunctionResult} for a transaction based on the given
+     * {@link RootProxyWorldUpdater} and maybe {@link EthTxData}.
+     *
+     * @return the result
+     */
+    public ContractFunctionResult asQueryResultOf() {
+        if (haltReason != null) {
             throw new AssertionError("Not implemented");
         } else if (revertReason != null) {
             throw new AssertionError("Not implemented");
         } else {
-            return withMaybeEthFields(asSuccessResultForCommitted(updater), ethTxData);
+            return asSuccessResultForQuery();
         }
     }
 
@@ -97,9 +116,13 @@ public record HederaEvmTransactionResult(
      */
     public ResponseCodeEnum finalStatus() {
         if (haltReason != null) {
-            throw new AssertionError("Not implemented");
+            return CustomExceptionalHaltReason.statusFor(haltReason);
         } else if (revertReason != null) {
-            throw new AssertionError("Not implemented");
+            if (revertReason.length() == 0) {
+                return ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+            } else {
+                throw new AssertionError("Not implemented");
+            }
         } else {
             return SUCCESS;
         }
@@ -167,7 +190,7 @@ public record HederaEvmTransactionResult(
                 null,
                 null,
                 Bytes.EMPTY,
-                frame.getExceptionalHaltReason().map(Object::toString).orElse(null),
+                frame.getExceptionalHaltReason().orElse(null),
                 frame.getRevertReason().map(ConversionUtils::tuweniToPbjBytes).orElse(null),
                 Collections.emptyList(),
                 stateReadsFrom(frame));
@@ -211,6 +234,11 @@ public record HederaEvmTransactionResult(
         return builder.build();
     }
 
+    private ContractFunctionResult.Builder asUncommittedFailureResult(@NonNull final String errorMessage) {
+        requireNonNull(errorMessage);
+        return ContractFunctionResult.newBuilder().gasUsed(gasUsed).errorMessage(errorMessage);
+    }
+
     private ContractFunctionResult.Builder asSuccessResultForCommitted(@NonNull final RootProxyWorldUpdater updater) {
         final var createdIds = updater.getCreatedContractIds();
         return ContractFunctionResult.newBuilder()
@@ -223,6 +251,17 @@ public record HederaEvmTransactionResult(
                 .evmAddress(recipientEvmAddressIfCreatedIn(createdIds))
                 .contractNonces(updater.getUpdatedContractNonces())
                 .errorMessage(null);
+    }
+
+    private ContractFunctionResult asSuccessResultForQuery() {
+        return ContractFunctionResult.newBuilder()
+                .gasUsed(gasUsed)
+                .bloom(bloomForAll(logs))
+                .contractCallResult(output)
+                .contractID(recipientId)
+                .logInfo(pbjLogsFrom(logs))
+                .errorMessage(null)
+                .build();
     }
 
     private @Nullable Bytes recipientEvmAddressIfCreatedIn(@NonNull final List<ContractID> contractIds) {

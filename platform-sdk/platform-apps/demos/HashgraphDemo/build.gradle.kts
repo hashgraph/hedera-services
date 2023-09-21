@@ -15,11 +15,8 @@
  */
 
 plugins {
-  id("com.swirlds.platform.conventions")
-  id("com.swirlds.platform.application")
+    id("com.hedera.hashgraph.application")
+    id("com.hedera.hashgraph.mock-release-tasks")
 }
 
-dependencies {
-  // Individual Dependencies
-  implementation(project(":swirlds-platform-core"))
-}
+application.mainClass.set("com.swirlds.demo.hashgraph.HashgraphDemoMain")

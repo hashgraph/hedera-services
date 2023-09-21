@@ -55,7 +55,9 @@ import org.apache.commons.lang3.tuple.Pair;
 /**
  * Utility class for signing record stream files
  */
+@SuppressWarnings("java:S106") // Suppressing the usage of System.out.println instead of a logger
 public class RecordStreamSigningUtils {
+
     /**
      * Hidden constructor
      */
@@ -88,6 +90,7 @@ public class RecordStreamSigningUtils {
      * @param hapiVersion              the hapi protobuf version
      * @return true if the signature file was generated successfully, false otherwise
      */
+    @SuppressWarnings("java:S112") // Suppressing that we are throwing RuntimeException(generic exception)
     public static boolean signRecordStreamFile(
             @NonNull final Path signatureFileDestination,
             @NonNull final Path streamFileToSign,
@@ -198,6 +201,8 @@ public class RecordStreamSigningUtils {
         }
     }
 
+    // Suppressing the warning that in log.info we shouldn't pass invoking method
+    @SuppressWarnings("java:S2629")
     private static void outputStreamDigest(int[] fileHeader, String recordFile) throws IOException {
         try (final SerializableDataOutputStream dosMeta =
                         new SerializableDataOutputStream(new HashingOutputStream(metadataStreamDigest));
@@ -243,6 +248,7 @@ public class RecordStreamSigningUtils {
                     System.err.printf(
                             "outputStreamDigest :: Failed to parse record file [%s] with exception : [%s]%n",
                             recordFile, "RecordStreamFile does not have startObjectRunningHash");
+
                     throw new IOException("RecordStreamFile does not have startObjectRunningHash");
                 }
             } else {

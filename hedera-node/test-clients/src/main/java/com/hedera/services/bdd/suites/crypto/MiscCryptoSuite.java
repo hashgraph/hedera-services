@@ -35,6 +35,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -71,7 +72,8 @@ public class MiscCryptoSuite extends HapiSuite {
         return List.of(updateWithOutOfDateKeyFails());
     }
 
-    private HapiSpec sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign() {
+    @HapiTest
+    private static HapiSpec sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign() {
         String sysAccount = "0.0.977";
         String randomAccountA = "randomAccountA";
         String randomAccountB = "randomAccountB";
@@ -101,7 +103,7 @@ public class MiscCryptoSuite extends HapiSuite {
                                 .hasKnownStatus(INVALID_SIGNATURE));
     }
 
-    private HapiSpec reduceTransferFee() {
+    private static HapiSpec reduceTransferFee() {
         final long REDUCED_NODE_FEE = 2L;
         final long REDUCED_NETWORK_FEE = 3L;
         final long REDUCED_SERVICE_FEE = 3L;
@@ -125,21 +127,24 @@ public class MiscCryptoSuite extends HapiSuite {
                                 .logged());
     }
 
-    public static HapiSpec getsGenesisBalance() {
+    @HapiTest
+    private static HapiSpec getsGenesisBalance() {
         return defaultHapiSpec("GetsGenesisBalance")
                 .given()
                 .when()
                 .then(getAccountBalance(GENESIS).logged());
     }
 
-    public static HapiSpec transferChangesBalance() {
+    @HapiTest
+    private static HapiSpec transferChangesBalance() {
         return defaultHapiSpec("TransferChangesBalance")
                 .given(cryptoCreate("newPayee").balance(0L))
                 .when(cryptoTransfer(tinyBarsFromTo(GENESIS, "newPayee", 1_000_000_000L)))
                 .then(getAccountBalance("newPayee").hasTinyBars(1_000_000_000L).logged());
     }
 
-    private HapiSpec updateWithOutOfDateKeyFails() {
+    @HapiTest
+    private static HapiSpec updateWithOutOfDateKeyFails() {
         return defaultHapiSpec("UpdateWithOutOfDateKeyFails")
                 .given(
                         newKeyNamed("originalKey"),

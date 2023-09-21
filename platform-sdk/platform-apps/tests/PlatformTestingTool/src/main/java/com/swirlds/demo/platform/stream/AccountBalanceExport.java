@@ -41,7 +41,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -242,10 +241,9 @@ public class AccountBalanceExport {
                 return newFileName;
             }
         } catch (IOException e) {
-            logger.error(
-                    "generateSigFile :: Fail to generate signature file for {}. Exception: {}",
-                    fileName,
-                    ExceptionUtils.getStackTrace(e));
+            final String message =
+                    "generateSigFile :: Fail to generate signature file for %s. Exception:".formatted(fileName);
+            logger.error(message, e);
             return null;
         }
     }

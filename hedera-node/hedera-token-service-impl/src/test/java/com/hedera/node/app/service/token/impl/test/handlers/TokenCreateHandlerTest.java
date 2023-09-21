@@ -62,7 +62,6 @@ import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.TokenCreateTransactionBody;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.config.VersionedConfigImpl;
 import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
@@ -82,6 +81,7 @@ import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilde
 import com.hedera.node.app.workflows.handle.validation.StandardizedAttributeValidator;
 import com.hedera.node.app.workflows.handle.validation.StandardizedExpiryValidator;
 import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -175,7 +175,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(tokenRel.deleted()).isFalse();
         assertThat(tokenRel.tokenId()).isEqualTo(newTokenId);
         assertThat(tokenRel.accountId()).isEqualTo(treasuryId);
-        assertThat(tokenRel.kycGranted()).isFalse();
+        assertThat(tokenRel.kycGranted()).isTrue();
         assertThat(tokenRel.automaticAssociation()).isFalse();
         assertThat(tokenRel.frozen()).isFalse();
         assertThat(tokenRel.nextToken()).isNull();
@@ -232,7 +232,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(tokenRel.deleted()).isFalse();
         assertThat(tokenRel.tokenId()).isEqualTo(newTokenId);
         assertThat(tokenRel.accountId()).isEqualTo(treasuryId);
-        assertThat(tokenRel.kycGranted()).isFalse();
+        assertThat(tokenRel.kycGranted()).isTrue();
         assertThat(tokenRel.automaticAssociation()).isFalse();
         assertThat(tokenRel.frozen()).isFalse();
         assertThat(tokenRel.nextToken()).isNull();
@@ -420,7 +420,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(tokenRel.deleted()).isFalse();
         assertThat(tokenRel.tokenId()).isEqualTo(newTokenId);
         assertThat(tokenRel.accountId()).isEqualTo(treasuryId);
-        assertThat(tokenRel.kycGranted()).isFalse();
+        assertThat(tokenRel.kycGranted()).isTrue();
         assertThat(tokenRel.automaticAssociation()).isFalse();
         assertThat(tokenRel.frozen()).isFalse();
         assertThat(tokenRel.nextToken()).isNull();

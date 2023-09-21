@@ -20,11 +20,12 @@ import static com.swirlds.logging.LogMarker.STARTUP;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.status.StatusActionSubmitter;
+import com.swirlds.common.system.status.PlatformStatusManager;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.manager.ThreadManager;
@@ -48,6 +49,7 @@ import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -74,6 +76,7 @@ public final class GossipFactory {
      * @param addressBook                   the current address book
      * @param selfId                        this node's ID
      * @param appVersion                    the version of the app
+     * @param epochHash                     the epoch hash of the initial state
      * @param shadowGraph                   contains non-ancient events
      * @param emergencyRecoveryManager      handles emergency recovery
      * @param consensusRef                  a pointer to consensus
@@ -90,7 +93,7 @@ public final class GossipFactory {
      * @param eventIntakeMetrics            metrics for event intake
      * @param syncMetrics                   metrics for sync
      * @param eventLinker                   links together events, if chatter is enabled will also buffer orphans
-     * @param statusActionSubmitter         enables submitting platform status actions
+     * @param platformStatusManager         the platform status manager
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
      * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
      * @return the gossip engine
@@ -104,6 +107,7 @@ public final class GossipFactory {
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
             @NonNull final SoftwareVersion appVersion,
+            @Nullable final Hash epochHash,
             @NonNull final ShadowGraph shadowGraph,
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
             @NonNull final AtomicReference<Consensus> consensusRef,
@@ -119,7 +123,7 @@ public final class GossipFactory {
             @NonNull final EventIntakeMetrics eventIntakeMetrics,
             @NonNull final SyncMetrics syncMetrics,
             @NonNull final EventLinker eventLinker,
-            @NonNull final StatusActionSubmitter statusActionSubmitter,
+            @NonNull final PlatformStatusManager platformStatusManager,
             @NonNull final Consumer<SignedState> loadReconnectState,
             @NonNull final Runnable clearAllPipelinesForReconnect) {
 
@@ -145,7 +149,7 @@ public final class GossipFactory {
         Objects.requireNonNull(eventIntakeMetrics);
         Objects.requireNonNull(syncMetrics);
         Objects.requireNonNull(eventLinker);
-        Objects.requireNonNull(statusActionSubmitter);
+        Objects.requireNonNull(platformStatusManager);
         Objects.requireNonNull(loadReconnectState);
         Objects.requireNonNull(clearAllPipelinesForReconnect);
 
@@ -162,6 +166,7 @@ public final class GossipFactory {
                     addressBook,
                     selfId,
                     appVersion,
+                    epochHash,
                     shadowGraph,
                     emergencyRecoveryManager,
                     consensusRef,
@@ -177,7 +182,7 @@ public final class GossipFactory {
                     eventIntakeMetrics,
                     syncMetrics,
                     eventLinker,
-                    statusActionSubmitter,
+                    platformStatusManager,
                     loadReconnectState,
                     clearAllPipelinesForReconnect);
         } else {
@@ -202,7 +207,7 @@ public final class GossipFactory {
                         eventMapper,
                         eventIntakeMetrics,
                         syncMetrics,
-                        statusActionSubmitter,
+                        platformStatusManager,
                         loadReconnectState,
                         clearAllPipelinesForReconnect);
             } else {
@@ -216,6 +221,7 @@ public final class GossipFactory {
                         addressBook,
                         selfId,
                         appVersion,
+                        epochHash,
                         shadowGraph,
                         emergencyRecoveryManager,
                         consensusRef,
@@ -230,7 +236,7 @@ public final class GossipFactory {
                         eventIntakeMetrics,
                         syncMetrics,
                         eventLinker,
-                        statusActionSubmitter,
+                        platformStatusManager,
                         loadReconnectState,
                         clearAllPipelinesForReconnect);
             }

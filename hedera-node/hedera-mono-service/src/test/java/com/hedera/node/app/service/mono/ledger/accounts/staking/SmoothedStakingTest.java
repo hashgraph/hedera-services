@@ -82,8 +82,7 @@ class SmoothedStakingTest {
 
     private static final long V_040_MAX_STAKE_REWARDED = 650_000_000_000_000_000L;
     private static final long V_040_REWARD_BALANCE_THRESHOLD = 8_500_000_000_000_000L;
-    private static final long V_040_REWARD_RATE = 48_630_136_986_000L;
-    private static final long V_040_MAX_REWARD_RATE_PER_HBAR = 6_849L;
+    private static final long MAX_REWARD_RATE_PER_HBAR = 6_849L;
     private static final long TINYBAR_PER_HBAR = 100_000_000L;
 
     @CsvSource({
@@ -95,7 +94,7 @@ class SmoothedStakingTest {
     })
     @ParameterizedTest
     void rewardsWithV40PropertiesTrackAsExpected(final long stakeRewardedHbars, final long unreserved800BalanceHbars) {
-        given(dynamicProperties.stakingRewardRate()).willReturn(V_040_REWARD_RATE);
+        given(dynamicProperties.stakingPerHbarRewardRate()).willReturn(MAX_REWARD_RATE_PER_HBAR);
         given(dynamicProperties.maxStakeRewarded()).willReturn(V_040_MAX_STAKE_REWARDED);
         given(dynamicProperties.stakingRewardBalanceThreshold()).willReturn(V_040_REWARD_BALANCE_THRESHOLD);
         given(properties.getLongProperty(ACCOUNTS_STAKING_REWARD_ACCOUNT)).willReturn(800L);
@@ -105,23 +104,20 @@ class SmoothedStakingTest {
         given(accounts.get(EntityNum.fromLong(800L))).willReturn(accountWith(unreserved800Balance));
 
         final var impliedBalanceRatio = subject.ratioOf(unreserved800Balance, V_040_REWARD_BALANCE_THRESHOLD);
-        final var maxTinybarsToPay = V_040_MAX_REWARD_RATE_PER_HBAR * (stakeRewarded / TINYBAR_PER_HBAR);
-        final var effectiveTinybarsToPay =
-                subject.rewardRateForEndingPeriod(impliedBalanceRatio, stakeRewarded, maxTinybarsToPay);
+        final var desiredTinybarsToPay =
+                subject.rescaledPerHbarRewardRate(impliedBalanceRatio, stakeRewarded, MAX_REWARD_RATE_PER_HBAR);
 
-        final var actualTinybarsToPay = subject.rewardRateForEndingPeriod(stakeRewarded);
+        final var actualTinybarsToPay = subject.perHbarRewardRateForEndingPeriod(stakeRewarded);
         System.out.println("\nWith " + asBillions(stakeRewarded)
                 + " stake rewarded, and "
                 + asMillions(unreserved800Balance) + " unreserved 800 balance:");
         System.out.println("  - Exact HIP-782 calculation: "
-                + effectiveTinybarsToPay + " tinybars disbursed in period for a yearly reward rate of "
-                + asInRangeRate(effectiveTinybarsToPay, stakeRewarded));
-        System.out.println("  - Actual 0.40 calculation  : "
+                + desiredTinybarsToPay + " tinybars disbursed in period for a yearly reward rate of "
+                + asInRangeRate(desiredTinybarsToPay, stakeRewarded));
+        System.out.println("  - Actual calculation      : "
                 + actualTinybarsToPay + " tinybars disbursed in period for a yearly reward rate of "
                 + asInRangeRate(actualTinybarsToPay, stakeRewarded));
-        final var percentDifference =
-                100.0 * Math.abs(actualTinybarsToPay - effectiveTinybarsToPay) / effectiveTinybarsToPay;
-        Assertions.assertTrue(percentDifference < 7.0);
+        Assertions.assertEquals(desiredTinybarsToPay, actualTinybarsToPay);
     }
 
     private String asInRangeRate(final long tinybarsDisbursed, final long stakeRewarded) {

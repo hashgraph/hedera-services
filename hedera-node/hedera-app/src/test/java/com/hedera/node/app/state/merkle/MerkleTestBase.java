@@ -31,22 +31,26 @@ import com.hedera.node.app.state.merkle.singleton.SingletonNode;
 import com.hedera.pbj.runtime.Codec;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
+import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.common.utility.Labeled;
-import com.swirlds.jasperdb.JasperDbBuilder;
-import com.swirlds.jasperdb.VirtualLeafRecordSerializer;
-import com.swirlds.jasperdb.files.DataFileCommon;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.merkledb.MerkleDb;
+import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
+import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
+import org.junit.jupiter.api.AfterEach;
 
 /**
  * This base class provides helpful methods and defaults for simplifying the other merkle related
@@ -192,7 +196,7 @@ public class MerkleTestBase extends StateTestBase {
             // It may have been configured during some other test, so we reset it
             registry.reset();
             registry.registerConstructables("com.swirlds.merklemap");
-            registry.registerConstructables("com.swirlds.jasperdb");
+            registry.registerConstructables("com.swirlds.merkledb");
             registry.registerConstructables("com.swirlds.fcqueue");
             registry.registerConstructables("com.swirlds.virtualmap");
             registry.registerConstructables("com.swirlds.common.merkle");
@@ -216,21 +220,25 @@ public class MerkleTestBase extends StateTestBase {
     @SuppressWarnings("unchecked")
     protected VirtualMap<OnDiskKey<String>, OnDiskValue<String>> createVirtualMap(
             String label, StateMetadata<String, String> md) {
-        final var keySerializer = new OnDiskKeySerializer<>(md);
-        final var builder = new JasperDbBuilder<OnDiskKey<String>, OnDiskValue<String>>()
+        final MerkleDbTableConfig<OnDiskKey<String>, OnDiskValue<String>> tableConfig = new MerkleDbTableConfig<>(
+                        (short) 1,
+                        DigestType.SHA_384,
+                        (short) 1,
+                        new OnDiskKeySerializer<>(md),
+                        (short) 1,
+                        new OnDiskValueSerializer<>(md))
                 .hashesRamToDiskThreshold(0)
-                .maxNumOfKeys(100)
-                .preferDiskBasedIndexes(true)
-                .keySerializer(keySerializer)
-                .virtualLeafRecordSerializer(new VirtualLeafRecordSerializer<>(
-                        (short) 1,
-                        DataFileCommon.VARIABLE_DATA_SIZE,
-                        keySerializer,
-                        (short) 1,
-                        DataFileCommon.VARIABLE_DATA_SIZE,
-                        new OnDiskValueSerializer<>(md),
-                        false));
-        return new VirtualMap<>(label, builder);
+                .maxNumberOfKeys(100)
+                .preferDiskIndices(true);
+
+        try {
+            final VirtualDataSourceBuilder<OnDiskKey<String>, OnDiskValue<String>> dsBuilder =
+                    new MerkleDbDataSourceBuilder<>(
+                            TemporaryFileBuilder.buildTemporaryDirectory("merkledb"), tableConfig);
+            return new VirtualMap<>(label, dsBuilder);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -297,5 +305,10 @@ public class MerkleTestBase extends StateTestBase {
         try (final var in = new MerkleDataInputStream(byteInputStream)) {
             return in.readMerkleTree(tempDir, 100);
         }
+    }
+
+    @AfterEach
+    void cleanUp() {
+        MerkleDb.resetDefaultInstancePath();
     }
 }

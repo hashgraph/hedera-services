@@ -30,6 +30,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -60,6 +61,7 @@ public class SignedTransactionBytesRecordsSuite extends HapiSuite {
         return true;
     }
 
+    @HapiTest
     private HapiSpec transactionsWithOnlySigMap() {
         final var contract = "BalanceLookup";
         return defaultHapiSpec("TransactionsWithOnlySigMap")

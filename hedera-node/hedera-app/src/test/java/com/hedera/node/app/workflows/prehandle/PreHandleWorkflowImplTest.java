@@ -17,8 +17,10 @@
 package com.hedera.node.app.workflows.prehandle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNKNOWN;
 import static com.hedera.node.app.workflows.TransactionScenarioBuilder.scenario;
@@ -31,12 +33,12 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.AppTestBase;
-import com.hedera.node.app.config.VersionedConfigImpl;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.signature.SignatureExpander;
@@ -53,6 +55,7 @@ import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.verifier.BaseHandleContextVerifier;
 import com.hedera.node.app.workflows.handle.verifier.HandleContextVerifier;
 import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -126,6 +129,11 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
                         "ACCOUNTS",
                         Map.of(
                                 ALICE.accountID(), ALICE.account(),
+                                BOB.accountID(),
+                                        BOB.account()
+                                                .copyBuilder()
+                                                .deleted(true)
+                                                .build(),
                                 ERIN.accountID(), ERIN.account(),
                                 STAKING_REWARD_ACCOUNT.accountID(), STAKING_REWARD_ACCOUNT.account()),
                         "ALIASES",
@@ -344,6 +352,33 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
         }
 
         /**
+         * It may be that when the transaction is pre-handled, it refers to an account that was deleted. This may
+         * happen because the transaction is bad, or it may happen because we do not yet have an account object (maybe
+         * another in-flight transaction will create it). But every node as part of its due-diligence has to verify the
+         * payer signature on the transaction prior to submitting the transaction to the network. So if the payer
+         * account was deleted, then the node failed due-diligence and should pay for the transaction.
+         */
+        @Test
+        @DisplayName("Fail pre-handle because the payer account deleted")
+        void preHandlePayerAccountDeleted() throws PreCheckException {
+            // Given a transactionID that refers to an account that was deleted
+            final var txInfo = scenario().withPayer(BOB.accountID()).txInfo();
+
+            final Transaction platformTx = new SwirldTransaction(asByteArray(txInfo.transaction()));
+            when(transactionChecker.parseAndCheck(any(Bytes.class))).thenReturn(txInfo);
+
+            // When we pre-handle the transaction
+            workflow.preHandle(storeFactory, NODE_1.nodeAccountID(), Stream.of(platformTx));
+
+            // Then the transaction fails and the node is the payer
+            final PreHandleResult result1 = platformTx.getMetadata();
+            assertThat(result1.responseCode()).isEqualTo(PAYER_ACCOUNT_DELETED);
+            assertThat(result1.payer()).isEqualTo(NODE_1.nodeAccountID());
+            // But we do see this transaction registered with the deduplication cache
+            verify(deduplicationCache).add(txInfo.txBody().transactionIDOrThrow());
+        }
+
+        /**
          * The transaction submitted by the user may simply be missing the payer signature. Maybe the payer in the
          * transaction is a valid account ID, and maybe the account exists, but maybe the payer never signed the
          * transaction. In that case, the node failed due diligence again and should pay for the transaction. True, a
@@ -376,8 +411,34 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             final HandleContextVerifier verifier = new BaseHandleContextVerifier(config, result1.verificationResults());
             final var result = verifier.verificationFor(key);
             assertThat(result.passed()).isFalse();
-            // And we do see this transaction registered with the deduplication cache
+            // And we do NOT see this transaction registered with the deduplication cache
             verify(deduplicationCache).add(txInfo.txBody().transactionIDOrThrow());
+        }
+
+        /**
+         * If a node's event contains transactions that DO NOT have that node's account as the node account ID of the
+         * transaction, then the node is trying to send transactions that don't belong to it.
+         */
+        @Test
+        @DisplayName("Fail pre-handle because the transaction is not created by the creator")
+        void preHandleCreatorAccountNotTxNodeAccount() throws PreCheckException {
+            // Given a transactionID that refers to an account OTHER THAN the creator node account.
+            // The creator in this scenario is NODE_1.
+            final var txInfo =
+                    scenario().withNodeAccount(NODE_2.nodeAccountID()).txInfo();
+
+            final Transaction platformTx = new SwirldTransaction(asByteArray(txInfo.transaction()));
+            when(transactionChecker.parseAndCheck(any(Bytes.class))).thenReturn(txInfo);
+
+            // When we pre-handle the transaction
+            workflow.preHandle(storeFactory, NODE_1.nodeAccountID(), Stream.of(platformTx));
+
+            // Then the transaction fails and the node is the payer
+            final PreHandleResult result1 = platformTx.getMetadata();
+            assertThat(result1.responseCode()).isEqualTo(INVALID_NODE_ACCOUNT);
+            assertThat(result1.payer()).isEqualTo(NODE_1.nodeAccountID());
+            // But we do see this transaction registered with the deduplication cache
+            verifyNoInteractions(deduplicationCache);
         }
     }
 

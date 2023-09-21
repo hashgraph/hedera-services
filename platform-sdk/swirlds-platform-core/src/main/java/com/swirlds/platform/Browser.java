@@ -16,6 +16,7 @@
 
 package com.swirlds.platform;
 
+import static com.swirlds.common.system.SystemExitUtils.exitSystem;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
@@ -26,9 +27,9 @@ import static com.swirlds.platform.gui.internal.BrowserWindowManager.getStateHie
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.moveBrowserWindowToFront;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.setStateHierarchy;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.showBrowserWindow;
+import static com.swirlds.platform.state.signed.StartupStateUtils.getInitialState;
 import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
-import static com.swirlds.platform.util.BootstrapUtils.getInitialState;
 import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.loadPathsConfig;
 import static com.swirlds.platform.util.BootstrapUtils.loadSwirldMains;
@@ -37,6 +38,7 @@ import static com.swirlds.platform.util.BootstrapUtils.startJVMPauseDetectorThre
 import static com.swirlds.platform.util.BootstrapUtils.startThreadDumpGenerator;
 import static com.swirlds.platform.util.BootstrapUtils.writeSettingsUsed;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.StartupTime;
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.PathsConfig;
@@ -46,7 +48,7 @@ import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.internal.ApplicationDefinition;
-import com.swirlds.common.io.utility.RecycleBin;
+import com.swirlds.common.io.utility.RecycleBinImpl;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.MetricsProvider;
 import com.swirlds.common.metrics.platform.DefaultMetricsProvider;
@@ -55,6 +57,8 @@ import com.swirlds.common.startup.Log4jSetup;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldMain;
+import com.swirlds.common.system.SystemExitCode;
+import com.swirlds.common.system.SystemExitUtils;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
@@ -68,6 +72,7 @@ import com.swirlds.logging.payloads.NodeStartPayload;
 import com.swirlds.platform.config.internal.PlatformConfigUtils;
 import com.swirlds.platform.crypto.CryptoConstants;
 import com.swirlds.platform.gui.internal.StateHierarchy;
+import com.swirlds.platform.internal.SignedStateLoadingException;
 import com.swirlds.platform.network.Network;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.State;
@@ -142,15 +147,16 @@ public class Browser {
     public static void parseCommandLineArgsAndLaunch(@NonNull final String... args) {
         final CommandLineArgs commandLineArgs = CommandLineArgs.parse(args);
 
-        launch(commandLineArgs);
+        launch(commandLineArgs, false);
     }
 
     /**
      * Launch the browser with the command line arguments already parsed
      *
      * @param commandLineArgs the parsed command line arguments
+     * @param pcesRecovery if true, the platform will be started in PCES recovery mode
      */
-    public static void launch(@NonNull final CommandLineArgs commandLineArgs) {
+    public static void launch(@NonNull final CommandLineArgs commandLineArgs, final boolean pcesRecovery) {
         if (STARTED.getAndSet(true)) {
             return;
         }
@@ -167,7 +173,7 @@ public class Browser {
         logger = LogManager.getLogger(Browser.class);
 
         try {
-            launchUnhandled(commandLineArgs);
+            launchUnhandled(commandLineArgs, pcesRecovery);
         } catch (final Exception e) {
             logger.error(EXCEPTION.getMarker(), "Unable to start Browser", e);
             throw new RuntimeException("Unable to start Browser", e);
@@ -178,8 +184,10 @@ public class Browser {
      * Launch the browser but do not handle any exceptions
      *
      * @param commandLineArgs the parsed command line arguments
+     * @param pcesRecovery if true, the platform will be started in PCES recovery mode
      */
-    private static void launchUnhandled(@NonNull final CommandLineArgs commandLineArgs) throws Exception {
+    private static void launchUnhandled(@NonNull final CommandLineArgs commandLineArgs, final boolean pcesRecovery)
+            throws Exception {
         Objects.requireNonNull(commandLineArgs);
 
         StartupTime.markStartupTime();
@@ -266,6 +274,13 @@ public class Browser {
         // init appMains
         for (final NodeId nodeId : nodesToRun) {
             appMains.get(nodeId).init(platforms.get(nodeId), nodeId);
+        }
+
+        if (pcesRecovery) {
+            // PCES recovery is only expected to be done on a single node
+            // due to the structure of Browser atm, it makes more sense to enable the feature for multiple platforms
+            platforms.values().forEach(SwirldsPlatform::performPcesRecovery);
+            SystemExitUtils.exitSystem(SystemExitCode.NO_ERROR, "PCES recovery done");
         }
 
         // build app threads
@@ -365,7 +380,9 @@ public class Browser {
         final String swirldName = appDefinition.getSwirldName();
         final SoftwareVersion appVersion = appMain.getSoftwareVersion();
 
-        final RecycleBin recycleBin = RecycleBin.create(configuration, nodeId);
+        final RecycleBinImpl recycleBin = new RecycleBinImpl(
+                configuration, platformContext.getMetrics(), getStaticThreadManager(), Time.getCurrent(), nodeId);
+        recycleBin.start();
 
         // We can't send a "real" dispatch, since the dispatcher will not have been started by the
         // time this class is used.
@@ -374,27 +391,29 @@ public class Browser {
         final EmergencyRecoveryManager emergencyRecoveryManager = new EmergencyRecoveryManager(
                 stateConfig, new Shutdown()::shutdown, basicConfig.getEmergencyRecoveryFileLoadDir());
 
-        final ReservedSignedState initialState = getInitialState(
-                platformContext,
-                appMain,
-                mainClassName,
-                swirldName,
-                nodeId,
-                configAddressBook,
-                emergencyRecoveryManager);
+        final ReservedSignedState initialState;
+        try {
+            initialState = getInitialState(
+                    platformContext,
+                    recycleBin,
+                    appMain,
+                    mainClassName,
+                    swirldName,
+                    nodeId,
+                    configAddressBook,
+                    emergencyRecoveryManager);
+        } catch (final SignedStateLoadingException e) {
+            exitSystem(SystemExitCode.FATAL_ERROR, "unable to load initial state");
+            throw new IllegalStateException(); // unreachable
+        }
 
         try (initialState) {
             // check software version compatibility
             final boolean softwareUpgrade = detectSoftwareUpgrade(appVersion, initialState.get());
 
-            if (softwareUpgrade) {
-                logger.info(STARTUP.getMarker(), "Clearing recycle bin as part of software upgrade workflow.");
-                recycleBin.clear();
-            }
-
             // Initialize the address book from the configuration and platform saved state.
             final AddressBookInitializer addressBookInitializer = new AddressBookInitializer(
-                    appVersion, softwareUpgrade, initialState.get(), configAddressBook.copy(), platformContext);
+                    nodeId, appVersion, softwareUpgrade, initialState.get(), configAddressBook.copy(), platformContext);
 
             if (!initialState.get().isGenesisState()) {
                 final State state = initialState.get().getState();
@@ -418,6 +437,7 @@ public class Browser {
                     mainClassName,
                     swirldName,
                     appVersion,
+                    softwareUpgrade,
                     initialState.get(),
                     addressBookInitializer.getPreviousAddressBook(),
                     emergencyRecoveryManager);

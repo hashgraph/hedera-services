@@ -26,12 +26,13 @@ import com.swirlds.base.utility.Pair;
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.status.StatusActionSubmitter;
+import com.swirlds.common.system.status.PlatformStatusManager;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
@@ -69,6 +70,7 @@ import com.swirlds.platform.event.intake.ChatterEventMapper;
 import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.gossip.AbstractGossip;
 import com.swirlds.platform.gossip.FallenBehindManagerImpl;
+import com.swirlds.platform.gossip.ProtocolConfig;
 import com.swirlds.platform.gossip.chatter.communication.ChatterProtocol;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.chatter.protocol.ChatterCore;
@@ -79,6 +81,7 @@ import com.swirlds.platform.metrics.EventIntakeMetrics;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.communication.NegotiationProtocols;
 import com.swirlds.platform.network.communication.NegotiatorThread;
+import com.swirlds.platform.network.communication.handshake.HashCompareHandshake;
 import com.swirlds.platform.network.communication.handshake.VersionCompareHandshake;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.reconnect.DefaultSignedStateValidator;
@@ -90,6 +93,7 @@ import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.threading.PauseAndClear;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -122,6 +126,7 @@ public class ChatterGossip extends AbstractGossip {
      * @param addressBook                   the current address book
      * @param selfId                        this node's ID
      * @param appVersion                    the version of the app
+     * @param epochHash                     the epoch hash of the initial state
      * @param shadowGraph                   contains non-ancient events
      * @param emergencyRecoveryManager      handles emergency recovery
      * @param consensusRef                  a pointer to consensus
@@ -138,7 +143,7 @@ public class ChatterGossip extends AbstractGossip {
      * @param eventIntakeMetrics            metrics for event intake
      * @param syncMetrics                   metrics for sync
      * @param eventLinker                   links together events, if chatter is enabled will also buffer orphans
-     * @param statusActionSubmitter         enables submitting platform status actions
+     * @param platformStatusManager         the platform status manager
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
      * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
      */
@@ -151,6 +156,7 @@ public class ChatterGossip extends AbstractGossip {
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
             @NonNull final SoftwareVersion appVersion,
+            @Nullable final Hash epochHash,
             @NonNull final ShadowGraph shadowGraph,
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
             @NonNull final AtomicReference<Consensus> consensusRef,
@@ -166,7 +172,7 @@ public class ChatterGossip extends AbstractGossip {
             @NonNull final EventIntakeMetrics eventIntakeMetrics,
             @NonNull final SyncMetrics syncMetrics,
             @NonNull final EventLinker eventLinker,
-            @NonNull final StatusActionSubmitter statusActionSubmitter,
+            @NonNull final PlatformStatusManager platformStatusManager,
             @NonNull final Consumer<SignedState> loadReconnectState,
             @NonNull final Runnable clearAllPipelinesForReconnect) {
         super(
@@ -186,12 +192,13 @@ public class ChatterGossip extends AbstractGossip {
                 eventIntakeMetrics,
                 syncMetrics,
                 eventObserverDispatcher,
-                statusActionSubmitter,
+                platformStatusManager,
                 loadReconnectState,
                 clearAllPipelinesForReconnect);
 
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
         final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
+        final ProtocolConfig protocolConfig = platformContext.getConfiguration().getConfigData(ProtocolConfig.class);
 
         chatterCore = new ChatterCore<>(
                 time,
@@ -201,7 +208,10 @@ public class ChatterGossip extends AbstractGossip {
                 networkMetrics::recordPingTime,
                 platformContext.getMetrics());
 
-        reconnectController = new ReconnectController(threadManager, reconnectHelper, this::resume);
+        final ReconnectConfig reconnectConfig =
+                platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
+
+        reconnectController = new ReconnectController(reconnectConfig, threadManager, reconnectHelper, this::resume);
 
         // first create all instances because of thread safety
         for (final NodeId otherId : topology.getNeighbors()) {
@@ -241,9 +251,6 @@ public class ChatterGossip extends AbstractGossip {
                         intakeCycle.waitForCurrentSequenceEnd();
                     });
 
-            final ReconnectConfig reconnectConfig =
-                    platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
-
             chatterThreads.add(new StoppableThreadConfiguration<>(threadManager)
                     .setPriority(Thread.NORM_PRIORITY)
                     .setNodeId(selfId)
@@ -255,10 +262,12 @@ public class ChatterGossip extends AbstractGossip {
                             connectionManagers.getManager(otherId, topology.shouldConnectTo(otherId)),
                             chatterConfig.sleepAfterFailedNegotiation(),
                             List.of(
-                                    new VersionCompareHandshake(appVersion, !basicConfig.gossipWithDifferentVersions()),
+                                    new VersionCompareHandshake(
+                                            appVersion, !protocolConfig.tolerateMismatchedVersion()),
                                     new VersionCompareHandshake(
                                             PlatformVersion.locateOrDefault(),
-                                            !basicConfig.gossipWithDifferentVersions())),
+                                            !protocolConfig.tolerateMismatchedVersion()),
+                                    new HashCompareHandshake(epochHash, !protocolConfig.tolerateMismatchedEpochHash())),
                             new NegotiationProtocols(List.of(
                                     new EmergencyReconnectProtocol(
                                             threadManager,
@@ -271,7 +280,7 @@ public class ChatterGossip extends AbstractGossip {
                                             reconnectMetrics,
                                             reconnectController,
                                             fallenBehindManager,
-                                            statusActionSubmitter,
+                                            platformStatusManager,
                                             platformContext.getConfiguration()),
                                     new ReconnectProtocol(
                                             threadManager,
@@ -282,9 +291,11 @@ public class ChatterGossip extends AbstractGossip {
                                             reconnectConfig.asyncStreamTimeout(),
                                             reconnectMetrics,
                                             reconnectController,
-                                            new DefaultSignedStateValidator(),
+                                            new DefaultSignedStateValidator(platformContext),
                                             fallenBehindManager,
-                                            platformContext.getConfiguration()),
+                                            platformStatusManager,
+                                            platformContext.getConfiguration(),
+                                            time),
                                     new ChatterSyncProtocol(
                                             otherId,
                                             chatterPeer.communicationState(),

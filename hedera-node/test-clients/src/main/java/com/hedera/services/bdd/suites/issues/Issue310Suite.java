@@ -24,6 +24,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
@@ -46,10 +47,11 @@ public class Issue310Suite extends HapiSuite {
         return List.of(
                 duplicatedTxnsSameTypeDetected(),
                 duplicatedTxnsDifferentTypesDetected(),
-                duplicatedTxnsSameTypeDifferntNodesDetected(),
-                duplicatedTxnsDiffrentTypesDifferentNodesDetected());
+                duplicatedTxnsSameTypeDifferentNodesDetected(),
+                duplicatedTxnsDifferentTypesDifferentNodesDetected());
     }
 
+    @HapiTest
     private HapiSpec duplicatedTxnsSameTypeDetected() {
         long initialBalance = 10_000L;
 
@@ -66,6 +68,7 @@ public class Issue310Suite extends HapiSuite {
                 .then(getTxnRecord("txnId1").logged());
     }
 
+    @HapiTest
     private HapiSpec duplicatedTxnsDifferentTypesDetected() {
         return defaultHapiSpec("duplicatedTxnsDifferentTypesDetected")
                 .given(
@@ -80,9 +83,11 @@ public class Issue310Suite extends HapiSuite {
                 .then(getTxnRecord("txnId2").logged());
     }
 
-    private HapiSpec duplicatedTxnsSameTypeDifferntNodesDetected() {
+    // This test requires multiple nodes
+    @HapiTest
+    private HapiSpec duplicatedTxnsSameTypeDifferentNodesDetected() {
 
-        return defaultHapiSpec("duplicatedTxnsSameTypeDifferntNodesDetected")
+        return defaultHapiSpec("duplicatedTxnsSameTypeDifferentNodesDetected")
                 .given(
                         cryptoCreate("acct3").setNode("0.0.3").via("txnId1"),
                         UtilVerbs.sleepFor(1000),
@@ -94,8 +99,10 @@ public class Issue310Suite extends HapiSuite {
                 .then(getTxnRecord("txnId1").logged());
     }
 
-    private HapiSpec duplicatedTxnsDiffrentTypesDifferentNodesDetected() {
-        return defaultHapiSpec("duplicatedTxnsDiffrentTypesDifferentNodesDetected")
+    // This test requires multiple nodes
+    @HapiTest
+    private HapiSpec duplicatedTxnsDifferentTypesDifferentNodesDetected() {
+        return defaultHapiSpec("duplicatedTxnsDifferentTypesDifferentNodesDetected")
                 .given(
                         cryptoCreate("acct4").via("txnId4").setNode("0.0.3"),
                         newKeyNamed("key2"),

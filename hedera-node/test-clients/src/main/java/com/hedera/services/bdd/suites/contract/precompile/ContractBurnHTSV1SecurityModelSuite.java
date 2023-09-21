@@ -60,7 +60,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REVERTED_SUCCE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
@@ -68,13 +67,12 @@ import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenType;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.NotNull;
 
-@HapiTestSuite
 @SuppressWarnings("java:S1192") // "string literal should not be duplicated" - this rule makes test suites worse
 public class ContractBurnHTSV1SecurityModelSuite extends HapiSuite {
 
@@ -421,7 +419,7 @@ public class ContractBurnHTSV1SecurityModelSuite extends HapiSuite {
                 .then(getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN, 50));
     }
 
-    @NotNull
+    @NonNull
     private String getNestedContractAddress(String outerContract, HapiSpec spec) {
         return HapiPropertySource.asHexedSolidityAddress(spec.registry().getContractId(outerContract));
     }

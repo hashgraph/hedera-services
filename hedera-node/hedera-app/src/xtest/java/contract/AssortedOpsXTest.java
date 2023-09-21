@@ -31,7 +31,6 @@ import static contract.AssortedOpsXTestConstants.EXPECTED_CHILD_STORAGE;
 import static contract.AssortedOpsXTestConstants.EXPECTED_POINTLESS_INTERMEDIARY_STORAGE;
 import static contract.AssortedOpsXTestConstants.FINALIZED_AND_DESTRUCTED_CONTRACT_ID;
 import static contract.AssortedOpsXTestConstants.FINALIZED_AND_DESTRUCTED_ID;
-import static contract.AssortedOpsXTestConstants.MISC_PAYER_ID;
 import static contract.AssortedOpsXTestConstants.NEXT_ENTITY_NUM;
 import static contract.AssortedOpsXTestConstants.ONE_HBAR;
 import static contract.AssortedOpsXTestConstants.POINTLESS_INTERMEDIARY_ADDRESS;
@@ -39,11 +38,12 @@ import static contract.AssortedOpsXTestConstants.POINTLESS_INTERMEDIARY_ID;
 import static contract.AssortedOpsXTestConstants.RELAYER_ID;
 import static contract.AssortedOpsXTestConstants.RUBE_GOLDBERG_CHILD_ID;
 import static contract.AssortedOpsXTestConstants.SALT;
-import static contract.AssortedOpsXTestConstants.SENDER_ADDRESS;
 import static contract.AssortedOpsXTestConstants.SENDER_ALIAS;
-import static contract.AssortedOpsXTestConstants.SENDER_ID;
 import static contract.AssortedOpsXTestConstants.TAKE_FIVE;
 import static contract.AssortedOpsXTestConstants.VACATE_ADDRESS;
+import static contract.XTestConstants.MISC_PAYER_ID;
+import static contract.XTestConstants.SENDER_ADDRESS;
+import static contract.XTestConstants.SENDER_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -76,7 +76,7 @@ import java.util.Objects;
  */
 public class AssortedOpsXTest extends AbstractContractXTest {
     @Override
-    protected void handleAndCommitScenarioTransactions() {
+    protected void doScenarioOperations() {
         handleAndCommit(CONTRACT_SERVICE.handlers().contractCreateHandler(), synthCreateTxn());
         handleAndCommit(CONTRACT_SERVICE.handlers().ethereumTransactionHandler(), synthLazyCreateTxn());
         handleAndCommit(
@@ -89,7 +89,7 @@ public class AssortedOpsXTest extends AbstractContractXTest {
 
     private TransactionBody synthCreateTxn() {
         return TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder().accountID(MISC_PAYER_ID))
+                .transactionID(TransactionID.newBuilder().accountID(RELAYER_ID))
                 .contractCreateInstance(ContractCreateTransactionBody.newBuilder()
                         .autoRenewPeriod(STANDARD_AUTO_RENEW_PERIOD)
                         .fileID(ASSORTED_OPS_INITCODE_FILE_ID)
@@ -144,10 +144,10 @@ public class AssortedOpsXTest extends AbstractContractXTest {
     }
 
     @Override
-    protected Map<Bytes, AccountID> initialAliases() {
-        final var aliases = new HashMap<Bytes, AccountID>();
-        aliases.put(SENDER_ALIAS, SENDER_ID);
-        aliases.put(SENDER_ADDRESS, SENDER_ID);
+    protected Map<ProtoBytes, AccountID> initialAliases() {
+        final var aliases = new HashMap<ProtoBytes, AccountID>();
+        aliases.put(ProtoBytes.newBuilder().value(SENDER_ALIAS).build(), SENDER_ID);
+        aliases.put(ProtoBytes.newBuilder().value(SENDER_ADDRESS).build(), SENDER_ID);
         return aliases;
     }
 
@@ -215,8 +215,16 @@ public class AssortedOpsXTest extends AbstractContractXTest {
 
     @Override
     protected void assertExpectedAliases(@NonNull final ReadableKVState<ProtoBytes, AccountID> aliases) {
-        assertEquals(POINTLESS_INTERMEDIARY_ID, aliases.get(POINTLESS_INTERMEDIARY_ADDRESS));
-        assertEquals(RUBE_GOLDBERG_CHILD_ID, aliases.get(DETERMINISTIC_CHILD_ADDRESS));
+        assertEquals(
+                POINTLESS_INTERMEDIARY_ID,
+                aliases.get(ProtoBytes.newBuilder()
+                        .value(POINTLESS_INTERMEDIARY_ADDRESS)
+                        .build()));
+        assertEquals(
+                RUBE_GOLDBERG_CHILD_ID,
+                aliases.get(ProtoBytes.newBuilder()
+                        .value(DETERMINISTIC_CHILD_ADDRESS)
+                        .build()));
     }
 
     @Override

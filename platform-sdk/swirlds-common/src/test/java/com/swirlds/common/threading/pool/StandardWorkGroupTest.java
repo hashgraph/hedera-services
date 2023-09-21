@@ -16,14 +16,15 @@
 
 package com.swirlds.common.threading.pool;
 
-import static com.google.common.truth.Truth.assertThat;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -152,5 +153,23 @@ class StandardWorkGroupTest {
         assertThat(subject.isTerminated()).isTrue();
         assertThat(subject.isShutdown()).isTrue();
         assertThat(abortCount.get()).isEqualTo(0);
+    }
+
+    @Test
+    void exceptionsPropagatedToListener() throws InterruptedException {
+        final AtomicReference<Throwable> caught = new AtomicReference<>();
+        subject = new StandardWorkGroup(getStaticThreadManager(), "groupName", abortCount::incrementAndGet, ex -> {
+            caught.set(ex);
+            return true;
+        });
+
+        final String exceptionMessage = "ExceptionMessage";
+        subject.execute("task", () -> {
+            throw new RuntimeException(exceptionMessage);
+        });
+        subject.waitForTermination();
+
+        assertThat(caught.get()).isNotNull();
+        assertThat(caught.get().getMessage()).endsWith(exceptionMessage);
     }
 }

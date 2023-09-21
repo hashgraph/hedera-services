@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthAccountCreationFromHapi;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthContractCreationFromParent;
 import static java.util.Objects.requireNonNull;
@@ -207,7 +208,8 @@ public class HandleHederaOperations implements HederaOperations {
         dispatchAndMarkCreation(
                 number,
                 synthAccountCreationFromHapi(
-                        ContractID.newBuilder().contractNum(number).build(), evmAddress, impliedContractCreation));
+                        ContractID.newBuilder().contractNum(number).build(), evmAddress, impliedContractCreation),
+                null);
     }
 
     /**
@@ -220,7 +222,8 @@ public class HandleHederaOperations implements HederaOperations {
         dispatchAndMarkCreation(
                 number,
                 synthAccountCreationFromHapi(
-                        ContractID.newBuilder().contractNum(number).build(), evmAddress, body));
+                        ContractID.newBuilder().contractNum(number).build(), evmAddress, body),
+                body.autoRenewAccountId());
     }
 
     /**
@@ -288,17 +291,23 @@ public class HandleHederaOperations implements HederaOperations {
         return 0;
     }
 
-    private void dispatchAndMarkCreation(final long number, @NonNull final CryptoCreateTransactionBody body) {
-        // Create the contract account by dispatching a synthetic HAPI transaction
+    private void dispatchAndMarkCreation(
+            final long number,
+            @NonNull final CryptoCreateTransactionBody body,
+            @Nullable final AccountID autoRenewAccountId) {
         final var recordBuilder = context.dispatchChildTransaction(
-                TransactionBody.newBuilder().cryptoCreateAccount(body).build(), CryptoCreateRecordBuilder.class);
+                TransactionBody.newBuilder().cryptoCreateAccount(body).build(),
+                CryptoCreateRecordBuilder.class,
+                key -> true,
+                context.payer());
         // TODO - switch OK to SUCCESS once some status-setting responsibilities are clarified
-        if (recordBuilder.status() != OK) {
+        if (recordBuilder.status() != OK && recordBuilder.status() != SUCCESS) {
             throw new AssertionError("Not implemented");
         }
         // Then use the TokenService API to mark the created account as a contract
         final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
         final var accountId = AccountID.newBuilder().accountNum(number).build();
-        tokenServiceApi.markAsContract(accountId);
+
+        tokenServiceApi.markAsContract(accountId, autoRenewAccountId);
     }
 }

@@ -25,12 +25,13 @@ import com.swirlds.base.utility.Pair;
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.status.StatusActionSubmitter;
+import com.swirlds.common.system.status.PlatformStatusManager;
 import com.swirlds.common.threading.SyncPermitProvider;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.StoppableThread;
@@ -54,6 +55,7 @@ import com.swirlds.platform.event.EventIntakeTask;
 import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.gossip.AbstractGossip;
 import com.swirlds.platform.gossip.FallenBehindManagerImpl;
+import com.swirlds.platform.gossip.ProtocolConfig;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
@@ -64,6 +66,7 @@ import com.swirlds.platform.metrics.EventIntakeMetrics;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.communication.NegotiationProtocols;
 import com.swirlds.platform.network.communication.NegotiatorThread;
+import com.swirlds.platform.network.communication.handshake.HashCompareHandshake;
 import com.swirlds.platform.network.communication.handshake.VersionCompareHandshake;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.reconnect.DefaultSignedStateValidator;
@@ -75,6 +78,7 @@ import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.threading.PauseAndClear;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -116,6 +120,7 @@ public class SyncGossip extends AbstractGossip {
      * @param addressBook                   the current address book
      * @param selfId                        this node's ID
      * @param appVersion                    the version of the app
+     * @param epochHash                     the epoch hash of the initial state
      * @param shadowGraph                   contains non-ancient events
      * @param emergencyRecoveryManager      handles emergency recovery
      * @param consensusRef                  a pointer to consensus
@@ -131,7 +136,7 @@ public class SyncGossip extends AbstractGossip {
      * @param eventIntakeMetrics            metrics for event intake
      * @param syncMetrics                   metrics for sync
      * @param eventLinker                   links events to their parents, buffers orphans if configured to do so
-     * @param statusActionSubmitter         enables submitting platform status actions
+     * @param platformStatusManager         the platform status manager
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
      * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
      */
@@ -144,6 +149,7 @@ public class SyncGossip extends AbstractGossip {
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
             @NonNull final SoftwareVersion appVersion,
+            @Nullable final Hash epochHash,
             @NonNull final ShadowGraph shadowGraph,
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
             @NonNull final AtomicReference<Consensus> consensusRef,
@@ -158,7 +164,7 @@ public class SyncGossip extends AbstractGossip {
             @NonNull final EventIntakeMetrics eventIntakeMetrics,
             @NonNull final SyncMetrics syncMetrics,
             @NonNull final EventLinker eventLinker,
-            @NonNull final StatusActionSubmitter statusActionSubmitter,
+            @NonNull final PlatformStatusManager platformStatusManager,
             @NonNull final Consumer<SignedState> loadReconnectState,
             @NonNull final Runnable clearAllPipelinesForReconnect) {
         super(
@@ -178,7 +184,7 @@ public class SyncGossip extends AbstractGossip {
                 eventIntakeMetrics,
                 syncMetrics,
                 eventObserverDispatcher,
-                statusActionSubmitter,
+                platformStatusManager,
                 loadReconnectState,
                 clearAllPipelinesForReconnect);
 
@@ -213,9 +219,13 @@ public class SyncGossip extends AbstractGossip {
                         Pair.of(eventMapper, "eventMapper"),
                         Pair.of(shadowGraph, "shadowGraph")));
 
-        reconnectController = new ReconnectController(threadManager, reconnectHelper, this::resume);
+        final ReconnectConfig reconnectConfig =
+                platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
+
+        reconnectController = new ReconnectController(reconnectConfig, threadManager, reconnectHelper, this::resume);
 
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
+        final ProtocolConfig protocolConfig = platformContext.getConfiguration().getConfigData(ProtocolConfig.class);
 
         final Duration hangingThreadDuration = basicConfig.hangingThreadDuration();
 
@@ -231,9 +241,6 @@ public class SyncGossip extends AbstractGossip {
         final PeerAgnosticSyncChecks peerAgnosticSyncChecks = new PeerAgnosticSyncChecks(List.of(
                 () -> !gossipHalted.get(), () -> intakeQueue.size() < eventConfig.eventIntakeQueueThrottleSize()));
 
-        final ReconnectConfig reconnectConfig =
-                platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
-
         for (final NodeId otherId : topology.getNeighbors()) {
             syncProtocolThreads.add(new StoppableThreadConfiguration<>(threadManager)
                     .setPriority(Thread.NORM_PRIORITY)
@@ -246,10 +253,12 @@ public class SyncGossip extends AbstractGossip {
                             connectionManagers.getManager(otherId, topology.shouldConnectTo(otherId)),
                             syncConfig.syncSleepAfterFailedNegotiation(),
                             List.of(
-                                    new VersionCompareHandshake(appVersion, !basicConfig.gossipWithDifferentVersions()),
+                                    new VersionCompareHandshake(
+                                            appVersion, !protocolConfig.tolerateMismatchedVersion()),
                                     new VersionCompareHandshake(
                                             PlatformVersion.locateOrDefault(),
-                                            !basicConfig.gossipWithDifferentVersions())),
+                                            !protocolConfig.tolerateMismatchedVersion()),
+                                    new HashCompareHandshake(epochHash, !protocolConfig.tolerateMismatchedEpochHash())),
                             new NegotiationProtocols(List.of(
                                     new HeartbeatProtocol(
                                             otherId,
@@ -267,7 +276,7 @@ public class SyncGossip extends AbstractGossip {
                                             reconnectMetrics,
                                             reconnectController,
                                             fallenBehindManager,
-                                            statusActionSubmitter,
+                                            platformStatusManager,
                                             platformContext.getConfiguration()),
                                     new ReconnectProtocol(
                                             threadManager,
@@ -278,9 +287,11 @@ public class SyncGossip extends AbstractGossip {
                                             reconnectConfig.asyncStreamTimeout(),
                                             reconnectMetrics,
                                             reconnectController,
-                                            new DefaultSignedStateValidator(),
+                                            new DefaultSignedStateValidator(platformContext),
                                             fallenBehindManager,
-                                            platformContext.getConfiguration()),
+                                            platformStatusManager,
+                                            platformContext.getConfiguration(),
+                                            time),
                                     new SyncProtocol(
                                             otherId,
                                             syncShadowgraphSynchronizer,

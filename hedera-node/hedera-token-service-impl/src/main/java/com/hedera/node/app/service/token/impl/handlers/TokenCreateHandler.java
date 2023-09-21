@@ -20,14 +20,20 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOU
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
+import static com.hedera.node.app.hapi.fees.usage.SingletonUsageProperties.USAGE_PROPERTIES;
+import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
+import static com.hedera.node.app.hapi.fees.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
+import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.TokenCreateTransactionBody;
 import com.hedera.hapi.node.transaction.CustomFee;
@@ -40,6 +46,8 @@ import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
 import com.hedera.node.app.service.token.impl.validators.CustomFeesValidator;
 import com.hedera.node.app.service.token.impl.validators.TokenCreateValidator;
 import com.hedera.node.app.service.token.records.TokenCreateRecordBuilder;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -135,13 +143,20 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         // is set to sentinel value
         associateAccounts(context, newToken, accountStore, tokenRelationStore, feesSetNeedingCollectorAutoAssociation);
 
+        // Since we have associated treasury and needed fee collector accounts in the previous step,
+        // this relation must exist
+        final var treasuryRel = requireNonNull(tokenRelationStore.get(op.treasuryOrThrow(), newTokenId));
         if (op.initialSupply() > 0) {
-            // Since we have associated treasury and needed fee collector accounts in the previous step,
-            // this relation should exist. Mint the provided initial supply of tokens
-            final var treasuryRel = tokenRelationStore.get(op.treasuryOrThrow(), newTokenId);
             // This keeps modified token with minted balance into modifications in token store
             mintFungible(newToken, treasuryRel, op.initialSupply(), true, accountStore, tokenStore, tokenRelationStore);
         }
+        // Increment treasury's title count
+        final var treasuryAccount = requireNonNull(accountStore.getForModify(treasuryRel.accountIdOrThrow()));
+        accountStore.put(treasuryAccount
+                .copyBuilder()
+                .numberTreasuryTitles(treasuryAccount.numberTreasuryTitles() + 1)
+                .build());
+
         // Update record with newly created token id
         final var recordBuilder = context.recordBuilder(TokenCreateRecordBuilder.class);
         recordBuilder.tokenID(newTokenId);
@@ -179,6 +194,9 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
             tokenCreateValidator.validateAssociation(entitiesConfig, tokensConfig, collector, newToken, tokenRelStore);
             createAndLinkTokenRels(collector, List.of(newToken), accountStore, tokenRelStore);
         }
+        final var recordBuilder = context.recordBuilder(TokenCreateRecordBuilder.class);
+        final var newRelation = tokenRelStore.get(newToken.treasuryAccountId(), newToken.tokenId());
+        recordBuilder.addAutomaticTokenAssociation(asTokenAssociation(newRelation.tokenId(), newRelation.accountId()));
     }
 
     /**
@@ -225,13 +243,19 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
      * @param op token creation transaction body
      * @return given expiry metadata
      */
-    private ExpiryMeta getExpiryMeta(final long consensusTime, @NonNull final TokenCreateTransactionBody op) {
-        final var impliedExpiry =
-                consensusTime + op.autoRenewPeriodOrElse(Duration.DEFAULT).seconds();
+    private ExpiryMeta getExpiryMeta(
+            final long consensusTime,
+            @NonNull final TokenCreateTransactionBody op,
+            @NonNull final HandleContext context) {
+        final var maxEntityLifetime =
+                context.configuration().getConfigData(EntitiesConfig.class).maxLifetime();
+        final var impliedExpiry = op.hasAutoRenewPeriod()
+                ? consensusTime + op.autoRenewPeriod().seconds()
+                : consensusTime + maxEntityLifetime;
 
         return new ExpiryMeta(
                 impliedExpiry,
-                op.autoRenewPeriodOrElse(Duration.DEFAULT).seconds(),
+                op.hasAutoRenewPeriod() ? op.autoRenewPeriod().seconds() : NA,
                 // Shard and realm will be ignored if num is NA
                 op.autoRenewAccount());
     }
@@ -259,7 +283,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         tokenCreateValidator.validate(context, accountStore, op, config);
 
         // validate expiration and auto-renew account if present
-        final var givenExpiryMeta = getExpiryMeta(context.consensusNow().getEpochSecond(), op);
+        final var givenExpiryMeta = getExpiryMeta(context.consensusNow().getEpochSecond(), op, context);
         final var resolvedExpiryMeta = context.expiryValidator().resolveCreationAttempt(false, givenExpiryMeta);
 
         // validate auto-renew account exists
@@ -327,5 +351,28 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         } else {
             context.requireKeyIfReceiverSigRequired(collector, INVALID_CUSTOM_FEE_COLLECTOR);
         }
+    }
+
+    @NonNull
+    @Override
+    public Fees calculateFees(@NonNull final FeeContext feeContext) {
+        final var txn = feeContext.body();
+        final var op = txn.tokenCreationOrThrow();
+        final var type = op.tokenType();
+        final var meta = TOKEN_OPS_USAGE_UTILS.tokenCreateUsageFrom(fromPbj(txn));
+        final long tokenSizes = TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(
+                        meta.getNumTokens(), meta.getFungibleNumTransfers(), meta.getNftsTransfers())
+                * USAGE_PROPERTIES.legacyReceiptStorageSecs();
+
+        final var calculator = feeContext
+                .feeCalculator(
+                        type.equals(TokenType.FUNGIBLE_COMMON)
+                                ? SubType.TOKEN_FUNGIBLE_COMMON
+                                : SubType.TOKEN_NON_FUNGIBLE_UNIQUE)
+                .addBytesPerTransaction(meta.getBaseSize())
+                .addRamByteSeconds((meta.getBaseSize() + meta.getCustomFeeScheduleSize()) * meta.getLifeTime())
+                .addRamByteSeconds(tokenSizes)
+                .addNetworkRamByteSeconds(meta.getNetworkRecordRb() * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+        return calculator.calculate();
     }
 }

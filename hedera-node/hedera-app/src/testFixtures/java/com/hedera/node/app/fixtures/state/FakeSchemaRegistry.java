@@ -19,6 +19,8 @@ package com.hedera.node.app.fixtures.state;
 import com.hedera.node.app.spi.fixtures.state.ListWritableQueueState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
+import com.hedera.node.app.spi.fixtures.state.NoOpGenesisRecordsBuilder;
+import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.state.EmptyReadableStates;
 import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.ReadableStates;
@@ -26,6 +28,7 @@ import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -39,7 +42,10 @@ public class FakeSchemaRegistry implements SchemaRegistry {
     private final List<Schema> schemas = new LinkedList<>();
 
     @SuppressWarnings("rawtypes")
-    public void migrate(@NonNull final String serviceName, @NonNull final FakeHederaState state) {
+    public void migrate(
+            @NonNull final String serviceName,
+            @NonNull final FakeHederaState state,
+            @NonNull final NetworkInfo networkInfo) {
         // For each schema, create the underlying raw data sources (maps, or lists) and the writable states that
         // will wrap them. Then call the schema's migrate method to populate those states, and commit each of them
         // to the underlying data sources. At that point, we have properly migrated the state.
@@ -85,6 +91,17 @@ public class FakeSchemaRegistry implements SchemaRegistry {
                 @Override
                 public Configuration configuration() {
                     return ConfigurationBuilder.create().build();
+                }
+
+                @NonNull
+                @Override
+                public GenesisRecordsBuilder genesisRecordsBuilder() {
+                    return new NoOpGenesisRecordsBuilder();
+                }
+
+                @Override
+                public NetworkInfo networkInfo() {
+                    return networkInfo;
                 }
             });
 

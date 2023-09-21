@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.crypto;
 
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
@@ -199,6 +200,7 @@ public class CryptoCreateSuite extends HapiSuite {
     }
 
     /* Prior to 0.13.0, a "canonical" CryptoCreate (one sig, 3 month auto-renew) cost 1¢. */
+    @HapiTest
     private HapiSpec usdFeeAsExpected() {
         double preV13PriceUsd = 0.01;
         double v13PriceUsd = 0.05;
@@ -211,7 +213,7 @@ public class CryptoCreateSuite extends HapiSuite {
         final var tenAutoAssocSlots = "tenAutoAssocSlots";
         final var token = "token";
 
-        return defaultHapiSpec("usdFeeAsExpected")
+        return onlyDefaultHapiSpec("usdFeeAsExpected")
                 .given(
                         cryptoCreate(CIVILIAN).balance(ONE_HUNDRED_HBARS),
                         getAccountBalance(CIVILIAN).hasTinyBars(ONE_HUNDRED_HBARS))
@@ -259,6 +261,7 @@ public class CryptoCreateSuite extends HapiSuite {
                         validateChargedUsd(tenAutoAssocSlots, v13PriceUsdTenAutoAssociations));
     }
 
+    @HapiTest
     public HapiSpec syntaxChecksAreAsExpected() {
         return defaultHapiSpec("SyntaxChecksAreAsExpected")
                 .given()
@@ -266,6 +269,9 @@ public class CryptoCreateSuite extends HapiSuite {
                 .then(
                         cryptoCreate("broken").autoRenewSecs(1L).hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE),
                         cryptoCreate("alsoBroken").entityMemo(ZERO_BYTE_MEMO).hasPrecheck(INVALID_ZERO_BYTE_IN_STRING));
+        // In modular code this error is thrown in handle, but it is fixed using dynamic property
+        // spec.streamlinedIngestChecks
+        // to accommodate error codes moved from Ingest to handle
     }
 
     @HapiTest
@@ -291,11 +297,16 @@ public class CryptoCreateSuite extends HapiSuite {
         return defaultHapiSpec("createAnAccountEmptyKeyList")
                 .given()
                 .when()
-                .then(cryptoCreate(NO_KEYS)
-                        .keyShape(shape)
-                        .balance(initialBalance)
-                        .logged()
-                        .hasPrecheck(KEY_REQUIRED));
+                .then(
+                        cryptoCreate(NO_KEYS)
+                                .keyShape(shape)
+                                .balance(initialBalance)
+                                .logged()
+                                .hasPrecheck(KEY_REQUIRED)
+                        // In modular code this error is thrown in handle, but it is fixed using dynamic property
+                        // spec.streamlinedIngestChecks
+                        // to accommodate error codes moved from Ingest to handle
+                        );
     }
 
     @HapiTest
@@ -315,8 +326,8 @@ public class CryptoCreateSuite extends HapiSuite {
                         .hasPrecheck(KEY_REQUIRED));
     }
 
-    @HapiTest
     // One of element in key list is not valid
+    @HapiTest
     private HapiSpec createAnAccountInvalidKeyList() {
         KeyShape emptyThresholdShape = threshOf(0, 0);
         KeyShape shape = listOf(SIMPLE, SIMPLE, emptyThresholdShape);
@@ -332,8 +343,8 @@ public class CryptoCreateSuite extends HapiSuite {
                         .hasPrecheck(INVALID_ADMIN_KEY));
     }
 
-    @HapiTest
     // One of element in nested key list is not valid
+    @HapiTest
     private HapiSpec createAnAccountInvalidNestedKeyList() {
         KeyShape invalidListShape = listOf(SIMPLE, SIMPLE, listOf(0));
         KeyShape shape = listOf(SIMPLE, SIMPLE, invalidListShape);
@@ -349,8 +360,8 @@ public class CryptoCreateSuite extends HapiSuite {
                         .hasPrecheck(INVALID_ADMIN_KEY));
     }
 
-    @HapiTest
     // One of element in threshold key is not valid
+    @HapiTest
     private HapiSpec createAnAccountInvalidThresholdKey() {
         KeyShape emptyListShape = listOf(0);
         KeyShape thresholdShape = threshOf(1, SIMPLE, SIMPLE, emptyListShape);
@@ -484,7 +495,11 @@ public class CryptoCreateSuite extends HapiSuite {
                                 .balance(initialBalance)
                                 .signedBy(GENESIS)
                                 .logged()
-                                .hasPrecheck(BAD_ENCODING));
+                                .hasPrecheck(BAD_ENCODING)
+                        // In modular code this error is thrown in handle, but it is fixed using dynamic property
+                        // spec.streamlinedIngestChecks
+                        // to accommodate error codes moved from Ingest to handle
+                        );
     }
 
     @HapiTest
@@ -663,16 +678,22 @@ public class CryptoCreateSuite extends HapiSuite {
                     final var op = cryptoCreate(ACCOUNT)
                             .key(SECP_256K1_SOURCE_KEY)
                             .alias(evmAddressBytes)
+                            .signedBy(GENESIS, SECP_256K1_SOURCE_KEY)
+                            .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY))
                             .balance(100 * ONE_HBAR);
                     final var op2 = cryptoCreate(ACCOUNT)
                             .key(SECP_256K1_SOURCE_KEY)
                             .alias(evmAddressBytes)
                             .balance(100 * ONE_HBAR)
+                            .signedBy(GENESIS, SECP_256K1_SOURCE_KEY)
+                            .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY))
                             .hasPrecheck(ALIAS_ALREADY_ASSIGNED);
                     final var op3 = cryptoCreate(ACCOUNT)
                             .key(edKey)
                             .alias(evmAddressBytes)
                             .balance(100 * ONE_HBAR)
+                            .signedBy(GENESIS, SECP_256K1_SOURCE_KEY)
+                            .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY))
                             .hasPrecheck(ALIAS_ALREADY_ASSIGNED);
                     allRunFor(spec, op, op2, op3);
                     var hapiGetAccountInfo = getAccountInfo(ACCOUNT)
@@ -687,6 +708,7 @@ public class CryptoCreateSuite extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
     private HapiSpec createAnAccountWithEVMAddressAliasFromDifferentKey() {
         return defaultHapiSpec("createAnAccountWithEVMAddressAliasFromDifferentKey")
                 .given(

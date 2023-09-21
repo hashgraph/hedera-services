@@ -16,36 +16,54 @@
 
 package com.swirlds.benchmark;
 
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.jasperdb.files.hashmap.KeySerializer;
+import com.swirlds.merkledb.serialize.KeySerializer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 public class BenchmarkKeySerializer implements KeySerializer<BenchmarkKey> {
 
-    static final long CLASS_ID = 0x1bf5b26682153acfL;
-    static final int VERSION = 1;
+    // Serializer class ID
+    private static final long CLASS_ID = 0xbfadab77596df06L;
+
+    // Serializer version
+    private static final int VERSION = 1;
+
+    // Key data version
+    private static final int DATA_VERSION = 1;
+
+    public BenchmarkKeySerializer() {
+        // required for deserialization
+    }
+
+    @Override
+    public long getClassId() {
+        return CLASS_ID;
+    }
+
+    @Override
+    public int getVersion() {
+        return VERSION;
+    }
 
     @Override
     public long getCurrentDataVersion() {
-        return BenchmarkKey.VERSION;
+        return DATA_VERSION;
+    }
+
+    @Override
+    public int getSerializedSize() {
+        return BenchmarkKey.getKeySize();
+    }
+
+    @Override
+    public int serialize(final BenchmarkKey data, final ByteBuffer buffer) throws IOException {
+        data.serialize(buffer);
+        return getSerializedSize();
     }
 
     @Override
     public int deserializeKeySize(final ByteBuffer buffer) {
-        return Integer.BYTES + buffer.getInt();
-    }
-
-    @Override
-    public boolean equals(final ByteBuffer buffer, final int dataVersion, final BenchmarkKey keyToCompare)
-            throws IOException {
-        return keyToCompare.equals(buffer, dataVersion);
-    }
-
-    @Override
-    public int getSerializedSize(final long dataVersion) {
-        return BenchmarkKey.getSerializedSize();
+        return getSerializedSize();
     }
 
     @Override
@@ -56,25 +74,7 @@ public class BenchmarkKeySerializer implements KeySerializer<BenchmarkKey> {
     }
 
     @Override
-    public int serialize(final BenchmarkKey key, final SerializableDataOutputStream outputStream) throws IOException {
-        outputStream.writeSerializable(key, false);
-        return BenchmarkKey.getSerializedSize();
-    }
-
-    @Override
-    public void deserialize(SerializableDataInputStream serializableDataInputStream, int dataVersion)
-            throws IOException {}
-
-    @Override
-    public void serialize(SerializableDataOutputStream serializableDataOutputStream) throws IOException {}
-
-    @Override
-    public long getClassId() {
-        return CLASS_ID;
-    }
-
-    @Override
-    public int getVersion() {
-        return VERSION;
+    public boolean equals(final ByteBuffer buffer, final int dataVersion, final BenchmarkKey keyToCompare) {
+        return keyToCompare.equals(buffer, dataVersion);
     }
 }

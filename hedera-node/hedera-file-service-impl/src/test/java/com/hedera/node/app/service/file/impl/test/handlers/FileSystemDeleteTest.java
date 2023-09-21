@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.file.impl.test.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
@@ -29,6 +30,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.Key;
@@ -37,13 +39,13 @@ import com.hedera.hapi.node.file.SystemDeleteTransactionBody;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.utils.fee.FileFeeBuilder;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.handlers.FileSystemDeleteHandler;
 import com.hedera.node.app.service.file.impl.test.FileTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -60,7 +62,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -94,12 +95,15 @@ class FileSystemDeleteTest extends FileTestBase {
     @Mock(strictness = Mock.Strictness.LENIENT)
     protected Account payerAccount;
 
+    @Mock
+    private FileFeeBuilder usageEstimator;
+
     protected Configuration testConfig;
 
     @BeforeEach
     void setUp() {
         mockStore = mock(ReadableFileStoreImpl.class);
-        subject = new FileSystemDeleteHandler();
+        subject = new FileSystemDeleteHandler(usageEstimator);
 
         writableFileState = writableFileStateWithOneKey();
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
@@ -107,6 +111,8 @@ class FileSystemDeleteTest extends FileTestBase {
         testConfig = HederaTestConfigBuilder.createConfig();
         lenient().when(preHandleContext.configuration()).thenReturn(testConfig);
         lenient().when(handleContext.configuration()).thenReturn(testConfig);
+        when(mockStoreFactory.getStore(ReadableFileStore.class)).thenReturn(mockStore);
+        when(mockStoreFactory.getStore(ReadableAccountStore.class)).thenReturn(accountStore);
     }
 
     @Test
@@ -115,29 +121,10 @@ class FileSystemDeleteTest extends FileTestBase {
         // given:
         mockPayerLookup();
         given(mockStore.getFileMetadata(notNull())).willReturn(null);
-        final var context = new FakePreHandleContext(accountStore, newFileDeleteTxn());
-        context.registerStore(ReadableFileStore.class, mockStore);
+        final var context = new PreHandleContextImpl(mockStoreFactory, newFileDeleteTxn(), testConfig, mockDispatcher);
 
         // when:
         assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_FILE_ID);
-    }
-
-    @Test
-    @DisplayName("Pre handle works as expected")
-    void preHandleWorksAsExpected() throws PreCheckException {
-        refreshStoresWithCurrentFileOnlyInReadable();
-        BDDMockito.given(accountStore.getAccountById(payerId)).willReturn(payerAccount);
-        BDDMockito.given(mockStoreFactory.getStore(ReadableFileStore.class)).willReturn(readableStore);
-        BDDMockito.given(mockStoreFactory.getStore(ReadableAccountStore.class)).willReturn(accountStore);
-        BDDMockito.given(payerAccount.key()).willReturn(A_COMPLEX_KEY);
-
-        PreHandleContext realPreContext =
-                new PreHandleContextImpl(mockStoreFactory, newFileDeleteTxn(), testConfig, mockDispatcher);
-
-        subject.preHandle(realPreContext);
-
-        assertTrue(realPreContext.requiredNonPayerKeys().size() > 0);
-        assertEquals(3, realPreContext.requiredNonPayerKeys().size());
     }
 
     @Test
@@ -165,7 +152,7 @@ class FileSystemDeleteTest extends FileTestBase {
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
-        assertEquals(INVALID_FILE_ID, msg.getStatus());
+        assertEquals(ENTITY_NOT_ALLOWED_TO_DELETE, msg.getStatus());
         assertFalse(existingFile.get().deleted());
     }
 
@@ -173,7 +160,7 @@ class FileSystemDeleteTest extends FileTestBase {
     @DisplayName("Fails handle if keys doesn't exist on file system to be deleted")
     void keysDoesntExist() {
         given(handleContext.body()).willReturn(newFileDeleteTxn());
-        file = new File(fileId, expirationTime, null, Bytes.wrap(contents), memo, false);
+        file = new File(fileId, expirationTime, null, Bytes.wrap(contents), memo, false, 0L);
 
         writableFileState = writableFileStateWithOneKey();
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
