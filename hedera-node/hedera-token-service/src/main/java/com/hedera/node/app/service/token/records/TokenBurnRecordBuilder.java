@@ -35,7 +35,8 @@ public interface TokenBurnRecordBuilder extends SingleTransactionRecordBuilder {
     /**
      * Sets the new total supply of a token
      * @param newTotalSupply the new total supply of a token
-     */@NonNull
+     */
+    @NonNull
     TokenBurnRecordBuilder newTotalSupply(final long newTotalSupply);
 
     /**
