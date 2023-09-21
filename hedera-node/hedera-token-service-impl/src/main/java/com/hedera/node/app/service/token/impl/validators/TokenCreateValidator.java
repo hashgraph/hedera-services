@@ -23,7 +23,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_MAX_SUPPL
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hedera.hapi.node.base.TokenSupplyType.FINITE;
@@ -188,7 +187,5 @@ public class TokenCreateValidator {
                 entitiesConfig.limitTokenAssociations()
                         && account.numberAssociations() + 1 > tokensConfig.maxPerAccount(),
                 TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
-        validateTrue(
-                tokenRelStore.get(account.accountId(), token.tokenId()) == null, TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
     }
 }

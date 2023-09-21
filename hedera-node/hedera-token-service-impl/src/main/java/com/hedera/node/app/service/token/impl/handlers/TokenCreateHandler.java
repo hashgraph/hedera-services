@@ -188,10 +188,15 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         for (final var customFee : requireCollectorAutoAssociation) {
             // This should exist as it is validated in validateSemantics
             final var collector = accountStore.get(customFee.feeCollectorAccountIdOrThrow());
-            // Validate if token relation can be created between collector and new token
-            // If this succeeds, create and link token relation.
-            tokenCreateValidator.validateAssociation(entitiesConfig, tokensConfig, collector, newToken, tokenRelStore);
-            createAndLinkTokenRels(collector, List.of(newToken), accountStore, tokenRelStore);
+
+            // Ensure no duplicate relations are created
+            final var existingTokenRel = tokenRelStore.get(collector.accountId(), newToken.tokenId());
+            if (existingTokenRel == null) {
+                // Validate if token relation can be created between collector and new token
+                // If this succeeds, create and link token relation.
+                tokenCreateValidator.validateAssociation(entitiesConfig, tokensConfig, collector, newToken, tokenRelStore);
+                createAndLinkTokenRels(collector, List.of(newToken), accountStore, tokenRelStore);
+            }
         }
         final var recordBuilder = context.recordBuilder(TokenCreateRecordBuilder.class);
         final var newRelation = tokenRelStore.get(newToken.treasuryAccountId(), newToken.tokenId());

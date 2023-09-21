@@ -87,8 +87,7 @@ public class CustomFeesValidator {
             switch (fee.fee().kind()) {
                 case FIXED_FEE -> validateFixedFeeForCreation(
                         tokenType, fee, createdToken, tokenRelationStore, tokenStore, fees);
-                case FRACTIONAL_FEE -> validateTrue(
-                        isFungibleCommon(tokenType), CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON);
+                case FRACTIONAL_FEE -> validateFractionalFeeForCreation(tokenType, fee, fees);
                 case ROYALTY_FEE -> validateRoyaltyFeeForCreation(tokenType, fee, tokenRelationStore, tokenStore);
                 default -> throw new IllegalArgumentException(
                         "Unexpected value for custom fee type: " + fee.fee().kind());
@@ -243,6 +242,19 @@ public class CustomFeesValidator {
                 validateExplicitTokenDenomination(
                         fee.feeCollectorAccountId(), denominatingTokenId, tokenRelationStore, tokenStore);
             }
+        }
+    }
+
+    private void validateFractionalFeeForCreation(
+        @NonNull final TokenType tokenType,
+        @NonNull final CustomFee fee,
+        @NonNull final Set<CustomFee> feesWithCollectorsToAutoAssociate) {
+        validateTrue(isFungibleCommon(tokenType), CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON);
+
+        final var fractionalFee = fee.fractionalFeeOrThrow();
+        if (fractionalFee.hasFractionalAmount()) {
+            final var copy = fee.copyBuilder();
+            feesWithCollectorsToAutoAssociate.add(copy.build());
         }
     }
 }
