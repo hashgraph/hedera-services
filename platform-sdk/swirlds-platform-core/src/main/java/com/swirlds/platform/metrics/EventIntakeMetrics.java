@@ -27,7 +27,6 @@ import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.LongAccumulator;
-import com.swirlds.common.metrics.LongGauge;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
@@ -36,7 +35,6 @@ import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.StaleEventObserver;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
-import java.util.function.LongBinaryOperator;
 
 /**
  * Collection of metrics related to event intake
@@ -72,7 +70,8 @@ public class EventIntakeMetrics implements StaleEventObserver {
             new RunningAverageMetric.Config(INTERNAL_CATEGORY, "shouldCreateEvent").withFormat(FORMAT_10_1);
     private final RunningAverageMetric shouldCreateEvent;
 
-    private static final LongAccumulator.Config STALE_EVENTS_CONFIG = new LongAccumulator.Config(INTERNAL_CATEGORY, "staleEvents")
+    private static final LongAccumulator.Config STALE_EVENTS_CONFIG = new LongAccumulator.Config(
+                    INTERNAL_CATEGORY, "staleEvents")
             .withAccumulator(Long::sum)
             .withDescription("number of stale events");
     private final LongAccumulator staleEventCount;
