@@ -20,28 +20,39 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LO
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FEE_SCHEDULE_KEY;
+import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
+import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsage.LONG_BASIC_ENTITY_ID_SIZE;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.TokenFeeScheduleUpdateTransactionBody;
+import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsage;
+import com.hedera.node.app.hapi.fees.usage.token.meta.FeeScheduleUpdateMeta;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
 import com.hedera.node.app.service.token.impl.validators.CustomFeesValidator;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Collections;
+import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -139,5 +150,75 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
         if (!op.hasTokenId()) {
             throw new PreCheckException(INVALID_TOKEN_ID);
         }
+    }
+
+    @NonNull
+    @Override
+    public Fees calculateFees(@NonNull final FeeContext feeContext) {
+        final var body = feeContext.body();
+        final var op = body.tokenFeeScheduleUpdateOrThrow();
+        final var readableTokenStore = feeContext.readableStore(ReadableTokenStore.class);
+        final var token = readableTokenStore.get(op.tokenIdOrThrow());
+        final var tokenOpsUsage = new TokenOpsUsage();
+        final var pbjCustomFees = op.customFeesOrElse(Collections.emptyList());
+
+        final var newFeeSchedule =
+                pbjCustomFees.stream().map(fee -> fromPbj(fee)).toList();
+        final var newReprBytes = tokenOpsUsage.bytesNeededToRepr(newFeeSchedule);
+        final var meta = new FeeScheduleUpdateMeta(
+                body.transactionID().transactionValidStart().seconds(), newReprBytes);
+        final var lifetime = Math.max(0, token.expirationSecond() - meta.effConsensusTime());
+        final var currentFeeScheduleSize = currentFeeScheduleSize(pbjCustomFees, tokenOpsUsage);
+        final var rbsDelta = ESTIMATOR_UTILS.changeInBsUsage(
+                currentFeeScheduleSize,
+                lifetime,
+                tokenOpsUsage.bytesNeededToRepr(token.customFeesOrElse(emptyList()).stream()
+                        .map(fee -> fromPbj(fee))
+                        .toList()),
+                lifetime);
+        return feeContext
+                .feeCalculator(SubType.DEFAULT)
+                .addBytesPerTransaction(LONG_BASIC_ENTITY_ID_SIZE + meta.numBytesInNewFeeScheduleRepr())
+                .addRamByteSeconds(rbsDelta)
+                .calculate();
+    }
+
+    private int currentFeeScheduleSize(List<CustomFee> feeSchedule, final TokenOpsUsage tokenOpsUsage) {
+        int numFixedHbarFees = 0;
+        int numFixedHtsFees = 0;
+        int numFractionalFees = 0;
+        int numRoyaltyNoFallbackFees = 0;
+        int numRoyaltyHtsFallbackFees = 0;
+        int numRoyaltyHbarFallbackFees = 0;
+        for (var fee : feeSchedule) {
+            if (fee.fee().kind().equals(CustomFee.FeeOneOfType.FIXED_FEE)) {
+                if (fee.fixedFee().hasDenominatingTokenId()) {
+                    numFixedHtsFees++;
+                } else {
+                    numFixedHbarFees++;
+                }
+            } else if (fee.fee().kind().equals(CustomFee.FeeOneOfType.FRACTIONAL_FEE)) {
+                numFractionalFees++;
+            } else {
+                final var royaltyFee = fee.royaltyFee();
+                final var fallbackFee = royaltyFee.fallbackFee();
+                if (fallbackFee != null) {
+                    if (fallbackFee.hasDenominatingTokenId()) {
+                        numRoyaltyHtsFallbackFees++;
+                    } else {
+                        numRoyaltyHbarFallbackFees++;
+                    }
+                } else {
+                    numRoyaltyNoFallbackFees++;
+                }
+            }
+        }
+        return tokenOpsUsage.bytesNeededToRepr(
+                numFixedHbarFees,
+                numFixedHtsFees,
+                numFractionalFees,
+                numRoyaltyNoFallbackFees,
+                numRoyaltyHtsFallbackFees,
+                numRoyaltyHbarFallbackFees);
     }
 }
