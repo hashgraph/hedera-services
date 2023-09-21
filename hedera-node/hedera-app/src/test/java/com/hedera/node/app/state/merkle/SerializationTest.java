@@ -18,6 +18,7 @@ package com.hedera.node.app.state.merkle;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
 
 import com.hedera.node.app.spi.fixtures.state.TestSchema;
 import com.hedera.node.app.spi.info.NetworkInfo;
@@ -30,6 +31,7 @@ import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableQueueState;
 import com.hedera.node.app.spi.state.WritableSingletonState;
+import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -43,7 +45,6 @@ import java.util.Set;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 class SerializationTest extends MerkleTestBase {
     private Path dir;
@@ -55,9 +56,9 @@ class SerializationTest extends MerkleTestBase {
         setupConstructableRegistry();
 
         this.dir = TemporaryFileBuilder.buildTemporaryDirectory();
-        this.config = Mockito.mock(Configuration.class);
-        this.networkInfo = Mockito.mock(NetworkInfo.class);
-        final var hederaConfig = Mockito.mock(HederaConfig.class);
+        this.config = mock(Configuration.class);
+        this.networkInfo = mock(NetworkInfo.class);
+        final var hederaConfig = mock(HederaConfig.class);
         lenient().when(config.getConfigData(HederaConfig.class)).thenReturn(hederaConfig);
     }
 
@@ -120,7 +121,8 @@ class SerializationTest extends MerkleTestBase {
         final var v1 = version(1, 0, 0);
         final var originalTree = new MerkleHederaState(
                 (tree, state) -> {}, (evt, meta, provider) -> {}, (state, platform, dual, trigger, version) -> {});
-        final var originalRegistry = new MerkleSchemaRegistry(registry, FIRST_SERVICE);
+        final var originalRegistry =
+                new MerkleSchemaRegistry(registry, FIRST_SERVICE, mock(GenesisRecordsBuilder.class));
         final var schemaV1 = createV1Schema();
         originalRegistry.register(schemaV1);
         originalRegistry.migrate(originalTree, null, v1, config, networkInfo);
@@ -129,7 +131,7 @@ class SerializationTest extends MerkleTestBase {
         originalTree.copy(); // make a fast copy because we can only write to disk an immutable copy
         CRYPTO.digestTreeSync(originalTree);
         final var serializedBytes = writeTree(originalTree, dir);
-        final var newRegistry = new MerkleSchemaRegistry(registry, FIRST_SERVICE);
+        final var newRegistry = new MerkleSchemaRegistry(registry, FIRST_SERVICE, mock(GenesisRecordsBuilder.class));
         newRegistry.register(schemaV1);
 
         // Register the MerkleHederaState so, when found in serialized bytes, it will register with

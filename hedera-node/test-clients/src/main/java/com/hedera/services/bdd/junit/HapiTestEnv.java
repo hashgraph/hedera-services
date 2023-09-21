@@ -30,6 +30,7 @@ public class HapiTestEnv {
     private static final int FIRST_GOSSIP_PORT = 60000;
     private static final int FIRST_GOSSIP_TLS_PORT = 60001;
     private static final int FIRST_GRPC_PORT = 50211;
+    private static final int CAPTIVE_NODE_STARTUP_TIME_LIMIT = 300;
     private final List<HapiTestNode> nodes = new ArrayList<>();
     private final List<String> nodeHosts = new ArrayList<>();
 
@@ -85,7 +86,7 @@ public class HapiTestEnv {
         }
 
         for (final var node : nodes) {
-            node.waitForActive(60);
+            node.waitForActive(CAPTIVE_NODE_STARTUP_TIME_LIMIT);
         }
     }
 
