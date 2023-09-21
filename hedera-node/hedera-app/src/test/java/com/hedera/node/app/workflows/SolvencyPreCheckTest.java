@@ -215,8 +215,8 @@ class SolvencyPreCheckTest extends AppTestBase {
             final var txInfo = createTransactionInfo(FEE - 1, START, CONSENSUS_CREATE_TOPIC, null);
             final var payer =
                     ALICE.account().copyBuilder().tinybarBalance(FEE / 2).build();
-            when(authorizer.hasPrivilegedAuthorization(ALICE.accountID(), CONSENSUS_CREATE_TOPIC, txInfo.txBody()))
-                    .thenReturn(SystemPrivilege.AUTHORIZED);
+            when(authorizer.hasWaivedFees(ALICE.accountID(), CONSENSUS_CREATE_TOPIC, txInfo.txBody()))
+                    .thenReturn(true);
 
             // then
             assertThatCode(() -> subject.checkSolvency(txInfo, payer, new Fees(FEE, 0, 0)))
