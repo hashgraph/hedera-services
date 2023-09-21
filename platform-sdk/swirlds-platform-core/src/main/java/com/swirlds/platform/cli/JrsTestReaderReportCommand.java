@@ -17,25 +17,21 @@
 package com.swirlds.platform.cli;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
-import static com.swirlds.platform.testreader.JrsTestReader.findTestResults;
-import static com.swirlds.platform.testreader.JrsTestReader.parseMetadataFile;
+import static com.swirlds.platform.cli.utils.JtrUtils.scrapeTestData;
 import static com.swirlds.platform.testreader.JrsTestReportGenerator.generateReport;
 
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
+import com.swirlds.platform.cli.utils.JtrUtils;
 import com.swirlds.platform.testreader.JrsReportData;
 import com.swirlds.platform.testreader.JrsTestIdentifier;
 import com.swirlds.platform.testreader.JrsTestMetadata;
-import com.swirlds.platform.util.VirtualTerminal;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.time.Instant;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.Executors;
 import picocli.CommandLine;
 
 @CommandLine.Command(
@@ -103,9 +99,6 @@ public class JrsTestReaderReportCommand extends AbstractCommand {
 
     @Override
     public Integer call() {
-        final VirtualTerminal terminal =
-                new VirtualTerminal().setProgressIndicatorEnabled(true).setThrowOnError(true);
-
         if (Files.exists(output)) {
             try {
                 Files.delete(output);
@@ -114,24 +107,8 @@ public class JrsTestReaderReportCommand extends AbstractCommand {
             }
         }
 
-        final Instant now = Instant.now();
-
-        final boolean hasSlash = bucketPrefix.endsWith("/") || testDirectory.startsWith("/");
-        final String rootDirectory = bucketPrefix + (hasSlash ? "" : "/") + testDirectory;
-
-        final Map<JrsTestIdentifier, JrsTestMetadata> metadata;
-        if (metadataFile == null) {
-            System.out.println("No metadata file specified.");
-            metadata = new HashMap<>();
-        } else if (!Files.exists(metadataFile)) {
-            System.out.println("No metadata file found at " + metadataFile + ". ");
-            metadata = new HashMap<>();
-        } else {
-            metadata = parseMetadataFile(metadataFile);
-        }
-
-        final JrsReportData data = findTestResults(
-                terminal, Executors.newFixedThreadPool(threads), rootDirectory, now, Duration.ofDays(days));
+        final JrsReportData data = scrapeTestData(bucketPrefix, testDirectory, days, threads);
+        final Map<JrsTestIdentifier, JrsTestMetadata> metadata = JtrUtils.getTestMetadata(metadataFile);
 
         generateReport(data, metadata, Instant.now(), bucketPrefix, bucketPrefixReplacement, output);
 
