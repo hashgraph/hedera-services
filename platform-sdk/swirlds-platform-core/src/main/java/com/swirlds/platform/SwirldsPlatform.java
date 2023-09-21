@@ -43,6 +43,8 @@ import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.metrics.extensions.PhaseTimer;
+import com.swirlds.common.metrics.extensions.PhaseTimerBuilder;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.common.notification.listeners.ReconnectCompleteNotification;
@@ -122,7 +124,7 @@ import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphEventObserver;
 import com.swirlds.platform.gui.GuiPlatformAccessor;
-import com.swirlds.platform.intake.IntakeCycleStats;
+import com.swirlds.platform.intake.EventIntakePhase;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.AddedEventMetrics;
 import com.swirlds.platform.metrics.ConsensusHandlingMetrics;
@@ -533,7 +535,11 @@ public class SwirldsPlatform implements Platform, Startable {
 
         eventLinker = buildEventLinker(time, isDuplicateChecks);
 
-        final IntakeCycleStats intakeCycleStats = new IntakeCycleStats(time, metrics);
+        final PhaseTimer<EventIntakePhase> eventIntakePhaseTimer = new PhaseTimerBuilder<>(
+                        platformContext, time, "platform", EventIntakePhase.class)
+                .setInitialPhase(EventIntakePhase.IDLE)
+                .enableFractionalMetrics()
+                .build();
 
         final EventIntake eventIntake = new EventIntake(
                 platformContext,
@@ -544,7 +550,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 consensusRef::get,
                 currentAddressBook,
                 eventObserverDispatcher,
-                intakeCycleStats,
+                eventIntakePhaseTimer,
                 shadowGraph,
                 preConsensusEventHandler::preconsensusEvent);
 
@@ -569,15 +575,11 @@ public class SwirldsPlatform implements Platform, Startable {
         final GossipEventValidators eventValidators = new GossipEventValidators(validators);
 
         // validates events received from gossip
-        final EventValidator eventValidator = new EventValidator(eventValidators, eventIntake::addUnlinkedEvent);
+        final EventValidator eventValidator =
+                new EventValidator(eventValidators, eventIntake::addUnlinkedEvent, eventIntakePhaseTimer);
 
         eventTaskDispatcher = new EventTaskDispatcher(
-                time,
-                eventValidator,
-                eventCreator,
-                eventIntake::addUnlinkedEvent,
-                eventIntakeMetrics,
-                intakeCycleStats);
+                time, eventValidator, eventCreator, eventIntake::addUnlinkedEvent, eventIntakeMetrics);
 
         intakeQueue = components.add(new QueueThreadConfiguration<EventIntakeTask>(threadManager)
                 .setNodeId(selfId)
@@ -589,9 +591,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 .setHandler(e -> getGossip().getEventIntakeLambda().accept(e))
                 .setCapacity(eventConfig.eventIntakeQueueSize())
                 .setLogAfterPauseDuration(threadConfig.logStackTracePauseDuration())
-                .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics)
-                        .enableMaxSizeMetric()
-                        .enableBusyTimeMetric())
+                .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics).enableMaxSizeMetric())
                 .build());
 
         tipsetEventCreator = buildTipsetEventCreationManager(

@@ -28,6 +28,7 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.metrics.extensions.PhaseTimer;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.Consensus;
@@ -35,7 +36,6 @@ import com.swirlds.platform.components.EventIntake;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
-import com.swirlds.platform.intake.IntakeCycleStats;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.EventObserverDispatcher;
@@ -76,7 +76,7 @@ class EventIntakeTest {
                 () -> consensus,
                 addressBook,
                 dispatcher,
-                mock(IntakeCycleStats.class),
+                mock(PhaseTimer.class),
                 shadowGraph,
                 e -> {});
 
