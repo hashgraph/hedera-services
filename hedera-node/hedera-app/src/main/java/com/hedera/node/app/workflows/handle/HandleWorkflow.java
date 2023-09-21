@@ -36,6 +36,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.ExchangeRateManager;
@@ -51,7 +52,7 @@ import com.hedera.node.app.signature.SignatureExpander;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.signature.SignatureVerifier;
 import com.hedera.node.app.spi.authorization.Authorizer;
-import com.hedera.node.app.spi.authorization.Authorizer.SystemPrivilege;
+import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.info.NetworkInfo;
@@ -323,11 +324,13 @@ public class HandleWorkflow {
             // Set up the verifier
             final var hederaConfig = configuration.getConfigData(HederaConfig.class);
             final var verifier = new BaseHandleContextVerifier(hederaConfig, preHandleResult.verificationResults());
+            final var signatureMapSize = SignatureMap.PROTOBUF.measureRecord(transactionInfo.signatureMap());
 
             // Setup context
             final var context = new HandleContextImpl(
                     txBody,
-                    transactionInfo,
+                    transactionInfo.functionality(),
+                    signatureMapSize,
                     payer,
                     preHandleResult.payerKey(),
                     networkInfo,
@@ -344,7 +347,8 @@ public class HandleWorkflow {
                     recordCache,
                     feeManager,
                     exchangeRateManager,
-                    consensusNow);
+                    consensusNow,
+                    authorizer);
 
             // Calculate the fee
             fees = dispatcher.dispatchComputeFees(context);
