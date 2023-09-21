@@ -46,6 +46,7 @@ import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.util.impl.UtilServiceImpl;
 import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.spi.HapiUtils;
+import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
@@ -54,6 +55,7 @@ import com.hedera.node.app.throttle.ThrottleManager;
 import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.handle.SystemFileUpdateFacility;
+import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.Utils;
 import com.hedera.node.config.data.FilesConfig;
@@ -134,6 +136,8 @@ public final class Hedera implements SwirldMain {
     private ThrottleManager throttleManager;
     /** The exchange rate manager */
     private ExchangeRateManager exchangeRateManager;
+    /** The class responsible for remembering objects created in genesis cases */
+    private final GenesisRecordsBuilder genesisRecordsBuilder;
     /**
      * Dependencies managed by Dagger. Set during state initialization. The mono-service requires this object, but none
      * of the rest of the system (and particularly the modular implementation) uses it directly. Rather, it is created
@@ -197,10 +201,13 @@ public final class Hedera implements SwirldMain {
                 () -> HapiUtils.toString(version.getHapiVersion()),
                 () -> HapiUtils.toString(version.getServicesVersion()));
 
+        // Create a record builder for any genesis records that need to be created
+        this.genesisRecordsBuilder = new GenesisRecordsConsensusHook();
+
         // Create all the service implementations
         logger.info("Registering services");
         // FUTURE: Use the service loader framework to load these services!
-        this.servicesRegistry = new ServicesRegistryImpl(constructableRegistry);
+        this.servicesRegistry = new ServicesRegistryImpl(constructableRegistry, genesisRecordsBuilder);
         Set.of(
                         new ConsensusServiceImpl(),
                         CONTRACT_SERVICE,
@@ -410,9 +417,17 @@ public final class Hedera implements SwirldMain {
         final var defaultCharset = daggerApp.nativeCharset().get();
         if (!isUTF8(defaultCharset)) {
             logger.error(
-                    "Fatal precondition violation in HederaNode#{}:" + "default charset is {} and not UTF-8",
+                    """
+                    Fatal precondition violation in HederaNode#{}: default charset is {} and not UTF-8
+                    LC_ALL={}
+                    LANG={}
+                    file.encoding={}
+                    """,
                     daggerApp.nodeId(),
-                    defaultCharset);
+                    defaultCharset,
+                    System.getenv("LC_ALL"),
+                    System.getenv("LANG"),
+                    System.getProperty("file.encoding"));
             daggerApp.systemExits().fail(1);
         }
 
@@ -420,7 +435,7 @@ public final class Hedera implements SwirldMain {
         final var digestFactory = daggerApp.digestFactory();
         if (!sha384DigestIsAvailable(digestFactory)) {
             logger.error(
-                    "Fatal precondition violation in HederaNode#{}:" + "digest factory does not support SHA-384",
+                    "Fatal precondition violation in HederaNode#{}: digest factory does not support SHA-384",
                     daggerApp.nodeId());
             daggerApp.systemExits().fail(1);
         }
@@ -476,6 +491,7 @@ public final class Hedera implements SwirldMain {
             // com.hedera.node.app.service.mono.state.logic.StateWriteToDiskListener
             // which looks like it is related to freeze / upgrade.
             // daggerApp.stateWriteToDiskListener());
+            // see issue #8660
 
             // TBD: notifications.register(NewSignedStateListener.class, daggerApp.newSignedStateListener());
             // com.hedera.node.app.service.mono.state.exports.NewSignedStateListener
@@ -713,6 +729,7 @@ public final class Hedera implements SwirldMain {
                     .servicesRegistry(servicesRegistry)
                     .bootstrapProps(new BootstrapProperties(false)) // TBD REMOVE
                     .instantSource(InstantSource.system())
+                    .genesisRecordsConsensusHook((GenesisRecordsConsensusHook) genesisRecordsBuilder)
                     .build();
 
             daggerApp.workingStateAccessor().setHederaState(state);

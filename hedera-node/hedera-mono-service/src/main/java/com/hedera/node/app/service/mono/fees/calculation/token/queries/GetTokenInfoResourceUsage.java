@@ -16,9 +16,11 @@
 
 package com.hedera.node.app.service.mono.fees.calculation.token.queries;
 
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.mono.queries.token.GetTokenInfoAnswer.TOKEN_INFO_CTX_KEY;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.putIfNotNull;
 
+import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.hapi.fees.usage.token.TokenGetInfoUsage;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.fees.calculation.QueryResourceUsageEstimator;
@@ -66,6 +68,38 @@ public final class GetTokenInfoResourceUsage implements QueryResourceUsageEstima
                     .givenCurrentMemo(info.getMemo())
                     .givenCurrentSymbol(info.getSymbol());
             if (info.hasAutoRenewAccount()) {
+                estimate.givenCurrentlyUsingAutoRenewAccount();
+            }
+            return estimate.get();
+        } else {
+            return FeeData.getDefaultInstance();
+        }
+    }
+
+    /**
+     * This method is used to calculate the fee for the {@code GetTokenInfo}
+     * only in modularized code, until new fee logic is implemented.
+     * @param query query to be processed
+     * @param token token whose info to be retrieved
+     * @return fee data
+     */
+    public FeeData usageGiven(final Query query, final Token token) {
+        if (token != null) {
+            final var estimate = factory.apply(query)
+                    .givenCurrentAdminKey(
+                            token.hasAdminKey() ? Optional.of(fromPbj(token.adminKey())) : Optional.empty())
+                    .givenCurrentFreezeKey(
+                            token.hasFreezeKey() ? Optional.of(fromPbj(token.freezeKey())) : Optional.empty())
+                    .givenCurrentWipeKey(token.hasWipeKey() ? Optional.of(fromPbj(token.wipeKey())) : Optional.empty())
+                    .givenCurrentSupplyKey(
+                            token.hasSupplyKey() ? Optional.of(fromPbj(token.supplyKey())) : Optional.empty())
+                    .givenCurrentKycKey(token.hasKycKey() ? Optional.of(fromPbj(token.kycKey())) : Optional.empty())
+                    .givenCurrentPauseKey(
+                            token.hasPauseKey() ? Optional.of(fromPbj(token.pauseKey())) : Optional.empty())
+                    .givenCurrentName(token.name())
+                    .givenCurrentMemo(token.memo())
+                    .givenCurrentSymbol(token.symbol());
+            if (token.hasAutoRenewAccountId()) {
                 estimate.givenCurrentlyUsingAutoRenewAccount();
             }
             return estimate.get();

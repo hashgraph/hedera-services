@@ -19,7 +19,6 @@ package com.hedera.node.app.service.file.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.preValidate;
-import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateAndAddRequiredKeys;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static java.util.Objects.requireNonNull;
 
@@ -74,9 +73,6 @@ public class FileSystemUndeleteHandler implements TransactionHandler {
         final var fileStore = context.createStore(ReadableFileStore.class);
         final var transactionFileId = requireNonNull(transactionBody.fileID());
         preValidate(transactionFileId, fileStore, context, true);
-
-        var file = fileStore.getFileLeaf(transactionFileId);
-        validateAndAddRequiredKeys(file, null, context);
     }
 
     @Override
@@ -103,7 +99,8 @@ public class FileSystemUndeleteHandler implements TransactionHandler {
             /* Copy all the fields from existing special file and change deleted flag */
             final var fileBuilder = new File.Builder()
                     .fileId(file.fileId())
-                    .expirationSecond(file.expirationSecond())
+                    .expirationSecond(file.preSystemDeleteExpirationSecond())
+                    .preSystemDeleteExpirationSecond(0L)
                     .keys(file.keys())
                     .contents(file.contents())
                     .memo(file.memo())

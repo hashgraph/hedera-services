@@ -42,6 +42,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ForkJoinPool;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import org.junit.jupiter.api.BeforeEach;
@@ -82,7 +84,9 @@ class FreezeUpgradeActionsTest {
         noiseFileLoc = zipOutputDir.toPath().resolve("forgotten.cfg");
         noiseSubFileLoc = zipOutputDir.toPath().resolve("edargpu");
 
-        subject = new FreezeUpgradeActions(adminServiceConfig, freezeStore);
+        final Executor freezeExectuor = new ForkJoinPool(
+                1, ForkJoinPool.defaultForkJoinWorkerThreadFactory, Thread.getDefaultUncaughtExceptionHandler(), true);
+        subject = new FreezeUpgradeActions(adminServiceConfig, freezeStore, freezeExectuor);
 
         // set up test zip
         zipSourceDir = Files.createTempDirectory("zipSourceDir");
@@ -145,6 +149,7 @@ class FreezeUpgradeActionsTest {
         rmIfPresent(NOW_FROZEN_MARKER);
 
         given(adminServiceConfig.upgradeArtifactsPath()).willReturn(zipOutputDir.toString());
+        given(freezeStore.updateFileHash()).willReturn(Bytes.wrap("fake hash"));
 
         subject.externalizeFreezeIfUpgradePending();
 

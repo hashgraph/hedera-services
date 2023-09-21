@@ -45,7 +45,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.concurrent.Executor;
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.inject.Singleton;
 
 /**
@@ -57,9 +59,11 @@ public class FreezeHandler implements TransactionHandler {
     // used for a quick sanity check that the file hash is not invalid
     public static final int UPDATE_FILE_HASH_LEN = 48;
 
+    private final Executor freezeExecutor;
+
     @Inject
-    public FreezeHandler() {
-        // Dagger2
+    public FreezeHandler(@NonNull @Named("FreezeService") final Executor freezeExecutor) {
+        this.freezeExecutor = requireNonNull(freezeExecutor);
     }
 
     /**
@@ -129,10 +133,10 @@ public class FreezeHandler implements TransactionHandler {
 
         validateSemantics(freezeTxn, freezeStore, upgradeFileStore);
 
-        final FreezeUpgradeActions upgradeActions = new FreezeUpgradeActions(adminServiceConfig, freezeStore);
+        final FreezeUpgradeActions upgradeActions =
+                new FreezeUpgradeActions(adminServiceConfig, freezeStore, freezeExecutor);
         final Timestamp freezeStartTime = freezeTxn.startTime(); // may be null for some freeze types
 
-        // @todo('Issue #6761') - the below switch returns a CompletableFuture, need to use this with an ExecutorService
         switch (freezeTxn.freezeType()) {
             case PREPARE_UPGRADE -> {
                 // by the time we get here, we've already checked that fileHash is non-null in preHandle()
@@ -147,7 +151,6 @@ public class FreezeHandler implements TransactionHandler {
             case FREEZE_ABORT -> {
                 upgradeActions.abortScheduledFreeze();
                 freezeStore.updateFileHash(null);
-                // todo: need to null out the update file num as well
             }
             case TELEMETRY_UPGRADE -> {
                 try {
