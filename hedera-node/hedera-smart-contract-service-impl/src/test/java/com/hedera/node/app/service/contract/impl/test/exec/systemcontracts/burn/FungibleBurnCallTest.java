@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.burn
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.burn.BurnTranslator.BURN_TOKEN_V1;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.burn.BurnTranslator.BURN_TOKEN_V2;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_ACCOUNT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN_ID;
@@ -70,15 +71,7 @@ public class FungibleBurnCallTest extends HtsCallTestBase {
 
     @Test
     void burnTokenHappyPathV1() {
-        given(addressIdConverter.convert(asHeadlongAddress(FRAME_SENDER_ADDRESS)))
-                .willReturn(A_NEW_ACCOUNT_ID);
-        given(systemContractOperations.dispatch(
-                        any(TransactionBody.class),
-                        eq(verificationStrategy),
-                        eq(A_NEW_ACCOUNT_ID),
-                        eq(TokenBurnRecordBuilder.class)))
-                .willReturn(recordBuilder);
-        given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
+        givensForSuccessfulBurnTokenV1AndV2();
 
         subject = subjectForBurn(10L);
 
@@ -87,6 +80,22 @@ public class FungibleBurnCallTest extends HtsCallTestBase {
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
                 asBytesResult(BURN_TOKEN_V1
+                        .getOutputs()
+                        .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()))),
+                result.getOutput());
+    }
+
+    @Test
+    void burnTokenHappyPathV2() {
+        givensForSuccessfulBurnTokenV1AndV2();
+
+        subject = subjectForBurn(10L);
+
+        final var result = subject.execute().fullResult().result();
+
+        assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
+        assertEquals(
+                asBytesResult(BURN_TOKEN_V2
                         .getOutputs()
                         .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()))),
                 result.getOutput());
@@ -112,7 +121,17 @@ public class FungibleBurnCallTest extends HtsCallTestBase {
         assertEquals(Bytes.wrap(INVALID_TOKEN_BURN_AMOUNT.protoName().getBytes()), result.getOutput());
     }
 
-    // @TODO add test for V2
+    private void givensForSuccessfulBurnTokenV1AndV2() {
+        given(addressIdConverter.convert(asHeadlongAddress(FRAME_SENDER_ADDRESS)))
+                .willReturn(A_NEW_ACCOUNT_ID);
+        given(systemContractOperations.dispatch(
+                any(TransactionBody.class),
+                eq(verificationStrategy),
+                eq(A_NEW_ACCOUNT_ID),
+                eq(TokenBurnRecordBuilder.class)))
+                .willReturn(recordBuilder);
+        given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
+    }
 
     private FungibleBurnCall subjectForBurn(final long amount) {
         return new FungibleBurnCall(
