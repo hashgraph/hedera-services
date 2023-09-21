@@ -25,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
@@ -64,6 +65,7 @@ import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionScenarioBuilder;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecord;
 import com.hedera.node.app.workflows.prehandle.FakeSignatureVerificationFuture;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
@@ -171,6 +173,9 @@ class HandleWorkflowTest extends AppTestBase {
     private HederaRecordCache recordCache;
 
     @Mock
+    private GenesisRecordsConsensusHook genesisRecordsTimeHook;
+
+    @Mock
     private StakingPeriodTimeHook stakingPeriodTimeHook;
 
     @Mock
@@ -261,6 +266,7 @@ class HandleWorkflowTest extends AppTestBase {
                 serviceLookup,
                 configProvider,
                 recordCache,
+                genesisRecordsTimeHook,
                 stakingPeriodTimeHook,
                 feeManager,
                 exchangeRateManager,
@@ -286,6 +292,7 @@ class HandleWorkflowTest extends AppTestBase {
                         serviceLookup,
                         configProvider,
                         recordCache,
+                        genesisRecordsTimeHook,
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
@@ -307,6 +314,7 @@ class HandleWorkflowTest extends AppTestBase {
                         serviceLookup,
                         configProvider,
                         recordCache,
+                        genesisRecordsTimeHook,
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
@@ -328,6 +336,7 @@ class HandleWorkflowTest extends AppTestBase {
                         serviceLookup,
                         configProvider,
                         recordCache,
+                        genesisRecordsTimeHook,
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
@@ -349,6 +358,7 @@ class HandleWorkflowTest extends AppTestBase {
                         serviceLookup,
                         configProvider,
                         recordCache,
+                        genesisRecordsTimeHook,
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
@@ -370,6 +380,7 @@ class HandleWorkflowTest extends AppTestBase {
                         serviceLookup,
                         configProvider,
                         recordCache,
+                        genesisRecordsTimeHook,
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
@@ -391,6 +402,7 @@ class HandleWorkflowTest extends AppTestBase {
                         serviceLookup,
                         configProvider,
                         recordCache,
+                        genesisRecordsTimeHook,
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
@@ -412,6 +424,7 @@ class HandleWorkflowTest extends AppTestBase {
                         serviceLookup,
                         configProvider,
                         recordCache,
+                        genesisRecordsTimeHook,
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
@@ -433,6 +446,7 @@ class HandleWorkflowTest extends AppTestBase {
                         null,
                         configProvider,
                         recordCache,
+                        genesisRecordsTimeHook,
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
@@ -454,6 +468,7 @@ class HandleWorkflowTest extends AppTestBase {
                         serviceLookup,
                         null,
                         recordCache,
+                        genesisRecordsTimeHook,
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
@@ -475,6 +490,7 @@ class HandleWorkflowTest extends AppTestBase {
                         serviceLookup,
                         configProvider,
                         null,
+                        genesisRecordsTimeHook,
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
@@ -497,6 +513,7 @@ class HandleWorkflowTest extends AppTestBase {
                         configProvider,
                         recordCache,
                         null,
+                        stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
                         finalizer,
@@ -517,6 +534,29 @@ class HandleWorkflowTest extends AppTestBase {
                         serviceLookup,
                         configProvider,
                         recordCache,
+                        genesisRecordsTimeHook,
+                        null,
+                        feeManager,
+                        exchangeRateManager,
+                        finalizer,
+                        systemFileUpdateFacility,
+                        dualStateUpdateFacility,
+                        solvencyPreCheck,
+                        authorizer,
+                        networkUtilizationManager))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new HandleWorkflow(
+                        networkInfo,
+                        preHandleWorkflow,
+                        dispatcher,
+                        blockRecordManager,
+                        signatureExpander,
+                        signatureVerifier,
+                        checker,
+                        serviceLookup,
+                        configProvider,
+                        recordCache,
+                        genesisRecordsTimeHook,
                         stakingPeriodTimeHook,
                         null,
                         exchangeRateManager,
@@ -538,6 +578,7 @@ class HandleWorkflowTest extends AppTestBase {
                         serviceLookup,
                         configProvider,
                         recordCache,
+                        genesisRecordsTimeHook,
                         stakingPeriodTimeHook,
                         feeManager,
                         null,
@@ -559,6 +600,7 @@ class HandleWorkflowTest extends AppTestBase {
                         serviceLookup,
                         configProvider,
                         recordCache,
+                        genesisRecordsTimeHook,
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
@@ -580,6 +622,7 @@ class HandleWorkflowTest extends AppTestBase {
                         serviceLookup,
                         configProvider,
                         recordCache,
+                        genesisRecordsTimeHook,
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
@@ -601,6 +644,7 @@ class HandleWorkflowTest extends AppTestBase {
                         serviceLookup,
                         configProvider,
                         recordCache,
+                        genesisRecordsTimeHook,
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
@@ -622,6 +666,7 @@ class HandleWorkflowTest extends AppTestBase {
                         serviceLookup,
                         configProvider,
                         recordCache,
+                        genesisRecordsTimeHook,
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
@@ -643,6 +688,7 @@ class HandleWorkflowTest extends AppTestBase {
                         serviceLookup,
                         configProvider,
                         recordCache,
+                        genesisRecordsTimeHook,
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
@@ -664,6 +710,7 @@ class HandleWorkflowTest extends AppTestBase {
                         serviceLookup,
                         configProvider,
                         recordCache,
+                        genesisRecordsTimeHook,
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
@@ -702,7 +749,7 @@ class HandleWorkflowTest extends AppTestBase {
         final var alice = aliasesState.get(new ProtoBytes(Bytes.wrap(ALICE_ALIAS)));
         assertThat(alice).isEqualTo(ALICE.account().accountId());
         // TODO: Check that record was created
-        verify(systemFileUpdateFacility).handleTxBody(any(), any());
+        verify(systemFileUpdateFacility).handleTxBody(any(), any(), any());
         verify(dualStateUpdateFacility).handleTxBody(any(), any(), any());
     }
 
@@ -1545,9 +1592,10 @@ class HandleWorkflowTest extends AppTestBase {
     }
 
     @Test
-    void testConsensusTimeHookCalled() {
+    void testConsensusTimeHooksCalled() {
         workflow.handleRound(state, dualState, round);
-        verify(stakingPeriodTimeHook).process(any());
+        verify(genesisRecordsTimeHook).process(notNull());
+        verify(stakingPeriodTimeHook).process(notNull());
     }
 
     private SingleTransactionRecord getRecordFromStream() {

@@ -71,6 +71,7 @@ import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
@@ -117,6 +118,7 @@ public class HandleWorkflow {
     private final ServiceScopeLookup serviceScopeLookup;
     private final ConfigProvider configProvider;
     private final HederaRecordCache recordCache;
+    private final GenesisRecordsConsensusHook genesisRecordsTimeHook;
     private final StakingPeriodTimeHook stakingPeriodTimeHook;
     private final FeeManager feeManager;
     private final ExchangeRateManager exchangeRateManager;
@@ -139,6 +141,7 @@ public class HandleWorkflow {
             @NonNull final ServiceScopeLookup serviceScopeLookup,
             @NonNull final ConfigProvider configProvider,
             @NonNull final HederaRecordCache recordCache,
+            @NonNull final GenesisRecordsConsensusHook genesisRecordsTimeHook,
             @NonNull final StakingPeriodTimeHook stakingPeriodTimeHook,
             @NonNull final FeeManager feeManager,
             @NonNull final ExchangeRateManager exchangeRateManager,
@@ -158,6 +161,7 @@ public class HandleWorkflow {
         this.serviceScopeLookup = requireNonNull(serviceScopeLookup, "serviceScopeLookup must not be null");
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
         this.recordCache = requireNonNull(recordCache, "recordCache must not be null");
+        this.genesisRecordsTimeHook = requireNonNull(genesisRecordsTimeHook, "genesisRecordsTimeHook must not be null");
         this.stakingPeriodTimeHook = requireNonNull(stakingPeriodTimeHook, "stakingPeriodTimeHook must not be null");
         this.feeManager = requireNonNull(feeManager, "feeManager must not be null");
         this.exchangeRateManager = requireNonNull(exchangeRateManager, "exchangeRateManager must not be null");
@@ -236,7 +240,6 @@ public class HandleWorkflow {
             @NonNull final ConsensusEvent platformEvent,
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction platformTxn) {
-
         // Get the consensus timestamp
         final Instant consensusNow = platformTxn.getConsensusTimestamp();
 
@@ -267,7 +270,10 @@ public class HandleWorkflow {
         final var readableStoreFactory = new ReadableStoreFactory(stack);
         final var feeAccumulator = createFeeAccumulator(stack, configuration, recordBuilder);
 
-        final var tokenServiceContext = new TokenServiceContextImpl(configuration, stack, recordListBuilder);
+        final var tokenServiceContext = new TokenContextImpl(configuration, stack, recordListBuilder);
+        // It's awful that we have to check this every time a transaction is handled, especially since this mostly
+        // applies to non-production cases. Let's find a way to 💥💥 remove this 💥💥
+        genesisRecordsTimeHook.process(tokenServiceContext);
         try {
             // If this is the first user transaction after midnight, then handle staking updates prior to handling the
             // transaction itself.
@@ -424,7 +430,7 @@ public class HandleWorkflow {
                     networkUtilizationManager.saveTo(state);
 
                     // Notify responsible facility if system-file was uploaded
-                    systemFileUpdateFacility.handleTxBody(stack, txBody);
+                    systemFileUpdateFacility.handleTxBody(stack, txBody, recordBuilder);
 
                     // Notify if dual state was updated
                     dualStateUpdateFacility.handleTxBody(stack, dualState, txBody);

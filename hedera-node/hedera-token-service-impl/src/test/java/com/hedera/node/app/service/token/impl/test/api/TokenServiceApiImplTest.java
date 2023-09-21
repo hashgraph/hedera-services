@@ -188,7 +188,7 @@ class TokenServiceApiImplTest {
         accountStore.put(Account.newBuilder().accountId(CONTRACT_ACCOUNT_ID).build());
 
         assertNull(accountStore.getContractById(CONTRACT_ID_BY_NUM));
-        subject.markAsContract(CONTRACT_ACCOUNT_ID);
+        subject.markAsContract(CONTRACT_ACCOUNT_ID, null);
 
         assertEquals(1, accountStore.sizeOfAccountState());
         assertNotNull(accountStore.getContractById(CONTRACT_ID_BY_NUM));
