@@ -63,11 +63,13 @@ public class IsKycCall extends AbstractNonRevertibleTokenViewCall {
     }
 
     @Override
-    protected @NonNull FullResult viewCallResultWith(@NonNull ResponseCodeEnum status, long gasRequirement) {
+    protected @NonNull FullResult viewCallResultWith(
+            @NonNull final ResponseCodeEnum status, final long gasRequirement) {
         return fullResultsFor(status, gasRequirement, false);
     }
 
-    private @NonNull FullResult fullResultsFor(@NonNull ResponseCodeEnum status, long gasRequirement, boolean isKyc) {
+    private @NonNull FullResult fullResultsFor(
+            @NonNull final ResponseCodeEnum status, final long gasRequirement, final boolean isKyc) {
         return successResult(IS_KYC.getOutputs().encodeElements(status.protoOrdinal(), isKyc), gasRequirement);
     }
 }

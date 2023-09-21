@@ -47,11 +47,13 @@ public class TokenTypeCall extends AbstractNonRevertibleTokenViewCall {
     }
 
     @Override
-    protected @NonNull FullResult viewCallResultWith(@NonNull ResponseCodeEnum status, long gasRequirement) {
+    protected @NonNull FullResult viewCallResultWith(
+            @NonNull final ResponseCodeEnum status, final long gasRequirement) {
         return fullResultsFor(status, gasRequirement, 0);
     }
 
-    private @NonNull FullResult fullResultsFor(@NonNull ResponseCodeEnum status, long gasRequirement, int tokenType) {
+    private @NonNull FullResult fullResultsFor(
+            @NonNull final ResponseCodeEnum status, final long gasRequirement, final int tokenType) {
         return successResult(TOKEN_TYPE.getOutputs().encodeElements(status.protoOrdinal(), tokenType), gasRequirement);
     }
 }

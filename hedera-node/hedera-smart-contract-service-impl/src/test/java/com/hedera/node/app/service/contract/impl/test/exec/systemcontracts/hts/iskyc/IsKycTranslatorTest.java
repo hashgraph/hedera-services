@@ -62,8 +62,8 @@ class IsKycTranslatorTest {
 
     @Test
     void callFromTest() {
-        Tuple tuple = new Tuple(FUNGIBLE_TOKEN_HEADLONG_ADDRESS, OWNER_HEADLONG_ADDRESS);
-        Bytes inputBytes = Bytes.wrapByteBuffer(IsKycTranslator.IS_KYC.encodeCall(tuple));
+        final Tuple tuple = new Tuple(FUNGIBLE_TOKEN_HEADLONG_ADDRESS, OWNER_HEADLONG_ADDRESS);
+        final Bytes inputBytes = Bytes.wrapByteBuffer(IsKycTranslator.IS_KYC.encodeCall(tuple));
         given(attempt.input()).willReturn(inputBytes);
         given(attempt.linkedToken(fromHeadlongAddress(FUNGIBLE_TOKEN_HEADLONG_ADDRESS)))
                 .willReturn(token);

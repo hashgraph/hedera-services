@@ -56,8 +56,9 @@ class DefaultFreezeStatusTranslatorTest {
 
     @Test
     void callFromTest() {
-        Tuple tuple = new Tuple(FUNGIBLE_TOKEN_HEADLONG_ADDRESS);
-        Bytes inputBytes = Bytes.wrapByteBuffer(DefaultFreezeStatusTranslator.DEFAULT_FREEZE_STATUS.encodeCall(tuple));
+        final Tuple tuple = new Tuple(FUNGIBLE_TOKEN_HEADLONG_ADDRESS);
+        final Bytes inputBytes =
+                Bytes.wrapByteBuffer(DefaultFreezeStatusTranslator.DEFAULT_FREEZE_STATUS.encodeCall(tuple));
         given(attempt.input()).willReturn(inputBytes);
         given(attempt.enhancement()).willReturn(enhancement);
 

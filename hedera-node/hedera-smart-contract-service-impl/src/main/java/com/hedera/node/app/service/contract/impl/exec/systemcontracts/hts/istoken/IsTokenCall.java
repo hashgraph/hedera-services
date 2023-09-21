@@ -47,11 +47,13 @@ public class IsTokenCall extends AbstractNonRevertibleTokenViewCall {
     }
 
     @Override
-    protected @NonNull FullResult viewCallResultWith(@NonNull ResponseCodeEnum status, long gasRequirement) {
+    protected @NonNull FullResult viewCallResultWith(
+            @NonNull final ResponseCodeEnum status, final long gasRequirement) {
         return fullResultsFor(status, gasRequirement, false);
     }
 
-    private @NonNull FullResult fullResultsFor(@NonNull ResponseCodeEnum status, long gasRequirement, boolean isToken) {
+    private @NonNull FullResult fullResultsFor(
+            @NonNull final ResponseCodeEnum status, final long gasRequirement, final boolean isToken) {
         return successResult(IS_TOKEN.getOutputs().encodeElements(status.protoOrdinal(), isToken), gasRequirement);
     }
 }

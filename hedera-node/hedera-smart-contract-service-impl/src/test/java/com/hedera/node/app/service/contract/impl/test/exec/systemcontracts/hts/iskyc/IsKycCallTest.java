@@ -44,7 +44,7 @@ class IsKycCallTest extends HtsCallTestBase {
     void returnsIsKycForPresentToken() {
         subject = new IsKycCall(mockEnhancement(), FUNGIBLE_TOKEN, FUNGIBLE_TOKEN_HEADLONG_ADDRESS);
 
-        MockedStatic<ConversionUtils> conversionUtilsMockStatic = mockStatic(ConversionUtils.class);
+        final MockedStatic<ConversionUtils> conversionUtilsMockStatic = mockStatic(ConversionUtils.class);
         conversionUtilsMockStatic
                 .when(() -> ConversionUtils.accountNumberForEvmReference(any(), any()))
                 .thenReturn(1L);
@@ -65,7 +65,7 @@ class IsKycCallTest extends HtsCallTestBase {
     void returnsIsKycForMissingToken() {
         subject = new IsKycCall(mockEnhancement(), null, FUNGIBLE_TOKEN_HEADLONG_ADDRESS);
 
-        MockedStatic<ConversionUtils> conversionUtilsMockStatic = mockStatic(ConversionUtils.class);
+        final MockedStatic<ConversionUtils> conversionUtilsMockStatic = mockStatic(ConversionUtils.class);
         conversionUtilsMockStatic
                 .when(() -> ConversionUtils.accountNumberForEvmReference(any(), any()))
                 .thenReturn(1L);
@@ -86,7 +86,7 @@ class IsKycCallTest extends HtsCallTestBase {
     void returnsIsFrozenForMissingAccount() {
         subject = new IsKycCall(mockEnhancement(), FUNGIBLE_TOKEN, FUNGIBLE_TOKEN_HEADLONG_ADDRESS);
 
-        MockedStatic<ConversionUtils> conversionUtilsMockStatic = mockStatic(ConversionUtils.class);
+        final MockedStatic<ConversionUtils> conversionUtilsMockStatic = mockStatic(ConversionUtils.class);
         conversionUtilsMockStatic
                 .when(() -> ConversionUtils.accountNumberForEvmReference(any(), any()))
                 .thenReturn(-1L);
