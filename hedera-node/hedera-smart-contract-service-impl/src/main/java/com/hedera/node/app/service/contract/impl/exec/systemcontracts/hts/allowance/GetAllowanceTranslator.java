@@ -36,7 +36,7 @@ public class GetAllowanceTranslator extends AbstractHtsCallTranslator {
 
     public static final Function GET_ALLOWANCE =
             new Function("allowance(address,address,address)", ReturnTypes.RESPONSE_CODE_UINT256);
-    public static final Function ERC_GET_ALLOWANCE = new Function("allowance(address,address)", ReturnTypes.INT);
+    public static final Function ERC_GET_ALLOWANCE = new Function("allowance(address,address)", ReturnTypes.UINT256);
 
     @Inject
     public GetAllowanceTranslator() {
@@ -63,7 +63,8 @@ public class GetAllowanceTranslator extends AbstractHtsCallTranslator {
                     attempt.enhancement(),
                     attempt.redirectToken(),
                     call.get(0),
-                    call.get(1));
+                    call.get(1),
+                    true);
         } else {
             final var call = GetAllowanceTranslator.GET_ALLOWANCE.decodeCall(attempt.inputBytes());
             final Address token = call.get(0);
@@ -74,7 +75,8 @@ public class GetAllowanceTranslator extends AbstractHtsCallTranslator {
                     attempt.enhancement(),
                     attempt.linkedToken(ConversionUtils.fromHeadlongAddress(token)),
                     owner,
-                    spender);
+                    spender,
+                    false);
         }
     }
 

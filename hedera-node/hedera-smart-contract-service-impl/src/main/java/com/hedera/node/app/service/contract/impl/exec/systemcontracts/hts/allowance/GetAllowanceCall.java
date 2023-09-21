@@ -32,6 +32,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -41,6 +42,7 @@ public class GetAllowanceCall extends AbstractTokenViewCall {
     private final Address owner;
     private final Address spender;
     private final AddressIdConverter addressIdConverter;
+    private final boolean isERCCall;
 
     @Inject
     public GetAllowanceCall(
@@ -48,11 +50,13 @@ public class GetAllowanceCall extends AbstractTokenViewCall {
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             @Nullable final Token token,
             @NonNull final Address owner,
-            @NonNull final Address spender) {
+            @NonNull final Address spender,
+            final boolean isERCCall) {
         super(enhancement, token);
         this.addressIdConverter = addressIdConverter;
         this.owner = requireNonNull(owner);
         this.spender = requireNonNull(spender);
+        this.isERCCall = isERCCall;
     }
 
     @NonNull
@@ -69,14 +73,12 @@ public class GetAllowanceCall extends AbstractTokenViewCall {
         final var ownerAccount = nativeOperations().getAccount(ownerID.accountNumOrThrow());
         final var spenderID = addressIdConverter.convert(spender);
         final var allowance = getAllowance(token, requireNonNull(ownerAccount), spenderID);
-        final var output = GetAllowanceTranslator.GET_ALLOWANCE
-                .getOutputs()
-                .encodeElements((long) ResponseCodeEnum.SUCCESS.getNumber(), allowance);
+        final var output = prepareOutput(allowance);
         return FullResult.successResult(output, 0L);
     }
 
     @NonNull
-    private static BigInteger getAllowance(
+    private BigInteger getAllowance(
             @NonNull final Token token, @NonNull final Account ownerAccount, @NonNull final AccountID spenderID) {
         final var tokenAllowance = requireNonNull(ownerAccount).tokenAllowancesOrThrow().stream()
                 .filter(allowance -> allowance.tokenIdOrThrow().equals(token.tokenIdOrThrow())
@@ -84,5 +86,14 @@ public class GetAllowanceCall extends AbstractTokenViewCall {
                 .findFirst();
         return BigInteger.valueOf(
                 tokenAllowance.map(AccountFungibleTokenAllowance::amount).orElse(0L));
+    }
+
+    @NonNull
+    private ByteBuffer prepareOutput(@NonNull final BigInteger allowance) {
+        return isERCCall
+                ? GetAllowanceTranslator.ERC_GET_ALLOWANCE.getOutputs().encodeElements(allowance)
+                : GetAllowanceTranslator.GET_ALLOWANCE
+                        .getOutputs()
+                        .encodeElements((long) ResponseCodeEnum.SUCCESS.getNumber(), allowance);
     }
 }

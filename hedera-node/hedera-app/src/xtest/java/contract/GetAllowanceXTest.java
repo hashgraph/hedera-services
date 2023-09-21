@@ -74,9 +74,9 @@ public class GetAllowanceXTest extends AbstractContractXTest {
                                 OWNER_HEADLONG_ADDRESS, APPROVED_HEADLONG_ADDRESS),
                         ERC20_TOKEN_ID),
                 output -> assertEquals(
-                        asBytesResult(GetAllowanceTranslator.GET_ALLOWANCE
+                        asBytesResult(GetAllowanceTranslator.ERC_GET_ALLOWANCE
                                 .getOutputs()
-                                .encodeElements((long) SUCCESS.getNumber(), BigInteger.valueOf(1_000L))),
+                                .encodeElements(BigInteger.valueOf(1_000L))),
                         output));
     }
 
