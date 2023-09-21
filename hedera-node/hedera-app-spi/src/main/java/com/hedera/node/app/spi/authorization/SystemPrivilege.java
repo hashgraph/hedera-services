@@ -14,12 +14,21 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.token.records;
-
-import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
+package com.hedera.node.app.spi.authorization;
 
 /**
- * A {@code RecordBuilder} specialization for tracking the side effects of a {@code CryptoDelete}
- * transaction.
+ * The possible results of a system privilege check.
  */
-public interface CryptoDeleteRecordBuilder extends DeleteCapableTransactionRecordBuilder {}
+public enum SystemPrivilege {
+    /** The operation does not require any system privileges. */
+    UNNECESSARY,
+
+    /** The operation requires system privileges that its payer does not have. */
+    UNAUTHORIZED,
+
+    /** The operation cannot be performed, no matter the privileges of its payer. */
+    IMPERMISSIBLE,
+
+    /** The operation requires system privileges, and its payer has those privileges. */
+    AUTHORIZED;
+}
