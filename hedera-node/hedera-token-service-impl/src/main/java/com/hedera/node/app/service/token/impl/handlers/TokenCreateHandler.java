@@ -18,11 +18,10 @@ package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
-import static com.hedera.node.app.hapi.fees.usage.SingletonUsageProperties.USAGE_PROPERTIES;
-import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
-import static com.hedera.node.app.hapi.fees.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
+import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.txnEstimateFactory;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -38,6 +37,8 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.TokenCreateTransactionBody;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
+import com.hedera.node.app.service.mono.fees.calculation.token.txns.TokenCreateResourceUsage;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
@@ -50,6 +51,7 @@ import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -355,23 +357,22 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
     @NonNull
     @Override
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
-        final var txn = feeContext.body();
-        final var op = txn.tokenCreationOrThrow();
-        final var type = op.tokenType();
-        final var meta = TOKEN_OPS_USAGE_UTILS.tokenCreateUsageFrom(fromPbj(txn));
-        final long tokenSizes = TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(
-                        meta.getNumTokens(), meta.getFungibleNumTransfers(), meta.getNftsTransfers())
-                * USAGE_PROPERTIES.legacyReceiptStorageSecs();
+        requireNonNull(feeContext);
+        final var op = feeContext.body();
+        final var type = op.tokenCreationOrThrow().tokenType();
 
-        final var calculator = feeContext
-                .feeCalculator(
-                        type.equals(TokenType.FUNGIBLE_COMMON)
-                                ? SubType.TOKEN_FUNGIBLE_COMMON
-                                : SubType.TOKEN_NON_FUNGIBLE_UNIQUE)
-                .addBytesPerTransaction(meta.getBaseSize())
-                .addRamByteSeconds((meta.getBaseSize() + meta.getCustomFeeScheduleSize()) * meta.getLifeTime())
-                .addRamByteSeconds(tokenSizes)
-                .addNetworkRamByteSeconds(meta.getNetworkRecordRb() * USAGE_PROPERTIES.legacyReceiptStorageSecs());
-        return calculator.calculate();
+        return feeContext.feeCalculator(tokenSubTypeFrom(type)).legacyCalculate(sigValueObj -> {
+            try {
+                return new TokenCreateResourceUsage(txnEstimateFactory).usageGiven(fromPbj(op), sigValueObj, null);
+            } catch (InvalidTxBodyException e) {
+                throw new HandleException(INVALID_TRANSACTION_BODY);
+            }
+        });
+    }
+
+    public static SubType tokenSubTypeFrom(final TokenType tokenType) {
+        return tokenType.equals(TokenType.FUNGIBLE_COMMON)
+                ? SubType.TOKEN_FUNGIBLE_COMMON
+                : SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
     }
 }
