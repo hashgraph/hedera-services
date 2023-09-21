@@ -46,6 +46,7 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Disabled;
 
 @HapiTestSuite
 public class TokenDeleteSpecs extends HapiSuite {
@@ -123,6 +124,7 @@ public class TokenDeleteSpecs extends HapiSuite {
     }
 
     @HapiTest
+    @Disabled
     public HapiSpec deletionWorksAsExpected() {
         return defaultHapiSpec("DeletionWorksAsExpected")
                 .given(

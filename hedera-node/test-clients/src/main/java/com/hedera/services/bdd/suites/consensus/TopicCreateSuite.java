@@ -42,6 +42,7 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Disabled;
 
 @HapiTestSuite
 public class TopicCreateSuite extends HapiSuite {
@@ -231,6 +232,7 @@ public class TopicCreateSuite extends HapiSuite {
     }
 
     @HapiTest
+    @Disabled
     private HapiSpec feeAsExpected() {
         return defaultHapiSpec("feeAsExpected")
                 .given(

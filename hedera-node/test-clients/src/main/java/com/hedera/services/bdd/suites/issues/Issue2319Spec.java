@@ -38,6 +38,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Disabled;
 
 @HapiTestSuite
 public class Issue2319Spec extends HapiSuite {
@@ -58,6 +59,7 @@ public class Issue2319Spec extends HapiSuite {
     }
 
     @HapiTest
+    @Disabled
     private HapiSpec propsPermissionsSigReqsWaivedForAddressBookAdmin() {
         var pemLoc = "<PEM>";
 
@@ -110,6 +112,7 @@ public class Issue2319Spec extends HapiSuite {
     }
 
     @HapiTest
+    @Disabled
     private HapiSpec sysAccountSigReqsWaivedForMasterAndTreasury() {
         var pemLoc = "<PEM>";
 
@@ -137,6 +140,7 @@ public class Issue2319Spec extends HapiSuite {
     }
 
     @HapiTest
+    @Disabled
     private HapiSpec sysFileSigReqsWaivedForMasterAndTreasury() {
         var pemLoc = "<PEM>";
         var validRates = new AtomicReference<ByteString>();

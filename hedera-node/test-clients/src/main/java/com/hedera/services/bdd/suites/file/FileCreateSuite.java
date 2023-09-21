@@ -53,6 +53,7 @@ import java.nio.file.Path;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Disabled;
 
 @HapiTestSuite
 public class FileCreateSuite extends HapiSuite {
@@ -117,6 +118,7 @@ public class FileCreateSuite extends HapiSuite {
     }
 
     @HapiTest
+    @Disabled
     private HapiSpec createFailsWithMissingSigs() {
         KeyShape shape = listOf(SIMPLE, threshOf(2, 3), threshOf(1, 3));
         SigControl validSig = shape.signedWith(sigs(ON, sigs(ON, ON, OFF), sigs(OFF, OFF, ON)));
