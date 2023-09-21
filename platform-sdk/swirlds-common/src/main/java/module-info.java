@@ -174,5 +174,7 @@ module com.swirlds.common {
     requires jdk.management;
     requires org.apache.logging.log4j.core;
     requires org.bouncycastle.provider;
+    requires org.hyperledger.besu.secp256k1;
+    requires com.sun.jna;
     requires static com.github.spotbugs.annotations;
 }
