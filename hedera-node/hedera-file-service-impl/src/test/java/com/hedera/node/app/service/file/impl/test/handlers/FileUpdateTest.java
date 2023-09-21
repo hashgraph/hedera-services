@@ -155,8 +155,7 @@ class FileUpdateTest extends FileTestBase {
 
         subject.preHandle(realPreContext);
 
-        assertTrue(realPreContext.requiredNonPayerKeys().size() > 0);
-        assertEquals(3, realPreContext.requiredNonPayerKeys().size());
+        assertFalse(realPreContext.requiredNonPayerKeys().size() > 0);
     }
 
     @Test
