@@ -904,6 +904,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                         getTokenNftInfo(nft, 1L).hasNoSpender());
     }
 
+    @HapiTest
     private HapiSpec happyPathWorks() {
         final String owner = "owner";
         final String spender = "spender";
