@@ -27,6 +27,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RECEIVING_NODE_
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.estimatedFee;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
+import static com.hedera.node.app.spi.workflows.InsufficientBalanceType.OTHER_COSTS_NOT_COVERED;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -46,6 +47,7 @@ import com.hedera.node.app.AppTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
 import com.hedera.node.app.spi.authorization.Authorizer;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.validation.ExpiryValidation;
@@ -236,9 +238,9 @@ class QueryCheckerTest extends AppTestBase {
             final var amount = 8L;
             final var txInfo = createPaymentInfo(
                     ALICE.accountID(), send(ALICE.accountID(), amount), receive(nodeSelfAccountId, amount));
-            doThrow(new InsufficientBalanceException(INSUFFICIENT_PAYER_BALANCE, amount))
+            doThrow(new InsufficientBalanceException(INSUFFICIENT_PAYER_BALANCE, amount, OTHER_COSTS_NOT_COVERED))
                     .when(solvencyPreCheck)
-                    .checkSolvency(txInfo, ALICE.account(), amount);
+                    .checkSolvency(txInfo, ALICE.account(), new Fees(amount, 0, 0));
 
             // then
             assertThatThrownBy(() -> checker.validateAccountBalances(store, txInfo, amount))
