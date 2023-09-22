@@ -93,7 +93,7 @@ public class DefaultStateManagementComponentFactory implements StateManagementCo
         this.swirldName = Objects.requireNonNull(swirldName);
         this.platformStatusGetter = Objects.requireNonNull(platformStatusGetter);
         this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
-        this.currentEpochHash = Objects.requireNonNull(currentEpochHash);
+        this.currentEpochHash = currentEpochHash;
     }
 
     @Override
