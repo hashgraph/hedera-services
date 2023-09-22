@@ -24,9 +24,12 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseHeader;
 import com.hedera.hapi.node.base.ResponseType;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.network.NetworkGetVersionInfoResponse;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
+import com.hedera.node.app.service.mono.fees.calculation.meta.queries.GetVersionInfoResourceUsage;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
@@ -86,5 +89,15 @@ public class NetworkGetVersionInfoHandler extends PaidQueryHandler {
         }
 
         return Response.newBuilder().networkGetVersionInfo(responseBuilder).build();
+    }
+
+    @NonNull
+    @Override
+    public Fees computeFees(@NonNull final QueryContext queryContext) {
+        requireNonNull(queryContext);
+
+        return queryContext
+                .feeCalculator(SubType.DEFAULT)
+                .legacyCalculate(sigValueObj -> GetVersionInfoResourceUsage.usageGiven());
     }
 }

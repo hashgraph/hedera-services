@@ -22,9 +22,12 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseHeader;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.network.NetworkGetExecutionTimeResponse;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
+import com.hedera.node.app.service.mono.fees.calculation.meta.queries.GetExecTimeResourceUsage;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
@@ -69,5 +72,13 @@ public class NetworkGetExecutionTimeHandler extends PaidQueryHandler {
         requireNonNull(context);
         requireNonNull(header);
         throw new UnsupportedOperationException("Not supported");
+    }
+
+    @NonNull
+    @Override
+    public Fees computeFees(@NonNull final QueryContext queryContext) {
+        final var query = queryContext.query();
+        return queryContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> new GetExecTimeResourceUsage()
+                .usageGiven(query));
     }
 }
