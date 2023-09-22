@@ -423,9 +423,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 preconsensusEventWriter,
                 platformStatusManager::getCurrentStatus,
                 platformStatusManager::submitStatusAction,
-                Optional.ofNullable(emergencyRecoveryManager.getEmergencyRecoveryFile())
-                        .map(EmergencyRecoveryFile::hash)
-                        .orElse(null));
+                epochHash);
         wiring.registerComponents(components);
 
         final SignedStateManager signedStateManager = stateManagementComponent.getSignedStateManager();

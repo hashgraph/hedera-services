@@ -101,7 +101,7 @@ public final class StartupStateUtils {
                         + "higher than {} will recycled.",
                 initialStateRound);
 
-        PreconsensusEventFileManager.clear(platformContext, recycleBin, selfId);
+        //PreconsensusEventFileManager.clear(platformContext, recycleBin, selfId);
 
         final List<SavedStateInfo> savedStateFiles = getSavedStateFiles(actualMainClassName, selfId, swirldName);
         for (final SavedStateInfo stateInfo : savedStateFiles) {
