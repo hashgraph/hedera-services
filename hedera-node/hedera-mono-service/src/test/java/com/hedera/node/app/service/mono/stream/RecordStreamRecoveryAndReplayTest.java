@@ -105,7 +105,7 @@ class RecordStreamRecoveryAndReplayTest {
     // The running hash you get after starting with the running hash of the "golden"
     // record file on disk for this test; and then adding the 4 record stream items NOT
     // replayed during this test's simulated event stream recovery
-    private static final String RECOVERY_STATE_RUNNING_HASH =
+    private static final String SAVED_STATE_RUNNING_HASH =
             "df6f47019d32c0fa9410b280b40e8235dda744782518d8d9b1b46708d48e8c3ab8cb416c81c585f20b4e23f5951d3890";
     private static final long START_TEST_ASSET_BLOCK_NO = 2;
     private static final long BLOCK_PERIOD_MS = 2000L;
@@ -186,7 +186,7 @@ class RecordStreamRecoveryAndReplayTest {
                 runningAvgs,
                 nodeLocalProperties,
                 MEMO,
-                new Hash(CommonUtils.unhex(RECOVERY_STATE_RUNNING_HASH)),
+                new Hash(CommonUtils.unhex(SAVED_STATE_RUNNING_HASH)),
                 RELEASE_038x_STREAM_TYPE,
                 globalDynamicProperties,
                 recoveryWriter,
@@ -196,7 +196,7 @@ class RecordStreamRecoveryAndReplayTest {
     /**
      * Sets the test subject to a {@link RecordStreamManager} that will receive record stream objects
      * created while {@link com.swirlds.common.system.status.PlatformStatus#REPLAYING_EVENTS}. The subject
-     * does not need to do any work to reconcile the items replayed during recovery with record files on
+     * does not need to do any work to reconcile the items replayed with record files on
      * disk, since it should instead just skip the blocks corresponding to those old files.
      *
      * @param onDiskLocForTest the location of the test assets to use
@@ -218,7 +218,7 @@ class RecordStreamRecoveryAndReplayTest {
                 runningAvgs,
                 nodeLocalProperties,
                 MEMO,
-                new Hash(CommonUtils.unhex(RECOVERY_STATE_RUNNING_HASH)),
+                new Hash(CommonUtils.unhex(SAVED_STATE_RUNNING_HASH)),
                 RELEASE_038x_STREAM_TYPE,
                 globalDynamicProperties,
                 null,
@@ -234,7 +234,7 @@ class RecordStreamRecoveryAndReplayTest {
                 runningAvgs,
                 nodeLocalProperties,
                 MEMO,
-                new Hash(CommonUtils.unhex(RECOVERY_STATE_RUNNING_HASH)),
+                new Hash(CommonUtils.unhex(SAVED_STATE_RUNNING_HASH)),
                 RELEASE_038x_STREAM_TYPE,
                 globalDynamicProperties,
                 recoveryWriter,
@@ -270,7 +270,7 @@ class RecordStreamRecoveryAndReplayTest {
         final var allExpectedRsos = loadRsosFrom(ALL_EXPECTED_RSOS_ASSET);
 
         // when:
-        replayRecoveryRsosAndFreeze();
+        replayRsosAndFreeze();
         // and:
         final var actualMeta = allRecordFileMetaFrom(tmpDir.getAbsolutePath());
 
@@ -291,15 +291,15 @@ class RecordStreamRecoveryAndReplayTest {
         givenRealSubjectReplayingFrom(ON_DISK_FILES_LOC);
 
         // when:
-        replayRecoveryRsosAndFreeze();
+        replayRsosAndFreeze();
 
+        // then the newly re-created last signature file has the correct metadata hash
         final var expectedLastSigFileName =
                 Objects.requireNonNull(expectedLastFile).substring(0, expectedLastFile.lastIndexOf(".rcd"))
                         + ".rcd_sig";
         final var finalSigLoc = Paths.get(tmpDirLoc(), expectedLastSigFileName).toString();
         final var sigFile =
                 RecordStreamingUtils.readSignatureFile(finalSigLoc).getRight().get();
-
         final var actualMetadataHash = CommonUtils.hex(
                 sigFile.getMetadataSignature().getHashObject().getHash().toByteArray());
         assertEquals(expectedLastMetadataHash, actualMetadataHash);
@@ -309,7 +309,7 @@ class RecordStreamRecoveryAndReplayTest {
     void failsFastIfUnableToDeleteExistingFileDuringRecovery() throws IOException, NoSuchAlgorithmException {
         givenDeletionIncapableSubjectRecoveringFrom(ON_DISK_FILES_LOC);
 
-        final var e = assertThrows(IllegalStateException.class, this::replayRecoveryRsosAndFreeze);
+        final var e = assertThrows(IllegalStateException.class, this::replayRsosAndFreeze);
 
         assertEquals(
                 "Could not delete existing record file '2023-04-18T14_08_20.465612003Z.rcd.gz' "
@@ -378,8 +378,7 @@ class RecordStreamRecoveryAndReplayTest {
         return ans;
     }
 
-    private void replayRecoveryRsosAndFreeze()
-            throws InvalidProtocolBufferException, InterruptedException, ExecutionException {
+    private void replayRsosAndFreeze() throws InvalidProtocolBufferException, InterruptedException, ExecutionException {
         final var recoveryRsos = loadRsosFrom(RECOVERY_STREAM_ONLY_RSOS_ASSET);
         Instant firstConsTimeInBlock = null;
 
