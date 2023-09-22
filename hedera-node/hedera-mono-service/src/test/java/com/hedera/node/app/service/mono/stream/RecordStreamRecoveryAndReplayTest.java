@@ -92,9 +92,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
  * resource directory into the temporary directory. Then we run the recovery process,
  * intentionally <b>skipping</b> the first 4 record stream items from the first
  * {@code .rcd.gz} file. Because the {@link RecordStreamManager} is started in recovery mode,
- * it must still find and include these 4 items (and their sidecars) from the files on disk
- * in its newly created "golden" record files, <b>even though</b> the 4 items were not
- * replayed during event recovery.
+ * it must still find and include these 4 items (and their sidecars) from the "golden" record
+ * file on disk that includes the consensus time at which recovery began.
  *
  * <p>When testing <b>replay</b>, after copying the {@code .rcd.gz} file from the test
  * resource directory, we remove the last file after computing its expected metadata hash.
@@ -103,7 +102,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
  */
 @ExtendWith(MockitoExtension.class)
 class RecordStreamRecoveryAndReplayTest {
-    // The running hash you get after starting with the running hash of the first "golden"
+    // The running hash you get after starting with the running hash of the "golden"
     // record file on disk for this test; and then adding the 4 record stream items NOT
     // replayed during this test's simulated event stream recovery
     private static final String RECOVERY_STATE_RUNNING_HASH =
@@ -161,6 +160,15 @@ class RecordStreamRecoveryAndReplayTest {
         given(globalDynamicProperties.shouldCompressRecordFilesOnCreation()).willReturn(true);
     }
 
+    /**
+     * Sets the test subject to a {@link RecordStreamManager} that will receive record stream objects
+     * created during {@link com.swirlds.common.system.InitTrigger#EVENT_STREAM_RECOVERY}. The subject
+     * must reconcile the items replayed during recovery with the "golden" record file on disk that
+     * contains the consensus time at which recovery begins; and it must otherwise delete and recreate
+     * any record files it finds on disk.
+     *
+     * @param onDiskLocForTest the location of the test assets to use
+     */
     private void givenRealSubjectRecoveringFrom(final String onDiskLocForTest)
             throws IOException, NoSuchAlgorithmException {
         final var copiedFiles = cpAssetsToTmpDirFrom(onDiskLocForTest);
@@ -185,6 +193,14 @@ class RecordStreamRecoveryAndReplayTest {
                 File::delete);
     }
 
+    /**
+     * Sets the test subject to a {@link RecordStreamManager} that will receive record stream objects
+     * created while {@link com.swirlds.common.system.status.PlatformStatus#REPLAYING_EVENTS}. The subject
+     * does not need to do any work to reconcile the items replayed during recovery with record files on
+     * disk, since it should instead just skip the blocks corresponding to those old files.
+     *
+     * @param onDiskLocForTest the location of the test assets to use
+     */
     private void givenRealSubjectReplayingFrom(final String onDiskLocForTest)
             throws IOException, NoSuchAlgorithmException {
         final var copiedFiles = cpAssetsToTmpDirFrom(onDiskLocForTest);
