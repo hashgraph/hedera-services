@@ -223,6 +223,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                         getTokenNftInfo(nft, 3L).hasNoSpender());
     }
 
+    @HapiTest
     private HapiSpec invalidOwnerFails() {
         final String owner = "owner";
         final String spender = "spender";
@@ -767,6 +768,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                         getTokenNftInfo(nft, 5L).hasNoSpender());
     }
 
+    @HapiTest
     private HapiSpec noOwnerDefaultsToPayerInDeleteAllowance() {
         final String payer = "payer";
         final String spender = "spender";

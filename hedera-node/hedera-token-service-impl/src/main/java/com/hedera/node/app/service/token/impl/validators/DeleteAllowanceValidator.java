@@ -35,6 +35,7 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
+import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.HederaConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -73,7 +74,14 @@ public class DeleteAllowanceValidator extends AllowanceValidator {
 
         validateAllowancesCount(nftAllowances, hederaConfig);
 
-        validateNftDeleteAllowances(nftAllowances, payerAccount, accountStore, tokenStore, tokenRelStore, nftStore);
+        validateNftDeleteAllowances(
+                nftAllowances,
+                payerAccount,
+                accountStore,
+                tokenStore,
+                tokenRelStore,
+                nftStore,
+                handleContext.expiryValidator());
     }
 
     /**
@@ -91,7 +99,8 @@ public class DeleteAllowanceValidator extends AllowanceValidator {
             final ReadableAccountStore accountStore,
             final ReadableTokenStore tokenStore,
             final ReadableTokenRelationStore tokenRelStore,
-            final ReadableNftStore nftStore) {
+            final ReadableNftStore nftStore,
+            @NonNull final ExpiryValidator expiryValidator) {
         if (nftAllowances.isEmpty()) {
             return;
         }
@@ -103,7 +112,7 @@ public class DeleteAllowanceValidator extends AllowanceValidator {
             final Token token = getIfUsable(allowance.tokenIdOrElse(TokenID.DEFAULT), tokenStore);
             validateFalse(token.tokenType().equals(TokenType.FUNGIBLE_COMMON), FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES);
 
-            final var effectiveOwner = getEffectiveOwner(ownerId, payerAccount, accountStore);
+            final var effectiveOwner = getEffectiveOwner(ownerId, payerAccount, accountStore, expiryValidator);
 
             final var relation = tokenRelStore.get(effectiveOwner.accountId(), token.tokenId());
             validateTrue(relation != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);

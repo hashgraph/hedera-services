@@ -75,6 +75,8 @@ public class TokenHandlerHelper {
      * @param accountId the ID of the account to get
      * @param accountStore the {@link ReadableTokenStore} to use for account retrieval
      * @param expiryValidator the {@link ExpiryValidator} to determine if the account is expired
+     * @param errorIfNotFound the {@link ResponseCodeEnum} to use if the account is not found
+     * @param errorIfDeleted the {@link ResponseCodeEnum} to use if the account is deleted
      * @throws HandleException if any of the account conditions are not met
      */
     @NonNull
@@ -82,17 +84,19 @@ public class TokenHandlerHelper {
             @NonNull final AccountID accountId,
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final ExpiryValidator expiryValidator,
-            @NonNull final ResponseCodeEnum errorIfNotUsable) {
+            @NonNull final ResponseCodeEnum errorIfNotFound,
+            @NonNull final ResponseCodeEnum errorIfDeleted) {
         requireNonNull(accountId);
         requireNonNull(accountStore);
         requireNonNull(expiryValidator);
-        requireNonNull(errorIfNotUsable);
+        requireNonNull(errorIfNotFound);
+        requireNonNull(errorIfDeleted);
 
         final var acct = accountStore.getAccountById(accountId);
-        validateTrue(acct != null, errorIfNotUsable);
+        validateTrue(acct != null, errorIfNotFound);
         final var isContract = acct.smartContract();
 
-        validateFalse(acct.deleted(), isContract ? CONTRACT_DELETED : ACCOUNT_DELETED);
+        validateFalse(acct.deleted(), isContract ? CONTRACT_DELETED : errorIfDeleted);
         final var type = isContract ? EntityType.CONTRACT : EntityType.ACCOUNT;
 
         final var expiryStatus =
@@ -100,6 +104,18 @@ public class TokenHandlerHelper {
         validateTrue(expiryStatus == OK, expiryStatus);
 
         return acct;
+    }
+
+    /**
+     * Override of {@link #getIfUsable(AccountID, ReadableAccountStore, ExpiryValidator,
+     * ResponseCodeEnum, ResponseCodeEnum)} above, with a default `ACCOUNT_DELETED` error code
+     */
+    public static Account getIfUsable(
+            @NonNull final AccountID accountId,
+            @NonNull final ReadableAccountStore accountStore,
+            @NonNull final ExpiryValidator expiryValidator,
+            @NonNull final ResponseCodeEnum errorIfNotFound) {
+        return getIfUsable(accountId, accountStore, expiryValidator, errorIfNotFound, ACCOUNT_DELETED);
     }
 
     /**

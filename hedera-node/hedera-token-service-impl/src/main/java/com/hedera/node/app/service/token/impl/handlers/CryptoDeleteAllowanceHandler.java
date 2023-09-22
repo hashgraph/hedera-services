@@ -35,6 +35,7 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.validators.DeleteAllowanceValidator;
+import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.*;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -61,9 +62,10 @@ public class CryptoDeleteAllowanceHandler implements TransactionHandler {
         final var txn = context.body();
         pureChecks(txn);
         final var op = txn.cryptoDeleteAllowanceOrThrow();
-        // Every owner whose allowances are being removed should sign, if the owner is not payer
+        // Every owner whose allowances are being removed should sign (or the payer, if there is no owner)
+        var payerId = txn.transactionID().accountID();
         for (final var allowance : op.nftAllowancesOrElse(emptyList())) {
-            context.requireKeyOrThrow(allowance.ownerOrElse(AccountID.DEFAULT), INVALID_ALLOWANCE_OWNER_ID);
+            context.requireKeyOrThrow(allowance.ownerOrElse(payerId), INVALID_ALLOWANCE_OWNER_ID);
         }
     }
 
@@ -121,7 +123,7 @@ public class CryptoDeleteAllowanceHandler implements TransactionHandler {
         final var nftStore = context.writableStore(WritableNftStore.class);
         final var tokenStore = context.writableStore(WritableTokenStore.class);
 
-        deleteNftSerials(nftAllowances, payer, accountStore, tokenStore, nftStore);
+        deleteNftSerials(nftAllowances, payer, accountStore, tokenStore, nftStore, context.expiryValidator());
     }
 
     /**
@@ -138,7 +140,9 @@ public class CryptoDeleteAllowanceHandler implements TransactionHandler {
             final Account payerAccount,
             final WritableAccountStore accountStore,
             final WritableTokenStore tokenStore,
-            final WritableNftStore nftStore) {
+            final WritableNftStore nftStore,
+            @NonNull final ExpiryValidator expiryValidator)
+            throws HandleException {
         if (nftAllowances.isEmpty()) {
             return;
         }
@@ -146,7 +150,7 @@ public class CryptoDeleteAllowanceHandler implements TransactionHandler {
             final var serialNums = allowance.serialNumbers();
             final var tokenId = allowance.tokenIdOrElse(TokenID.DEFAULT);
             // If owner is not provided in allowance, consider payer as owner
-            final var owner = getEffectiveOwner(allowance.owner(), payerAccount, accountStore);
+            final var owner = getEffectiveOwner(allowance.owner(), payerAccount, accountStore, expiryValidator);
             final var token = tokenStore.get(tokenId);
             for (final var serial : serialNums) {
                 final var nft = nftStore.get(tokenId, serial);

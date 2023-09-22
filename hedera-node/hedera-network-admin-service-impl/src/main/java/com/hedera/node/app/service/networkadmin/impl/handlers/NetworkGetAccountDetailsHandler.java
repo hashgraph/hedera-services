@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.networkadmin.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
@@ -98,6 +99,9 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
         final var accountStore = context.createStore(ReadableAccountStore.class);
         final var accountMetadata = accountStore.getAccountById(op.accountIdOrThrow());
         mustExist(accountMetadata, INVALID_ACCOUNT_ID);
+        if (accountMetadata.deleted()) {
+            throw new PreCheckException(ACCOUNT_DELETED);
+        }
     }
 
     @Override

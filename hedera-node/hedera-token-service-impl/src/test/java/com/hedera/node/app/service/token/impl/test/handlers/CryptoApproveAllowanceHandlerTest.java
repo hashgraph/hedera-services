@@ -22,6 +22,9 @@ import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.res
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -41,6 +44,7 @@ import com.hedera.node.app.service.token.impl.handlers.CryptoApproveAllowanceHan
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.ApproveAllowanceValidator;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -58,6 +62,9 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
     @Mock(strictness = Strictness.LENIENT)
     private HandleContext handleContext;
 
+    @Mock(strictness = Strictness.LENIENT)
+    private ExpiryValidator expiryValidator;
+
     private CryptoApproveAllowanceHandler subject;
 
     @BeforeEach
@@ -66,6 +73,8 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         refreshWritableStores();
         final var validator = new ApproveAllowanceValidator();
         givenStoresAndConfig(handleContext);
+        given(handleContext.expiryValidator()).willReturn(expiryValidator);
+        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
 
         subject = new CryptoApproveAllowanceHandler(validator);
     }
