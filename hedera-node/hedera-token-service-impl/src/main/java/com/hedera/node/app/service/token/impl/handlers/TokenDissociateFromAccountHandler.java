@@ -37,6 +37,7 @@ import com.hedera.hapi.node.token.TokenDissociateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hedera.node.app.service.mono.fees.calculation.token.txns.TokenDissociateResourceUsage;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
@@ -278,11 +279,16 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
     @Override
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
         requireNonNull(feeContext);
-        final var op = feeContext.body();
+        final var body = feeContext.body();
+        final var op = body.tokenDissociateOrThrow();
+        final var accountId = op.accountOrThrow();
+        final var readableAccountStore = feeContext.readableStore(ReadableAccountStore.class);
+        final var account = readableAccountStore.getAccountById(accountId);
 
         return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> {
             try {
-                return new TokenDissociateResourceUsage(txnEstimateFactory).usageGiven(fromPbj(op), sigValueObj, null);
+                return new TokenDissociateResourceUsage(txnEstimateFactory)
+                        .usageGiven(fromPbj(body), sigValueObj, account);
             } catch (InvalidTxBodyException e) {
                 throw new HandleException(INVALID_TRANSACTION_BODY);
             }
