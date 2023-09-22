@@ -93,7 +93,7 @@ public class CryptoTransferLoadTestWithStakedAccounts extends LoadTest {
             };
         };
 
-        return defaultHapiSpec("RunCryptoTransfers")
+        return defaultHapiSpec("RunCryptoTransfers-StakedAccount")
                 .given(
                         withOpContext(
                                 (spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
