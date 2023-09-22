@@ -18,6 +18,8 @@ package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.txnEstimateFactory;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
@@ -25,6 +27,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Account;
@@ -32,14 +35,20 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.TokenDissociateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
+import com.hedera.node.app.service.mono.fees.calculation.token.txns.TokenDissociateResourceUsage;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
 import com.hedera.node.app.service.token.impl.util.TokenRelListCalculator;
 import com.hedera.node.app.service.token.impl.validators.TokenListChecks;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -62,9 +71,7 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
             TokenID.newBuilder().tokenNum(-1).build();
 
     @Inject
-    public TokenDissociateFromAccountHandler() {
-        // Exists for injection
-    }
+    public TokenDissociateFromAccountHandler() {}
 
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
@@ -267,4 +274,24 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
             @NonNull Account acct,
             // This is the relation of the token's treasury account ID and the token ID
             @Nullable TokenRelation treasuryTokenRel) {}
+
+    @NonNull
+    @Override
+    public Fees calculateFees(@NonNull final FeeContext feeContext) {
+        requireNonNull(feeContext);
+        final var body = feeContext.body();
+        final var op = body.tokenDissociateOrThrow();
+        final var accountId = op.accountOrThrow();
+        final var readableAccountStore = feeContext.readableStore(ReadableAccountStore.class);
+        final var account = readableAccountStore.getAccountById(accountId);
+
+        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> {
+            try {
+                return new TokenDissociateResourceUsage(txnEstimateFactory)
+                        .usageGiven(fromPbj(body), sigValueObj, account);
+            } catch (InvalidTxBodyException e) {
+                throw new HandleException(INVALID_TRANSACTION_BODY);
+            }
+        });
+    }
 }
