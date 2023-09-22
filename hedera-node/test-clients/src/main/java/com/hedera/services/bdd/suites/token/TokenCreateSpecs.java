@@ -158,7 +158,6 @@ public class TokenCreateSpecs extends HapiSuite {
      * It also verifies that these auto-associations don't "count" against the max
      * automatic associations limit defined by https://hips.hedera.com/hip/hip-23.
      */
-    @HapiTest
     private HapiSpec validateNewTokenAssociations() {
         final String notToBeToken = "notToBeToken";
         final String hbarCollector = "hbarCollector";
@@ -260,7 +259,6 @@ public class TokenCreateSpecs extends HapiSuite {
                 .then(getTokenInfo(SENTINEL_VALUE).hasCostAnswerPrecheck(INVALID_TOKEN_ID));
     }
 
-    @HapiTest
     public HapiSpec cannotCreateWithExcessiveLifetime() {
         final var smallBuffer = 12_345L;
         final var okExpiry = defaultMaxLifetime + Instant.now().getEpochSecond() - smallBuffer;
@@ -273,7 +271,6 @@ public class TokenCreateSpecs extends HapiSuite {
                         tokenCreate("neverToBe").expiry(okExpiry));
     }
 
-    @HapiTest
     public HapiSpec autoRenewValidationWorks() {
         final var deletingAccount = "deletingAccount";
         return defaultHapiSpec("AutoRenewValidationWorks")
@@ -332,7 +329,6 @@ public class TokenCreateSpecs extends HapiSuite {
                         .hasToken(relationshipWith(PRIMARY).kyc(TokenKycStatus.KycNotApplicable)));
     }
 
-    @HapiTest
     public HapiSpec baseCreationsHaveExpectedPrices() {
         final var civilian = "NonExemptPayer";
 
