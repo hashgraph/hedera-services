@@ -40,7 +40,6 @@ import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.HederaConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.HashSet;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -148,11 +147,8 @@ public class DeleteAllowanceValidator extends AllowanceValidator {
      */
     public static int aggregateNftDeleteAllowances(final List<NftRemoveAllowance> nftAllowances) {
         var count = 0;
-        final var serialsSet = new HashSet<Long>();
         for (final var allowance : nftAllowances) {
-            serialsSet.addAll(allowance.serialNumbers());
-            count += serialsSet.size();
-            serialsSet.clear();
+            count += allowance.serialNumbers().size();
         }
         return count;
     }
