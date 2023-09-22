@@ -50,7 +50,6 @@ import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.common.stream.internal.LinkedObjectStream;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.logging.LogMarker;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedOutputStream;
@@ -511,25 +510,24 @@ public class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamOb
         final var fileSignature = generateSignatureObject(streamDigest.digest());
 
         metadataStreamDigest.reset();
-        System.out.println("Creating signature file for " + relatedRecordStreamFile);
         // Next compute the signature for the metadata file based on the given record file's contents
         try (final var out = new SerializableDataOutputStream(new HashingOutputStream(metadataStreamDigest))) {
             for (final var versionPart : streamType.getFileHeader()) {
-                System.out.println("versionPart: " + versionPart);
                 out.writeInt(versionPart);
             }
-            System.out.println(CommonUtils.hex(unwrapUnsafelyIfPossible(
-                    protoRecordFile.getStartObjectRunningHash().getHash())));
             out.write(unwrapUnsafelyIfPossible(
                     protoRecordFile.getStartObjectRunningHash().getHash()));
-            System.out.println(CommonUtils.hex(unwrapUnsafelyIfPossible(
-                    protoRecordFile.getEndObjectRunningHash().getHash())));
             out.write(unwrapUnsafelyIfPossible(
                     protoRecordFile.getEndObjectRunningHash().getHash()));
-            System.out.println("Block: " + protoRecordFile.getBlockNumber());
             out.writeLong(protoRecordFile.getBlockNumber());
         } catch (IOException e) {
-            throw new AssertionError("Not implemented");
+            // Should never get here except in some truly dire circumstances
+            LOG.error(
+                    EXCEPTION.getMarker(),
+                    "Failed to write metadata digest contents for {}, skipping its signature file",
+                    relatedRecordStreamFile,
+                    e);
+            return;
         }
         final var metadataSignature = generateSignatureObject(metadataStreamDigest.digest());
 

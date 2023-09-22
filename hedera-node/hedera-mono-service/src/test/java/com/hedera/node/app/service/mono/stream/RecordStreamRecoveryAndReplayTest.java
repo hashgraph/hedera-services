@@ -103,6 +103,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
  */
 @ExtendWith(MockitoExtension.class)
 class RecordStreamRecoveryAndReplayTest {
+    // The running hash you get after starting with the running hash of the first "golden"
+    // record file on disk for this test; and then adding the 4 record stream items NOT
+    // replayed during this test's simulated event stream recovery
     private static final String RECOVERY_STATE_RUNNING_HASH =
             "df6f47019d32c0fa9410b280b40e8235dda744782518d8d9b1b46708d48e8c3ab8cb416c81c585f20b4e23f5951d3890";
     private static final long START_TEST_ASSET_BLOCK_NO = 2;
