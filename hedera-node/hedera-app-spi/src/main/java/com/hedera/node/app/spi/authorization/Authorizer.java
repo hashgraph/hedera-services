@@ -62,4 +62,17 @@ public interface Authorizer {
      */
     SystemPrivilege hasPrivilegedAuthorization(
             @NonNull AccountID id, @NonNull HederaFunctionality functionality, @NonNull TransactionBody txBody);
+
+    /**
+     * Checks whether the given information about a transaction implies fees should be waived.
+     *
+     * @param id the payer {@link AccountID} of the transaction
+     * @param functionality the {@link HederaFunctionality} of the transaction
+     * @param txBody the {@link TransactionBody} of the transaction
+     * @return {@code true} if the transaction should have fees waived, otherwise {@code false}
+     */
+    default boolean hasWaivedFees(
+            @NonNull AccountID id, @NonNull HederaFunctionality functionality, @NonNull TransactionBody txBody) {
+        return isSuperUser(id) || hasPrivilegedAuthorization(id, functionality, txBody) == SystemPrivilege.AUTHORIZED;
+    }
 }

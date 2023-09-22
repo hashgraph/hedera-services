@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,31 +20,23 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * An {@code InsufficientBalanceException} is a {@link PreCheckException} that is thrown, when the
- * payer balance is not sufficient to cover all the required fees. It provides the {@link #estimatedFee}.
+ * An {@code InsufficientBalanceException} caused by specifically by the payer being
+ * unable or unwilling to cover the network fee for a transaction.
+ *
+ * <p>If thrown in handle, this is a node due diligence failure. The node that submitted
+ * the transaction will be charged its network fee as a penalty.
+ *
+ * <p>We still report the total expected fee in the {@code estimatedFee} field, however.
  */
-public class InsufficientBalanceException extends PreCheckException {
-
-    private final long estimatedFee;
-
+public class InsufficientNetworkFeeException extends InsufficientBalanceException {
     /**
-     * Constructor of {@code InsufficientBalanceException}
+     * Constructs an {@link InsufficientBalanceException} that represents a due
+     * diligence failure by the node submitting the transaction.
      *
      * @param responseCode the {@link ResponseCodeEnum responseCode}
      * @param estimatedFee the estimated fee
-     * @throws NullPointerException if {@code responseCode} is {@code null}
      */
-    public InsufficientBalanceException(@NonNull final ResponseCodeEnum responseCode, final long estimatedFee) {
-        super(responseCode);
-        this.estimatedFee = estimatedFee;
-    }
-
-    /**
-     * Returns the estimated fee
-     *
-     * @return the estimated fee
-     */
-    public long getEstimatedFee() {
-        return estimatedFee;
+    public InsufficientNetworkFeeException(@NonNull final ResponseCodeEnum responseCode, final long estimatedFee) {
+        super(responseCode, estimatedFee);
     }
 }

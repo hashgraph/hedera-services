@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.fees;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.service.token.api.FeeRecordBuilder;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
@@ -42,8 +44,17 @@ public class FeeAccumulatorImpl implements FeeAccumulator {
     }
 
     @Override
-    public void charge(@NonNull AccountID payer, @NonNull Fees fees) {
-        tokenApi.chargeFees(payer, fees, recordBuilder);
+    public void chargeNetworkFee(@NonNull final AccountID payer, final long networkFee) {
+        requireNonNull(payer);
+        tokenApi.chargeNetworkFee(payer, networkFee, recordBuilder);
+    }
+
+    @Override
+    public void chargeFees(@NonNull AccountID payer, @NonNull final AccountID nodeAccount, @NonNull Fees fees) {
+        requireNonNull(payer);
+        requireNonNull(nodeAccount);
+        requireNonNull(fees);
+        tokenApi.chargeFees(payer, nodeAccount, fees, recordBuilder);
     }
 
     @Override
