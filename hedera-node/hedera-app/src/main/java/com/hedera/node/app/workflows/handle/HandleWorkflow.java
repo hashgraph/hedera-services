@@ -61,7 +61,8 @@ import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
+import com.hedera.node.app.spi.workflows.InsufficientNonFeeDebitsException;
+import com.hedera.node.app.spi.workflows.InsufficientServiceFeeException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.HederaState;
@@ -484,15 +485,12 @@ public class HandleWorkflow {
         try {
             final var payer = solvencyPreCheck.getPayerAccount(storeFactory, payerID);
             solvencyPreCheck.checkSolvency(txInfo, payer, fees);
-        } catch (final InsufficientBalanceException e) {
-            final PreHandleResult.Status finalStatus =
-                    switch (e.getInsufficientBalanceType()) {
-                        case NETWORK_FEE_NOT_COVERED -> NODE_DUE_DILIGENCE_FAILURE;
-                        case SERVICE_FEES_NOT_COVERED -> PAYER_UNWILLING_OR_UNABLE_TO_PAY_SERVICE_FEE;
-                        case OTHER_COSTS_NOT_COVERED -> PRE_HANDLE_FAILURE;
-                    };
-            return new ValidationResult(finalStatus, e.responseCode());
-        } catch (final PreCheckException e) {
+        } catch (final InsufficientServiceFeeException e) {
+            return new ValidationResult(PAYER_UNWILLING_OR_UNABLE_TO_PAY_SERVICE_FEE, e.responseCode());
+        } catch (final InsufficientNonFeeDebitsException e) {
+            return new ValidationResult(PRE_HANDLE_FAILURE, e.responseCode());
+        } catch (PreCheckException e) {
+            // Includes InsufficientNetworkFeeException
             return new ValidationResult(NODE_DUE_DILIGENCE_FAILURE, e.responseCode());
         }
 

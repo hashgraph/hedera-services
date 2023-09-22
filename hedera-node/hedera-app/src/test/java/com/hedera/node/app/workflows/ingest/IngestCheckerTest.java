@@ -31,7 +31,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.estimatedFee;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
-import static com.hedera.node.app.spi.workflows.InsufficientBalanceType.OTHER_COSTS_NOT_COVERED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -404,7 +403,7 @@ class IngestCheckerTest extends AppTestBase {
         void payerAccountStatusFails(ResponseCodeEnum failureReason)
                 throws PreCheckException, ExecutionException, InterruptedException, TimeoutException {
             givenValidPayerSignature();
-            doThrow(new InsufficientBalanceException(failureReason, 123L, OTHER_COSTS_NOT_COVERED))
+            doThrow(new InsufficientBalanceException(failureReason, 123L))
                     .when(solvencyPreCheck)
                     .checkSolvency(any(), any(), any());
 

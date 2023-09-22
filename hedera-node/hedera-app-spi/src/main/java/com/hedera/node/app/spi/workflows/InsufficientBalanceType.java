@@ -26,7 +26,7 @@ public enum InsufficientBalanceType {
      */
     NETWORK_FEE_NOT_COVERED,
     /**
-     * The payer's account balance or willingness-to-pay did to cover the service fee (this is
+     * The payer's account balance or willingness-to-pay did not cover the service fee (this is
      * not a due diligence failure, but implies we will not charge any part of the service fee).
      */
     SERVICE_FEES_NOT_COVERED,

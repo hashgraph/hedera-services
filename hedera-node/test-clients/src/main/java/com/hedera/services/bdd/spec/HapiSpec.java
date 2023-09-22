@@ -113,7 +113,7 @@ public class HapiSpec implements Runnable {
     private static final TransferList DEFAULT_NODE_BALANCE_FUNDING = TransferList.newBuilder()
             .addAllAccountAmounts(Stream.concat(
                             Stream.of(AccountAmount.newBuilder()
-                                    .setAmount(-4 * ONE_HBAR)
+                                    .setAmount(-NUM_IN_USE_NODE_ACCOUNTS * ONE_HBAR)
                                     .setAccountID(AccountID.newBuilder().setAccountNum(2L))
                                     .build()),
                             LongStream.range(FIRST_NODE_ACCOUNT_NUM, FIRST_NODE_ACCOUNT_NUM + NUM_IN_USE_NODE_ACCOUNTS)
