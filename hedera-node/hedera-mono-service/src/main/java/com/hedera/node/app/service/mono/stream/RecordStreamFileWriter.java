@@ -505,9 +505,7 @@ public class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamOb
                 .build();
     }
 
-    private void createSignatureFileFor(
-            final RecordStreamFile protoRecordFile,
-            final String relatedRecordStreamFile) {
+    private void createSignatureFileFor(final RecordStreamFile protoRecordFile, final String relatedRecordStreamFile) {
         // First compute the signature for the record stream file based on the data written to the
         // record file's HashingOutputStream; note all of this data in closeCurrentAndSign()
         final var fileSignature = generateSignatureObject(streamDigest.digest());
@@ -520,10 +518,14 @@ public class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamOb
                 System.out.println("versionPart: " + versionPart);
                 out.writeInt(versionPart);
             }
-            System.out.println(CommonUtils.hex(unwrapUnsafelyIfPossible(protoRecordFile.getStartObjectRunningHash().getHash())));
-            out.write(unwrapUnsafelyIfPossible(protoRecordFile.getStartObjectRunningHash().getHash()));
-            System.out.println(CommonUtils.hex(unwrapUnsafelyIfPossible(protoRecordFile.getEndObjectRunningHash().getHash())));
-            out.write(unwrapUnsafelyIfPossible(protoRecordFile.getEndObjectRunningHash().getHash()));
+            System.out.println(CommonUtils.hex(unwrapUnsafelyIfPossible(
+                    protoRecordFile.getStartObjectRunningHash().getHash())));
+            out.write(unwrapUnsafelyIfPossible(
+                    protoRecordFile.getStartObjectRunningHash().getHash()));
+            System.out.println(CommonUtils.hex(unwrapUnsafelyIfPossible(
+                    protoRecordFile.getEndObjectRunningHash().getHash())));
+            out.write(unwrapUnsafelyIfPossible(
+                    protoRecordFile.getEndObjectRunningHash().getHash()));
             System.out.println("Block: " + protoRecordFile.getBlockNumber());
             out.writeLong(protoRecordFile.getBlockNumber());
         } catch (IOException e) {

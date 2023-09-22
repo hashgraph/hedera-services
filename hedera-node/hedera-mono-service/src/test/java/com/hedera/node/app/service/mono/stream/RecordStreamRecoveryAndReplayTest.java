@@ -464,9 +464,11 @@ class RecordStreamRecoveryAndReplayTest {
                 System.out.println("Writing " + part);
                 out.writeInt(part);
             }
-            System.out.println(CommonUtils.hex(recordStreamFile.getStartObjectRunningHash().getHash().toByteArray()));
+            System.out.println(CommonUtils.hex(
+                    recordStreamFile.getStartObjectRunningHash().getHash().toByteArray()));
             out.write(recordStreamFile.getStartObjectRunningHash().getHash().toByteArray());
-            System.out.println(CommonUtils.hex(recordStreamFile.getEndObjectRunningHash().getHash().toByteArray()));
+            System.out.println(CommonUtils.hex(
+                    recordStreamFile.getEndObjectRunningHash().getHash().toByteArray()));
             out.write(recordStreamFile.getEndObjectRunningHash().getHash().toByteArray());
             System.out.println("Writing " + recordStreamFile.getBlockNumber());
             out.writeLong(recordStreamFile.getBlockNumber());
