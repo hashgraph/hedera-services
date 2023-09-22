@@ -212,7 +212,7 @@
           "refId": "StandardVariableQuery"
         },
         "refresh": 1,
-        "regex": "/^(Reconnect.*|app.*|internal.*|virtual.*|internal.*|platform.*)/",
+        "regex": "/^(Reconnect.*|app.*|internal.*|virtual.*|platform.*|merkle.*)/",
         "skipUrlSync": false,
         "sort": 1,
         "type": "query"
