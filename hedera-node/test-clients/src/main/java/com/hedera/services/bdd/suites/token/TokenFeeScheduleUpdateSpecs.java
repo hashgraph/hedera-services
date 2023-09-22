@@ -31,7 +31,6 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fix
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fixedHtsFeeInSchedule;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fractionalFeeInSchedule;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
@@ -84,9 +83,9 @@ public class TokenFeeScheduleUpdateSpecs extends HapiSuite {
                         cryptoCreate("civilian").key(feeScheduleKey),
                         cryptoCreate(htsCollector),
                         tokenCreate(feeDenom).treasury(htsCollector),
-                        sourcing(() -> tokenCreate(targetToken)
+                        tokenCreate(targetToken)
                                 .expiry(Instant.now().getEpochSecond() + THREE_MONTHS_IN_SECONDS)
-                                .feeScheduleKey(feeScheduleKey)))
+                                .feeScheduleKey(feeScheduleKey))
                 .when(tokenFeeScheduleUpdate(targetToken)
                         .signedBy(feeScheduleKey)
                         .payingWith("civilian")
