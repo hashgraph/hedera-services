@@ -460,7 +460,7 @@ public final class Hedera implements SwirldMain {
             notifications.register(PlatformStatusChangeListener.class, notification -> {
                 final var wasActive = platformStatus == PlatformStatus.ACTIVE;
                 platformStatus = notification.getNewStatus();
-                switch (notification.getNewStatus()) {
+                switch (platformStatus) {
                     case ACTIVE -> {
                         logger.info("Hederanode#{} is ACTIVE", nodeId);
                         startGrpcServer();
