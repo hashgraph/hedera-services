@@ -360,7 +360,8 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         final var type = op.tokenType();
 
         return feeContext
-                .feeCalculator(tokenSubTypeFrom(type, op.hasCustomFees()))
+                .feeCalculator(
+                        tokenSubTypeFrom(type, !op.customFeesOrElse(emptyList()).isEmpty()))
                 .legacyCalculate(sigValueObj -> {
                     try {
                         return new TokenCreateResourceUsage(txnEstimateFactory)
