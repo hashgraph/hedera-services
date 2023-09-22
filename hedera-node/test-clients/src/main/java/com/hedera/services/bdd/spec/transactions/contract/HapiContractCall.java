@@ -37,6 +37,7 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
+import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -66,6 +67,10 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
     public HapiContractCall withExplicitParams(final Supplier<String> supplier) {
         explicitHexedParams = Optional.of(supplier);
         return this;
+    }
+
+    public HapiContractCall withExplicitRawParams(final byte[] params) {
+        return withExplicitParams(() -> CommonUtils.hex(params));
     }
 
     public static HapiContractCall fromDetails(String actionable) {
