@@ -63,7 +63,7 @@ public class CryptoDeleteAllowanceHandler implements TransactionHandler {
         pureChecks(txn);
         final var op = txn.cryptoDeleteAllowanceOrThrow();
         // Every owner whose allowances are being removed should sign (or the payer, if there is no owner)
-        var payerId = txn.transactionID().accountID();
+        final var payerId = txn.transactionID().accountID();
         for (final var allowance : op.nftAllowancesOrElse(emptyList())) {
             context.requireKeyOrThrow(allowance.ownerOrElse(payerId), INVALID_ALLOWANCE_OWNER_ID);
         }
