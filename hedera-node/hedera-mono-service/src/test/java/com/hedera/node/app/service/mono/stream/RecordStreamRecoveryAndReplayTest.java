@@ -104,7 +104,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class RecordStreamRecoveryAndReplayTest {
     private static final String RECOVERY_STATE_RUNNING_HASH =
-            "9bc31589bd39af924deda8e8ed58e54d2d0127286211782cc195d8cc0e89f1078120a5596bc903642ae11c008811029b";
+            "df6f47019d32c0fa9410b280b40e8235dda744782518d8d9b1b46708d48e8c3ab8cb416c81c585f20b4e23f5951d3890";
     private static final long START_TEST_ASSET_BLOCK_NO = 2;
     private static final long BLOCK_PERIOD_MS = 2000L;
     private static final String MEMO = "0.0.3";
@@ -160,7 +160,13 @@ class RecordStreamRecoveryAndReplayTest {
 
     private void givenRealSubjectRecoveringFrom(final String onDiskLocForTest)
             throws IOException, NoSuchAlgorithmException {
-        cpAssetsToTmpDirFrom(onDiskLocForTest);
+        final var copiedFiles = cpAssetsToTmpDirFrom(onDiskLocForTest);
+        final var lastFile = lastCopiedFile(copiedFiles);
+        final var lastFilePath = Paths.get(tmpDirLoc(), lastFile);
+        // Delete one file just to get a bit more scenario coverage
+        if (!lastFilePath.toFile().delete()) {
+            throw new IllegalStateException("Could not delete " + lastFilePath);
+        }
         final var recoveryWriter = new RecoveryRecordsWriter(2_000L, tmpDir.getAbsolutePath());
         final var mockSig = new Signature(SignatureType.RSA, new byte[0]);
         given(platform.sign(any())).willReturn(mockSig);
@@ -179,14 +185,10 @@ class RecordStreamRecoveryAndReplayTest {
     private void givenRealSubjectReplayingFrom(final String onDiskLocForTest)
             throws IOException, NoSuchAlgorithmException {
         final var copiedFiles = cpAssetsToTmpDirFrom(onDiskLocForTest);
-        expectedLastFile = copiedFiles.stream()
-                .filter(RecordStreamingUtils::isRecordFile)
-                .sorted(comparing(RecordStreamingUtils::parseRecordFileConsensusTime)
-                        .reversed())
-                .findFirst()
-                .get();
+        expectedLastFile = lastCopiedFile(copiedFiles);
         final var lastFilePath = Paths.get(tmpDirLoc(), expectedLastFile);
         expectedLastMetadataHash = computeHexedMetadataHashOfRecordFile(lastFilePath);
+        // Delete one file to ensure we re-create it as expected
         if (!lastFilePath.toFile().delete()) {
             throw new IllegalStateException("Could not delete " + lastFilePath);
         }
@@ -218,26 +220,6 @@ class RecordStreamRecoveryAndReplayTest {
                 globalDynamicProperties,
                 recoveryWriter,
                 tryDeletion);
-    }
-
-    @Test
-    void metadataHashReplayedCorrectly()
-            throws IOException, NoSuchAlgorithmException, ExecutionException, InterruptedException {
-        given(globalDynamicProperties.getSidecarMaxSizeMb()).willReturn(256);
-        givenRealSubjectReplayingFrom(ON_DISK_FILES_AND_SIDECARS_LOC);
-
-        // when:
-        replayDirectlyFromRsos(ON_DISK_FILES_AND_SIDECARS_LOC, 0);
-        final var expectedLastSigFileName =
-                Objects.requireNonNull(expectedLastFile).substring(0, expectedLastFile.lastIndexOf(".rcd"))
-                        + ".rcd_sig";
-        final var finalSigLoc = Paths.get(tmpDirLoc(), expectedLastSigFileName).toString();
-        final var sigFile =
-                RecordStreamingUtils.readSignatureFile(finalSigLoc).getRight().get();
-
-        final var actualMetadataHash = CommonUtils.hex(
-                sigFile.getMetadataSignature().getHashObject().getHash().toByteArray());
-        assertEquals(expectedLastMetadataHash, actualMetadataHash);
     }
 
     @Test
@@ -278,8 +260,30 @@ class RecordStreamRecoveryAndReplayTest {
         for (final var compressedRecordFile : expectedMeta.keySet()) {
             final var expectedFileMeta = expectedMeta.get(compressedRecordFile);
             final var actualFileMeta = actualMeta.get(compressedRecordFile);
+            System.out.println(actualFileMeta);
             assertEquals(expectedFileMeta, actualFileMeta, "Wrong meta for " + compressedRecordFile);
         }
+    }
+
+    @Test
+    void metadataHashReplayedCorrectly()
+            throws IOException, NoSuchAlgorithmException, ExecutionException, InterruptedException {
+        given(globalDynamicProperties.getSidecarMaxSizeMb()).willReturn(256);
+        givenRealSubjectReplayingFrom(ON_DISK_FILES_LOC);
+
+        // when:
+        replayRecoveryRsosAndFreeze();
+
+        final var expectedLastSigFileName =
+                Objects.requireNonNull(expectedLastFile).substring(0, expectedLastFile.lastIndexOf(".rcd"))
+                        + ".rcd_sig";
+        final var finalSigLoc = Paths.get(tmpDirLoc(), expectedLastSigFileName).toString();
+        final var sigFile =
+                RecordStreamingUtils.readSignatureFile(finalSigLoc).getRight().get();
+
+        final var actualMetadataHash = CommonUtils.hex(
+                sigFile.getMetadataSignature().getHashObject().getHash().toByteArray());
+        assertEquals(expectedLastMetadataHash, actualMetadataHash);
     }
 
     @Test
@@ -457,13 +461,26 @@ class RecordStreamRecoveryAndReplayTest {
         final var baos = new ByteArrayOutputStream();
         try (final var out = new SerializableDataOutputStream(baos)) {
             for (final int part : RELEASE_038x_STREAM_TYPE.getFileHeader()) {
+                System.out.println("Writing " + part);
                 out.writeInt(part);
             }
+            System.out.println(CommonUtils.hex(recordStreamFile.getStartObjectRunningHash().getHash().toByteArray()));
             out.write(recordStreamFile.getStartObjectRunningHash().getHash().toByteArray());
+            System.out.println(CommonUtils.hex(recordStreamFile.getEndObjectRunningHash().getHash().toByteArray()));
             out.write(recordStreamFile.getEndObjectRunningHash().getHash().toByteArray());
+            System.out.println("Writing " + recordStreamFile.getBlockNumber());
             out.writeLong(recordStreamFile.getBlockNumber());
         }
         final var digest = MessageDigest.getInstance(Cryptography.DEFAULT_DIGEST_TYPE.algorithmName());
         return CommonUtils.hex(digest.digest(baos.toByteArray()));
+    }
+
+    private String lastCopiedFile(final List<String> copiedFilesNames) {
+        return copiedFilesNames.stream()
+                .filter(RecordStreamingUtils::isRecordFile)
+                .sorted(comparing(RecordStreamingUtils::parseRecordFileConsensusTime)
+                        .reversed())
+                .findFirst()
+                .get();
     }
 }

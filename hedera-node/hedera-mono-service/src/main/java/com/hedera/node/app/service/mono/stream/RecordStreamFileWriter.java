@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.mono.stream;
 
+import static com.hedera.node.app.hapi.utils.ByteStringUtils.unwrapUnsafelyIfPossible;
 import static com.hedera.node.app.hapi.utils.exports.FileCompressionUtils.COMPRESSION_ALGORITHM_EXTENSION;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.convertInstantToStringWithPadding;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.generateStreamFileNameFromInstant;
@@ -49,6 +50,7 @@ import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.common.stream.internal.LinkedObjectStream;
+import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.logging.LogMarker;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedOutputStream;
@@ -112,12 +114,6 @@ public class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamOb
      * a messageDigest object for digesting sidecar files and generating sidecar file hash
      */
     private final MessageDigest sidecarStreamDigest;
-
-    /**
-     * Output stream for digesting metaData. Metadata should be written to this stream. Any data
-     * written to this stream is used to generate a running metadata hash.
-     */
-    private SerializableDataOutputStream dosMeta = null;
 
     /**
      * current runningHash before consuming the object added by calling {@link
@@ -249,32 +245,16 @@ public class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamOb
                     // write endRunningHash
                     final var endRunningHash = runningHash.getFutureHash().get();
                     recordStreamFileBuilder.setEndObjectRunningHash(toProto(endRunningHash.getValue()));
-                    dosMeta.write(endRunningHash.getValue());
                     LOG.debug(
                             OBJECT_STREAM_FILE.getMarker(),
                             "closeCurrentAndSign :: write endRunningHash {}",
                             endRunningHash);
-
-                    // write block number to metadata
-                    dosMeta.writeLong(recordStreamFileBuilder.getBlockNumber());
-                    LOG.debug(
-                            OBJECT_STREAM_FILE.getMarker(),
-                            "closeCurrentAndSign :: write block number {}",
-                            recordStreamFileBuilder.getBlockNumber());
                 } catch (final InterruptedException | ExecutionException e) {
                     Thread.currentThread().interrupt();
                     LOG.error(
                             EXCEPTION.getMarker(),
                             "closeCurrentAndSign :: failed when getting endRunningHash for writing" + " {}",
                             recordFileNameShort,
-                            e);
-                    return;
-                } catch (final IOException e) {
-                    Thread.currentThread().interrupt();
-                    LOG.warn(
-                            EXCEPTION.getMarker(),
-                            "closeCurrentAndSign :: IOException when serializing endRunningHash and"
-                                    + " block number into metadata",
                             e);
                     return;
                 }
@@ -294,7 +274,8 @@ public class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamOb
                     }
                 }
 
-                // create record file
+                streamDigest.reset();
+                final RecordStreamFile protoRecordFile;
                 try (final FileOutputStream stream = new FileOutputStream(recordFile, false);
                         final GZIPOutputStream gzipStream = dynamicProperties.shouldCompressRecordFilesOnCreation()
                                 ? new GZIPOutputStream(stream)
@@ -307,7 +288,8 @@ public class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamOb
                     // write contents of record file - record file version and serialized RecordFile
                     // protobuf
                     dos.writeInt(recordFileVersion);
-                    dos.write(serialize(recordStreamFileBuilder));
+                    protoRecordFile = recordStreamFileBuilder.build();
+                    dos.write(serialize(protoRecordFile));
 
                     // make sure the whole file is written to disk
                     dos.flush();
@@ -323,8 +305,6 @@ public class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamOb
                             OBJECT_STREAM_FILE.getMarker(), "Stream file written successfully {}", recordFileNameShort);
 
                     // close dosMeta manually; stream and dos will be automatically closed
-                    dosMeta.close();
-                    dosMeta = null;
                     recordStreamFileBuilder = null;
 
                     LOG.debug(
@@ -344,14 +324,20 @@ public class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamOb
 
                 // if this line is reached, record file has been created successfully, so create its
                 // signature
-                createSignatureFileFor(uncompressedRecordFilePath);
+                createSignatureFileFor(protoRecordFile, uncompressedRecordFilePath);
             }
         }
     }
 
     /**
-     * write the beginning part of the record stream file and metadata: record stream version, HAPI
-     * proto version and initial runningHash.
+     * Prepares internal state to start writing a new record file. The one really critical piece
+     * of information we must track here in the {@code recordStreamFileBuilder} is the current
+     * running hash, since that will be lost by the time we {@link #closeCurrentAndSign()}.
+     *
+     * <p>Note we don't initialize any part of the metadata hash digest here, because we'll have
+     * all the required information we need when we {@link #closeCurrentAndSign()}; and
+     * computing the entire digest there makes it easier to verify correctness. (C.f.
+     * https://github.com/hashgraph/hedera-services/issues/8738)
      */
     private void beginNew(final RecordStreamObject object) {
         final var fileHeader = streamType.getFileHeader();
@@ -368,25 +354,13 @@ public class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamOb
                 .setMajor(fileHeader[1])
                 .setMinor(fileHeader[2])
                 .setPatch(fileHeader[3]));
-        dosMeta = new SerializableDataOutputStream(new HashingOutputStream(metadataStreamDigest));
         try {
-            // write record stream version and HAPI version to metadata
-            for (final var value : fileHeader) {
-                dosMeta.writeInt(value);
-            }
             final var startRunningHash = runningHash.getFutureHash().get();
             recordStreamFileBuilder.setStartObjectRunningHash(toProto(startRunningHash.getValue()));
-            dosMeta.write(startRunningHash.getValue());
             LOG.debug(
                     OBJECT_STREAM_FILE.getMarker(),
                     "beginNew :: write startRunningHash to metadata {}",
                     startRunningHash);
-        } catch (final IOException e) {
-            Thread.currentThread().interrupt();
-            LOG.error(
-                    EXCEPTION.getMarker(),
-                    "beginNew :: Got IOException when writing startRunningHash to metadata stream",
-                    e);
         } catch (final InterruptedException | ExecutionException e) {
             Thread.currentThread().interrupt();
             LOG.error(
@@ -490,15 +464,6 @@ public class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamOb
      */
     @Override
     public void clear() {
-        if (dosMeta != null) {
-            try {
-                dosMeta.close();
-                metadataStreamDigest.reset();
-                dosMeta = null;
-            } catch (final IOException e) {
-                LOG.warn(EXCEPTION.getMarker(), "RecordStreamFileWriter::clear Exception in closing dosMeta", e);
-            }
-        }
         recordStreamFileBuilder = null;
         LOG.debug(OBJECT_STREAM.getMarker(), "RecordStreamFileWriter::clear executed.");
     }
@@ -520,15 +485,14 @@ public class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamOb
      * Helper method that serializes an arbitrary Message.Builder. Uses deterministic serialization
      * to ensure multiple invocations on the same object lead to identical serialization.
      *
-     * @param messageBuilder the object that needs to be serialized
+     * @param message the object that needs to be serialized
      * @return the serialized bytes
      */
-    private byte[] serialize(final Message.Builder messageBuilder) throws IOException {
-        final var messageProto = messageBuilder.build();
-        final var result = new byte[messageProto.getSerializedSize()];
+    private byte[] serialize(final Message message) throws IOException {
+        final var result = new byte[message.getSerializedSize()];
         final var output = CodedOutputStream.newInstance(result);
         output.useDeterministicSerialization();
-        messageProto.writeTo(output);
+        message.writeTo(output);
         output.checkNoSpaceLeft();
         return result;
     }
@@ -541,19 +505,40 @@ public class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamOb
                 .build();
     }
 
-    private void createSignatureFileFor(final String relatedRecordStreamFile) {
-        // create proto messages for signature file
+    private void createSignatureFileFor(
+            final RecordStreamFile protoRecordFile,
+            final String relatedRecordStreamFile) {
+        // First compute the signature for the record stream file based on the data written to the
+        // record file's HashingOutputStream; note all of this data in closeCurrentAndSign()
         final var fileSignature = generateSignatureObject(streamDigest.digest());
+
+        metadataStreamDigest.reset();
+        System.out.println("Creating signature file for " + relatedRecordStreamFile);
+        // Next compute the signature for the metadata file based on the given record file's contents
+        try (final var out = new SerializableDataOutputStream(new HashingOutputStream(metadataStreamDigest))) {
+            for (final var versionPart : streamType.getFileHeader()) {
+                System.out.println("versionPart: " + versionPart);
+                out.writeInt(versionPart);
+            }
+            System.out.println(CommonUtils.hex(unwrapUnsafelyIfPossible(protoRecordFile.getStartObjectRunningHash().getHash())));
+            out.write(unwrapUnsafelyIfPossible(protoRecordFile.getStartObjectRunningHash().getHash()));
+            System.out.println(CommonUtils.hex(unwrapUnsafelyIfPossible(protoRecordFile.getEndObjectRunningHash().getHash())));
+            out.write(unwrapUnsafelyIfPossible(protoRecordFile.getEndObjectRunningHash().getHash()));
+            System.out.println("Block: " + protoRecordFile.getBlockNumber());
+            out.writeLong(protoRecordFile.getBlockNumber());
+        } catch (IOException e) {
+            throw new AssertionError("Not implemented");
+        }
         final var metadataSignature = generateSignatureObject(metadataStreamDigest.digest());
+
+        // Finally, construct and write the signature file
         final var signatureFile =
                 SignatureFile.newBuilder().setFileSignature(fileSignature).setMetadataSignature(metadataSignature);
-
-        // create signature file
         final var sigFilePath = relatedRecordStreamFile + "_sig";
         try (final var fos = new FileOutputStream(sigFilePath)) {
             // version in signature files is 1 byte, compared to 4 in record files
             fos.write(streamType.getSigFileHeader()[0]);
-            signatureFile.build().writeTo(fos);
+            fos.write(serialize(signatureFile.build()));
             LOG.debug(OBJECT_STREAM_FILE.getMarker(), "closeCurrentAndSign :: signature file saved: {}", sigFilePath);
         } catch (final IOException e) {
             LOG.error(
@@ -583,7 +568,8 @@ public class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamOb
                 final SerializableDataOutputStream dos = new SerializableDataOutputStream(new BufferedOutputStream(
                         new HashingOutputStream(sidecarStreamDigest, gzipStream != null ? gzipStream : stream)))) {
             // write contents of sidecar
-            dos.write(serialize(sidecarFileBuilder));
+            final var protoSidecarFile = sidecarFileBuilder.build();
+            dos.write(serialize(protoSidecarFile));
 
             // make sure the whole sidecar is written to disk before continuing
             // with calculating its hash and saving it as part of the SidecarMetadata

@@ -28,10 +28,12 @@ import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.RunningHashable;
 import com.swirlds.common.stream.MultiStream;
+import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Instant;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
@@ -116,6 +118,13 @@ public class RecoveryRecordsWriter {
                         itemIsFirst.set(false);
                     }
                     multiStream.addObject(rso);
+                    try {
+                        System.out.println("Running hash now " + CommonUtils.hex(rso.getRunningHash().getFutureHash().get().getValue()));
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    } catch (ExecutionException e) {
+                        throw new RuntimeException(e);
+                    }
                 }
             });
         } catch (IOException e) {

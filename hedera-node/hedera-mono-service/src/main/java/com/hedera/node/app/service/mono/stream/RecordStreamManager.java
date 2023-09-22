@@ -33,6 +33,7 @@ import com.swirlds.common.stream.QueueThreadObjectStream;
 import com.swirlds.common.stream.QueueThreadObjectStreamConfiguration;
 import com.swirlds.common.stream.RunningHashCalculatorForStream;
 import com.swirlds.common.system.Platform;
+import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
@@ -225,6 +226,7 @@ public class RecordStreamManager {
             }
             try {
                 multiStream.addObject(recordStreamObject);
+                System.out.println("Running hash now " + CommonUtils.hex(recordStreamObject.getRunningHash().getFutureHash().get().getValue()));
             } catch (Exception e) {
                 log.warn("Unhandled exception while streaming {}", recordStreamObject, e);
             }
