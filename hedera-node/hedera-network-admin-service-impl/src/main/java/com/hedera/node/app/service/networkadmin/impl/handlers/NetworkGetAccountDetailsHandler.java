@@ -98,9 +98,9 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
 
         // The account must exist for that transaction ID
         final var accountStore = context.createStore(ReadableAccountStore.class);
-        final var accountMetadata = accountStore.getAccountById(op.accountIdOrThrow());
-        mustExist(accountMetadata, INVALID_ACCOUNT_ID);
-        validateTruePreCheck(!accountMetadata.deleted(), ACCOUNT_DELETED);
+        final var account = accountStore.getAccountById(op.accountIdOrThrow());
+        mustExist(account, INVALID_ACCOUNT_ID);
+        validateTruePreCheck(!account.deleted(), ACCOUNT_DELETED);
     }
 
     @Override
