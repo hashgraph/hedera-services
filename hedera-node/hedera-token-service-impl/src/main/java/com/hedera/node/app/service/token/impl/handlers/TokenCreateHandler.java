@@ -355,21 +355,30 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
     @Override
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
         requireNonNull(feeContext);
-        final var op = feeContext.body();
-        final var type = op.tokenCreationOrThrow().tokenType();
+        final var body = feeContext.body();
+        final var op = body.tokenCreationOrThrow();
+        final var type = op.tokenType();
 
-        return feeContext.feeCalculator(tokenSubTypeFrom(type)).legacyCalculate(sigValueObj -> {
-            try {
-                return new TokenCreateResourceUsage(txnEstimateFactory).usageGiven(fromPbj(op), sigValueObj, null);
-            } catch (InvalidTxBodyException e) {
-                throw new HandleException(INVALID_TRANSACTION_BODY);
-            }
-        });
+        return feeContext
+                .feeCalculator(tokenSubTypeFrom(type, op.hasCustomFees()))
+                .legacyCalculate(sigValueObj -> {
+                    try {
+                        return new TokenCreateResourceUsage(txnEstimateFactory)
+                                .usageGiven(fromPbj(body), sigValueObj, null);
+                    } catch (InvalidTxBodyException e) {
+                        throw new HandleException(INVALID_TRANSACTION_BODY);
+                    }
+                });
     }
 
-    public static SubType tokenSubTypeFrom(final TokenType tokenType) {
-        return tokenType.equals(TokenType.FUNGIBLE_COMMON)
-                ? SubType.TOKEN_FUNGIBLE_COMMON
-                : SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
+    public static SubType tokenSubTypeFrom(final TokenType tokenType, boolean hasCustomFees) {
+        return switch (tokenType) {
+            case FUNGIBLE_COMMON -> hasCustomFees
+                    ? SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES
+                    : SubType.TOKEN_FUNGIBLE_COMMON;
+            case NON_FUNGIBLE_UNIQUE -> hasCustomFees
+                    ? SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES
+                    : SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
+        };
     }
 }
