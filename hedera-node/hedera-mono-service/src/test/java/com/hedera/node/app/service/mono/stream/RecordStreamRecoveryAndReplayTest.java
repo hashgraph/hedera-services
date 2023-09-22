@@ -279,7 +279,6 @@ class RecordStreamRecoveryAndReplayTest {
         for (final var compressedRecordFile : expectedMeta.keySet()) {
             final var expectedFileMeta = expectedMeta.get(compressedRecordFile);
             final var actualFileMeta = actualMeta.get(compressedRecordFile);
-            System.out.println(actualFileMeta);
             assertEquals(expectedFileMeta, actualFileMeta, "Wrong meta for " + compressedRecordFile);
         }
     }
@@ -479,16 +478,10 @@ class RecordStreamRecoveryAndReplayTest {
         final var baos = new ByteArrayOutputStream();
         try (final var out = new SerializableDataOutputStream(baos)) {
             for (final int part : RELEASE_038x_STREAM_TYPE.getFileHeader()) {
-                System.out.println("Writing " + part);
                 out.writeInt(part);
             }
-            System.out.println(CommonUtils.hex(
-                    recordStreamFile.getStartObjectRunningHash().getHash().toByteArray()));
             out.write(recordStreamFile.getStartObjectRunningHash().getHash().toByteArray());
-            System.out.println(CommonUtils.hex(
-                    recordStreamFile.getEndObjectRunningHash().getHash().toByteArray()));
             out.write(recordStreamFile.getEndObjectRunningHash().getHash().toByteArray());
-            System.out.println("Writing " + recordStreamFile.getBlockNumber());
             out.writeLong(recordStreamFile.getBlockNumber());
         }
         final var digest = MessageDigest.getInstance(Cryptography.DEFAULT_DIGEST_TYPE.algorithmName());
