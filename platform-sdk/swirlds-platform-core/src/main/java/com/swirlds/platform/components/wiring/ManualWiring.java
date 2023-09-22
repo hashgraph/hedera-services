@@ -21,6 +21,7 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 
 import com.swirlds.common.config.WiringConfig;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SystemExitCode;
@@ -127,6 +128,7 @@ public class ManualWiring {
      * @param preconsensusEventWriter            writes preconsensus events to disk
      * @param platformStatusGetter               gets the current platform status
      * @param statusActionSubmitter              enables submitting platform status actions
+     * @param currentEpochHash                   the current epoch hash
      * @return a fully wired {@link StateManagementComponent}
      */
     public @NonNull StateManagementComponent wireStateManagementComponent(
@@ -139,7 +141,8 @@ public class ManualWiring {
             @NonNull final AppCommunicationComponent appCommunicationComponent,
             @NonNull final PreconsensusEventWriter preconsensusEventWriter,
             @NonNull final PlatformStatusGetter platformStatusGetter,
-            @NonNull final StatusActionSubmitter statusActionSubmitter) {
+            @NonNull final StatusActionSubmitter statusActionSubmitter,
+            @Nullable final Hash currentEpochHash) {
 
         Objects.requireNonNull(platformSigner, "platformSigner");
         Objects.requireNonNull(mainClassName, "mainClassName");
@@ -162,7 +165,8 @@ public class ManualWiring {
                         selfId,
                         swirldName,
                         platformStatusGetter,
-                        statusActionSubmitter);
+                        statusActionSubmitter,
+                        currentEpochHash);
 
         stateManagementComponentFactory.newLatestCompleteStateConsumer(ss -> {
             final ReservedSignedState reservedSignedState = ss.reserve("ManualWiring newLatestCompleteStateConsumer");

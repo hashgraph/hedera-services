@@ -138,6 +138,7 @@ import com.swirlds.platform.observers.ConsensusRoundObserver;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.observers.PreConsensusEventObserver;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
+import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.iss.ConsensusHashManager;
@@ -421,7 +422,10 @@ public class SwirldsPlatform implements Platform, Startable {
                 appCommunicationComponent,
                 preconsensusEventWriter,
                 platformStatusManager::getCurrentStatus,
-                platformStatusManager::submitStatusAction);
+                platformStatusManager::submitStatusAction,
+                Optional.ofNullable(emergencyRecoveryManager.getEmergencyRecoveryFile())
+                        .map(EmergencyRecoveryFile::hash)
+                        .orElse(null));
         wiring.registerComponents(components);
 
         final SignedStateManager signedStateManager = stateManagementComponent.getSignedStateManager();
