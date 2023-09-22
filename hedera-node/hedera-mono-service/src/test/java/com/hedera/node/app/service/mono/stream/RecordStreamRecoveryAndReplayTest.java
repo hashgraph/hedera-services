@@ -25,6 +25,7 @@ import static com.hedera.node.app.service.mono.utils.forensics.RecordParsers.par
 import static com.hedera.node.app.service.mono.utils.forensics.RecordParsers.parseV6SidecarRecordsByConsTimeIn;
 import static com.hedera.node.app.service.mono.utils.forensics.RecordParsers.visitWithSidecars;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
+import static java.util.Comparator.comparing;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -33,6 +34,7 @@ import static org.mockito.BDDMockito.given;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hedera.node.app.service.mono.stats.MiscRunningAvgs;
@@ -42,24 +44,32 @@ import com.hedera.services.stream.proto.SidecarFile;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.crypto.SignatureType;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -73,22 +83,26 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
- * This unit test does "live" testing of a full event stream recovery. The only mocks
- * are the property sources and the {@link Platform#sign(byte[])} method; but the
- * {@link RecordStreamManager} internals are fully exercised, reading and writing from
- * a temporary directory.
+ * This unit test does "live" testing of a full event stream recovery or PCES replay.
+ * The only mocks are the property sources and the {@link Platform#sign(byte[])} method;
+ * but the {@link RecordStreamManager} internals are fully exercised, reading and writing
+ * from a temporary directory.
  *
- * <p>First we copy the {@code .rcd.gz} files from a test resource directory into the
- * temporary directory. Then we run the recovery process, intentionally <b>skipping</b>
- * the first 4 record stream items from the first {@code .rcd.gz} file.
- *
- * <p>Because the {@link RecordStreamManager} is started in recovery mode, it must
- * still find and include these 4 items (and their sidecars) from the files on disk
+ * <p>When testing <b>recovery</b>, first we copy the {@code .rcd.gz} files from a test
+ * resource directory into the temporary directory. Then we run the recovery process,
+ * intentionally <b>skipping</b> the first 4 record stream items from the first
+ * {@code .rcd.gz} file. Because the {@link RecordStreamManager} is started in recovery mode,
+ * it must still find and include these 4 items (and their sidecars) from the files on disk
  * in its newly created "golden" record files, <b>even though</b> the 4 items were not
  * replayed during event recovery.
+ *
+ * <p>When testing <b>replay</b>, after copying the {@code .rcd.gz} file from the test
+ * resource directory, we remove the last file after computing its expected metadata hash.
+ * We then run the replay process, which should re-create the last file, and confirm the
+ * metadata hash in the signature file is as expected.
  */
 @ExtendWith(MockitoExtension.class)
-class RecordStreamRecoveryTest {
+class RecordStreamRecoveryAndReplayTest {
     private static final String RECOVERY_STATE_RUNNING_HASH =
             "9bc31589bd39af924deda8e8ed58e54d2d0127286211782cc195d8cc0e89f1078120a5596bc903642ae11c008811029b";
     private static final long START_TEST_ASSET_BLOCK_NO = 2;
@@ -125,6 +139,13 @@ class RecordStreamRecoveryTest {
     @Mock
     private Predicate<File> tryDeletion;
 
+    // When running a PCES replay test, the expected name of the last record file
+    @Nullable
+    private String expectedLastFile;
+    // When running a PCES replay test, the expected metadata hash of the last record file
+    @Nullable
+    private String expectedLastMetadataHash;
+
     private RecordStreamManager subject;
 
     @BeforeEach
@@ -155,6 +176,34 @@ class RecordStreamRecoveryTest {
                 File::delete);
     }
 
+    private void givenRealSubjectReplayingFrom(final String onDiskLocForTest)
+            throws IOException, NoSuchAlgorithmException {
+        final var copiedFiles = cpAssetsToTmpDirFrom(onDiskLocForTest);
+        expectedLastFile = copiedFiles.stream()
+                .filter(RecordStreamingUtils::isRecordFile)
+                .sorted(comparing(RecordStreamingUtils::parseRecordFileConsensusTime)
+                        .reversed())
+                .findFirst()
+                .get();
+        final var lastFilePath = Paths.get(tmpDirLoc(), expectedLastFile);
+        expectedLastMetadataHash = computeHexedMetadataHashOfRecordFile(lastFilePath);
+        if (!lastFilePath.toFile().delete()) {
+            throw new IllegalStateException("Could not delete " + lastFilePath);
+        }
+        final var mockSig = new Signature(SignatureType.RSA, new byte[0]);
+        given(platform.sign(any())).willReturn(mockSig);
+        subject = new RecordStreamManager(
+                platform,
+                runningAvgs,
+                nodeLocalProperties,
+                MEMO,
+                new Hash(CommonUtils.unhex(RECOVERY_STATE_RUNNING_HASH)),
+                RELEASE_038x_STREAM_TYPE,
+                globalDynamicProperties,
+                null,
+                File::delete);
+    }
+
     private void givenDeletionIncapableSubjectRecoveringFrom(final String onDiskLocForTest)
             throws IOException, NoSuchAlgorithmException {
         cpAssetsToTmpDirFrom(onDiskLocForTest);
@@ -169,6 +218,26 @@ class RecordStreamRecoveryTest {
                 globalDynamicProperties,
                 recoveryWriter,
                 tryDeletion);
+    }
+
+    @Test
+    void metadataHashReplayedCorrectly()
+            throws IOException, NoSuchAlgorithmException, ExecutionException, InterruptedException {
+        given(globalDynamicProperties.getSidecarMaxSizeMb()).willReturn(256);
+        givenRealSubjectReplayingFrom(ON_DISK_FILES_AND_SIDECARS_LOC);
+
+        // when:
+        replayDirectlyFromRsos(ON_DISK_FILES_AND_SIDECARS_LOC, 0);
+        final var expectedLastSigFileName =
+                Objects.requireNonNull(expectedLastFile).substring(0, expectedLastFile.lastIndexOf(".rcd"))
+                        + ".rcd_sig";
+        final var finalSigLoc = Paths.get(tmpDirLoc(), expectedLastSigFileName).toString();
+        final var sigFile =
+                RecordStreamingUtils.readSignatureFile(finalSigLoc).getRight().get();
+
+        final var actualMetadataHash = CommonUtils.hex(
+                sigFile.getMetadataSignature().getHashObject().getHash().toByteArray());
+        assertEquals(expectedLastMetadataHash, actualMetadataHash);
     }
 
     @Test
@@ -359,9 +428,10 @@ class RecordStreamRecoveryTest {
         }
     }
 
-    private void cpAssetsToTmpDirFrom(@NonNull final String sourceLoc) throws IOException {
-        final var nodeScopedDir = new File(RecordStreamManager.effectiveLogDir(tmpDir.getAbsolutePath(), MEMO));
+    private List<String> cpAssetsToTmpDirFrom(@NonNull final String sourceLoc) throws IOException {
+        final var nodeScopedDir = new File(tmpDirLoc());
         Files.createDirectories(nodeScopedDir.toPath());
+        final List<String> copiedFileNames = new ArrayList<>();
         Files.list(Paths.get(sourceLoc)).forEach(path -> {
             try {
                 Files.copy(
@@ -369,9 +439,31 @@ class RecordStreamRecoveryTest {
                         Paths.get(
                                 nodeScopedDir.getAbsolutePath(),
                                 path.getFileName().toString()));
+                copiedFileNames.add(path.getName(path.getNameCount() - 1).toString());
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
         });
+        return copiedFileNames;
+    }
+
+    private String tmpDirLoc() {
+        return RecordStreamManager.effectiveLogDir(tmpDir.getAbsolutePath(), MEMO);
+    }
+
+    private String computeHexedMetadataHashOfRecordFile(final Path at) throws IOException, NoSuchAlgorithmException {
+        final var recordStreamFile =
+                readMaybeCompressedRecordStreamFile(at.toString()).getRight().get();
+        final var baos = new ByteArrayOutputStream();
+        try (final var out = new SerializableDataOutputStream(baos)) {
+            for (final int part : RELEASE_038x_STREAM_TYPE.getFileHeader()) {
+                out.writeInt(part);
+            }
+            out.write(recordStreamFile.getStartObjectRunningHash().getHash().toByteArray());
+            out.write(recordStreamFile.getEndObjectRunningHash().getHash().toByteArray());
+            out.writeLong(recordStreamFile.getBlockNumber());
+        }
+        final var digest = MessageDigest.getInstance(Cryptography.DEFAULT_DIGEST_TYPE.algorithmName());
+        return CommonUtils.hex(digest.digest(baos.toByteArray()));
     }
 }
