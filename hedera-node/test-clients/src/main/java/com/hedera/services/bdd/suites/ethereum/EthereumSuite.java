@@ -159,7 +159,7 @@ public class EthereumSuite extends HapiSuite {
     }
 
     @HapiTest
-    @Disabled
+    @Disabled("Failing or intermittently failing HAPI Test")
     HapiSpec sendingLargerBalanceThanAvailableFailsGracefully() {
         final AtomicReference<Address> tokenCreateContractAddress = new AtomicReference<>();
 

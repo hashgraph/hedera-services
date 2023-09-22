@@ -39,7 +39,6 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.Disabled;
 
 @HapiTestSuite
 public class TokenTotalSupplyAfterMintBurnWipeSuite extends HapiSuite {
@@ -58,7 +57,6 @@ public class TokenTotalSupplyAfterMintBurnWipeSuite extends HapiSuite {
     }
 
     @HapiTest
-    @Disabled
     public HapiSpec checkTokenTotalSupplyAfterMintAndBurn() {
         String tokenName = "tokenToTest";
         return defaultHapiSpec("checkTokenTotalSupplyAfterMintAndBurn")
@@ -88,7 +86,6 @@ public class TokenTotalSupplyAfterMintBurnWipeSuite extends HapiSuite {
     }
 
     @HapiTest
-    @Disabled
     public HapiSpec totalSupplyAfterWipe() {
         var tokenToWipe = "tokenToWipe";
 

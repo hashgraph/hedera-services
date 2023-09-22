@@ -43,7 +43,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.Disabled;
 
 @HapiTestSuite
 public class UpdateFailuresSpec extends HapiSuite {
@@ -111,7 +110,6 @@ public class UpdateFailuresSpec extends HapiSuite {
     }
 
     @HapiTest
-    @Disabled
     private HapiSpec precheckAllowsMissing() {
         return defaultHapiSpec("PrecheckAllowsMissing")
                 .given()

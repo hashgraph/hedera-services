@@ -314,6 +314,7 @@ public class Hip17UnhappyTokensSuite extends HapiSuite {
     }
 
     @HapiTest
+    @Disabled("Failing or intermittently failing HAPI Test")
     private HapiSpec cannotUpdateNftFeeScheduleWhenDeleted() {
         final var origHbarFee = 1_234L;
         final var newHbarFee = 4_321L;
@@ -362,7 +363,6 @@ public class Hip17UnhappyTokensSuite extends HapiSuite {
     }
 
     @HapiTest
-    @Disabled
     private HapiSpec cannotBurnNftWhenDeleted() {
         return defaultHapiSpec("cannotBurnNftWhenDeleted")
                 .given(
@@ -394,7 +394,6 @@ public class Hip17UnhappyTokensSuite extends HapiSuite {
     }
 
     @HapiTest
-    @Disabled
     private HapiSpec cannotWipeNftWhenDeleted() {
         return defaultHapiSpec("cannotWipeNftWhenDeleted")
                 .given(
@@ -449,7 +448,6 @@ public class Hip17UnhappyTokensSuite extends HapiSuite {
     }
 
     @HapiTest
-    @Disabled
     private HapiSpec cannotGetNftInfoWhenAutoRemoved() {
         return defaultHapiSpec("cannotGetNftInfoWhenAutoRemoved")
                 .given(

@@ -59,7 +59,7 @@ public class Issue2319Spec extends HapiSuite {
     }
 
     @HapiTest
-    @Disabled
+    @Disabled("Failing or intermittently failing HAPI Test")
     private HapiSpec propsPermissionsSigReqsWaivedForAddressBookAdmin() {
         var pemLoc = "<PEM>";
 
@@ -112,7 +112,7 @@ public class Issue2319Spec extends HapiSuite {
     }
 
     @HapiTest
-    @Disabled
+    @Disabled("Failing or intermittently failing HAPI Test")
     private HapiSpec sysAccountSigReqsWaivedForMasterAndTreasury() {
         var pemLoc = "<PEM>";
 
@@ -140,7 +140,7 @@ public class Issue2319Spec extends HapiSuite {
     }
 
     @HapiTest
-    @Disabled
+    @Disabled("Failing or intermittently failing HAPI Test")
     private HapiSpec sysFileSigReqsWaivedForMasterAndTreasury() {
         var pemLoc = "<PEM>";
         var validRates = new AtomicReference<ByteString>();

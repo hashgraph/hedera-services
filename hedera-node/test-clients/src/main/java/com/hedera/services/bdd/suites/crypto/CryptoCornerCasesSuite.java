@@ -142,7 +142,7 @@ public class CryptoCornerCasesSuite extends HapiSuite {
     }
 
     @HapiTest
-    @Disabled
+    @Disabled("Failing or intermittently failing HAPI Test")
     public static HapiSpec invalidTransactionPayerAccountNotFound() {
         return defaultHapiSpec("InvalidTransactionDuration")
                 .given()

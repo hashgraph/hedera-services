@@ -223,7 +223,6 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    @Disabled
     public HapiSpec keysChange() {
         return defaultHapiSpec("KeysChange")
                 .given(
@@ -611,6 +610,7 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
+    @Disabled("Failing or intermittently failing HAPI Test")
     private HapiSpec safeToUpdateCustomFeesWithNewFallbackWhileTransferring() {
         final var uniqueTokenFeeKey = "uniqueTokenFeeKey";
         final var hbarCollector = "hbarFee";

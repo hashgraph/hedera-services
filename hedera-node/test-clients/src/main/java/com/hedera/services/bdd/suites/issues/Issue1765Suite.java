@@ -78,7 +78,7 @@ public class Issue1765Suite extends HapiSuite {
     }
 
     @HapiTest
-    @Disabled
+    @Disabled("Failing or intermittently failing HAPI Test")
     private static HapiSpec recordOfInvalidAccountTransferSanityChecks() {
         final String INVALID_ACCOUNT = IMAGINARY;
 
@@ -92,7 +92,7 @@ public class Issue1765Suite extends HapiSuite {
     }
 
     @HapiTest
-    @Disabled
+    @Disabled("Failing or intermittently failing HAPI Test")
     private static HapiSpec recordOfInvalidAccountUpdateSanityChecks() {
         final String INVALID_ACCOUNT = IMAGINARY;
 
