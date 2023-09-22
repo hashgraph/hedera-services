@@ -118,13 +118,6 @@ public class RecoveryRecordsWriter {
                         itemIsFirst.set(false);
                     }
                     multiStream.addObject(rso);
-                    try {
-                        System.out.println("Running hash now " + CommonUtils.hex(rso.getRunningHash().getFutureHash().get().getValue()));
-                    } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
-                    } catch (ExecutionException e) {
-                        throw new RuntimeException(e);
-                    }
                 }
             });
         } catch (IOException e) {
