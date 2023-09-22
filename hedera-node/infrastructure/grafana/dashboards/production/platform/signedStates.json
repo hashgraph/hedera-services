@@ -1,4 +1,47 @@
 {
+  "__inputs": [
+    {
+      "name": "DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM",
+      "label": "grafanacloud-swirldslabsproduction-prom",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "prometheus",
+      "pluginName": "Prometheus"
+    }
+  ],
+  "__elements": {},
+  "__requires": [
+    {
+      "type": "panel",
+      "id": "gauge",
+      "name": "Gauge",
+      "version": ""
+    },
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "10.2.0-60853"
+    },
+    {
+      "type": "datasource",
+      "id": "prometheus",
+      "name": "Prometheus",
+      "version": "1.0.0"
+    },
+    {
+      "type": "panel",
+      "id": "stat",
+      "name": "Stat",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "timeseries",
+      "name": "Time series",
+      "version": ""
+    }
+  ],
   "annotations": {
     "list": [
       {
@@ -18,7 +61,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 81,
+  "id": null,
   "links": [
     {
       "asDropdown": true,
@@ -40,7 +83,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "grafanacloud-prom"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
       },
       "description": "The number of nodes that currently disagree with the consensus hash",
       "fieldConfig": {
@@ -92,7 +135,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
@@ -112,7 +155,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "grafanacloud-prom"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
       },
       "description": "The age of the oldest SignedState object in memory",
       "fieldConfig": {
@@ -196,7 +239,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
@@ -216,7 +259,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "grafanacloud-prom"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
       },
       "description": "The age of the oldest SignedState object in memory",
       "fieldConfig": {
@@ -272,7 +315,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
@@ -292,7 +335,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "grafanacloud-prom"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
       },
       "description": "The average number of unsigned states awaiting signatures.",
       "fieldConfig": {
@@ -376,7 +419,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
@@ -396,7 +439,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "grafanacloud-prom"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
       },
       "description": "The minimum, average, and maximum number of unsigned states reported. These use the min/mean/max metrics reported by each node and not just the average, so the min and max may be more extreme than shown on the average graph.",
       "fieldConfig": {
@@ -451,7 +494,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
@@ -467,7 +510,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
@@ -484,7 +527,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
@@ -505,7 +548,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "grafanacloud-prom"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
       },
       "description": "The average number of fully signed states awaiting signatures.",
       "fieldConfig": {
@@ -588,7 +631,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
@@ -608,7 +651,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "grafanacloud-prom"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
       },
       "description": "The minimum, average, and maximum number of fully signed states reported. These use the min/mean/max metrics reported by each node and not just the average, so the min and max may be more extreme than shown on the average graph.",
       "fieldConfig": {
@@ -662,7 +705,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
@@ -678,7 +721,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
@@ -695,7 +738,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
@@ -716,7 +759,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "grafanacloud-prom"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
       },
       "description": "The changes in total number of states that did not receive enough signatures in the allowed time per second.",
       "fieldConfig": {
@@ -799,7 +842,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
@@ -819,7 +862,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "grafanacloud-prom"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
       },
       "description": "The total number of states that did not receive enough signatures in the allowed time.",
       "fieldConfig": {
@@ -873,7 +916,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
@@ -893,7 +936,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "grafanacloud-prom"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
       },
       "description": "The average number of state signatures gathered from other nodes per second.",
       "fieldConfig": {
@@ -976,7 +1019,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
@@ -996,7 +1039,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "grafanacloud-prom"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
       },
       "description": "The minimum, average, and maximum number of state signatures gathered per second. These use the min/mean/max metrics reported by each node and not just the average, so the min and max may be more extreme than shown on the average graph.",
       "fieldConfig": {
@@ -1050,7 +1093,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
@@ -1066,7 +1109,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
@@ -1083,7 +1126,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
@@ -1104,7 +1147,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "grafanacloud-prom"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
       },
       "description": "The average difference in round number between state signatures and the most recent immutable state. Negative numbers mean the are being received early, large positive numbers mean signatures are being received late.",
       "fieldConfig": {
@@ -1183,7 +1226,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
@@ -1203,7 +1246,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "grafanacloud-prom"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
       },
       "description": "The average difference in round number between state signatures and the most recent immutable state. Negative numbers mean the are being received early, large positive numbers mean signatures are being received late.",
       "fieldConfig": {
@@ -1257,7 +1300,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
@@ -1273,7 +1316,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
@@ -1290,7 +1333,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
@@ -1317,14 +1360,10 @@
   "templating": {
     "list": [
       {
-        "current": {
-          "selected": false,
-          "text": "mainnet",
-          "value": "mainnet"
-        },
+        "current": {},
         "datasource": {
           "type": "prometheus",
-          "uid": "grafanacloud-prom"
+          "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
         },
         "definition": "label_values(environment)",
         "hide": 0,
@@ -1344,18 +1383,10 @@
         "type": "query"
       },
       {
-        "current": {
-          "selected": false,
-          "text": [
-            "All"
-          ],
-          "value": [
-            "$__all"
-          ]
-        },
+        "current": {},
         "datasource": {
           "type": "prometheus",
-          "uid": "grafanacloud-prom"
+          "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
         },
         "definition": "label_values(node_id)",
         "hide": 0,
