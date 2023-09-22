@@ -38,6 +38,7 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.TokenAssociateTransactionBody;
 import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hedera.node.app.service.mono.fees.calculation.token.txns.TokenAssociateResourceUsage;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
@@ -184,11 +185,16 @@ public class TokenAssociateToAccountHandler extends BaseTokenHandler implements 
     @Override
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
         requireNonNull(feeContext);
-        final var op = feeContext.body();
+        final var body = feeContext.body();
+        final var op = body.tokenAssociateOrThrow();
+        final var accountId = op.accountOrThrow();
+        final var readableAccountStore = feeContext.readableStore(ReadableAccountStore.class);
+        final var account = readableAccountStore.getAccountById(accountId);
 
         return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> {
             try {
-                return new TokenAssociateResourceUsage(txnEstimateFactory).usageGiven(fromPbj(op), sigValueObj, null);
+                return new TokenAssociateResourceUsage(txnEstimateFactory)
+                        .usageGiven(fromPbj(body), sigValueObj, account);
             } catch (InvalidTxBodyException e) {
                 throw new HandleException(INVALID_TRANSACTION_BODY);
             }

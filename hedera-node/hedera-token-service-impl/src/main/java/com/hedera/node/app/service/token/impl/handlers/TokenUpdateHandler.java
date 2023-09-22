@@ -433,11 +433,14 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
     @Override
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
         requireNonNull(feeContext);
-        final var op = feeContext.body();
+        final var body = feeContext.body();
+        final var op = body.tokenUpdateOrThrow();
+        final var readableStore = feeContext.readableStore(ReadableTokenStore.class);
+        final var token = readableStore.get(op.tokenOrThrow());
 
         return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> {
             try {
-                return new TokenUpdateResourceUsage(txnEstimateFactory).usageGiven(fromPbj(op), sigValueObj, null);
+                return new TokenUpdateResourceUsage(txnEstimateFactory).usageGiven(fromPbj(body), sigValueObj, token);
             } catch (InvalidTxBodyException e) {
                 throw new HandleException(INVALID_TRANSACTION_BODY);
             }
