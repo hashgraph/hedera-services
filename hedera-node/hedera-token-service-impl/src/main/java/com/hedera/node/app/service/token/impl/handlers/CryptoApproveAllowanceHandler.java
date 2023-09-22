@@ -16,7 +16,16 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_ALLOWANCES;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_DELEGATING_SPENDER;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
+import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.CRYPTO_ALLOWANCE_SIZE;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.LONG_SIZE;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.NFT_ALLOWANCE_SIZE;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.TOKEN_ALLOWANCE_SIZE;
 import static com.hedera.node.app.service.token.impl.validators.AllowanceValidator.isValidOwner;
 import static com.hedera.node.app.service.token.impl.validators.AllowanceValidator.validateAllowanceLimit;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -26,12 +35,14 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
 import com.hedera.hapi.node.state.token.AccountCryptoAllowance;
 import com.hedera.hapi.node.state.token.AccountFungibleTokenAllowance;
 import com.hedera.hapi.node.token.CryptoAllowance;
+import com.hedera.hapi.node.token.CryptoApproveAllowanceTransactionBody;
 import com.hedera.hapi.node.token.NftAllowance;
 import com.hedera.hapi.node.token.TokenAllowance;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -40,7 +51,13 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.validators.ApproveAllowanceValidator;
-import com.hedera.node.app.spi.workflows.*;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.HederaConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -90,26 +107,32 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
         var failureStatus = INVALID_ALLOWANCE_OWNER_ID;
 
         for (final var allowance : op.cryptoAllowancesOrElse(emptyList())) {
-            context.requireKeyOrThrow(allowance.ownerOrElse(AccountID.DEFAULT), failureStatus);
+            if (allowance.hasOwner()) {
+                context.requireKeyOrThrow(allowance.ownerOrThrow(), failureStatus);
+            }
         }
         for (final var allowance : op.tokenAllowancesOrElse(emptyList())) {
-            context.requireKeyOrThrow(allowance.ownerOrElse(AccountID.DEFAULT), failureStatus);
+            if (allowance.hasOwner()) {
+                context.requireKeyOrThrow(allowance.ownerOrThrow(), failureStatus);
+            }
         }
         for (final var allowance : op.nftAllowancesOrElse(emptyList())) {
-            final var ownerId = allowance.ownerOrElse(AccountID.DEFAULT);
-            // If a spender who is granted approveForAll from owner and is granting
-            // allowance for a serial to another spender, need signature from the approveForAll
-            // spender
-            var operatorId = allowance.delegatingSpenderOrElse(ownerId);
-            // If approveForAll is set to true, need signature from owner
-            // since only the owner can grant approveForAll
-            if (allowance.hasApprovedForAll() && allowance.approvedForAllOrThrow()) {
-                operatorId = ownerId;
+            if (allowance.hasOwner()) {
+                final var ownerId = allowance.ownerOrThrow();
+                // If a spender who is granted approveForAll from owner and is granting
+                // allowance for a serial to another spender, need signature from the approveForAll
+                // spender
+                var operatorId = allowance.delegatingSpenderOrElse(ownerId);
+                // If approveForAll is set to true, need signature from owner
+                // since only the owner can grant approveForAll
+                if (allowance.hasApprovedForAll() && allowance.approvedForAllOrThrow()) {
+                    operatorId = ownerId;
+                }
+                if (operatorId != ownerId) {
+                    failureStatus = INVALID_DELEGATING_SPENDER;
+                }
+                context.requireKeyOrThrow(operatorId, failureStatus);
             }
-            if (operatorId != ownerId) {
-                failureStatus = INVALID_DELEGATING_SPENDER;
-            }
-            context.requireKeyOrThrow(operatorId, failureStatus);
         }
     }
 
@@ -464,5 +487,104 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
             validateTrue(ownerAccount != null, INVALID_ALLOWANCE_OWNER_ID);
             return ownerAccount;
         }
+    }
+
+    @NonNull
+    @Override
+    public Fees calculateFees(@NonNull final FeeContext feeContext) {
+        final var body = feeContext.body();
+        final var op = body.cryptoApproveAllowanceOrThrow();
+        final var accountStore = feeContext.readableStore(ReadableAccountStore.class);
+
+        final var txnValidStart =
+                body.transactionIDOrThrow().transactionValidStartOrThrow().seconds();
+        final var payerId = body.transactionIDOrThrow().accountIDOrThrow();
+        final var account = accountStore.getAccountById(payerId);
+
+        final var currentExpiry = account == null ? txnValidStart : account.expirationSecond();
+        final long lifeTime = ESTIMATOR_UTILS.relativeLifetime(txnValidStart, currentExpiry);
+        // If the value is being adjusted instead of inserting a new entry , the fee charged will be
+        // slightly less than the base price
+        final var adjustedBytes = getNewBytes(body.cryptoApproveAllowanceOrThrow(), account);
+        return feeContext
+                .feeCalculator(SubType.DEFAULT)
+                .addBytesPerTransaction(bytesUsedInTxn(op))
+                .addRamByteSeconds(adjustedBytes * lifeTime)
+                .calculate();
+    }
+
+    private int bytesUsedInTxn(final CryptoApproveAllowanceTransactionBody op) {
+        return op.cryptoAllowancesOrElse(emptyList()).size() * CRYPTO_ALLOWANCE_SIZE
+                + op.tokenAllowancesOrElse(emptyList()).size() * TOKEN_ALLOWANCE_SIZE
+                + op.nftAllowancesOrElse(emptyList()).size() * NFT_ALLOWANCE_SIZE
+                + countSerials(op.nftAllowancesOrElse(emptyList())) * LONG_SIZE;
+    }
+
+    private long getNewBytes(final CryptoApproveAllowanceTransactionBody op, final Account account) {
+        final long newCryptoKeys = getChangedCryptoKeys(
+                op.cryptoAllowancesOrElse(emptyList()),
+                account == null ? emptyList() : account.cryptoAllowancesOrElse(emptyList()));
+        final long newTokenKeys = getChangedTokenKeys(
+                op.tokenAllowancesOrElse(emptyList()),
+                account == null ? emptyList() : account.tokenAllowancesOrElse(emptyList()));
+        final long newApproveForAllNfts = getChangedNftKeys(
+                op.nftAllowancesOrElse(emptyList()),
+                account == null ? emptyList() : account.approveForAllNftAllowancesOrElse(emptyList()));
+
+        return newCryptoKeys * CRYPTO_ALLOWANCE_SIZE
+                + newTokenKeys * TOKEN_ALLOWANCE_SIZE
+                + newApproveForAllNfts * NFT_ALLOWANCE_SIZE;
+    }
+
+    private int getChangedCryptoKeys(
+            final List<CryptoAllowance> newAllowances, final List<AccountCryptoAllowance> existingAllowances) {
+        int counter = 0;
+        for (var key : newAllowances) {
+            for (int i = 0; i < existingAllowances.size(); i++) {
+                if (existingAllowances.get(i).spenderId().equals(key.spender())) {
+                    break;
+                }
+                counter++;
+            }
+        }
+        return counter;
+    }
+
+    private int getChangedTokenKeys(
+            final List<TokenAllowance> newAllowances, final List<AccountFungibleTokenAllowance> existingAllowances) {
+        int counter = 0;
+        for (final var key : newAllowances) {
+            for (final var existingAllowance : existingAllowances) {
+                if (existingAllowance.spenderId().equals(key.spender())
+                        && existingAllowance.tokenId().equals(key.tokenId())) {
+                    break;
+                }
+                counter++;
+            }
+        }
+        return counter;
+    }
+
+    private int getChangedNftKeys(
+            final List<NftAllowance> newAllowances, final List<AccountApprovalForAllAllowance> existingAllowances) {
+        int counter = 0;
+        for (final var key : newAllowances) {
+            for (final var existingAllowance : existingAllowances) {
+                if (existingAllowance.spenderId().equals(key.spender())
+                        && existingAllowance.tokenId().equals(key.tokenId())) {
+                    break;
+                }
+                counter++;
+            }
+        }
+        return counter;
+    }
+
+    private int countSerials(final List<NftAllowance> nftAllowancesList) {
+        int totalSerials = 0;
+        for (var allowance : nftAllowancesList) {
+            totalSerials += allowance.serialNumbers().size();
+        }
+        return totalSerials;
     }
 }
