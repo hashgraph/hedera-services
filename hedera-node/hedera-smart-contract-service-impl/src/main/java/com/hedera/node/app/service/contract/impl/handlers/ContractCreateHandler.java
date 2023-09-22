@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.throwIfUnsuccessful;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -58,8 +59,8 @@ public class ContractCreateHandler implements TransactionHandler {
         // Assemble the appropriate top-level record for the result
         context.recordBuilder(ContractCreateRecordBuilder.class)
                 .contractCreateResult(outcome.result())
-                .contractID(outcome.recipientIdIfCreated())
-                .status(outcome.status());
+                .contractID(outcome.recipientIdIfCreated());
+        throwIfUnsuccessful(outcome.status());
     }
 
     @Override
