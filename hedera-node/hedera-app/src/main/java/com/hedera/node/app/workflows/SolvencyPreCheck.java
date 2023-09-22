@@ -22,9 +22,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALA
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
-import static com.hedera.node.app.spi.workflows.InsufficientBalanceType.NETWORK_FEE_NOT_COVERED;
-import static com.hedera.node.app.spi.workflows.InsufficientBalanceType.OTHER_COSTS_NOT_COVERED;
-import static com.hedera.node.app.spi.workflows.InsufficientBalanceType.SERVICE_FEES_NOT_COVERED;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;

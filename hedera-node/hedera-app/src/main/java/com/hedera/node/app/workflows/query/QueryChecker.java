@@ -24,7 +24,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
-import static com.hedera.node.app.spi.workflows.InsufficientBalanceType.OTHER_COSTS_NOT_COVERED;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -147,14 +146,14 @@ public class QueryChecker {
                 if (amount < 0 && account.tinybarBalance() < -amount) {
                     // FUTURE: Expiry should probably be checked earlier
                     expiryValidation.checkAccountExpiry(account);
-                    throw new InsufficientBalanceException(INSUFFICIENT_PAYER_BALANCE, fee, OTHER_COSTS_NOT_COVERED);
+                    throw new InsufficientBalanceException(INSUFFICIENT_PAYER_BALANCE, fee);
                 }
 
                 // Make sure the node receives enough
                 if (amount >= 0 && nodeAccountID.equals(transfer.accountIDOrThrow())) {
                     nodeReceivesSome = true;
                     if (amount < fee) {
-                        throw new InsufficientBalanceException(INSUFFICIENT_TX_FEE, fee, OTHER_COSTS_NOT_COVERED);
+                        throw new InsufficientBalanceException(INSUFFICIENT_TX_FEE, fee);
                     }
                 }
             }

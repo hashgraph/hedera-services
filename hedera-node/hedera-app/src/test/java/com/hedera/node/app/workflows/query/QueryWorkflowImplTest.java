@@ -27,7 +27,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_TRANSACTION_NO
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_ONLY;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
-import static com.hedera.node.app.spi.workflows.InsufficientBalanceType.OTHER_COSTS_NOT_COVERED;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -602,7 +601,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         // given
         given(handler.computeFees(any(QueryContext.class))).willReturn(new Fees(100L, 0L, 100L));
         when(handler.requiresNodePayment(ANSWER_ONLY)).thenReturn(true);
-        doThrow(new InsufficientBalanceException(INSUFFICIENT_TX_FEE, 12345L, OTHER_COSTS_NOT_COVERED))
+        doThrow(new InsufficientBalanceException(INSUFFICIENT_TX_FEE, 12345L))
                 .when(queryChecker)
                 .validateAccountBalances(any(), eq(transactionInfo), eq(200L));
         final var responseBuffer = newEmptyBuffer();

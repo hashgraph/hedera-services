@@ -26,7 +26,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public class InsufficientBalanceException extends PreCheckException {
 
     private final long estimatedFee;
-    private final InsufficientBalanceType insufficientBalanceType;
 
     /**
      * Constructor of {@code InsufficientBalanceException}
@@ -35,13 +34,9 @@ public class InsufficientBalanceException extends PreCheckException {
      * @param estimatedFee the estimated fee
      * @throws NullPointerException if {@code responseCode} is {@code null}
      */
-    public InsufficientBalanceException(
-            @NonNull final ResponseCodeEnum responseCode,
-            final long estimatedFee,
-            @NonNull final InsufficientBalanceType insufficientBalanceType) {
+    public InsufficientBalanceException(@NonNull final ResponseCodeEnum responseCode, final long estimatedFee) {
         super(responseCode);
         this.estimatedFee = estimatedFee;
-        this.insufficientBalanceType = insufficientBalanceType;
     }
 
     /**
@@ -51,14 +46,5 @@ public class InsufficientBalanceException extends PreCheckException {
      */
     public long getEstimatedFee() {
         return estimatedFee;
-    }
-
-    /**
-     * Returns the {@link InsufficientBalanceType}
-     *
-     * @return the {@link InsufficientBalanceType}
-     */
-    public InsufficientBalanceType getInsufficientBalanceType() {
-        return insufficientBalanceType;
     }
 }
