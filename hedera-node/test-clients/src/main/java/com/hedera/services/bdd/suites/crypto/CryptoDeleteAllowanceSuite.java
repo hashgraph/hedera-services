@@ -46,6 +46,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FUNGIBLE_TOKEN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -147,6 +148,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                         getTokenNftInfo(nft, 3L).hasNoSpender());
     }
 
+    @HapiTest
     private HapiSpec duplicateEntriesDoesntThrow() {
         final String owner = "owner";
         final String spender = "spender";
@@ -367,6 +369,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                         validateChargedUsdWithin("twoDeleteNft", 0.08124, 0.01));
     }
 
+    @HapiTest
     private HapiSpec succeedsWhenTokenPausedFrozenKycRevoked() {
         final String owner = "owner";
         final String spender = "spender";
@@ -463,6 +466,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                                         "hedera.allowances.maxAccountLimit", "100")));
     }
 
+    @HapiTest
     private HapiSpec exceedsTransactionLimit() {
         final String owner = "owner";
         final String spender = "spender";
@@ -505,28 +509,30 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                                         List.of(
                                                 ByteString.copyFromUtf8("a"),
                                                 ByteString.copyFromUtf8("b"),
-                                                ByteString.copyFromUtf8("c")))
+                                                ByteString.copyFromUtf8("c"),
+                                                ByteString.copyFromUtf8("d"),
+                                                ByteString.copyFromUtf8("e")))
                                 .via("nftTokenMint"),
                         mintToken(token, 500L).via("tokenMint"),
-                        cryptoTransfer(movingUnique(nft, 1L, 2L, 3L).between(TOKEN_TREASURY, owner)))
+                        cryptoTransfer(movingUnique(nft, 1L, 2L, 3L, 4L, 5L).between(TOKEN_TREASURY, owner)))
                 .when(
                         cryptoApproveAllowance()
                                 .payingWith(owner)
                                 .addNftAllowance(owner, nft, spender, false, List.of(1L, 2L)),
                         cryptoDeleteAllowance()
                                 .payingWith(owner)
-                                .addNftDeleteAllowance(owner, nft, List.of(1L, 2L, 3L, 3L, 3L))
-                                .hasPrecheck(MAX_ALLOWANCES_EXCEEDED),
+                                .addNftDeleteAllowance(owner, nft, List.of(1L, 1L, 1L, 1L, 1L))
+                                .hasPrecheck(OK),
                         cryptoDeleteAllowance()
                                 .payingWith(owner)
-                                .addNftDeleteAllowance(owner, nft, List.of(1L, 1L, 1L, 1L, 1L))
+                                .addNftDeleteAllowance(owner, nft, List.of(1L, 2L, 3L, 4L, 5L))
                                 .hasPrecheck(MAX_ALLOWANCES_EXCEEDED),
                         cryptoDeleteAllowance()
                                 .payingWith(owner)
                                 .addNftDeleteAllowance(owner, nft, List.of(1L))
                                 .addNftDeleteAllowance(owner, nft, List.of(2L))
                                 .addNftDeleteAllowance(owner, nft, List.of(3L))
-                                .addNftDeleteAllowance(owner, nft, List.of(1L))
+                                .addNftDeleteAllowance(owner, nft, List.of(4L))
                                 .addNftDeleteAllowance(owner, nft, List.of(1L))
                                 .hasPrecheck(MAX_ALLOWANCES_EXCEEDED))
                 .then(
@@ -593,6 +599,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
     private HapiSpec invalidTokenTypeFailsInDeleteAllowance() {
         final String owner = "owner";
         final String spender = "spender";
@@ -630,6 +637,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
     private HapiSpec tokenNotAssociatedToAccountFailsOnDeleteAllowance() {
         final String owner = "owner";
         final String spender = "spender";
@@ -677,6 +685,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                                 .tokenAllowancesCount(0)));
     }
 
+    @HapiTest
     private HapiSpec canDeleteMultipleOwners() {
         final String owner1 = "owner1";
         final String owner2 = "owner2";
