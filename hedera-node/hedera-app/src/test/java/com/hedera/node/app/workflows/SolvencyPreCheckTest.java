@@ -65,7 +65,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class SolvencyPreCheckTest extends AppTestBase {
 
-    private static final long FEE = 1000L;
+    private static final Fees FEE = new Fees(1000L, 0, 0);
 
     private static final Instant START = Instant.parse("2020-02-02T20:20:02.02Z");
 
@@ -175,8 +175,9 @@ class SolvencyPreCheckTest extends AppTestBase {
         @Test
         void testCheckSolvencyWithIllegalParameters() {
             // given
-            final var txInfo = createTransactionInfo(FEE, START, CONSENSUS_CREATE_TOPIC, null);
-            final var payer = ALICE.account().copyBuilder().tinybarBalance(FEE).build();
+            final var txInfo = createTransactionInfo(FEE.totalFee(), START, CONSENSUS_CREATE_TOPIC, null);
+            final var payer =
+                    ALICE.account().copyBuilder().tinybarBalance(FEE.totalFee()).build();
 
             // then
             assertThatThrownBy(() -> subject.checkSolvency(null, payer, new Fees(FEE, 0, 0)))
@@ -188,8 +189,9 @@ class SolvencyPreCheckTest extends AppTestBase {
         @Test
         void testSimpleHappyPath() {
             // given
-            final var txInfo = createTransactionInfo(FEE, START, CONSENSUS_CREATE_TOPIC, null);
-            final var payer = ALICE.account().copyBuilder().tinybarBalance(FEE).build();
+            final var txInfo = createTransactionInfo(FEE.totalFee(), START, CONSENSUS_CREATE_TOPIC, null);
+            final var payer =
+                    ALICE.account().copyBuilder().tinybarBalance(FEE.totalFee()).build();
 
             // then
             assertThatCode(() -> subject.checkSolvency(txInfo, payer, new Fees(FEE, 0, 0)))
@@ -199,22 +201,25 @@ class SolvencyPreCheckTest extends AppTestBase {
         @Test
         void testInsufficientTransactionFeeFails() {
             // given
-            final var txInfo = createTransactionInfo(FEE - 1, START, CONSENSUS_CREATE_TOPIC, null);
-            final var payer = ALICE.account().copyBuilder().tinybarBalance(FEE).build();
+            final var txInfo = createTransactionInfo(FEE.totalFee() - 1, START, CONSENSUS_CREATE_TOPIC, null);
+            final var payer =
+                    ALICE.account().copyBuilder().tinybarBalance(FEE.totalFee()).build();
 
             // then
             assertThatThrownBy(() -> subject.checkSolvency(txInfo, payer, new Fees(FEE, 0, 0)))
                     .isInstanceOf(InsufficientBalanceException.class)
                     .has(responseCode(ResponseCodeEnum.INSUFFICIENT_TX_FEE))
-                    .has(estimatedFee(FEE));
+                    .has(estimatedFee(FEE.totalFee()));
         }
 
         @Test
         void testPrivilegedTransactionSucceeds() {
             // given
-            final var txInfo = createTransactionInfo(FEE - 1, START, CONSENSUS_CREATE_TOPIC, null);
-            final var payer =
-                    ALICE.account().copyBuilder().tinybarBalance(FEE / 2).build();
+            final var txInfo = createTransactionInfo(FEE.totalFee() - 1, START, CONSENSUS_CREATE_TOPIC, null);
+            final var payer = ALICE.account()
+                    .copyBuilder()
+                    .tinybarBalance(FEE.totalFee() / 2)
+                    .build();
             when(authorizer.hasWaivedFees(ALICE.accountID(), CONSENSUS_CREATE_TOPIC, txInfo.txBody()))
                     .thenReturn(true);
 
@@ -226,28 +231,35 @@ class SolvencyPreCheckTest extends AppTestBase {
         @Test
         void testInsufficientPayerBalanceFails() {
             // given
-            final var txInfo = createTransactionInfo(FEE, START, CONSENSUS_CREATE_TOPIC, null);
-            final var payer =
-                    ALICE.account().copyBuilder().tinybarBalance(FEE - 1).build();
+            final var txInfo = createTransactionInfo(FEE.totalFee(), START, CONSENSUS_CREATE_TOPIC, null);
+            final var payer = ALICE.account()
+                    .copyBuilder()
+                    .tinybarBalance(FEE.totalFee() - 1)
+                    .build();
 
             // then
             assertThatThrownBy(() -> subject.checkSolvency(txInfo, payer, new Fees(FEE, 0, 0)))
                     .isInstanceOf(InsufficientBalanceException.class)
                     .has(responseCode(ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE))
-                    .has(estimatedFee(FEE));
+                    .has(estimatedFee(FEE.totalFee()));
         }
 
         @Test
         void testInsufficientBalanceOfExpiredAccountFails() throws PreCheckException {
             // given
-            final var txInfo = createTransactionInfo(FEE, START, CONSENSUS_CREATE_TOPIC, null);
-            final var payer = ALICE.account().copyBuilder().tinybarBalance(0L).build();
+            final var txInfo = createTransactionInfo(
+                    0,
+                    START,
+                    CRYPTO_CREATE,
+                    TransactionBody.newBuilder()
+                            .cryptoCreateAccount(
+                                    CryptoCreateTransactionBody.newBuilder().initialBalance(123L)));
+            final var payer = ALICE.account().copyBuilder().tinybarBalance(0).build();
             doThrow(new PreCheckException(ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL))
                     .when(expiryValidation)
                     .checkAccountExpiry(payer);
-
             // then
-            assertThatThrownBy(() -> subject.checkSolvency(txInfo, payer, new Fees(FEE, 0, 0)))
+            assertThatThrownBy(() -> subject.checkSolvency(txInfo, payer, new Fees(0, 0, 0)))
                     .isInstanceOf(PreCheckException.class)
                     .has(responseCode(ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
         }
@@ -262,9 +274,11 @@ class SolvencyPreCheckTest extends AppTestBase {
             final var builder = TransactionBody.newBuilder()
                     .cryptoCreateAccount(
                             CryptoCreateTransactionBody.newBuilder().initialBalance(1L));
-            final var txInfo = createTransactionInfo(FEE, START, CRYPTO_CREATE, builder);
-            final var payer =
-                    ALICE.account().copyBuilder().tinybarBalance(FEE + 1L).build();
+            final var txInfo = createTransactionInfo(FEE.totalFee(), START, CRYPTO_CREATE, builder);
+            final var payer = ALICE.account()
+                    .copyBuilder()
+                    .tinybarBalance(FEE.totalFee() + 1L)
+                    .build();
 
             // then
             assertThatCode(() -> subject.checkSolvency(txInfo, payer, new Fees(FEE, 0, 0)))
@@ -277,14 +291,15 @@ class SolvencyPreCheckTest extends AppTestBase {
             final var builder = TransactionBody.newBuilder()
                     .cryptoCreateAccount(
                             CryptoCreateTransactionBody.newBuilder().initialBalance(1L));
-            final var txInfo = createTransactionInfo(FEE, START, CRYPTO_CREATE, builder);
-            final var payer = ALICE.account().copyBuilder().tinybarBalance(FEE).build();
+            final var txInfo = createTransactionInfo(FEE.totalFee(), START, CRYPTO_CREATE, builder);
+            final var payer =
+                    ALICE.account().copyBuilder().tinybarBalance(FEE.totalFee()).build();
 
             // then
             assertThatThrownBy(() -> subject.checkSolvency(txInfo, payer, new Fees(FEE, 0, 0)))
                     .isInstanceOf(InsufficientBalanceException.class)
                     .has(responseCode(ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE))
-                    .has(estimatedFee(FEE));
+                    .has(estimatedFee(FEE.totalFee()));
         }
     }
 
@@ -295,12 +310,14 @@ class SolvencyPreCheckTest extends AppTestBase {
         @Test
         void testCryptoTransferSucceeds() {
             // given
-            final var payer =
-                    ALICE.account().copyBuilder().tinybarBalance(FEE + 1).build();
+            final var payer = ALICE.account()
+                    .copyBuilder()
+                    .tinybarBalance(FEE.totalFee() + 1)
+                    .build();
             final var transferList = TransferList.newBuilder().accountAmounts(send(ALICE.accountID(), 1L));
             final var builder = TransactionBody.newBuilder()
                     .cryptoTransfer(CryptoTransferTransactionBody.newBuilder().transfers(transferList));
-            final var txInfo = createTransactionInfo(FEE, START, CRYPTO_TRANSFER, builder);
+            final var txInfo = createTransactionInfo(FEE.totalFee(), START, CRYPTO_TRANSFER, builder);
 
             // then
             assertThatCode(() -> subject.checkSolvency(txInfo, payer, new Fees(FEE, 0, 0)))
@@ -310,27 +327,29 @@ class SolvencyPreCheckTest extends AppTestBase {
         @Test
         void testCryptoTransferWithInsufficientBalanceFails() {
             // given
-            final var payer = ALICE.account().copyBuilder().tinybarBalance(FEE).build();
+            final var payer =
+                    ALICE.account().copyBuilder().tinybarBalance(FEE.totalFee()).build();
             final var transferList = TransferList.newBuilder().accountAmounts(send(ALICE.accountID(), 1L));
             final var builder = TransactionBody.newBuilder()
                     .cryptoTransfer(CryptoTransferTransactionBody.newBuilder().transfers(transferList));
-            final var txInfo = createTransactionInfo(FEE, START, CRYPTO_TRANSFER, builder);
+            final var txInfo = createTransactionInfo(FEE.totalFee(), START, CRYPTO_TRANSFER, builder);
 
             // then
             assertThatThrownBy(() -> subject.checkSolvency(txInfo, payer, new Fees(FEE, 0, 0)))
                     .isInstanceOf(InsufficientBalanceException.class)
                     .has(responseCode(ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE))
-                    .has(estimatedFee(FEE));
+                    .has(estimatedFee(FEE.totalFee()));
         }
 
         @Test
         void testCryptoTransferWithoutPayerEntrySucceeds() {
             // given
-            final var payer = ALICE.account().copyBuilder().tinybarBalance(FEE).build();
+            final var payer =
+                    ALICE.account().copyBuilder().tinybarBalance(FEE.totalFee()).build();
             final var transferList = TransferList.newBuilder().accountAmounts(send(BOB.accountID(), 1000L));
             final var builder = TransactionBody.newBuilder()
                     .cryptoTransfer(CryptoTransferTransactionBody.newBuilder().transfers(transferList));
-            final var txInfo = createTransactionInfo(FEE, START, CRYPTO_TRANSFER, builder);
+            final var txInfo = createTransactionInfo(FEE.totalFee(), START, CRYPTO_TRANSFER, builder);
 
             // then
             assertThatCode(() -> subject.checkSolvency(txInfo, payer, new Fees(FEE, 0, 0)))
@@ -340,13 +359,15 @@ class SolvencyPreCheckTest extends AppTestBase {
         @Test
         void testCryptoTransferWithMultipleEntriesSucceeds() {
             // given
-            final var payer =
-                    ALICE.account().copyBuilder().tinybarBalance(FEE + 1L).build();
+            final var payer = ALICE.account()
+                    .copyBuilder()
+                    .tinybarBalance(FEE.totalFee() + 1L)
+                    .build();
             final var transferList =
                     TransferList.newBuilder().accountAmounts(send(ALICE.accountID(), 1L), send(BOB.accountID(), 1000L));
             final var builder = TransactionBody.newBuilder()
                     .cryptoTransfer(CryptoTransferTransactionBody.newBuilder().transfers(transferList));
-            final var txInfo = createTransactionInfo(FEE, START, CRYPTO_TRANSFER, builder);
+            final var txInfo = createTransactionInfo(FEE.totalFee(), START, CRYPTO_TRANSFER, builder);
 
             // then
             assertThatCode(() -> subject.checkSolvency(txInfo, payer, new Fees(FEE, 0, 0)))
@@ -356,18 +377,19 @@ class SolvencyPreCheckTest extends AppTestBase {
         @Test
         void testCryptoTransferWithMultipleEntriesFails() {
             // given
-            final var payer = ALICE.account().copyBuilder().tinybarBalance(FEE).build();
+            final var payer =
+                    ALICE.account().copyBuilder().tinybarBalance(FEE.totalFee()).build();
             final var transferList =
                     TransferList.newBuilder().accountAmounts(send(ALICE.accountID(), 1L), send(BOB.accountID(), 1000L));
             final var builder = TransactionBody.newBuilder()
                     .cryptoTransfer(CryptoTransferTransactionBody.newBuilder().transfers(transferList));
-            final var txInfo = createTransactionInfo(FEE, START, CRYPTO_TRANSFER, builder);
+            final var txInfo = createTransactionInfo(FEE.totalFee(), START, CRYPTO_TRANSFER, builder);
 
             // then
             assertThatThrownBy(() -> subject.checkSolvency(txInfo, payer, new Fees(FEE, 0, 0)))
                     .isInstanceOf(InsufficientBalanceException.class)
                     .has(responseCode(ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE))
-                    .has(estimatedFee(FEE));
+                    .has(estimatedFee(FEE.totalFee()));
         }
     }
 
@@ -391,9 +413,11 @@ class SolvencyPreCheckTest extends AppTestBase {
             // given
             final var builder = TransactionBody.newBuilder()
                     .ethereumTransaction(EthereumTransactionBody.newBuilder().maxGasAllowance(1L));
-            final var txInfo = createTransactionInfo(FEE, START, ETHEREUM_TRANSACTION, builder);
-            final var payer =
-                    ALICE.account().copyBuilder().tinybarBalance(FEE + 1L).build();
+            final var txInfo = createTransactionInfo(FEE.totalFee(), START, ETHEREUM_TRANSACTION, builder);
+            final var payer = ALICE.account()
+                    .copyBuilder()
+                    .tinybarBalance(FEE.totalFee() + 1L)
+                    .build();
 
             // then
             assertThatCode(() -> subject.checkSolvency(txInfo, payer, new Fees(FEE, 0, 0)))
@@ -405,14 +429,15 @@ class SolvencyPreCheckTest extends AppTestBase {
             // given
             final var builder = TransactionBody.newBuilder()
                     .ethereumTransaction(EthereumTransactionBody.newBuilder().maxGasAllowance(1L));
-            final var txInfo = createTransactionInfo(FEE, START, ETHEREUM_TRANSACTION, builder);
-            final var payer = ALICE.account().copyBuilder().tinybarBalance(FEE).build();
+            final var txInfo = createTransactionInfo(FEE.totalFee(), START, ETHEREUM_TRANSACTION, builder);
+            final var payer =
+                    ALICE.account().copyBuilder().tinybarBalance(FEE.totalFee()).build();
 
             // then
             assertThatThrownBy(() -> subject.checkSolvency(txInfo, payer, new Fees(FEE, 0, 0)))
                     .isInstanceOf(InsufficientBalanceException.class)
                     .has(responseCode(ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE))
-                    .has(estimatedFee(FEE));
+                    .has(estimatedFee(FEE.totalFee()));
         }
     }
 

@@ -288,7 +288,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
         final var payerAccount = lookupAccount("Payer", payerId);
         final var amountToCharge = Math.min(amount, payerAccount.tinybarBalance());
         chargePayer(payerAccount, amountToCharge);
-        rb.transactionFee(rb.transactionFee() + amountToCharge);
+        rb.transactionFee(amountToCharge);
         distributeToNetworkFundingAccounts(amountToCharge, rb);
     }
 
@@ -308,23 +308,23 @@ public class TokenServiceApiImpl implements TokenServiceApi {
         // no conceivable way that these accounts *should* be null at this point.
         final var payerAccount = lookupAccount("Payer", payerId);
         if (payerAccount.tinybarBalance() < fees.networkFee()) {
-            throw new IllegalArgumentException("Payer " + payerId
-                    + " (balance=" + payerAccount.tinybarBalance() + ") cannot afford network fee of "
-                    + fees.networkFee() + ", which should have been a due diligence failure");
+            throw new IllegalArgumentException(
+                    "Payer %s (balance=%d) cannot afford network fee of %d, which should have been a due diligence failure"
+                            .formatted(payerId, payerAccount.tinybarBalance(), fees.networkFee()));
         }
         if (fees.serviceFee() > 0 && payerAccount.tinybarBalance() < fees.totalFee()) {
-            throw new IllegalArgumentException("Payer " + payerId
-                    + " (balance=" + payerAccount.tinybarBalance() + ") cannot afford total fee of "
-                    + fees.totalFee() + ", which means service component should have been zeroed out");
+            throw new IllegalArgumentException(
+                    "Payer %s (balance=%d) cannot afford total fee of %d, which means service component should have been zeroed out"
+                            .formatted(payerId, payerAccount.tinybarBalance(), fees.totalFee()));
         }
         // Prioritize network fee over node fee
-        final var chargeableNodeFee = Math.min(fees.nodeFee(), payerAccount.tinybarBalance() - fees.networkFee());
-        final var amountToCharge = fees.totalWithoutNodeFee() + chargeableNodeFee;
-        final var amountToDistributeToFundingAccounts = amountToCharge - chargeableNodeFee;
+        final long chargeableNodeFee = Math.min(fees.nodeFee(), payerAccount.tinybarBalance() - fees.networkFee());
+        final long amountToCharge = fees.totalWithoutNodeFee() + chargeableNodeFee;
+        final long amountToDistributeToFundingAccounts = amountToCharge - chargeableNodeFee;
 
         chargePayer(payerAccount, amountToCharge);
         // Record the amount charged into the record builder
-        rb.transactionFee(rb.transactionFee() + amountToCharge);
+        rb.transactionFee(amountToCharge);
         distributeToNetworkFundingAccounts(amountToDistributeToFundingAccounts, rb);
 
         if (chargeableNodeFee > 0) {
@@ -350,7 +350,11 @@ public class TokenServiceApiImpl implements TokenServiceApi {
      * @throws IllegalStateException if the payer account doesn't exist
      */
     private void chargePayer(@NonNull final Account payerAccount, final long amount) {
-        final var currentBalance = payerAccount.tinybarBalance();
+        if (amount > payerAccount.tinybarBalance()) {
+            throw new IllegalArgumentException("Payer %s (balance=%d) cannot afford fee of %d"
+                    .formatted(payerAccount, payerAccount.tinybarBalance(), amount));
+        }
+        final long currentBalance = payerAccount.tinybarBalance();
         accountStore.put(payerAccount
                 .copyBuilder()
                 .tinybarBalance(currentBalance - amount)
@@ -510,15 +514,15 @@ public class TokenServiceApiImpl implements TokenServiceApi {
     private void distributeToNetworkFundingAccounts(final long amount, @NonNull final FeeRecordBuilder rb) {
         // We may have a rounding error, so we will first remove the node and staking rewards from the total, and then
         // whatever is left over goes to the funding account.
-        var balance = amount;
+        long balance = amount;
 
         // We only pay node and staking rewards if the feature is enabled
         if (stakingConfig.isEnabled()) {
-            final var nodeReward = (stakingConfig.feesNodeRewardPercentage() * amount) / 100;
+            final long nodeReward = (stakingConfig.feesNodeRewardPercentage() * amount) / 100;
             balance -= nodeReward;
             payNodeRewardAccount(nodeReward);
 
-            final var stakingReward = (stakingConfig.feesStakingRewardPercentage() * amount) / 100;
+            final long stakingReward = (stakingConfig.feesStakingRewardPercentage() * amount) / 100;
             balance -= stakingReward;
             payStakingRewardAccount(stakingReward);
         }

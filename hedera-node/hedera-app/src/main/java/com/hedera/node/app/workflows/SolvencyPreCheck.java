@@ -40,6 +40,9 @@ import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
+import com.hedera.node.app.spi.workflows.InsufficientNetworkFeeException;
+import com.hedera.node.app.spi.workflows.InsufficientNonFeeDebitsException;
+import com.hedera.node.app.spi.workflows.InsufficientServiceFeeException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.validation.ExpiryValidation;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
@@ -124,11 +127,17 @@ public class SolvencyPreCheck {
         final var totalFee = fees.totalFee();
         final var availableBalance = account.tinybarBalance();
         final var offeredFee = txInfo.txBody().transactionFee();
-        if (offeredFee < fees.networkFee() || availableBalance < fees.networkFee()) {
-            throw new InsufficientBalanceException(INSUFFICIENT_TX_FEE, totalFee, NETWORK_FEE_NOT_COVERED);
+        if (offeredFee < fees.networkFee()) {
+            throw new InsufficientNetworkFeeException(INSUFFICIENT_TX_FEE, totalFee);
         }
-        if (offeredFee < fees.totalFee()) {
-            throw new InsufficientBalanceException(INSUFFICIENT_TX_FEE, fees.totalFee(), SERVICE_FEES_NOT_COVERED);
+        if (availableBalance < fees.networkFee()) {
+            throw new InsufficientNetworkFeeException(INSUFFICIENT_PAYER_BALANCE, totalFee);
+        }
+        if (offeredFee < totalFee) {
+            throw new InsufficientServiceFeeException(INSUFFICIENT_TX_FEE, totalFee);
+        }
+        if (availableBalance < totalFee) {
+            throw new InsufficientServiceFeeException(INSUFFICIENT_PAYER_BALANCE, totalFee);
         }
 
         final long additionalCosts;
@@ -137,13 +146,13 @@ public class SolvencyPreCheck {
             additionalCosts = Math.max(0, estimateAdditionalCosts(txInfo, HapiUtils.asInstant(now)));
         } catch (NullPointerException ex) {
             // One of the required fields was not present
-            throw new InsufficientBalanceException(INVALID_TRANSACTION_BODY, totalFee, OTHER_COSTS_NOT_COVERED);
+            throw new InsufficientBalanceException(INVALID_TRANSACTION_BODY, totalFee);
         }
 
         if (availableBalance < totalFee + additionalCosts) {
             // FUTURE: This should be checked earlier
             expiryValidation.checkAccountExpiry(account);
-            throw new InsufficientBalanceException(INSUFFICIENT_PAYER_BALANCE, totalFee, OTHER_COSTS_NOT_COVERED);
+            throw new InsufficientNonFeeDebitsException(INSUFFICIENT_PAYER_BALANCE, totalFee);
         }
     }
 

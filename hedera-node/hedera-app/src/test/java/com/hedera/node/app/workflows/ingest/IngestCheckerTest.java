@@ -404,7 +404,7 @@ class IngestCheckerTest extends AppTestBase {
         void payerAccountStatusFails(ResponseCodeEnum failureReason)
                 throws PreCheckException, ExecutionException, InterruptedException, TimeoutException {
             givenValidPayerSignature();
-            doThrow(new InsufficientBalanceException(failureReason, 123L, OTHER_COSTS_NOT_COVERED))
+            doThrow(new InsufficientBalanceException(failureReason, 123L))
                     .when(solvencyPreCheck)
                     .checkSolvency(any(), any(), any());
 
