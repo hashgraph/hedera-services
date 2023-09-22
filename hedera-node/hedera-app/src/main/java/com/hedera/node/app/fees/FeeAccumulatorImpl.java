@@ -43,12 +43,18 @@ public class FeeAccumulatorImpl implements FeeAccumulator {
         this.recordBuilder = recordBuilder;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void chargeNetworkFee(@NonNull final AccountID payer, final long networkFee) {
         requireNonNull(payer);
         tokenApi.chargeNetworkFee(payer, networkFee, recordBuilder);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void chargeFees(@NonNull AccountID payer, @NonNull final AccountID nodeAccount, @NonNull Fees fees) {
         requireNonNull(payer);
@@ -57,6 +63,9 @@ public class FeeAccumulatorImpl implements FeeAccumulator {
         tokenApi.chargeFees(payer, nodeAccount, fees, recordBuilder);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void refund(@NonNull AccountID receiver, @NonNull Fees fees) {
         tokenApi.refundFees(receiver, fees, recordBuilder);
