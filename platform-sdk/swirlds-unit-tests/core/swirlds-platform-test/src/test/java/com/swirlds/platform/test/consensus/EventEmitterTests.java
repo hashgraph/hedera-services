@@ -132,13 +132,17 @@ public class EventEmitterTests {
 
         final int numberOfEvents = 1000;
 
+        emitter.setCheckpoint(numberOfEvents);
         emitter.skip(numberOfEvents);
+        emitter.setCheckpoint(numberOfEvents * 2);
         final List<IndexedEvent> events1 = emitter.emitEvents(numberOfEvents);
         assertEquals(numberOfEvents, events1.size());
 
         final EventEmitter<?> emitterCopy = emitter.cleanCopy();
 
+        emitterCopy.setCheckpoint(numberOfEvents);
         emitterCopy.skip(numberOfEvents);
+        emitterCopy.setCheckpoint(numberOfEvents * 2);
         final List<IndexedEvent> events2 = emitterCopy.emitEvents(numberOfEvents);
         assertEquals(numberOfEvents, events2.size());
 
@@ -215,6 +219,8 @@ public class EventEmitterTests {
      */
     public void assertOrderIsDifferent(
             final EventEmitter<?> emitter1, final EventEmitter<?> emitter2, final int numberOfEvents) {
+        emitter1.setCheckpoint(numberOfEvents);
+        emitter2.setCheckpoint(numberOfEvents);
         final List<IndexedEvent> list1 = emitter1.emitEvents(numberOfEvents);
         final List<IndexedEvent> list2 = emitter2.emitEvents(numberOfEvents);
 
@@ -254,7 +260,6 @@ public class EventEmitterTests {
         final int numberOfEvents = 1000;
 
         final ShuffledEventEmitter shuffledEmitter = new ShuffledEventEmitter(generator, 0);
-        shuffledEmitter.setCheckpoint(numberOfEvents);
 
         shuffledEmitterSanityChecks(shuffledEmitter);
 

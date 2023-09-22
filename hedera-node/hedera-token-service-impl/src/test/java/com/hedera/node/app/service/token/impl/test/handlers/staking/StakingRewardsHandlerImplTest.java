@@ -39,6 +39,7 @@ import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHel
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.records.CryptoDeleteRecordBuilder;
 import com.hedera.node.app.service.token.records.FinalizeContext;
+import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
 import com.hedera.node.config.ConfigProvider;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -452,7 +453,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                         .atStartOfDay(ZoneOffset.UTC)
                         .toInstant());
         given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-        given(context.userTransactionRecordBuilder(CryptoDeleteRecordBuilder.class))
+        given(context.userTransactionRecordBuilder(DeleteCapableTransactionRecordBuilder.class))
                 .willReturn(recordBuilder);
         given(recordBuilder.getNumberOfDeletedAccounts()).willReturn(1);
         given(recordBuilder.getDeletedAccountBeneficiaryFor(payerId)).willReturn(ownerId);
@@ -691,7 +692,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                         .atStartOfDay(ZoneOffset.UTC)
                         .toInstant());
         given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-        given(context.userTransactionRecordBuilder(CryptoDeleteRecordBuilder.class))
+        given(context.userTransactionRecordBuilder(DeleteCapableTransactionRecordBuilder.class))
                 .willReturn(recordBuilder);
         given(recordBuilder.getNumberOfDeletedAccounts()).willReturn(1);
         given(recordBuilder.getDeletedAccountBeneficiaryFor(payerId)).willReturn(ownerId);
@@ -740,7 +741,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                         .atStartOfDay(ZoneOffset.UTC)
                         .toInstant());
         given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-        given(context.userTransactionRecordBuilder(CryptoDeleteRecordBuilder.class))
+        given(context.userTransactionRecordBuilder(DeleteCapableTransactionRecordBuilder.class))
                 .willReturn(recordBuilder);
         given(recordBuilder.getNumberOfDeletedAccounts()).willReturn(1);
         given(recordBuilder.getDeletedAccountBeneficiaryFor(payerId)).willReturn(ownerId);
@@ -796,7 +797,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                         .atStartOfDay(ZoneOffset.UTC)
                         .toInstant());
         given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-        given(context.userTransactionRecordBuilder(CryptoDeleteRecordBuilder.class))
+        given(context.userTransactionRecordBuilder(DeleteCapableTransactionRecordBuilder.class))
                 .willReturn(recordBuilder);
 
         given(recordBuilder.getNumberOfDeletedAccounts()).willReturn(2);

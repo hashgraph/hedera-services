@@ -51,7 +51,7 @@ import com.hedera.node.app.signature.SignatureExpander;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.signature.SignatureVerifier;
 import com.hedera.node.app.spi.authorization.Authorizer;
-import com.hedera.node.app.spi.authorization.Authorizer.SystemPrivilege;
+import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -249,7 +249,7 @@ class HandleWorkflowTest extends AppTestBase {
                 .thenReturn(HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE);
         when(authorizer.isAuthorized(eq(ALICE.accountID()), any())).thenReturn(true);
         when(authorizer.hasPrivilegedAuthorization(eq(ALICE.accountID()), any(), any()))
-                .thenReturn(Authorizer.SystemPrivilege.UNNECESSARY);
+                .thenReturn(SystemPrivilege.UNNECESSARY);
 
         workflow = new HandleWorkflow(
                 networkInfo,
