@@ -378,6 +378,7 @@ public final class TokenPauseSpecs extends HapiSuite {
                                 .hasToken(relationshipWith(otherToken).balance(500)));
     }
 
+    @HapiTest
     private HapiSpec cannotChangePauseStatusIfMissingPauseKey() {
         return defaultHapiSpec("CannotChangePauseStatusIfMissingPauseKey")
                 .given(cryptoCreate(TOKEN_TREASURY))

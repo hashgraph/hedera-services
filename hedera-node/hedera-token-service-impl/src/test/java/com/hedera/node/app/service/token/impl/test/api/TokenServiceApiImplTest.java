@@ -30,7 +30,6 @@ import static org.mockito.Mockito.verify;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractNonceInfo;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.fixtures.FakeFeeRecordBuilder;
@@ -45,7 +44,6 @@ import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
@@ -377,6 +375,12 @@ class TokenServiceApiImplTest {
     @Nested
     final class FeeChargingTests {
         // Using non-standard account numbers to tease out any bugs
+        private static final long ORIGINAL_PAYER_BALANCE = 100L;
+        private static final long ALL_FEES = 12;
+        private static final long PAYER_BALANCE_AFTER_ALL_FEES = ORIGINAL_PAYER_BALANCE - ALL_FEES;
+
+        private static final AccountID NODE_ACCOUNT_ID =
+                AccountID.newBuilder().accountNum(666).build();
         private static final AccountID FUNDING_ACCOUNT_ID =
                 AccountID.newBuilder().accountNum(12).build();
         private static final AccountID STAKING_REWARD_ACCOUNT_ID =
@@ -408,13 +412,15 @@ class TokenServiceApiImplTest {
             accountStore.put(
                     Account.newBuilder().accountId(NODE_REWARD_ACCOUNT_ID).build());
 
+            accountStore.put(Account.newBuilder().accountId(NODE_ACCOUNT_ID).build());
+
             accountStore.put(Account.newBuilder()
                     .accountId(EOA_ACCOUNT_ID)
-                    .tinybarBalance(100)
+                    .tinybarBalance(ORIGINAL_PAYER_BALANCE)
                     .build());
 
             rb = new FakeFeeRecordBuilder();
-            fees = new Fees(2, 3, 5); // 10 tinybars
+            fees = new Fees(2, 5, 5); // 10 tinybars
         }
 
         @Test
@@ -425,12 +431,12 @@ class TokenServiceApiImplTest {
 
             subject = new TokenServiceApiImpl(config, stakingValidator, writableStates);
 
-            // When we charge fees of 10 tinybars
-            subject.chargeFees(EOA_ACCOUNT_ID, fees, rb);
+            // When we charge network+service fees of 10 tinybars and a node fee of 2 tinybars
+            subject.chargeFees(EOA_ACCOUNT_ID, NODE_ACCOUNT_ID, fees, rb);
 
             // Then we find that 10% go to node rewards, 20% to staking rewards, and the rest to the funding account
             final var payerAccount = requireNonNull(accountState.get(EOA_ACCOUNT_ID));
-            assertThat(payerAccount.tinybarBalance()).isEqualTo(90);
+            assertThat(payerAccount.tinybarBalance()).isEqualTo(PAYER_BALANCE_AFTER_ALL_FEES);
 
             final var nodeRewardAccount = requireNonNull(accountState.get(NODE_REWARD_ACCOUNT_ID));
             assertThat(nodeRewardAccount.tinybarBalance()).isEqualTo(1);
@@ -441,7 +447,10 @@ class TokenServiceApiImplTest {
             final var fundingAccount = requireNonNull(accountState.get(FUNDING_ACCOUNT_ID));
             assertThat(fundingAccount.tinybarBalance()).isEqualTo(7);
 
-            assertThat(rb.transactionFee()).isEqualTo(10);
+            final var nodeAccount = requireNonNull(accountState.get(NODE_ACCOUNT_ID));
+            assertThat(nodeAccount.tinybarBalance()).isEqualTo(2);
+
+            assertThat(rb.transactionFee()).isEqualTo(ALL_FEES);
         }
 
         @Test
@@ -453,11 +462,11 @@ class TokenServiceApiImplTest {
             subject = new TokenServiceApiImpl(config, stakingValidator, writableStates);
 
             // When we charge fees of 10 tinybars
-            subject.chargeFees(EOA_ACCOUNT_ID, fees, rb);
+            subject.chargeFees(EOA_ACCOUNT_ID, NODE_ACCOUNT_ID, fees, rb);
 
             // Then we find that all the fees go to the funding account
             final var payerAccount = requireNonNull(accountState.get(EOA_ACCOUNT_ID));
-            assertThat(payerAccount.tinybarBalance()).isEqualTo(90);
+            assertThat(payerAccount.tinybarBalance()).isEqualTo(PAYER_BALANCE_AFTER_ALL_FEES);
 
             final var nodeRewardAccount = requireNonNull(accountState.get(NODE_REWARD_ACCOUNT_ID));
             assertThat(nodeRewardAccount.tinybarBalance()).isZero();
@@ -468,7 +477,7 @@ class TokenServiceApiImplTest {
             final var fundingAccount = requireNonNull(accountState.get(FUNDING_ACCOUNT_ID));
             assertThat(fundingAccount.tinybarBalance()).isEqualTo(10);
 
-            assertThat(rb.transactionFee()).isEqualTo(10);
+            assertThat(rb.transactionFee()).isEqualTo(ALL_FEES);
         }
 
         @Test
@@ -476,7 +485,7 @@ class TokenServiceApiImplTest {
             // When we try to charge a payer account that DOES NOT EXIST, then we get an IllegalStateException.
             final var unknownAccountId =
                     AccountID.newBuilder().accountNum(12345678L).build();
-            assertThatThrownBy(() -> subject.chargeFees(unknownAccountId, fees, rb))
+            assertThatThrownBy(() -> subject.chargeFees(unknownAccountId, NODE_ACCOUNT_ID, fees, rb))
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessage("Payer account does not exist");
         }
@@ -490,7 +499,7 @@ class TokenServiceApiImplTest {
             subject = new TokenServiceApiImpl(config, stakingValidator, writableStates);
 
             // When we try to charge a payer account that DOES exist, then we get an IllegalStateException
-            assertThatThrownBy(() -> subject.chargeFees(EOA_ACCOUNT_ID, fees, rb))
+            assertThatThrownBy(() -> subject.chargeFees(EOA_ACCOUNT_ID, NODE_ACCOUNT_ID, fees, rb))
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessage("Funding account does not exist");
         }
@@ -505,7 +514,7 @@ class TokenServiceApiImplTest {
             subject = new TokenServiceApiImpl(config, stakingValidator, writableStates);
 
             // When we try to charge a payer account that DOES exist, then we get an IllegalStateException
-            assertThatThrownBy(() -> subject.chargeFees(EOA_ACCOUNT_ID, fees, rb))
+            assertThatThrownBy(() -> subject.chargeFees(EOA_ACCOUNT_ID, NODE_ACCOUNT_ID, fees, rb))
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessage("Staking reward account does not exist");
         }
@@ -520,19 +529,42 @@ class TokenServiceApiImplTest {
             subject = new TokenServiceApiImpl(config, stakingValidator, writableStates);
 
             // When we try to charge a payer account that DOES exist, then we get an IllegalStateException
-            assertThatThrownBy(() -> subject.chargeFees(EOA_ACCOUNT_ID, fees, rb))
+            assertThatThrownBy(() -> subject.chargeFees(EOA_ACCOUNT_ID, NODE_ACCOUNT_ID, fees, rb))
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessage("Node reward account does not exist");
         }
 
         @Test
-        void payerHasInsufficientFunds() {
-            // Given a payer and fees that are so large, the payer cannot pay for them.
-            fees = new Fees(1000, 1000, 1000); // more than the 100 the user has
-            // When we charge the fees, then a HandleException is thrown with INSUFFICIENT_PAYER_BALANCE as the reason.
-            assertThatThrownBy(() -> subject.chargeFees(EOA_ACCOUNT_ID, fees, rb))
-                    .isInstanceOf(HandleException.class)
-                    .hasFieldOrPropertyWithValue("status", ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE);
+        void chargesRemainingBalanceIfInsufficient() {
+            // Given a payer and unpayable fees, just charge the remaining payer balance
+            fees = new Fees(1000, 100, 0); // more than the 100 the user has
+
+            subject = new TokenServiceApiImpl(configBuilder.getOrCreateConfig(), stakingValidator, writableStates);
+            subject.chargeFees(EOA_ACCOUNT_ID, NODE_ACCOUNT_ID, fees, rb);
+
+            final var payerAccount = requireNonNull(accountState.get(EOA_ACCOUNT_ID));
+            assertThat(payerAccount.tinybarBalance()).isEqualTo(0);
+            assertThat(rb.transactionFee()).isEqualTo(100);
+        }
+
+        @Test
+        void throwsIfUnableToPayNetworkFee() {
+            // Given a payer and unpayable fees, just charge the remaining payer balance
+            fees = new Fees(0, 101, 0); // more than the 100 the user has
+
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () -> subject.chargeFees(EOA_ACCOUNT_ID, NODE_ACCOUNT_ID, fees, rb));
+        }
+
+        @Test
+        void throwsWithNonZeroServiceFeeIfUnableToPayEverything() {
+            // Given a payer and unpayable fees, just charge the remaining payer balance
+            fees = new Fees(0, 99, 2); // more than the 100 the user has
+
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () -> subject.chargeFees(EOA_ACCOUNT_ID, NODE_ACCOUNT_ID, fees, rb));
         }
     }
 }

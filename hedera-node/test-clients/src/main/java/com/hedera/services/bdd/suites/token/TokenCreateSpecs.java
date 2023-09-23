@@ -329,6 +329,7 @@ public class TokenCreateSpecs extends HapiSuite {
                         .hasToken(relationshipWith(PRIMARY).kyc(TokenKycStatus.KycNotApplicable)));
     }
 
+    @HapiTest
     public HapiSpec baseCreationsHaveExpectedPrices() {
         final var civilian = "NonExemptPayer";
 

@@ -409,6 +409,12 @@ public final class JrsTestReportGenerator {
         sb.append("</td>\n");
     }
 
+    private static void generateLogsCell(@NonNull final StringBuilder sb, @NonNull final String testUrl) {
+        sb.append("<td>");
+        generateHyperlink(sb, "logs", testUrl + "swirlds-logs.html");
+        sb.append("</td>\n");
+    }
+
     private static void generateMetricsCell(@NonNull final StringBuilder sb, @NonNull final String testUrl) {
         sb.append("<td>");
         generateHyperlink(sb, "metrics", testUrl + "multipage_pdf.pdf");
@@ -447,6 +453,7 @@ public final class JrsTestReportGenerator {
         generateStatusCell(sb, row.getMostRecentTest().status());
         generateHistoryCell(sb, row.tests(), bucketPrefix, bucketPrefixReplacement);
         generateSummaryCell(sb, testUrl);
+        generateLogsCell(sb, testUrl);
         generateMetricsCell(sb, testUrl);
         generateDataCell(sb, testUrl);
         generateNotesCell(sb, row.metadata() == null ? "" : row.metadata().notesUrl());
@@ -476,6 +483,7 @@ public final class JrsTestReportGenerator {
                                 <th>Status</th>
                                 <th>History</th>
                                 <th>Summary</th>
+                                <th>Logs</th>
                                 <th>Metrics</th>
                                 <th>Data</th>
                                 <th>Notes</th>
