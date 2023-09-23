@@ -25,8 +25,8 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TransactionFeeSchedule;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.fees.FeeCalculator;
-import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -136,27 +136,34 @@ public final class FeeManager {
      */
     @NonNull
     public FeeCalculator createFeeCalculator(
-            @Nullable final TransactionInfo txInfo,
+            @Nullable final TransactionBody txBody,
             @Nullable final Key payerKey,
+            @Nullable final HederaFunctionality functionality,
             final int numVerifications,
+            final int signatureMapSize,
             @NonNull final Instant consensusTime,
             @NonNull final SubType subType) {
 
-        if (txInfo == null || payerKey == null) {
+        if (txBody == null || payerKey == null ||functionality == null) {
             return NoOpFeeCalculator.INSTANCE;
         }
 
         // Determine which fee schedule to use, based on the consensus time
         // If it is not known, that is, if we have no fee data for that transaction, then we MUST NOT execute that
         // transaction! We will not be able to charge appropriately for it.
-        final var feeData = getFeeData(txInfo.functionality(), consensusTime, subType);
+        final var feeData = getFeeData(functionality, consensusTime, subType);
         if (feeData == null) {
-            throw new IllegalStateException("No fee data found for transaction type " + txInfo.functionality());
+            throw new IllegalStateException("No fee data found for transaction type " + functionality);
         }
 
         // Create the fee calculator
         return new FeeCalculatorImpl(
-                txInfo, payerKey, numVerifications, feeData, exchangeRateManager.activeRate(consensusTime));
+                txBody,
+                payerKey,
+                numVerifications,
+                signatureMapSize,
+                feeData,
+                exchangeRateManager.activeRate(consensusTime));
     }
 
     @NonNull

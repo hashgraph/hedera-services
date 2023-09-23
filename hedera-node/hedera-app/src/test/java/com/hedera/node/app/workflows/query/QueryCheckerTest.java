@@ -258,7 +258,7 @@ class QueryCheckerTest extends AppTestBase {
                     ALICE.accountID(), send(ALICE.accountID(), amount), receive(nodeSelfAccountId, amount));
             doThrow(new InsufficientBalanceException(INSUFFICIENT_PAYER_BALANCE, amount))
                     .when(solvencyPreCheck)
-                    .checkSolvency(txInfo, ALICE_ACCOUNT, amount);
+                    .checkSolvency(txInfo, ALICE_ACCOUNT, new Fees(amount, 0, 0));
 
             // then
             assertThatThrownBy(() -> checker.validateAccountBalances(store, txInfo, ALICE_ACCOUNT, amount))

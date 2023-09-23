@@ -70,7 +70,7 @@ jobs:
       version-policy: specified
       new-version: ${{ needs.prepare-tag-release.outputs.version }}
       trigger-env-deploy: none
-      sdk-release-profile: MavenCentral
+      sdk-release-profile: ${{ needs.prepare-tag-release.outputs.prerelease == 'true' && 'PrereleaseChannel' || 'MavenCentral' }}
     secrets:
       access-token: ${{ secrets.GITHUB_TOKEN }}
       bucket-name: ${{ secrets.RELEASE_ARTIFACT_BUCKET_NAME }}

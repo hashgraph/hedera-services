@@ -22,7 +22,7 @@ import static com.hedera.hapi.streams.ContractActionType.CALL;
 import static com.hedera.hapi.streams.ContractActionType.CREATE;
 import static com.hedera.hapi.streams.ContractActionType.PRECOMPILE;
 import static com.hedera.hapi.streams.ContractActionType.SYSTEM;
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.MISSING_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.exec.utils.ActionStack.Source.POPPED_FROM_STACK;
 import static com.hedera.node.app.service.contract.impl.exec.utils.ActionStack.Source.READ_FROM_LIST_END;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
@@ -317,7 +317,7 @@ class ActionStackTest {
         allActions.add(wrappedAction);
         actionsStack.push(wrappedAction);
         given(parentFrame.getType()).willReturn(MessageFrame.Type.MESSAGE_CALL);
-        given(parentFrame.getExceptionalHaltReason()).willReturn(Optional.of(MISSING_ADDRESS));
+        given(parentFrame.getExceptionalHaltReason()).willReturn(Optional.of(INVALID_SOLIDITY_ADDRESS));
         given(helper.createSynthActionForMissingAddressIn(parentFrame)).willReturn(MISSING_ADDRESS_CALL_ACTION);
 
         subject.finalizeLastAction(POPPED_FROM_STACK, parentFrame, ActionStack.Validation.OFF);
@@ -338,7 +338,7 @@ class ActionStackTest {
         allActions.add(wrappedAction);
         actionsStack.push(wrappedAction);
         given(parentFrame.getType()).willReturn(CONTRACT_CREATION);
-        given(parentFrame.getExceptionalHaltReason()).willReturn(Optional.of(MISSING_ADDRESS));
+        given(parentFrame.getExceptionalHaltReason()).willReturn(Optional.of(INVALID_SOLIDITY_ADDRESS));
 
         subject.finalizeLastAction(POPPED_FROM_STACK, parentFrame, ActionStack.Validation.OFF);
 

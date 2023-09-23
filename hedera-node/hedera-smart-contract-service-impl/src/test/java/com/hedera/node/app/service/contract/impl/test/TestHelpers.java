@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test;
 
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SIGNATURE;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
@@ -348,7 +349,7 @@ public class TestHelpers {
             null,
             null,
             Bytes.EMPTY,
-            "I prefer not to",
+            INVALID_SIGNATURE,
             null,
             Collections.emptyList(),
             null);
@@ -594,5 +595,11 @@ public class TestHelpers {
 
     public static org.apache.tuweni.bytes.Bytes asBytesResult(final ByteBuffer encoded) {
         return org.apache.tuweni.bytes.Bytes.wrap(encoded.array());
+    }
+
+    public static ContractID asNumericContractId(@NonNull final AccountID accountId) {
+        return ContractID.newBuilder()
+                .contractNum(accountId.accountNumOrThrow())
+                .build();
     }
 }
