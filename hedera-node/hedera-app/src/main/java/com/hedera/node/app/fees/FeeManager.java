@@ -144,7 +144,7 @@ public final class FeeManager {
             @NonNull final Instant consensusTime,
             @NonNull final SubType subType) {
 
-        if (txBody == null || payerKey == null ||functionality == null) {
+        if (txBody == null || payerKey == null || functionality == null) {
             return NoOpFeeCalculator.INSTANCE;
         }
 
