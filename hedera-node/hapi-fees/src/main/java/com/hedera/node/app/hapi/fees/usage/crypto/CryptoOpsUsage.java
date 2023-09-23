@@ -53,7 +53,7 @@ public class CryptoOpsUsage {
     public static final long CREATE_SLOT_MULTIPLIER = 1228;
     public static final long UPDATE_SLOT_MULTIPLIER = 24000;
 
-    static EstimatorFactory txnEstimateFactory = TxnUsageEstimator::new;
+    public static EstimatorFactory txnEstimateFactory = TxnUsageEstimator::new;
     static Function<ResponseType, QueryUsage> queryEstimateFactory = QueryUsage::new;
 
     @Inject

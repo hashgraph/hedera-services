@@ -147,13 +147,27 @@ public interface TokenServiceApi {
     void updateStorageMetadata(@NonNull AccountID accountId, @NonNull Bytes firstKey, int netChangeInSlotsUsed);
 
     /**
-     * Charges the payer the given fees, and records those fees in the given record builder.
+     * Charges the payer the given network fee, and records that fee in the given record builder.
      *
-     * @param payer         the id of the account that should be charged
-     * @param fees          the fees to charge
+     * @param payer the id of the account that should be charged
+     * @param amount the amount to charge
      * @param recordBuilder the record builder to record the fees in
      */
-    void chargeFees(@NonNull AccountID payer, @NonNull Fees fees, @NonNull final FeeRecordBuilder recordBuilder);
+    void chargeNetworkFee(@NonNull AccountID payer, long amount, @NonNull final FeeRecordBuilder recordBuilder);
+
+    /**
+     * Charges the payer the given fees, and records those fees in the given record builder.
+     *
+     * @param payer the id of the account that should be charged
+     * @param nodeAccount the id of the node that should receive the node fee, if present and payable
+     * @param fees the fees to charge
+     * @param recordBuilder the record builder to record the fees in
+     */
+    void chargeFees(
+            @NonNull AccountID payer,
+            AccountID nodeAccount,
+            @NonNull Fees fees,
+            @NonNull final FeeRecordBuilder recordBuilder);
 
     /**
      * Refunds the given fees to the given receiver, and records those fees in the given record builder.
