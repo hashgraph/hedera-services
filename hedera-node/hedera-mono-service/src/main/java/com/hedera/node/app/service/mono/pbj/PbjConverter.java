@@ -1501,7 +1501,7 @@ public final class PbjConverter {
         var builder = com.hederahashgraph.api.proto.java.FixedFee.newBuilder();
         if (fixedFee != null) {
             builder.setAmount(fixedFee.amount());
-            builder.setDenominatingTokenId(fromPbj(fixedFee.denominatingTokenId()));
+            builder.setDenominatingTokenId(fromPbj(fixedFee.denominatingTokenIdOrElse(TokenID.DEFAULT)));
         }
         return builder.build();
     }
