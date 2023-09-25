@@ -36,24 +36,27 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Addres
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.mint.NonFungibleMintCall;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
 import com.hedera.node.app.service.token.records.TokenMintRecordBuilder;
+import java.math.BigInteger;
+import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
-import java.math.BigInteger;
-import java.util.List;
-
 class NonFungibleMintCallTest extends HtsCallTestBase {
     private static final org.hyperledger.besu.datatypes.Address FRAME_SENDER_ADDRESS = EIP_1014_ADDRESS;
-    private static final List<com.hedera.pbj.runtime.io.buffer.Bytes> METADATA = List.of(
-            com.hedera.pbj.runtime.io.buffer.Bytes.wrap("metadata"));
+    private static final List<com.hedera.pbj.runtime.io.buffer.Bytes> METADATA =
+            List.of(com.hedera.pbj.runtime.io.buffer.Bytes.wrap("metadata"));
+
     @Mock
     private AddressIdConverter addressIdConverter;
+
     @Mock
     private VerificationStrategy verificationStrategy;
+
     @Mock
     private TokenMintRecordBuilder recordBuilder;
+
     private NonFungibleMintCall subject;
 
     @Test
@@ -69,12 +72,13 @@ class NonFungibleMintCallTest extends HtsCallTestBase {
 
     @Test
     void mintHappyPathSucceedsWithTrue() {
-        given(addressIdConverter.convert(asHeadlongAddress(FRAME_SENDER_ADDRESS))).willReturn(A_NEW_ACCOUNT_ID);
+        given(addressIdConverter.convert(asHeadlongAddress(FRAME_SENDER_ADDRESS)))
+                .willReturn(A_NEW_ACCOUNT_ID);
         given(systemContractOperations.dispatch(
-                any(TransactionBody.class),
-                eq(verificationStrategy),
-                eq(A_NEW_ACCOUNT_ID),
-                eq(TokenMintRecordBuilder.class)))
+                        any(TransactionBody.class),
+                        eq(verificationStrategy),
+                        eq(A_NEW_ACCOUNT_ID),
+                        eq(TokenMintRecordBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
         subject = subjectForMint();
@@ -82,19 +86,18 @@ class NonFungibleMintCallTest extends HtsCallTestBase {
         final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
-        assertEquals(asBytesResult(MINT.getOutputs().encodeElements(
-                BigInteger.valueOf(22)
-        )), result.getOutput());
+        assertEquals(asBytesResult(MINT.getOutputs().encodeElements(BigInteger.valueOf(22))), result.getOutput());
     }
 
     @Test
     void unhappyPathRevertsWithReason() {
-        given(addressIdConverter.convert(asHeadlongAddress(FRAME_SENDER_ADDRESS))).willReturn(A_NEW_ACCOUNT_ID);
+        given(addressIdConverter.convert(asHeadlongAddress(FRAME_SENDER_ADDRESS)))
+                .willReturn(A_NEW_ACCOUNT_ID);
         given(systemContractOperations.dispatch(
-                any(TransactionBody.class),
-                eq(verificationStrategy),
-                eq(A_NEW_ACCOUNT_ID),
-                eq(TokenMintRecordBuilder.class)))
+                        any(TransactionBody.class),
+                        eq(verificationStrategy),
+                        eq(A_NEW_ACCOUNT_ID),
+                        eq(TokenMintRecordBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(INSUFFICIENT_ACCOUNT_BALANCE);
 

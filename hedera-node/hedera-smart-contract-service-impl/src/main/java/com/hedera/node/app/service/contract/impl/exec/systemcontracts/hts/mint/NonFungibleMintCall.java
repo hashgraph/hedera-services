@@ -16,6 +16,13 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.mint;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.revertResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asHeadlongAddress;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.token.TokenMintTransactionBody;
@@ -28,21 +35,15 @@ import com.hedera.node.app.service.token.records.TokenMintRecordBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.math.BigInteger;
 import java.util.List;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.revertResult;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asHeadlongAddress;
-import static java.util.Objects.requireNonNull;
-
 public class NonFungibleMintCall extends AbstractHtsCall implements MintCall {
     private final List<Bytes> metadata;
+
     @Nullable
     private final TokenID tokenId;
+
     private final VerificationStrategy verificationStrategy;
     private final org.hyperledger.besu.datatypes.Address spender;
     private final AddressIdConverter addressIdConverter;
@@ -78,8 +79,9 @@ public class NonFungibleMintCall extends AbstractHtsCall implements MintCall {
         if (recordBuilder.status() != ResponseCodeEnum.SUCCESS) {
             return gasOnly(revertResult(recordBuilder.status(), 0L));
         } else {
-            final var encodedOutput =  MintTranslator.MINT.getOutputs().encodeElements(
-                    BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()));
+            final var encodedOutput = MintTranslator.MINT
+                    .getOutputs()
+                    .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()));
             return gasOnly(successResult(encodedOutput, recordBuilder.getNewTotalSupply()));
         }
     }
@@ -89,7 +91,7 @@ public class NonFungibleMintCall extends AbstractHtsCall implements MintCall {
                 .tokenMint(TokenMintTransactionBody.newBuilder()
                         .token(tokenId)
                         .metadata(metadata)
-                        .build()
-                ).build();
+                        .build())
+                .build();
     }
 }
