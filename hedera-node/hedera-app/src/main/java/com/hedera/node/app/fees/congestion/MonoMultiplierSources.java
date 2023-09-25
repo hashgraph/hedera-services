@@ -40,6 +40,7 @@ public class MonoMultiplierSources {
             // so using just a dummy accessor
             accessor = SignedTxnAccessor.from(Bytes.EMPTY.toByteArray());
         } catch (InvalidProtocolBufferException e) {
+            // this should never happen because we use an empty byte array constant above which should be always valid
             throw new RuntimeException(e);
         }
         this.delegate.updateMultiplier(accessor, consensusTime);
