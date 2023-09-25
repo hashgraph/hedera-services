@@ -135,7 +135,6 @@ public class SingleTransactionRecordBuilderImpl
     private List<Long> serialNumbers = new LinkedList<>();
     private long newTotalSupply = 0L;
     private final TransactionReceipt.Builder transactionReceiptBuilder = TransactionReceipt.newBuilder();
-    private long newTotalSupply = 0L;
     // Sidecar data, booleans are the migration flag
     private List<AbstractMap.SimpleEntry<ContractStateChanges, Boolean>> contractStateChanges = new LinkedList<>();
     private List<AbstractMap.SimpleEntry<ContractActions, Boolean>> contractActions = new LinkedList<>();
