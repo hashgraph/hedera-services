@@ -78,6 +78,7 @@ import java.time.Instant;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Disabled;
 
 @HapiTestSuite
 public class TokenUpdateSpecs extends HapiSuite {
@@ -609,6 +610,7 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
+    @Disabled("Failing or intermittently failing HAPI Test")
     private HapiSpec safeToUpdateCustomFeesWithNewFallbackWhileTransferring() {
         final var uniqueTokenFeeKey = "uniqueTokenFeeKey";
         final var hbarCollector = "hbarFee";

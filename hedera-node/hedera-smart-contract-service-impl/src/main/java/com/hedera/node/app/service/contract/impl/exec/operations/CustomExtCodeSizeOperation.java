@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.operations;
 
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.MISSING_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -53,7 +53,7 @@ public class CustomExtCodeSizeOperation extends ExtCodeSizeOperation {
                 return new OperationResult(cost(true), null);
             }
             if (!addressChecks.isPresent(address, frame)) {
-                return new OperationResult(cost(true), MISSING_ADDRESS);
+                return new OperationResult(cost(true), INVALID_SOLIDITY_ADDRESS);
             }
             return super.execute(frame, evm);
         } catch (FixedStack.UnderflowException ignore) {

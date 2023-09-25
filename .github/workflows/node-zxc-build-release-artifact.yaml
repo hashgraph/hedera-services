@@ -410,7 +410,7 @@ jobs:
          DOCKER_TAG_BASE="gcr.io/hedera-registry"
          if [[ "${{ inputs.version-policy }}" == "branch-commit" && "${{ inputs.dry-run-enabled }}" != true ]]; then
             DOCKER_TAG_BASE="us-docker.pkg.dev/swirlds-registry/local-node"
-         else
+         elif [[ "${{ inputs.dry-run-enabled }}" == true ]]; then
             DOCKER_TAG_BASE="localhost:5000"
          fi
 
@@ -601,7 +601,7 @@ jobs:
           gradle-version: ${{ inputs.gradle-version }}
           arguments: ":hedera-node:app-service-evm:releaseMavenCentralSnapshot --scan -PpublishSigningEnabled=true"
 
-  sdk-mc-publish:
+  sdk-publish:
     name: Publish Platform to ${{ inputs.version-policy == 'specified' && 'Maven Central' || 'GCP Registry' }}
     runs-on: [ self-hosted, Linux, large, ephemeral ]
     needs:
@@ -772,9 +772,26 @@ jobs:
       - validate
       - local-node-images
       - evm-mc-publish
-      - sdk-mc-publish
+      - sdk-publish
     if: ${{ inputs.dry-run-enabled != true && inputs.version-policy == 'specified' && !cancelled() && !failure() }}
     steps:
+      - name: Determine Notification Parameters
+        id: parameters
+        run: |
+          ARTIFACT_URL="https://repo1.maven.org/maven2/com/swirlds/swirlds-platform-core/${{ needs.validate.outputs.version }}/"
+          ARTIFACT_LINK_NAME="MC Availability Check"
+          ARTIFACT_REGISTRY="Maven Central"
+
+          if [[ "${{ inputs.sdk-release-profile }}" == "PrereleaseChannel" ]]; then
+            ARTIFACT_URL="https://console.cloud.google.com/artifacts/maven/swirlds-registry/us/maven-prerelease-channel/com.swirlds:swirlds-platform-core/${{ needs.validate.outputs.version }}?project=swirlds-registry"
+            ARTIFACT_LINK_NAME="GCP Registry"
+            ARTIFACT_REGISTRY="GCP Artifact Registry"
+          fi
+
+          echo "artifact-url=${ARTIFACT_URL}" >>"${GITHUB_OUTPUT}"
+          echo "artifact-name=${ARTIFACT_LINK_NAME}" >>"${GITHUB_OUTPUT}"
+          echo "artifact-registry=${ARTIFACT_REGISTRY}" >>"${GITHUB_OUTPUT}"
+
       - name: Send Slack Notification (Maven Central)
         uses: slackapi/slack-github-action@e28cf165c92ffef168d23c5c9000cffc8a25e117 # v1.24.0
         env:
@@ -808,11 +825,11 @@ jobs:
                           },
                           {
                             "type": "mrkdwn",
-                            "text": "Maven Central"
+                            "text": ${{ steps.parameters.outputs.artifact-registry }}"
                           },
                           {
                             "type": "mrkdwn",
-                            "text": "<https://repo1.maven.org/maven2/com/swirlds/swirlds-platform-core/${{ needs.validate.outputs.version }}/|MC Availability Check>"
+                            "text": "<${{ steps.parameters.outputs.artifact-url }}|${{ steps.parameters.outputs.artifact-name }}>"
                           }
                         ]
                       },
@@ -854,7 +871,7 @@ jobs:
                           },
                           {
                             "type": "mrkdwn",
-                            "text": "<${{ github.server_url }}/${{ github.repository }}/releases/tag/v${{ github.event.inputs.new-version }}|v${{ github.event.inputs.new-version }}>"
+                            "text": "<${{ github.server_url }}/${{ github.repository }}/releases/tag/v${{ needs.validate.outputs.version }}|v${{ needs.validate.outputs.version }}>"
                           }
                         ]
                       },

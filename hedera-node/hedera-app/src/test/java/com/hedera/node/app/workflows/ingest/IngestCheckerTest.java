@@ -59,6 +59,7 @@ import com.hedera.node.app.info.CurrentPlatformStatus;
 import com.hedera.node.app.signature.SignatureExpander;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.signature.SignatureVerifier;
+import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
@@ -76,6 +77,8 @@ import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.config.api.Configuration;
 import java.time.Instant;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -119,6 +122,9 @@ class IngestCheckerTest extends AppTestBase {
 
     @Mock(strictness = LENIENT)
     private FeeManager feeManager;
+
+    @Mock(strictness = LENIENT)
+    private Authorizer authorizer;
 
     private DeduplicationCache deduplicationCache;
 
@@ -171,7 +177,8 @@ class IngestCheckerTest extends AppTestBase {
                 signatureVerifier,
                 deduplicationCache,
                 dispatcher,
-                feeManager);
+                feeManager,
+                authorizer);
     }
 
     @Nested
@@ -219,7 +226,8 @@ class IngestCheckerTest extends AppTestBase {
                 signatureVerifier,
                 deduplicationCache,
                 dispatcher,
-                feeManager);
+                feeManager,
+                authorizer);
 
         // Then the checker should throw a PreCheckException
         assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))
@@ -392,10 +400,12 @@ class IngestCheckerTest extends AppTestBase {
         @ParameterizedTest(name = "Check of payer's balance fails with error code {0}")
         @MethodSource("failureReasons")
         @DisplayName("If the payer has insufficient funds, the transaction should be rejected")
-        void payerAccountStatusFails(ResponseCodeEnum failureReason) throws PreCheckException {
+        void payerAccountStatusFails(ResponseCodeEnum failureReason)
+                throws PreCheckException, ExecutionException, InterruptedException, TimeoutException {
+            givenValidPayerSignature();
             doThrow(new InsufficientBalanceException(failureReason, 123L))
                     .when(solvencyPreCheck)
-                    .checkSolvency(any(), any(), anyLong());
+                    .checkSolvency(any(), any(), any());
 
             assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))
                     .isInstanceOf(InsufficientBalanceException.class)
@@ -405,16 +415,26 @@ class IngestCheckerTest extends AppTestBase {
 
         @Test
         @DisplayName("If some random exception is thrown from checking solvency, the exception is bubbled up")
-        void randomException() throws PreCheckException {
+        void randomException() throws PreCheckException, ExecutionException, InterruptedException, TimeoutException {
             // Given an IngestChecker that will throw a RuntimeException from checkPayerSignature
+            givenValidPayerSignature();
             doThrow(new RuntimeException("checkSolvency exception"))
                     .when(solvencyPreCheck)
-                    .checkSolvency(any(), any(), anyLong());
+                    .checkSolvency(any(), any(), any());
 
             // When the transaction is submitted, then the exception is bubbled up
             assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))
                     .isInstanceOf(RuntimeException.class)
                     .hasMessageContaining("checkSolvency exception");
+        }
+
+        private void givenValidPayerSignature() throws ExecutionException, InterruptedException, TimeoutException {
+            final var verificationResultFuture = mock(SignatureVerificationFuture.class);
+            final var verificationResult = mock(SignatureVerification.class);
+            when(verificationResult.passed()).thenReturn(true);
+            when(verificationResultFuture.get(anyLong(), any())).thenReturn(verificationResult);
+            when(signatureVerifier.verify(any(), any()))
+                    .thenReturn(Map.of(ALICE.account().keyOrThrow(), verificationResultFuture));
         }
     }
 
