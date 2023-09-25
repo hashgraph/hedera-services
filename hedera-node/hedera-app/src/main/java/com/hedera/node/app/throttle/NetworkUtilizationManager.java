@@ -26,15 +26,18 @@ import java.time.Instant;
  * congestion pricing).
  */
 public interface NetworkUtilizationManager {
-    void trackTxn(@NonNull final TransactionInfo txnInfo, Instant consensusTime, HederaState state);
+    void trackTxn(
+            @NonNull final TransactionInfo txnInfo,
+            @NonNull final Instant consensusTime,
+            @NonNull final HederaState state);
 
-    void trackFeePayments(Instant consensusNow, HederaState state);
+    void trackFeePayments(@NonNull final Instant consensusNow, @NonNull final HederaState state);
 
     boolean wasLastTxnGasThrottled();
 
-    void leakUnusedGasPreviouslyReserved(@NonNull final TransactionInfo txnInfo, long value);
+    void leakUnusedGasPreviouslyReserved(@NonNull final TransactionInfo txnInfo, final long value);
 
-    void resetFrom(HederaState state);
+    void resetFrom(@NonNull final HederaState state);
 
-    void saveTo(HederaState state);
+    void saveTo(@NonNull final HederaState state);
 }

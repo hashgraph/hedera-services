@@ -78,18 +78,21 @@ public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager 
     }
 
     @Override
-    public void trackTxn(@NonNull final TransactionInfo txnInfo, Instant consensusTime, HederaState state) {
+    public void trackTxn(
+            @NonNull final TransactionInfo txnInfo,
+            @NonNull final Instant consensusTime,
+            @NonNull final HederaState state) {
         handleThrottling.shouldThrottle(txnInfo, consensusTime, state);
         multiplierSources.updateMultiplier(consensusTime);
     }
 
     @Override
-    public void trackFeePayments(Instant consensusNow, HederaState state) {
+    public void trackFeePayments(@NonNull final Instant consensusNow, @NonNull final HederaState state) {
         trackTxn(STAND_IN_CRYPTO_TRANSFER, consensusNow, state);
     }
 
     @Override
-    public void resetFrom(final @NonNull HederaState state) {
+    public void resetFrom(@NonNull final HederaState state) {
         final var activeThrottles = handleThrottling.allActiveThrottles();
         final var states = state.createReadableStates(CongestionThrottleService.NAME);
         final var throttleSnapshots = states.<ThrottleUsageSnapshots>getSingleton(
@@ -143,7 +146,7 @@ public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager 
     }
 
     @Override
-    public void saveTo(final @NonNull HederaState state) {
+    public void saveTo(@NonNull final HederaState state) {
         final var states = state.createWritableStates(CongestionThrottleService.NAME);
         final var throttleSnapshotsState = states.<ThrottleUsageSnapshots>getSingleton(
                 CongestionThrottleService.THROTTLE_USAGE_SNAPSHOTS_STATE_KEY);

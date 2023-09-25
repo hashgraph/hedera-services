@@ -16,23 +16,30 @@
 
 package com.hedera.node.app.fees.congestion;
 
+import static java.util.Objects.requireNonNull;
+
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.service.mono.fees.congestion.FeeMultiplierSource;
 import com.hedera.node.app.service.mono.fees.congestion.MultiplierSources;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 
 public class MonoMultiplierSources {
     private final MultiplierSources delegate;
 
     public MonoMultiplierSources(
-            final FeeMultiplierSource genericFeeMultiplier, final FeeMultiplierSource gasFeeMultiplier) {
+            @NonNull final FeeMultiplierSource genericFeeMultiplier,
+            @NonNull final FeeMultiplierSource gasFeeMultiplier) {
+        requireNonNull(genericFeeMultiplier, "genericFeeMultiplier must not be null");
+        requireNonNull(gasFeeMultiplier, "gasFeeMultiplier must not be null");
+
         this.delegate = new MultiplierSources(genericFeeMultiplier, gasFeeMultiplier);
     }
 
-    public void updateMultiplier(Instant consensusTime) {
+    public void updateMultiplier(@NonNull final Instant consensusTime) {
         TxnAccessor accessor = null;
         try {
             // only accessor.congestionExempt() is used in the mono multiplier implementation and that seems like could
@@ -46,19 +53,21 @@ public class MonoMultiplierSources {
         this.delegate.updateMultiplier(accessor, consensusTime);
     }
 
+    @NonNull
     public Instant[] genericCongestionStarts() {
         return delegate.genericCongestionStarts();
     }
 
+    @NonNull
     public Instant[] gasCongestionStarts() {
         return delegate.gasCongestionStarts();
     }
 
-    public void resetGenericCongestionLevelStarts(final Instant[] startTimes) {
+    public void resetGenericCongestionLevelStarts(@NonNull final Instant[] startTimes) {
         delegate.resetGenericCongestionLevelStarts(startTimes);
     }
 
-    public void resetGasCongestionLevelStarts(final Instant[] startTimes) {
+    public void resetGasCongestionLevelStarts(@NonNull final Instant[] startTimes) {
         delegate.resetGasCongestionLevelStarts(startTimes);
     }
 
