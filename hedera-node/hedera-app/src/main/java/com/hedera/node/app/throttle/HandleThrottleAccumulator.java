@@ -104,19 +104,6 @@ public class HandleThrottleAccumulator {
         final var shouldThrottleByGas =
                 configuration.getConfigData(ContractsConfig.class).throttleThrottleByGas();
 
-        // Note that by payer exempt from throttling we mean just that those transactions will not be throttled,
-        // such payer accounts neither impact the throttles nor are they impacted by them
-        // In the current mono-service implementation we have the same behavior, additionally it is
-        // possible that transaction can also be exempt from affecting congestion levels separate from throttle
-        // exemption
-        // but this is only possible for the case of triggered transactions which is not yet implemented (see
-        // MonoMultiplierSources.java)
-        final var payer = query.accountDetails().accountId();
-        final var isPayerThrottleExempt = throttleExempt(payer, configuration);
-        if (isPayerThrottleExempt) {
-            return false;
-        }
-
         resetLastAllowedUse();
         if (isGasThrottled(queryFunction)
                 && shouldThrottleByGas
