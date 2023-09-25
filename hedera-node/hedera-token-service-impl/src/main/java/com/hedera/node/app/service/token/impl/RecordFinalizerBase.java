@@ -155,7 +155,8 @@ public class RecordFinalizerBase {
      * @return a {@link Map} of {@link TokenID} to {@link List} of {@link NftTransfer} representing the nft ownership
      */
     @NonNull
-    protected Map<TokenID, List<NftTransfer>> nftChangesFrom(@NonNull final WritableNftStore writableNftStore, @NonNull final ReadableTokenStore readableTokenStore) {
+    protected Map<TokenID, List<NftTransfer>> nftChangesFrom(
+            @NonNull final WritableNftStore writableNftStore, @NonNull final ReadableTokenStore readableTokenStore) {
         final var nftChanges = new HashMap<TokenID, List<NftTransfer>>();
         for (final NftID nftId : writableNftStore.modifiedNfts()) {
             final var modifiedNft = writableNftStore.get(nftId);
@@ -165,7 +166,8 @@ public class RecordFinalizerBase {
             AccountID senderAccountId = null;
             if (persistedNft != null) {
                 final var token = readableTokenStore.get(nftId.tokenId());
-                final boolean hasOwnerId = persistedNft.hasOwnerId() && !persistedNft.ownerId().equals(AccountID.DEFAULT);
+                final boolean hasOwnerId =
+                        persistedNft.hasOwnerId() && !persistedNft.ownerId().equals(AccountID.DEFAULT);
                 // If the NFT did not have an owner before set it to the treasury account
                 senderAccountId = hasOwnerId ? persistedNft.ownerId() : token.treasuryAccountId();
             }

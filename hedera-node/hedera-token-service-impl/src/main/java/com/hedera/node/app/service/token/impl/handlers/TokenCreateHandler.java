@@ -197,7 +197,8 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
             if (existingTokenRel == null) {
                 // Validate if token relation can be created between collector and new token
                 // If this succeeds, create and link token relation.
-                tokenCreateValidator.validateAssociation(entitiesConfig, tokensConfig, collector, newToken, tokenRelStore);
+                tokenCreateValidator.validateAssociation(
+                        entitiesConfig, tokensConfig, collector, newToken, tokenRelStore);
                 createAndLinkTokenRels(collector, List.of(newToken), accountStore, tokenRelStore);
             }
         }
