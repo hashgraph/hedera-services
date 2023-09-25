@@ -24,6 +24,7 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.PlatformBuilder;
+import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.util.BootstrapUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
@@ -35,9 +36,9 @@ import java.nio.file.Path;
  *
  * <p>Ideally we would host the node with classloader isolation, which would allow us to bring this node down and up
  * again. Unfortunately, the {@link ConstructableRegistry} thwarted my attempt, because it ignores the classloader
- * isolation, discovers all the classloaders (including the system classloader), and chooses its own rank order for
- * what order to look classes up in. That makes it impossible to do classloader isolation. We need to fix that. Until
- * then, in process nodes simply will not work well when stopped.
+ * isolation, discovers all the classloaders (including the system classloader), and chooses its own rank order for what
+ * order to look classes up in. That makes it impossible to do classloader isolation. We need to fix that. Until then,
+ * in process nodes simply will not work well when stopped.
  */
 public class InProcessHapiTestNode implements HapiTestNode {
     /** The thread in which the Hedera node will run */
@@ -53,8 +54,8 @@ public class InProcessHapiTestNode implements HapiTestNode {
      * Create a new in-process node.
      *
      * @param workingDir The working directory. Must already be created and setup with all the files.
-     * @param nodeId The node ID
-     * @param grpcPort The grpc port to configure the server with.
+     * @param nodeId     The node ID
+     * @param grpcPort   The grpc port to configure the server with.
      */
     public InProcessHapiTestNode(@NonNull final Path workingDir, final long nodeId, final int grpcPort) {
         this.workingDir = requireNonNull(workingDir);
@@ -64,7 +65,9 @@ public class InProcessHapiTestNode implements HapiTestNode {
 
     @Override
     public void start() {
-        if (th != null) throw new IllegalStateException("Node is not stopped, cannot start it!");
+        if (th != null) {
+            throw new IllegalStateException("Node is not stopped, cannot start it!");
+        }
 
         try {
             th = new WorkerThread(workingDir, nodeId, grpcPort);
@@ -97,7 +100,9 @@ public class InProcessHapiTestNode implements HapiTestNode {
     @Override
     public void stop() {
         if (th != null) {
-            if (th.hedera != null) th.hedera.shutdown();
+            if (th.hedera != null) {
+                th.hedera.shutdown();
+            }
             th.interrupt();
             th = null;
         }
@@ -154,12 +159,14 @@ public class InProcessHapiTestNode implements HapiTestNode {
                     .withValue("loadKeysFromPfxFiles", false)
                     .withValue("grpc.port", grpcPort);
 
-            builder.withLegacyInit(hedera::init)
-                    .withConfigurationBuilder(configBuilder)
+            builder.withConfigurationBuilder(configBuilder)
                     .withSettingsPath(Path.of(path("settings.txt")))
                     .withConfigPath(Path.of(path("config.txt")));
 
-            builder.build(true);
+            final SwirldsPlatform platform = builder.build();
+            hedera.init(platform, new NodeId(nodeId));
+            platform.start();
+            hedera.run();
         }
 
         private String path(String path) {

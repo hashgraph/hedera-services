@@ -42,7 +42,6 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsProvider;
 import com.swirlds.common.startup.Log4jSetup;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
@@ -69,7 +68,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -118,11 +116,6 @@ public final class PlatformBuilder {
      * The path to settings.txt.
      */
     private Path settingsPath = getAbsolutePath("settings.txt");
-
-    /**
-     * A function that mimics the old init() behavior of SwirldsMain. Will eventually be removed.
-     */
-    private BiConsumer<Platform, NodeId> legacyInit;
 
     /**
      * Create a new platform builder.
@@ -192,19 +185,6 @@ public final class PlatformBuilder {
             throw new IllegalArgumentException("File " + absolutePath + " does not exist");
         }
         this.configPath = absolutePath;
-        return this;
-    }
-
-    /**
-     * A function that mimics the old init() behavior of SwirldsMain. Will eventually be removed.
-     *
-     * @param legacyInit the function to call
-     * @return this
-     * @deprecated this will no longer be supported after control is inverted
-     */
-    @Deprecated(forRemoval = true)
-    public PlatformBuilder withLegacyInit(@NonNull final BiConsumer<Platform, NodeId> legacyInit) {
-        this.legacyInit = Objects.requireNonNull(legacyInit);
         return this;
     }
 
@@ -376,10 +356,6 @@ public final class PlatformBuilder {
                     initialState.get(),
                     addressBookInitializer.getPreviousAddressBook(),
                     emergencyRecoveryManager);
-
-            if (legacyInit != null) {
-                legacyInit.accept(platform, selfId);
-            }
 
             if (firstTimeSetup) {
                 MetricsDocUtils.writeMetricsDocumentToFile(globalMetrics, getPlatforms(), configuration);
