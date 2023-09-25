@@ -206,6 +206,7 @@ public class ContractCallLocalSuite extends HapiSuite {
                                 .hasAnswerOnlyPrecheck(ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION));
     }
 
+    @HapiTest
     private HapiSpec invalidDeletedContract() {
         return defaultHapiSpec("invalidDeletedContract")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))

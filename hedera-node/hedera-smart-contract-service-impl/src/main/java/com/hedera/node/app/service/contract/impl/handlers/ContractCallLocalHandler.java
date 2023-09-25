@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static java.util.Objects.requireNonNull;
@@ -78,7 +79,7 @@ public class ContractCallLocalHandler extends PaidQueryHandler {
         final var contract = context.createStore(ReadableAccountStore.class).getContractById(contractID);
         if (contract != null) {
             if (contract.deleted()) {
-                throw new PreCheckException(INVALID_CONTRACT_ID);
+                throw new PreCheckException(CONTRACT_DELETED);
             }
         } else {
             final var tokenID =
