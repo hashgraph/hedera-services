@@ -31,7 +31,7 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.txns.auth.SystemOpAuthorization;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
-import com.hedera.node.app.spi.authorization.Authorizer.SystemPrivilege;
+import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;

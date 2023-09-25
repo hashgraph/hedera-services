@@ -17,19 +17,27 @@
 package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
+import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.txnEstimateFactory;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
+import com.hedera.node.app.service.mono.fees.calculation.token.txns.TokenRevokeKycResourceUsage;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -45,10 +53,9 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
+
     @Inject
-    public TokenRevokeKycFromAccountHandler() {
-        // Exists for injection
-    }
+    public TokenRevokeKycFromAccountHandler() {}
 
     /**
      * This method is called during the pre-handle workflow.
@@ -126,5 +133,20 @@ public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
         validateTrue(tokenRel != null, INVALID_TOKEN_ID);
 
         return tokenRel;
+    }
+
+    @NonNull
+    @Override
+    public Fees calculateFees(@NonNull final FeeContext feeContext) {
+        requireNonNull(feeContext);
+        final var op = feeContext.body();
+
+        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> {
+            try {
+                return new TokenRevokeKycResourceUsage(txnEstimateFactory).usageGiven(fromPbj(op), sigValueObj, null);
+            } catch (InvalidTxBodyException e) {
+                throw new HandleException(INVALID_TRANSACTION_BODY);
+            }
+        });
     }
 }

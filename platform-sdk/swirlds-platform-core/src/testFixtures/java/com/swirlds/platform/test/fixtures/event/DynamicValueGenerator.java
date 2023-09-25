@@ -68,7 +68,7 @@ public class DynamicValueGenerator<T> {
     /**
      * Reset this object to its initial state.
      */
-    private void reset() {
+    public void reset() {
         previousValue = null;
         previousEventIndex = -1;
     }

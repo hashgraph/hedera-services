@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.operations;
 
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.MISSING_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.*;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 import static org.mockito.ArgumentMatchers.any;
@@ -77,7 +77,7 @@ class CustomDelegateCallOperationTest {
     void rejectsMissingNonSystemAddress() {
         doCallRealMethod().when(addressChecks).isNeitherSystemNorPresent(any(), any());
         givenWellKnownFrameWith(1L, NON_SYSTEM_LONG_ZERO_ADDRESS, 2L);
-        final var expected = new Operation.OperationResult(REQUIRED_GAS, MISSING_ADDRESS);
+        final var expected = new Operation.OperationResult(REQUIRED_GAS, INVALID_SOLIDITY_ADDRESS);
         assertSameResult(expected, subject.execute(frame, evm));
     }
 
