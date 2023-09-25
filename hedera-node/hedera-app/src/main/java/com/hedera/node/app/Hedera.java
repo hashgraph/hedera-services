@@ -260,11 +260,6 @@ public final class Hedera implements SwirldMain {
                 && daggerApp.grpcServerManager().isRunning();
     }
 
-    public void logActiveStatus() { // TODO remove
-        logger.info(">>>> platform status = {}, grpc server running = {}",
-                platformStatus, daggerApp.grpcServerManager().isRunning());
-    }
-
     /**
      * {@inheritDoc}
      *
