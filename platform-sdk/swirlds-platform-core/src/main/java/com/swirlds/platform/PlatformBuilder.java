@@ -42,6 +42,7 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsProvider;
 import com.swirlds.common.startup.Log4jSetup;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
@@ -68,7 +69,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Function;
+import java.util.function.BiConsumer;
+import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -91,7 +93,7 @@ public final class PlatformBuilder {
 
     private final String appName;
     private final SoftwareVersion softwareVersion;
-    private final Function<AddressBook, SwirldState> genesisStateBuilder;
+    private final Supplier<SwirldState> genesisStateBuilder;
     private final NodeId selfId;
     private final String swirldName;
 
@@ -118,6 +120,11 @@ public final class PlatformBuilder {
     private Path settingsPath = getAbsolutePath("settings.txt");
 
     /**
+     * A function that mimics the old init() behavior of SwirldsMain. Will eventually be removed.
+     */
+    private BiConsumer<Platform, NodeId> legacyInit;
+
+    /**
      * Create a new platform builder.
      *
      * @param appName             the name of the application, currently used for deciding where to store states on
@@ -131,7 +138,7 @@ public final class PlatformBuilder {
             @NonNull final String appName,
             @NonNull final String swirldName,
             @NonNull final SoftwareVersion softwareVersion,
-            @NonNull final Function<AddressBook, SwirldState> genesisStateBuilder,
+            @NonNull final Supplier<SwirldState> genesisStateBuilder,
             @NonNull final NodeId selfId) {
 
         this.appName = Objects.requireNonNull(appName);
@@ -185,6 +192,19 @@ public final class PlatformBuilder {
             throw new IllegalArgumentException("File " + absolutePath + " does not exist");
         }
         this.configPath = absolutePath;
+        return this;
+    }
+
+    /**
+     * A function that mimics the old init() behavior of SwirldsMain. Will eventually be removed.
+     *
+     * @param legacyInit the function to call
+     * @return this
+     * @deprecated this will no longer be supported after control is inverted
+     */
+    @Deprecated(forRemoval = true)
+    public PlatformBuilder withLegacyInit(@NonNull final BiConsumer<Platform, NodeId> legacyInit) {
+        this.legacyInit = Objects.requireNonNull(legacyInit);
         return this;
     }
 
@@ -316,7 +336,7 @@ public final class PlatformBuilder {
                 platformContext,
                 recycleBin,
                 softwareVersion,
-                () -> genesisStateBuilder.apply(configAddressBook),
+                genesisStateBuilder,
                 appName,
                 swirldName,
                 selfId,
@@ -356,6 +376,10 @@ public final class PlatformBuilder {
                     initialState.get(),
                     addressBookInitializer.getPreviousAddressBook(),
                     emergencyRecoveryManager);
+
+            if (legacyInit != null) {
+                legacyInit.accept(platform, selfId);
+            }
 
             if (firstTimeSetup) {
                 MetricsDocUtils.writeMetricsDocumentToFile(globalMetrics, getPlatforms(), configuration);

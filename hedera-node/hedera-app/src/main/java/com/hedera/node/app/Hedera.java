@@ -147,6 +147,17 @@ public final class Hedera implements SwirldMain {
     /** Indicates whether the platform is active */
     private PlatformStatus platformStatus = PlatformStatus.STARTING_UP;
 
+    /**
+     * The application name from the platform's perspective. This is currently locked in at the old main class name and
+     * requires data migration to change.
+     */
+    public static final String APP_NAME = "com.hedera.services.ServicesMain";
+
+    /**
+     * The swirld name. Currently there is only one swirld.
+     */
+    public static final String SWIRLD_NAME = "123";
+
     /*==================================================================================================================
     *
     * Hedera Object Construction.

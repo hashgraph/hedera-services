@@ -21,7 +21,9 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.hedera.node.app.Hedera;
 import com.swirlds.common.constructable.ConstructableRegistry;
-import com.swirlds.platform.SwirldsPlatformBuilder;
+import com.swirlds.common.system.NodeId;
+import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.platform.PlatformBuilder;
 import com.swirlds.platform.util.BootstrapUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
@@ -130,24 +132,34 @@ public class InProcessHapiTestNode implements HapiTestNode {
         public void run() {
             BootstrapUtils.setupConstructableRegistry();
             final var cr = ConstructableRegistry.getInstance();
-            new SwirldsPlatformBuilder()
-                    .withNodeId(nodeId)
-                    .withConfigValue("paths.configPath", path("config.txt"))
-                    .withConfigValue("paths.settingsPath", path("settings.txt"))
-                    .withConfigValue("paths.settingsUsedDir", path("."))
-                    .withConfigValue("paths.keysDirPath", path("data/keys"))
-                    .withConfigValue("paths.appsDirPath", path("data/apps"))
-                    .withConfigValue("paths.logPath", path("log4j2.xml"))
-                    .withConfigValue("emergencyRecoveryFileLoadDir", path("data/saved"))
-                    .withConfigValue("state.savedStateDirectory", path("data/saved"))
-                    .withConfigValue("loadKeysFromPfxFiles", false)
-                    .withConfigValue("grpc.port", grpcPort)
-                    .withMain(() -> {
-                        final var h = new Hedera(cr);
-                        hedera = h;
-                        return h;
-                    })
-                    .buildAndStart();
+
+            final Hedera hedera = new Hedera(cr);
+
+            final PlatformBuilder builder = new PlatformBuilder(
+                    Hedera.APP_NAME,
+                    Hedera.SWIRLD_NAME,
+                    hedera.getSoftwareVersion(),
+                    hedera::newState,
+                    new NodeId(nodeId));
+
+            final ConfigurationBuilder configBuilder = ConfigurationBuilder.create()
+                    .withValue("paths.configPath", path("config.txt"))
+                    .withValue("paths.settingsPath", path("settings.txt"))
+                    .withValue("paths.settingsUsedDir", path("."))
+                    .withValue("paths.keysDirPath", path("data/keys"))
+                    .withValue("paths.appsDirPath", path("data/apps"))
+                    .withValue("paths.logPath", path("log4j2.xml"))
+                    .withValue("emergencyRecoveryFileLoadDir", path("data/saved"))
+                    .withValue("state.savedStateDirectory", path("data/saved"))
+                    .withValue("loadKeysFromPfxFiles", false)
+                    .withValue("grpc.port", grpcPort);
+
+            builder.withLegacyInit(hedera::init)
+                    .withConfigurationBuilder(configBuilder)
+                    .withSettingsPath(Path.of(path("settings.txt")))
+                    .withConfigPath(Path.of(path("config.txt")));
+
+            builder.build(true);
         }
 
         private String path(String path) {

@@ -39,7 +39,6 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
-import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
@@ -278,7 +277,7 @@ public class StatsSigningTestingToolMain implements SwirldMain {
 
     @Override
     @NonNull
-    public SwirldState newState(@NonNull final AddressBook addressBook) {
+    public SwirldState newState() {
         return new StatsSigningTestingToolState(() -> sttTransactionPool);
     }
 

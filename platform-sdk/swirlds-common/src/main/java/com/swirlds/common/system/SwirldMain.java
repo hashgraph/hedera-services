@@ -16,7 +16,6 @@
 
 package com.swirlds.common.system;
 
-import com.swirlds.common.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
@@ -65,11 +64,10 @@ public interface SwirldMain extends Runnable {
      * Instantiate and return a SwirldState object that corresponds to this SwirldMain object. Typically, if class
      * ExampleMain implements SwirldMain, then newState will return an object of class ExampleMain.
      *
-     * @param addressBook the genesis address book
      * @return the newly instantiated SwirldState object
      */
     @NonNull
-    SwirldState newState(@NonNull final AddressBook addressBook);
+    SwirldState newState();
 
     /**
      * <p>

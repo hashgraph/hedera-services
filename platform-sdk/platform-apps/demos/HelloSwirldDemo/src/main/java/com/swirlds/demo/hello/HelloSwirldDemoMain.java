@@ -36,7 +36,6 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
-import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.gui.model.GuiModel;
@@ -109,7 +108,7 @@ public class HelloSwirldDemoMain implements SwirldMain {
     }
 
     @Override
-    public SwirldState newState(final AddressBook addressBook) {
+    public SwirldState newState() {
         return new HelloSwirldDemoState();
     }
 

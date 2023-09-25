@@ -59,7 +59,6 @@ import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.SystemExitCode;
 import com.swirlds.common.system.SystemExitUtils;
-import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.state.notifications.NewSignedStateListener;
 import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
@@ -842,7 +841,7 @@ public class PlatformTestingToolMain implements SwirldMain {
 
     @Override
     @NonNull
-    public SwirldState newState(@NonNull final AddressBook addressBook) {
+    public SwirldState newState() {
         return new PlatformTestingToolState();
     }
 

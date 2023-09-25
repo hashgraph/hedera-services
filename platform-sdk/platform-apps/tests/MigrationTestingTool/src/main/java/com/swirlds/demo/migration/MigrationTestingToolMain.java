@@ -23,7 +23,6 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
-import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.fcqueue.FCQueueStatistics;
 import com.swirlds.gui.model.GuiModel;
 import com.swirlds.logging.payloads.ApplicationFinishedPayload;
@@ -167,7 +166,7 @@ public class MigrationTestingToolMain implements SwirldMain {
      * {@inheritDoc}
      */
     @Override
-    public SwirldState newState(final AddressBook addressBook) {
+    public SwirldState newState() {
         return new MigrationTestingToolState();
     }
 
