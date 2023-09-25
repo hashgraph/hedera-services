@@ -83,6 +83,7 @@ public class InProcessHapiTestNode implements HapiTestNode {
         final var waitUntil = System.currentTimeMillis() + (seconds * 1000);
         while (th == null || th.hedera == null || !th.hedera.isActive()) {
             if (System.currentTimeMillis() > waitUntil) {
+                th.hedera.logActiveStatus(); // TODO remove
                 throw new RuntimeException(
                         "node " + nodeId + ": Waited " + seconds + " seconds, but node did not become active!");
             }
