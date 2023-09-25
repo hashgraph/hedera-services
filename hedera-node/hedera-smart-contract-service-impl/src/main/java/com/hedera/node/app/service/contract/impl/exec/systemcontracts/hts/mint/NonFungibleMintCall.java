@@ -16,20 +16,80 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.mint;
 
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.token.TokenMintTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.service.token.records.TokenMintRecordBuilder;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+
+import java.math.BigInteger;
+import java.util.List;
+
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.revertResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asHeadlongAddress;
+import static java.util.Objects.requireNonNull;
 
 public class NonFungibleMintCall extends AbstractHtsCall implements MintCall {
-    public NonFungibleMintCall(@NonNull final HederaWorldUpdater.Enhancement enhancement) {
+    private final List<Bytes> metadata;
+    @Nullable
+    private final TokenID tokenId;
+    private final VerificationStrategy verificationStrategy;
+    private final org.hyperledger.besu.datatypes.Address spender;
+    private final AddressIdConverter addressIdConverter;
+
+    public NonFungibleMintCall(
+            @NonNull final HederaWorldUpdater.Enhancement enhancement,
+            @NonNull final List<Bytes> metadata,
+            @Nullable final TokenID tokenId,
+            @NonNull final VerificationStrategy verificationStrategy,
+            @NonNull final org.hyperledger.besu.datatypes.Address spender,
+            @NonNull final AddressIdConverter addressIdConverter) {
         super(enhancement);
+        this.metadata = metadata;
+        this.tokenId = tokenId;
+        this.verificationStrategy = requireNonNull(verificationStrategy);
+        this.spender = requireNonNull(spender);
+        this.addressIdConverter = requireNonNull(addressIdConverter);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public @NonNull PricedResult execute() {
-        throw new AssertionError("Not implemented");
+        if (tokenId == null) {
+            return reversionWith(INVALID_TOKEN_ID, 0L);
+        }
+        final var spenderId = addressIdConverter.convert(asHeadlongAddress(spender.toArrayUnsafe()));
+        final var recordBuilder = systemContractOperations()
+                .dispatch(
+                        syntheticMintUnits(tokenId, metadata),
+                        verificationStrategy,
+                        spenderId,
+                        TokenMintRecordBuilder.class);
+
+        if (recordBuilder.status() != ResponseCodeEnum.SUCCESS) {
+            return gasOnly(revertResult(recordBuilder.status(), 0L));
+        } else {
+            final var encodedOutput =  MintTranslator.MINT.getOutputs().encodeElements(
+                    BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()));
+            return gasOnly(successResult(encodedOutput, recordBuilder.getNewTotalSupply()));
+        }
+    }
+
+    private TransactionBody syntheticMintUnits(@NonNull final TokenID tokenId, final List<Bytes> metadata) {
+        return TransactionBody.newBuilder()
+                .tokenMint(TokenMintTransactionBody.newBuilder()
+                        .token(tokenId)
+                        .metadata(metadata)
+                        .build()
+                ).build();
     }
 }

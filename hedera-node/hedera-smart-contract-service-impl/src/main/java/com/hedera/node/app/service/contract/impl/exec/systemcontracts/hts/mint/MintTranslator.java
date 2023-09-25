@@ -22,9 +22,16 @@ import com.hedera.hapi.node.base.TokenType;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
+import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hederahashgraph.api.proto.java.AccountID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+
+import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.hyperledger.besu.datatypes.Address;
@@ -58,18 +65,54 @@ public class MintTranslator extends AbstractHtsCallTranslator {
     public @Nullable MintCall callFrom(@NonNull final HtsCallAttempt attempt) {
         final var selector = attempt.selector();
         final Tuple call;
+        final long amount;
         if (Arrays.equals(selector, MintTranslator.MINT.selector())) {
             call = MintTranslator.MINT.decodeCall(attempt.input().toArrayUnsafe());
+            amount = ((BigInteger) call.get(1)).longValueExact();
         } else {
             call = MintTranslator.MINT_V2.decodeCall(attempt.input().toArrayUnsafe());
+            amount = call.get(1);
         }
         final var token = attempt.linkedToken(Address.fromHexString(call.get(0).toString()));
         if (token == null) {
             return null;
         } else {
             return token.tokenType() == TokenType.FUNGIBLE_COMMON
-                    ? new FungibleMintCall(attempt.enhancement())
-                    : new NonFungibleMintCall(attempt.enhancement());
+                    ? fungibleCallFrom(attempt.senderAddress(), call.get(0), amount, attempt)
+                    : nonFungibleCallFrom(attempt.senderAddress(), call.get(0), call.get(2), attempt);
         }
+    }
+
+    private FungibleMintCall fungibleCallFrom(
+            @NonNull final org.hyperledger.besu.datatypes.Address sender,
+            @NonNull final com.esaulpaugh.headlong.abi.Address token,
+            final long amount,
+            @NonNull final HtsCallAttempt attempt) {
+        return new FungibleMintCall(
+                attempt.enhancement(),
+                amount,
+                ConversionUtils.asTokenId(token),
+                attempt.defaultVerificationStrategy(),
+                sender,
+                attempt.addressIdConverter());
+    }
+
+    private NonFungibleMintCall nonFungibleCallFrom(
+            @NonNull final org.hyperledger.besu.datatypes.Address sender,
+            @NonNull final com.esaulpaugh.headlong.abi.Address token,
+            @NonNull final byte[][] metadataArray,
+            @NonNull final HtsCallAttempt attempt) {
+        final List<Bytes> metadata = new ArrayList<>();
+        for (final var data : metadataArray) {
+            metadata.add(Bytes.wrap(data));
+        }
+
+        return new NonFungibleMintCall(
+                attempt.enhancement(),
+                metadata,
+                ConversionUtils.asTokenId(token),
+                attempt.defaultVerificationStrategy(),
+                sender,
+                attempt.addressIdConverter());
     }
 }

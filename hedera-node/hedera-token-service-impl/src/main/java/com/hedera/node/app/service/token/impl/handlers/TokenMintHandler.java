@@ -104,7 +104,10 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
 
         if (token.tokenType() == TokenType.FUNGIBLE_COMMON) {
             // we need to know if treasury mint while creation to ignore supply key exist or not.
-            mintFungible(token, treasuryRel, op.amount(), false, accountStore, tokenStore, tokenRelStore);
+            long newTotalSupply = mintFungible(token, treasuryRel, op.amount(), false, accountStore, tokenStore, tokenRelStore);
+            final var recordBuilder = context.recordBuilder(TokenMintRecordBuilder.class);
+
+            recordBuilder.newTotalSupply(newTotalSupply);
         } else {
             // get the config needed for validation
             final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);

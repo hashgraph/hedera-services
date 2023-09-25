@@ -16,17 +16,78 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.mint;
 
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.token.TokenMintTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.service.token.records.TokenMintRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+
+import java.math.BigInteger;
+
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.revertResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asHeadlongAddress;
+import static java.util.Objects.requireNonNull;
 
 public class FungibleMintCall extends AbstractHtsCall implements MintCall {
-    public FungibleMintCall(@NonNull final HederaWorldUpdater.Enhancement enhancement) {
+    private final long amount;
+    @Nullable
+    private final TokenID tokenId;
+    private final VerificationStrategy verificationStrategy;
+    private final org.hyperledger.besu.datatypes.Address spender;
+    private final AddressIdConverter addressIdConverter;
+
+    public FungibleMintCall(
+            @NonNull final HederaWorldUpdater.Enhancement enhancement,
+            final long amount,
+            @Nullable final TokenID tokenId,
+            @NonNull final VerificationStrategy verificationStrategy,
+            @NonNull final org.hyperledger.besu.datatypes.Address spender,
+            @NonNull final AddressIdConverter addressIdConverter) {
         super(enhancement);
+        this.amount = amount;
+        this.tokenId = tokenId;
+        this.verificationStrategy = requireNonNull(verificationStrategy);
+        this.spender = requireNonNull(spender);
+        this.addressIdConverter = requireNonNull(addressIdConverter);
     }
 
     @Override
     public @NonNull PricedResult execute() {
-        throw new AssertionError("Not implemented");
+        if (tokenId == null) {
+            return reversionWith(INVALID_TOKEN_ID, 0L);
+        }
+        final var spenderId = addressIdConverter.convert(asHeadlongAddress(spender.toArrayUnsafe()));
+        final var recordBuilder = systemContractOperations()
+                .dispatch(
+                        syntheticMintUnits(tokenId, amount),
+                        verificationStrategy,
+                        spenderId,
+                        TokenMintRecordBuilder.class);
+
+        if (recordBuilder.status() != ResponseCodeEnum.SUCCESS) {
+            return gasOnly(revertResult(recordBuilder.status(), 0L));
+        } else {
+            final var encodedOutput =  MintTranslator.MINT.getOutputs().encodeElements(
+                            BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()));
+            return gasOnly(successResult(encodedOutput, recordBuilder.getNewTotalSupply()));
+        }
+    }
+
+    private TransactionBody syntheticMintUnits(@NonNull final TokenID tokenId, final long amount) {
+        return TransactionBody.newBuilder()
+                .tokenMint(TokenMintTransactionBody.newBuilder()
+                        .token(tokenId)
+                        .amount(amount)
+                        .build()
+                ).build();
     }
 }

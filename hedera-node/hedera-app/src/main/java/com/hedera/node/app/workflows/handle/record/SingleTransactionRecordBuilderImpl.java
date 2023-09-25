@@ -128,6 +128,7 @@ public class SingleTransactionRecordBuilderImpl
     private ExchangeRateSet exchangeRate = ExchangeRateSet.DEFAULT;
     private List<Long> serialNumbers = new LinkedList<>();
     private final TransactionReceipt.Builder transactionReceiptBuilder = TransactionReceipt.newBuilder();
+    private long newTotalSupply = 0L;
     // Sidecar data, booleans are the migration flag
     private List<AbstractMap.SimpleEntry<ContractStateChanges, Boolean>> contractStateChanges = new LinkedList<>();
     private List<AbstractMap.SimpleEntry<ContractActions, Boolean>> contractActions = new LinkedList<>();
@@ -731,8 +732,13 @@ public class SingleTransactionRecordBuilderImpl
      */
     @NonNull
     public SingleTransactionRecordBuilderImpl newTotalSupply(final long newTotalSupply) {
+        this.newTotalSupply = newTotalSupply;
         transactionReceiptBuilder.newTotalSupply(newTotalSupply);
         return this;
+    }
+
+    public long getNewTotalSupply() {
+        return newTotalSupply;
     }
 
     /**
