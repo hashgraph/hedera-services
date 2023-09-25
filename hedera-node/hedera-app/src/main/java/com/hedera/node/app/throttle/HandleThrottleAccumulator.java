@@ -125,8 +125,8 @@ public class HandleThrottleAccumulator {
             reclaimLastAllowedUse();
             return true;
         }
-        ThrottleReqsManager manager;
-        if ((manager = functionReqs.get(queryFunction)) == null) {
+        final var manager = functionReqs.get(queryFunction);
+        if (manager == null) {
             reclaimLastAllowedUse();
             return true;
         }
@@ -152,11 +152,12 @@ public class HandleThrottleAccumulator {
     }
 
     public List<DeterministicThrottle> activeThrottlesFor(HederaFunctionality function) {
-        ThrottleReqsManager manager;
-        if ((manager = functionReqs.get(function)) == null) {
+        final var manager = functionReqs.get(function);
+        if (manager == null) {
             return Collections.emptyList();
+        } else {
+            return manager.managedThrottles();
         }
-        return manager.managedThrottles();
     }
 
     public boolean wasLastTxnGasThrottled() {
@@ -193,8 +194,8 @@ public class HandleThrottleAccumulator {
             return true;
         }
 
-        ThrottleReqsManager manager;
-        if ((manager = functionReqs.get(function)) == null) {
+        final var manager = functionReqs.get(function);
+        if (manager == null) {
             return true;
         }
 
