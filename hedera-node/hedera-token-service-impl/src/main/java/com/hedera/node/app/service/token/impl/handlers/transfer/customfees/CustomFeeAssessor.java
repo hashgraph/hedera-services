@@ -84,7 +84,8 @@ public class CustomFeeAssessor {
         validateBalanceChanges(result, maxTransfersSize, tokenRelStore);
     }
 
-    private void validateBalanceChanges(final AssessmentResult result, final int maxTransfersSize, final ReadableTokenRelationStore tokenRelStore) {
+    private void validateBalanceChanges(
+            final AssessmentResult result, final int maxTransfersSize, final ReadableTokenRelationStore tokenRelStore) {
         var inputFungibleTransfers = 0;
         var newFungibleTransfers = 0;
         for (final var entry : result.getMutableInputTokenAdjustments().entrySet()) {
@@ -97,7 +98,9 @@ public class CustomFeeAssessor {
                 final Long htsBalanceChange = entryTx.getValue();
                 if (htsBalanceChange < 0) {
                     final var tokenRel = tokenRelStore.get(entryTx.getKey(), entry.getKey());
-                    validateTrue(tokenRel.balance() + htsBalanceChange >= 0, INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
+                    validateTrue(
+                            tokenRel.balance() + htsBalanceChange >= 0,
+                            INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
                 }
             }
         }
