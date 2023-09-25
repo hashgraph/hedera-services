@@ -100,6 +100,7 @@ import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
@@ -125,7 +126,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.junit.jupiter.api.Assertions;
 
-// @HapiTestSuite
+@HapiTestSuite
 public class ContractCallSuite extends HapiSuite {
 
     private static final Logger LOG = LogManager.getLogger(ContractCallSuite.class);
@@ -1120,11 +1121,7 @@ public class ContractCallSuite extends HapiSuite {
 
                     ctxLog.info("symbol: [{}]", symbol);
 
-                    Assertions.assertEquals("", symbol, "TokenIssuer's symbol should be fixed value"); // should
-                    // be
-                    // "OCT"
-                    // as
-                    // expected
+                    Assertions.assertEquals("OCT", symbol, "TokenIssuer's symbol should be fixed value");
                     final var funcDecimals = Function.fromJson(getABIFor(FUNCTION, DECIMALS, contract));
 
                     final Integer decimals = getValueFromRegistry(spec, DECIMALS, funcDecimals);

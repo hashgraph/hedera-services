@@ -38,11 +38,10 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.base.SignatureMap;
-import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.consensus.ConsensusSubmitMessageTransactionBody;
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
@@ -53,6 +52,7 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.UnknownHederaFunctionality;
+import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.fixtures.Scenarios;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
@@ -73,7 +73,6 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.TransactionChecker;
-import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
@@ -104,11 +103,12 @@ import org.mockito.Mock;
 import org.mockito.Mock.Strictness;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-@SuppressWarnings("JUnitMalformedDeclaration")
 @ExtendWith(MockitoExtension.class)
 class HandleContextImplTest extends StateTestBase implements Scenarios {
 
     private static final Configuration DEFAULT_CONFIGURATION = HederaTestConfigBuilder.createConfig();
+
+    private static final Instant DEFAULT_CONSENSUS_NOW = Instant.ofEpochSecond(1_234_567L, 890);
 
     @Mock
     private SingleTransactionRecordBuilderImpl recordBuilder;
@@ -147,7 +147,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
     private ExchangeRateManager exchangeRateManager;
 
     @Mock
-    private Instant consensusNow;
+    private Authorizer authorizer;
 
     @BeforeEach
     void setup() {
@@ -168,12 +168,11 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         } catch (UnknownHederaFunctionality e) {
             throw new RuntimeException(e);
         }
-        final var txInfo =
-                new TransactionInfo(Transaction.DEFAULT, txBody, SignatureMap.DEFAULT, Bytes.EMPTY, function);
 
         return new HandleContextImpl(
                 txBody,
-                txInfo,
+                function,
+                0,
                 ALICE.accountID(),
                 ALICE.account().keyOrThrow(),
                 networkInfo,
@@ -190,21 +189,17 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                 recordCache,
                 feeManager,
                 exchangeRateManager,
-                consensusNow);
+                DEFAULT_CONSENSUS_NOW,
+                authorizer);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithInvalidArguments() {
-        final var txInfo = new TransactionInfo(
-                Transaction.DEFAULT,
-                defaultTransactionBody(),
-                SignatureMap.DEFAULT,
-                Bytes.EMPTY,
-                HederaFunctionality.CRYPTO_TRANSFER);
         final var allArgs = new Object[] {
-            txInfo.txBody(),
-            txInfo,
+            defaultTransactionBody(),
+            HederaFunctionality.CRYPTO_TRANSFER,
+            42,
             ALICE.accountID(),
             ALICE.account().keyOrThrow(),
             networkInfo,
@@ -221,14 +216,15 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             recordCache,
             feeManager,
             exchangeRateManager,
-            consensusNow
+            DEFAULT_CONSENSUS_NOW,
+            authorizer
         };
 
         final var constructor = HandleContextImpl.class.getConstructors()[0];
         for (int i = 0; i < allArgs.length; i++) {
             final var index = i;
-            // Skip transactionID and payerKey, they are optional
-            if (index == 1 || index == 3) {
+            // Skip signatureMapSize and payerKey
+            if (index == 2 || index == 4) {
                 continue;
             }
             assertThatThrownBy(() -> {
@@ -264,15 +260,10 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                             .state(MapWritableKVState.builder("ACCOUNTS").build())
                             .state(MapWritableKVState.builder("ALIASES").build())
                             .build());
-            final var txInfo = new TransactionInfo(
-                    Transaction.DEFAULT,
-                    defaultTransactionBody(),
-                    SignatureMap.DEFAULT,
-                    Bytes.EMPTY,
-                    HederaFunctionality.CRYPTO_TRANSFER);
             handleContext = new HandleContextImpl(
-                    txInfo.txBody(),
-                    txInfo,
+                    defaultTransactionBody(),
+                    HederaFunctionality.CRYPTO_TRANSFER,
+                    0,
                     payer,
                     payerKey,
                     networkInfo,
@@ -289,7 +280,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     recordCache,
                     feeManager,
                     exchangeRateManager,
-                    consensusNow);
+                    DEFAULT_CONSENSUS_NOW,
+                    authorizer);
         }
 
         @Test
@@ -714,6 +706,10 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     MapWritableStates.builder().state(baseKVState).build();
             when(baseState.createReadableStates(FOOD_SERVICE)).thenReturn(writableStates);
             when(baseState.createWritableStates(FOOD_SERVICE)).thenReturn(writableStates);
+            final var accountsState = new MapWritableKVState<AccountID, Account>("ACCOUNTS");
+            accountsState.put(ALICE.accountID(), ALICE.account());
+            when(baseState.createWritableStates(TokenService.NAME))
+                    .thenReturn(MapWritableStates.builder().state(accountsState).build());
 
             doAnswer(invocation -> {
                         final var childContext = invocation.getArgument(0, HandleContext.class);
@@ -744,11 +740,10 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                 throw new RuntimeException(e);
             }
 
-            final var txInfo =
-                    new TransactionInfo(Transaction.DEFAULT, txBody, SignatureMap.DEFAULT, Bytes.EMPTY, function);
             return new HandleContextImpl(
                     txBody,
-                    txInfo,
+                    function,
+                    0,
                     ALICE.accountID(),
                     ALICE.account().keyOrThrow(),
                     networkInfo,
@@ -765,7 +760,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     recordCache,
                     feeManager,
                     exchangeRateManager,
-                    consensusNow);
+                    DEFAULT_CONSENSUS_NOW,
+                    authorizer);
         }
 
         @SuppressWarnings("ConstantConditions")
