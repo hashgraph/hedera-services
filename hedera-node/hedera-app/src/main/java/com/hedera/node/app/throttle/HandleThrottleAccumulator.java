@@ -88,10 +88,10 @@ public class HandleThrottleAccumulator {
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
     }
 
-    public boolean shouldThrottle(@NonNull TransactionInfo txnInfo, Instant t, HederaState state) {
+    public boolean shouldThrottle(@NonNull TransactionInfo txnInfo, Instant consensusTime, HederaState state) {
         resetLastAllowedUse();
         lastTxnWasGasThrottled = false;
-        if (shouldThrottleTxn(txnInfo, t, state)) {
+        if (shouldThrottleTxn(txnInfo, consensusTime, state)) {
             reclaimLastAllowedUse();
             return true;
         }
