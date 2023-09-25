@@ -164,11 +164,13 @@ public class BlocklistAccountCreator {
 
         log.info("Bootstrapping blocklist from default resource '{}'", defaultResource);
         try (final var inputStream = getClass().getClassLoader().getResourceAsStream(defaultResource)) {
-            if (inputStream == null) {
-                throw new IOException("Could not find default resource " + defaultResource);
+            if (inputStream != null) {
+                final var reader = new BufferedReader(new InputStreamReader(inputStream));
+                return reader.lines().toList();
+            } else {
+                log.warn("Could not find default resource {}.", defaultResource);
+                return Collections.emptyList();
             }
-            final var reader = new BufferedReader(new InputStreamReader(inputStream));
-            return reader.lines().toList();
         } catch (final IOException e) {
             log.warn("Could not read from default resource {}", defaultResource);
             return Collections.emptyList();
