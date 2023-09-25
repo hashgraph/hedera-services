@@ -33,6 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -492,6 +493,9 @@ class HtsCallAttemptTest extends HtsCallTestBase {
         "0xe0f4059a,NON_FUNGIBLE",
     })
     void constructsMints(String hexedSelector, LinkedTokenType linkedTokenType) {
+        lenient()
+                .when(verificationStrategies.activatingOnlyContractKeysFor(EIP_1014_ADDRESS, false, nativeOperations))
+                .thenReturn(strategy);
         final var selector = CommonUtils.unhex(hexedSelector.substring(2));
         final var useV2 = Arrays.equals(MintTranslator.MINT_V2.selector(), selector);
         final Bytes input;
