@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.utils;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.processors.ProcessorModule.EVM_ADDRESS_SIZE;
 import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
 import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.NON_CANONICAL_REFERENCE_NUMBER;
@@ -24,8 +25,10 @@ import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.ContractLoginfo;
@@ -37,6 +40,7 @@ import com.hedera.hapi.streams.StorageChange;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
+import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
@@ -79,6 +83,18 @@ public class ConversionUtils {
             tokens[i] = asTokenId(tokenAddresses[i]);
         }
         return tokens;
+    }
+
+    /**
+     * Given a numeric {@link AccountID}, returns its equivalent contract id.
+     *
+     * @param accountId the numeric {@link AccountID}
+     * @return the equivalent account id
+     */
+    public static ContractID asNumericContractId(@NonNull final AccountID accountId) {
+        return ContractID.newBuilder()
+                .contractNum(accountId.accountNumOrThrow())
+                .build();
     }
 
     /**
@@ -132,17 +148,6 @@ public class ConversionUtils {
             builder.alias(evmAddress);
         }
         return builder.build();
-    }
-
-    /**
-     * Given a headlong address, converts it to a Besu {@link Address}.
-     *
-     * @param address the headlong address
-     * @return the Besu {@link Address}
-     */
-    public static Address fromHeadlongAddress(@NonNull final com.esaulpaugh.headlong.abi.Address address) {
-        requireNonNull(address);
-        return Address.fromHexString(address.toString());
     }
 
     /**
@@ -430,6 +435,17 @@ public class ConversionUtils {
     }
 
     /**
+     * Throws a {@link HandleException} if the given status is not {@link ResponseCodeEnum#SUCCESS}.
+     *
+     * @param status the status
+     */
+    public static void throwIfUnsuccessful(@NonNull final ResponseCodeEnum status) {
+        if (status != SUCCESS) {
+            throw new HandleException(status);
+        }
+    }
+
+    /**
      * Converts a PBJ bytes to Tuweni bytes.
      *
      * @param bytes the PBJ bytes
@@ -628,5 +644,16 @@ public class ConversionUtils {
         return account.alias().length() == EVM_ADDRESS_SIZE
                 ? account.alias().toByteArray()
                 : asEvmAddress(account.accountIdOrThrow().accountNumOrThrow());
+    }
+
+    /**
+     * Given a headlong address, converts it to a Besu {@link Address}.
+     *
+     * @param address the headlong address
+     * @return the Besu {@link Address}
+     */
+    public static Address fromHeadlongAddress(@NonNull final com.esaulpaugh.headlong.abi.Address address) {
+        requireNonNull(address);
+        return Address.fromHexString(address.toString());
     }
 }

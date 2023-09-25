@@ -27,6 +27,7 @@ import static com.swirlds.cli.logging.PlatformStatusLog.STATUS_HTML_CLASS;
 
 import com.swirlds.common.system.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -34,6 +35,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.IntStream;
 import org.apache.logging.log4j.Level;
 
 /**
@@ -74,9 +76,11 @@ public class HtmlGenerator {
     public static final String BLACKLIST_LABEL = "blacklist";
 
     /**
-     * This label is for fields we absolutely positively do not want displayed, regardless of what other filters say
+     * This label is for fields we absolutely positively do not want displayed, regardless of what filters say
+     * <p>
+     * The only thing that supersedes this are the "select" checkboxes
      */
-    public static final String ABSOLUTELY_NO_SHOW = "no-show";
+    public static final String NO_SHOW = "no-show";
 
     /**
      * This label is used to hold the value of how many whitelist filters are currently applied to a field
@@ -129,6 +133,17 @@ public class HtmlGenerator {
     public static final String TABLE_INDEPENDENT_SCROLL_LABEL = "table-independent-scroll";
 
     public static final String LOG_TABLE_LABEL = "log-table";
+
+    /**
+     * The labels to use for styling log levels.
+     */
+    private static final Map<String, String> logLevelLabels = Map.of(
+            "TRACE", "trace-label",
+            "DEBUG", "debug-label",
+            "INFO", "info-label",
+            "WARN", "warn-label",
+            "ERROR", "error-label",
+            "FATAL", "fatal-label");
 
     /**
      * The javascript that is used to hide/show elements when the filter checkboxes are clicked
@@ -297,6 +312,23 @@ public class HtmlGenerator {
                     }
                 });
             }
+            // the checkboxes that have the ability to "select" a line
+            let selectCheckboxes = document.getElementsByClassName("select-checkbox");
+            // add a listener to each checkbox
+            for (const element of selectCheckboxes) {
+                element.addEventListener("change", function() {
+                    let potentialTopLevelLine = $(this).parent();
+                    // step up parents, until you find the main log line
+                    while ($(potentialTopLevelLine).parent().hasClass("log-line")) {
+                        potentialTopLevelLine = $(potentialTopLevelLine).parent();
+                    }
+                    if ($(this).is(":checked")) {
+                        $(potentialTopLevelLine).attr('selected', true);
+                    } else {
+                        $(potentialTopLevelLine).attr('selected', false);
+                    }
+                });
+            }
             """;
 
     /**
@@ -368,10 +400,24 @@ public class HtmlGenerator {
      * This method creates 3 radio buttons, whitelist, blacklist, and neutral
      *
      * @param elementName the name of the element to hide
-     * @return the checkbox
+     * @return the radio filter group
      */
     @NonNull
-    private static String createStandardRadioFilter(@NonNull final String elementName) {
+    private static String createStandardRadioFilterWithoutLabelClass(@NonNull final String elementName) {
+        return createStandardRadioFilter(elementName, null);
+    }
+
+    /**
+     * Create a set of radio buttons that can hide elements with the given name
+     * <p>
+     * This method creates 3 radio buttons, whitelist, blacklist, and neutral
+     *
+     * @param elementName the name of the element to hide
+     * @param labelClass  the class to apply to the label, for styling
+     * @return the radio filter group
+     */
+    @NonNull
+    private static String createStandardRadioFilter(@NonNull final String elementName, @Nullable String labelClass) {
         final String commonRadioLabel = elementName + "-radio";
 
         final StringBuilder stringBuilder = new StringBuilder();
@@ -402,9 +448,13 @@ public class HtmlGenerator {
                         .generateTag())
                 .append("\n");
 
-        stringBuilder
-                .append(new HtmlTagFactory("label", elementName).generateTag())
-                .append("\n");
+        final HtmlTagFactory labelTagFactory = new HtmlTagFactory("label", elementName);
+
+        if (labelClass != null) {
+            labelTagFactory.addClass(labelClass);
+        }
+
+        stringBuilder.append(labelTagFactory.generateTag()).append("\n");
         stringBuilder.append(new HtmlTagFactory("br").generateTag()).append("\n");
 
         return stringBuilder.toString();
@@ -467,10 +517,34 @@ public class HtmlGenerator {
      * @return the filter div
      */
     @NonNull
-    private static String createStandardFilterDiv(
+    private static String createStandardFilterDivWithoutLabelClasses(
             @NonNull final String filterName, @NonNull final List<String> filterValues) {
+
         final List<String> filterRadios = filterValues.stream()
-                .map(HtmlGenerator::createStandardRadioFilter)
+                .map(HtmlGenerator::createStandardRadioFilterWithoutLabelClass)
+                .toList();
+        return createInputDiv(filterName, filterRadios);
+    }
+
+    /**
+     * Create a standard 3 radio filter div for the given filter name and values
+     * <p>
+     * The filter div has a heading, and a series of radio buttons that can hide elements with the given names
+     * <p>
+     * The radio labels will have the classes defined in labelClasses.
+     *
+     * @param filterName   the filter name
+     * @param filterValues the filter values
+     * @param labelClasses the classes to apply to the radio labels
+     * @return the filter div
+     */
+    private static String createStandardFilterDivWithLabelClasses(
+            @NonNull final String filterName,
+            @NonNull final List<String> filterValues,
+            @NonNull final Map<String, String> labelClasses) {
+
+        final List<String> filterRadios = filterValues.stream()
+                .map(filterValue -> createStandardRadioFilter(filterValue, labelClasses.get(filterValue)))
                 .toList();
         return createInputDiv(filterName, filterRadios);
     }
@@ -495,15 +569,15 @@ public class HtmlGenerator {
                 new CssDeclaration("white-space", "nowrap"),
                 new CssDeclaration("vertical-align", "top"));
 
-        // hide elements that have a blacklist value that isn't 0 or NaN
+        // hide elements that have a blacklist value, as long as they don't have a whitelist value, and aren't selected
         cssFactory.addRule(
-                "[%s]:not([%s~='0']):not([%s~=\"NaN\"]):is([%s='0'])"
+                "[%s]:not([%s~='0']):not([%s~=\"NaN\"]):is([%s='0']):not([selected])"
                         .formatted(BLACKLIST_LABEL, BLACKLIST_LABEL, BLACKLIST_LABEL, WHITELIST_LABEL),
                 new CssDeclaration("display", "none"));
 
-        // absolutely hide any elements with a no-show value of > 1
+        // strongly hide any elements with a no-show value of > 1. Only selected elements are exempt
         cssFactory.addRule(
-                "[%s]:not([%s~='0'])".formatted(ABSOLUTELY_NO_SHOW, ABSOLUTELY_NO_SHOW),
+                "[%s]:not([%s~='0']):not([selected])".formatted(NO_SHOW, NO_SHOW),
                 new CssDeclaration("display", "none !important"));
 
         // pad the log table columns
@@ -568,6 +642,13 @@ public class HtmlGenerator {
                             "td.node-" + nodeId + ", label.node-" + nodeId,
                             new CssDeclaration("color", color == null ? DEFAULT_TEXT_COLOR : color));
                 });
+
+        // add transparent borders that match node id color
+        IntStream.range(0, NodeIdColorizer.nodeIdColors.size())
+                .forEach(index -> cssFactory.addRule(
+                        "tr[selected].node" + index + ", tbody[selected].node" + index,
+                        new CssDeclaration("outline", "2px solid " + NodeIdColorizer.nodeIdColors.get(index) + "50"),
+                        new CssDeclaration("outline-offset", "-2px")));
     }
 
     /**
@@ -624,16 +705,24 @@ public class HtmlGenerator {
                 CLASS_NAME_COLUMN_LABEL,
                 REMAINDER_OF_LINE_COLUMN_LABEL)));
 
-        filterDivBuilder.append(createStandardFilterDiv(
-                "Log Level",
-                logLines.stream()
-                        .map(LogLine::getLogLevel)
-                        .distinct()
-                        .sorted(Comparator.comparing(Level::toLevel))
-                        .toList()));
-        filterDivBuilder.append(createStandardFilterDiv(
-                "Log Marker",
-                logLines.stream().map(LogLine::getMarker).distinct().toList()));
+        logLevelLabels.forEach((logLevel, labelClass) -> cssFactory.addRule(
+                "." + labelClass, new CssDeclaration("color", getHtmlColor(getLogLevelColor(logLevel)))));
+        filterDivBuilder
+                .append(createStandardFilterDivWithLabelClasses(
+                        "Log Level",
+                        logLines.stream()
+                                .map(LogLine::getLogLevel)
+                                .distinct()
+                                .sorted(Comparator.comparing(Level::toLevel))
+                                .toList(),
+                        logLevelLabels))
+                .append("\n");
+
+        filterDivBuilder
+                .append(createStandardFilterDivWithoutLabelClasses(
+                        "Log Marker",
+                        logLines.stream().map(LogLine::getMarker).distinct().toList()))
+                .append("\n");
 
         final StringBuilder containingDivBuilder = new StringBuilder();
         containingDivBuilder

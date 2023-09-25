@@ -17,17 +17,12 @@
 package com.hedera.node.app.service.contract.impl.state;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.ACCOUNTS_LIMIT_REACHED;
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_RECEIVER_SIGNATURE;
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_VALUE_TRANSFER;
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.MISSING_ADDRESS;
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.SELFDESTRUCT_TO_SELF;
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.TOKEN_HOLDER_SELFDESTRUCT;
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.TOKEN_TREASURY_SELFDESTRUCT;
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.TOO_MANY_CHILD_RECORDS;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.CONTRACT_IS_TREASURY;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.CONTRACT_STILL_OWNS_NFTS;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.FAILURE_DURING_LAZY_ACCOUNT_CREATION;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.SELF_DESTRUCT_TO_SELF;
 import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.EVM_ADDRESS_LENGTH_AS_LONG;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
@@ -46,6 +41,7 @@ import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
+import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
 import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy.UseTopLevelSigs;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaNativeOperations;
@@ -327,11 +323,11 @@ public class DispatchingEvmFrameState implements EvmFrameState {
             final boolean delegateCall) {
         final var from = (ProxyEvmAccount) getAccount(sendingContract);
         if (from == null) {
-            return Optional.of(MISSING_ADDRESS);
+            return Optional.of(INVALID_SOLIDITY_ADDRESS);
         }
         final var to = getAccount(recipient);
         if (to == null) {
-            return Optional.of(MISSING_ADDRESS);
+            return Optional.of(INVALID_SOLIDITY_ADDRESS);
         } else if (to instanceof TokenEvmAccount) {
             return Optional.of(ILLEGAL_STATE_CHANGE);
         }
@@ -344,7 +340,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
                         from.number, tuweniToPbjBytes(from.getAddress()), delegateCall, UseTopLevelSigs.YES));
         if (status != OK) {
             if (status == INVALID_SIGNATURE) {
-                return Optional.of(INVALID_RECEIVER_SIGNATURE);
+                return Optional.of(CustomExceptionalHaltReason.INVALID_SIGNATURE);
             } else {
                 throw new IllegalStateException("Transfer from 0.0." + from.number
                         + " to 0.0." + ((ProxyEvmAccount) to).number
@@ -368,7 +364,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
             final var account = nativeOperations.getAccount(number);
             if (account != null) {
                 if (account.expiredAndPendingRemoval()) {
-                    return Optional.of(INVALID_VALUE_TRANSFER);
+                    return Optional.of(FAILURE_DURING_LAZY_ACCOUNT_CREATION);
                 } else {
                     throw new IllegalArgumentException(
                             "Unexpired account 0.0." + number + " already exists at address " + address);
@@ -377,14 +373,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
         }
         final var status = nativeOperations.createHollowAccount(tuweniToPbjBytes(address));
         if (status != OK) {
-            if (status == MAX_CHILD_RECORDS_EXCEEDED) {
-                return Optional.of(TOO_MANY_CHILD_RECORDS);
-            } else if (status == MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED) {
-                return Optional.of(ACCOUNTS_LIMIT_REACHED);
-            } else {
-                throw new IllegalStateException(
-                        "Lazy creation of account at address " + address + " failed with unexpected status " + status);
-            }
+            return Optional.of(FAILURE_DURING_LAZY_ACCOUNT_CREATION);
         }
         return Optional.empty();
     }
@@ -396,19 +385,19 @@ public class DispatchingEvmFrameState implements EvmFrameState {
     public Optional<ExceptionalHaltReason> tryTrackingDeletion(
             @NonNull final Address deleted, @NonNull final Address beneficiary) {
         if (deleted.equals(beneficiary)) {
-            return Optional.of(SELFDESTRUCT_TO_SELF);
+            return Optional.of(SELF_DESTRUCT_TO_SELF);
         }
         final var beneficiaryAccount = getAccount(beneficiary);
         if (beneficiaryAccount == null || beneficiaryAccount instanceof TokenEvmAccount) {
-            return Optional.of(MISSING_ADDRESS);
+            return Optional.of(INVALID_SOLIDITY_ADDRESS);
         }
         // Token addresses don't have bytecode that could run a selfdestruct, so this cast is safe
         final var deletedAccount = (ProxyEvmAccount) requireNonNull(getAccount(deleted));
         if (deletedAccount.numTreasuryTitles() > 0) {
-            return Optional.of(TOKEN_TREASURY_SELFDESTRUCT);
+            return Optional.of(CONTRACT_IS_TREASURY);
         }
         if (deletedAccount.numPositiveTokenBalances() > 0) {
-            return Optional.of(TOKEN_HOLDER_SELFDESTRUCT);
+            return Optional.of(CONTRACT_STILL_OWNS_NFTS);
         }
         nativeOperations.trackDeletion(deletedAccount.number, ((ProxyEvmAccount) beneficiaryAccount).number);
         return Optional.empty();
