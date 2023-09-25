@@ -73,8 +73,12 @@ public record PreHandleResult(
         /** When the pre-handle fails due to node due diligence failures. */
         NODE_DUE_DILIGENCE_FAILURE,
         /**
-         * When the pre-handle fails because the combination of state and transaction is invalid, such as insufficient
-         * balance, missing account, or invalid transaction body data.
+         * When the pre-handle fails because the payer was either unwilling (or unable) to pay the service fee.
+         */
+        PAYER_UNWILLING_OR_UNABLE_TO_PAY_SERVICE_FEE,
+        /**
+         * When the pre-handle fails for any case of the combination of state and transaction being invalid,
+         * such a missing account or invalid transaction body data.
          */
         PRE_HANDLE_FAILURE,
         /**
