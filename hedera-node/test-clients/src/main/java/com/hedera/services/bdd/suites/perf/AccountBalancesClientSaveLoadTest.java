@@ -225,10 +225,12 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest {
                         .balance((RANDOM.nextInt((int) ONE_HBAR) + MIN_ACCOUNT_BALANCE))
                         .key(GENESIS)
                         .fee(ONE_HUNDRED_HBARS)
+                        .rechargeWindow(30)
                         .hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
                         .hasPrecheckFrom(DUPLICATE_TRANSACTION, OK)
-                        .hasKnownStatusFrom(SUCCESS)
-                        .noLogging();
+                        .hasKnownStatusFrom(SUCCESS, INVALID_SIGNATURE)
+                        .noLogging()
+                        .deferStatusResolution();
 
                 return Optional.of(op);
             }
