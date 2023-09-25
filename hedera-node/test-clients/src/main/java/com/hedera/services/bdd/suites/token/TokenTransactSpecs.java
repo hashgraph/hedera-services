@@ -216,8 +216,8 @@ public class TokenTransactSpecs extends HapiSuite {
 
 
     // fails with
-    // 2023-09-18 15:00:09.452 WARN  262  HapiSpecOperation - 'CustomFeesHaveExpectedAutoCreateInteractions' - HapiCryptoTransfer{sigs=2, node=0.0.3, transfers=[]} failed - Wrong status! Expected INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE, was FAIL_INVALID!
-//    @HapiTest
+    // HapiCryptoTransfer{sigs=2, node=0.0.3, transfers=[]} failed - Wrong status! Expected INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE, was FAIL_INVALID!
+    // @HapiTest
     private HapiSpec customFeesHaveExpectedAutoCreateInteractions() {
         final var nftWithRoyaltyNoFallback = "nftWithRoyaltyNoFallback";
         final var nftWithRoyaltyPlusHtsFallback = "nftWithRoyaltyPlusFallback";
@@ -762,7 +762,7 @@ public class TokenTransactSpecs extends HapiSuite {
 
     // fails with
     // 2023-09-18 15:02:28.917 WARN  262  HapiSpecOperation - 'autoAssociationWorksForContracts' - HapiContractCreate{sigs=2, node=0.0.3, contract=CreateDonor, bytecode=CreateDonor, created=0, contract=CreateDonor, bytecode=CreateDonor, created=0} failed - Wrong status! Expected SUCCESS, was NOT_SUPPORTED!
-//    @HapiTest
+    // @HapiTest
     public HapiSpec autoAssociationWorksForContracts() {
         final var theContract = "CreateDonor";
         final String tokenA = "tokenA";
@@ -1605,9 +1605,7 @@ public class TokenTransactSpecs extends HapiSuite {
                                 .hasTokenBalance(tokenWithFractionalFee, Long.MAX_VALUE - 1_000L + 1L));
     }
 
-    // TODO
-    // FAIL
-    // 2023-09-18 14:59:57.055 WARN  262  HapiSpecOperation - 'MultipleRoyaltyFallbackCaseStudy' - HapiCryptoTransfer{sigs=2, payer=zephyr, node=0.0.3, transfers=[], tokenTransfers=0.0.1044([])([serialNumber:1 senderAccountID:0.0.1037 receiverAccountId:0.0.1038])} failed - Wrong status! Expected INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE, was INSUFFICIENT_TOKEN_BALANCE!
+
     @HapiTest
     public HapiSpec multipleRoyaltyFallbackCaseStudy() {
         final var zephyr = "zephyr";
@@ -1879,10 +1877,9 @@ public class TokenTransactSpecs extends HapiSuite {
     }
 
 
-    // TODO
-    // FAIL
-    // 2023-09-18 14:59:14.893 WARN  262  HapiSpecOperation - 'CanTransactInTokenWithSelfDenominatedFixedFee' - HapiTokenCreate{sigs=2, node=0.0.3, token=protocolToken} failed - Wrong status! Expected SUCCESS, was TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT!
-    @HapiTest
+    // fails with
+    // Wrong status! Expected INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE, was INVALID_TOKEN_ID!
+    // @HapiTest
     public HapiSpec canTransactInTokenWithSelfDenominatedFixedFee() {
         final var protocolToken = "protocolToken";
         final var gabriella = "gabriella";
@@ -2145,7 +2142,7 @@ public class TokenTransactSpecs extends HapiSuite {
 
     // fails with
     // 2023-09-18 15:02:58.607 WARN  259  HapiSpecOperation - 'CollectorIsChargedFractionalFeeUnlessExempt' - HapiGetTxnRecord{sigs=1, node=0.0.3, txn=collectorNonExempt} failed - java.lang.Exception: Bad priority record! :: Bad assessedCustomFeesList! :: Wrong # of custom fees: expected: <1> but was: <2>
-//    @HapiTest
+    // @HapiTest
     public HapiSpec collectorIsChargedFractionalFeeUnlessExempt() {
         return defaultHapiSpec("CollectorIsChargedFractionalFeeUnlessExempt")
                 .given(

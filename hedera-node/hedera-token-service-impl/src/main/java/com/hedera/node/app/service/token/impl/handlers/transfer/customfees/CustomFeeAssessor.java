@@ -17,12 +17,15 @@
 package com.hedera.node.app.service.token.impl.handlers.transfer.customfees;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
+import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Collections.emptyList;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
+import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
@@ -65,7 +68,10 @@ public class CustomFeeAssessor {
             final AssessmentResult result,
             final HandleContext ctx) {
         fixedFeeAssessor.assessFixedFees(feeMeta, sender, result);
-        validateBalanceChanges(result, maxTransfersSize);
+
+        final var tokenRelStore = ctx.readableStore(ReadableTokenRelationStore.class);
+
+        validateBalanceChanges(result, maxTransfersSize, tokenRelStore);
 
         // A FUNGIBLE_COMMON token can have fractional fees but not royalty fees.
         // A NON_FUNGIBLE_UNIQUE token can have royalty fees but not fractional fees.
@@ -75,18 +81,27 @@ public class CustomFeeAssessor {
         } else {
             royaltyFeeAssessor.assessRoyaltyFees(feeMeta, sender, receiver, result, ctx);
         }
-        validateBalanceChanges(result, maxTransfersSize);
+        validateBalanceChanges(result, maxTransfersSize, tokenRelStore);
     }
 
-    private void validateBalanceChanges(final AssessmentResult result, final int maxTransfersSize) {
+    private void validateBalanceChanges(final AssessmentResult result, final int maxTransfersSize, final ReadableTokenRelationStore tokenRelStore) {
         var inputFungibleTransfers = 0;
         var newFungibleTransfers = 0;
         for (final var entry : result.getMutableInputTokenAdjustments().entrySet()) {
             inputFungibleTransfers += entry.getValue().size();
         }
         for (final var entry : result.getHtsAdjustments().entrySet()) {
-            newFungibleTransfers += entry.getValue().size();
+            final var entryValue = entry.getValue();
+            newFungibleTransfers += entryValue.size();
+            for (final var entryTx : entryValue.entrySet()) {
+                final Long htsBalanceChange = entryTx.getValue();
+                if (htsBalanceChange < 0) {
+                    final var tokenRel = tokenRelStore.get(entryTx.getKey(), entry.getKey());
+                    validateTrue(tokenRel.balance() + htsBalanceChange >= 0, INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
+                }
+            }
         }
+
         final var balanceChanges = result.getHbarAdjustments().size()
                 + newFungibleTransfers
                 + result.getInputHbarAdjustments().size()
