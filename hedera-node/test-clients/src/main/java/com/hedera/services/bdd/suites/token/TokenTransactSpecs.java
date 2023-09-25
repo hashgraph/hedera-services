@@ -1273,9 +1273,7 @@ public class TokenTransactSpecs extends HapiSuite {
     }
 
 
-    // fails with
-    // 2023-09-18 15:00:02.747 WARN  262  HapiSpecOperation - 'FixedHbarCaseStudy' - HapiGetTxnRecord{sigs=1, node=0.0.3, txn=txnFromTreasury} failed - Cannot find TokenID: tokenNum: 1048
-//    @HapiTest
+    @HapiTest
     public HapiSpec fixedHbarCaseStudy() {
         final var alice = "Alice";
         final var bob = "Bob";

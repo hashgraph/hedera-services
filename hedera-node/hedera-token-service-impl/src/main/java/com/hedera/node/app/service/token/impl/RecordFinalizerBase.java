@@ -27,6 +27,7 @@ import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.state.common.EntityIDPair;
+import com.hedera.node.app.service.token.ReadableTokenStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -154,14 +155,21 @@ public class RecordFinalizerBase {
      * @return a {@link Map} of {@link TokenID} to {@link List} of {@link NftTransfer} representing the nft ownership
      */
     @NonNull
-    protected Map<TokenID, List<NftTransfer>> nftChangesFrom(@NonNull final WritableNftStore writableNftStore) {
+    protected Map<TokenID, List<NftTransfer>> nftChangesFrom(@NonNull final WritableNftStore writableNftStore, @NonNull final ReadableTokenStore readableTokenStore) {
         final var nftChanges = new HashMap<TokenID, List<NftTransfer>>();
         for (final NftID nftId : writableNftStore.modifiedNfts()) {
             final var modifiedNft = writableNftStore.get(nftId);
             final var persistedNft = writableNftStore.getOriginalValue(nftId);
 
             // The NFT may not have existed before, in which case we'll use a null sender account ID
-            final var senderAccountId = persistedNft != null ? persistedNft.ownerId() : null;
+            AccountID senderAccountId = null;
+            if (persistedNft != null) {
+                final var token = readableTokenStore.get(nftId.tokenId());
+                final boolean hasOwnerId = persistedNft.hasOwnerId() && !persistedNft.ownerId().equals(AccountID.DEFAULT);
+                // If the NFT did not have an owner before set it to the treasury account
+                senderAccountId = hasOwnerId ? persistedNft.ownerId() : token.treasuryAccountId();
+            }
+
             // If the NFT has been burned or wiped, modifiedNft will be null. In that case the receiverId
             // will be explicitly set as 0.0.0
             final var builder = NftTransfer.newBuilder();
