@@ -67,6 +67,8 @@ import org.apache.logging.log4j.Logger;
 public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOperation {
     private static final Logger log = LogManager.getLogger(HapiQueryOp.class);
 
+    private static final int MAX_RETRY_LIMIT = 20;
+
     private String nodePaymentName;
     private boolean recordsNodePayment = false;
     private boolean stopAfterCostAnswer = false;
@@ -139,6 +141,25 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
     }
 
     protected abstract T self();
+
+    @Override
+    public Optional<Throwable> execFor(HapiSpec spec) {
+        Optional<Throwable> result = Optional.empty();
+        for (int retryCount = 0; retryCount < MAX_RETRY_LIMIT; retryCount++) {
+            result = super.execFor(spec);
+            if (result.isEmpty()) {
+                return result;
+            }
+            log.info("{}. retry", retryCount);
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException("Interrupted while waiting to retry", e);
+            }
+        }
+        return result;
+    }
 
     @Override
     protected boolean submitOp(HapiSpec spec) throws Throwable {
@@ -308,6 +329,21 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
             return cost;
         }
     }
+
+//    private long retryLookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
+//        int retryCount = 1;
+//        while (true) {
+//            try {
+//                return lookupCostWith(spec, payment);
+//            } catch (final HapiQueryCheckStateException ex) {
+//                if (++retryCount > MAX_RETRY_LIMIT) {
+//                    throw ex;
+//                }
+//            }
+//            log.info("{}. retry of cost lookup", retryCount);
+//            Thread.sleep(10);
+//        }
+//    }
 
     private Consumer<TransactionBody.Builder> opDef(HapiSpec spec, long amount) throws Throwable {
         TransferList transfers = asTransferList(
