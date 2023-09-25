@@ -20,7 +20,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
@@ -44,7 +43,6 @@ import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.HederaConfig;
@@ -282,46 +280,60 @@ public class TokenServiceApiImpl implements TokenServiceApi {
                 .build());
     }
 
-    private void maybeRemoveAlias(@NonNull final WritableAccountStore store, @NonNull final Bytes alias) {
-        if (!Bytes.EMPTY.equals(alias)) {
-            store.removeAlias(alias);
-        }
+    @Override
+    public void chargeNetworkFee(@NonNull AccountID payerId, long amount, @NonNull FeeRecordBuilder rb) {
+        requireNonNull(rb);
+        requireNonNull(payerId);
+
+        final var payerAccount = lookupAccount("Payer", payerId);
+        final var amountToCharge = Math.min(amount, payerAccount.tinybarBalance());
+        chargePayer(payerAccount, amountToCharge);
+        rb.transactionFee(amountToCharge);
+        distributeToNetworkFundingAccounts(amountToCharge, rb);
     }
 
     @Override
-    public void chargeFees(@NonNull AccountID payer, @NonNull Fees fees, @NonNull final FeeRecordBuilder rb) {
+    public void chargeFees(
+            @NonNull AccountID payerId,
+            AccountID nodeAccountId,
+            @NonNull Fees fees,
+            @NonNull final FeeRecordBuilder rb) {
+        requireNonNull(rb);
+        requireNonNull(fees);
+        requireNonNull(payerId);
+        requireNonNull(nodeAccountId);
+
         // Note: these four accounts (payer, funding, staking reward, node reward) MUST exist for the transaction to be
         // valid and for fees to be processed. If any of them do not exist, the entire transaction will fail. There is
         // no conceivable way that these accounts *should* be null at this point.
-
-        // Record the total fee into the record builder
-        final var total = fees.totalFee();
-        rb.transactionFee(rb.transactionFee() + total);
-
-        // Charge the payer for the fees
-        chargePayer(payer, total);
-
-        // We may have a rounding error, so we will first remove the node and staking rewards from the total, and then
-        // whatever is left over goes to the funding account.
-        var balance = total;
-
-        // We only pay node and staking rewards if the feature is enabled
-        if (stakingConfig.isEnabled()) {
-            final var nodeReward = (long) ((stakingConfig.feesNodeRewardPercentage() / 100.0) * total);
-            balance -= nodeReward;
-            payNodeRewardAccount(nodeReward);
-
-            final var stakingReward = (long) ((stakingConfig.feesStakingRewardPercentage() / 100.0) * total);
-            balance -= stakingReward;
-            payStakingRewardAccount(stakingReward);
+        final var payerAccount = lookupAccount("Payer", payerId);
+        if (payerAccount.tinybarBalance() < fees.networkFee()) {
+            throw new IllegalArgumentException(
+                    "Payer %s (balance=%d) cannot afford network fee of %d, which should have been a due diligence failure"
+                            .formatted(payerId, payerAccount.tinybarBalance(), fees.networkFee()));
         }
+        if (fees.serviceFee() > 0 && payerAccount.tinybarBalance() < fees.totalFee()) {
+            throw new IllegalArgumentException(
+                    "Payer %s (balance=%d) cannot afford total fee of %d, which means service component should have been zeroed out"
+                            .formatted(payerId, payerAccount.tinybarBalance(), fees.totalFee()));
+        }
+        // Prioritize network fee over node fee
+        final long chargeableNodeFee = Math.min(fees.nodeFee(), payerAccount.tinybarBalance() - fees.networkFee());
+        final long amountToCharge = fees.totalWithoutNodeFee() + chargeableNodeFee;
+        final long amountToDistributeToFundingAccounts = amountToCharge - chargeableNodeFee;
 
-        // Whatever is left over goes to the funding account
-        final var fundingAccount = lookupAccount("Funding", fundingAccountID);
-        accountStore.put(fundingAccount
-                .copyBuilder()
-                .tinybarBalance(fundingAccount.tinybarBalance() + balance)
-                .build());
+        chargePayer(payerAccount, amountToCharge);
+        // Record the amount charged into the record builder
+        rb.transactionFee(amountToCharge);
+        distributeToNetworkFundingAccounts(amountToDistributeToFundingAccounts, rb);
+
+        if (chargeableNodeFee > 0) {
+            final var nodeAccount = lookupAccount("Node account", nodeAccountId);
+            accountStore.put(nodeAccount
+                    .copyBuilder()
+                    .tinybarBalance(nodeAccount.tinybarBalance() + chargeableNodeFee)
+                    .build());
+        }
     }
 
     @Override
@@ -330,19 +342,19 @@ public class TokenServiceApiImpl implements TokenServiceApi {
     }
 
     /**
-     * A utility method that charges (debits) the payer for the given total fee. If the payer account doesn't exist,
+     * A utility method that charges (debits) the payer up to the given total fee. If the payer account doesn't exist,
      * then an exception is thrown.
      *
-     * @param payer the account to charge
-     * @param amount the amount to charge
+     * @param payerAccount the account to charge
+     * @param amount the maximum amount to charge
      * @throws IllegalStateException if the payer account doesn't exist
      */
-    private void chargePayer(@NonNull final AccountID payer, final long amount) {
-        final var payerAccount = lookupAccount("Payer", payer);
-        final var currentBalance = payerAccount.tinybarBalance();
-        if (currentBalance < amount) {
-            throw new HandleException(INSUFFICIENT_PAYER_BALANCE);
+    private void chargePayer(@NonNull final Account payerAccount, final long amount) {
+        if (amount > payerAccount.tinybarBalance()) {
+            throw new IllegalArgumentException("Payer %s (balance=%d) cannot afford fee of %d"
+                    .formatted(payerAccount, payerAccount.tinybarBalance(), amount));
         }
+        final long currentBalance = payerAccount.tinybarBalance();
         accountStore.put(payerAccount
                 .copyBuilder()
                 .tinybarBalance(currentBalance - amount)
@@ -491,5 +503,35 @@ public class TokenServiceApiImpl implements TokenServiceApi {
 
     private EntityType getEntityType(@NonNull final Account account) {
         return account.smartContract() ? EntityType.CONTRACT : EntityType.ACCOUNT;
+    }
+
+    private void maybeRemoveAlias(@NonNull final WritableAccountStore store, @NonNull final Bytes alias) {
+        if (!Bytes.EMPTY.equals(alias)) {
+            store.removeAlias(alias);
+        }
+    }
+
+    private void distributeToNetworkFundingAccounts(final long amount, @NonNull final FeeRecordBuilder rb) {
+        // We may have a rounding error, so we will first remove the node and staking rewards from the total, and then
+        // whatever is left over goes to the funding account.
+        long balance = amount;
+
+        // We only pay node and staking rewards if the feature is enabled
+        if (stakingConfig.isEnabled()) {
+            final long nodeReward = (stakingConfig.feesNodeRewardPercentage() * amount) / 100;
+            balance -= nodeReward;
+            payNodeRewardAccount(nodeReward);
+
+            final long stakingReward = (stakingConfig.feesStakingRewardPercentage() * amount) / 100;
+            balance -= stakingReward;
+            payStakingRewardAccount(stakingReward);
+        }
+
+        // Whatever is left over goes to the funding account
+        final var fundingAccount = lookupAccount("Funding", fundingAccountID);
+        accountStore.put(fundingAccount
+                .copyBuilder()
+                .tinybarBalance(fundingAccount.tinybarBalance() + balance)
+                .build());
     }
 }

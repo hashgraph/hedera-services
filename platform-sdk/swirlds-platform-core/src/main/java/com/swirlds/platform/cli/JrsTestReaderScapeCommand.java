@@ -17,21 +17,17 @@
 package com.swirlds.platform.cli;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
-import static com.swirlds.platform.testreader.JrsTestReader.findTestResults;
+import static com.swirlds.platform.cli.utils.JtrUtils.scrapeTestData;
 import static com.swirlds.platform.testreader.JrsTestReader.saveTestResults;
 
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.platform.testreader.JrsReportData;
-import com.swirlds.platform.util.VirtualTerminal;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.Objects;
-import java.util.concurrent.Executors;
 import picocli.CommandLine;
 
 @CommandLine.Command(
@@ -82,9 +78,6 @@ public class JrsTestReaderScapeCommand extends AbstractCommand {
 
     @Override
     public Integer call() {
-        final VirtualTerminal terminal =
-                new VirtualTerminal().setProgressIndicatorEnabled(true).setThrowOnError(true);
-
         if (Files.exists(output)) {
             try {
                 Files.delete(output);
@@ -93,15 +86,10 @@ public class JrsTestReaderScapeCommand extends AbstractCommand {
             }
         }
 
-        final Instant now = Instant.now();
+        final JrsReportData data = scrapeTestData(bucketPrefix, testDirectory, days, threads);
 
-        final boolean hasSlash = bucketPrefix.endsWith("/") || testDirectory.startsWith("/");
-        final String rootDirectory = bucketPrefix + (hasSlash ? "" : "/") + testDirectory;
+        saveTestResults(data, output);
 
-        final JrsReportData reportData = findTestResults(
-                terminal, Executors.newFixedThreadPool(threads), rootDirectory, now, Duration.ofDays(days));
-
-        saveTestResults(reportData, output);
         return 0;
     }
 }

@@ -26,13 +26,15 @@ import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
 import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.metrics.Counter;
+import com.swirlds.common.metrics.LongAccumulator;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
-import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.StaleEventObserver;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 
 /**
  * Collection of metrics related to event intake
@@ -68,44 +70,74 @@ public class EventIntakeMetrics implements StaleEventObserver {
             new RunningAverageMetric.Config(INTERNAL_CATEGORY, "shouldCreateEvent").withFormat(FORMAT_10_1);
     private final RunningAverageMetric shouldCreateEvent;
 
-    private static final Counter.Config STALE_EVENTS_TOTAL_CONFIG =
-            new Counter.Config(INTERNAL_CATEGORY, "staleEvTot").withDescription("total number of stale events ever");
-    private final Counter staleEventsTotal;
+    private static final LongAccumulator.Config STALE_EVENTS_CONFIG = new LongAccumulator.Config(
+                    INTERNAL_CATEGORY, "staleEvents")
+            .withAccumulator(Long::sum)
+            .withDescription("number of stale events");
+    private final LongAccumulator staleEventCount;
 
-    private static final SpeedometerMetric.Config STALE_EVENTS_PER_SECOND_CONFIG = new SpeedometerMetric.Config(
-                    INTERNAL_CATEGORY, "staleEv/sec")
-            .withDescription("number of stale events per second")
-            .withFormat(FORMAT_16_2);
-    private final SpeedometerMetric staleEventsPerSecond;
+    private static final LongAccumulator.Config STALE_SELF_EVENTS_CONFIG = new LongAccumulator.Config(
+                    INTERNAL_CATEGORY, "staleSelfEvents")
+            .withAccumulator(Long::sum)
+            .withDescription("number of stale self events");
+    private final LongAccumulator staleSelfEventCount;
+
+    private static final LongAccumulator.Config STALE_APP_TRANSACTIONS_CONFIG = new LongAccumulator.Config(
+                    INTERNAL_CATEGORY, "staleAppTransactions")
+            .withAccumulator(Long::sum)
+            .withDescription("number of application transactions in stale events");
+    private final LongAccumulator staleAppTransactionCount;
+
+    private static final LongAccumulator.Config STALE_SELF_APP_TRANSACTIONS_CONFIG = new LongAccumulator.Config(
+                    INTERNAL_CATEGORY, "staleSelfAppTransactions")
+            .withAccumulator(Long::sum)
+            .withDescription("number of application transactions in stale self events");
+    private final LongAccumulator staleSelfAppTransactionCount;
+
+    private static final LongAccumulator.Config STALE_SYSTEM_TRANSACTIONS_CONFIG = new LongAccumulator.Config(
+                    INTERNAL_CATEGORY, "staleSystemTransactions")
+            .withAccumulator(Long::sum)
+            .withDescription("number of system transactions in stale events");
+    private final LongAccumulator staleSystemTransactionCount;
+
+    private static final LongAccumulator.Config STALE_SELF_SYSTEM_TRANSACTIONS_CONFIG = new LongAccumulator.Config(
+                    INTERNAL_CATEGORY, "staleSelfSystemTransactions")
+            .withAccumulator(Long::sum)
+            .withDescription("number of system transactions in stale self events");
+    private final LongAccumulator staleSelfSystemTransactionCount;
 
     private final Time time;
+    private final NodeId selfId;
 
     /**
      * Constructor of {@code EventIntakeMetrics}
      *
-     * @param metrics
-     * 		a reference to the metrics-system
-     * @param time
-     * 		provides wall clock time
-     * @throws IllegalArgumentException
-     * 		if {@code metrics} is {@code null}
+     * @param metrics a reference to the metrics-system
+     * @param time    provides wall clock time
+     * @param selfId  the ID of this node
+     * @throws IllegalArgumentException if {@code metrics} is {@code null}
      */
-    public EventIntakeMetrics(final Metrics metrics, final Time time) {
-        CommonUtils.throwArgNull(metrics, "metrics");
-        this.time = time;
+    public EventIntakeMetrics(@NonNull final Metrics metrics, @NonNull final Time time, @NonNull final NodeId selfId) {
+
+        this.time = Objects.requireNonNull(time);
+        this.selfId = Objects.requireNonNull(selfId);
 
         rescuedEventsPerSecond = metrics.getOrCreate(RESCUED_EVENTS_PER_SECOND_CONFIG);
         duplicateEventsPerSecond = metrics.getOrCreate(DUPLICATE_EVENTS_PER_SECOND_CONFIG);
         avgDuplicatePercent = metrics.getOrCreate(AVG_DUPLICATE_PERCENT_CONFIG);
         timeFracAdd = metrics.getOrCreate(TIME_FRAC_ADD_CONFIG);
         shouldCreateEvent = metrics.getOrCreate(SHOULD_CREATE_EVENT_CONFIG);
-        staleEventsTotal = metrics.getOrCreate(STALE_EVENTS_TOTAL_CONFIG);
-        staleEventsPerSecond = metrics.getOrCreate(STALE_EVENTS_PER_SECOND_CONFIG);
+        staleEventCount = metrics.getOrCreate(STALE_EVENTS_CONFIG);
+        staleSelfEventCount = metrics.getOrCreate(STALE_SELF_EVENTS_CONFIG);
+        staleAppTransactionCount = metrics.getOrCreate(STALE_APP_TRANSACTIONS_CONFIG);
+        staleSelfAppTransactionCount = metrics.getOrCreate(STALE_SELF_APP_TRANSACTIONS_CONFIG);
+        staleSystemTransactionCount = metrics.getOrCreate(STALE_SYSTEM_TRANSACTIONS_CONFIG);
+        staleSelfSystemTransactionCount = metrics.getOrCreate(STALE_SELF_SYSTEM_TRANSACTIONS_CONFIG);
     }
 
     /**
-     * Update a statistics accumulator whenever this node creates an event with
-     * an other-parent that has no children. (The OP is "rescued".)
+     * Update a statistics accumulator whenever this node creates an event with an other-parent that has no children.
+     * (The OP is "rescued".)
      */
     public void rescuedEvent() {
         rescuedEventsPerSecond.cycle();
@@ -131,8 +163,7 @@ public class EventIntakeMetrics implements StaleEventObserver {
     /**
      * Update event task statistics
      *
-     * @param startTime
-     * 		a start time, in nanoseconds
+     * @param startTime a start time, in nanoseconds
      */
     public void processedEventTask(final long startTime) {
         // nanoseconds spent adding to hashgraph
@@ -142,8 +173,7 @@ public class EventIntakeMetrics implements StaleEventObserver {
     /**
      * Notifies the stats that the event creation phase has entered
      *
-     * @param shouldCreateEvent
-     * 		did the sync manager tell us to create an event?
+     * @param shouldCreateEvent did the sync manager tell us to create an event?
      */
     public void eventCreation(final boolean shouldCreateEvent) {
         this.shouldCreateEvent.update(shouldCreateEvent ? 1 : 0);
@@ -153,8 +183,18 @@ public class EventIntakeMetrics implements StaleEventObserver {
      * {@inheritDoc}
      */
     @Override
-    public void staleEvent(final EventImpl event) {
-        staleEventsTotal.increment();
-        staleEventsPerSecond.cycle();
+    public void staleEvent(@NonNull final EventImpl event) {
+        final int applicationTransactionCount = event.getNumAppTransactions();
+        final int systemTransactionCount = event.getNumTransactions() - applicationTransactionCount;
+
+        staleEventCount.update(1);
+        staleAppTransactionCount.update(applicationTransactionCount);
+        staleSystemTransactionCount.update(systemTransactionCount);
+
+        if (event.getCreatorId().equals(selfId)) {
+            staleSelfEventCount.update(1);
+            staleSelfAppTransactionCount.update(applicationTransactionCount);
+            staleSelfSystemTransactionCount.update(systemTransactionCount);
+        }
     }
 }

@@ -30,7 +30,6 @@ import com.swirlds.platform.event.CreateEventTask;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.ValidEvent;
 import com.swirlds.platform.event.validation.EventValidator;
-import com.swirlds.platform.intake.IntakeCycleStats;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
@@ -50,13 +49,8 @@ class EventTaskDispatcherTest {
         @SuppressWarnings("unchecked")
         final Consumer<GossipEvent> intake = (Consumer<GossipEvent>) mock(Consumer.class);
 
-        final EventTaskDispatcher dispatcher = new EventTaskDispatcher(
-                Time.getCurrent(),
-                validator,
-                creator,
-                intake,
-                mock(EventIntakeMetrics.class),
-                mock(IntakeCycleStats.class));
+        final EventTaskDispatcher dispatcher =
+                new EventTaskDispatcher(Time.getCurrent(), validator, creator, intake, mock(EventIntakeMetrics.class));
 
         // create event
         final NodeId otherId = new NodeId(5);
