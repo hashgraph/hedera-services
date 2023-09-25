@@ -139,7 +139,7 @@ public class InProcessHapiTestNode implements HapiTestNode {
             BootstrapUtils.setupConstructableRegistry();
             final var cr = ConstructableRegistry.getInstance();
 
-            final Hedera hedera = new Hedera(cr);
+            hedera = new Hedera(cr);
 
             final PlatformBuilder builder = new PlatformBuilder(
                     Hedera.APP_NAME,
