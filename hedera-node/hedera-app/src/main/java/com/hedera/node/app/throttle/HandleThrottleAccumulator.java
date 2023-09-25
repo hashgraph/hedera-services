@@ -126,8 +126,7 @@ public class HandleThrottleAccumulator {
 
     public void leakUnusedGasPreviouslyReserved(@NonNull final TransactionInfo txnInfo, long value) {
         final var configuration = configProvider.getConfiguration();
-        final var payer = txnInfo.txBody().transactionID().accountID();
-        if (throttleExempt(payer, configuration)) {
+        if (throttleExempt(txnInfo.payerID(), configuration)) {
             return;
         }
 
@@ -167,8 +166,7 @@ public class HandleThrottleAccumulator {
         // exemption
         // but this is only possible for the case of triggered transactions which is not yet implemented (see
         // MonoMultiplierSources.java)
-        final var payer = txnInfo.txBody().transactionID().accountID();
-        final var isPayerThrottleExempt = throttleExempt(payer, configuration);
+        final var isPayerThrottleExempt = throttleExempt(txnInfo.payerID(), configuration);
         if (isPayerThrottleExempt) {
             return false;
         }
