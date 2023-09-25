@@ -74,7 +74,7 @@ import org.apache.logging.log4j.Logger;
 @Singleton
 public class HandleThrottleAccumulator {
     private static final Logger log = LogManager.getLogger(HandleThrottleAccumulator.class);
-    private static final Set<HederaFunctionality> CONSENSUS_THROTTLED_FUNCTIONS =
+    private static final Set<HederaFunctionality> GAS_THROTTLED_FUNCTIONS =
             EnumSet.of(CONTRACT_CALL_LOCAL, CONTRACT_CALL, CONTRACT_CREATE, ETHEREUM_TRANSACTION);
     private static final int CAPACITY_SPLIT = 1;
     private final ConfigProvider configProvider;
@@ -165,7 +165,7 @@ public class HandleThrottleAccumulator {
     }
 
     public static boolean isGasThrottled(final HederaFunctionality function) {
-        return CONSENSUS_THROTTLED_FUNCTIONS.contains(function);
+        return GAS_THROTTLED_FUNCTIONS.contains(function);
     }
 
     private boolean shouldThrottleTxn(
