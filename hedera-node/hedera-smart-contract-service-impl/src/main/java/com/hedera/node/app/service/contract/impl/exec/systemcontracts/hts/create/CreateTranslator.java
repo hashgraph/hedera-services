@@ -16,13 +16,27 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create;
 
+import static com.hedera.node.app.service.contract.impl.utils.ParsingConstantsUtils.ARRAY_BRACKETS;
+import static com.hedera.node.app.service.contract.impl.utils.ParsingConstantsUtils.EXPIRY;
+import static com.hedera.node.app.service.contract.impl.utils.ParsingConstantsUtils.TOKEN_KEY;
+
+import com.esaulpaugh.headlong.abi.Function;
+import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Arrays;
 import javax.inject.Inject;
 
 public class CreateTranslator extends AbstractHtsCallTranslator {
+
+    public static final String HEDERA_TOKEN_STRUCT =
+            "(string,string,address,string,bool,uint32,bool," + TOKEN_KEY + ARRAY_BRACKETS + "," + EXPIRY + ")";
+
+    public static final Function CREATE_FUNGIBLE_TOKEN =
+            new Function("createFungibleToken(" + HEDERA_TOKEN_STRUCT + ",int64,int32)", ReturnTypes.INT);
 
     @Inject
     public CreateTranslator() {
@@ -31,11 +45,19 @@ public class CreateTranslator extends AbstractHtsCallTranslator {
 
     @Override
     public boolean matches(@NonNull HtsCallAttempt attempt) {
-        return false;
+        return Arrays.equals(attempt.selector(), CreateTranslator.CREATE_FUNGIBLE_TOKEN.selector());
     }
 
     @Override
     public HtsCall callFrom(@NonNull HtsCallAttempt attempt) {
-        return null;
+        final var selector = attempt.selector();
+        final Tuple call;
+        if (Arrays.equals(selector, CreateTranslator.CREATE_FUNGIBLE_TOKEN.selector())) {
+            call = CreateTranslator.CREATE_FUNGIBLE_TOKEN.decodeCall(
+                    attempt.input().toArrayUnsafe());
+        } else {
+
+        }
+        throw new AssertionError("Not implemented");
     }
 }
