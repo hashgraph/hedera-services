@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.operations;
 
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.MISSING_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.exec.operations.CustomizedOpcodes.SELFDESTRUCT;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.isDelegateCall;
 import static java.util.Objects.requireNonNull;
@@ -66,7 +66,7 @@ public class CustomSelfDestructOperation extends AbstractOperation {
             // Enforce Hedera-specific checks on the beneficiary address
             if (addressChecks.isSystemAccount(beneficiaryAddress)
                     || !addressChecks.isPresent(beneficiaryAddress, frame)) {
-                return haltFor(null, 0, MISSING_ADDRESS);
+                return haltFor(null, 0, INVALID_SOLIDITY_ADDRESS);
             }
 
             final var tbdAddress = frame.getRecipientAddress();
