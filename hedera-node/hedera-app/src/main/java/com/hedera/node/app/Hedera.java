@@ -72,13 +72,11 @@ import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldDualState;
+import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
-import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.common.system.transaction.Transaction;
-import com.swirlds.platform.PlatformBuilder;
-import com.swirlds.platform.SwirldsPlatform;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.charset.Charset;
@@ -86,9 +84,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.Locale;
-import java.util.Objects;
 import java.util.Set;
-import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -122,7 +118,7 @@ import org.apache.logging.log4j.Logger;
  * infrastructure. It constructs the Dagger dependency tree, and manages the gRPC server, and in all other ways,
  * controls execution of the node. If you want to understand our system, this is a great place to start!
  */
-public final class Hedera {
+public final class Hedera implements SwirldMain {
     private static final Logger logger = LogManager.getLogger(Hedera.class);
     // FUTURE: This should come from configuration, not be hardcoded.
     public static final int MAX_SIGNED_TXN_SIZE = 6144;
@@ -132,12 +128,8 @@ public final class Hedera {
     private final HederaSoftwareVersion version;
     /** The configuration at the time of bootstrapping the node */
     private final ConfigProvider bootstrapConfigProvider;
-    /** The Hashgraph Platform. */
-    private final SwirldsPlatform platform;
-    /** The ID of this node. */
-    private final NodeId selfId;
-    /** The address book, null until known. */
-    private AddressBook platformAddressBook = null;
+    /** The Hashgraph Platform. This is set during state initialization. */
+    private Platform platform;
     /** The configuration for this node */
     private ConfigProviderImpl configProvider;
     /** The throttle manager for parsing the throttle definition file */
@@ -155,17 +147,6 @@ public final class Hedera {
     /** Indicates whether the platform is active */
     private PlatformStatus platformStatus = PlatformStatus.STARTING_UP;
 
-    /**
-     * The application name from the platform's perspective. This is currently locked in at the old main class name and
-     * requires data migration to change.
-     */
-    public static final String APP_NAME = "com.hedera.services.ServicesMain";
-
-    /**
-     * The swirld name. Currently there is only one swirld.
-     */
-    public static final String SWIRLD_NAME = "123";
-
     /*==================================================================================================================
     *
     * Hedera Object Construction.
@@ -176,24 +157,8 @@ public final class Hedera {
      * Create a new Hedera instance.
      *
      * @param constructableRegistry The registry to use during the deserialization process
-     * @param selfId                The ID of this node
      */
-    public Hedera(@NonNull final ConstructableRegistry constructableRegistry, @NonNull final NodeId selfId) {
-        this(constructableRegistry, selfId, null);
-    }
-
-    /**
-     * Create a new Hedera instance.
-     *
-     * @param constructableRegistry The registry to use during the deserialization process
-     * @param selfId                The ID of this node
-     * @param updatePlatformBuilder a function that can be used to update the platform builder, ignored if null
-     */
-    public Hedera(
-            @NonNull final ConstructableRegistry constructableRegistry,
-            @NonNull final NodeId selfId,
-            @Nullable final Consumer<PlatformBuilder> updatePlatformBuilder) {
-
+    public Hedera(@NonNull final ConstructableRegistry constructableRegistry) {
         requireNonNull(constructableRegistry);
 
         // Print welcome message
@@ -214,8 +179,6 @@ public final class Hedera {
                         """);
         logger.info("Welcome to Hedera! Developed with ❤\uFE0F by the Open Source Community. "
                 + "https://github.com/hashgraph/hedera-services");
-
-        this.selfId = Objects.requireNonNull(selfId);
 
         // Load the bootstrap configuration. These config values are NOT stored in state, so we don't need to have
         // state up and running for getting their values. We use this bootstrap config only in this constructor.
@@ -270,15 +233,6 @@ public final class Hedera {
             logger.error("Failed to register MerkleHederaState with ConstructableRegistry", e);
             throw new RuntimeException(e);
         }
-
-        final PlatformBuilder builder = new PlatformBuilder(
-                Hedera.APP_NAME, Hedera.SWIRLD_NAME, getSoftwareVersion(), this::buildGenesisState, selfId);
-        if (updatePlatformBuilder != null) {
-            updatePlatformBuilder.accept(builder);
-        }
-        platform = builder.build();
-
-        init(platform, selfId);
     }
 
     /** Gets the port the gRPC server is listening on, or {@code -1} if there is no server listening. */
@@ -288,7 +242,6 @@ public final class Hedera {
 
     /**
      * Indicates whether this node is UP and ready for business.
-     *
      * @return True if the platform is active and the gRPC server is running.
      */
     public boolean isActive() {
@@ -297,11 +250,14 @@ public final class Hedera {
     }
 
     /**
+     * {@inheritDoc}
+     *
      * <p>Called immediately after the constructor to get the version of this software. In an upgrade scenario, this
      * version will be greater than the one in the saved state.
      *
      * @return The software version.
      */
+    @Override
     @NonNull
     public SoftwareVersion getSoftwareVersion() {
         return version;
@@ -321,20 +277,10 @@ public final class Hedera {
      *
      * @return A new {@link SwirldState} instance.
      */
+    @Override
     @NonNull
     public SwirldState newState() {
         return new MerkleHederaState(this::onPreHandle, this::onHandleConsensusRound, this::onStateInitialized);
-    }
-
-    /**
-     * Build the genesis state.
-     *
-     * @param platformAddressBook The address book to use for the genesis state.
-     * @return The genesis state.
-     */
-    public SwirldState buildGenesisState(@NonNull final AddressBook platformAddressBook) {
-        this.platformAddressBook = Objects.requireNonNull(platformAddressBook);
-        return newState();
     }
 
     /*==================================================================================================================
@@ -382,6 +328,7 @@ public final class Hedera {
         // This is the *FIRST* time in the initialization sequence that we have access to the platform. Grab it!
         // This instance should never change on us, once it has been set
         assert this.platform == null || this.platform == platform : "Platform should never change once set";
+        this.platform = platform;
 
         // Different paths for different triggers. Every trigger should be handled here. If a new trigger is added,
         // since there is no 'default' case, it will cause a compile error, so you will know you have to deal with it
@@ -412,9 +359,9 @@ public final class Hedera {
     }
 
     /**
-     * Called by this class when we detect it is time to do migration. The {@code deserializedVersion} must not be newer
-     * than the current software version. If it is prior to the current version, then each migration between the
-     * {@code deserializedVersion} and the current version, including the current version, will be executed, thus
+     * Called by this class when we detect it is time to do migration. The {@code deserializedVersion} must not be
+     * newer than the current software version. If it is prior to the current version, then each migration between
+     * the {@code deserializedVersion} and the current version, including the current version, will be executed, thus
      * bringing the state up to date.
      *
      * <p>If the {@code deserializedVersion} is {@code null}, then this is the first time the node has been started,
@@ -429,9 +376,10 @@ public final class Hedera {
                 () -> previousVersion == null ? "<NONE>" : HapiUtils.toString(previousVersion),
                 () -> HapiUtils.toString(currentVersion));
 
-        final var nodeAddress = platformAddressBook.getAddress(selfId);
+        final var selfId = platform.getSelfId();
+        final var nodeAddress = platform.getAddressBook().getAddress(selfId);
         final var selfNodeInfo = SelfNodeInfoImpl.of(nodeAddress, version);
-        final var networkInfo = new NetworkInfoImpl(selfNodeInfo, platformAddressBook, bootstrapConfigProvider);
+        final var networkInfo = new NetworkInfoImpl(selfNodeInfo, platform, bootstrapConfigProvider);
         for (final var registration : servicesRegistry.registrations()) {
             // FUTURE We should have metrics here to keep track of how long it takes to migrate each service
             final var service = registration.service();
@@ -450,21 +398,19 @@ public final class Hedera {
     =================================================================================================================*/
 
     /**
+     * {@inheritDoc}
+     *
      * <p>Called <b>AFTER</b> init and migrate have been called on the state (either the new state created from
      * {@link #newState()} or an instance of {@link MerkleHederaState} created by the platform and loaded from the saved
      * state).
      */
     @SuppressWarnings("java:S1181") // catching Throwable instead of Exception when we do a direct System.exit()
-    private void init(@NonNull final Platform platform, @NonNull final NodeId nodeId) {
+    @Override
+    public void init(@NonNull final Platform platform, @NonNull final NodeId nodeId) {
         if (this.platform != platform) {
             throw new IllegalArgumentException("Platform must be the same instance");
         }
         logger.info("Initializing Hedera app with HederaNode#{}", nodeId);
-        platformAddressBook = platform.getAddressBook();
-
-        daggerApp.platformAccessor().setPlatform(platform);
-        ((CurrentPlatformStatusImpl) daggerApp.currentPlatformStatus())
-                .wireNotification(platform.getNotificationEngine());
 
         // Check that UTF-8 is in use. Otherwise, the node will be subject to subtle bugs in string handling that will
         // lead to ISS.
@@ -584,12 +530,14 @@ public final class Hedera {
     =================================================================================================================*/
 
     /**
+     * {@inheritDoc}
+     *
      * <p>Called by the platform after <b>ALL</b> initialization to start the gRPC servers and begin operation, or by
      * the notification listener when it is time to restart the gRPC server after it had been stopped (such as during
      * reconnect).
      */
-    public void start() {
-        platform.start();
+    @Override
+    public void run() {
         startGrpcServer();
     }
 
@@ -613,8 +561,7 @@ public final class Hedera {
     }
 
     /**
-     * Invoked by the platform to handle pre-consensus events. This only happens after {@link #start()} has been
-     * called.
+     * Invoked by the platform to handle pre-consensus events. This only happens after {@link #run()} has been called.
      */
     private void onPreHandle(@NonNull final Event event, @NonNull final HederaState state) {
         final var readableStoreFactory = new ReadableStoreFactory(state);
@@ -633,7 +580,7 @@ public final class Hedera {
     }
 
     /**
-     * Invoked by the platform to handle a round of consensus events.  This only happens after {@link #start()} has been
+     * Invoked by the platform to handle a round of consensus events.  This only happens after {@link #run()} has been
      * called.
      */
     private void onHandleConsensusRound(
@@ -763,8 +710,9 @@ public final class Hedera {
 
     private void initializeDagger(@NonNull final MerkleHederaState state, @NonNull final InitTrigger trigger) {
         logger.debug("Initializing dagger");
+        final var selfId = platform.getSelfId();
         if (daggerApp == null) {
-            final var nodeAddress = platformAddressBook.getAddress(selfId);
+            final var nodeAddress = platform.getAddressBook().getAddress(selfId);
             // Fully qualified so as to not confuse javadoc
             daggerApp = com.hedera.node.app.DaggerHederaInjectionComponent.builder()
                     .initTrigger(trigger)
@@ -774,9 +722,10 @@ public final class Hedera {
                     .systemFileUpdateFacility(
                             new SystemFileUpdateFacility(configProvider, throttleManager, exchangeRateManager))
                     .self(SelfNodeInfoImpl.of(nodeAddress, version))
+                    .platform(platform)
                     .maxSignedTxnSize(MAX_SIGNED_TXN_SIZE)
                     .crypto(CryptographyHolder.get())
-                    .currentPlatformStatus(new CurrentPlatformStatusImpl())
+                    .currentPlatformStatus(new CurrentPlatformStatusImpl(platform))
                     .servicesRegistry(servicesRegistry)
                     .bootstrapProps(new BootstrapProperties(false)) // TBD REMOVE
                     .instantSource(InstantSource.system())

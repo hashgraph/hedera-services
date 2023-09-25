@@ -21,7 +21,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_TRANSACTION_NO
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.platform.PlatformAccessor;
 import com.hedera.node.app.service.mono.context.properties.Profile;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -86,18 +85,18 @@ public class SubmissionManager {
     /**
      * Create a new {@code SubmissionManager} instance.
      *
-     * @param platformAccessor provides access to the platform
+     * @param platform the {@link Platform} to which transactions will be submitted
      * @param deduplicationCache used to prevent submission of duplicate transactions
      * @param configProvider the {@link ConfigProvider}
      * @param metrics             metrics related to submissions
      */
     @Inject
     public SubmissionManager(
-            @NonNull final PlatformAccessor platformAccessor,
+            @NonNull final Platform platform,
             @NonNull final DeduplicationCache deduplicationCache,
             @NonNull final ConfigProvider configProvider,
             @NonNull final Metrics metrics) {
-        this.platform = requireNonNull(platformAccessor.getPlatform());
+        this.platform = requireNonNull(platform);
         this.submittedTxns = requireNonNull(deduplicationCache);
 
         final var hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);

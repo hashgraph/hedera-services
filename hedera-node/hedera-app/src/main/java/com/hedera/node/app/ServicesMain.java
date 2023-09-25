@@ -16,42 +16,70 @@
 
 package com.hedera.node.app;
 
+import com.hedera.node.app.config.ConfigProviderImpl;
+import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.Platform;
+import com.swirlds.common.system.SoftwareVersion;
+import com.swirlds.common.system.SwirldMain;
+import com.swirlds.common.system.SwirldState;
+import com.swirlds.platform.SwirldsPlatformBuilder;
 import com.swirlds.platform.util.BootstrapUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
- * Main hedera consensus node entry point.
+ * Main entry point.
+ *
+ * <p>This class simply delegates to either {@link MonoServicesMain} or {@link Hedera} depending on
+ * the value of the {@code hedera.services.functions.workflows.enabled} property. If *any* workflows are enabled, then
+ * {@link Hedera} is used; otherwise, {@link MonoServicesMain} is used.
  */
-public final class ServicesMain {
-
-    private ServicesMain() {}
+public class ServicesMain implements SwirldMain {
+    private static final Logger logger = LogManager.getLogger(ServicesMain.class);
 
     /**
-     * Determine this node's ID based on the command line arguments.
-     *
-     * @param args The command line arguments
-     * @return The node ID
+     * The {@link SwirldMain} to actually use, depending on whether workflows are enabled.
      */
-    @NonNull
-    private static NodeId parseSelfId(@Nullable final String... args) {
-        if (args == null || args.length == 0) {
-            return new NodeId(0);
+    private final SwirldMain delegate;
+
+    /** Create a new instance */
+    public ServicesMain() {
+        final var configProvider = new ConfigProviderImpl(false);
+        final var hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
+        if (hederaConfig.workflowsEnabled().isEmpty()) {
+            logger.info("No workflows enabled, using mono-service");
+            delegate = new MonoServicesMain();
+        } else {
+            logger.info("One or more workflows enabled, using Hedera");
+            delegate = new Hedera(ConstructableRegistry.getInstance());
         }
-        return new NodeId(Integer.parseInt(args[0]));
     }
 
-    /**
-     * Setup and get the constructable registry.
-     *
-     * @return The constructable registry
-     */
-    @NonNull
-    private static ConstructableRegistry getRegistry() {
-        BootstrapUtils.setupConstructableRegistry();
-        return ConstructableRegistry.getInstance();
+    /** {@inheritDoc} */
+    @Override
+    public SoftwareVersion getSoftwareVersion() {
+        return delegate.getSoftwareVersion();
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void init(@NonNull final Platform ignored, @NonNull final NodeId nodeId) {
+        delegate.init(ignored, nodeId);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public SwirldState newState() {
+        return delegate.newState();
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void run() {
+        delegate.run();
     }
 
     /**
@@ -59,7 +87,13 @@ public final class ServicesMain {
      *
      * @param args First arg, if specified, will be the node ID
      */
-    public static void main(@Nullable final String... args) throws Exception {
-        new Hedera(getRegistry(), parseSelfId(args)).start();
+    public static void main(final String... args) throws Exception {
+        BootstrapUtils.setupConstructableRegistry();
+        final var registry = ConstructableRegistry.getInstance();
+        new SwirldsPlatformBuilder()
+                .withName("Hedera")
+                .withMain(() -> new Hedera(registry))
+                .withNodeId(args != null && args.length > 0 ? Integer.parseInt(args[0]) : 0)
+                .buildAndStart();
     }
 }

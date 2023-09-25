@@ -22,7 +22,7 @@ import com.hedera.node.app.service.mono.utils.NamedDigestFactory;
 import com.hedera.node.app.service.mono.utils.SystemExits;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.Platform;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -38,20 +38,14 @@ import javax.inject.Singleton;
 public interface PlatformModule {
     @Provides
     @Singleton
-    static NodeId selfId(@NonNull final PlatformAccessor platformAccessor) {
-        return platformAccessor.getPlatform().getSelfId();
+    static NodeId selfId(@NonNull final Platform platform) {
+        return platform.getSelfId();
     }
 
     @Provides
     @Singleton
-    static AddressBook addressBook(@NonNull final PlatformAccessor platformAccessor) {
-        return platformAccessor.getPlatform().getAddressBook();
-    }
-
-    @Provides
-    @Singleton
-    static Signer signer(@NonNull final PlatformAccessor platformAccessor) {
-        return platformAccessor.getPlatform();
+    static Signer signer(@NonNull final Platform platform) {
+        return platform;
     }
 
     @Provides

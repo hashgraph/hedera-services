@@ -42,7 +42,6 @@ import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.config.api.Configuration;
 import java.time.InstantSource;
@@ -75,7 +74,6 @@ class IngestComponentTest {
         final PlatformContext platformContext = mock(PlatformContext.class);
         lenient().when(platformContext.getConfiguration()).thenReturn(configuration);
         when(platform.getContext()).thenReturn(platformContext);
-        when(platform.getAddressBook()).thenReturn(mock(AddressBook.class));
 
         final var selfNodeInfo = new SelfNodeInfoImpl(
                 1L,
@@ -94,6 +92,7 @@ class IngestComponentTest {
         final var exchangeRateManager = new ExchangeRateManager(configProvider);
         app = DaggerHederaInjectionComponent.builder()
                 .initTrigger(InitTrigger.GENESIS)
+                .platform(platform)
                 .crypto(CryptographyHolder.get())
                 .bootstrapProps(new BootstrapProperties())
                 .configuration(configProvider)
@@ -108,8 +107,6 @@ class IngestComponentTest {
                 .exchangeRateManager(exchangeRateManager)
                 .genesisRecordsConsensusHook(mock(GenesisRecordsConsensusHook.class))
                 .build();
-
-        app.platformAccessor().setPlatform(platform);
 
         final var state = new FakeHederaState();
         state.addService(RecordCacheService.NAME, Map.of("TransactionRecordQueue", new ArrayDeque<String>()));

@@ -27,7 +27,6 @@ import com.hedera.node.app.grpc.GrpcServerManager;
 import com.hedera.node.app.info.CurrentPlatformStatus;
 import com.hedera.node.app.info.InfoInjectionModule;
 import com.hedera.node.app.metrics.MetricsInjectionModule;
-import com.hedera.node.app.platform.PlatformAccessor;
 import com.hedera.node.app.platform.PlatformModule;
 import com.hedera.node.app.records.BlockRecordInjectionModule;
 import com.hedera.node.app.records.BlockRecordManager;
@@ -55,6 +54,7 @@ import com.hedera.node.config.ConfigProvider;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.Platform;
 import dagger.BindsInstance;
 import dagger.Component;
 import java.nio.charset.Charset;
@@ -89,10 +89,6 @@ public interface HederaInjectionComponent {
     Provider<IngestInjectionComponent.Factory> ingestComponentFactory();
 
     WorkingStateAccessor workingStateAccessor();
-
-    PlatformAccessor platformAccessor();
-
-    CurrentPlatformStatus currentPlatformStatus();
 
     RecordCache recordCache();
 
@@ -137,6 +133,9 @@ public interface HederaInjectionComponent {
 
         @BindsInstance
         Builder crypto(Cryptography engine);
+
+        @BindsInstance
+        Builder platform(Platform platform);
 
         @BindsInstance
         Builder self(final SelfNodeInfo self);

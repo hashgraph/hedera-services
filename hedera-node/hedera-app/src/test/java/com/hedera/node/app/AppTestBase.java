@@ -353,9 +353,8 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
                             .copySetWeight(nodeInfo.zeroStake() ? 0 : 10))
                     .toList();
 
-            final AddressBook addressBook = new AddressBook(addresses);
             final var platform = new FakePlatform(realSelfNodeInfo.nodeId(), new AddressBook(addresses));
-            final var networkInfo = new NetworkInfoImpl(realSelfNodeInfo, addressBook, configProvider);
+            final var networkInfo = new NetworkInfoImpl(realSelfNodeInfo, platform, configProvider);
 
             final var initialState = new FakeHederaState();
             services.forEach(svc -> {

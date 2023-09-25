@@ -19,7 +19,6 @@ package com.hedera.node.app.workflows.query;
 import com.hedera.hapi.node.base.ResponseType;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.node.app.components.QueryInjectionComponent;
-import com.hedera.node.app.platform.PlatformAccessor;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusHandlers;
 import com.hedera.node.app.service.contract.impl.handlers.ContractHandlers;
 import com.hedera.node.app.service.file.impl.handlers.FileHandlers;
@@ -28,6 +27,7 @@ import com.hedera.node.app.service.schedule.impl.handlers.ScheduleHandlers;
 import com.hedera.node.app.service.token.impl.handlers.TokenHandlers;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.pbj.runtime.Codec;
+import com.swirlds.common.system.Platform;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import dagger.Binds;
 import dagger.Module;
@@ -50,10 +50,10 @@ public interface QueryWorkflowInjectionModule {
     @Singleton
     @SuppressWarnings({"unchecked", "rawtypes"})
     static Function<ResponseType, AutoCloseableWrapper<HederaState>> provideStateAccess(
-            @NonNull final PlatformAccessor platformAccessor) {
+            @NonNull final Platform platform) {
         // Always return the latest immutable state until we support state proofs
-        return responseType -> (AutoCloseableWrapper)
-                platformAccessor.getPlatform().getLatestImmutableState(QueryWorkflowInjectionModule.class.getName());
+        return responseType ->
+                (AutoCloseableWrapper) platform.getLatestImmutableState(QueryWorkflowInjectionModule.class.getName());
     }
 
     @Provides

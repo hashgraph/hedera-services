@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.info;
 
-import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.listeners.PlatformStatusChangeListener;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.status.PlatformStatus;
@@ -30,16 +29,9 @@ import javax.inject.Singleton;
 public class CurrentPlatformStatusImpl implements CurrentPlatformStatus {
     private PlatformStatus status = PlatformStatus.STARTING_UP;
 
-    public CurrentPlatformStatusImpl() {}
-
-    /**
-     * Hook up this class with the notification engine.
-     *
-     * @param notificationEngine the notification engine.
-     */
-    public void wireNotification(@NonNull final NotificationEngine notificationEngine) {
-        notificationEngine.register(
-                PlatformStatusChangeListener.class, notification -> status = notification.getNewStatus());
+    public CurrentPlatformStatusImpl(@NonNull final Platform platform) {
+        platform.getNotificationEngine()
+                .register(PlatformStatusChangeListener.class, notification -> status = notification.getNewStatus());
     }
 
     @NonNull
