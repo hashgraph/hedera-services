@@ -19,13 +19,9 @@ package com.hedera.node.app.throttle;
 import dagger.Binds;
 import dagger.Module;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 @Module
 public interface ThrottleInjectionModule {
-    Logger log = LogManager.getLogger(ThrottleInjectionModule.class);
-
     @Binds
     @Singleton
     ThrottleAccumulator bindThrottleAccumulator(ThrottleAccumulatorImpl throttleAccumulator);

@@ -426,25 +426,20 @@ public class HandleThrottleAccumulator {
     }
 
     public void applyGasConfig() {
-        long capacity;
-
         final var configuration = configProvider.getConfiguration();
         final var contractsConfig = configuration.getConfigData(ContractsConfig.class);
         if (contractsConfig.throttleThrottleByGas() && contractsConfig.maxGasPerSec() == 0) {
             log.warn("Consensus gas throttling enabled, but limited to 0 gas/sec");
             return;
-        } else {
-            capacity = contractsConfig.maxGasPerSec();
         }
 
+        final long capacity = contractsConfig.maxGasPerSec();
         gasThrottle = new GasLimitDeterministicThrottle(capacity);
 
-        final var configDesc = "Resolved consensus gas throttle -\n  "
-                + gasThrottle.capacity()
-                + " gas/sec (throttling "
-                + (contractsConfig.throttleThrottleByGas() ? "ON" : "OFF")
-                + ")";
-        log.info(configDesc);
+        log.info(
+                "Resolved consensus gas throttle -\n {} gas/sec (throttling {})",
+                gasThrottle.capacity(),
+                (contractsConfig.throttleThrottleByGas() ? "ON" : "OFF"));
     }
 
     private ThrottleGroup<HederaFunctionality> hapiGroupFromPbj(
@@ -453,8 +448,9 @@ public class HandleThrottleAccumulator {
     }
 
     private void logResolvedDefinitions(int capacitySplit) {
-        var sb = new StringBuilder(
-                "Resolved handle throttles (after splitting capacity " + capacitySplit + " ways) - \n");
+        var sb = new StringBuilder("Resolved handle throttles (after splitting capacity ")
+                .append(capacitySplit)
+                .append(" ways) - \n");
         functionReqs.entrySet().stream()
                 .sorted(Comparator.comparing(entry -> entry.getKey().toString()))
                 .forEach(entry -> {

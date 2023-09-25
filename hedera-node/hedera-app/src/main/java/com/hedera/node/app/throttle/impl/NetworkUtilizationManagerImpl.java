@@ -17,6 +17,8 @@
 package com.hedera.node.app.throttle.impl;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.safeResetThrottles;
 import static java.util.Objects.requireNonNull;
 
@@ -26,12 +28,12 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.congestion.CongestionLevelStarts;
-import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshot;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.congestion.MonoMultiplierSources;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.service.mono.fees.congestion.MultiplierSources;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.CongestionThrottleService;
 import com.hedera.node.app.throttle.HandleThrottleAccumulator;
@@ -51,9 +53,9 @@ import org.apache.logging.log4j.Logger;
  */
 public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager {
     private static final Logger log = LogManager.getLogger(NetworkUtilizationManagerImpl.class);
-    // Used to update network utilization after a user-submitted transaction fails the signature
-    // validity
-    // screen; the stand-in is a CryptoTransfer because it best reflects the work done charging fees
+    // Used to update network utilization after
+    // a user-submitted transaction fails the signature validity screen;
+    // the stand-in is a CryptoTransfer because it best reflects the work done charging fees
     static final TransactionInfo STAND_IN_CRYPTO_TRANSFER = new TransactionInfo(
             Transaction.DEFAULT,
             TransactionBody.DEFAULT,
@@ -77,12 +79,13 @@ public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager 
 
     @Override
     public void trackTxn(@NonNull final TransactionInfo txnInfo, Instant consensusTime, HederaState state) {
-        track(txnInfo, consensusTime, state);
+        handleThrottling.shouldThrottle(txnInfo, consensusTime, state);
+        multiplierSources.updateMultiplier(consensusTime);
     }
 
     @Override
     public void trackFeePayments(Instant consensusNow, HederaState state) {
-        track(STAND_IN_CRYPTO_TRANSFER, consensusNow, state);
+        trackTxn(STAND_IN_CRYPTO_TRANSFER, consensusNow, state);
     }
 
     @Override
@@ -93,7 +96,7 @@ public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager 
                         CongestionThrottleService.THROTTLE_USAGE_SNAPSHOTS_STATE_KEY)
                 .get();
         final var usageSnapshots = throttleSnapshots.tpsThrottles().stream()
-                .map(this::fromPbj)
+                .map(PbjConverter::fromPbj)
                 .toArray(DeterministicThrottle.UsageSnapshot[]::new);
 
         if (activeThrottles.size() != usageSnapshots.length) {
@@ -146,7 +149,7 @@ public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager 
                 CongestionThrottleService.THROTTLE_USAGE_SNAPSHOTS_STATE_KEY);
         final var tpsThrottleUsageSnapshots = handleThrottling.allActiveThrottles().stream()
                 .map(DeterministicThrottle::usageSnapshot)
-                .map(this::toPbj)
+                .map(PbjConverter::toPbj)
                 .toList();
 
         final var throttleUsageSnapshots = ThrottleUsageSnapshots.newBuilder()
@@ -171,23 +174,6 @@ public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager 
                 .build();
 
         congestionLevelStartsState.put(congestionLevelStarts);
-    }
-
-    private DeterministicThrottle.UsageSnapshot fromPbj(ThrottleUsageSnapshot snapshot) {
-        final var lastDecisionTime = snapshot.lastDecisionTime();
-        return new DeterministicThrottle.UsageSnapshot(
-                snapshot.used(), Instant.ofEpochSecond(lastDecisionTime.seconds(), lastDecisionTime.nanos()));
-    }
-
-    private ThrottleUsageSnapshot toPbj(DeterministicThrottle.UsageSnapshot snapshot) {
-        final var lastDecisionTime = snapshot.lastDecisionTime();
-        return new ThrottleUsageSnapshot(
-                snapshot.used(), new Timestamp(lastDecisionTime.getEpochSecond(), lastDecisionTime.getNano()));
-    }
-
-    private void track(@NonNull TransactionInfo txnInfo, Instant consensusTime, HederaState state) {
-        handleThrottling.shouldThrottle(txnInfo, consensusTime, state);
-        multiplierSources.updateMultiplier(consensusTime);
     }
 
     @Override

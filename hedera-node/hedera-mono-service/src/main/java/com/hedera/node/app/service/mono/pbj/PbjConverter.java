@@ -46,6 +46,7 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.network.NetworkGetExecutionTimeQuery;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshot;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.FixedFee;
@@ -54,6 +55,7 @@ import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.RoyaltyFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.TransactionRecord;
+import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 import com.hedera.node.app.spi.key.HederaKey;
@@ -69,6 +71,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.security.InvalidKeyException;
+import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -1540,5 +1543,17 @@ public final class PbjConverter {
     public static NetworkGetExecutionTimeQuery toPbj(
             com.hederahashgraph.api.proto.java.NetworkGetExecutionTimeQuery query) {
         return protoToPbj(query, NetworkGetExecutionTimeQuery.class);
+    }
+
+    public static DeterministicThrottle.UsageSnapshot fromPbj(ThrottleUsageSnapshot snapshot) {
+        final var lastDecisionTime = snapshot.lastDecisionTime();
+        return new DeterministicThrottle.UsageSnapshot(
+                snapshot.used(), Instant.ofEpochSecond(lastDecisionTime.seconds(), lastDecisionTime.nanos()));
+    }
+
+    public static ThrottleUsageSnapshot toPbj(DeterministicThrottle.UsageSnapshot snapshot) {
+        final var lastDecisionTime = snapshot.lastDecisionTime();
+        return new ThrottleUsageSnapshot(
+                snapshot.used(), new Timestamp(lastDecisionTime.getEpochSecond(), lastDecisionTime.getNano()));
     }
 }
