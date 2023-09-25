@@ -23,6 +23,7 @@ import static com.swirlds.logging.legacy.LogMarker.SYNC;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.metrics.extensions.PhaseTimer;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.threading.manager.ThreadManager;
@@ -33,7 +34,7 @@ import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.event.validation.StaticValidators;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
-import com.swirlds.platform.intake.IntakeCycleStats;
+import com.swirlds.platform.intake.EventIntakePhase;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.EventObserverDispatcher;
@@ -69,8 +70,6 @@ public class EventIntake {
     private final AddressBook addressBook;
     /** An {@link EventObserverDispatcher} instance */
     private final EventObserverDispatcher dispatcher;
-    /** Collects statistics */
-    private final IntakeCycleStats stats;
     /** Stores events, expires them, provides event lookup methods */
     private final ShadowGraph shadowGraph;
 
@@ -79,6 +78,11 @@ public class EventIntake {
 
     private final EventIntakeMetrics metrics;
     private final Time time;
+
+    /**
+     * Measures the time spent in each phase of event intake
+     */
+    private final PhaseTimer<EventIntakePhase> phaseTimer;
 
     /**
      * Constructor
@@ -92,7 +96,7 @@ public class EventIntake {
      * @param consensusSupplier provides the current consensus instance
      * @param addressBook       the current address book
      * @param dispatcher        invokes event related callbacks
-     * @param stats             metrics for event intake
+     * @param phaseTimer        measures the time spent in each phase of intake
      * @param shadowGraph       tracks events in the hashgraph
      * @param prehandleEvent    prehandles transactions in an event
      */
@@ -105,7 +109,7 @@ public class EventIntake {
             @NonNull final Supplier<Consensus> consensusSupplier,
             @NonNull final AddressBook addressBook,
             @NonNull final EventObserverDispatcher dispatcher,
-            @NonNull final IntakeCycleStats stats,
+            @NonNull final PhaseTimer<EventIntakePhase> phaseTimer,
             @NonNull final ShadowGraph shadowGraph,
             @NonNull final Consumer<EventImpl> prehandleEvent) {
 
@@ -116,7 +120,7 @@ public class EventIntake {
         this.consensusWrapper = new ConsensusWrapper(consensusSupplier);
         this.addressBook = Objects.requireNonNull(addressBook);
         this.dispatcher = Objects.requireNonNull(dispatcher);
-        this.stats = Objects.requireNonNull(stats);
+        this.phaseTimer = Objects.requireNonNull(phaseTimer);
         this.shadowGraph = Objects.requireNonNull(shadowGraph);
         this.prehandleEvent = Objects.requireNonNull(prehandleEvent);
 
@@ -147,14 +151,17 @@ public class EventIntake {
      * @param event the event
      */
     public void addUnlinkedEvent(final GossipEvent event) {
-        stats.receivedUnlinkedEvent();
+        phaseTimer.activatePhase(EventIntakePhase.EVENT_RECEIVED_DISPATCH);
         dispatcher.receivedEvent(event);
-        stats.dispatchedReceived();
+
+        phaseTimer.activatePhase(EventIntakePhase.LINKING);
         eventLinker.linkEvent(event);
-        stats.doneLinking();
+
         while (eventLinker.hasLinkedEvents()) {
             addEvent(eventLinker.pollLinkedEvent());
         }
+
+        phaseTimer.activatePhase(EventIntakePhase.IDLE);
     }
 
     /**
@@ -167,17 +174,18 @@ public class EventIntake {
         if (consensus().isExpired(event)) {
             return;
         }
-        stats.startIntakeAddEvent();
+
         if (!StaticValidators.isValidTimeCreated(event)) {
             event.clear();
             return;
         }
 
-        stats.doneValidation();
         logger.debug(SYNC.getMarker(), "{} sees {}", selfId, event);
+
+        phaseTimer.activatePhase(EventIntakePhase.PRECONSENSUS_DISPATCH);
         dispatcher.preConsensusEvent(event);
+
         logger.debug(INTAKE_EVENT.getMarker(), "Adding {} ", event::toShortString);
-        stats.dispatchedPreConsensus();
         final long minGenNonAncientBeforeAdding = consensus().getMinGenerationNonAncient();
         // #5762 if we cannot calculate its roundCreated, then we use the one that was sent to us
         final boolean missingSelfParent = event.getSelfParentHash() != null && event.getSelfParent() == null;
@@ -198,6 +206,7 @@ public class EventIntake {
 
         if (prehandlePool == null) {
             // Prehandle transactions on the intake thread (i.e. this thread).
+            phaseTimer.activatePhase(EventIntakePhase.PREHANDLING);
             prehandleEvent.accept(event);
         } else {
             // Prehandle transactions on the thread pool.
@@ -205,24 +214,28 @@ public class EventIntake {
         }
 
         // record the event in the hashgraph, which results in the events in consEvent reaching consensus
+        phaseTimer.activatePhase(EventIntakePhase.ADDING_TO_HASHGRAPH);
         final List<ConsensusRound> consRounds = consensusWrapper.addEvent(event, addressBook);
-        // #5762 after we calculate roundCreated, se set its value in GossipEvent so that it can be shared with other
-        // nodes
+
+        // after we calculate roundCreated, we set its value in GossipEvent so that it can be shared with other nodes
         event.getBaseEvent().setRoundCreated(event.getRoundCreated());
-        stats.addedToConsensus();
+
+        phaseTimer.activatePhase(EventIntakePhase.EVENT_ADDED_DISPATCH);
         dispatcher.eventAdded(event);
-        stats.dispatchedAdded();
+
         if (consRounds != null) {
+            phaseTimer.activatePhase(EventIntakePhase.HANDLING_CONSENSUS_ROUNDS);
             consRounds.forEach(this::handleConsensus);
-            stats.dispatchedRound();
         }
+
         if (consensus().getMinGenerationNonAncient() > minGenNonAncientBeforeAdding) {
             // consensus rounds can be null and the minNonAncient might change, this is probably because of a round
             // with no consensus events, so we check the diff in generations to look for stale events
+            phaseTimer.activatePhase(EventIntakePhase.HANDLING_STALE_EVENTS);
             handleStale(minGenNonAncientBeforeAdding);
-            stats.dispatchedStale();
         }
-        stats.doneIntakeAddEvent();
+
+        phaseTimer.activatePhase(EventIntakePhase.IDLE);
     }
 
     /**

@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.exec.gas;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.gascalculator.LondonGasCalculator;
 
 /**
@@ -26,9 +27,20 @@ import org.hyperledger.besu.evm.gascalculator.LondonGasCalculator;
  * that gets its price and exchange rate from the {@link HederaOperations}.
  */
 @Singleton
+@SuppressWarnings("java:S110") // suppress the warning that the class inheritance shouldn't be too deep
 public class CustomGasCalculator extends LondonGasCalculator {
     @Inject
     public CustomGasCalculator() {
         // Dagger2
+    }
+
+    @Override
+    public long transactionIntrinsicGasCost(final Bytes payload, final boolean isContractCreate) {
+        return 0L;
+    }
+
+    @Override
+    public long codeDepositGasCost(final int codeSize) {
+        return 0L;
     }
 }

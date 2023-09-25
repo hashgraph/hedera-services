@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.handle.record;
 
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logEndTransactionRecord;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
@@ -45,6 +46,7 @@ import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRe
 import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractDeleteRecordBuilder;
 import com.hedera.node.app.service.contract.impl.records.EthereumTransactionRecordBuilder;
 import com.hedera.node.app.service.file.impl.records.CreateFileRecordBuilder;
 import com.hedera.node.app.service.schedule.ScheduleRecordBuilder;
@@ -53,7 +55,9 @@ import com.hedera.node.app.service.token.records.ChildRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoDeleteRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
+import com.hedera.node.app.service.token.records.GenesisAccountRecordBuilder;
 import com.hedera.node.app.service.token.records.NodeStakeUpdateRecordBuilder;
+import com.hedera.node.app.service.token.records.TokenBurnRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenCreateRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenMintRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenUpdateRecordBuilder;
@@ -100,6 +104,7 @@ public class SingleTransactionRecordBuilderImpl
                 PrngRecordBuilder,
                 ScheduleRecordBuilder,
                 TokenMintRecordBuilder,
+                TokenBurnRecordBuilder,
                 TokenCreateRecordBuilder,
                 ContractCreateRecordBuilder,
                 ContractCallRecordBuilder,
@@ -107,7 +112,9 @@ public class SingleTransactionRecordBuilderImpl
                 CryptoDeleteRecordBuilder,
                 TokenUpdateRecordBuilder,
                 NodeStakeUpdateRecordBuilder,
-                FeeRecordBuilder {
+                FeeRecordBuilder,
+                ContractDeleteRecordBuilder,
+                GenesisAccountRecordBuilder {
     // base transaction data
     private Transaction transaction;
     private Bytes transactionBytes = Bytes.EMPTY;
@@ -126,6 +133,7 @@ public class SingleTransactionRecordBuilderImpl
     private ResponseCodeEnum status = ResponseCodeEnum.OK;
     private ExchangeRateSet exchangeRate = ExchangeRateSet.DEFAULT;
     private List<Long> serialNumbers = new LinkedList<>();
+    private long newTotalSupply = 0L;
     private final TransactionReceipt.Builder transactionReceiptBuilder = TransactionReceipt.newBuilder();
     // Sidecar data, booleans are the migration flag
     private List<AbstractMap.SimpleEntry<ContractStateChanges, Boolean>> contractStateChanges = new LinkedList<>();
@@ -205,6 +213,9 @@ public class SingleTransactionRecordBuilderImpl
                         pair.getValue(),
                         new OneOf<>(TransactionSidecarRecord.SidecarRecordsOneOfType.BYTECODE, pair.getKey())))
                 .forEach(transactionSidecarRecords::add);
+
+        // Log end of user transaction to transaction state log
+        logEndTransactionRecord(transactionID, transactionRecord);
 
         return new SingleTransactionRecord(transaction, transactionRecord, transactionSidecarRecords);
     }
@@ -727,8 +738,13 @@ public class SingleTransactionRecordBuilderImpl
      */
     @NonNull
     public SingleTransactionRecordBuilderImpl newTotalSupply(final long newTotalSupply) {
+        this.newTotalSupply = newTotalSupply;
         transactionReceiptBuilder.newTotalSupply(newTotalSupply);
         return this;
+    }
+
+    public long getNewTotalSupply() {
+        return newTotalSupply;
     }
 
     /**

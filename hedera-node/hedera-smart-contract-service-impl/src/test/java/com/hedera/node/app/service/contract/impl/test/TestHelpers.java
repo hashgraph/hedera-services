@@ -16,8 +16,11 @@
 
 package com.hedera.node.app.service.contract.impl.test;
 
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SIGNATURE;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToBesuAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniBytes;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static java.util.Objects.requireNonNull;
@@ -53,6 +56,7 @@ import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.service.contract.impl.exec.failure.ResourceExhaustedException;
 import com.hedera.node.app.service.contract.impl.exec.gas.GasCharges;
 import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy;
+import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy.UseTopLevelSigs;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
@@ -75,6 +79,7 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -175,8 +180,14 @@ public class TestHelpers {
             FileID.newBuilder().fileNum(7890L).build();
     public static final TokenID FUNGIBLE_TOKEN_ID =
             TokenID.newBuilder().tokenNum(9876L).build();
+    public static final com.esaulpaugh.headlong.abi.Address FUNGIBLE_TOKEN_HEADLONG_ADDRESS =
+            asHeadlongAddress(asEvmAddress(FUNGIBLE_TOKEN_ID.tokenNum()));
     public static final TokenID NON_FUNGIBLE_TOKEN_ID =
             TokenID.newBuilder().tokenNum(9898L).build();
+
+    public static final com.esaulpaugh.headlong.abi.Address NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS =
+            asHeadlongAddress(asEvmAddress(NON_FUNGIBLE_TOKEN_ID.tokenNum()));
+
     public static final Token FUNGIBLE_TOKEN = Token.newBuilder()
             .tokenId(FUNGIBLE_TOKEN_ID)
             .name("Fungible Token")
@@ -196,6 +207,11 @@ public class TestHelpers {
             .build();
 
     public static final long NFT_SERIAL_NO = 666L;
+
+    public static final long[] NFT_SERIAL_NUMBERS = {41L, 42L, 43L};
+
+    public static final List<Long> NFT_SERIAL_NUMBERS_LIST =
+            Arrays.stream(NFT_SERIAL_NUMBERS).boxed().toList();
 
     public static final AccountID NON_SYSTEM_ACCOUNT_ID = AccountID.newBuilder()
             .accountNum(numberOfLongZero(NON_SYSTEM_LONG_ZERO_ADDRESS))
@@ -238,6 +254,7 @@ public class TestHelpers {
 
     public static final Account SOMEBODY = Account.newBuilder()
             .accountId(A_NEW_ACCOUNT_ID)
+            .key(AN_ED25519_KEY)
             .approveForAllNftAllowances(
                     AccountApprovalForAllAllowance.newBuilder()
                             .tokenId(NON_FUNGIBLE_TOKEN_ID)
@@ -254,6 +271,13 @@ public class TestHelpers {
             .build();
     public static final Account ALIASED_SOMEBODY = Account.newBuilder()
             .accountId(A_NEW_ACCOUNT_ID)
+            .alias(tuweniToPbjBytes(EIP_1014_ADDRESS))
+            .build();
+
+    public static final Account PARANOID_SOMEBODY = Account.newBuilder()
+            .accountId(B_NEW_ACCOUNT_ID)
+            .receiverSigRequired(true)
+            .key(AN_ED25519_KEY)
             .alias(tuweniToPbjBytes(EIP_1014_ADDRESS))
             .build();
     public static final TokenRelation A_FUNGIBLE_RELATION = TokenRelation.newBuilder()
@@ -325,7 +349,7 @@ public class TestHelpers {
             null,
             null,
             Bytes.EMPTY,
-            "I prefer not to",
+            INVALID_SIGNATURE,
             null,
             Collections.emptyList(),
             null);
@@ -366,6 +390,15 @@ public class TestHelpers {
             .recipientContract(CALLED_CONTRACT_ID)
             .gas(REMAINING_GAS)
             .build();
+    public static final Key A_CONTRACT_KEY = Key.newBuilder()
+            .contractID(ContractID.newBuilder().contractNum(1234L))
+            .build();
+    public static final Key A_SECP256K1_KEY = Key.newBuilder()
+            .ecdsaSecp256k1(Bytes.fromHex("030101010101010101010101010101010101010101010101010101010101010101"))
+            .build();
+    public static final Key B_SECP256K1_KEY = Key.newBuilder()
+            .ecdsaSecp256k1(Bytes.fromHex("039191919191919191919191919191919191919191919191919191919191919191"))
+            .build();
     private static final ContractCreateTransactionBody MOCK_CREATE_BODY = ContractCreateTransactionBody.newBuilder()
             .memo("Something to think about")
             .build();
@@ -382,7 +415,32 @@ public class TestHelpers {
             TransactionBody.newBuilder().ethereumTransaction(MOCK_ETH_BODY).build();
 
     public static final VerificationStrategy MOCK_VERIFICATION_STRATEGY =
-            new ActiveContractVerificationStrategy(1, Bytes.EMPTY, true);
+            new ActiveContractVerificationStrategy(1, Bytes.EMPTY, true, UseTopLevelSigs.NO);
+    public static final AccountID OWNER_ID =
+            AccountID.newBuilder().accountNum(121212L).build();
+    public static final Bytes OWNER_ADDRESS = Bytes.fromHex("a213624b8b83a724438159ba7c0d333a2b6b3990");
+    public static final com.esaulpaugh.headlong.abi.Address OWNER_HEADLONG_ADDRESS =
+            asHeadlongAddress(OWNER_ADDRESS.toByteArray());
+    public static final Address OWNER_BESU_ADDRESS = pbjToBesuAddress(OWNER_ADDRESS);
+    public static final AccountID UNAUTHORIZED_SPENDER_ID =
+            AccountID.newBuilder().accountNum(999999L).build();
+    public static final Bytes UNAUTHORIZED_SPENDER_ADDRESS = Bytes.fromHex("b284224b8b83a724438cc3cc7c0d333a2b6b3222");
+    public static final com.esaulpaugh.headlong.abi.Address UNAUTHORIZED_SPENDER_HEADLONG_ADDRESS =
+            asHeadlongAddress(UNAUTHORIZED_SPENDER_ADDRESS.toByteArray());
+    public static final Address UNAUTHORIZED_SPENDER_BESU_ADDRESS = pbjToBesuAddress(UNAUTHORIZED_SPENDER_ADDRESS);
+    public static final AccountID APPROVED_ID =
+            AccountID.newBuilder().accountNum(8888888L).build();
+    public static final Bytes APPROVED_ADDRESS = Bytes.fromHex("aa1e6a49898ea7a44e81599a7c0deeeaa969e990");
+    public static final com.esaulpaugh.headlong.abi.Address APPROVED_HEADLONG_ADDRESS =
+            asHeadlongAddress(APPROVED_ADDRESS.toByteArray());
+    public static final Address APPROVED_BESU_ADDRESS = pbjToBesuAddress(APPROVED_ADDRESS);
+
+    public static final AccountID RECEIVER_ID =
+            AccountID.newBuilder().accountNum(7773777L).build();
+    public static final Bytes RECEIVER_ADDRESS = Bytes.fromHex("3b1ef340808e37344e8150037c0deee33060e123");
+    public static final com.esaulpaugh.headlong.abi.Address RECEIVER_HEADLONG_ADDRESS =
+            asHeadlongAddress(RECEIVER_ADDRESS.toByteArray());
+    public static final Address RECEIVER_BESU_ADDRESS = pbjToBesuAddress(RECEIVER_ADDRESS);
 
     public static void assertSameResult(
             final Operation.OperationResult expected, final Operation.OperationResult actual) {
@@ -533,5 +591,15 @@ public class TestHelpers {
                 org.apache.tuweni.bytes.Bytes.wrap(HtsCallAttempt.REDIRECT_FOR_TOKEN.selector()),
                 tokenAddress,
                 org.apache.tuweni.bytes.Bytes.of(subSelector));
+    }
+
+    public static org.apache.tuweni.bytes.Bytes asBytesResult(final ByteBuffer encoded) {
+        return org.apache.tuweni.bytes.Bytes.wrap(encoded.array());
+    }
+
+    public static ContractID asNumericContractId(@NonNull final AccountID accountId) {
+        return ContractID.newBuilder()
+                .contractNum(accountId.accountNumOrThrow())
+                .build();
     }
 }

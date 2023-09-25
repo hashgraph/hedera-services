@@ -33,33 +33,26 @@ import org.apache.logging.log4j.Logger;
  */
 public class EmergencyRecoveryManager {
     private static final Logger logger = LogManager.getLogger(EmergencyRecoveryManager.class);
+
     private final ShutdownRequestedTrigger shutdownRequestedTrigger;
     private final EmergencyRecoveryFile emergencyRecoveryFile;
     private final StateConfig stateConfig;
     private volatile boolean emergencyStateRequired;
 
     /**
-     * @param stateConfig               the state configuration from the platform
-     * @param shutdownRequestedTrigger  a trigger that requests the platform to shut down
-     * @param emergencyRecoveryDir      the directory to look for an emergency recovery file in
+     * @param stateConfig              the state configuration from the platform
+     * @param shutdownRequestedTrigger a trigger that requests the platform to shut down
+     * @param emergencyRecoveryDir     the directory to look for an emergency recovery file in
      */
     public EmergencyRecoveryManager(
             @NonNull final StateConfig stateConfig,
             @NonNull final ShutdownRequestedTrigger shutdownRequestedTrigger,
             @NonNull final Path emergencyRecoveryDir) {
+
         this.stateConfig = stateConfig;
         this.shutdownRequestedTrigger = shutdownRequestedTrigger;
         this.emergencyRecoveryFile = readEmergencyRecoveryFile(emergencyRecoveryDir);
         emergencyStateRequired = emergencyRecoveryFile != null;
-    }
-
-    /**
-     * Returns whether an emergency recovery file was present at node boot time.
-     *
-     * @return {@code true} if an emergency recovery file was present, {@code false} otherwise
-     */
-    public boolean isEmergencyRecoveryFilePresent() {
-        return emergencyRecoveryFile != null;
     }
 
     /**

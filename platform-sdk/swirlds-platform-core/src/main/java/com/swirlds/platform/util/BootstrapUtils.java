@@ -22,9 +22,6 @@ import static com.swirlds.common.system.SystemExitCode.NODE_ADDRESS_MISMATCH;
 import static com.swirlds.common.system.SystemExitUtils.exitSystem;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
-import static com.swirlds.platform.state.GenesisStateBuilder.buildGenesisState;
-import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
-import static com.swirlds.platform.state.signed.SignedStateFileReader.getSavedStateFiles;
 
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.ConsensusConfig;
@@ -41,7 +38,6 @@ import com.swirlds.common.config.sources.LegacyFileConfigSource;
 import com.swirlds.common.config.sources.ThreadCountPropertyConfigSource;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.internal.ApplicationDefinition;
 import com.swirlds.common.io.config.RecycleBinConfig;
@@ -65,10 +61,8 @@ import com.swirlds.config.api.source.ConfigSource;
 import com.swirlds.fchashmap.config.FCHashMapConfig;
 import com.swirlds.gui.WindowConfig;
 import com.swirlds.logging.legacy.payload.NodeAddressMismatchPayload;
-import com.swirlds.logging.legacy.payload.SavedStateLoadedPayload;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.platform.JVMPauseDetectorThread;
-import com.swirlds.platform.SavedStateLoader;
 import com.swirlds.platform.ThreadDumpGenerator;
 import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.config.ThreadConfig;
@@ -88,16 +82,10 @@ import com.swirlds.platform.health.clock.OSClockSpeedSourceChecker;
 import com.swirlds.platform.health.entropy.OSEntropyChecker;
 import com.swirlds.platform.health.filesystem.OSFileSystemChecker;
 import com.swirlds.platform.network.Network;
-import com.swirlds.platform.reconnect.emergency.EmergencySignedStateValidator;
-import com.swirlds.platform.recovery.EmergencyRecoveryManager;
-import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.address.AddressBookNetworkUtils;
-import com.swirlds.platform.state.signed.ReservedSignedState;
-import com.swirlds.platform.state.signed.SavedStateInfo;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.swirldapp.AppLoaderException;
 import com.swirlds.platform.swirldapp.SwirldAppLoader;
-import com.swirlds.platform.system.Shutdown;
 import com.swirlds.platform.uptime.UptimeConfig;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -144,15 +132,22 @@ public final class BootstrapUtils {
      */
     public static @NonNull PathsConfig loadPathsConfig() {
         final PathsConfig pathsConfig = ConfigurationHolder.getConfigData(PathsConfig.class);
+        validatePathToConfigTxt(pathsConfig);
+        return pathsConfig;
+    }
+
+    /**
+     * Validate the "config.txt" exists. Program terminates if not.
+     */
+    public static void validatePathToConfigTxt(@NonNull final PathsConfig pathsConfig) {
         if (Files.exists(pathsConfig.getConfigPath())) {
             CommonUtils.tellUserConsole("Reading the configuration from the file:   " + pathsConfig.getConfigPath());
         } else {
-            final String message = "A config.txt file could be created here:   " + pathsConfig.getConfigPath();
+            final String message = "A config.txt file could not be found here:   " + pathsConfig.getConfigPath();
             CommonUtils.tellUserConsole(message);
             logger.error(STARTUP.getMarker(), message);
             SystemExitUtils.exitSystem(SystemExitCode.CONFIGURATION_ERROR, message);
         }
-        return pathsConfig;
     }
 
     /**
@@ -168,8 +163,34 @@ public final class BootstrapUtils {
     public static @NonNull Configuration loadConfig(
             @NonNull final PathsConfig pathsConfig, @NonNull final Map<NodeId, SwirldMain> appMains)
             throws IOException {
-        Objects.requireNonNull(pathsConfig, "pathsConfig must not be null");
         Objects.requireNonNull(appMains, "appMains must not be null");
+        final var configurationBuilder = ConfigurationBuilder.create();
+        setupConfigBuilder(configurationBuilder, pathsConfig);
+
+        // Assume all locally run instances provide the same configuration definitions to the configuration builder.
+        if (!appMains.isEmpty()) {
+            appMains.values().iterator().next().updateConfigurationBuilder(configurationBuilder);
+        }
+
+        final Configuration configuration = configurationBuilder.build();
+
+        // Set the configuration on all SwirldMain instances.
+        appMains.values().forEach(swirldMain -> swirldMain.setConfiguration(configuration));
+
+        return configuration;
+    }
+
+    /**
+     * Load the configuration for the platform.
+     *
+     * @param configurationBuilder the configuration builder to setup
+     * @param pathsConfig the paths of configuration files
+     * @throws IOException if there is a problem reading the configuration files
+     */
+    public static void setupConfigBuilder(
+            @NonNull final ConfigurationBuilder configurationBuilder, @NonNull final PathsConfig pathsConfig)
+            throws IOException {
+        Objects.requireNonNull(pathsConfig, "pathsConfig must not be null");
 
         // The properties from the config.txt
         final LegacyConfigProperties configurationProperties =
@@ -182,7 +203,7 @@ public final class BootstrapUtils {
         final ConfigSource threadCountPropertyConfigSource = new ThreadCountPropertyConfigSource();
 
         // Load Configuration Definitions
-        final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create()
+        configurationBuilder
                 .withSource(mappedSettingsConfigSource)
                 .withSource(configPropertiesConfigSource)
                 .withSource(threadCountPropertyConfigSource)
@@ -214,18 +235,6 @@ public final class BootstrapUtils {
                 .withConfigDataType(PlatformStatusConfig.class)
                 .withConfigDataType(TransactionConfig.class)
                 .withConfigDataType(ProtocolConfig.class);
-
-        // Assume all locally run instances provide the same configuration definitions to the configuration builder.
-        if (!appMains.isEmpty()) {
-            appMains.values().iterator().next().updateConfigurationBuilder(configurationBuilder);
-        }
-
-        final Configuration configuration = configurationBuilder.build();
-
-        // Set the configuration on all SwirldMain instances.
-        appMains.values().forEach(swirldMain -> swirldMain.setConfiguration(configuration));
-
-        return configuration;
     }
 
     /**
@@ -449,27 +458,6 @@ public final class BootstrapUtils {
     }
 
     /**
-     * Create a copy of the initial signed state. There are currently data structures that become immutable after
-     * being hashed, and we need to make a copy to force it to become mutable again.
-     *
-     * @param platformContext    the platform's context
-     * @param initialSignedState the initial signed state
-     * @return a copy of the initial signed state
-     */
-    public static @NonNull ReservedSignedState copyInitialSignedState(
-            @NonNull final PlatformContext platformContext, @NonNull final SignedState initialSignedState) {
-        Objects.requireNonNull(platformContext);
-        Objects.requireNonNull(initialSignedState);
-
-        final State stateCopy = initialSignedState.getState().copy();
-        final SignedState signedStateCopy =
-                new SignedState(platformContext, stateCopy, "Browser create new copy of initial state");
-        signedStateCopy.setSigSet(initialSignedState.getSigSet());
-
-        return signedStateCopy.reserve("Browser copied initial state");
-    }
-
-    /**
      * Determine which nodes should be run locally
      *
      * @param addressBook       the address book
@@ -551,113 +539,6 @@ public final class BootstrapUtils {
             return appMains;
         } catch (final Exception ex) {
             throw new RuntimeException("Error loading SwirldMains", ex);
-        }
-    }
-
-    /**
-     * Load the signed state from the disk if it is present.
-     *
-     * @param platformContext          the platform context
-     * @param mainClassName            the name of the app's SwirldMain class.
-     * @param swirldName               the name of the swirld to load the state for.
-     * @param selfId                   the ID of the node to load the state for.
-     * @param appVersion               the version of the app to use for emergency recovery.
-     * @param configAddressBook        the address book to use for emergency recovery.
-     * @param emergencyRecoveryManager the emergency recovery manager to use for emergency recovery.
-     * @return the signed state loaded from disk.
-     */
-    @NonNull
-    public static ReservedSignedState getUnmodifiedSignedStateFromDisk(
-            @NonNull final PlatformContext platformContext,
-            @NonNull final String mainClassName,
-            @NonNull final String swirldName,
-            @NonNull final NodeId selfId,
-            @NonNull final SoftwareVersion appVersion,
-            @NonNull final AddressBook configAddressBook,
-            @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
-
-        final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
-        final String actualMainClassName = stateConfig.getMainClassName(mainClassName);
-
-        final List<SavedStateInfo> savedStateFiles = getSavedStateFiles(actualMainClassName, selfId, swirldName);
-
-        // We can't send a "real" dispatcher for shutdown, since the dispatcher will not have been started by the
-        // time this class is used.
-        final SavedStateLoader savedStateLoader = new SavedStateLoader(
-                platformContext,
-                new Shutdown()::shutdown,
-                configAddressBook,
-                savedStateFiles,
-                appVersion,
-                () -> new EmergencySignedStateValidator(
-                        stateConfig, emergencyRecoveryManager.getEmergencyRecoveryFile()),
-                emergencyRecoveryManager);
-        try {
-            return savedStateLoader.getSavedStateToLoad();
-        } catch (final Exception e) {
-            logger.error(EXCEPTION.getMarker(), "Signed state not loaded from disk:", e);
-            if (stateConfig.requireStateLoad()) {
-                exitSystem(SystemExitCode.SAVED_STATE_NOT_LOADED);
-            }
-        }
-        return createNullReservation();
-    }
-
-    /**
-     * Get the initial state to be used by this node. May return a state loaded from disk, or may return a genesis state
-     * if no valid state is found on disk.
-     *
-     * @param platformContext          the platform context
-     * @param appMain                  the app main
-     * @param mainClassName            the name of the app's SwirldMain class
-     * @param swirldName               the name of this swirld
-     * @param selfId                   the node id of this node
-     * @param configAddressBook        the address book from config.txt
-     * @param emergencyRecoveryManager the emergency recovery manager
-     * @return the initial state to be used by this node
-     */
-    @NonNull
-    public static ReservedSignedState getInitialState(
-            @NonNull final PlatformContext platformContext,
-            @NonNull final SwirldMain appMain,
-            @NonNull final String mainClassName,
-            @NonNull final String swirldName,
-            @NonNull final NodeId selfId,
-            @NonNull final AddressBook configAddressBook,
-            @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
-
-        Objects.requireNonNull(platformContext);
-        Objects.requireNonNull(mainClassName);
-        Objects.requireNonNull(swirldName);
-        Objects.requireNonNull(selfId);
-        Objects.requireNonNull(configAddressBook);
-        Objects.requireNonNull(emergencyRecoveryManager);
-
-        final ReservedSignedState loadedState = getUnmodifiedSignedStateFromDisk(
-                platformContext,
-                mainClassName,
-                swirldName,
-                selfId,
-                appMain.getSoftwareVersion(),
-                configAddressBook,
-                emergencyRecoveryManager);
-
-        try (loadedState) {
-            if (loadedState.isNotNull()) {
-                logger.info(
-                        STARTUP.getMarker(),
-                        new SavedStateLoadedPayload(
-                                loadedState.get().getRound(), loadedState.get().getConsensusTimestamp()));
-
-                return copyInitialSignedState(platformContext, loadedState.get());
-            }
-        }
-
-        final ReservedSignedState genesisState =
-                buildGenesisState(platformContext, configAddressBook, appMain.getSoftwareVersion(), appMain.newState());
-
-        try (genesisState) {
-            return copyInitialSignedState(platformContext, genesisState.get());
         }
     }
 }

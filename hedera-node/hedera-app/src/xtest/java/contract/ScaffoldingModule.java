@@ -22,13 +22,9 @@ import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategor
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.SignatureMap;
-import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.authorization.AuthorizerImpl;
-import com.hedera.node.app.authorization.PrivilegesVerifier;
-import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
@@ -47,6 +43,7 @@ import com.hedera.node.app.service.token.impl.handlers.staking.StakeRewardCalcul
 import com.hedera.node.app.service.token.impl.handlers.staking.StakeRewardCalculatorImpl;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.UnknownHederaFunctionality;
+import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fixtures.info.FakeNetworkInfo;
 import com.hedera.node.app.spi.fixtures.numbers.FakeHederaNumbers;
 import com.hedera.node.app.spi.info.NetworkInfo;
@@ -60,7 +57,6 @@ import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.recordcache.DeduplicationCacheImpl;
 import com.hedera.node.app.state.recordcache.RecordCacheImpl;
 import com.hedera.node.app.workflows.TransactionChecker;
-import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.HandleContextImpl;
@@ -75,7 +71,6 @@ import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.stream.Signer;
@@ -120,13 +115,9 @@ public interface ScaffoldingModule {
         return new FakeNetworkInfo();
     }
 
-    @Provides
+    @Binds
     @Singleton
-    static CryptoSignatureWaivers provideCryptoSignatureWaivers() {
-        final var configProvider = new ConfigProviderImpl();
-        final var authorizer = new AuthorizerImpl(configProvider, new PrivilegesVerifier(configProvider));
-        return new CryptoSignatureWaiversImpl(authorizer);
-    }
+    CryptoSignatureWaivers bindCryptoSignatureWaivers(CryptoSignatureWaiversImpl cryptoSignatureWaivers);
 
     @Binds
     @Singleton
@@ -155,6 +146,10 @@ public interface ScaffoldingModule {
     @Binds
     @Singleton
     BlockRecordWriterFactory bindBlockRecordWriterFactory(BlockRecordWriterFactoryImpl factory);
+
+    @Binds
+    @Singleton
+    Authorizer bindAuthorizer(AuthorizerImpl authorizer);
 
     @Provides
     @Singleton
@@ -224,7 +219,8 @@ public interface ScaffoldingModule {
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final HederaState state,
             @NonNull final ExchangeRateManager exchangeRateManager,
-            @NonNull final FeeManager feeManager) {
+            @NonNull final FeeManager feeManager,
+            @NonNull final Authorizer authorizer) {
         final var consensusTime = Instant.now();
         final var parentRecordBuilder = new SingleTransactionRecordBuilderImpl(consensusTime);
         return body -> {
@@ -235,10 +231,10 @@ public interface ScaffoldingModule {
             } catch (UnknownHederaFunctionality e) {
                 throw new RuntimeException(e);
             }
-            final var txInfo =
-                    new TransactionInfo(Transaction.DEFAULT, body, SignatureMap.DEFAULT, Bytes.EMPTY, function);
             return new HandleContextImpl(
-                    txInfo,
+                    body,
+                    function,
+                    0,
                     body.transactionIDOrThrow().accountIDOrThrow(),
                     Key.DEFAULT,
                     networkInfo,
@@ -255,7 +251,8 @@ public interface ScaffoldingModule {
                     recordCache,
                     feeManager,
                     exchangeRateManager,
-                    consensusTime);
+                    consensusTime,
+                    authorizer);
         };
     }
 }

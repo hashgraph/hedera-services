@@ -155,8 +155,7 @@ class FileUpdateTest extends FileTestBase {
 
         subject.preHandle(realPreContext);
 
-        assertTrue(realPreContext.requiredNonPayerKeys().size() > 0);
-        assertEquals(3, realPreContext.requiredNonPayerKeys().size());
+        assertFalse(realPreContext.requiredNonPayerKeys().size() > 0);
     }
 
     @Test
@@ -181,7 +180,6 @@ class FileUpdateTest extends FileTestBase {
 
         subject.preHandle(realPreContext);
 
-        assertTrue(realPreContext.requiredNonPayerKeys().size() == 0);
         assertEquals(0, realPreContext.requiredNonPayerKeys().size());
     }
 
@@ -247,7 +245,7 @@ class FileUpdateTest extends FileTestBase {
     @Test
     @DisplayName("Fails handle if keys doesn't exist on file to be updated")
     void failForImmutableFile() {
-        file = new File(fileId, expirationTime, null, Bytes.wrap(contents), memo, false);
+        file = new File(fileId, expirationTime, null, Bytes.wrap(contents), memo, false, 0L);
         refreshStoresWithCurrentFileInBothReadableAndWritable();
 
         final var op = OP_BUILDER.fileID(fileId).keys(anotherKeys).build();

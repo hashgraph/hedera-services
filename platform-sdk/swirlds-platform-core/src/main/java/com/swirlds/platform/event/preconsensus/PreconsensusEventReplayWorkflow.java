@@ -96,7 +96,7 @@ public final class PreconsensusEventReplayWorkflow {
             final Instant start = time.now();
 
             final IOIterator<GossipEvent> iterator =
-                    preconsensusEventFileManager.getEventIterator(initialMinimumGenerationNonAncient, true);
+                    preconsensusEventFileManager.getEventIterator(initialMinimumGenerationNonAncient);
 
             final PreconsensusEventReplayPipeline eventReplayPipeline = new PreconsensusEventReplayPipeline(
                     platformContext, threadManager, iterator, eventTaskDispatcher::dispatchTask);

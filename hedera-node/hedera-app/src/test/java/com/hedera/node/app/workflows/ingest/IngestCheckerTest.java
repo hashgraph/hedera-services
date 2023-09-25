@@ -59,6 +59,7 @@ import com.hedera.node.app.info.CurrentPlatformStatus;
 import com.hedera.node.app.signature.SignatureExpander;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.signature.SignatureVerifier;
+import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
@@ -70,10 +71,14 @@ import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.common.system.status.PlatformStatus;
+import com.swirlds.config.api.Configuration;
 import java.time.Instant;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -118,10 +123,15 @@ class IngestCheckerTest extends AppTestBase {
     @Mock(strictness = LENIENT)
     private FeeManager feeManager;
 
+    @Mock(strictness = LENIENT)
+    private Authorizer authorizer;
+
     private DeduplicationCache deduplicationCache;
 
     private TransactionBody txBody;
     private Transaction tx;
+
+    private Configuration configuration;
 
     private IngestChecker subject;
 
@@ -129,6 +139,8 @@ class IngestCheckerTest extends AppTestBase {
     void setUp() throws PreCheckException {
         setupStandardStates();
         when(currentPlatformStatus.get()).thenReturn(PlatformStatus.ACTIVE);
+
+        configuration = new VersionedConfigImpl(HederaTestConfigBuilder.createConfig(), 1L);
 
         txBody = TransactionBody.newBuilder()
                 .uncheckedSubmit(UncheckedSubmitBody.newBuilder().build())
@@ -165,7 +177,8 @@ class IngestCheckerTest extends AppTestBase {
                 signatureVerifier,
                 deduplicationCache,
                 dispatcher,
-                feeManager);
+                feeManager,
+                authorizer);
     }
 
     @Nested
@@ -213,10 +226,11 @@ class IngestCheckerTest extends AppTestBase {
                 signatureVerifier,
                 deduplicationCache,
                 dispatcher,
-                feeManager);
+                feeManager,
+                authorizer);
 
         // Then the checker should throw a PreCheckException
-        assertThatThrownBy(() -> subject.runAllChecks(state, tx))
+        assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))
                 .isInstanceOf(PreCheckException.class)
                 .has(responseCode(INVALID_NODE_ACCOUNT));
     }
@@ -235,7 +249,7 @@ class IngestCheckerTest extends AppTestBase {
                 .thenReturn(Map.of(ALICE.account().keyOrThrow(), verificationResultFuture));
 
         // when
-        final var actual = subject.runAllChecks(state, tx);
+        final var actual = subject.runAllChecks(state, tx, configuration);
 
         // then
         assertThat(actual).isEqualTo(expected);
@@ -261,7 +275,7 @@ class IngestCheckerTest extends AppTestBase {
             when(transactionChecker.check(any())).thenThrow(new PreCheckException(failureReason));
 
             // When the transaction is checked
-            assertThatThrownBy(() -> subject.runAllChecks(state, tx))
+            assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))
                     .isInstanceOf(PreCheckException.class)
                     .has(responseCode(failureReason));
         }
@@ -273,7 +287,7 @@ class IngestCheckerTest extends AppTestBase {
             when(transactionChecker.check(any())).thenThrow(new RuntimeException("check exception"));
 
             // When the transaction is submitted, then the exception is bubbled up
-            assertThatThrownBy(() -> subject.runAllChecks(state, tx))
+            assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))
                     .isInstanceOf(RuntimeException.class)
                     .hasMessageContaining("check exception");
         }
@@ -289,7 +303,7 @@ class IngestCheckerTest extends AppTestBase {
             final var id = txBody.transactionIDOrThrow();
             deduplicationCache.add(id);
             // When the transaction is checked, then it throws a PreCheckException due to duplication
-            assertThatThrownBy(() -> subject.runAllChecks(state, tx))
+            assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))
                     .isInstanceOf(PreCheckException.class)
                     .hasFieldOrPropertyWithValue("responseCode", DUPLICATE_TRANSACTION);
         }
@@ -305,7 +319,7 @@ class IngestCheckerTest extends AppTestBase {
             when(throttleAccumulator.shouldThrottle(txBody)).thenReturn(true);
 
             // When the transaction is submitted
-            assertThatThrownBy(() -> subject.runAllChecks(state, tx))
+            assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))
                     .isInstanceOf(PreCheckException.class)
                     .hasFieldOrPropertyWithValue("responseCode", BUSY);
         }
@@ -318,7 +332,7 @@ class IngestCheckerTest extends AppTestBase {
                     .thenThrow(new RuntimeException("shouldThrottle exception"));
 
             // When the transaction is submitted, then the exception is bubbled up
-            assertThatThrownBy(() -> subject.runAllChecks(state, tx))
+            assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))
                     .isInstanceOf(RuntimeException.class)
                     .hasMessageContaining("shouldThrottle exception");
         }
@@ -338,7 +352,7 @@ class IngestCheckerTest extends AppTestBase {
         void payerAccountStatusFails(ResponseCodeEnum failureReason) throws PreCheckException {
             doThrow(new PreCheckException(failureReason)).when(solvencyPreCheck).getPayerAccount(any(), any());
 
-            assertThatThrownBy(() -> subject.runAllChecks(state, tx))
+            assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))
                     .isInstanceOf(PreCheckException.class)
                     .has(responseCode(failureReason));
         }
@@ -352,7 +366,7 @@ class IngestCheckerTest extends AppTestBase {
                     .getPayerAccount(any(), any());
 
             // When the transaction is submitted, then the exception is bubbled up
-            assertThatThrownBy(() -> subject.runAllChecks(state, tx))
+            assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))
                     .isInstanceOf(RuntimeException.class)
                     .hasMessageContaining("checkPayerAccountStatus exception");
         }
@@ -366,7 +380,7 @@ class IngestCheckerTest extends AppTestBase {
             when(solvencyPreCheck.getPayerAccount(any(), eq(ALICE.accountID()))).thenReturn(account);
 
             // When the transaction is submitted, then the exception is thrown
-            assertThatThrownBy(() -> subject.runAllChecks(state, tx))
+            assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))
                     .isInstanceOf(PreCheckException.class)
                     .has(responseCode(UNAUTHORIZED));
         }
@@ -386,12 +400,14 @@ class IngestCheckerTest extends AppTestBase {
         @ParameterizedTest(name = "Check of payer's balance fails with error code {0}")
         @MethodSource("failureReasons")
         @DisplayName("If the payer has insufficient funds, the transaction should be rejected")
-        void payerAccountStatusFails(ResponseCodeEnum failureReason) throws PreCheckException {
+        void payerAccountStatusFails(ResponseCodeEnum failureReason)
+                throws PreCheckException, ExecutionException, InterruptedException, TimeoutException {
+            givenValidPayerSignature();
             doThrow(new InsufficientBalanceException(failureReason, 123L))
                     .when(solvencyPreCheck)
-                    .checkSolvency(any(), any(), anyLong());
+                    .checkSolvency(any(), any(), any());
 
-            assertThatThrownBy(() -> subject.runAllChecks(state, tx))
+            assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))
                     .isInstanceOf(InsufficientBalanceException.class)
                     .has(responseCode(failureReason))
                     .has(estimatedFee(123L));
@@ -399,16 +415,26 @@ class IngestCheckerTest extends AppTestBase {
 
         @Test
         @DisplayName("If some random exception is thrown from checking solvency, the exception is bubbled up")
-        void randomException() throws PreCheckException {
+        void randomException() throws PreCheckException, ExecutionException, InterruptedException, TimeoutException {
             // Given an IngestChecker that will throw a RuntimeException from checkPayerSignature
+            givenValidPayerSignature();
             doThrow(new RuntimeException("checkSolvency exception"))
                     .when(solvencyPreCheck)
-                    .checkSolvency(any(), any(), anyLong());
+                    .checkSolvency(any(), any(), any());
 
             // When the transaction is submitted, then the exception is bubbled up
-            assertThatThrownBy(() -> subject.runAllChecks(state, tx))
+            assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))
                     .isInstanceOf(RuntimeException.class)
                     .hasMessageContaining("checkSolvency exception");
+        }
+
+        private void givenValidPayerSignature() throws ExecutionException, InterruptedException, TimeoutException {
+            final var verificationResultFuture = mock(SignatureVerificationFuture.class);
+            final var verificationResult = mock(SignatureVerification.class);
+            when(verificationResult.passed()).thenReturn(true);
+            when(verificationResultFuture.get(anyLong(), any())).thenReturn(verificationResult);
+            when(signatureVerifier.verify(any(), any()))
+                    .thenReturn(Map.of(ALICE.account().keyOrThrow(), verificationResultFuture));
         }
     }
 
@@ -424,7 +450,7 @@ class IngestCheckerTest extends AppTestBase {
             when(signatureVerifier.verify(any(), any())).thenReturn(Map.of());
 
             // When the transaction is submitted, then the exception is thrown
-            assertThatThrownBy(() -> subject.runAllChecks(state, tx))
+            assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))
                     .isInstanceOf(PreCheckException.class)
                     .has(responseCode(INVALID_SIGNATURE));
         }
@@ -439,7 +465,7 @@ class IngestCheckerTest extends AppTestBase {
             when(signatureVerifier.verify(any(), any()))
                     .thenReturn(Map.of(ALICE.account().keyOrThrow(), verificationResultFuture));
 
-            assertThatThrownBy(() -> subject.runAllChecks(state, tx))
+            assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))
                     .isInstanceOf(PreCheckException.class)
                     .has(responseCode(INVALID_SIGNATURE));
         }
@@ -456,7 +482,7 @@ class IngestCheckerTest extends AppTestBase {
                     .thenReturn(Map.of(ALICE.account().keyOrThrow(), verificationResultFuture));
 
             // When the transaction is submitted, then the exception is bubbled up
-            assertThatThrownBy(() -> subject.runAllChecks(state, tx))
+            assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))
                     .isInstanceOf(RuntimeException.class)
                     .hasMessageContaining("checkPayerSignature exception");
         }

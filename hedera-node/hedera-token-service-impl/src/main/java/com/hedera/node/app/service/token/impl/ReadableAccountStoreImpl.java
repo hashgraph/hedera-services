@@ -125,7 +125,11 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
 
         return accountNum == null
                 ? null
-                : accountState.get(AccountID.newBuilder().accountNum(accountNum).build());
+                : accountState.get(AccountID.newBuilder()
+                        .realmNum(id.realmNum())
+                        .shardNum(id.shardNum())
+                        .accountNum(accountNum)
+                        .build());
     }
 
     /**

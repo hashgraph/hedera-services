@@ -1052,9 +1052,11 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      */
     @Override
     public boolean shouldBeFlushed() {
+        // Check if this copy was explicitly marked to flush
         if (shouldBeFlushed.get()) {
             return true;
         }
+        // Otherwise check its size and compare against flush threshold
         final long threshold = flushThreshold.get();
         return (threshold > 0) && (estimatedSize() >= threshold);
     }

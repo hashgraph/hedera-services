@@ -78,6 +78,7 @@ import java.time.Instant;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Disabled;
 
 @HapiTestSuite
 public class TokenUpdateSpecs extends HapiSuite {
@@ -157,6 +158,7 @@ public class TokenUpdateSpecs extends HapiSuite {
                 .then(tokenUpdate("tbd").hasKnownStatus(TOKEN_WAS_DELETED));
     }
 
+    @HapiTest
     private HapiSpec tokensCanBeMadeImmutableWithEmptyKeyList() {
         final var mutableForNow = "mutableForNow";
         return defaultHapiSpec("TokensCanBeMadeImmutableWithEmptyKeyList")
@@ -220,6 +222,7 @@ public class TokenUpdateSpecs extends HapiSuite {
                         .hasKnownStatus(TOKEN_IS_IMMUTABLE));
     }
 
+    @HapiTest
     public HapiSpec keysChange() {
         return defaultHapiSpec("KeysChange")
                 .given(
@@ -265,6 +268,7 @@ public class TokenUpdateSpecs extends HapiSuite {
                         getAccountInfo(TOKEN_TREASURY).logged());
     }
 
+    @HapiTest
     public HapiSpec newTreasuryAutoAssociationWorks() {
         return defaultHapiSpec("NewTreasuryAutoAssociationWorks")
                 .given(
@@ -285,6 +289,7 @@ public class TokenUpdateSpecs extends HapiSuite {
                         getTokenInfo("tbu").hasTreasury("newTreasuryWithRemainingAutoAssociations"));
     }
 
+    @HapiTest
     public HapiSpec newTreasuryMustSign() {
         return defaultHapiSpec("NewTreasuryMustSign")
                 .given(
@@ -351,6 +356,7 @@ public class TokenUpdateSpecs extends HapiSuite {
                 .then(getTokenInfo("tbu").logged());
     }
 
+    @HapiTest
     public HapiSpec symbolChanges() {
         var hopefullyUnique = "ORIGINAL" + TxnUtils.randomUppercase(5);
 
@@ -365,6 +371,7 @@ public class TokenUpdateSpecs extends HapiSuite {
                         cryptoTransfer(moving(1, "tbu").between(TOKEN_TREASURY, GENESIS)));
     }
 
+    @HapiTest
     public HapiSpec nameChanges() {
         var hopefullyUnique = "ORIGINAL" + TxnUtils.randomUppercase(5);
 
@@ -437,6 +444,7 @@ public class TokenUpdateSpecs extends HapiSuite {
                                 .hasKnownStatus(INVALID_RENEWAL_PERIOD));
     }
 
+    @HapiTest
     public HapiSpec invalidTreasuryCheckHolds() {
         return defaultHapiSpec("InvalidTreasuryCheckHolds")
                 .given(
@@ -531,6 +539,7 @@ public class TokenUpdateSpecs extends HapiSuite {
                                 .hasAutoRenewPeriod(THREE_MONTHS_IN_SECONDS + 1));
     }
 
+    @HapiTest
     public HapiSpec updateTokenTreasuryRequiresZeroTokenBalance() {
         return defaultHapiSpec("updateTokenTreasuryRequiresZeroTokenBalance")
                 .given(
@@ -600,6 +609,8 @@ public class TokenUpdateSpecs extends HapiSuite {
                                 .logged());
     }
 
+    @HapiTest
+    @Disabled("Failing or intermittently failing HAPI Test")
     private HapiSpec safeToUpdateCustomFeesWithNewFallbackWhileTransferring() {
         final var uniqueTokenFeeKey = "uniqueTokenFeeKey";
         final var hbarCollector = "hbarFee";

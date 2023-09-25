@@ -16,7 +16,7 @@
 
 plugins {
     id("com.hedera.hashgraph.conventions")
-    id("com.hedera.hashgraph.maven-publish")
+    id("com.hedera.hashgraph.evm-maven-publish")
 }
 
 group = "com.hedera.evm"
@@ -26,7 +26,6 @@ description = "Hedera EVM - API"
 mainModuleInfo { annotationProcessor("dagger.compiler") }
 
 testModuleInfo {
-    requires("org.hyperledger.besu.plugin.api")
     requires("org.junit.jupiter.api")
     requires("org.mockito")
     requires("org.mockito.junit.jupiter")
