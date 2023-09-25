@@ -46,6 +46,7 @@ import com.hedera.node.app.AppTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
 import com.hedera.node.app.spi.authorization.Authorizer;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.validation.ExpiryValidation;
@@ -238,7 +239,7 @@ class QueryCheckerTest extends AppTestBase {
                     ALICE.accountID(), send(ALICE.accountID(), amount), receive(nodeSelfAccountId, amount));
             doThrow(new InsufficientBalanceException(INSUFFICIENT_PAYER_BALANCE, amount))
                     .when(solvencyPreCheck)
-                    .checkSolvency(txInfo, ALICE.account(), amount);
+                    .checkSolvency(txInfo, ALICE.account(), new Fees(amount, 0, 0));
 
             // then
             assertThatThrownBy(() -> checker.validateAccountBalances(store, txInfo, amount))

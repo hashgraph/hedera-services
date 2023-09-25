@@ -35,6 +35,8 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
+import com.swirlds.common.merkle.utility.SerializableLong;
+import com.swirlds.common.scratchpad.Scratchpad;
 import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
@@ -101,6 +103,8 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
 
     private boolean immutable;
 
+    private Scratchpad<IssScratchPadType> scratchPad;
+
     public ISSTestingToolState() {}
 
     /**
@@ -113,6 +117,7 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
         this.plannedLogErrorList = new LinkedList<>(that.plannedLogErrorList);
         this.genesisTimestamp = that.genesisTimestamp;
         this.selfId = that.selfId;
+        this.scratchPad = that.scratchPad;
         that.immutable = true;
     }
 
@@ -155,6 +160,7 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
         }
 
         this.selfId = platform.getSelfId();
+        this.scratchPad = new Scratchpad<>(platform.getContext(), selfId, IssScratchPadType.class, "ISSTestingTool");
     }
 
     /**
@@ -175,8 +181,12 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
 
                 final PlannedIss plannedIss =
                         shouldTriggerIncident(elapsedSinceGenesis, currentTimestamp, plannedIssList);
+
                 if (plannedIss != null) {
                     triggerISS(plannedIss, elapsedSinceGenesis, currentTimestamp);
+                    // Record the consensus time at which this ISS was provoked
+                    scratchPad.set(
+                            IssScratchPadType.PROVOKED_ISS, new SerializableLong(currentTimestamp.toEpochMilli()));
                 }
 
                 final PlannedLogError plannedLogError =
@@ -218,7 +228,7 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
      * @return the first incident that should be triggered, or null if no incident should be triggered
      */
     @Nullable
-    private static <T extends PlannedIncident> T shouldTriggerIncident(
+    private <T extends PlannedIncident> T shouldTriggerIncident(
             @NonNull final Duration elapsedSinceGenesis,
             @NonNull final Instant currentTimestamp,
             @NonNull final List<T> plannedIncidentList) {
@@ -254,6 +264,19 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
                         plannedIncident.getTimeAfterGenesis(),
                         elapsedSinceGenesis);
 
+                continue;
+            }
+
+            final SerializableLong issLong = scratchPad.get(IssScratchPadType.PROVOKED_ISS);
+            if (issLong != null) {
+                final Instant lastProvokedIssTime = Instant.ofEpochMilli(issLong.getValue());
+                if (lastProvokedIssTime.equals(currentTimestamp)) {
+                    logger.info(
+                            STARTUP.getMarker(),
+                            "Planned {} skipped at {} because this ISS was already invoked (likely before a restart).",
+                            plannedIncident.getDescriptor(),
+                            currentTimestamp);
+                }
                 continue;
             }
 
