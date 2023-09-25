@@ -419,7 +419,7 @@ public class HandleWorkflow {
                     if (networkUtilizationManager.wasLastTxnGasThrottled()) {
                         // Don't charge the payer the service fee component, because the user-submitted transaction
                         // was fully valid but network capacity was unavailable to satisfy it
-                        fees = new Fees(fees.nodeFee(), fees.networkFee(), 0L);
+                        fees = fees.withoutServiceComponent();
                         throw new HandleException(CONSENSUS_GAS_EXHAUSTED);
                     }
 
