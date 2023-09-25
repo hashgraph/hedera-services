@@ -72,18 +72,31 @@ public class EventCreationExpectedResults {
     }
 
     public void validate(final EventCreationSimulationResults r) {
-        Assertions.assertTrue(numEventsCreatedMax >= r.numEventsCreated());
+        Assertions.assertTrue(
+                numEventsCreatedMax >= r.numEventsCreated(),
+                "Number of events created should be less than or equal to %d but was %d"
+                        .formatted(numEventsCreatedMax, r.numEventsCreated()));
         Assertions.assertTrue(numEventsCreatedMin <= r.numEventsCreated());
         if (!consensusExpected) {
             Assertions.assertEquals(0, r.numConsEvents());
             return;
         }
-        Assertions.assertTrue(numConsEventsMin <= r.numConsEvents());
+        Assertions.assertTrue(
+                numConsEventsMin <= r.numConsEvents(),
+                "Number of consensus events should be greater than or equal to %d but was %d"
+                        .formatted(numConsEventsMin, r.numConsEvents()));
         Assertions.assertNotNull(r.avgC2C());
         Assertions.assertNotNull(r.maxC2C());
-        Assertions.assertFalse(DurationUtils.isLonger(r.maxC2C(), maxC2CMax));
-        Assertions.assertFalse(DurationUtils.isLonger(r.avgC2C(), avgC2CMax));
+        Assertions.assertFalse(
+                DurationUtils.isLonger(r.maxC2C(), maxC2CMax),
+                "Max C2C should be less than or equal to %s but was %s".formatted(maxC2CMax, r.maxC2C()));
+        Assertions.assertFalse(
+                DurationUtils.isLonger(r.avgC2C(), avgC2CMax),
+                "Avg C2C should be less than or equal to %s but was %s".formatted(avgC2CMax, r.avgC2C()));
         Assertions.assertNotNull(r.maxRoundSize());
-        Assertions.assertTrue(maxRoundSizeMax >= r.maxRoundSize());
+        Assertions.assertTrue(
+                maxRoundSizeMax >= r.maxRoundSize(),
+                "Max round size should be less than or equal to %d but was %d"
+                        .formatted(maxRoundSizeMax, r.maxRoundSize()));
     }
 }

@@ -27,7 +27,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ENTITY_NOT_ALL
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
@@ -73,8 +72,7 @@ public class SysDelSysUndelSpec extends HapiSuite {
                 .then(
                         systemFileDelete("misc")
                                 .payingWith(SYSTEM_UNDELETE_ADMIN)
-                                .hasPrecheckFrom(NOT_SUPPORTED, OK)
-                                .hasKnownStatus(UNAUTHORIZED),
+                                .hasPrecheck(NOT_SUPPORTED),
                         systemFileUndelete("misc")
                                 .payingWith(SYSTEM_DELETE_ADMIN)
                                 .hasPrecheck(AUTHORIZATION_FAILED),

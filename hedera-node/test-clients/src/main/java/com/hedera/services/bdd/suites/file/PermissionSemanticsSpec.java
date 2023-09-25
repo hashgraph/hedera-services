@@ -37,6 +37,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.ControlForKey;
@@ -74,6 +75,7 @@ public class PermissionSemanticsSpec extends HapiSuite {
                 addressBookAdminExemptFromFeesGivenAuthorizedOps());
     }
 
+    @HapiTest
     private HapiSpec addressBookAdminExemptFromFeesGivenAuthorizedOps() {
         long amount = 100 * 100_000_000L;
         AtomicReference<byte[]> origContents = new AtomicReference<>();
@@ -97,6 +99,7 @@ public class PermissionSemanticsSpec extends HapiSuite {
                         getTxnRecord("authorizedTxn").hasPriority(recordWith().fee(0L)));
     }
 
+    @HapiTest
     private HapiSpec supportsImmutableFiles() {
         long extensionSecs = 666L;
         AtomicLong approxExpiry = new AtomicLong();
@@ -138,6 +141,7 @@ public class PermissionSemanticsSpec extends HapiSuite {
                                 .hasExpiryPassing(l -> Math.abs(l - approxExpiry.get() - extensionSecs) < 5));
     }
 
+    @HapiTest
     private HapiSpec allowsDeleteWithOneTopLevelSig() {
         KeyShape wacl = KeyShape.listOf(KeyShape.SIMPLE, KeyShape.listOf(2));
 

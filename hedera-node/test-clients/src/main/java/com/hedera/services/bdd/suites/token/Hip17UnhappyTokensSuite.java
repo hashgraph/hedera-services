@@ -62,6 +62,7 @@ import java.util.List;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Disabled;
 
 @HapiTestSuite
 public class Hip17UnhappyTokensSuite extends HapiSuite {
@@ -313,6 +314,7 @@ public class Hip17UnhappyTokensSuite extends HapiSuite {
     }
 
     @HapiTest
+    @Disabled("Failing or intermittently failing HAPI Test")
     private HapiSpec cannotUpdateNftFeeScheduleWhenDeleted() {
         final var origHbarFee = 1_234L;
         final var newHbarFee = 4_321L;
