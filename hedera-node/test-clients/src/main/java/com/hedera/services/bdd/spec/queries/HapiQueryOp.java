@@ -67,7 +67,7 @@ import org.apache.logging.log4j.Logger;
 public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOperation {
     private static final Logger log = LogManager.getLogger(HapiQueryOp.class);
 
-    private static final int MAX_RETRY_LIMIT = 20;
+    private static final int MAX_RETRY_LIMIT = 50;
 
     private String nodePaymentName;
     private boolean recordsNodePayment = false;
@@ -329,21 +329,6 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
             return cost;
         }
     }
-
-//    private long retryLookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
-//        int retryCount = 1;
-//        while (true) {
-//            try {
-//                return lookupCostWith(spec, payment);
-//            } catch (final HapiQueryCheckStateException ex) {
-//                if (++retryCount > MAX_RETRY_LIMIT) {
-//                    throw ex;
-//                }
-//            }
-//            log.info("{}. retry of cost lookup", retryCount);
-//            Thread.sleep(10);
-//        }
-//    }
 
     private Consumer<TransactionBody.Builder> opDef(HapiSpec spec, long amount) throws Throwable {
         TransferList transfers = asTransferList(
