@@ -29,7 +29,6 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseHeader;
-import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.token.TokenGetNftInfoResponse;
 import com.hedera.hapi.node.token.TokenNftInfo;
 import com.hedera.hapi.node.transaction.Query;
@@ -154,8 +153,7 @@ public class TokenGetNftInfoHandler extends PaidQueryHandler {
         final var nftId = op.nftIDOrThrow();
         final var nft = nftStore.get(nftId);
 
-        return queryContext
-                .feeCalculator(SubType.DEFAULT)
-                .legacyCalculate(sigValueObj -> new GetTokenNftInfoResourceUsage().usageGiven(query, nft));
+        return queryContext.feeCalculator().legacyCalculate(sigValueObj -> new GetTokenNftInfoResourceUsage()
+                .usageGiven(query, nft));
     }
 }
