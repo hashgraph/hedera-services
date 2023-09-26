@@ -31,7 +31,6 @@ import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseHeader;
-import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.token.AccountInfo;
 import com.hedera.hapi.node.token.CryptoGetInfoQuery;
@@ -187,9 +186,8 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
         final var accountId = op.accountIDOrThrow();
         final var account = accountStore.getAccountById(accountId);
 
-        return queryContext
-                .feeCalculator(SubType.DEFAULT)
-                .legacyCalculate(sigValueObj ->
-                        new GetAccountInfoResourceUsage(cryptoOpsUsage, null, null, null).usageGiven(query, account));
+        return queryContext.feeCalculator().legacyCalculate(sigValueObj -> new GetAccountInfoResourceUsage(
+                        cryptoOpsUsage, null, null, null)
+                .usageGiven(query, account));
     }
 }
