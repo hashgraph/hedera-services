@@ -19,12 +19,10 @@ package com.hedera.node.app.workflows.query;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.node.app.fees.ExchangeRateManager;
-import com.hedera.node.app.fees.NoOpFeeCalculator;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.records.impl.BlockRecordInfoImpl;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
@@ -50,15 +48,20 @@ public class QueryContextImpl implements QueryContext {
     private final HederaState state;
     private final ExchangeRateManager exchangeRateManager;
     private final AccountID payer;
+    private final FeeCalculator feeCalculator;
     private BlockRecordInfo blockRecordInfo; // lazily created
     private ExchangeRateInfo exchangeRateInfo; // lazily created
 
     /**
      * Constructor of {@code QueryContextImpl}.
      *
+     * @param state         the {@link HederaState} with the current state
      * @param storeFactory  the {@link ReadableStoreFactory} used to create the stores
      * @param query         the query that is currently being processed
      * @param configuration the current {@link Configuration}
+     * @param recordCache   the {@link RecordCache} used to cache records
+     * @param exchangeRateManager the {@link ExchangeRateManager} used to get the current exchange rate
+     * @param feeCalculator the {@link FeeCalculator} used to calculate fees
      * @param payer         the {@link AccountID} of the payer, if present
      * @throws NullPointerException if {@code query} is {@code null}
      */
@@ -69,6 +72,7 @@ public class QueryContextImpl implements QueryContext {
             @NonNull final Configuration configuration,
             @NonNull final RecordCache recordCache,
             @NonNull final ExchangeRateManager exchangeRateManager,
+            @NonNull final FeeCalculator feeCalculator,
             @Nullable final AccountID payer) {
         this.state = requireNonNull(state, "state must not be null");
         this.storeFactory = requireNonNull(storeFactory, "storeFactory must not be null");
@@ -76,6 +80,7 @@ public class QueryContextImpl implements QueryContext {
         this.configuration = requireNonNull(configuration, "configuration must not be null");
         this.recordCache = requireNonNull(recordCache, "recordCache must not be null");
         this.exchangeRateManager = requireNonNull(exchangeRateManager, "exchangeRateManager must not be null");
+        this.feeCalculator = requireNonNull(feeCalculator, "feeCalculator must not be null");
         this.payer = payer;
     }
 
@@ -136,8 +141,7 @@ public class QueryContextImpl implements QueryContext {
 
     @NonNull
     @Override
-    public FeeCalculator feeCalculator(@NonNull SubType subType) {
-        // TODO: issue 8543 - implement fee calculator
-        return new NoOpFeeCalculator();
+    public FeeCalculator feeCalculator() {
+        return feeCalculator;
     }
 }
