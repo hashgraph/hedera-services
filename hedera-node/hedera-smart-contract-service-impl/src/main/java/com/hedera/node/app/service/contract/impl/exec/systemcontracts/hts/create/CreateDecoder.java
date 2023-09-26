@@ -48,8 +48,21 @@ public class CreateDecoder {
             @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
         final var call = CreateTranslator.CREATE_FUNGIBLE_TOKEN.decodeCall(encoded);
         final var hederaToken = (Tuple) call.get(0);
+
+        return bodyOf(createToken(hederaToken, call.get(1), call.get(2), addressIdConverter));
+    }
+
+    private TransactionBody bodyOf(@NonNull final TokenCreateTransactionBody.Builder tokenCreate) {
+        return TransactionBody.newBuilder().tokenCreation(tokenCreate).build();
+    }
+
+    private TokenCreateTransactionBody.Builder createToken(
+            @NonNull Tuple hederaToken,
+            long initialTotalSupply,
+            int decimals,
+            @NonNull final AddressIdConverter addressIdConverter) {
         final TokenCreateWrapper tokenCreateWrapper =
-                getTokenCreateWrapperFungible(hederaToken, true, call.get(1), call.get(2), addressIdConverter);
+                getTokenCreateWrapperFungible(hederaToken, true, initialTotalSupply, decimals, addressIdConverter);
 
         final var txnBodyBuilder = TokenCreateTransactionBody.newBuilder();
 
@@ -84,12 +97,7 @@ public class CreateDecoder {
         if (tokenCreateWrapper.getExpiry().autoRenewPeriod() != null) {
             txnBodyBuilder.autoRenewPeriod(tokenCreateWrapper.getExpiry().autoRenewPeriod());
         }
-
-        return bodyOf(txnBodyBuilder);
-    }
-
-    private TransactionBody bodyOf(@NonNull final TokenCreateTransactionBody.Builder tokenCreate) {
-        return TransactionBody.newBuilder().tokenCreation(tokenCreate).build();
+        return txnBodyBuilder;
     }
 
     private static TokenCreateWrapper getTokenCreateWrapperFungible(
