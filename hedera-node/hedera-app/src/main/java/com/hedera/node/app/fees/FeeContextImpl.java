@@ -17,6 +17,7 @@
 package com.hedera.node.app.fees;
 
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.fees.FeeCalculator;
@@ -25,7 +26,6 @@ import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 
 /**
@@ -58,7 +58,7 @@ public class FeeContextImpl implements FeeContext {
             @NonNull final Key payerKey,
             @NonNull final FeeManager feeManager,
             @NonNull final ReadableStoreFactory storeFactory,
-            @Nullable final Configuration configuration) {
+            @NonNull final Configuration configuration) {
         this.consensusTime = consensusTime;
         this.txInfo = txInfo;
         this.payerKey = payerKey;
@@ -76,7 +76,17 @@ public class FeeContextImpl implements FeeContext {
     @NonNull
     @Override
     public FeeCalculator feeCalculator(@NonNull SubType subType) {
-        return feeManager.createFeeCalculator(txInfo, payerKey, 0, consensusTime, subType);
+        // FUTURE: Do we want to extract the exact number of verifications?
+        final var numVerifications = 1;
+        final var signatureMapSize = SignatureMap.PROTOBUF.measureRecord(txInfo.signatureMap());
+        return feeManager.createFeeCalculator(
+                txInfo.txBody(),
+                payerKey,
+                txInfo.functionality(),
+                numVerifications,
+                signatureMapSize,
+                consensusTime,
+                subType);
     }
 
     @NonNull
@@ -86,7 +96,7 @@ public class FeeContextImpl implements FeeContext {
     }
 
     @Override
-    @Nullable
+    @NonNull
     public Configuration configuration() {
         return configuration;
     }
