@@ -72,7 +72,7 @@ public class CreateXTest extends AbstractContractXTest {
                                                             RECEIVER_HEADLONG_ADDRESS))
                                         },
                                         // Expiry
-                                        Tuple.of(123L, RECEIVER_HEADLONG_ADDRESS, 123L)),
+                                        Tuple.of(123L, OWNER_HEADLONG_ADDRESS, 2592000L)),
                                 INITIAL_TOTAL_SUPPLY,
                                 DECIMALS)
                         .array()),

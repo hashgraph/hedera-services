@@ -21,9 +21,8 @@ import static com.hedera.node.app.service.contract.impl.utils.ParsingConstantsUt
 import static com.hedera.node.app.service.contract.impl.utils.ParsingConstantsUtils.TOKEN_KEY;
 
 import com.esaulpaugh.headlong.abi.Function;
-import com.esaulpaugh.headlong.abi.Tuple;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -37,10 +36,12 @@ public class CreateTranslator extends AbstractHtsCallTranslator {
 
     public static final Function CREATE_FUNGIBLE_TOKEN =
             new Function("createFungibleToken(" + HEDERA_TOKEN_STRUCT + ",int64,int32)", ReturnTypes.INT);
+    private final CreateDecoder decoder;
 
     @Inject
-    public CreateTranslator() {
+    public CreateTranslator(CreateDecoder decoder) {
         // Dagger2
+        this.decoder = decoder;
     }
 
     @Override
@@ -49,15 +50,19 @@ public class CreateTranslator extends AbstractHtsCallTranslator {
     }
 
     @Override
-    public HtsCall callFrom(@NonNull HtsCallAttempt attempt) {
-        final var selector = attempt.selector();
-        final Tuple call;
-        if (Arrays.equals(selector, CreateTranslator.CREATE_FUNGIBLE_TOKEN.selector())) {
-            call = CreateTranslator.CREATE_FUNGIBLE_TOKEN.decodeCall(
-                    attempt.input().toArrayUnsafe());
-        } else {
+    public FungibleCreateCall callFrom(@NonNull HtsCallAttempt attempt) {
+        return new FungibleCreateCall(
+                attempt.enhancement(),
+                nominalBodyFor(attempt),
+                attempt.defaultVerificationStrategy(),
+                attempt.senderAddress(),
+                attempt.addressIdConverter());
+    }
 
+    private TransactionBody nominalBodyFor(@NonNull final HtsCallAttempt attempt) {
+        if (Arrays.equals(attempt.selector(), CreateTranslator.CREATE_FUNGIBLE_TOKEN.selector())) {
+            return decoder.decodeCreateFungibleToken(attempt.inputBytes(), attempt.addressIdConverter());
         }
-        throw new AssertionError("Not implemented");
+        throw new AssertionError("Add more cases");
     }
 }
