@@ -24,6 +24,8 @@ import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.token.TokenCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
+import com.hedera.node.app.service.contract.impl.exec.utils.TokenCreateWrapper;
+import com.hedera.node.app.service.contract.impl.exec.utils.TokenExpiryWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -46,40 +48,41 @@ public class CreateDecoder {
             @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
         final var call = CreateTranslator.CREATE_FUNGIBLE_TOKEN.decodeCall(encoded);
         final var hederaToken = (Tuple) call.get(0);
+        final TokenCreateWrapper tokenCreateWrapper =
+                getTokenCreateWrapperFungible(hederaToken, true, call.get(1), call.get(2), addressIdConverter);
+
         final var txnBodyBuilder = TokenCreateTransactionBody.newBuilder();
 
-        txnBodyBuilder.name(hederaToken.get(0));
-        txnBodyBuilder.symbol(hederaToken.get(1));
-        txnBodyBuilder.decimals(call.get(2));
+        txnBodyBuilder.name(tokenCreateWrapper.getName());
+        txnBodyBuilder.symbol(tokenCreateWrapper.getSymbol());
+        txnBodyBuilder.decimals(tokenCreateWrapper.getDecimals());
         txnBodyBuilder.tokenType(TokenType.FUNGIBLE_COMMON);
-        txnBodyBuilder.supplyType(hederaToken.get(4) ? TokenSupplyType.FINITE : TokenSupplyType.INFINITE);
-        txnBodyBuilder.maxSupply(hederaToken.get(5));
-        txnBodyBuilder.initialSupply(call.get(1));
+        txnBodyBuilder.supplyType(
+                tokenCreateWrapper.isSupplyTypeFinite() ? TokenSupplyType.FINITE : TokenSupplyType.INFINITE);
+        txnBodyBuilder.maxSupply(tokenCreateWrapper.getMaxSupply());
+        txnBodyBuilder.initialSupply(tokenCreateWrapper.getInitSupply());
 
         // checks for treasury
-        if (hederaToken.get(2) != null) {
-            txnBodyBuilder.treasury(addressIdConverter.convert(hederaToken.get(2)));
+        if (tokenCreateWrapper.getTreasury() != null) {
+            txnBodyBuilder.treasury(tokenCreateWrapper.getTreasury());
         }
 
         // @TODO iterate through TokenKeys and check for keyType
 
-        txnBodyBuilder.freezeDefault(hederaToken.get(6));
-        txnBodyBuilder.memo(hederaToken.get(3));
+        txnBodyBuilder.freezeDefault(tokenCreateWrapper.isFreezeDefault());
+        txnBodyBuilder.memo(tokenCreateWrapper.getMemo());
 
         // checks for expiry
-        if (hederaToken.get(8) != null) {
-            final var expiry = (Tuple) hederaToken.get(8);
-            if (expiry.get(0) != null) {
-                txnBodyBuilder.expiry(
-                        Timestamp.newBuilder().seconds(expiry.get(0)).build());
-            }
-            if (expiry.get(1) != null) {
-                txnBodyBuilder.autoRenewAccount(addressIdConverter.convert(expiry.get(1)));
-            }
-            if (expiry.get(2) != null) {
-                txnBodyBuilder.autoRenewPeriod(
-                        Duration.newBuilder().seconds(expiry.get(2)).build());
-            }
+        if (tokenCreateWrapper.getExpiry().second() != 0) {
+            txnBodyBuilder.expiry(Timestamp.newBuilder()
+                    .seconds(tokenCreateWrapper.getExpiry().second())
+                    .build());
+        }
+        if (tokenCreateWrapper.getExpiry().autoRenewAccount() != null) {
+            txnBodyBuilder.autoRenewAccount(tokenCreateWrapper.getExpiry().autoRenewAccount());
+        }
+        if (tokenCreateWrapper.getExpiry().autoRenewPeriod() != null) {
+            txnBodyBuilder.autoRenewPeriod(tokenCreateWrapper.getExpiry().autoRenewPeriod());
         }
 
         return bodyOf(txnBodyBuilder);
@@ -87,5 +90,46 @@ public class CreateDecoder {
 
     private TransactionBody bodyOf(@NonNull final TokenCreateTransactionBody.Builder tokenCreate) {
         return TransactionBody.newBuilder().tokenCreation(tokenCreate).build();
+    }
+
+    private static TokenCreateWrapper getTokenCreateWrapperFungible(
+            @NonNull final Tuple tokenCreateStruct,
+            final boolean isFungible,
+            final long initSupply,
+            final int decimals,
+            @NonNull final AddressIdConverter addressIdConverter) {
+
+        final var tokenName = (String) tokenCreateStruct.get(0);
+        final var tokenSymbol = (String) tokenCreateStruct.get(1);
+        final var tokenTreasury = addressIdConverter.convert(tokenCreateStruct.get(2));
+        final var memo = (String) tokenCreateStruct.get(3);
+        final var isSupplyTypeFinite = (Boolean) tokenCreateStruct.get(4);
+        final var maxSupply = (long) tokenCreateStruct.get(5);
+        final var isFreezeDefault = (Boolean) tokenCreateStruct.get(6);
+        // @TODO add TokenKeys
+        final var tokenExpiry = decodeTokenExpiry(tokenCreateStruct.get(8), addressIdConverter);
+
+        return new TokenCreateWrapper(
+                isFungible,
+                tokenName,
+                tokenSymbol,
+                tokenTreasury.accountNum() != 0 ? tokenTreasury : null,
+                memo,
+                isSupplyTypeFinite,
+                initSupply,
+                decimals,
+                maxSupply,
+                isFreezeDefault,
+                tokenExpiry);
+    }
+
+    private static TokenExpiryWrapper decodeTokenExpiry(
+            @NonNull final Tuple expiryTuple, @NonNull final AddressIdConverter addressIdConverter) {
+        final var second = (long) expiryTuple.get(0);
+        final var autoRenewAccount = addressIdConverter.convert(expiryTuple.get(1));
+        final var autoRenewPeriod =
+                Duration.newBuilder().seconds(expiryTuple.get(2)).build();
+        return new TokenExpiryWrapper(
+                second, autoRenewAccount.accountNum() == 0 ? null : autoRenewAccount, autoRenewPeriod);
     }
 }
