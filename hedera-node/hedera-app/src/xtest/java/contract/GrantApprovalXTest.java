@@ -161,7 +161,11 @@ public class GrantApprovalXTest extends AbstractContractXTest {
                         GrantApprovalTranslator.ERC_GRANT_APPROVAL.encodeCallWithArgs(
                                 UNAUTHORIZED_SPENDER_HEADLONG_ADDRESS, BigInteger.valueOf(100L)),
                         ERC20_TOKEN_ID),
-                assertSuccess());
+                output -> assertEquals(
+                        asBytesResult(GrantApprovalTranslator.ERC_GRANT_APPROVAL
+                                .getOutputs()
+                                .encodeElements(true)),
+                        output));
         // TRY TRANSFER AND EXPECT SUCCESS
         runHtsCallAndExpectOnSuccess(
                 UNAUTHORIZED_SPENDER_BESU_ADDRESS,
@@ -178,7 +182,11 @@ public class GrantApprovalXTest extends AbstractContractXTest {
                         GrantApprovalTranslator.ERC_GRANT_APPROVAL.encodeCallWithArgs(
                                 UNAUTHORIZED_SPENDER_HEADLONG_ADDRESS, BigInteger.valueOf(SN_2345.serialNumber())),
                         ERC721_TOKEN_ID),
-                assertSuccess());
+                output -> assertEquals(
+                        asBytesResult(GrantApprovalTranslator.ERC_GRANT_APPROVAL_NFT
+                                .getOutputs()
+                                .encodeElements()),
+                        output));
         // TRANSFER NFT
         runHtsCallAndExpectOnSuccess(
                 UNAUTHORIZED_SPENDER_BESU_ADDRESS,

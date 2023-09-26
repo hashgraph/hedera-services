@@ -27,7 +27,6 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
-import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.token.NftAllowance;
 import com.hedera.hapi.node.token.TokenAllowance;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -62,20 +61,6 @@ class GrantApprovalDecoderTest {
         given(attempt.addressIdConverter()).willReturn(addressIdConverter);
         given(addressIdConverter.convert(UNAUTHORIZED_SPENDER_HEADLONG_ADDRESS)).willReturn(UNAUTHORIZED_SPENDER_ID);
         final var body = subject.decodeGrantApproval(attempt);
-        assertGrantApprovePresent(body, FUNGIBLE_TOKEN_ID, UNAUTHORIZED_SPENDER_ID, 10L);
-    }
-
-    @Test
-    void ERCGrantApprovalWorks() {
-        final var encoded = GrantApprovalTranslator.ERC_GRANT_APPROVAL
-                .encodeCallWithArgs(UNAUTHORIZED_SPENDER_HEADLONG_ADDRESS, BigInteger.valueOf(10L))
-                .array();
-        given(attempt.inputBytes()).willReturn(encoded);
-        given(attempt.redirectTokenId()).willReturn(FUNGIBLE_TOKEN_ID);
-        given(attempt.redirectTokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
-        given(attempt.addressIdConverter()).willReturn(addressIdConverter);
-        given(addressIdConverter.convert(UNAUTHORIZED_SPENDER_HEADLONG_ADDRESS)).willReturn(UNAUTHORIZED_SPENDER_ID);
-        final var body = subject.decodeErcGrantApproval(attempt);
         assertGrantApprovePresent(body, FUNGIBLE_TOKEN_ID, UNAUTHORIZED_SPENDER_ID, 10L);
     }
 

@@ -25,7 +25,9 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.math.BigInteger;
 import java.util.Arrays;
+import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -36,6 +38,7 @@ import javax.inject.Singleton;
 public class GrantApprovalTranslator extends AbstractHtsCallTranslator {
 
     public static final Function ERC_GRANT_APPROVAL = new Function("approve(address,uint256)", ReturnTypes.BOOL);
+    public static final Function ERC_GRANT_APPROVAL_NFT = new Function("approve(address,uint256)");
     public static final Function GRANT_APPROVAL = new Function("approve(address,address,uint256)", ReturnTypes.INT_64);
     public static final Function GRANT_APPROVAL_NFT =
             new Function("approveNFT(address,address,uint256)", ReturnTypes.INT_64);
@@ -59,8 +62,12 @@ public class GrantApprovalTranslator extends AbstractHtsCallTranslator {
      */
     @Override
     public HtsCall callFrom(@NonNull final HtsCallAttempt attempt) {
-        return new DispatchForResponseCodeHtsCall<>(
-                attempt, bodyForClassic(attempt), SingleTransactionRecordBuilder.class);
+        if (matchesErcSelector(attempt.selector())) {
+            return bodyForErc(attempt);
+        } else {
+            return new DispatchForResponseCodeHtsCall<>(
+                    attempt, bodyForClassic(attempt), SingleTransactionRecordBuilder.class);
+        }
     }
 
     private boolean matchesClassicSelector(@NonNull final byte[] selector) {
@@ -73,12 +80,24 @@ public class GrantApprovalTranslator extends AbstractHtsCallTranslator {
     }
 
     private TransactionBody bodyForClassic(final HtsCallAttempt attempt) {
-        if (Arrays.equals(attempt.selector(), ERC_GRANT_APPROVAL.selector())) {
-            return decoder.decodeErcGrantApproval(attempt);
-        } else if (Arrays.equals(attempt.selector(), GRANT_APPROVAL.selector())) {
+        if (Arrays.equals(attempt.selector(), GRANT_APPROVAL.selector())) {
             return decoder.decodeGrantApproval(attempt);
         } else {
             return decoder.decodeGrantApprovalNFT(attempt);
         }
+    }
+
+    private ERCGrantApprovalCall bodyForErc(final HtsCallAttempt attempt) {
+        final var call = GrantApprovalTranslator.ERC_GRANT_APPROVAL.decodeCall(attempt.inputBytes());
+        final var spender = attempt.addressIdConverter().convert(call.get(0));
+        final var amount = call.get(1);
+        return new ERCGrantApprovalCall(
+                attempt.enhancement(),
+                attempt.defaultVerificationStrategy(),
+                attempt.senderId(),
+                Objects.requireNonNull(attempt.redirectTokenId()),
+                spender,
+                (BigInteger) amount,
+                Objects.requireNonNull(attempt.redirectTokenType()));
     }
 }
