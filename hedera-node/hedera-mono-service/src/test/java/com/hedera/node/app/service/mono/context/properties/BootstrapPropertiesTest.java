@@ -554,7 +554,7 @@ class BootstrapPropertiesTest {
             entry(TOKENS_AUTO_CREATIONS_ENABLED, true),
             entry(WORKFLOWS_ENABLED, Set.of()),
             entry(ACCOUNTS_BLOCKLIST_ENABLED, true),
-            entry(ACCOUNTS_BLOCKLIST_PATH, "evm-addresses-blocklist.csv"),
+            entry(ACCOUNTS_BLOCKLIST_PATH, "hedera-node/data/onboard/evm-addresses-blocklist.csv"),
             entry(STAKING_SUM_OF_CONSENSUS_WEIGHTS, 500),
             entry(CACHE_CRYPTO_TRANSFER_WARM_THREADS, 30),
             entry(CONFIG_VERSION, 10),
