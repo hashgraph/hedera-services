@@ -51,7 +51,7 @@ public class Issue1741Suite extends HapiSuite {
                 .then(getAccountInfo("payer")
                         .nodePayment(BALANCE)
                         .payingWith("payer")
-                        .hasCostAnswerPrecheck(INSUFFICIENT_PAYER_BALANCE));
+                        .hasAnswerOnlyPrecheck(INSUFFICIENT_PAYER_BALANCE));
     }
 
     @Override
