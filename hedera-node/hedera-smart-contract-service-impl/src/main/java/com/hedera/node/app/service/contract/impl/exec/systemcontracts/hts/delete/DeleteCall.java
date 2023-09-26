@@ -44,7 +44,7 @@ public class DeleteCall extends AbstractHtsCall {
     private final VerificationStrategy verificationStrategy;
     private final org.hyperledger.besu.datatypes.Address spender;
 
-    protected DeleteCall(
+    public DeleteCall(
             @NonNull HederaWorldUpdater.Enhancement enhancement,
             @Nullable final TokenID tokenId,
             @NonNull final VerificationStrategy verificationStrategy,
