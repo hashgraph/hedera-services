@@ -72,6 +72,11 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * Keeps track of the amount of usage of different TPS throttle categories and gas, and returns whether a given
+ * transaction or query should be throttled based on that.
+ * Meant to be used in single-threaded context only as part of the {@link com.hedera.node.app.workflows.handle.HandleWorkflow}.
+ */
 @Singleton
 public class HandleThrottleAccumulator {
     private static final Logger log = LogManager.getLogger(HandleThrottleAccumulator.class);
@@ -89,6 +94,14 @@ public class HandleThrottleAccumulator {
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
     }
 
+    /*
+     * Updates the throttle requirements for the given transaction and returns whether the transaction should be throttled.
+     *
+     * @param txnInfo the transaction to update the throttle requirements for
+     * @param consensusTime the consensus time of the transaction
+     * @param state the current state of the node
+     * @return whether the transaction should be throttled
+     */
     public boolean shouldThrottle(
             @NonNull final TransactionInfo txnInfo,
             @NonNull final Instant consensusTime,
@@ -103,6 +116,14 @@ public class HandleThrottleAccumulator {
         return false;
     }
 
+    /*
+     * Updates the throttle requirements for the given query and returns whether the query should be throttled.
+     *
+     * @param queryFunction the functionality of the query
+     * @param now the time at which the query is being processed
+     * @param query the query to update the throttle requirements for
+     * @return whether the query should be throttled
+     */
     public boolean shouldThrottleQuery(
             @NonNull final HederaFunctionality queryFunction, @NonNull final Instant now, @NonNull final Query query) {
         final var configuration = configProvider.getConfiguration();
@@ -129,6 +150,13 @@ public class HandleThrottleAccumulator {
         return false;
     }
 
+    /*
+     * Leaks the gas amount previously reserved for the given transaction.
+     *
+     * @param txnInfo the transaction to leak the gas for
+     * @param value the amount of gas to leak
+     *
+     */
     public void leakUnusedGasPreviouslyReserved(@NonNull final TransactionInfo txnInfo, final long value) {
         final var configuration = configProvider.getConfiguration();
         if (throttleExempt(txnInfo.payerID(), configuration)) {
@@ -138,11 +166,22 @@ public class HandleThrottleAccumulator {
         gasThrottle.leakUnusedGasPreviouslyReserved(value);
     }
 
+    /*
+     * Gets the current list of active throttles.
+     *
+     * @return the current list of active throttles
+     */
     @NonNull
     public List<DeterministicThrottle> allActiveThrottles() {
         return activeThrottles;
     }
 
+    /*
+     * Gets the current list of active throttles for the given functionality.
+     *
+     * @param function the functionality to get the active throttles for
+     * @return the current list of active throttles for the given functionality
+     */
     @NonNull
     public List<DeterministicThrottle> activeThrottlesFor(@NonNull final HederaFunctionality function) {
         final var manager = functionReqs.get(function);
@@ -153,10 +192,21 @@ public class HandleThrottleAccumulator {
         }
     }
 
+    /*
+     * Indicates whether the last transaction was throttled by gas.
+     *
+     * @return whether the last transaction was throttled by gas
+     */
     public boolean wasLastTxnGasThrottled() {
         return lastTxnWasGasThrottled;
     }
 
+    /*
+     * Checks if the given functionality should be throttled by gas.
+     *
+     * @param function the functionality to check
+     * @return whether the given functionality should be throttled by gas
+     */
     public static boolean isGasThrottled(@NonNull final HederaFunctionality function) {
         return GAS_THROTTLED_FUNCTIONS.contains(function);
     }
@@ -405,6 +455,11 @@ public class HandleThrottleAccumulator {
         return manager == null || !manager.allReqsMetAt(now, n, ONE_TO_ONE);
     }
 
+    /*
+     * Rebuilds the throttle requirements based on the given throttle definitions.
+     *
+     * @param defs the throttle definitions to rebuild the throttle requirements based on
+     */
     public void rebuildFor(@NonNull final ThrottleDefinitions defs) {
         List<DeterministicThrottle> newActiveThrottles = new ArrayList<>();
         EnumMap<HederaFunctionality, List<Pair<DeterministicThrottle, Integer>>> reqLists =
@@ -439,6 +494,9 @@ public class HandleThrottleAccumulator {
         logResolvedDefinitions(CAPACITY_SPLIT);
     }
 
+    /*
+     * Rebuilds the gas throttle based on the current configuration.
+     */
     public void applyGasConfig() {
         final var configuration = configProvider.getConfiguration();
         final var contractsConfig = configuration.getConfigData(ContractsConfig.class);
@@ -482,6 +540,9 @@ public class HandleThrottleAccumulator {
         log.info("{}", () -> sb.toString().trim());
     }
 
+    /*
+     * Gets the gas throttle.
+     */
     @Nullable
     public GasLimitDeterministicThrottle gasLimitThrottle() {
         return gasThrottle;
