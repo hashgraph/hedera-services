@@ -262,6 +262,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         givenTxn();
         refreshWritableStores();
         writableTokenStore.put(nonFungibleToken.copyBuilder().kycKey((Key) null).build());
+        writableTokenStore.put(fungibleToken.copyBuilder().kycKey((Key) null).build());
         givenStoresAndConfig(handleContext);
 
         given(handleContext.dispatchRemovableChildTransaction(

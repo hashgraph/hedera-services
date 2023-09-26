@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl.handlers.transfer.customfees;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Collections.emptyList;
@@ -98,6 +99,7 @@ public class CustomFeeAssessor {
                 final Long htsBalanceChange = entryTx.getValue();
                 if (htsBalanceChange < 0) {
                     final var tokenRel = tokenRelStore.get(entryTx.getKey(), entry.getKey());
+                    validateTrue(tokenRel != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
                     validateTrue(
                             tokenRel.balance() + htsBalanceChange >= 0,
                             INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
