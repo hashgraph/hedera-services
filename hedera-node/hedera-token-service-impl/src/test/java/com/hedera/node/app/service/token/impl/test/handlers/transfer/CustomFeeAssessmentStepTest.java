@@ -467,14 +467,16 @@ class CustomFeeAssessmentStepTest extends StepsBase {
         writableTokenStore.put(fungibleWithNoKyc);
         nonFungibleWithNoKyc = givenValidNonFungibleToken(false);
         writableTokenStore.put(nonFungibleWithNoKyc);
-        final var fungibleWithNoKycB = fungibleWithNoKyc.copyBuilder().tokenId(fungibleTokenIDB).build();
+        final var fungibleWithNoKycB =
+                fungibleWithNoKyc.copyBuilder().tokenId(fungibleTokenIDB).build();
         writableTokenStore.put(fungibleWithNoKycB);
 
         ensureAliasesStep.doIn(transferContext);
         associateTokenRecepientsStep.doIn(transferContext);
 
         final var tokenRel = writableTokenRelStore.get(asAccount(tokenReceiver), fungibleWithNoKyc.tokenId());
-        readableTokenRelStore = TestStoreFactory.newReadableStoreWithTokenRels(tokenRel.copyBuilder().balance(1000).build());
+        readableTokenRelStore = TestStoreFactory.newReadableStoreWithTokenRels(
+                tokenRel.copyBuilder().balance(1000).build());
         when(handleContext.readableStore(ReadableTokenRelationStore.class)).thenReturn(readableTokenRelStore);
 
         return replaceAliasesWithIDsInOp.replaceAliasesWithIds(body, transferContext);
