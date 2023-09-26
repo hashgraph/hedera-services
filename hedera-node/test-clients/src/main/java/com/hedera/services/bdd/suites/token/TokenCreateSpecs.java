@@ -292,10 +292,10 @@ public class TokenCreateSpecs extends HapiSuite {
                         // TODO: for some reason setting the autoRenewPeriod does not change the value. We always get
                         // the default value(7776000). Not sure why
                         // Other then that the validation itself seems to be in place.
-                        //                        tokenCreate(PRIMARY)
-                        //                                .autoRenewAccount(AUTO_RENEW)
-                        //                                .autoRenewPeriod(Long.MAX_VALUE)
-                        //                                .hasPrecheck(INVALID_RENEWAL_PERIOD),
+                        tokenCreate(PRIMARY)
+                                .autoRenewAccount(AUTO_RENEW)
+                                .autoRenewPeriod(Long.MAX_VALUE)
+                                .hasPrecheck(INVALID_RENEWAL_PERIOD),
                         tokenCreate(PRIMARY)
                                 .signedBy(GENESIS)
                                 .autoRenewAccount(AUTO_RENEW)
@@ -1013,11 +1013,7 @@ public class TokenCreateSpecs extends HapiSuite {
                                 .hasPrecheck(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS),
                         tokenAssociate(FIRST_USER, A_TOKEN),
                         cryptoTransfer(moving(0, A_TOKEN).between(TOKEN_TREASURY, FIRST_USER))
-                                // Either fail pre-check with EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS (mono)
-                                // or post-consensus (modular). When we only have modular code left,
-                                // we can just check hasKnownStatus.
-                                .hasPrecheckFrom(OK, EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS)
-                                .hasKnownStatus(EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS),
+                                .hasPrecheck(OK),
                         cryptoTransfer(moving(10, A_TOKEN).from(TOKEN_TREASURY))
                                 .hasPrecheck(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN),
                         cryptoTransfer(moving(10, A_TOKEN).empty()).hasPrecheck(EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS));
