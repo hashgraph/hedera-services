@@ -1288,6 +1288,7 @@ public class ContractCallSuite extends HapiSuite {
         return decodedReturnedValue;
     }
 
+    @HapiTest
     HapiSpec smartContractInlineAssemblyCheck() {
         final var inlineTestContract = "InlineTest";
 
