@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec.utils;
 
 import com.hedera.hapi.node.base.AccountID;
+import java.util.List;
 
 public class TokenCreateWrapper {
     private final boolean isFungible;
@@ -29,6 +30,7 @@ public class TokenCreateWrapper {
     private final long maxSupply;
     private final String memo;
     private final boolean isFreezeDefault;
+    private final List<TokenKeyWrapper> tokenKeys;
     private final TokenExpiryWrapper expiry;
 
     public TokenCreateWrapper(
@@ -42,6 +44,7 @@ public class TokenCreateWrapper {
             final int decimals,
             final long maxSupply,
             final Boolean isFreezeDefault,
+            final List<TokenKeyWrapper> tokenKeys,
             final TokenExpiryWrapper tokenExpiry) {
         this.isFungible = isFungible;
         this.name = tokenName;
@@ -53,6 +56,7 @@ public class TokenCreateWrapper {
         this.decimals = decimals;
         this.maxSupply = maxSupply;
         this.isFreezeDefault = isFreezeDefault;
+        this.tokenKeys = tokenKeys;
         this.expiry = tokenExpiry;
     }
 
@@ -94,6 +98,10 @@ public class TokenCreateWrapper {
 
     public boolean isFreezeDefault() {
         return isFreezeDefault;
+    }
+
+    public List<TokenKeyWrapper> getTokenKeys() {
+        return tokenKeys;
     }
 
     public TokenExpiryWrapper getExpiry() {

@@ -17,6 +17,8 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create;
 
 import com.esaulpaugh.headlong.abi.Tuple;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenSupplyType;
@@ -24,9 +26,14 @@ import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.token.TokenCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
+import com.hedera.node.app.service.contract.impl.exec.utils.KeyValueWrapper;
 import com.hedera.node.app.service.contract.impl.exec.utils.TokenCreateWrapper;
 import com.hedera.node.app.service.contract.impl.exec.utils.TokenExpiryWrapper;
+import com.hedera.node.app.service.contract.impl.exec.utils.TokenKeyWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -80,8 +87,30 @@ public class CreateDecoder {
             txnBodyBuilder.treasury(tokenCreateWrapper.getTreasury());
         }
 
-        // @TODO iterate through TokenKeys and check for keyType
-
+        tokenCreateWrapper.getTokenKeys().forEach(tokenKeyWrapper -> {
+            final var key = tokenKeyWrapper.key().asGrpc();
+            if (tokenKeyWrapper.isUsedForAdminKey()) {
+                txnBodyBuilder.adminKey(key);
+            }
+            if (tokenKeyWrapper.isUsedForKycKey()) {
+                txnBodyBuilder.kycKey(key);
+            }
+            if (tokenKeyWrapper.isUsedForFreezeKey()) {
+                txnBodyBuilder.freezeKey(key);
+            }
+            if (tokenKeyWrapper.isUsedForWipeKey()) {
+                txnBodyBuilder.wipeKey(key);
+            }
+            if (tokenKeyWrapper.isUsedForSupplyKey()) {
+                txnBodyBuilder.supplyKey(key);
+            }
+            if (tokenKeyWrapper.isUsedForFeeScheduleKey()) {
+                txnBodyBuilder.feeScheduleKey(key);
+            }
+            if (tokenKeyWrapper.isUsedForPauseKey()) {
+                txnBodyBuilder.pauseKey(key);
+            }
+        });
         txnBodyBuilder.freezeDefault(tokenCreateWrapper.isFreezeDefault());
         txnBodyBuilder.memo(tokenCreateWrapper.getMemo());
 
@@ -114,7 +143,7 @@ public class CreateDecoder {
         final var isSupplyTypeFinite = (Boolean) tokenCreateStruct.get(4);
         final var maxSupply = (long) tokenCreateStruct.get(5);
         final var isFreezeDefault = (Boolean) tokenCreateStruct.get(6);
-        // @TODO add TokenKeys
+        final var tokenKeys = decodeTokenKeys(tokenCreateStruct.get(7), addressIdConverter);
         final var tokenExpiry = decodeTokenExpiry(tokenCreateStruct.get(8), addressIdConverter);
 
         return new TokenCreateWrapper(
@@ -128,7 +157,33 @@ public class CreateDecoder {
                 decimals,
                 maxSupply,
                 isFreezeDefault,
+                tokenKeys,
                 tokenExpiry);
+    }
+
+    private static List<TokenKeyWrapper> decodeTokenKeys(@NonNull final Tuple[] tokenKeysTuples,
+            @NonNull final AddressIdConverter addressIdConverter) {
+        final List<TokenKeyWrapper> tokenKeys = new ArrayList<>(tokenKeysTuples.length);
+        for (final var tokenKeyTuple : tokenKeysTuples) {
+            final var keyType = ((BigInteger) tokenKeyTuple.get(0)).intValue();
+            final Tuple keyValueTuple = tokenKeyTuple.get(1);
+            final var inheritAccountKey = (Boolean) keyValueTuple.get(0);
+            final var contractId = asContract(addressIdConverter.convert(keyValueTuple.get(1)));
+            final var ed25519 = (byte[]) keyValueTuple.get(2);
+            final var ecdsaSecp256K1 = (byte[]) keyValueTuple.get(3);
+            final var delegatableContractId = asContract(addressIdConverter.convert(keyValueTuple.get(4)));
+
+            tokenKeys.add(new TokenKeyWrapper(
+                    keyType,
+                    new KeyValueWrapper(
+                            inheritAccountKey,
+                            contractId.contractNum() != 0 ? contractId : null,
+                            ed25519,
+                            ecdsaSecp256K1,
+                            delegatableContractId.contractNum() != 0 ? delegatableContractId : null)));
+        }
+
+        return tokenKeys;
     }
 
     private static TokenExpiryWrapper decodeTokenExpiry(
@@ -139,5 +194,13 @@ public class CreateDecoder {
                 Duration.newBuilder().seconds(expiryTuple.get(2)).build();
         return new TokenExpiryWrapper(
                 second, autoRenewAccount.accountNum() == 0 ? null : autoRenewAccount, autoRenewPeriod);
+    }
+
+    public static ContractID asContract(final AccountID id) {
+        return ContractID.newBuilder()
+                .realmNum(id.realmNum())
+                .shardNum(id.shardNum())
+                .contractNum(id.realmNum())
+                .build();
     }
 }
