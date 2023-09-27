@@ -214,9 +214,9 @@ public class TokenTransactSpecs extends HapiSuite {
                 customFeesHaveExpectedAutoCreateInteractions());
     }
 
-
     // fails with
-    // HapiCryptoTransfer{sigs=2, node=0.0.3, transfers=[]} failed - Wrong status! Expected INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE, was FAIL_INVALID!
+    // HapiCryptoTransfer{sigs=2, node=0.0.3, transfers=[]} failed - Wrong status! Expected
+    // INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE, was FAIL_INVALID!
     // @HapiTest
     private HapiSpec customFeesHaveExpectedAutoCreateInteractions() {
         final var nftWithRoyaltyNoFallback = "nftWithRoyaltyNoFallback";
@@ -280,11 +280,9 @@ public class TokenTransactSpecs extends HapiSuite {
                                         moving(10_000, ftWithNonNetOfTransfersFractional)
                                                 .between(CIVILIAN, finalReceiverKey),
                                         movingUnique(nftWithRoyaltyPlusHtsFallback, 1L)
-                                                .between(CIVILIAN, finalReceiverKey)
-                        )
+                                                .between(CIVILIAN, finalReceiverKey))
                                 .hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE)
-                                .via(finalTxn)
-                );
+                                .via(finalTxn));
     }
 
     private HapiSpecOperation autoCreateWithFungible(final String token) {
@@ -759,9 +757,11 @@ public class TokenTransactSpecs extends HapiSuite {
                         getAccountBalance(theContract).hasTokenBalance(A_TOKEN, 1L));
     }
 
-
     // fails with
-    // 2023-09-18 15:02:28.917 WARN  262  HapiSpecOperation - 'autoAssociationWorksForContracts' - HapiContractCreate{sigs=2, node=0.0.3, contract=CreateDonor, bytecode=CreateDonor, created=0, contract=CreateDonor, bytecode=CreateDonor, created=0} failed - Wrong status! Expected SUCCESS, was NOT_SUPPORTED!
+    // 2023-09-18 15:02:28.917 WARN  262  HapiSpecOperation - 'autoAssociationWorksForContracts' -
+    // HapiContractCreate{sigs=2, node=0.0.3, contract=CreateDonor, bytecode=CreateDonor, created=0,
+    // contract=CreateDonor, bytecode=CreateDonor, created=0} failed - Wrong status! Expected SUCCESS, was
+    // NOT_SUPPORTED!
     // @HapiTest
     public HapiSpec autoAssociationWorksForContracts() {
         final var theContract = "CreateDonor";
@@ -1272,7 +1272,6 @@ public class TokenTransactSpecs extends HapiSuite {
                         .hasKnownStatus(TOKEN_WAS_DELETED));
     }
 
-
     @HapiTest
     public HapiSpec fixedHbarCaseStudy() {
         final var alice = "Alice";
@@ -1605,7 +1604,6 @@ public class TokenTransactSpecs extends HapiSuite {
                                 .hasTokenBalance(tokenWithFractionalFee, Long.MAX_VALUE - 1_000L + 1L));
     }
 
-
     @HapiTest
     public HapiSpec multipleRoyaltyFallbackCaseStudy() {
         final var zephyr = "zephyr";
@@ -1876,7 +1874,6 @@ public class TokenTransactSpecs extends HapiSuite {
                         getAccountBalance(DEFAULT_PAYER).hasTokenBalance(feeToken, Long.MAX_VALUE - 1_000L));
     }
 
-
     // fails with
     // Wrong status! Expected INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE, was INVALID_TOKEN_ID!
     // @HapiTest
@@ -2141,7 +2138,9 @@ public class TokenTransactSpecs extends HapiSuite {
     }
 
     // fails with
-    // 2023-09-18 15:02:58.607 WARN  259  HapiSpecOperation - 'CollectorIsChargedFractionalFeeUnlessExempt' - HapiGetTxnRecord{sigs=1, node=0.0.3, txn=collectorNonExempt} failed - java.lang.Exception: Bad priority record! :: Bad assessedCustomFeesList! :: Wrong # of custom fees: expected: <1> but was: <2>
+    // 2023-09-18 15:02:58.607 WARN  259  HapiSpecOperation - 'CollectorIsChargedFractionalFeeUnlessExempt' -
+    // HapiGetTxnRecord{sigs=1, node=0.0.3, txn=collectorNonExempt} failed - java.lang.Exception: Bad priority record!
+    // :: Bad assessedCustomFeesList! :: Wrong # of custom fees: expected: <1> but was: <2>
     // @HapiTest
     public HapiSpec collectorIsChargedFractionalFeeUnlessExempt() {
         return defaultHapiSpec("CollectorIsChargedFractionalFeeUnlessExempt")
