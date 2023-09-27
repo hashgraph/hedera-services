@@ -1,5 +1,20 @@
-package com.hedera.node.app.service.contract.impl.exec.utils;
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
+package com.hedera.node.app.service.contract.impl.exec.utils;
 
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
@@ -90,9 +105,9 @@ public final class KeyValueWrapper {
     private KeyValueType setKeyValueType() {
         if (isShouldInheritAccountKeySet()) {
             return (!isEcdsaSecp256k1KeySet()
-                    && !isDelegatableContractIdSet()
-                    && !isContractIDSet()
-                    && !isEd25519KeySet())
+                            && !isDelegatableContractIdSet()
+                            && !isContractIDSet()
+                            && !isEd25519KeySet())
                     ? KeyValueType.INHERIT_ACCOUNT_KEY
                     : KeyValueType.INVALID_KEY;
         } else if (isContractIDSet()) {
@@ -118,9 +133,7 @@ public final class KeyValueWrapper {
         return switch (keyValueType) {
             case INHERIT_ACCOUNT_KEY -> this.inheritedKey;
             case CONTRACT_ID -> Key.newBuilder().contractID(contractID).build();
-            case ED25519 -> Key.newBuilder()
-                    .ed25519(Bytes.wrap(ed25519))
-                    .build();
+            case ED25519 -> Key.newBuilder().ed25519(Bytes.wrap(ed25519)).build();
             case ECDSA_SECPK256K1 -> Key.newBuilder()
                     .ecdsaSecp256k1(Bytes.wrap(ecdsaSecp256k1))
                     .build();
@@ -130,5 +143,4 @@ public final class KeyValueWrapper {
             default -> throw new InvalidTransactionException("INVALID_KEY", ResponseCodeEnum.INVALID_TRANSACTION_BODY);
         };
     }
-
 }

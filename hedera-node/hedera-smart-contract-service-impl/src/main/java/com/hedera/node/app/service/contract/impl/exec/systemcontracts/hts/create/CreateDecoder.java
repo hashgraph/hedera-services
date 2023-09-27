@@ -16,9 +16,9 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create;
 
+import static com.hedera.node.app.service.contract.impl.exec.utils.IdUtils.asContract;
+
 import com.esaulpaugh.headlong.abi.Tuple;
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenSupplyType;
@@ -54,9 +54,7 @@ public class CreateDecoder {
     public TransactionBody decodeCreateFungibleToken(
             @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
         final var call = CreateTranslator.CREATE_FUNGIBLE_TOKEN.decodeCall(encoded);
-        final var hederaToken = (Tuple) call.get(0);
-
-        return bodyOf(createToken(hederaToken, call.get(1), call.get(2), addressIdConverter));
+        return bodyOf(createToken(call.get(0), call.get(1), call.get(2), addressIdConverter));
     }
 
     private TransactionBody bodyOf(@NonNull final TokenCreateTransactionBody.Builder tokenCreate) {
@@ -161,8 +159,8 @@ public class CreateDecoder {
                 tokenExpiry);
     }
 
-    private static List<TokenKeyWrapper> decodeTokenKeys(@NonNull final Tuple[] tokenKeysTuples,
-            @NonNull final AddressIdConverter addressIdConverter) {
+    private static List<TokenKeyWrapper> decodeTokenKeys(
+            @NonNull final Tuple[] tokenKeysTuples, @NonNull final AddressIdConverter addressIdConverter) {
         final List<TokenKeyWrapper> tokenKeys = new ArrayList<>(tokenKeysTuples.length);
         for (final var tokenKeyTuple : tokenKeysTuples) {
             final var keyType = ((BigInteger) tokenKeyTuple.get(0)).intValue();
@@ -194,13 +192,5 @@ public class CreateDecoder {
                 Duration.newBuilder().seconds(expiryTuple.get(2)).build();
         return new TokenExpiryWrapper(
                 second, autoRenewAccount.accountNum() == 0 ? null : autoRenewAccount, autoRenewPeriod);
-    }
-
-    public static ContractID asContract(final AccountID id) {
-        return ContractID.newBuilder()
-                .realmNum(id.realmNum())
-                .shardNum(id.shardNum())
-                .contractNum(id.realmNum())
-                .build();
     }
 }
