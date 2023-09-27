@@ -85,6 +85,8 @@ class XTestConstants {
             AccountID.newBuilder().accountNum(987654321L).build();
     static final com.esaulpaugh.headlong.abi.Address RECEIVER_HEADLONG_ADDRESS =
             asHeadlongAddress(asEvmAddress(RECEIVER_ID.accountNumOrThrow()));
+    static final Address RECEIVER_BESU_ADDRESS =
+            pbjToBesuAddress(Bytes.wrap(asEvmAddress(RECEIVER_ID.accountNumOrThrow())));
     static final TokenID ERC721_TOKEN_ID = TokenID.newBuilder().tokenNum(1028L).build();
     static final NftID SN_1234 =
             NftID.newBuilder().tokenId(ERC721_TOKEN_ID).serialNumber(1234L).build();

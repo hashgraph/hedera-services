@@ -33,6 +33,7 @@ package com.hedera.node.app.service.token.impl.util;
  */
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
@@ -140,6 +141,7 @@ public class TokenHandlerHelper {
 
         final var tokenRel = tokenRelStore.get(accountId, tokenId);
         validateTrue(tokenRel != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
+        validateTrue(!tokenRel.frozen(), ACCOUNT_FROZEN_FOR_TOKEN);
 
         return tokenRel;
     }
