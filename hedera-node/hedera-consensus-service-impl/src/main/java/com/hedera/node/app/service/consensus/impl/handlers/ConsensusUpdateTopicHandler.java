@@ -236,7 +236,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
                 if (e.getStatus() == INVALID_RENEWAL_PERIOD) {
                     // Tokens throw INVALID_EXPIRATION_TIME, but for topic it's expected currently to throw
                     // AUTORENEW_DURATION_NOT_IN_RANGE
-                    // TODO: We need to change this in the future.
+                    // future('8906')
                     throw new HandleException(AUTORENEW_DURATION_NOT_IN_RANGE);
                 }
                 throw e;
