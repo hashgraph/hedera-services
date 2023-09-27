@@ -25,6 +25,7 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.state.token.Token;
@@ -467,8 +468,11 @@ class CustomFeeAssessmentStepTest extends StepsBase {
         writableTokenStore.put(fungibleWithNoKyc);
         nonFungibleWithNoKyc = givenValidNonFungibleToken(false);
         writableTokenStore.put(nonFungibleWithNoKyc);
-        final var fungibleWithNoKycB =
-                fungibleWithNoKyc.copyBuilder().tokenId(fungibleTokenIDB).build();
+        final var fungibleWithNoKycB = fungibleTokenB
+                .copyBuilder()
+                .kycKey((Key) null)
+                .tokenId(fungibleTokenIDB)
+                .build();
         writableTokenStore.put(fungibleWithNoKycB);
 
         ensureAliasesStep.doIn(transferContext);
@@ -476,7 +480,17 @@ class CustomFeeAssessmentStepTest extends StepsBase {
 
         final var tokenRel = writableTokenRelStore.get(asAccount(tokenReceiver), fungibleWithNoKyc.tokenId());
         readableTokenRelStore = TestStoreFactory.newReadableStoreWithTokenRels(
-                tokenRel.copyBuilder().balance(1000).build());
+                tokenRel.copyBuilder().balance(1000).build(),
+                tokenRel.copyBuilder()
+                        .accountId(payerId)
+                        .tokenId(fungibleTokenIDC)
+                        .balance(1000)
+                        .build(),
+                tokenRel.copyBuilder()
+                        .accountId(payerId)
+                        .tokenId(fungibleTokenId)
+                        .balance(1000)
+                        .build());
         when(handleContext.readableStore(ReadableTokenRelationStore.class)).thenReturn(readableTokenRelStore);
 
         return replaceAliasesWithIDsInOp.replaceAliasesWithIds(body, transferContext);
