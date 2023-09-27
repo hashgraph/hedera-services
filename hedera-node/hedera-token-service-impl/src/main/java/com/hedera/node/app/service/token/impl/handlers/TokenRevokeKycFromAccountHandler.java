@@ -18,20 +18,29 @@ package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
-import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.txnEstimateFactory;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
+import com.hedera.node.app.service.mono.fees.calculation.token.txns.TokenRevokeKycResourceUsage;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -48,10 +57,9 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
+
     @Inject
-    public TokenRevokeKycFromAccountHandler() {
-        // Exists for injection
-    }
+    public TokenRevokeKycFromAccountHandler() {}
 
     /**
      * This method is called during the pre-handle workflow.
@@ -89,11 +97,11 @@ public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
         final var tokenId = op.tokenOrThrow();
         final var accountId = op.accountOrElse(AccountID.DEFAULT);
         final var tokenRelStore = handleContext.writableStore(WritableTokenRelationStore.class);
-        final var tokenStore = handleContext.readableStore(ReadableTokenStore.class);
         final var accountStore = handleContext.readableStore(ReadableAccountStore.class);
         final var expiryValidator = handleContext.expiryValidator();
+        final var tokenStore = handleContext.readableStore(ReadableTokenStore.class);
         final var tokenRel =
-                validateSemantics(accountId, tokenId, tokenRelStore, tokenStore, accountStore, expiryValidator);
+                validateSemantics(accountId, tokenId, tokenRelStore, accountStore, expiryValidator, tokenStore);
 
         final var tokenRelBuilder = tokenRel.copyBuilder();
         tokenRelBuilder.kycGranted(false);
@@ -125,16 +133,30 @@ public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
             @NonNull final AccountID accountId,
             @NonNull final TokenID tokenId,
             @NonNull final WritableTokenRelationStore tokenRelStore,
-            @NonNull final ReadableTokenStore tokenStore,
             @NonNull final ReadableAccountStore accountStore,
-            @NonNull final ExpiryValidator expiryValidator)
+            @NonNull final ExpiryValidator expiryValidator,
+            @NonNull final ReadableTokenStore tokenStore)
             throws HandleException {
         final var account =
                 TokenHandlerHelper.getIfUsable(accountId, accountStore, expiryValidator, INVALID_ACCOUNT_ID);
         final var token = TokenHandlerHelper.getIfUsable(tokenId, tokenStore);
-        final var tokenRel = tokenRelStore.getForModify(accountId, tokenId);
-        validateTrue(tokenRel != null, INVALID_TOKEN_ID);
+        final var tokenRel = TokenHandlerHelper.getIfUsable(accountId, tokenId, tokenRelStore);
 
         return tokenRel;
+    }
+
+    @NonNull
+    @Override
+    public Fees calculateFees(@NonNull final FeeContext feeContext) {
+        requireNonNull(feeContext);
+        final var op = feeContext.body();
+
+        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> {
+            try {
+                return new TokenRevokeKycResourceUsage(txnEstimateFactory).usageGiven(fromPbj(op), sigValueObj, null);
+            } catch (InvalidTxBodyException e) {
+                throw new HandleException(INVALID_TRANSACTION_BODY);
+            }
+        });
     }
 }

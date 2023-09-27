@@ -26,7 +26,6 @@ import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseHeader;
-import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.file.FileContents;
 import com.hedera.hapi.node.file.FileGetContentsQuery;
 import com.hedera.hapi.node.file.FileGetContentsResponse;
@@ -78,14 +77,15 @@ public class FileGetContentsHandler extends FileQueryBase {
         }
     }
 
-    public Fees computeFees(@NonNull QueryContext queryContext) {
+    @Override
+    public @NonNull Fees computeFees(@NonNull QueryContext queryContext) {
         final var query = queryContext.query();
         final var fileStore = queryContext.createStore(ReadableFileStore.class);
         final var op = query.fileGetContentsOrThrow();
         final var fileId = op.fileIDOrThrow();
         final var responseType = op.headerOrElse(QueryHeader.DEFAULT).responseType();
         final FileContents fileContents = contentFile(fileId, fileStore);
-        return queryContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> {
+        return queryContext.feeCalculator().legacyCalculate(sigValueObj -> {
             return new GetFileContentsResourceUsage(usageEstimator)
                     .usageGivenType(fileContents, fromPbjResponseType(responseType));
         });

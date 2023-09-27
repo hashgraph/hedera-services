@@ -18,6 +18,8 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.AdapterUtils.txnFrom;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static com.hedera.test.factories.scenarios.TokenKycGrantScenarios.VALID_GRANT_WITH_EXTANT_TOKEN;
@@ -40,6 +42,7 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenSupplyType;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.TokenGrantKycTransactionBody;
@@ -54,6 +57,8 @@ import com.hedera.node.app.service.token.impl.handlers.TokenGrantKycToAccountHan
 import com.hedera.node.app.service.token.impl.test.handlers.util.TokenHandlerTestBase;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.validation.EntityType;
+import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -168,6 +173,12 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
         @Mock
         private ReadableTokenStore readableTokenStore;
 
+        @Mock
+        private ReadableAccountStore readableAccountStore;
+
+        @Mock
+        private ExpiryValidator expiryValidator;
+
         private static final AccountID TREASURY_ACCOUNT_9876 = BaseCryptoHandler.asAccount(9876);
         private static final TokenID TOKEN_531 = BaseTokenHandler.asToken(531);
 
@@ -186,6 +197,8 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
         void setup() {
             given(handleContext.writableStore(WritableTokenRelationStore.class)).willReturn(tokenRelStore);
             given(handleContext.readableStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
+            given(handleContext.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
+            given(handleContext.expiryValidator()).willReturn(expiryValidator);
         }
 
         @Test
@@ -221,16 +234,20 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
         }
 
         @Test
-        @DisplayName("When getForModify returns empty, should not put or commit")
-        void emptyGetForModifyShouldNotPersist() {
+        @DisplayName("When TokenRelStore.get() returns empty, should not put or commit")
+        void emptyGetShouldNotPersist() {
+            given(readableAccountStore.getAccountById(payerId))
+                    .willReturn(Account.newBuilder().accountId(payerId).build());
             given(readableTokenStore.get(tokenId)).willReturn(newToken531);
-            given(tokenRelStore.getForModify(notNull(), notNull())).willReturn(null);
+            given(tokenRelStore.get(notNull(), notNull())).willReturn(null);
+            given(expiryValidator.expirationStatus(EntityType.ACCOUNT, false, 0))
+                    .willReturn(OK);
 
             final var txnBody = newTxnBody(true, true);
             given(handleContext.body()).willReturn(txnBody);
             assertThatThrownBy(() -> subject.handle(handleContext))
                     .isInstanceOf(HandleException.class)
-                    .has(responseCode(INVALID_TOKEN_ID));
+                    .has(responseCode(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT));
 
             verify(tokenRelStore, never()).put(any(TokenRelation.class));
         }
@@ -240,8 +257,12 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
         void kycGrantedAndPersisted() {
             final var stateTokenRel =
                     newTokenRelationBuilder().kycGranted(false).build();
+            given(readableAccountStore.getAccountById(payerId))
+                    .willReturn(Account.newBuilder().accountId(payerId).build());
             given(readableTokenStore.get(tokenId)).willReturn(newToken531);
-            given(tokenRelStore.getForModify(payerId, tokenId)).willReturn(stateTokenRel);
+            given(tokenRelStore.get(payerId, tokenId)).willReturn(stateTokenRel);
+            given(expiryValidator.expirationStatus(EntityType.ACCOUNT, false, 0))
+                    .willReturn(OK);
 
             final var txnBody = newTxnBody(true, true);
             given(handleContext.body()).willReturn(txnBody);
