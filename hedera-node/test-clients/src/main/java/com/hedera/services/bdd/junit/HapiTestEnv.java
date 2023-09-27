@@ -35,7 +35,7 @@ public class HapiTestEnv {
     private final List<String> nodeHosts = new ArrayList<>();
 
     public HapiTestEnv(@NonNull final String testName, final boolean cluster) {
-        final var numNodes = 1;
+        final var numNodes = cluster ? 4 : 1;
         try {
             final var sb = new StringBuilder();
             sb.append("swirld, ")
