@@ -24,6 +24,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
@@ -56,7 +57,8 @@ public class RecordsSuite extends HapiSuite {
         return true;
     }
 
-    HapiSpec bigCall() {
+    @HapiTest
+    private HapiSpec bigCall() {
         final var contract = "BigBig";
         final var txName = "BigCall";
         final long byteArraySize = (long) (87.5 * 1_024);
@@ -73,7 +75,8 @@ public class RecordsSuite extends HapiSuite {
                 .then(getTxnRecord(txName));
     }
 
-    HapiSpec txRecordsContainValidTransfers() {
+    @HapiTest
+    private HapiSpec txRecordsContainValidTransfers() {
         final var contract = "ParentChildTransfer";
 
         return defaultHapiSpec("TXRecordsContainValidTransfers")
