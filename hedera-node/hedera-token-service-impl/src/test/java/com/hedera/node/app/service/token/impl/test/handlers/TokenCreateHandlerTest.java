@@ -328,7 +328,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
-    void failsIfAssociationAlreadyExistsWhileAssociatingCollector() {
+    void doesntCreateAssociationIfItAlreadyExistsWhileAssociatingCollector() {
         setUpTxnContext();
         final var customFees = List.of(
                 withFixedFee(hbarFixedFee
@@ -349,16 +349,22 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(writableTokenRelStore.get(treasuryId, newTokenId)).isNull();
 
         // Just to simulate existing token association , add to store. Only for testing
-        writableTokenRelStore.put(TokenRelation.newBuilder()
+        final var prebuiltTokenRel = TokenRelation.newBuilder()
                 .tokenId(newTokenId)
                 .accountId(feeCollectorId)
                 .balance(1000L)
-                .build());
+                .build();
+        writableTokenRelStore.put(prebuiltTokenRel);
         assertThat(writableTokenRelStore.get(feeCollectorId, newTokenId)).isNotNull();
 
-        assertThatThrownBy(() -> subject.handle(handleContext))
-                .isInstanceOf(HandleException.class)
-                .has(responseCode(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT));
+        subject.handle(handleContext);
+
+        final var relAfterHandle = writableTokenRelStore.get(feeCollectorId, newTokenId);
+
+        assertThat(relAfterHandle).isNotNull();
+        assertThat(relAfterHandle.tokenId()).isEqualTo(prebuiltTokenRel.tokenId());
+        assertThat(relAfterHandle.accountId()).isEqualTo(prebuiltTokenRel.accountId());
+        assertThat(relAfterHandle.balance()).isEqualTo(prebuiltTokenRel.balance());
     }
 
     @Test

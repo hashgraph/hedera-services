@@ -323,7 +323,7 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
     void validateCustomFeeForCreation() {
         final var requireAutoAssociation = subject.validateForCreation(
                 fungibleToken, readableAccountStore, readableTokenRelStore, writableTokenStore, customFees);
-        assertThat(requireAutoAssociation).isEmpty();
+        assertThat(requireAutoAssociation).hasSize(1).contains(withFractionalFee(fractionalFee));
     }
 
     @Test
@@ -338,7 +338,7 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
         final var fees = List.of(withFixedFee(fixesFeeWithSelfDenomination), withFractionalFee(fractionalFee));
         final var requireAutoAssociation = subject.validateForCreation(
                 fungibleToken, readableAccountStore, readableTokenRelStore, writableTokenStore, fees);
-        assertThat(requireAutoAssociation).hasSize(1).contains(withFixedFee(expectedFeeWithNewToken));
+        assertThat(requireAutoAssociation).hasSize(2).contains(withFixedFee(expectedFeeWithNewToken)).contains(withFractionalFee(fractionalFee));
     }
 
     @Test
