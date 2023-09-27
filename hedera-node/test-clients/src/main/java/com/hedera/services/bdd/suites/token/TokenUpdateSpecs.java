@@ -258,8 +258,8 @@ public class TokenUpdateSpecs extends HapiSuite {
                         tokenAssociate("misc", "tbu"))
                 .then(
                         getTokenInfo("tbu").logged(),
-                        grantTokenKyc("tbu", "misc").signedBy(GENESIS, "freezeThenKycKey"),
                         tokenUnfreeze("tbu", "misc").signedBy(GENESIS, "kycThenFreezeKey"),
+                        grantTokenKyc("tbu", "misc").signedBy(GENESIS, "freezeThenKycKey"),
                         getAccountInfo("misc").logged(),
                         cryptoTransfer(moving(5, "tbu").between(TOKEN_TREASURY, "misc")),
                         mintToken("tbu", 10).signedBy(GENESIS, "wipeThenSupplyKey"),
