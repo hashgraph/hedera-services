@@ -114,6 +114,9 @@ public class BaseTokenHandler {
         requireNonNull(token);
         requireNonNull(treasuryRel);
         requireNonNull(invalidSupplyCode);
+        if (token.hasKycKey()) {
+            validateTrue(treasuryRel.kycGranted(), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
+        }
 
         validateTrue(
                 treasuryRel.accountId().equals(token.treasuryAccountId())
