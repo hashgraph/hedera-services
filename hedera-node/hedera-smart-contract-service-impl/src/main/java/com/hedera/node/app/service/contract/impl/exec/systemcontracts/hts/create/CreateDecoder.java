@@ -16,13 +16,11 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create;
 
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateSyntheticTxnFactory.createToken;
 import static com.hedera.node.app.service.contract.impl.exec.utils.IdUtils.asContract;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.Duration;
-import com.hedera.hapi.node.base.Timestamp;
-import com.hedera.hapi.node.base.TokenSupplyType;
-import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.token.TokenCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
@@ -54,77 +52,13 @@ public class CreateDecoder {
     public TransactionBody decodeCreateFungibleToken(
             @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
         final var call = CreateTranslator.CREATE_FUNGIBLE_TOKEN.decodeCall(encoded);
-        return bodyOf(createToken(call.get(0), call.get(1), call.get(2), addressIdConverter));
+        final TokenCreateWrapper tokenCreateWrapper =
+                getTokenCreateWrapperFungible(call.get(0), true, call.get(1), call.get(2), addressIdConverter);
+        return bodyOf(createToken(tokenCreateWrapper));
     }
 
     private TransactionBody bodyOf(@NonNull final TokenCreateTransactionBody.Builder tokenCreate) {
         return TransactionBody.newBuilder().tokenCreation(tokenCreate).build();
-    }
-
-    private TokenCreateTransactionBody.Builder createToken(
-            @NonNull Tuple hederaToken,
-            long initialTotalSupply,
-            int decimals,
-            @NonNull final AddressIdConverter addressIdConverter) {
-        final TokenCreateWrapper tokenCreateWrapper =
-                getTokenCreateWrapperFungible(hederaToken, true, initialTotalSupply, decimals, addressIdConverter);
-
-        final var txnBodyBuilder = TokenCreateTransactionBody.newBuilder();
-
-        txnBodyBuilder.name(tokenCreateWrapper.getName());
-        txnBodyBuilder.symbol(tokenCreateWrapper.getSymbol());
-        txnBodyBuilder.decimals(tokenCreateWrapper.getDecimals());
-        txnBodyBuilder.tokenType(TokenType.FUNGIBLE_COMMON);
-        txnBodyBuilder.supplyType(
-                tokenCreateWrapper.isSupplyTypeFinite() ? TokenSupplyType.FINITE : TokenSupplyType.INFINITE);
-        txnBodyBuilder.maxSupply(tokenCreateWrapper.getMaxSupply());
-        txnBodyBuilder.initialSupply(tokenCreateWrapper.getInitSupply());
-
-        // checks for treasury
-        if (tokenCreateWrapper.getTreasury() != null) {
-            txnBodyBuilder.treasury(tokenCreateWrapper.getTreasury());
-        }
-
-        tokenCreateWrapper.getTokenKeys().forEach(tokenKeyWrapper -> {
-            final var key = tokenKeyWrapper.key().asGrpc();
-            if (tokenKeyWrapper.isUsedForAdminKey()) {
-                txnBodyBuilder.adminKey(key);
-            }
-            if (tokenKeyWrapper.isUsedForKycKey()) {
-                txnBodyBuilder.kycKey(key);
-            }
-            if (tokenKeyWrapper.isUsedForFreezeKey()) {
-                txnBodyBuilder.freezeKey(key);
-            }
-            if (tokenKeyWrapper.isUsedForWipeKey()) {
-                txnBodyBuilder.wipeKey(key);
-            }
-            if (tokenKeyWrapper.isUsedForSupplyKey()) {
-                txnBodyBuilder.supplyKey(key);
-            }
-            if (tokenKeyWrapper.isUsedForFeeScheduleKey()) {
-                txnBodyBuilder.feeScheduleKey(key);
-            }
-            if (tokenKeyWrapper.isUsedForPauseKey()) {
-                txnBodyBuilder.pauseKey(key);
-            }
-        });
-        txnBodyBuilder.freezeDefault(tokenCreateWrapper.isFreezeDefault());
-        txnBodyBuilder.memo(tokenCreateWrapper.getMemo());
-
-        // checks for expiry
-        if (tokenCreateWrapper.getExpiry().second() != 0) {
-            txnBodyBuilder.expiry(Timestamp.newBuilder()
-                    .seconds(tokenCreateWrapper.getExpiry().second())
-                    .build());
-        }
-        if (tokenCreateWrapper.getExpiry().autoRenewAccount() != null) {
-            txnBodyBuilder.autoRenewAccount(tokenCreateWrapper.getExpiry().autoRenewAccount());
-        }
-        if (tokenCreateWrapper.getExpiry().autoRenewPeriod() != null) {
-            txnBodyBuilder.autoRenewPeriod(tokenCreateWrapper.getExpiry().autoRenewPeriod());
-        }
-        return txnBodyBuilder;
     }
 
     private static TokenCreateWrapper getTokenCreateWrapperFungible(
