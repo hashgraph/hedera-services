@@ -16,26 +16,26 @@
 
 package contract;
 
-import static contract.XTestConstants.AN_ED25519_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static contract.XTestConstants.ERC20_TOKEN_ADDRESS;
 import static contract.XTestConstants.ERC20_TOKEN_ID;
+import static contract.XTestConstants.ERC721_TOKEN_ADDRESS;
+import static contract.XTestConstants.ERC721_TOKEN_ID;
 import static contract.XTestConstants.SENDER_ADDRESS;
 import static contract.XTestConstants.SENDER_BESU_ADDRESS;
 import static contract.XTestConstants.SENDER_CONTRACT_ID_KEY;
 import static contract.XTestConstants.SENDER_ID;
-import static contract.XTestConstants.addErc20Relation;
 import static contract.XTestConstants.assertSuccess;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
-import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
-import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.delete.DeleteTranslator;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -53,13 +53,25 @@ public class DeleteXTest extends AbstractContractXTest {
                         .encodeCallWithArgs(ERC20_TOKEN_ADDRESS)
                         .array()),
                 assertSuccess());
+
+        // Revert if token has no admin key
+        runHtsCallAndExpectRevert(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(DeleteTranslator.DELETE_TOKEN
+                        .encodeCallWithArgs(ERC721_TOKEN_ADDRESS)
+                        .array()),
+                TOKEN_IS_IMMUTABLE);
     }
 
     @Override
     protected void assertExpectedTokens(@NonNull ReadableKVState<TokenID, Token> tokens) {
-        final var token = tokens.get(ERC20_TOKEN_ID);
-        assertNotNull(token);
-        assertTrue(token.deleted());
+        final var erc20Token = tokens.get(ERC20_TOKEN_ID);
+        assertNotNull(erc20Token);
+        assertTrue(erc20Token.deleted());
+
+        final var erc721Token = tokens.get(ERC721_TOKEN_ID);
+        assertNotNull(erc721Token);
+        assertFalse(erc721Token.deleted());
     }
 
     @Override
@@ -78,17 +90,16 @@ public class DeleteXTest extends AbstractContractXTest {
                         .tokenId(ERC20_TOKEN_ID)
                         .treasuryAccountId(SENDER_ID)
                         .tokenType(TokenType.FUNGIBLE_COMMON)
-                        .supplyKey(AN_ED25519_KEY)
                         .adminKey(SENDER_CONTRACT_ID_KEY)
                         .build());
+        tokens.put(
+                ERC721_TOKEN_ID,
+                Token.newBuilder()
+                        .tokenId(ERC721_TOKEN_ID)
+                        .treasuryAccountId(SENDER_ID)
+                        .tokenType(TokenType.FUNGIBLE_COMMON)
+                        .build());
         return tokens;
-    }
-
-    @Override
-    protected Map<EntityIDPair, TokenRelation> initialTokenRelationships() {
-        final var tokenRelationships = new HashMap<EntityIDPair, TokenRelation>();
-        addErc20Relation(tokenRelationships, SENDER_ID, 0L);
-        return tokenRelationships;
     }
 
     @Override
