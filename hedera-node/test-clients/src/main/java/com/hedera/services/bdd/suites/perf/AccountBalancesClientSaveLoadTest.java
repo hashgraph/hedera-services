@@ -99,7 +99,7 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest {
     List<Pair<Integer, Integer>> tokenAcctAssociations = new ArrayList<>();
 
     private final ResponseCodeEnum[] permissiblePrechecks = new ResponseCodeEnum[] {
-            OK, BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED, ACCOUNT_ID_DOES_NOT_EXIST, ACCOUNT_DELETED
+        OK, BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED, ACCOUNT_ID_DOES_NOT_EXIST, ACCOUNT_DELETED
     };
 
     public static void main(String... args) {
@@ -166,8 +166,8 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest {
                                     List<HapiSpecOperation> ops = new ArrayList<>();
                                     String acctName = null;
                                     for (int i = acctProcessed + 1;
-                                         i <= acctProcessed + batchSize && i <= totalAccounts;
-                                         i++) {
+                                            i <= acctProcessed + batchSize && i <= totalAccounts;
+                                            i++) {
                                         acctName = ACCT_NAME_PREFIX + i;
                                         // Make sure the named account was created before
                                         // query its balances.
@@ -322,7 +322,7 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest {
                 String senderAcctName = ACCT_NAME_PREFIX + tokenAndSenderOrd;
                 String receivedAcctName = ACCT_NAME_PREFIX + receiverOrd;
                 var op = cryptoTransfer(moving(RANDOM.nextInt(MAX_TOKEN_TRANSFER) + 1L, tokenName)
-                        .between(senderAcctName, receivedAcctName))
+                                .between(senderAcctName, receivedAcctName))
                         .hasKnownStatusFrom(
                                 OK,
                                 SUCCESS,
