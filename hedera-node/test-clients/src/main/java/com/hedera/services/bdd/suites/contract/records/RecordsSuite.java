@@ -58,7 +58,7 @@ public class RecordsSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec bigCall() {
+    HapiSpec bigCall() {
         final var contract = "BigBig";
         final var txName = "BigCall";
         final long byteArraySize = (long) (87.5 * 1_024);
@@ -76,7 +76,7 @@ public class RecordsSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec txRecordsContainValidTransfers() {
+    HapiSpec txRecordsContainValidTransfers() {
         final var contract = "ParentChildTransfer";
 
         return defaultHapiSpec("TXRecordsContainValidTransfers")
