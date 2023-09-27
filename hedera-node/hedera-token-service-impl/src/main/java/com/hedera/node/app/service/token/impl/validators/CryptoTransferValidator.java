@@ -116,7 +116,8 @@ public class CryptoTransferValidator {
             validateFalsePreCheck(!nonZeroFungibleValueFound && nftIds.isEmpty(), EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS);
             validateFalsePreCheck(nonZeroFungibleValueFound && !nftIds.isEmpty(), INVALID_ACCOUNT_AMOUNTS);
 
-            // Verify that if there is only one fungible transfer it should not be empty
+            // Verify that if there is only one fungible transfer and no non-fungible transfers,
+            // the fungible transfer should not be empty
             if (fungibleTransfers.size() == 1 && nftIds.isEmpty()) {
                 validateFalsePreCheck(nonZeroFungibleValueFound, EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS);
             }
