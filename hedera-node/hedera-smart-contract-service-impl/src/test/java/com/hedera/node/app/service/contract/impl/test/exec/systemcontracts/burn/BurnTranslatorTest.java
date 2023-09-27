@@ -19,8 +19,8 @@ package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.burn
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.burn.BurnTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.burn.BurnTranslator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
