@@ -125,14 +125,19 @@ public class BlocklistAccountCreator {
     }
 
     private List<String> readFileLines() {
-        final List<String> fileLines;
         try {
-            fileLines = readPrivateKeyBlocklist(DEFAULT_BLOCKLIST_RESOURCE, blocklistResourcePath);
-        } catch (Exception e) {
-            log.error("Failed to read blocklist resource {}", DEFAULT_BLOCKLIST_RESOURCE, e);
-            return Collections.emptyList();
+            return readPrivateKeyBlocklistFromPath(blocklistResourcePath);
+        } catch (BlocklistNotFoundException e) {
+            log.error("Failed to read blocklist file {}", blocklistResourcePath, e);
         }
-        return fileLines;
+
+        try {
+            return readPrivateKeyBlocklistFromResource(DEFAULT_BLOCKLIST_RESOURCE);
+        } catch (BlocklistNotFoundException e) {
+            log.error("Failed to read blocklist resource {}", DEFAULT_BLOCKLIST_RESOURCE, e);
+        }
+
+        return Collections.emptyList();
     }
 
     private List<BlockedInfo> parseBlockList(final List<String> fileLines) {
@@ -152,28 +157,32 @@ public class BlocklistAccountCreator {
     }
 
     @NonNull
-    private List<String> readPrivateKeyBlocklist(
-            final @NonNull String defaultResource, final @NonNull String resourcePath) {
-        log.info("Bootstrapping blocklist from '{}'", resourcePath);
-        try (var externalResourceStream = Files.newInputStream(Paths.get(resourcePath));
+    private List<String> readPrivateKeyBlocklistFromPath(String blocklistFilePath) throws BlocklistNotFoundException {
+        log.info("Bootstrapping blocklist from '{}'", blocklistFilePath);
+        try (var externalResourceStream = Files.newInputStream(Paths.get(blocklistFilePath));
                 var externalResourceReader = new BufferedReader(new InputStreamReader(externalResourceStream))) {
             return externalResourceReader.lines().toList();
         } catch (final IOException e) {
-            log.warn("Could not read external properties file {}", resourcePath);
+            throw new BlocklistNotFoundException(
+                    String.format("Could not read external properties file %s", blocklistFilePath), e);
         }
+    }
 
-        log.info("Bootstrapping blocklist from default resource '{}'", defaultResource);
-        try (final var inputStream = getClass().getClassLoader().getResourceAsStream(defaultResource)) {
+    @NonNull
+    private List<String> readPrivateKeyBlocklistFromResource(String blocklistResource)
+            throws BlocklistNotFoundException {
+        log.info("Bootstrapping blocklist from resource '{}'", blocklistResource);
+        try (final var inputStream = getClass().getClassLoader().getResourceAsStream(blocklistResource)) {
             if (inputStream != null) {
                 final var reader = new BufferedReader(new InputStreamReader(inputStream));
                 return reader.lines().toList();
             } else {
-                log.warn("Could not find default resource {}.", defaultResource);
+                log.warn("Could not find resource {}.", blocklistResource);
                 return Collections.emptyList();
             }
         } catch (final IOException e) {
-            log.warn("Could not read from default resource {}", defaultResource);
-            return Collections.emptyList();
+            throw new BlocklistNotFoundException(
+                    String.format("Could not read from resource %s", blocklistResource), e);
         }
     }
 

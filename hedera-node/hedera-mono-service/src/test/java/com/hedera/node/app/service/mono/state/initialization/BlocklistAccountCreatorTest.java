@@ -31,11 +31,9 @@ import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.ledger.backing.BackingStore;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
-import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -44,12 +42,9 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
-import java.security.InvalidKeyException;
 import java.util.function.Supplier;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -62,7 +57,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class BlocklistAccountCreatorTest {
-    private static final long GENESIS_ACCOUNT_NUM = 2L;
     private static final long FIRST_UNUSED_ID = 10_000L;
     private EntityIdSource ids;
 
@@ -82,7 +76,6 @@ class BlocklistAccountCreatorTest {
     private AccountNumbers accountNumbers;
 
     private final JEd25519Key pretendKey = new JEd25519Key("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes());
-    private JKey genesisKey;
 
     @LoggingTarget
     private LogCaptor logCaptor;
@@ -91,7 +84,7 @@ class BlocklistAccountCreatorTest {
     private BlocklistAccountCreator subject;
 
     @BeforeEach
-    void setUp() throws InvalidKeyException {
+    void setUp() {
         ids = new EntityIdSource() {
             long nextId = FIRST_UNUSED_ID;
 
@@ -139,10 +132,6 @@ class BlocklistAccountCreatorTest {
             @Override
             public void resetProvisionalIds() {}
         };
-
-        genesisKey = JKey.mapKey(Key.newBuilder()
-                .setKeyList(KeyList.newBuilder().addKeys(MiscUtils.asKeyUnchecked(pretendKey)))
-                .build());
     }
 
     @Test
@@ -223,6 +212,6 @@ class BlocklistAccountCreatorTest {
                 logCaptor.infoLogs(),
                 contains(
                         "Bootstrapping blocklist from 'non-existing.csv'",
-                        "Bootstrapping blocklist from default resource 'evm-addresses-blocklist.csv'"));
+                        "Bootstrapping blocklist from resource 'evm-addresses-blocklist.csv'"));
     }
 }
