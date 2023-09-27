@@ -42,6 +42,7 @@ import org.junit.jupiter.api.Test;
 
 class AdjustFungibleTokenChangesStepTest extends StepsBase {
 
+    @Override
     @BeforeEach
     public void setUp() {
         super.setUp();
@@ -67,6 +68,11 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         final var receiverAccountBefore = writableAccountStore.get(receiver);
         final var senderRelBefore = writableTokenRelStore.get(ownerId, fungibleTokenId);
         final var receiverRelBefore = writableTokenRelStore.get(receiver, fungibleTokenId);
+        writableTokenRelStore.put(receiverRelBefore
+                .copyBuilder()
+                .kycGranted(true)
+                .accountId(tokenReceiverId)
+                .build());
 
         assertThat(senderAccountBefore.numberPositiveBalances()).isEqualTo(2);
         assertThat(receiverAccountBefore.numberPositiveBalances()).isEqualTo(2);
@@ -107,6 +113,11 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         final var receiverAccountBefore = writableAccountStore.get(receiver);
         final var senderRelBefore = writableTokenRelStore.get(ownerId, fungibleTokenId);
         final var receiverRelBefore = writableTokenRelStore.get(receiver, fungibleTokenId);
+        writableTokenRelStore.put(receiverRelBefore
+                .copyBuilder()
+                .kycGranted(true)
+                .accountId(tokenReceiverId)
+                .build());
 
         assertThat(senderAccountBefore.numberPositiveBalances()).isEqualTo(2);
         assertThat(receiverAccountBefore.numberPositiveBalances()).isEqualTo(2);
@@ -183,6 +194,11 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
 
         final var replacedOp = getReplacedOp();
         adjustFungibleTokenChangesStep = new AdjustFungibleTokenChangesStep(replacedOp, spenderId);
+        final var tokenRel = writableTokenRelStore.get(tokenReceiverId, fungibleTokenId);
+        writableTokenRelStore.put(tokenRel.copyBuilder()
+                .kycGranted(true)
+                .accountId(tokenReceiverId)
+                .build());
 
         assertThatThrownBy(() -> adjustFungibleTokenChangesStep.doIn(transferContext))
                 .isInstanceOf(HandleException.class)
@@ -209,6 +225,11 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
 
         final var replacedOp = getReplacedOp();
         adjustFungibleTokenChangesStep = new AdjustFungibleTokenChangesStep(replacedOp, spenderId);
+        final var tokenRel = writableTokenRelStore.get(tokenReceiverId, fungibleTokenId);
+        writableTokenRelStore.put(tokenRel.copyBuilder()
+                .kycGranted(true)
+                .accountId(tokenReceiverId)
+                .build());
 
         assertThatThrownBy(() -> adjustFungibleTokenChangesStep.doIn(transferContext))
                 .isInstanceOf(HandleException.class)

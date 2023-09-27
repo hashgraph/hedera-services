@@ -18,11 +18,11 @@ package com.swirlds.platform.cli;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.platform.testreader.JrsTestReader.loadTestResults;
-import static com.swirlds.platform.testreader.JrsTestReader.parseMetadataFile;
 import static com.swirlds.platform.testreader.JrsTestReportGenerator.generateReport;
 
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
+import com.swirlds.platform.cli.utils.JtrUtils;
 import com.swirlds.platform.testreader.JrsReportData;
 import com.swirlds.platform.testreader.JrsTestIdentifier;
 import com.swirlds.platform.testreader.JrsTestMetadata;
@@ -31,7 +31,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import picocli.CommandLine;
@@ -96,17 +95,7 @@ public class JrsTestReaderRenderCommand extends AbstractCommand {
         }
 
         final JrsReportData data = loadTestResults(testData);
-
-        final Map<JrsTestIdentifier, JrsTestMetadata> metadata;
-        if (metadataFile == null) {
-            System.out.println("No metadata file specified.");
-            metadata = new HashMap<>();
-        } else if (!Files.exists(metadataFile)) {
-            System.out.println("No metadata file found at " + metadataFile + ". ");
-            metadata = new HashMap<>();
-        } else {
-            metadata = parseMetadataFile(metadataFile);
-        }
+        final Map<JrsTestIdentifier, JrsTestMetadata> metadata = JtrUtils.getTestMetadata(metadataFile);
 
         generateReport(data, metadata, Instant.now(), bucketPrefix, bucketPrefixReplacement, output);
 
