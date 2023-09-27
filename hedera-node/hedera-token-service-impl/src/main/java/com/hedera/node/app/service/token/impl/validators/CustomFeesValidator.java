@@ -37,6 +37,7 @@ import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
+import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashSet;
 import java.util.List;
@@ -166,10 +167,7 @@ public class CustomFeesValidator {
                     }
                 }
                 default -> {
-                    final var isSpecified = fee.hasFixedFee() || fee.hasFractionalFee() || fee.hasRoyaltyFee();
-                    validateTrue(isSpecified, CUSTOM_FEE_NOT_FULLY_SPECIFIED);
-                    throw new IllegalArgumentException(
-                            "Unexpected value for custom fee type: " + fee.fee().kind());
+                    throw new HandleException(CUSTOM_FEE_NOT_FULLY_SPECIFIED);
                 }
             }
         }

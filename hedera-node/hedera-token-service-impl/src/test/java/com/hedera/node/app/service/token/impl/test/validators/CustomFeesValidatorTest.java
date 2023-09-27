@@ -314,8 +314,8 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
                         List.of(CustomFee.newBuilder()
                                 .feeCollectorAccountId(AccountID.newBuilder().accountNum(accountNum.longValue()))
                                 .build())))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Unexpected value for custom fee type: UNSET");
+                .isInstanceOf(HandleException.class)
+                .hasMessage("CUSTOM_FEE_NOT_FULLY_SPECIFIED");
     }
 
     @Test
