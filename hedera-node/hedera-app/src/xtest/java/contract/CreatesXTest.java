@@ -40,10 +40,17 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.tuweni.bytes.Bytes;
 
-public class CreateXTest extends AbstractContractXTest {
+public class CreatesXTest extends AbstractContractXTest {
 
     private static final long INITIAL_TOTAL_SUPPLY = 10L;
     private static final int DECIMALS = 8;
+    private static final String NAME = "name";
+    private static final String SYMBOL = "symbol";
+    private static final String MEMO = "memo";
+    private static final long MAX_SUPPLY = 1000L;
+    private static final long KEY_TYPE = 1L;
+    private static final long SECOND = 123L;
+    private static final long AUTO_RENEW_PERIOD = 2592000L;
 
     @Override
     protected void doScenarioOperations() {
@@ -53,17 +60,17 @@ public class CreateXTest extends AbstractContractXTest {
                 Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN
                         .encodeCallWithArgs(
                                 Tuple.of(
-                                        "Name",
-                                        "Symbol",
+                                        NAME,
+                                        SYMBOL,
                                         OWNER_HEADLONG_ADDRESS,
-                                        "memo",
+                                        MEMO,
                                         true,
-                                        1000L,
+                                        MAX_SUPPLY,
                                         false,
                                         // TokenKey
                                         new Tuple[] {
                                             Tuple.of(
-                                                    BigInteger.valueOf(1L),
+                                                    BigInteger.valueOf(KEY_TYPE),
                                                     Tuple.of(
                                                             true,
                                                             RECEIVER_HEADLONG_ADDRESS,
@@ -72,11 +79,15 @@ public class CreateXTest extends AbstractContractXTest {
                                                             RECEIVER_HEADLONG_ADDRESS))
                                         },
                                         // Expiry
-                                        Tuple.of(123L, OWNER_HEADLONG_ADDRESS, 2592000L)),
+                                        Tuple.of(SECOND, OWNER_HEADLONG_ADDRESS, AUTO_RENEW_PERIOD)),
                                 INITIAL_TOTAL_SUPPLY,
                                 DECIMALS)
                         .array()),
                 assertSuccess());
+
+        // should successfully create fungible token without TokenKeys
+
+        // should revert on missing expiry
     }
 
     @Override
@@ -113,10 +124,10 @@ public class CreateXTest extends AbstractContractXTest {
         tokens.put(
                 A_TOKEN_ID,
                 Token.newBuilder()
-                        .name("Name")
-                        .symbol("Symbol")
+                        .name(NAME)
+                        .symbol(SYMBOL)
                         .treasuryAccountId(OWNER_ID)
-                        .memo("Memo")
+                        .memo(MEMO)
                         .tokenType(TokenType.FUNGIBLE_COMMON)
                         .maxSupply(10L)
                         .totalSupply(10L)
