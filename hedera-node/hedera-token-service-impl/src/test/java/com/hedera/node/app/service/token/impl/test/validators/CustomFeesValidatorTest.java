@@ -29,11 +29,14 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Fraction;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.CustomFee;
+import com.hedera.hapi.node.transaction.FixedFee;
+import com.hedera.hapi.node.transaction.FractionalFee;
 import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
@@ -302,6 +305,123 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
         assertThatThrownBy(() -> subject.validateForFeeScheduleUpdate(
                         fungibleToken, readableAccountStore, readableTokenRelStore, writableTokenStore, null))
                 .isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void failsIfFractionalFeeDenominatorIsSetToZero() {
+        final var fractionalFeeWithZeroDenominator = FractionalFee.newBuilder()
+                .maximumAmount(50L)
+                .minimumAmount(5L)
+                .fractionalAmount(
+                        Fraction.newBuilder().numerator(1).denominator(0).build())
+                .netOfTransfers(false)
+                .build();
+
+        assertThatThrownBy(() -> subject.validateForFeeScheduleUpdate(
+                        fungibleToken,
+                        readableAccountStore,
+                        readableTokenRelStore,
+                        writableTokenStore,
+                        List.of(withFractionalFee(fractionalFeeWithZeroDenominator))))
+                .isInstanceOf(HandleException.class)
+                .hasMessage("FRACTION_DIVIDES_BY_ZERO");
+    }
+
+    @Test
+    void failsIfFractionalFeeNumeratorIsNegative() {
+        final var fractionalFeeWithNegativeNumerator = FractionalFee.newBuilder()
+                .maximumAmount(50L)
+                .minimumAmount(5L)
+                .fractionalAmount(
+                        Fraction.newBuilder().numerator(-1).denominator(10).build())
+                .netOfTransfers(false)
+                .build();
+
+        assertThatThrownBy(() -> subject.validateForFeeScheduleUpdate(
+                        fungibleToken,
+                        readableAccountStore,
+                        readableTokenRelStore,
+                        writableTokenStore,
+                        List.of(withFractionalFee(fractionalFeeWithNegativeNumerator))))
+                .isInstanceOf(HandleException.class)
+                .hasMessage("CUSTOM_FEE_MUST_BE_POSITIVE");
+    }
+
+    @Test
+    void failsIfFractionalFeeMinimumAmountIsNegative() {
+        final var fractionalFeeWithNegativeMinimumAmount = FractionalFee.newBuilder()
+                .maximumAmount(50L)
+                .minimumAmount(-5L)
+                .fractionalAmount(
+                        Fraction.newBuilder().numerator(1).denominator(10).build())
+                .netOfTransfers(false)
+                .build();
+
+        assertThatThrownBy(() -> subject.validateForFeeScheduleUpdate(
+                        fungibleToken,
+                        readableAccountStore,
+                        readableTokenRelStore,
+                        writableTokenStore,
+                        List.of(withFractionalFee(fractionalFeeWithNegativeMinimumAmount))))
+                .isInstanceOf(HandleException.class)
+                .hasMessage("CUSTOM_FEE_MUST_BE_POSITIVE");
+    }
+
+    @Test
+    void failsIfFractionalFeeMaximumAmountIsNegative() {
+        final var fractionalFeeWithNegativeMaximumAmount = FractionalFee.newBuilder()
+                .maximumAmount(-50L)
+                .minimumAmount(5L)
+                .fractionalAmount(
+                        Fraction.newBuilder().numerator(1).denominator(10).build())
+                .netOfTransfers(false)
+                .build();
+
+        assertThatThrownBy(() -> subject.validateForFeeScheduleUpdate(
+                        fungibleToken,
+                        readableAccountStore,
+                        readableTokenRelStore,
+                        writableTokenStore,
+                        List.of(withFractionalFee(fractionalFeeWithNegativeMaximumAmount))))
+                .isInstanceOf(HandleException.class)
+                .hasMessage("CUSTOM_FEE_MUST_BE_POSITIVE");
+    }
+
+    @Test
+    void failsIfHtsFixedFeeAmountIsNegative() {
+        final var htsFixedFeeWithNegativeAmount = FixedFee.newBuilder()
+                .amount(-10L)
+                .denominatingTokenId(fungibleTokenId)
+                .build();
+
+        assertThatThrownBy(() -> subject.validateForFeeScheduleUpdate(
+                        fungibleToken,
+                        readableAccountStore,
+                        readableTokenRelStore,
+                        writableTokenStore,
+                        List.of(withFixedFee(htsFixedFeeWithNegativeAmount))))
+                .isInstanceOf(HandleException.class)
+                .hasMessage("CUSTOM_FEE_MUST_BE_POSITIVE");
+    }
+
+    @Test
+    void failsIfFractionalFeeMaximumAmountIsLessThanMinimumAmount() {
+        final var fractionalFeeWithWrongMinMaxAmount = FractionalFee.newBuilder()
+                .maximumAmount(5L)
+                .minimumAmount(50L)
+                .fractionalAmount(
+                        Fraction.newBuilder().numerator(1).denominator(10).build())
+                .netOfTransfers(false)
+                .build();
+
+        assertThatThrownBy(() -> subject.validateForFeeScheduleUpdate(
+                        fungibleToken,
+                        readableAccountStore,
+                        readableTokenRelStore,
+                        writableTokenStore,
+                        List.of(withFractionalFee(fractionalFeeWithWrongMinMaxAmount))))
+                .isInstanceOf(HandleException.class)
+                .hasMessage("FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT");
     }
 
     @Test
