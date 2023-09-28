@@ -125,6 +125,8 @@ public class FrameRunner {
                 * Math.min(frame.getSelfDestructs().size(), nominalUsed / gasCalculator.getMaxRefundQuotient());
         nominalUsed -= (selfDestructRefund + frame.getGasRefund());
         final var maxRefundPercent = contractsConfigOf(frame).maxRefundPercentOfGasLimit();
+        // include the base gas consumption of 21_000 in the final calculation
+        nominalUsed = nominalUsed < 21_000L ? nominalUsed + 21_000L : nominalUsed;
         return Math.max(nominalUsed, gasLimit - gasLimit * maxRefundPercent / 100);
     }
 }
