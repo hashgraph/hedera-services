@@ -80,7 +80,9 @@ public class ContractGetBytecodeHandler extends PaidQueryHandler {
             final var contract = requireNonNull(contractFrom(context));
             contractGetBytecode.bytecode(bytecodeFrom(context, contract));
         }
-        return Response.newBuilder().contractGetBytecodeResponse(contractGetBytecode).build();
+        return Response.newBuilder()
+                .contractGetBytecodeResponse(contractGetBytecode)
+                .build();
     }
 
     private @Nullable Account contractFrom(@NonNull final QueryContext context) {
@@ -93,7 +95,8 @@ public class ContractGetBytecodeHandler extends PaidQueryHandler {
     private Bytes bytecodeFrom(@NonNull final QueryContext context, @NonNull Account contract) {
         final var store = context.createStore(ContractStateStore.class);
         var contractNumber = contract.accountId().accountNum();
-        var contractEntityNumber = EntityNumber.newBuilder().number(contractNumber).build();
+        var contractEntityNumber =
+                EntityNumber.newBuilder().number(contractNumber).build();
         final var bytecode = store.getBytecode(contractEntityNumber);
         return bytecode.code();
     }
