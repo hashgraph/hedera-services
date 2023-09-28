@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.mono.state.initialization;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_BLOCKLIST_RESOURCE;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_BLOCKLIST_PATH;
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
@@ -31,11 +31,9 @@ import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.ledger.backing.BackingStore;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
-import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -44,12 +42,9 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
-import java.security.InvalidKeyException;
 import java.util.function.Supplier;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -62,7 +57,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class BlocklistAccountCreatorTest {
-    private static final long GENESIS_ACCOUNT_NUM = 2L;
     private static final long FIRST_UNUSED_ID = 10_000L;
     private EntityIdSource ids;
 
@@ -82,7 +76,6 @@ class BlocklistAccountCreatorTest {
     private AccountNumbers accountNumbers;
 
     private final JEd25519Key pretendKey = new JEd25519Key("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes());
-    private JKey genesisKey;
 
     @LoggingTarget
     private LogCaptor logCaptor;
@@ -91,7 +84,7 @@ class BlocklistAccountCreatorTest {
     private BlocklistAccountCreator subject;
 
     @BeforeEach
-    void setUp() throws InvalidKeyException {
+    void setUp() {
         ids = new EntityIdSource() {
             long nextId = FIRST_UNUSED_ID;
 
@@ -139,17 +132,13 @@ class BlocklistAccountCreatorTest {
             @Override
             public void resetProvisionalIds() {}
         };
-
-        genesisKey = JKey.mapKey(Key.newBuilder()
-                .setKeyList(KeyList.newBuilder().addKeys(MiscUtils.asKeyUnchecked(pretendKey)))
-                .build());
     }
 
     @Test
     void successfullyEnsuresBlockedAccounts() {
         // given
         given(genesisKeySource.get()).willReturn(pretendKey);
-        given(properties.getStringProperty(ACCOUNTS_BLOCKLIST_RESOURCE)).willReturn("evm-addresses-blocklist.csv");
+        given(properties.getStringProperty(ACCOUNTS_BLOCKLIST_PATH)).willReturn("evm-addresses-blocklist.csv");
         subject = new BlocklistAccountCreator(
                 MerkleAccount::new, ids, accounts, genesisKeySource, properties, aliasManager, accountNumbers);
         given(aliasManager.lookupIdBy(any())).willReturn(MISSING_NUM);
@@ -174,7 +163,7 @@ class BlocklistAccountCreatorTest {
     void forgetCreatedBlockedAccountsWorksAsExpected() {
         // given
         given(genesisKeySource.get()).willReturn(pretendKey);
-        given(properties.getStringProperty(ACCOUNTS_BLOCKLIST_RESOURCE)).willReturn("test-blocklist.csv");
+        given(properties.getStringProperty(ACCOUNTS_BLOCKLIST_PATH)).willReturn("test-blocklist.csv");
         given(aliasManager.lookupIdBy(any())).willReturn(MISSING_NUM);
         subject = new BlocklistAccountCreator(
                 MerkleAccount::new, ids, accounts, genesisKeySource, properties, aliasManager, accountNumbers);
@@ -190,14 +179,12 @@ class BlocklistAccountCreatorTest {
     @ParameterizedTest
     @CsvSource(
             value = {
-                "non-existing.csv;Failed to read blocklist resource non-existing.csv",
-                "invalid-hex-blocklist.csv;Failed to parse blocklist",
-                "invalid-col-count-blocklist.csv;Failed to parse blocklist",
+                "src/test/resources/invalid-hex-blocklist.csv;Failed to parse blocklist",
+                "src/test/resources/invalid-col-count-blocklist.csv;Failed to parse blocklist",
             },
             delimiter = ';')
-    void readingblocklistResourceExceptionShouldBeLogged(String blocklistResourceName, String expectedLog) {
-        // given
-        given(properties.getStringProperty(ACCOUNTS_BLOCKLIST_RESOURCE)).willReturn(blocklistResourceName);
+    void readingBlocklistResourceExceptionShouldBeLogged(String blocklistResourceName, String expectedLog) {
+        given(properties.getStringProperty(ACCOUNTS_BLOCKLIST_PATH)).willReturn(blocklistResourceName);
         subject = new BlocklistAccountCreator(
                 MerkleAccount::new, ids, accounts, genesisKeySource, properties, aliasManager, accountNumbers);
 
@@ -206,5 +193,25 @@ class BlocklistAccountCreatorTest {
 
         // then
         assertThat(logCaptor.errorLogs(), contains(Matchers.startsWith(expectedLog)));
+    }
+
+    @Test
+    void readingNonExistingBlocklistShouldLogFallbackToDefaultBlocklistResource() {
+        // given
+        given(genesisKeySource.get()).willReturn(pretendKey);
+        given(properties.getStringProperty(ACCOUNTS_BLOCKLIST_PATH)).willReturn("non-existing.csv");
+        given(aliasManager.lookupIdBy(any())).willReturn(MISSING_NUM);
+        subject = new BlocklistAccountCreator(
+                MerkleAccount::new, ids, accounts, genesisKeySource, properties, aliasManager, accountNumbers);
+
+        // when
+        subject.createMissingAccounts();
+
+        // then
+        assertThat(
+                logCaptor.infoLogs(),
+                contains(
+                        "Bootstrapping blocklist from 'non-existing.csv'",
+                        "Bootstrapping blocklist from resource 'evm-addresses-blocklist.csv'"));
     }
 }
