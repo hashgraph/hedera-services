@@ -26,8 +26,10 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.utils.KeyValueWrapper;
 import com.hedera.node.app.service.contract.impl.exec.utils.TokenCreateWrapper;
+import com.hedera.node.app.service.contract.impl.exec.utils.TokenCreateWrapper.FixedFeeWrapper;
 import com.hedera.node.app.service.contract.impl.exec.utils.TokenExpiryWrapper;
 import com.hedera.node.app.service.contract.impl.exec.utils.TokenKeyWrapper;
+import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -52,8 +54,16 @@ public class CreateDecoder {
     public TransactionBody decodeCreateFungibleToken(
             @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
         final var call = CreateTranslator.CREATE_FUNGIBLE_TOKEN.decodeCall(encoded);
-        final TokenCreateWrapper tokenCreateWrapper =
-                getTokenCreateWrapperFungible(call.get(0), true, call.get(1), call.get(2), addressIdConverter);
+        final TokenCreateWrapper tokenCreateWrapper = getTokenCreateWrapperFungibleWithoutFees(
+                call.get(0), true, call.get(1), call.get(2), addressIdConverter);
+        return bodyOf(createToken(tokenCreateWrapper));
+    }
+
+    public TransactionBody decodeCreateFungibleTokenWithCustomFees(
+            @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
+        final var call = CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES.decodeCall(encoded);
+        final TokenCreateWrapper tokenCreateWrapper = getTokenCreateWrapperFungibleWithCustomFees(
+                call.get(0), true, call.get(1), call.get(2), call.get(3), call.get(4), addressIdConverter);
         return bodyOf(createToken(tokenCreateWrapper));
     }
 
@@ -61,7 +71,7 @@ public class CreateDecoder {
         return TransactionBody.newBuilder().tokenCreation(tokenCreate).build();
     }
 
-    private static TokenCreateWrapper getTokenCreateWrapperFungible(
+    private static TokenCreateWrapper getTokenCreateWrapperFungibleWithoutFees(
             @NonNull final Tuple tokenCreateStruct,
             final boolean isFungible,
             final long initSupply,
@@ -91,6 +101,21 @@ public class CreateDecoder {
                 isFreezeDefault,
                 tokenKeys,
                 tokenExpiry);
+    }
+
+    private static TokenCreateWrapper getTokenCreateWrapperFungibleWithCustomFees(
+            @NonNull final Tuple tokenCreateStruct,
+            final boolean isFungible,
+            final long initSupply,
+            final int decimals,
+            @NonNull final Tuple[] fixedFeesTuple,
+            @NonNull final Tuple[] fractionalFeesTuple,
+            @NonNull final AddressIdConverter addressIdConverter) {
+        final var tokenCreateWrapper = getTokenCreateWrapperFungibleWithoutFees(
+                tokenCreateStruct, isFungible, initSupply, decimals, addressIdConverter);
+        final var fixedFees = decodeFixedFees(fixedFeesTuple, addressIdConverter);
+        // @TODO to be implemented
+        return null;
     }
 
     private static List<TokenKeyWrapper> decodeTokenKeys(
@@ -126,5 +151,24 @@ public class CreateDecoder {
                 Duration.newBuilder().seconds(expiryTuple.get(2)).build();
         return new TokenExpiryWrapper(
                 second, autoRenewAccount.accountNum() == 0 ? null : autoRenewAccount, autoRenewPeriod);
+    }
+
+    public static List<FixedFeeWrapper> decodeFixedFees(
+            @NonNull final Tuple[] fixedFeesTuples, @NonNull final AddressIdConverter addressIdConverter) {
+        final List<FixedFeeWrapper> fixedFees = new ArrayList<>(fixedFeesTuples.length);
+        for (final var fixedFeeTuple : fixedFeesTuples) {
+            final var amount = (long) fixedFeeTuple.get(0);
+            final var tokenId = ConversionUtils.asTokenId((fixedFeeTuple.get(1)));
+            final var useHbarsForPayment = (Boolean) fixedFeeTuple.get(2);
+            final var useCurrentTokenForPayment = (Boolean) fixedFeeTuple.get(3);
+            final var feeCollector = addressIdConverter.convert(fixedFeeTuple.get(4));
+            fixedFees.add(new FixedFeeWrapper(
+                    amount,
+                    tokenId.tokenNum() != 0 ? tokenId : null,
+                    useHbarsForPayment,
+                    useCurrentTokenForPayment,
+                    feeCollector.accountNum() != 0 ? feeCollector : null));
+        }
+        return fixedFees;
     }
 }

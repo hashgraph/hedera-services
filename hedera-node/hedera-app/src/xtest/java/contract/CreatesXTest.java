@@ -17,6 +17,7 @@
 package contract;
 
 import static contract.AssociationsXTestConstants.A_TOKEN_ID;
+import static contract.XTestConstants.ERC20_TOKEN_ADDRESS;
 import static contract.XTestConstants.OWNER_ADDRESS;
 import static contract.XTestConstants.OWNER_HEADLONG_ADDRESS;
 import static contract.XTestConstants.OWNER_ID;
@@ -90,6 +91,32 @@ public class CreatesXTest extends AbstractContractXTest {
         // should revert on missing expiry
 
         // should revert with autoRenewPeriod less than 2592000
+
+        // should successfully create fungible token without custom fees
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES
+                        .encodeCallWithArgs(
+                                Tuple.of(
+                                        NAME,
+                                        SYMBOL,
+                                        OWNER_HEADLONG_ADDRESS,
+                                        MEMO,
+                                        true,
+                                        MAX_SUPPLY,
+                                        false,
+                                        // TokenKey
+                                        new Tuple[] {},
+                                        // Expiry
+                                        Tuple.of(SECOND, OWNER_HEADLONG_ADDRESS, AUTO_RENEW_PERIOD)),
+                                INITIAL_TOTAL_SUPPLY,
+                                DECIMALS,
+                                // FixedFee
+                                new Tuple[] {Tuple.of(100L, ERC20_TOKEN_ADDRESS, true, true, OWNER_HEADLONG_ADDRESS)},
+                                // FractionalFee
+                                new Tuple[] {Tuple.of(100L, 100L, 100L, 100L, true, OWNER_HEADLONG_ADDRESS)})
+                        .array()),
+                assertSuccess());
     }
 
     @Override

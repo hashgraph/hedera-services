@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create;
 
+import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.ARRAY_BRACKETS;
+import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FIXED_FEE;
+import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FRACTIONAL_FEE;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.HEDERA_TOKEN;
 
 import com.esaulpaugh.headlong.abi.Function;
@@ -32,6 +35,16 @@ public class CreateTranslator extends AbstractHtsCallTranslator {
     public static final Function CREATE_FUNGIBLE_TOKEN =
             new Function("createFungibleToken(" + HEDERA_TOKEN + ",int64,int32)", ReturnTypes.INT);
 
+    public static final Function CREATE_FUNGIBLE_WITH_CUSTOM_FEES = new Function("createFungibleTokenWithCustomFees("
+            + HEDERA_TOKEN
+            + ",int64,int32,"
+            + FIXED_FEE
+            + ARRAY_BRACKETS
+            + ","
+            + FRACTIONAL_FEE
+            + ARRAY_BRACKETS
+            + ")");
+
     private final CreateDecoder decoder;
 
     @Inject
@@ -42,7 +55,8 @@ public class CreateTranslator extends AbstractHtsCallTranslator {
 
     @Override
     public boolean matches(@NonNull HtsCallAttempt attempt) {
-        return Arrays.equals(attempt.selector(), CreateTranslator.CREATE_FUNGIBLE_TOKEN.selector());
+        return Arrays.equals(attempt.selector(), CreateTranslator.CREATE_FUNGIBLE_TOKEN.selector())
+                || Arrays.equals(attempt.selector(), CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES.selector());
     }
 
     @Override
@@ -58,6 +72,8 @@ public class CreateTranslator extends AbstractHtsCallTranslator {
     private TransactionBody nominalBodyFor(@NonNull final HtsCallAttempt attempt) {
         if (Arrays.equals(attempt.selector(), CreateTranslator.CREATE_FUNGIBLE_TOKEN.selector())) {
             return decoder.decodeCreateFungibleToken(attempt.inputBytes(), attempt.addressIdConverter());
+        } else if (Arrays.equals(attempt.selector(), CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES.selector())) {
+            return decoder.decodeCreateFungibleTokenWithCustomFees(attempt.inputBytes(), attempt.addressIdConverter());
         }
         throw new AssertionError("Add more cases");
     }

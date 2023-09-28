@@ -17,6 +17,13 @@
 package com.hedera.node.app.service.contract.impl.exec.utils;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Fraction;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.transaction.CustomFee;
+import com.hedera.hapi.node.transaction.FixedFee;
+import com.hedera.hapi.node.transaction.FractionalFee;
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.List;
 
 public class TokenCreateWrapper {
@@ -106,5 +113,106 @@ public class TokenCreateWrapper {
 
     public TokenExpiryWrapper getExpiry() {
         return expiry;
+    }
+
+    public static final class FixedFeeWrapper {
+        public enum FixedFeePayment {
+            INVALID_PAYMENT,
+            USE_HBAR,
+            USE_CURRENTLY_CREATED_TOKEN,
+            USE_EXISTING_FUNGIBLE_TOKEN
+        }
+
+        private final long amount;
+        private final TokenID tokenID;
+        private final boolean useHbarsForPayment;
+        private final boolean useCurrentTokenForPayment;
+        private final AccountID feeCollector;
+
+        private final TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment fixedFeePayment;
+
+        public FixedFeeWrapper(
+                final long amount,
+                final TokenID tokenID,
+                final boolean useHbarsForPayment,
+                final boolean useCurrentTokenForPayment,
+                final AccountID feeCollector) {
+            this.amount = amount;
+            this.tokenID = tokenID;
+            this.useHbarsForPayment = useHbarsForPayment;
+            this.useCurrentTokenForPayment = useCurrentTokenForPayment;
+            this.feeCollector = feeCollector;
+            this.fixedFeePayment = setFixedFeePaymentType();
+        }
+
+        private TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment setFixedFeePaymentType() {
+            if (tokenID != null) {
+                return !useHbarsForPayment && !useCurrentTokenForPayment
+                        ? TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.USE_EXISTING_FUNGIBLE_TOKEN
+                        : TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.INVALID_PAYMENT;
+            } else if (useCurrentTokenForPayment) {
+                return !useHbarsForPayment
+                        ? TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.USE_CURRENTLY_CREATED_TOKEN
+                        : TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.INVALID_PAYMENT;
+            } else {
+                return useHbarsForPayment
+                        ? TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.USE_HBAR
+                        : TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.INVALID_PAYMENT;
+            }
+        }
+
+        private FixedFee.Builder asBuilder() {
+            return switch (fixedFeePayment) {
+                case USE_HBAR -> FixedFee.newBuilder().amount(amount);
+                case USE_EXISTING_FUNGIBLE_TOKEN -> FixedFee.newBuilder()
+                        .amount(amount)
+                        .denominatingTokenId(tokenID);
+                case USE_CURRENTLY_CREATED_TOKEN -> FixedFee.newBuilder()
+                        .amount(amount)
+                        .denominatingTokenId(TokenID.newBuilder()
+                                .shardNum(0L)
+                                .realmNum(0L)
+                                .tokenNum(0L)
+                                .build());
+                default -> throw new InvalidTransactionException(ResponseCodeEnum.FAIL_INVALID);
+            };
+        }
+
+        public TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment getFixedFeePayment() {
+            return this.fixedFeePayment;
+        }
+
+        public CustomFee asGrpc() {
+            final var feeBuilder = CustomFee.newBuilder().fixedFee(asBuilder().build());
+            if (feeCollector != null) {
+                feeBuilder.feeCollectorAccountId(feeCollector);
+            }
+            return feeBuilder.build();
+        }
+    }
+
+    public record FractionalFeeWrapper(
+            long numerator,
+            long denominator,
+            long minimumAmount,
+            long maximumAmount,
+            boolean netOfTransfers,
+            AccountID feeCollector) {
+        public CustomFee asGrpc() {
+            final var feeBuilder = CustomFee.newBuilder()
+                    .fractionalFee(FractionalFee.newBuilder()
+                            .fractionalAmount(Fraction.newBuilder()
+                                    .numerator(numerator)
+                                    .denominator(denominator)
+                                    .build())
+                            .minimumAmount(minimumAmount)
+                            .maximumAmount(maximumAmount)
+                            .netOfTransfers(netOfTransfers)
+                            .build());
+            if (feeCollector != null) {
+                feeBuilder.feeCollectorAccountId(feeCollector);
+            }
+            return feeBuilder.build();
+        }
     }
 }
