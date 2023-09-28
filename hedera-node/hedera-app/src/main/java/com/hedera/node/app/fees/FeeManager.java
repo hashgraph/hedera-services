@@ -23,12 +23,10 @@ import com.hedera.hapi.node.base.FeeData;
 import com.hedera.hapi.node.base.FeeSchedule;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TransactionFeeSchedule;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.fees.FeeCalculator;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -146,12 +144,17 @@ public final class FeeManager {
             @NonNull final Instant consensusTime,
             @NonNull final SubType subType) {
 
-        if (txBody == null || payerKey == null) {
+        if (txBody == null || payerKey == null || functionality == null) {
             return NoOpFeeCalculator.INSTANCE;
         }
 
         // Determine which fee schedule to use, based on the consensus time
+        // If it is not known, that is, if we have no fee data for that transaction, then we MUST NOT execute that
+        // transaction! We will not be able to charge appropriately for it.
         final var feeData = getFeeData(functionality, consensusTime, subType);
+        if (feeData == null) {
+            throw new IllegalStateException("No fee data found for transaction type " + functionality);
+        }
 
         // Create the fee calculator
         return new FeeCalculatorImpl(
@@ -163,23 +166,27 @@ public final class FeeManager {
                 exchangeRateManager.activeRate(consensusTime));
     }
 
+    @NonNull
+    public FeeCalculator createFeeCalculator(
+            @NonNull final HederaFunctionality functionality, @NonNull final Instant consensusTime) {
+        // Determine which fee schedule to use, based on the consensus time
+        final var feeData = getFeeData(functionality, consensusTime, SubType.DEFAULT);
+
+        // Create the fee calculator
+        return new FeeCalculatorImpl(feeData, exchangeRateManager.activeRate(consensusTime));
+    }
+
     /**
      * Looks up the fee data for the given transaction and its details.
      */
-    @NonNull
+    @Nullable
     public FeeData getFeeData(
             @NonNull HederaFunctionality functionality, @NonNull Instant consensusTime, @NonNull SubType subType) {
         final var feeDataMap =
                 consensusTime.getEpochSecond() > currentScheduleExpirationSeconds ? nextFeeDataMap : currentFeeDataMap;
 
-        // Now, lookup the fee data for the transaction type. If it is not known, that is, if we have no fee data for
-        // that transaction, then we MUST NOT execute that transaction! We will not be able to charge appropriately
-        // for it.
-        final var feeData = feeDataMap.get(new Entry(functionality, subType));
-        if (feeData == null) {
-            throw new HandleException(ResponseCodeEnum.NOT_SUPPORTED);
-        }
-        return feeData;
+        // Now, lookup the fee data for the transaction type.
+        return feeDataMap.get(new Entry(functionality, subType));
     }
 
     /**
