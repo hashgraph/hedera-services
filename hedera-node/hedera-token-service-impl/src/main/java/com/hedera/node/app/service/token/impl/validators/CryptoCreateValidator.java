@@ -50,7 +50,8 @@ import javax.inject.Singleton;
 @Singleton
 public class CryptoCreateValidator {
     private static final int EVM_ADDRESS_SIZE = 20;
-
+    public static final String ECDSA_KEY_ALIAS_PREFIX = "3a21";
+    public static final int ECDSA_SECP256K1_ALIAS_SIZE = 35;
     @Inject
     public CryptoCreateValidator() { // Exists for injection
     }
@@ -112,7 +113,8 @@ public class CryptoCreateValidator {
         if (!canSkipNormalKeyValidation(op.keyOrThrow(), isInternalDispatch)) {
             validateKey(op, attributeValidator);
         }
-        validateTrue(op.alias().length() == EVM_ADDRESS_SIZE, INVALID_ALIAS_KEY);
+        final boolean isValidAlias = op.alias().length() == EVM_ADDRESS_SIZE || (op.alias().length() == ECDSA_SECP256K1_ALIAS_SIZE && op.alias().toHex().startsWith(ECDSA_KEY_ALIAS_PREFIX));
+        validateTrue(isValidAlias, INVALID_ALIAS_KEY);
         validateFalse(isMirror(op.alias()), INVALID_ALIAS_KEY);
         validateTrue(readableAccountStore.getAccountIDByAlias(op.alias()) == null, ALIAS_ALREADY_ASSIGNED);
     }
