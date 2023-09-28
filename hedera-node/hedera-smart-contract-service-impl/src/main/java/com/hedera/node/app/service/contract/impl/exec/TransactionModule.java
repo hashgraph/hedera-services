@@ -42,6 +42,7 @@ import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.swirlds.config.api.Configuration;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -73,8 +74,8 @@ public interface TransactionModule {
 
     @Provides
     @TransactionScope
-    static ActionSidecarContentTracer provideActionSidecarContentTracer() {
-        return new EvmActionTracer(new ActionStack());
+    static ActionSidecarContentTracer provideActionSidecarContentTracer(@NonNull final Configuration configuration) {
+        return new EvmActionTracer(new ActionStack(), configuration);
     }
 
     @Provides

@@ -28,6 +28,8 @@ import static org.hyperledger.besu.evm.frame.MessageFrame.State.CODE_SUSPENDED;
 import com.hedera.hapi.streams.ContractActionType;
 import com.hedera.node.app.service.contract.impl.exec.utils.ActionStack;
 import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
+import com.hedera.node.config.data.ConsensusConfig;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
 import org.apache.logging.log4j.Level;
@@ -42,12 +44,15 @@ import org.hyperledger.besu.evm.operation.Operation;
  * {@link MessageFrame} state and system configuration.
  */
 public class EvmActionTracer implements ActionSidecarContentTracer {
+
     private static final Logger log = LogManager.getLogger(EvmActionTracer.class);
 
     private final ActionStack actionStack;
+    private final Configuration configuration;
 
-    public EvmActionTracer(@NonNull final ActionStack actionStack) {
+    public EvmActionTracer(@NonNull final ActionStack actionStack, @NonNull final Configuration configuration) {
         this.actionStack = requireNonNull(actionStack);
+        this.configuration = requireNonNull(configuration);
     }
 
     /**
@@ -119,5 +124,13 @@ public class EvmActionTracer implements ActionSidecarContentTracer {
     private ActionStack.Validation stackValidationChoice(@NonNull final MessageFrame frame) {
         requireNonNull(frame);
         return hasActionValidationEnabled(frame) ? ActionStack.Validation.ON : ActionStack.Validation.OFF;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void validate() {
+        actionStack.validate(configuration.getConfigData(ConsensusConfig.class).handleMaxFollowingRecords());
     }
 }

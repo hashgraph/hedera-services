@@ -16,9 +16,11 @@
 
 package com.hedera.node.app.workflows.handle.record;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.data.ConsensusConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -164,7 +166,7 @@ public class RecordListBuilder {
         final var childCount = childRecordBuilders.size();
         final var consensusConfig = configuration.getConfigData(ConsensusConfig.class);
         if (childCount >= consensusConfig.handleMaxFollowingRecords()) {
-            throw new IndexOutOfBoundsException("No more child slots available");
+            throw new HandleException(MAX_CHILD_RECORDS_EXCEEDED);
         }
 
         final var parentConsensusTimestamp = userTxnRecordBuilder.consensusNow();

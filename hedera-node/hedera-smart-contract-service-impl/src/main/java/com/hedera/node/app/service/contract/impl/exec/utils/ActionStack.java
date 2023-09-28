@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.utils;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 import static com.hedera.hapi.streams.CallOperationType.OP_CALL;
 import static com.hedera.hapi.streams.CallOperationType.OP_CREATE;
 import static com.hedera.hapi.streams.ContractActionType.CALL;
@@ -40,6 +41,7 @@ import com.hedera.hapi.streams.CallOperationType;
 import com.hedera.hapi.streams.ContractAction;
 import com.hedera.hapi.streams.ContractActionType;
 import com.hedera.node.app.service.contract.impl.utils.OpcodeUtils;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -60,6 +62,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
  * Encapsulates a stack of contract actions.
  */
 public class ActionStack {
+
     private static final Logger log = LogManager.getLogger(ActionStack.class);
 
     private final ActionsHelper helper;
@@ -397,5 +400,12 @@ public class ActionStack {
     private static <E, I> String get(
             @NonNull final E subject, final Function<E, I> getter, final Function<I, String> processor) {
         return processor.compose(getter).apply(subject);
+    }
+
+    public void validate(long maxFollowingRecords) {
+        final var actionsStackSize = actionsStack.stream().toList().size();
+        if (actionsStackSize > maxFollowingRecords) {
+            throw new HandleException(MAX_CHILD_RECORDS_EXCEEDED);
+        }
     }
 }

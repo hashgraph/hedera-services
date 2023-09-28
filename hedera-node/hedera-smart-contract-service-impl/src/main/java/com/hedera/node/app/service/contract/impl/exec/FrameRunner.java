@@ -89,6 +89,7 @@ public class FrameRunner {
         while (!stack.isEmpty()) {
             runToCompletion(stack.peekFirst(), tracer, messageCall, contractCreation);
         }
+        tracer.validate();
         tracer.sanitizeTracedActions(frame);
 
         // And return the result, success or failure

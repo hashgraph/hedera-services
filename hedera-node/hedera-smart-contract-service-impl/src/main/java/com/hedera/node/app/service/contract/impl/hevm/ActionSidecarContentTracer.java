@@ -51,4 +51,9 @@ public interface ActionSidecarContentTracer extends OperationTracer {
      * @param type the type of precompile called; expected values are {@code PRECOMPILE} and {@code SYSTEM}
      */
     void tracePrecompileResult(@NonNull MessageFrame frame, @NonNull ContractActionType type);
+
+    /**
+     * TODO: Add documentation
+     */
+    void validate();
 }

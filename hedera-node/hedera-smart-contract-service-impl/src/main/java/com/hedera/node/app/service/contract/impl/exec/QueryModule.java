@@ -34,6 +34,7 @@ import com.hedera.node.app.service.contract.impl.hevm.QueryContextHevmBlocks;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.ScopedEvmFrameStateFactory;
+import com.hedera.node.app.spi.workflows.QueryContext;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -60,8 +61,8 @@ public interface QueryModule {
 
     @Provides
     @QueryScope
-    static ActionSidecarContentTracer provideActionSidecarContentTracer() {
-        return new EvmActionTracer(new ActionStack());
+    static ActionSidecarContentTracer provideActionSidecarContentTracer(@NonNull final QueryContext context) {
+        return new EvmActionTracer(new ActionStack(), context.configuration());
     }
 
     @Provides
