@@ -16,9 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create;
 
-import static com.hedera.node.app.service.contract.impl.utils.ParsingConstantsUtils.ARRAY_BRACKETS;
-import static com.hedera.node.app.service.contract.impl.utils.ParsingConstantsUtils.EXPIRY;
-import static com.hedera.node.app.service.contract.impl.utils.ParsingConstantsUtils.TOKEN_KEY;
+import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.HEDERA_TOKEN;
 
 import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -31,11 +29,9 @@ import javax.inject.Inject;
 
 public class CreateTranslator extends AbstractHtsCallTranslator {
 
-    public static final String HEDERA_TOKEN_STRUCT =
-            "(string,string,address,string,bool,uint32,bool," + TOKEN_KEY + ARRAY_BRACKETS + "," + EXPIRY + ")";
-
     public static final Function CREATE_FUNGIBLE_TOKEN =
-            new Function("createFungibleToken(" + HEDERA_TOKEN_STRUCT + ",int64,int32)", ReturnTypes.INT);
+            new Function("createFungibleToken(" + HEDERA_TOKEN + ",int64,int32)", ReturnTypes.INT);
+
     private final CreateDecoder decoder;
 
     @Inject

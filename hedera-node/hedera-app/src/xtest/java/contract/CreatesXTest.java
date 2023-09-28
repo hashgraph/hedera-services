@@ -88,6 +88,8 @@ public class CreatesXTest extends AbstractContractXTest {
         // should successfully create fungible token without TokenKeys
 
         // should revert on missing expiry
+
+        // should revert with autoRenewPeriod less than 2592000
     }
 
     @Override
