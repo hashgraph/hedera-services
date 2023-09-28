@@ -118,6 +118,8 @@ public class TokenGetNftInfoHandler extends PaidQueryHandler {
      * 		the {@link NftID} to get the {@link TokenNftInfo} for
      * @param readableNftStore
      * 		the {@link ReadableNftStore} to get the {@link TokenNftInfo} from
+     * @param readableTokenStore
+     *      the {@link ReadableTokenStore} to get the {@link com.hedera.hapi.node.state.token.Token} from
      * @param config
      * 		the {@link LedgerConfig} to get the ledger ID from
      * @return the {@link TokenNftInfo} for the given {@link NftID} if it exists
