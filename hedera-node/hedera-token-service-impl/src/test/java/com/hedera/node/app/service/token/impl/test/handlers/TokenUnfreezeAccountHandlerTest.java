@@ -254,8 +254,6 @@ class TokenUnfreezeAccountHandlerTest {
         void tokenNotFound() throws HandleException {
             final var token = toPbj(KNOWN_TOKEN_WITH_FREEZE);
             given(tokenStore.get(token)).willReturn(null);
-            given(expiryValidator.expirationStatus(EntityType.ACCOUNT, false, 0))
-                    .willReturn(OK);
             final var txn = newUnfreezeTxn(token);
             given(context.body()).willReturn(txn);
 
@@ -270,8 +268,6 @@ class TokenUnfreezeAccountHandlerTest {
             final var token = toPbj(KNOWN_TOKEN_WITH_FREEZE);
             given(tokenStore.get(token))
                     .willReturn(Token.newBuilder().deleted(true).build());
-            given(expiryValidator.expirationStatus(EntityType.ACCOUNT, false, 0))
-                    .willReturn(OK);
             final var txn = newUnfreezeTxn(token);
             given(context.body()).willReturn(txn);
 

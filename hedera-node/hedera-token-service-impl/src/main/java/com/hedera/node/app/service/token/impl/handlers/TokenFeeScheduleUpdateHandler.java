@@ -160,6 +160,21 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
         final var tokenOpsUsage = new TokenOpsUsage();
         final var newFees = op.customFeesOrElse(Collections.emptyList());
 
+        // Ensure no null values for denominatingTokenId
+        for (int i = 0; i < newFees.size(); i++) {
+            var fee = newFees.get(i);
+            if (fee.hasFixedFee() && fee.fixedFee().denominatingTokenId() == null) {
+                newFees.set(
+                        i,
+                        fee.copyBuilder()
+                                .fixedFee(fee.fixedFee()
+                                        .copyBuilder()
+                                        .denominatingTokenId(TokenID.DEFAULT)
+                                        .build())
+                                .build());
+            }
+        }
+
         final var newReprBytes = tokenOpsUsage.bytesNeededToRepr(
                 newFees.stream().map(PbjConverter::fromPbj).toList());
         final var effConsTime =
