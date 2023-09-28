@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
@@ -274,6 +275,20 @@ class TokenUnfreezeAccountHandlerTest {
             assertThatThrownBy(() -> subject.handle(context))
                     .isInstanceOf(HandleException.class)
                     .has(responseCode(TOKEN_WAS_DELETED));
+            verifyNoPut();
+        }
+
+        @Test
+        void tokenPaused() throws HandleException {
+            final var token = toPbj(KNOWN_TOKEN_WITH_FREEZE);
+            given(tokenStore.get(token))
+                    .willReturn(Token.newBuilder().paused(true).build());
+            final var txn = newUnfreezeTxn(token);
+            given(context.body()).willReturn(txn);
+
+            assertThatThrownBy(() -> subject.handle(context))
+                    .isInstanceOf(HandleException.class)
+                    .has(responseCode(TOKEN_IS_PAUSED));
             verifyNoPut();
         }
 
