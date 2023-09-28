@@ -34,6 +34,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_TOKEN_NAME;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
@@ -269,34 +270,27 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
-    void doesntCreateAssociationIfItAlreadyExists() {
+    void failsIfAssociationAlreadyExists() {
         setUpTxnContext();
         configuration = HederaTestConfigBuilder.create()
                 .withValue("entities.limitTokenAssociations", "true")
                 .withValue("tokens.maxPerAccount", "10")
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(configuration);
-
         assertThat(writableTokenStore.get(newTokenId)).isNull();
         assertThat(writableTokenRelStore.get(treasuryId, newTokenId)).isNull();
 
         // Just to simulate existing token association , add to store. Only for testing
-        final var prebuiltTokenRel = TokenRelation.newBuilder()
+        writableTokenRelStore.put(TokenRelation.newBuilder()
                 .tokenId(newTokenId)
                 .accountId(treasuryId)
                 .balance(1000L)
-                .build();
-        writableTokenRelStore.put(prebuiltTokenRel);
-
+                .build());
         assertThat(writableTokenRelStore.get(treasuryId, newTokenId)).isNotNull();
 
-        subject.handle(handleContext);
-        final var relAfterHandle = writableTokenRelStore.get(treasuryId, newTokenId);
-
-        assertThat(relAfterHandle).isNotNull();
-        assertThat(relAfterHandle.tokenId()).isEqualTo(prebuiltTokenRel.tokenId());
-        assertThat(relAfterHandle.accountId()).isEqualTo(prebuiltTokenRel.accountId());
-        assertThat(relAfterHandle.balance()).isEqualTo(prebuiltTokenRel.balance());
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT));
     }
 
     @Test
