@@ -244,6 +244,7 @@ public class CryptoTransferSuite extends HapiSuite {
         return true;
     }
 
+    @HapiTest
     private HapiSpec okToRepeatSerialNumbersInWipeList() {
         final var ownerWith4AutoAssoc = "ownerWith4AutoAssoc";
         return defaultHapiSpec("OkToRepeatSerialNumbersInWipeList")
@@ -280,6 +281,7 @@ public class CryptoTransferSuite extends HapiSuite {
                         getAccountBalance(ownerWith4AutoAssoc).hasTokenBalance(NON_FUNGIBLE_TOKEN, 0L));
     }
 
+    @HapiTest
     private HapiSpec okToRepeatSerialNumbersInBurnList() {
         return defaultHapiSpec("okToRepeatSerialNumbersInBurnList")
                 .given(
@@ -1417,6 +1419,7 @@ public class CryptoTransferSuite extends HapiSuite {
                                                         .balance(1)))));
     }
 
+    @HapiTest
     private HapiSpec autoAssociationRequiresOpenSlots() {
         final String tokenA = "tokenA";
         final String tokenB = "tokenB";
@@ -1796,6 +1799,7 @@ public class CryptoTransferSuite extends HapiSuite {
                         .toArray(HapiSpecOperation[]::new));
     }
 
+    @HapiTest
     private HapiSpec transferWithMissingAccountGetsInvalidAccountId() {
         return defaultHapiSpec("transferWithMissingAccountGetsInvalidAccountId")
                 .given(cryptoCreate(PAYEE_SIG_REQ).receiverSigRequired(true))
@@ -1835,6 +1839,7 @@ public class CryptoTransferSuite extends HapiSuite {
                                         .noAllowances()));
     }
 
+    @HapiTest
     private HapiSpec hapiTransferFromForNFTWithCustomFeesWithAllowance() {
         final var NFT_TOKEN_WITH_FIXED_HBAR_FEE = "nftTokenWithFixedHbarFee";
         final var NFT_TOKEN_WITH_FIXED_TOKEN_FEE = "nftTokenWithFixedTokenFee";
@@ -1984,6 +1989,7 @@ public class CryptoTransferSuite extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
     private HapiSpec hapiTransferFromForFungibleTokenWithCustomFeesWithAllowance() {
         final var FUNGIBLE_TOKEN_WITH_FIXED_HBAR_FEE = "fungibleTokenWithFixedHbarFee";
         final var FUNGIBLE_TOKEN_WITH_FIXED_TOKEN_FEE = "fungibleTokenWithFixedTokenFee";
