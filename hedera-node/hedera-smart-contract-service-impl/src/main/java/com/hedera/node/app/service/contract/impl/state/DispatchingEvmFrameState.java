@@ -287,7 +287,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
                 // bytecode will fail with a more meaningful error message, so don't check that here
                 return asLongZeroAddress(number);
             } else {
-                throw new IllegalArgumentException("No account has number " + number);
+                throw new IllegalArgumentException("No account or token has number " + number);
             }
         }
 

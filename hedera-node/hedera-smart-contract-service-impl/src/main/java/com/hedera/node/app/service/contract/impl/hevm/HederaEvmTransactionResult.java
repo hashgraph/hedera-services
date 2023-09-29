@@ -101,7 +101,7 @@ public record HederaEvmTransactionResult(
      */
     public ContractFunctionResult asQueryResultOf() {
         if (haltReason != null) {
-            return null;
+            return asUncommittedFailureResult(errorMessageFor(haltReason)).build();
         } else if (revertReason != null) {
             throw new AssertionError("Not implemented");
         } else {

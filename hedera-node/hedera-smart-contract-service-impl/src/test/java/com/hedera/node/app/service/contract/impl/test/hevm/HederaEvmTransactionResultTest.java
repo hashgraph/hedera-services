@@ -249,7 +249,8 @@ class HederaEvmTransactionResultTest {
         given(frame.getExceptionalHaltReason()).willReturn(Optional.of(ExceptionalHaltReason.INVALID_OPERATION));
 
         final var result = HederaEvmTransactionResult.failureFrom(GAS_LIMIT / 2, SENDER_ID, frame);
-        assertNull(result.asQueryResultOf());
+        final var protoResult = result.asQueryResultOf();
+        assertEquals(ExceptionalHaltReason.INVALID_OPERATION.toString(), protoResult.errorMessage());
     }
 
     @Test
