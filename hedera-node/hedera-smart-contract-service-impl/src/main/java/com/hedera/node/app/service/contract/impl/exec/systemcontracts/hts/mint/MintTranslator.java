@@ -82,7 +82,7 @@ public class MintTranslator extends AbstractHtsCallTranslator {
     }
 
     private FungibleMintCall fungibleCallFrom(
-            @NonNull final org.hyperledger.besu.datatypes.Address sender,
+            @NonNull final Address sender,
             @NonNull final com.esaulpaugh.headlong.abi.Address token,
             final long amount,
             @NonNull final HtsCallAttempt attempt) {
@@ -96,7 +96,7 @@ public class MintTranslator extends AbstractHtsCallTranslator {
     }
 
     private NonFungibleMintCall nonFungibleCallFrom(
-            @NonNull final org.hyperledger.besu.datatypes.Address sender,
+            @NonNull final Address sender,
             @NonNull final com.esaulpaugh.headlong.abi.Address token,
             @NonNull final byte[][] metadataArray,
             @NonNull final HtsCallAttempt attempt) {

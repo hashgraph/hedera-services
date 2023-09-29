@@ -16,6 +16,9 @@
 
 package contract;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
+import static contract.AssociationsXTestConstants.A_TOKEN_ADDRESS;
+import static contract.AssociationsXTestConstants.A_TOKEN_ID;
 import static contract.HtsErc721TransferXTestConstants.APPROVED_ID;
 import static contract.MiscClassicTransfersXTestConstants.NEXT_ENTITY_NUM;
 import static contract.WipeXTest.NUMBER_OWNED_NFTS;
@@ -61,6 +64,7 @@ import org.jetbrains.annotations.NotNull;
  *     <li>Mints {@code ERC20_TOKEN} via MINT_V2 operation</li>
  *     <li>Mints {@code ERC721_TOKEN} via MINT operation</li>
  *     <li>Mints {@code ERC721_TOKEN} via MINT_V2 operation</li>
+ *     <li>Mints {@code ERC20_TOKEN} without supply hey via MINT operation. This should fail with TOKEN_HAS_NO_SUPPLY_KEY</li>
  * </ol>
  */
 public class MintsXTest extends AbstractContractXTest {
@@ -101,6 +105,14 @@ public class MintsXTest extends AbstractContractXTest {
                         .encodeCallWithArgs(ERC721_TOKEN_ADDRESS, 0L, metadata)
                         .array()),
                 assertSuccess());
+
+        // should revert when token has no supplyKey
+        runHtsCallAndExpectRevert(
+                OWNER_BESU_ADDRESS,
+                Bytes.wrap(MintTranslator.MINT
+                        .encodeCallWithArgs(A_TOKEN_ADDRESS, BigInteger.valueOf(MINT_AMOUNT), new byte[][] {})
+                        .array()),
+                TOKEN_HAS_NO_SUPPLY_KEY);
     }
 
     @Override
@@ -136,6 +148,15 @@ public class MintsXTest extends AbstractContractXTest {
                         .treasuryAccountId(OWNER_ID)
                         .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                         .build());
+        tokens.put(
+                A_TOKEN_ID,
+                Token.newBuilder()
+                        .tokenId(A_TOKEN_ID)
+                        .treasuryAccountId(OWNER_ID)
+                        .tokenType(TokenType.FUNGIBLE_COMMON)
+                        .totalSupply(TOKEN_BALANCE)
+                        .treasuryAccountId(OWNER_ID)
+                        .build());
         return tokens;
     }
 
@@ -144,6 +165,17 @@ public class MintsXTest extends AbstractContractXTest {
         final var tokenRelationships = new HashMap<EntityIDPair, TokenRelation>();
         addErc20Relation(tokenRelationships, OWNER_ID, TOKEN_BALANCE);
         addErc721Relation(tokenRelationships, OWNER_ID, NUMBER_OWNED_NFTS);
+        tokenRelationships.put(
+                EntityIDPair.newBuilder()
+                        .tokenId(A_TOKEN_ID)
+                        .accountId(OWNER_ID)
+                        .build(),
+                TokenRelation.newBuilder()
+                        .tokenId(A_TOKEN_ID)
+                        .accountId(OWNER_ID)
+                        .balance(TOKEN_BALANCE)
+                        .kycGranted(true)
+                        .build());
         return tokenRelationships;
     }
 

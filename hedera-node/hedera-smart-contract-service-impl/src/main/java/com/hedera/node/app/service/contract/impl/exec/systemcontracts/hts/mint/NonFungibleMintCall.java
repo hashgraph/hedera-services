@@ -71,7 +71,7 @@ public class NonFungibleMintCall extends AbstractHtsCall implements MintCall {
         final var spenderId = addressIdConverter.convert(asHeadlongAddress(spender.toArrayUnsafe()));
         final var recordBuilder = systemContractOperations()
                 .dispatch(
-                        syntheticMintUnits(tokenId, metadata),
+                        syntheticMintNfts(tokenId, metadata),
                         verificationStrategy,
                         spenderId,
                         TokenMintRecordBuilder.class);
@@ -86,7 +86,7 @@ public class NonFungibleMintCall extends AbstractHtsCall implements MintCall {
         }
     }
 
-    private TransactionBody syntheticMintUnits(@NonNull final TokenID tokenId, final List<Bytes> metadata) {
+    private TransactionBody syntheticMintNfts(@NonNull final TokenID tokenId, final List<Bytes> metadata) {
         return TransactionBody.newBuilder()
                 .tokenMint(TokenMintTransactionBody.newBuilder()
                         .token(tokenId)
