@@ -68,6 +68,14 @@ public class CreateDecoder {
         return bodyOf(createToken(tokenCreateWrapper));
     }
 
+    public TransactionBody decodeCreateNonFungible(
+            @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
+        final var call = CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN.decodeCall(encoded);
+        final TokenCreateWrapper tokenCreateWrapper =
+                getTokenCreateWrapperNonFungible(call.get(0), false, addressIdConverter);
+        return bodyOf(createToken(tokenCreateWrapper));
+    }
+
     private TransactionBody bodyOf(@NonNull final TokenCreateTransactionBody.Builder tokenCreate) {
         return TransactionBody.newBuilder().tokenCreation(tokenCreate).build();
     }
@@ -119,6 +127,16 @@ public class CreateDecoder {
         tokenCreateWrapper.setFixedFees(fixedFees);
         tokenCreateWrapper.setFractionalFees(fractionalFess);
         return tokenCreateWrapper;
+    }
+
+    private static TokenCreateWrapper getTokenCreateWrapperNonFungible(
+            @NonNull final Tuple tokenCreateStruct,
+            final boolean isFungible,
+            @NonNull final AddressIdConverter addressIdConverter) {
+        final var tokenCreateWrapper =
+                getTokenCreateWrapperFungibleWithoutFees(tokenCreateStruct, isFungible, 0L, 0, addressIdConverter);
+        // @TODO to be implemented
+        return null;
     }
 
     private static List<TokenKeyWrapper> decodeTokenKeys(

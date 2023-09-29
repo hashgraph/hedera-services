@@ -16,12 +16,15 @@
 
 package com.hedera.node.app.service.contract.impl.exec.utils;
 
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Fraction;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.FixedFee;
 import com.hedera.hapi.node.transaction.FractionalFee;
+import com.hedera.hapi.node.transaction.RoyaltyFee;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.List;
@@ -232,6 +235,33 @@ public class TokenCreateWrapper {
                 feeBuilder.feeCollectorAccountId(feeCollector);
             }
             return feeBuilder.build();
+        }
+    }
+
+    public record RoyaltyFeeWrapper(
+            long numerator,
+            long denominator,
+            TokenCreateWrapper.FixedFeeWrapper fallbackFixedFee,
+            AccountID feeCollector) {
+        public CustomFee asGrpc() {
+            final var royaltyFeeBuilder = RoyaltyFee.newBuilder()
+                    .exchangeValueFraction(Fraction.newBuilder()
+                            .numerator(numerator)
+                            .denominator(denominator)
+                            .build());
+            if (fallbackFixedFee != null) {
+                validateTrue(
+                        fallbackFixedFee.getFixedFeePayment()
+                                != TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.INVALID_PAYMENT,
+                        ResponseCodeEnum.FAIL_INVALID);
+                royaltyFeeBuilder.fallbackFee(fallbackFixedFee.asBuilder().build());
+            }
+
+            final var customFeeBuilder = CustomFee.newBuilder().royaltyFee(royaltyFeeBuilder.build());
+            if (feeCollector != null) {
+                customFeeBuilder.feeCollectorAccountId(feeCollector);
+            }
+            return customFeeBuilder.build();
         }
     }
 }
