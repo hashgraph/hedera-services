@@ -281,6 +281,7 @@ public class TokenManagementSpecs extends HapiSuite {
                         getTxnRecord(WIPE_TXN).logged());
     }
 
+    @HapiTest
     public HapiSpec wipeAccountFailureCasesWork() {
         var unwipeableToken = "without";
         var wipeableToken = "with";
