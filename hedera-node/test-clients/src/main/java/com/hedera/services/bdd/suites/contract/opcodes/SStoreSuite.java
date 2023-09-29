@@ -104,6 +104,7 @@ public class SStoreSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     HapiSpec childStorage() {
         // Successfully exceeds deprecated max contract storage of 1 KB
         final var contract = "ChildStorage";
@@ -167,6 +168,7 @@ public class SStoreSuite extends HapiSuite {
     }
 
     @SuppressWarnings("java:S5669")
+    @HapiTest
     private HapiSpec benchmarkSingleSetter() {
         final var contract = "Benchmark";
         final var GAS_LIMIT = 1_000_000;
