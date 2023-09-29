@@ -23,6 +23,7 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.as
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.token.TokenCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCall;
@@ -32,7 +33,7 @@ import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 
-public class FungibleCreateCall extends AbstractHtsCall {
+public class FungibleCreatesCall extends AbstractHtsCall {
 
     @NonNull
     final TransactionBody syntheticCreate;
@@ -41,7 +42,7 @@ public class FungibleCreateCall extends AbstractHtsCall {
     private final VerificationStrategy verificationStrategy;
     private final org.hyperledger.besu.datatypes.Address spender;
 
-    public FungibleCreateCall(
+    public FungibleCreatesCall(
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             @NonNull final TransactionBody syntheticCreate,
             @NonNull final VerificationStrategy verificationStrategy,
@@ -59,12 +60,18 @@ public class FungibleCreateCall extends AbstractHtsCall {
         final var spenderId = addressIdConverter.convert(asHeadlongAddress(spender.toArrayUnsafe()));
         final var recordBuilder = systemContractOperations()
                 .dispatch(syntheticCreate, verificationStrategy, spenderId, CryptoCreateRecordBuilder.class);
+        final var customFees =
+                ((TokenCreateTransactionBody) syntheticCreate.data().value()).customFees();
         if (recordBuilder.status() != ResponseCodeEnum.SUCCESS) {
             return gasOnly(revertResult(recordBuilder.status(), 0L));
         } else {
-            final var encodedOutput = CreateTranslator.CREATE_FUNGIBLE_TOKEN
-                    .getOutputs()
-                    .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()));
+            final var encodedOutput = (customFees.size() == 0)
+                    ? CreateTranslator.CREATE_FUNGIBLE_TOKEN
+                            .getOutputs()
+                            .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()))
+                    : CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES
+                            .getOutputs()
+                            .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()));
             // @TODO zero should not be hardcoded
             return gasOnly(successResult(encodedOutput, 0L));
         }

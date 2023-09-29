@@ -35,15 +35,17 @@ public class CreateTranslator extends AbstractHtsCallTranslator {
     public static final Function CREATE_FUNGIBLE_TOKEN =
             new Function("createFungibleToken(" + HEDERA_TOKEN + ",int64,int32)", ReturnTypes.INT);
 
-    public static final Function CREATE_FUNGIBLE_WITH_CUSTOM_FEES = new Function("createFungibleTokenWithCustomFees("
-            + HEDERA_TOKEN
-            + ",int64,int32,"
-            + FIXED_FEE
-            + ARRAY_BRACKETS
-            + ","
-            + FRACTIONAL_FEE
-            + ARRAY_BRACKETS
-            + ")");
+    public static final Function CREATE_FUNGIBLE_WITH_CUSTOM_FEES = new Function(
+            "createFungibleTokenWithCustomFees("
+                    + HEDERA_TOKEN
+                    + ",int64,int32,"
+                    + FIXED_FEE
+                    + ARRAY_BRACKETS
+                    + ","
+                    + FRACTIONAL_FEE
+                    + ARRAY_BRACKETS
+                    + ")",
+            ReturnTypes.INT);
 
     private final CreateDecoder decoder;
 
@@ -60,8 +62,8 @@ public class CreateTranslator extends AbstractHtsCallTranslator {
     }
 
     @Override
-    public FungibleCreateCall callFrom(@NonNull HtsCallAttempt attempt) {
-        return new FungibleCreateCall(
+    public FungibleCreatesCall callFrom(@NonNull HtsCallAttempt attempt) {
+        return new FungibleCreatesCall(
                 attempt.enhancement(),
                 nominalBodyFor(attempt),
                 attempt.defaultVerificationStrategy(),

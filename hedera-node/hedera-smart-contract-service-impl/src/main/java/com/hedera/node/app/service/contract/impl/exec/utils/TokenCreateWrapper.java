@@ -40,6 +40,9 @@ public class TokenCreateWrapper {
     private final List<TokenKeyWrapper> tokenKeys;
     private final TokenExpiryWrapper expiry;
 
+    private List<TokenCreateWrapper.FixedFeeWrapper> fixedFees;
+    private List<TokenCreateWrapper.FractionalFeeWrapper> fractionalFees;
+
     public TokenCreateWrapper(
             final boolean isFungible,
             final String tokenName,
@@ -113,6 +116,22 @@ public class TokenCreateWrapper {
 
     public TokenExpiryWrapper getExpiry() {
         return expiry;
+    }
+
+    public List<TokenCreateWrapper.FixedFeeWrapper> getFixedFees() {
+        return fixedFees;
+    }
+
+    public List<TokenCreateWrapper.FractionalFeeWrapper> getFractionalFees() {
+        return fractionalFees;
+    }
+
+    public void setFixedFees(final List<TokenCreateWrapper.FixedFeeWrapper> fixedFees) {
+        this.fixedFees = fixedFees;
+    }
+
+    public void setFractionalFees(final List<TokenCreateWrapper.FractionalFeeWrapper> fractionalFees) {
+        this.fractionalFees = fractionalFees;
     }
 
     public static final class FixedFeeWrapper {

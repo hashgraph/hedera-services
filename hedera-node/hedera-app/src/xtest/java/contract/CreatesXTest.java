@@ -112,7 +112,7 @@ public class CreatesXTest extends AbstractContractXTest {
                                 INITIAL_TOTAL_SUPPLY,
                                 DECIMALS,
                                 // FixedFee
-                                new Tuple[] {Tuple.of(100L, ERC20_TOKEN_ADDRESS, true, true, OWNER_HEADLONG_ADDRESS)},
+                                new Tuple[] {Tuple.of(100L, ERC20_TOKEN_ADDRESS, false, false, OWNER_HEADLONG_ADDRESS)},
                                 // FractionalFee
                                 new Tuple[] {Tuple.of(100L, 100L, 100L, 100L, true, OWNER_HEADLONG_ADDRESS)})
                         .array()),

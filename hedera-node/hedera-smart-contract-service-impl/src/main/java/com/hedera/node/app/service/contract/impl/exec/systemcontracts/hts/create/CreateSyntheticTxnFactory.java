@@ -82,6 +82,18 @@ public class CreateSyntheticTxnFactory {
         if (tokenCreateWrapper.getExpiry().autoRenewPeriod() != null) {
             txnBodyBuilder.autoRenewPeriod(tokenCreateWrapper.getExpiry().autoRenewPeriod());
         }
+
+        if (tokenCreateWrapper.getFixedFees() != null) {
+            txnBodyBuilder.customFees(tokenCreateWrapper.getFixedFees().stream()
+                    .map(TokenCreateWrapper.FixedFeeWrapper::asGrpc)
+                    .toList());
+        }
+        if (tokenCreateWrapper.getFractionalFees() != null) {
+            txnBodyBuilder.customFees(tokenCreateWrapper.getFractionalFees().stream()
+                    .map(TokenCreateWrapper.FractionalFeeWrapper::asGrpc)
+                    .toList());
+        }
+
         return txnBodyBuilder;
     }
 }

@@ -27,6 +27,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Addres
 import com.hedera.node.app.service.contract.impl.exec.utils.KeyValueWrapper;
 import com.hedera.node.app.service.contract.impl.exec.utils.TokenCreateWrapper;
 import com.hedera.node.app.service.contract.impl.exec.utils.TokenCreateWrapper.FixedFeeWrapper;
+import com.hedera.node.app.service.contract.impl.exec.utils.TokenCreateWrapper.FractionalFeeWrapper;
 import com.hedera.node.app.service.contract.impl.exec.utils.TokenExpiryWrapper;
 import com.hedera.node.app.service.contract.impl.exec.utils.TokenKeyWrapper;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
@@ -114,8 +115,10 @@ public class CreateDecoder {
         final var tokenCreateWrapper = getTokenCreateWrapperFungibleWithoutFees(
                 tokenCreateStruct, isFungible, initSupply, decimals, addressIdConverter);
         final var fixedFees = decodeFixedFees(fixedFeesTuple, addressIdConverter);
-        // @TODO to be implemented
-        return null;
+        final var fractionalFess = decodeFractionalFees(fractionalFeesTuple, addressIdConverter);
+        tokenCreateWrapper.setFixedFees(fixedFees);
+        tokenCreateWrapper.setFractionalFees(fractionalFess);
+        return tokenCreateWrapper;
     }
 
     private static List<TokenKeyWrapper> decodeTokenKeys(
@@ -170,5 +173,26 @@ public class CreateDecoder {
                     feeCollector.accountNum() != 0 ? feeCollector : null));
         }
         return fixedFees;
+    }
+
+    public static List<FractionalFeeWrapper> decodeFractionalFees(
+            @NonNull final Tuple[] fractionalFeesTuples, @NonNull final AddressIdConverter addressIdConverter) {
+        final List<FractionalFeeWrapper> fractionalFees = new ArrayList<>(fractionalFeesTuples.length);
+        for (final var fractionalFeeTuple : fractionalFeesTuples) {
+            final var numerator = (long) fractionalFeeTuple.get(0);
+            final var denominator = (long) fractionalFeeTuple.get(1);
+            final var minimumAmount = (long) fractionalFeeTuple.get(2);
+            final var maximumAmount = (long) fractionalFeeTuple.get(3);
+            final var netOfTransfers = (Boolean) fractionalFeeTuple.get(4);
+            final var feeCollector = addressIdConverter.convert(fractionalFeeTuple.get(5));
+            fractionalFees.add(new FractionalFeeWrapper(
+                    numerator,
+                    denominator,
+                    minimumAmount,
+                    maximumAmount,
+                    netOfTransfers,
+                    feeCollector.accountNum() != 0 ? feeCollector : null));
+        }
+        return fractionalFees;
     }
 }
