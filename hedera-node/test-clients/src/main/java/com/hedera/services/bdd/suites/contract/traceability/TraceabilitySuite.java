@@ -45,7 +45,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilStateChange.stateChangesT
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -123,7 +122,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.ArrayUtils;
@@ -4934,7 +4932,8 @@ public class TraceabilitySuite extends HapiSuite {
         return propertyPreservingHapiSpec(specName)
                 .preserving(LAZY_CREATE_PROPERTY, SIDECARS_PROP)
                 .given(
-                        overridingAllOf(Map.of(LAZY_CREATE_PROPERTY, "true", SIDECARS_PROP, "")),
+                        overriding(LAZY_CREATE_PROPERTY, "true"),
+                        overriding(SIDECARS_PROP, ""),
                         newKeyNamed(adminKey),
                         newKeyNamed(MULTI_KEY),
                         uploadInitCode(create2Factory),
