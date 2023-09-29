@@ -28,6 +28,7 @@ import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartU
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP2;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP3;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.NODE_DUE_DILIGENCE_FAILURE;
+import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PAYER_UNWILLING_OR_UNABLE_TO_PAY_SERVICE_FEE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE_HANDLE_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
 import static java.util.Collections.emptyList;
@@ -60,6 +61,8 @@ import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.InsufficientNonFeeDebitsException;
+import com.hedera.node.app.spi.workflows.InsufficientServiceFeeException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.HederaState;
@@ -237,11 +240,6 @@ public class HandleWorkflow {
 
         // handle user transaction
         handleUserTransaction(consensusNow, state, dualState, platformEvent, creator, platformTxn);
-
-        // TODO: handle long scheduled transactions
-
-        // TODO: handle system tasks. System tasks should be outside the blockRecordManager start/end user transaction
-        // TODO: and have their own start/end. So system transactions are handled like separate user transactions.
     }
 
     private void handleUserTransaction(
@@ -365,10 +363,16 @@ public class HandleWorkflow {
             if (validationResult.status() != SO_FAR_SO_GOOD) {
                 recordBuilder.status(validationResult.responseCodeEnum());
                 try {
-                    final var penaltyPayerID =
-                            validationResult.status() == NODE_DUE_DILIGENCE_FAILURE ? creator.accountId() : payer;
-                    final var penaltyFee = new Fees(fees.nodeFee(), fees.networkFee(), 0L);
-                    feeAccumulator.charge(penaltyPayerID, penaltyFee);
+                    if (validationResult.status() == NODE_DUE_DILIGENCE_FAILURE) {
+                        feeAccumulator.chargeNetworkFee(creator.accountId(), fees.networkFee());
+                    } else if (validationResult.status() == PAYER_UNWILLING_OR_UNABLE_TO_PAY_SERVICE_FEE) {
+                        // We do not charge partial service fees; if the payer is unwilling or unable to cover
+                        // the entire service fee, then we only charge network and node fees (prioritizing
+                        // the network fee in case of a very low payer balance)
+                        feeAccumulator.chargeFees(payer, creator.accountId(), fees.withoutServiceComponent());
+                    } else {
+                        feeAccumulator.chargeFees(payer, creator.accountId(), fees);
+                    }
                 } catch (HandleException ex) {
                     final var identifier = validationResult.status == NODE_DUE_DILIGENCE_FAILURE
                             ? "node " + creator.nodeId()
@@ -381,10 +385,9 @@ public class HandleWorkflow {
                 }
 
             } else {
-                if (authorizer.hasPrivilegedAuthorization(payer, transactionInfo.functionality(), txBody)
-                        != SystemPrivilege.AUTHORIZED) {
+                if (!authorizer.hasWaivedFees(payer, transactionInfo.functionality(), txBody)) {
                     // privileged transactions are not charged fees
-                    feeAccumulator.charge(payer, fees);
+                    feeAccumulator.chargeFees(payer, creator.accountId(), fees);
                 }
                 try {
                     // Dispatch the transaction to the handler
@@ -399,7 +402,7 @@ public class HandleWorkflow {
 
                 } catch (final HandleException e) {
                     rollback(e.getStatus(), stack, recordListBuilder);
-                    feeAccumulator.charge(payer, fees);
+                    feeAccumulator.chargeFees(payer, creator.accountId(), fees);
                 }
             }
         } catch (final Exception e) {
@@ -407,7 +410,7 @@ public class HandleWorkflow {
             rollback(ResponseCodeEnum.FAIL_INVALID, stack, recordListBuilder);
             if (payer != null && fees != null) {
                 try {
-                    feeAccumulator.charge(payer, fees);
+                    feeAccumulator.chargeFees(payer, creator.accountId(), fees);
                 } catch (HandleException chargeException) {
                     logger.error(
                             "Unable to charge account {} a penalty after an unexpected exception {}. Cause of the failed charge:",
@@ -476,8 +479,13 @@ public class HandleWorkflow {
         // Check the status and solvency of the payer
         try {
             final var payer = solvencyPreCheck.getPayerAccount(storeFactory, payerID);
-            solvencyPreCheck.checkSolvency(txInfo, payer, fees.totalWithoutServiceFee());
-        } catch (final PreCheckException e) {
+            solvencyPreCheck.checkSolvency(txInfo, payer, fees);
+        } catch (final InsufficientServiceFeeException e) {
+            return new ValidationResult(PAYER_UNWILLING_OR_UNABLE_TO_PAY_SERVICE_FEE, e.responseCode());
+        } catch (final InsufficientNonFeeDebitsException e) {
+            return new ValidationResult(PRE_HANDLE_FAILURE, e.responseCode());
+        } catch (PreCheckException e) {
+            // Includes InsufficientNetworkFeeException
             return new ValidationResult(NODE_DUE_DILIGENCE_FAILURE, e.responseCode());
         }
 
@@ -485,7 +493,7 @@ public class HandleWorkflow {
         try {
             checker.checkTimeBox(txBody, consensusNow);
         } catch (final PreCheckException e) {
-            return new ValidationResult(PRE_HANDLE_FAILURE, e.responseCode());
+            return new ValidationResult(NODE_DUE_DILIGENCE_FAILURE, e.responseCode());
         }
 
         // Check if the payer has the required permissions
@@ -593,7 +601,6 @@ public class HandleWorkflow {
      * any keys need to be added. If so, we trigger the signature verification for the new keys and collect all
      * results.
      */
-    // TODO: Need to re-use expandAndVerifySignatures from PreHandleWorkflowImpl instead of duplicating this code
     @NonNull
     private PreHandleResult addMissingSignatures(
             @NonNull final ReadableStoreFactory storeFactory,
@@ -661,6 +668,7 @@ public class HandleWorkflow {
     /**
      * Checks if any of the keys changed from previous result to current result.
      * Only if keys changed we need to re-expand and re-verify the signatures.
+     *
      * @param previousResults previous result from signature verification
      * @param context current context
      * @return true if any of the keys changed

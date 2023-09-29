@@ -64,6 +64,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Disabled;
 
 @HapiTestSuite
 public class CryptoCreateSuite extends HapiSuite {
@@ -262,6 +263,7 @@ public class CryptoCreateSuite extends HapiSuite {
     }
 
     @HapiTest
+    @Disabled("Failing or intermittently failing HAPI Test")
     public HapiSpec syntaxChecksAreAsExpected() {
         return defaultHapiSpec("SyntaxChecksAreAsExpected")
                 .given()

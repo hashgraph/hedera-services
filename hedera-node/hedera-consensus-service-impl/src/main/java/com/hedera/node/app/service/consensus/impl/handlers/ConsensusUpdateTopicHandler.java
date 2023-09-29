@@ -17,7 +17,9 @@
 package com.hedera.node.app.service.consensus.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_ACCOUNT_NOT_ALLOWED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
@@ -228,7 +230,17 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
                 new ExpiryMeta(topic.expirationSecond(), topic.autoRenewPeriod(), topic.autoRenewAccountId());
         if (updatesExpiryMeta(op)) {
             final var updateMeta = new ExpiryMeta(effExpiryOf(op), effAutoRenewPeriodOf(op), op.autoRenewAccount());
-            return expiryValidator.resolveUpdateAttempt(currentMeta, updateMeta);
+            try {
+                return expiryValidator.resolveUpdateAttempt(currentMeta, updateMeta);
+            } catch (final HandleException e) {
+                if (e.getStatus() == INVALID_RENEWAL_PERIOD) {
+                    // Tokens throw INVALID_EXPIRATION_TIME, but for topic it's expected currently to throw
+                    // AUTORENEW_DURATION_NOT_IN_RANGE
+                    // future('8906')
+                    throw new HandleException(AUTORENEW_DURATION_NOT_IN_RANGE);
+                }
+                throw e;
+            }
         } else {
             return currentMeta;
         }

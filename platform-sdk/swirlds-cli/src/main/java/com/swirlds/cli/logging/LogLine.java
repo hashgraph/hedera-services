@@ -237,7 +237,7 @@ public class LogLine implements FormattableString {
      */
     public void addNonStandardLine(@NonNull final String line) {
         if (additionalLines == null) {
-            additionalLines = new NonStandardLog(this);
+            additionalLines = new NonStandardLog();
         }
         additionalLines.addLogText(line);
     }
@@ -362,7 +362,28 @@ public class LogLine implements FormattableString {
     @NonNull
     @Override
     public String generateHtmlString() {
+        // the actual value of these elements of the line become html classes for the line itself, so that we can filter
+        // based on these values
+        final List<String> rowClassNames = Stream.of(
+                        logLevel,
+                        marker,
+                        threadName,
+                        className,
+                        nodeId == null ? "" : "node" + nodeId,
+                        HIDEABLE_LABEL,
+                        LOG_LINE_LABEL)
+                .map(LogProcessingUtils::escapeString)
+                .toList();
+
         final List<String> dataCellTags = new ArrayList<>();
+
+        final String selectCheckbox = new HtmlTagFactory("input")
+                .addClass("select-checkbox")
+                .addClasses(rowClassNames)
+                .addAttribute("type", "checkbox")
+                .generateTag();
+        final HtmlTagFactory selectCheckboxCellFactory = new HtmlTagFactory("td", selectCheckbox);
+        dataCellTags.add(selectCheckboxCellFactory.generateTag());
 
         final HtmlTagFactory nodeIdTagFactory = new HtmlTagFactory(
                         "td", nodeId == null ? "" : "node" + escapeString(nodeId.toString()))
@@ -436,30 +457,23 @@ public class LogLine implements FormattableString {
                 .addAttribute(WHITELIST_LABEL, "0");
         dataCellTags.add(remainderOfLineTagFactory.generateTag());
 
-        // the actual value of these elements of the line become html classes for the line itself, so that we can filter
-        // based on these values
-        final List<String> rowClassNames = Stream.of(
-                        logLevel,
-                        marker,
-                        threadName,
-                        className,
-                        nodeId == null ? "" : "node" + nodeId,
-                        HIDEABLE_LABEL,
-                        LOG_LINE_LABEL)
-                .map(LogProcessingUtils::escapeString)
-                .toList();
-
-        final String mainLogRow = new HtmlTagFactory("tr", "\n" + String.join("\n", dataCellTags) + "\n")
-                .addClasses(rowClassNames)
-                .addAttribute(BLACKLIST_LABEL, "0")
-                .addAttribute(WHITELIST_LABEL, "0")
-                .generateTag();
+        final HtmlTagFactory mainLogRowFactory =
+                new HtmlTagFactory("tr", "\n" + String.join("\n", dataCellTags) + "\n").addClass(LOG_LINE_LABEL);
 
         if (additionalLines == null) {
-            return mainLogRow;
+            mainLogRowFactory
+                    .addClasses(rowClassNames)
+                    .addAttribute(BLACKLIST_LABEL, "0")
+                    .addAttribute(WHITELIST_LABEL, "0");
+
+            return mainLogRowFactory.generateTag();
         } else {
-            return new HtmlTagFactory("tbody", mainLogRow + "\n" + additionalLines.generateHtmlString())
+            return new HtmlTagFactory(
+                            "tbody", mainLogRowFactory.generateTag() + "\n" + additionalLines.generateHtmlString())
                     .addClass(LOG_LINE_LABEL)
+                    .addClasses(rowClassNames)
+                    .addAttribute(BLACKLIST_LABEL, "0")
+                    .addAttribute(WHITELIST_LABEL, "0")
                     .generateTag();
         }
     }
