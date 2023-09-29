@@ -51,7 +51,6 @@ public class SubmitMessagesForReconnect extends HapiSuite {
         String topicToSubmit = String.format("0.0.%d", settings.getTestTopicId());
         return submitMessageTo(topicToSubmit)
                 .message(randomUtf8Bytes(100))
-                .noLogging()
                 .fee(ONE_HBAR)
                 .hasRetryPrecheckFrom(BUSY, PLATFORM_TRANSACTION_NOT_CREATED)
                 .deferStatusResolution();

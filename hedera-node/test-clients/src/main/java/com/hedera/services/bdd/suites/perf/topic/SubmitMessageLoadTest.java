@@ -196,7 +196,6 @@ public class SubmitMessageLoadTest extends LoadTest {
                                 .putLong(Instant.now().toEpochMilli())
                                 .array(),
                         randomUtf8Bytes(msgSize - 8)))
-                .noLogging()
                 .payingWith(senderId)
                 .signedBy(senderKey, submitKey)
                 .fee(100_000_000)
