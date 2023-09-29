@@ -42,6 +42,7 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -53,7 +54,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPING
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_MAX_SUPPLY_REACHED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Frozen;
 import static com.hederahashgraph.api.proto.java.TokenKycStatus.Revoked;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
@@ -308,20 +311,18 @@ public class TokenManagementSpecs extends HapiSuite {
                         tokenAssociate("misc", anotherWipeableToken),
                         cryptoTransfer(moving(500, anotherWipeableToken).between(TOKEN_TREASURY, "misc")))
                 .then(
-                        //                        wipeTokenAccount(wipeableUniqueToken, TOKEN_TREASURY, List.of(1L))
-                        //                                .hasKnownStatus(CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT),
-                        //                        wipeTokenAccount(unwipeableToken, TOKEN_TREASURY, 1)
-                        //                                .signedBy(GENESIS)
-                        //                                .hasKnownStatus(TOKEN_HAS_NO_WIPE_KEY),
-                        //                        wipeTokenAccount(wipeableToken, "misc",
-                        // 1).hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
-                        //                        wipeTokenAccount(wipeableToken, TOKEN_TREASURY, 1)
-                        //                                .signedBy(GENESIS)
-                        //                                .hasKnownStatus(INVALID_SIGNATURE),
-                        //                        wipeTokenAccount(wipeableToken, TOKEN_TREASURY, 1)
-                        //                                .hasKnownStatus(CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT),
-                        //                        wipeTokenAccount(anotherWipeableToken, "misc",
-                        // 501).hasKnownStatus(INVALID_WIPING_AMOUNT),
+                        wipeTokenAccount(wipeableUniqueToken, TOKEN_TREASURY, List.of(1L))
+                                .hasKnownStatus(CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT),
+                        wipeTokenAccount(unwipeableToken, TOKEN_TREASURY, 1)
+                                .signedBy(GENESIS)
+                                .hasKnownStatus(TOKEN_HAS_NO_WIPE_KEY),
+                        wipeTokenAccount(wipeableToken, "misc", 1).hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
+                        wipeTokenAccount(wipeableToken, TOKEN_TREASURY, 1)
+                                .signedBy(GENESIS)
+                                .hasKnownStatus(INVALID_SIGNATURE),
+                        wipeTokenAccount(wipeableToken, TOKEN_TREASURY, 1)
+                                .hasKnownStatus(CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT),
+                        wipeTokenAccount(anotherWipeableToken, "misc", 501).hasKnownStatus(INVALID_WIPING_AMOUNT),
                         wipeTokenAccount(anotherWipeableToken, "misc", -1).hasPrecheck(INVALID_WIPING_AMOUNT));
     }
 
@@ -500,6 +501,7 @@ public class TokenManagementSpecs extends HapiSuite {
                         .logged());
     }
 
+    @HapiTest
     public HapiSpec supplyMgmtFailureCasesWork() {
         return defaultHapiSpec("SupplyMgmtFailureCasesWork")
                 .given(newKeyNamed(SUPPLY_KEY))
