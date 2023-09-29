@@ -1337,7 +1337,8 @@ class HandleWorkflowTest extends AppTestBase {
 
             // then
             assertThat(accountsState.get(ALICE.accountID()).tinybarBalance()).isLessThan(DEFAULT_FEES.totalFee());
-            assertThat(accountsState.get(nodeSelfAccountId).tinybarBalance()).isEqualTo(DEFAULT_FEES.totalFee());
+            assertThat(accountsState.get(nodeSelfAccountId).tinybarBalance())
+                    .isEqualTo(DEFAULT_FEES.totalFee() + DEFAULT_FEES.nodeFee());
         }
 
         @Test
@@ -1370,8 +1371,9 @@ class HandleWorkflowTest extends AppTestBase {
             // then
             final var block = getRecordFromStream();
             assertThat(block).has(SingleTransactionRecordConditions.status(responseCode));
-            assertThat(accountsState.get(ALICE.accountID()).tinybarBalance()).isLessThan(DEFAULT_FEES.totalFee());
-            assertThat(accountsState.get(nodeSelfAccountId).tinybarBalance()).isEqualTo(DEFAULT_FEES.totalFee());
+            assertThat(accountsState.get(ALICE.accountID()).tinybarBalance()).isEqualTo(DEFAULT_FEES.totalFee());
+            assertThat(accountsState.get(nodeSelfAccountId).tinybarBalance())
+                    .isEqualTo(DEFAULT_FEES.totalFee() - DEFAULT_FEES.networkFee());
         }
 
         @ParameterizedTest
@@ -1406,7 +1408,7 @@ class HandleWorkflowTest extends AppTestBase {
             // given
             doThrow(new PreCheckException(responseCode))
                     .when(solvencyPreCheck)
-                    .checkSolvency(eq(OK_RESULT.txInfo()), any(), eq(DEFAULT_FEES.totalWithoutServiceFee()));
+                    .checkSolvency(eq(OK_RESULT.txInfo()), any(), eq(DEFAULT_FEES));
 
             // when
             workflow.handleRound(state, dualState, round);
@@ -1432,7 +1434,8 @@ class HandleWorkflowTest extends AppTestBase {
             final var block = getRecordFromStream();
             assertThat(block).has(SingleTransactionRecordConditions.status(UNAUTHORIZED));
             assertThat(accountsState.get(ALICE.accountID()).tinybarBalance()).isLessThan(DEFAULT_FEES.totalFee());
-            assertThat(accountsState.get(nodeSelfAccountId).tinybarBalance()).isEqualTo(DEFAULT_FEES.totalFee());
+            assertThat(accountsState.get(nodeSelfAccountId).tinybarBalance())
+                    .isEqualTo(DEFAULT_FEES.totalFee() + DEFAULT_FEES.nodeFee());
         }
 
         @Test
@@ -1452,7 +1455,8 @@ class HandleWorkflowTest extends AppTestBase {
             final var block = getRecordFromStream();
             assertThat(block).has(SingleTransactionRecordConditions.status(AUTHORIZATION_FAILED));
             assertThat(accountsState.get(ALICE.accountID()).tinybarBalance()).isLessThan(DEFAULT_FEES.totalFee());
-            assertThat(accountsState.get(nodeSelfAccountId).tinybarBalance()).isEqualTo(DEFAULT_FEES.totalFee());
+            assertThat(accountsState.get(nodeSelfAccountId).tinybarBalance())
+                    .isEqualTo(DEFAULT_FEES.totalFee() + DEFAULT_FEES.nodeFee());
         }
 
         @Test
@@ -1472,7 +1476,8 @@ class HandleWorkflowTest extends AppTestBase {
             final var block = getRecordFromStream();
             assertThat(block).has(SingleTransactionRecordConditions.status(ENTITY_NOT_ALLOWED_TO_DELETE));
             assertThat(accountsState.get(ALICE.accountID()).tinybarBalance()).isLessThan(DEFAULT_FEES.totalFee());
-            assertThat(accountsState.get(nodeSelfAccountId).tinybarBalance()).isEqualTo(DEFAULT_FEES.totalFee());
+            assertThat(accountsState.get(nodeSelfAccountId).tinybarBalance())
+                    .isEqualTo(DEFAULT_FEES.totalFee() + DEFAULT_FEES.nodeFee());
         }
 
         @ParameterizedTest

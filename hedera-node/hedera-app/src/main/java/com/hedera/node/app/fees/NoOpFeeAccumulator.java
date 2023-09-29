@@ -29,7 +29,10 @@ public class NoOpFeeAccumulator implements FeeAccumulator {
     public static final NoOpFeeAccumulator INSTANCE = new NoOpFeeAccumulator();
 
     @Override
-    public void charge(@NonNull AccountID payer, @NonNull Fees fees) {}
+    public void chargeFees(@NonNull AccountID payer, AccountID nodeAccount, @NonNull Fees fees) {}
+
+    @Override
+    public void chargeNetworkFee(@NonNull AccountID payer, long networkFee) {}
 
     @Override
     public void refund(@NonNull AccountID receiver, @NonNull Fees fees) {}
