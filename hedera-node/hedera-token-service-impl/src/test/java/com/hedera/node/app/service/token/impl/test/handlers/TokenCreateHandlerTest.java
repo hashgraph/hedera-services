@@ -187,12 +187,10 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     @SuppressWarnings("java:S5961")
     void handleWorksForFungibleCreateWithSelfDenominatedToken() {
         setUpTxnContext();
-        final var customFees = List.of(
-                withFixedFee(hbarFixedFee
-                        .copyBuilder()
-                        .denominatingTokenId(TokenID.newBuilder().tokenNum(0L).build())
-                        .build()),
-                withFractionalFee(fractionalFee));
+        final var customFees = List.of(withFixedFee(hbarFixedFee
+                .copyBuilder()
+                .denominatingTokenId(TokenID.newBuilder().tokenNum(0L).build())
+                .build()));
         txn = new TokenCreateBuilder().withCustomFees(customFees).build();
         given(handleContext.body()).willReturn(txn);
 

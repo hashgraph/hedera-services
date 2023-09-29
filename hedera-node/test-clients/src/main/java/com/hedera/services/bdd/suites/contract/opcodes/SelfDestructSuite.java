@@ -114,6 +114,7 @@ public class SelfDestructSuite extends HapiSuite {
                                 .has(contractWith().isDeleted()));
     }
 
+    @HapiTest
     private HapiSpec selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn() {
         final AtomicLong beneficiaryId = new AtomicLong();
         return defaultHapiSpec("selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn")
