@@ -150,7 +150,6 @@ public class StressTestingToolMain implements SwirldMain {
                 .setComponent("app")
                 .setThreadName("demo_log_time_pulse")
                 .setRunnable(() -> {
-                    final Logger logger = LogManager.getLogger(StressTestingToolMain.class);
                     logger.debug(STARTUP.getMarker(), "Keepalive Event for Regression Timing");
                 })
                 .build();
