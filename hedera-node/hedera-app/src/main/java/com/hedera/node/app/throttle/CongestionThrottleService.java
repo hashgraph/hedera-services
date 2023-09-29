@@ -20,6 +20,7 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.congestion.CongestionLevelStarts;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import com.hedera.node.app.spi.Service;
+import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
@@ -51,6 +52,16 @@ public class CongestionThrottleService implements Service {
                 return Set.of(
                         StateDefinition.singleton(THROTTLE_USAGE_SNAPSHOTS_STATE_KEY, ThrottleUsageSnapshots.PROTOBUF),
                         StateDefinition.singleton(CONGESTION_LEVEL_STARTS_STATE_KEY, CongestionLevelStarts.PROTOBUF));
+            }
+
+            /** {@inheritDoc} */
+            @Override
+            public void migrate(@NonNull final MigrationContext ctx) {
+                final var throttleSnapshotsState = ctx.newStates().getSingleton(THROTTLE_USAGE_SNAPSHOTS_STATE_KEY);
+                throttleSnapshotsState.put(ThrottleUsageSnapshots.DEFAULT);
+
+                final var congestionLevelStartsState = ctx.newStates().getSingleton(CONGESTION_LEVEL_STARTS_STATE_KEY);
+                congestionLevelStartsState.put(CongestionLevelStarts.DEFAULT);
             }
         });
     }

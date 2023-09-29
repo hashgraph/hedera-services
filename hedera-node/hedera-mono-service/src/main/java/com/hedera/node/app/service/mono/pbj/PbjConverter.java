@@ -1547,13 +1547,21 @@ public final class PbjConverter {
 
     public static DeterministicThrottle.UsageSnapshot fromPbj(ThrottleUsageSnapshot snapshot) {
         final var lastDecisionTime = snapshot.lastDecisionTime();
-        return new DeterministicThrottle.UsageSnapshot(
-                snapshot.used(), Instant.ofEpochSecond(lastDecisionTime.seconds(), lastDecisionTime.nanos()));
+        if (lastDecisionTime == null) {
+            return new DeterministicThrottle.UsageSnapshot(snapshot.used(), null);
+        } else {
+            return new DeterministicThrottle.UsageSnapshot(
+                    snapshot.used(), Instant.ofEpochSecond(lastDecisionTime.seconds(), lastDecisionTime.nanos()));
+        }
     }
 
     public static ThrottleUsageSnapshot toPbj(DeterministicThrottle.UsageSnapshot snapshot) {
         final var lastDecisionTime = snapshot.lastDecisionTime();
-        return new ThrottleUsageSnapshot(
-                snapshot.used(), new Timestamp(lastDecisionTime.getEpochSecond(), lastDecisionTime.getNano()));
+        if (lastDecisionTime == null) {
+            return new ThrottleUsageSnapshot(snapshot.used(), null);
+        } else {
+            return new ThrottleUsageSnapshot(
+                    snapshot.used(), new Timestamp(lastDecisionTime.getEpochSecond(), lastDecisionTime.getNano()));
+        }
     }
 }

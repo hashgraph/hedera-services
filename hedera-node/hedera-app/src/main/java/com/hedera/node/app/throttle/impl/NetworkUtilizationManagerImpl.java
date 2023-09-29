@@ -165,10 +165,10 @@ public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager 
         final var congestionLevelStartsState =
                 states.<CongestionLevelStarts>getSingleton(CongestionThrottleService.CONGESTION_LEVEL_STARTS_STATE_KEY);
         final var genericCongestionStarts = Arrays.stream(multiplierSources.genericCongestionStarts())
-                .map(inst -> new Timestamp(inst.getEpochSecond(), inst.getNano()))
+                .map(inst -> inst == null ? null : new Timestamp(inst.getEpochSecond(), inst.getNano()))
                 .toList();
         final var gasCongestionStarts = Arrays.stream(multiplierSources.gasCongestionStarts())
-                .map(inst -> new Timestamp(inst.getEpochSecond(), inst.getNano()))
+                .map(inst -> inst == null ? null : new Timestamp(inst.getEpochSecond(), inst.getNano()))
                 .toList();
 
         final var congestionLevelStarts = CongestionLevelStarts.newBuilder()
