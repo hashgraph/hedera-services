@@ -39,7 +39,9 @@ import com.hedera.hapi.node.token.TokenNftInfo;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.node.app.service.token.ReadableNftStore;
+import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.ReadableNftStoreImpl;
+import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.handlers.TokenGetNftInfoHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
@@ -172,6 +174,7 @@ class TokenGetNftInfoHandlerTest extends CryptoTokenHandlerTestBase {
         final var state = MapReadableKVState.<NftID, Nft>builder(NFTS).build();
         given(readableStates.<NftID, Nft>get(NFTS)).willReturn(state);
         final var store = new ReadableNftStoreImpl(readableStates);
+        final var tokenStore = new ReadableTokenStoreImpl(readableStates);
 
         final var responseHeader = ResponseHeader.newBuilder()
                 .nodeTransactionPrecheckCode(ResponseCodeEnum.OK)
@@ -180,6 +183,7 @@ class TokenGetNftInfoHandlerTest extends CryptoTokenHandlerTestBase {
         final var query = createTokenGetNftInfoQuery(nftIdSl1);
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableNftStore.class)).thenReturn(store);
+        when(context.createStore(ReadableTokenStore.class)).thenReturn(tokenStore);
 
         final var config = HederaTestConfigBuilder.create()
                 .withValue("tokens.maxRelsPerInfoQuery", 1000)
@@ -209,8 +213,9 @@ class TokenGetNftInfoHandlerTest extends CryptoTokenHandlerTestBase {
                 .build();
         given(readableStates.<NftID, Nft>get(NFTS)).willReturn(state);
         final var store = new ReadableNftStoreImpl(readableStates);
+        final var tokenStore = new ReadableTokenStoreImpl(readableStates);
 
-        checkResponse(responseHeader, expectedInfo, store);
+        checkResponse(responseHeader, expectedInfo, store, tokenStore);
     }
 
     @Test
@@ -230,16 +235,20 @@ class TokenGetNftInfoHandlerTest extends CryptoTokenHandlerTestBase {
                 .build();
         given(readableStates.<NftID, Nft>get(NFTS)).willReturn(state);
         final var store = new ReadableNftStoreImpl(readableStates);
+        final var tokenStore = new ReadableTokenStoreImpl(readableStates);
 
-        checkResponse(responseHeader, expectedInfo, store);
+        checkResponse(responseHeader, expectedInfo, store, tokenStore);
     }
 
     private void checkResponse(
-            final ResponseHeader responseHeader, final TokenNftInfo expectedInfo, ReadableNftStore ReadableNftStore) {
+            final ResponseHeader responseHeader,
+            final TokenNftInfo expectedInfo,
+            ReadableNftStore ReadableNftStore,
+            ReadableTokenStore ReadableTokenStore) {
         final var query = createTokenGetNftInfoQuery(nftIdSl1);
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableNftStore.class)).thenReturn(ReadableNftStore);
-
+        when(context.createStore(ReadableTokenStore.class)).thenReturn(ReadableTokenStore);
         final var config =
                 HederaTestConfigBuilder.create().withValue("ledger.id", "0x03").getOrCreateConfig();
         given(context.configuration()).willReturn(config);
