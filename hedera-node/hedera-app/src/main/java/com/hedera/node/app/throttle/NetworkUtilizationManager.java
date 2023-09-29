@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.throttle;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.TransactionInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -42,10 +43,12 @@ public interface NetworkUtilizationManager {
     /*
      * Updates the throttle usage and congestion pricing for cases where the transaction is not valid, but we want to track the fee payments related to it.
      *
+     * @param payer - the payer of the transaction.
      * @param consensusNow - the consensus time of the transaction.
      * @param state - the state of the node.
      */
-    void trackFeePayments(@NonNull final Instant consensusNow, @NonNull final HederaState state);
+    void trackFeePayments(
+            @NonNull AccountID payer, @NonNull final Instant consensusNow, @NonNull final HederaState state);
 
     /*
      * Indicates whether the last transaction was throttled by gas.

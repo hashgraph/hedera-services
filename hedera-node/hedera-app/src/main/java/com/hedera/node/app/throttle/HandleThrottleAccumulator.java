@@ -257,7 +257,8 @@ public class HandleThrottleAccumulator {
         };
     }
 
-    private boolean throttleExempt(@NonNull final AccountID accountID, @NonNull final Configuration configuration) {
+    public static boolean throttleExempt(
+            @NonNull final AccountID accountID, @NonNull final Configuration configuration) {
         final var maxThrottleExemptNum =
                 configuration.getConfigData(AccountsConfig.class).lastThrottleExempt();
         final var accountNum = accountID.accountNum();
@@ -365,6 +366,10 @@ public class HandleThrottleAccumulator {
             }
         } else {
             final var cryptoTransferBody = txnBody.cryptoTransfer();
+            if (cryptoTransferBody == null) {
+                return 0;
+            }
+
             implicitCreationsCount += hbarAdjustsImplicitCreationsCount(accountStore, cryptoTransferBody);
             implicitCreationsCount += tokenAdjustsImplicitCreationsCount(accountStore, cryptoTransferBody);
         }
@@ -375,6 +380,11 @@ public class HandleThrottleAccumulator {
     private int hbarAdjustsImplicitCreationsCount(
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final CryptoTransferTransactionBody cryptoTransferBody) {
+        if (cryptoTransferBody.transfers() == null
+                || cryptoTransferBody.transfers().accountAmounts() == null) {
+            return 0;
+        }
+
         var implicitCreationsCount = 0;
         for (var adjust : cryptoTransferBody.transfers().accountAmounts()) {
             if (!isKnownAlias(adjust.accountID(), accountStore) && containsImplicitCreations(adjust)) {
@@ -388,6 +398,10 @@ public class HandleThrottleAccumulator {
     private int tokenAdjustsImplicitCreationsCount(
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final CryptoTransferTransactionBody cryptoTransferBody) {
+        if (cryptoTransferBody.tokenTransfers() == null) {
+            return 0;
+        }
+
         var implicitCreationsCount = 0;
         for (var tokenAdjust : cryptoTransferBody.tokenTransfers()) {
             for (final var adjust : tokenAdjust.transfers()) {
