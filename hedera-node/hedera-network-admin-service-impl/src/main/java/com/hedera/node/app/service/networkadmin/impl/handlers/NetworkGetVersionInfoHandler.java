@@ -24,7 +24,6 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseHeader;
 import com.hedera.hapi.node.base.ResponseType;
-import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.network.NetworkGetVersionInfoResponse;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
@@ -96,8 +95,6 @@ public class NetworkGetVersionInfoHandler extends PaidQueryHandler {
     public Fees computeFees(@NonNull final QueryContext queryContext) {
         requireNonNull(queryContext);
 
-        return queryContext
-                .feeCalculator(SubType.DEFAULT)
-                .legacyCalculate(sigValueObj -> GetVersionInfoResourceUsage.usageGiven());
+        return queryContext.feeCalculator().legacyCalculate(sigValueObj -> GetVersionInfoResourceUsage.usageGiven());
     }
 }

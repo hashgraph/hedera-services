@@ -28,7 +28,6 @@ import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseHeader;
-import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenFreezeStatus;
 import com.hedera.hapi.node.base.TokenID;
@@ -97,7 +96,9 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
         final GetAccountDetailsQuery op = context.query().accountDetailsOrThrow();
 
         // The Account ID must be specified
-        if (!op.hasAccountId()) throw new PreCheckException(INVALID_ACCOUNT_ID);
+        if (!op.hasAccountId()) {
+            throw new PreCheckException(INVALID_ACCOUNT_ID);
+        }
 
         // The account must exist for that transaction ID
         final var accountStore = context.createStore(ReadableAccountStore.class);
@@ -297,9 +298,8 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
         final var accountId = op.accountIdOrThrow();
         final var account = accountStore.getAccountById(accountId);
 
-        return queryContext
-                .feeCalculator(SubType.DEFAULT)
-                .legacyCalculate(sigValueObj ->
-                        new GetAccountDetailsResourceUsage(cryptoOpsUsage, null, null).usageGiven(query, account));
+        return queryContext.feeCalculator().legacyCalculate(sigValueObj -> new GetAccountDetailsResourceUsage(
+                        cryptoOpsUsage, null, null)
+                .usageGiven(query, account));
     }
 }

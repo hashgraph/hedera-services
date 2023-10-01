@@ -22,7 +22,6 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseHeader;
-import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.network.NetworkGetExecutionTimeResponse;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
@@ -78,7 +77,7 @@ public class NetworkGetExecutionTimeHandler extends PaidQueryHandler {
     @Override
     public Fees computeFees(@NonNull final QueryContext queryContext) {
         final var query = queryContext.query();
-        return queryContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> new GetExecTimeResourceUsage()
+        return queryContext.feeCalculator().legacyCalculate(sigValueObj -> new GetExecTimeResourceUsage()
                 .usageGiven(query));
     }
 }
