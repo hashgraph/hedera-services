@@ -688,6 +688,7 @@ public class HapiSpecRegistry {
     }
 
     public void saveTopicId(String name, TopicID id) {
+        log.error("Saving topic {} with id {}", name, id);
         put(name, id);
         put(HapiPropertySource.asTopicString(id), name);
     }
