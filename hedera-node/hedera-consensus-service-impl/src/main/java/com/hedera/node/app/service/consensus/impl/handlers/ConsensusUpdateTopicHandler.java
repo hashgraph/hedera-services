@@ -17,7 +17,9 @@
 package com.hedera.node.app.service.consensus.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_ACCOUNT_NOT_ALLOWED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
@@ -41,6 +43,8 @@ import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.mono.fees.calculation.consensus.txns.UpdateTopicResourceUsage;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -124,17 +128,6 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         final var topic = maybeTopic.get();
         validateFalse(topic.deleted(), INVALID_TOPIC_ID);
 
-        final var fees = handleContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> {
-            try {
-                return new UpdateTopicResourceUsage()
-                        .usageGivenExplicit(fromPbj(handleContext.body()), sigValueObj, pbjToState(topic));
-            } catch (InvalidTxBodyException e) {
-                throw new HandleException(INVALID_TRANSACTION_BODY);
-            }
-        });
-
-        handleContext.feeAccumulator().charge(handleContext.payer(), fees);
-
         // First validate this topic is mutable; and the pending mutations are allowed
         validateFalse(topic.adminKey() == null && wantsToMutateNonExpiryField(topicUpdate), UNAUTHORIZED);
         if (!(topicUpdate.hasAutoRenewAccount() && designatesAccountRemoval(topicUpdate.autoRenewAccount()))
@@ -155,6 +148,25 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         // And then resolve mutable attributes, and put the new topic back
         resolveMutableBuilderAttributes(handleContext, topicUpdate, builder, topic);
         topicStore.put(builder.build());
+    }
+
+    @NonNull
+    @Override
+    public Fees calculateFees(@NonNull final FeeContext feeContext) {
+        requireNonNull(feeContext);
+        final var op = feeContext.body();
+        final var topicUpdate = op.consensusUpdateTopicOrThrow();
+        final var topicId = topicUpdate.topicIDOrElse(TopicID.DEFAULT);
+        final var topic = feeContext.readableStore(ReadableTopicStore.class).getTopic(topicId);
+
+        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> {
+            try {
+                return new UpdateTopicResourceUsage()
+                        .usageGivenExplicit(fromPbj(op), sigValueObj, topic != null ? pbjToState(topic) : null);
+            } catch (InvalidTxBodyException e) {
+                throw new HandleException(INVALID_TRANSACTION_BODY);
+            }
+        });
     }
 
     private void resolveMutableBuilderAttributes(
@@ -218,7 +230,17 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
                 new ExpiryMeta(topic.expirationSecond(), topic.autoRenewPeriod(), topic.autoRenewAccountId());
         if (updatesExpiryMeta(op)) {
             final var updateMeta = new ExpiryMeta(effExpiryOf(op), effAutoRenewPeriodOf(op), op.autoRenewAccount());
-            return expiryValidator.resolveUpdateAttempt(currentMeta, updateMeta);
+            try {
+                return expiryValidator.resolveUpdateAttempt(currentMeta, updateMeta);
+            } catch (final HandleException e) {
+                if (e.getStatus() == INVALID_RENEWAL_PERIOD) {
+                    // Tokens throw INVALID_EXPIRATION_TIME, but for topic it's expected currently to throw
+                    // AUTORENEW_DURATION_NOT_IN_RANGE
+                    // future('8906')
+                    throw new HandleException(AUTORENEW_DURATION_NOT_IN_RANGE);
+                }
+                throw e;
+            }
         } else {
             return currentMeta;
         }

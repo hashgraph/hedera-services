@@ -16,7 +16,10 @@
 
 package com.hedera.node.app.service.contract.impl.test.hevm;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.SELF_DESTRUCT_TO_SELF;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.BESU_LOGS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_EVM_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
@@ -84,11 +87,23 @@ class HederaEvmTransactionResultTest {
     }
 
     @Test
-    void finalStatusFromHaltNotImplemented() {
+    void finalStatusFromHaltUsesCorrespondingStatusIfFromCustom() {
         given(frame.getGasPrice()).willReturn(WEI_NETWORK_GAS_PRICE);
-        given(frame.getExceptionalHaltReason()).willReturn(Optional.of(ExceptionalHaltReason.INVALID_OPERATION));
+        given(frame.getExceptionalHaltReason()).willReturn(Optional.of(SELF_DESTRUCT_TO_SELF));
         final var subject = HederaEvmTransactionResult.failureFrom(GAS_LIMIT / 2, SENDER_ID, frame);
-        assertThrows(AssertionError.class, subject::finalStatus);
+        assertEquals(OBTAINER_SAME_CONTRACT_ID, subject.finalStatus());
+        final var protoResult = subject.asProtoResultOf(rootProxyWorldUpdater);
+        assertEquals(SELF_DESTRUCT_TO_SELF.toString(), protoResult.errorMessage());
+    }
+
+    @Test
+    void finalStatusFromHaltUsesCorrespondingStatusIfFromStandard() {
+        given(frame.getGasPrice()).willReturn(WEI_NETWORK_GAS_PRICE);
+        given(frame.getExceptionalHaltReason()).willReturn(Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
+        final var subject = HederaEvmTransactionResult.failureFrom(GAS_LIMIT / 2, SENDER_ID, frame);
+        assertEquals(INSUFFICIENT_GAS, subject.finalStatus());
+        final var protoResult = subject.asProtoResultOf(rootProxyWorldUpdater);
+        assertEquals(ExceptionalHaltReason.INSUFFICIENT_GAS.toString(), protoResult.errorMessage());
     }
 
     @Test
@@ -102,7 +117,8 @@ class HederaEvmTransactionResultTest {
     @Test
     void finalStatusFromMissingAddressHaltImplemented() {
         given(frame.getGasPrice()).willReturn(WEI_NETWORK_GAS_PRICE);
-        given(frame.getExceptionalHaltReason()).willReturn(Optional.of(CustomExceptionalHaltReason.MISSING_ADDRESS));
+        given(frame.getExceptionalHaltReason())
+                .willReturn(Optional.of(CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
         final var subject = HederaEvmTransactionResult.failureFrom(GAS_LIMIT / 2, SENDER_ID, frame);
         assertEquals(ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS, subject.finalStatus());
     }
@@ -233,7 +249,8 @@ class HederaEvmTransactionResultTest {
         given(frame.getExceptionalHaltReason()).willReturn(Optional.of(ExceptionalHaltReason.INVALID_OPERATION));
 
         final var result = HederaEvmTransactionResult.failureFrom(GAS_LIMIT / 2, SENDER_ID, frame);
-        assertThatThrownBy(() -> result.asQueryResultOf()).isInstanceOf(AssertionError.class);
+        final var protoResult = result.asQueryResultOf();
+        assertEquals(ExceptionalHaltReason.INVALID_OPERATION.toString(), protoResult.errorMessage());
     }
 
     @Test

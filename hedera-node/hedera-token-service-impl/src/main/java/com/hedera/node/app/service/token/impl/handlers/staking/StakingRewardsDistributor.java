@@ -23,7 +23,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
-import com.hedera.node.app.service.token.records.CryptoDeleteRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.HashMap;
@@ -59,7 +59,7 @@ public class StakingRewardsDistributor {
             @NonNull final WritableNetworkStakingRewardsStore stakingRewardsStore,
             @NonNull final WritableStakingInfoStore stakingInfoStore,
             @NonNull final Instant consensusNow,
-            @NonNull final CryptoDeleteRecordBuilder recordBuilder) {
+            @NonNull final DeleteCapableTransactionRecordBuilder recordBuilder) {
         requireNonNull(possibleRewardReceivers);
 
         final Map<AccountID, Long> rewardsPaid = new HashMap<>();
