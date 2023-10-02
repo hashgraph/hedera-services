@@ -82,7 +82,7 @@ public class CreateTranslator extends AbstractHtsCallTranslator {
         } else if (Arrays.equals(attempt.selector(), CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES.selector())) {
             return decoder.decodeCreateFungibleTokenWithCustomFees(attempt.inputBytes(), attempt.addressIdConverter());
         } else if (Arrays.equals(attempt.selector(), CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN.selector())) {
-            return decoder.decodeCreateFungibleTokenWithCustomFees(attempt.inputBytes(), attempt.addressIdConverter());
+            return decoder.decodeCreateNonFungible(attempt.inputBytes(), attempt.addressIdConverter());
         }
         throw new AssertionError("Add more cases");
     }

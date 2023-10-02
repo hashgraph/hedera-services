@@ -135,8 +135,7 @@ public class CreateDecoder {
             @NonNull final AddressIdConverter addressIdConverter) {
         final var tokenCreateWrapper =
                 getTokenCreateWrapperFungibleWithoutFees(tokenCreateStruct, isFungible, 0L, 0, addressIdConverter);
-        // @TODO to be implemented
-        return null;
+        return tokenCreateWrapper;
     }
 
     private static List<TokenKeyWrapper> decodeTokenKeys(

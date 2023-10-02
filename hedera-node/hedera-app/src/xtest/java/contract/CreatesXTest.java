@@ -92,7 +92,7 @@ public class CreatesXTest extends AbstractContractXTest {
 
         // should revert with autoRenewPeriod less than 2592000
 
-        // should successfully create fungible token without custom fees
+        // should successfully create fungible token with custom fees
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES
@@ -115,6 +115,35 @@ public class CreatesXTest extends AbstractContractXTest {
                                 new Tuple[] {Tuple.of(100L, ERC20_TOKEN_ADDRESS, false, false, OWNER_HEADLONG_ADDRESS)},
                                 // FractionalFee
                                 new Tuple[] {Tuple.of(100L, 100L, 100L, 100L, true, OWNER_HEADLONG_ADDRESS)})
+                        .array()),
+                assertSuccess());
+
+        // should successfully create non fungible token without custom fees
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN
+                        .encodeCallWithArgs(
+                                Tuple.of(
+                                        NAME,
+                                        SYMBOL,
+                                        OWNER_HEADLONG_ADDRESS,
+                                        MEMO,
+                                        true,
+                                        MAX_SUPPLY,
+                                        false,
+                                        // TokenKey
+                                        new Tuple[]{
+                                                Tuple.of(
+                                                        BigInteger.valueOf(KEY_TYPE),
+                                                        Tuple.of(
+                                                                true,
+                                                                RECEIVER_HEADLONG_ADDRESS,
+                                                                new byte[]{},
+                                                                new byte[]{},
+                                                                RECEIVER_HEADLONG_ADDRESS))
+                                        },
+                                        // Expiry
+                                        Tuple.of(SECOND, OWNER_HEADLONG_ADDRESS, AUTO_RENEW_PERIOD)))
                         .array()),
                 assertSuccess());
     }
