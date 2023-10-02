@@ -584,8 +584,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -680,8 +679,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -777,8 +775,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -873,8 +870,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -933,9 +929,9 @@
     "list": [
       {
         "current": {
-          "selected": true,
-          "text": "performance4",
-          "value": "performance4"
+          "selected": false,
+          "text": "integration",
+          "value": "integration"
         },
         "datasource": {
           "type": "prometheus",
@@ -997,6 +993,6 @@
   "timezone": "",
   "title": "VirtualMap",
   "uid": "d4dfeec8-23dc-48b9-931a-71e07a963ffc",
-  "version": 8,
+  "version": 10,
   "weekStart": ""
 }

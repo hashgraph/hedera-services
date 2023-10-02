@@ -23,8 +23,8 @@
     {
       "asDropdown": false,
       "icon": "external link",
-      "includeVars": false,
-      "keepTime": false,
+      "includeVars": true,
+      "keepTime": true,
       "tags": [
         "Platform"
       ],
@@ -461,8 +461,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -583,8 +582,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -730,8 +728,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -791,8 +788,8 @@
       {
         "current": {
           "selected": false,
-          "text": "performance",
-          "value": "performance"
+          "text": "integration",
+          "value": "integration"
         },
         "datasource": {
           "type": "prometheus",
@@ -846,7 +843,7 @@
       },
       {
         "current": {
-          "selected": true,
+          "selected": false,
           "text": "accountStore",
           "value": "accountStore"
         },
@@ -882,6 +879,6 @@
   "timezone": "",
   "title": "MerkleDb",
   "uid": "f57651cc-ee35-48d7-bbea-8908f07e3db4",
-  "version": 68,
+  "version": 70,
   "weekStart": ""
 }
