@@ -512,6 +512,11 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
                 .calculate();
     }
 
+    /**
+     * Gets total bytes used in transaction
+     * @param op the crypto approve allowance transaction body
+     * @return the total bytes used in transaction
+     */
     private int bytesUsedInTxn(final CryptoApproveAllowanceTransactionBody op) {
         return op.cryptoAllowancesOrElse(emptyList()).size() * CRYPTO_ALLOWANCE_SIZE
                 + op.tokenAllowancesOrElse(emptyList()).size() * TOKEN_ALLOWANCE_SIZE
@@ -519,6 +524,13 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
                 + countSerials(op.nftAllowancesOrElse(emptyList())) * LONG_SIZE;
     }
 
+    /**
+     * Gets the new bytes that will be added to state from the transaction, if it is successful compared to
+     * what is already present in state
+     * @param op the crypto approve allowance transaction body
+     * @param account the account existing in state
+     * @return the new bytes that will be added to state
+     */
     private long getNewBytes(final CryptoApproveAllowanceTransactionBody op, final Account account) {
         final long newCryptoKeys = getChangedCryptoKeys(
                 op.cryptoAllowancesOrElse(emptyList()),
@@ -535,6 +547,12 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
                 + newApproveForAllNfts * NFT_ALLOWANCE_SIZE;
     }
 
+    /**
+     * Gets the number of new crypto allowances that will be added to state from the transaction.
+     * @param newAllowances the list of new crypto allowances
+     * @param existingAllowances the list of existing crypto allowances
+     * @return the number of new crypto allowances that will be added to state from the transaction
+     */
     private int getChangedCryptoKeys(
             final List<CryptoAllowance> newAllowances, final List<AccountCryptoAllowance> existingAllowances) {
         int counter = 0;
@@ -549,6 +567,12 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
         return counter;
     }
 
+    /**
+     * Gets the number of new token allowances that will be added to state from the transaction.
+     * @param newAllowances the list of new token allowances
+     * @param existingAllowances the list of existing token allowances
+     * @return the number of new token allowances that will be added to state from the transaction
+     */
     private int getChangedTokenKeys(
             final List<TokenAllowance> newAllowances, final List<AccountFungibleTokenAllowance> existingAllowances) {
         int counter = 0;
@@ -564,6 +588,12 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
         return counter;
     }
 
+    /**
+     * Gets the number of new approveForAllNftAllowances that will be added to state from the transaction.
+     * @param newAllowances the list of new nft allowances
+     * @param existingAllowances the list of existing nft allowances
+     * @return the number of new approveForAllNftAllowances that will be added to state from the transaction
+     */
     private int getChangedNftKeys(
             final List<NftAllowance> newAllowances, final List<AccountApprovalForAllAllowance> existingAllowances) {
         int counter = 0;

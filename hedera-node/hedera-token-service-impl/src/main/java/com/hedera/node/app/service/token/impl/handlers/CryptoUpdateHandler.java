@@ -321,6 +321,13 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
                 body, feeContext.feeCalculator(SubType.DEFAULT), accountStore, feeContext.configuration());
     }
 
+    /**
+     * This method calculates the base size of the cryptoUpdate transaction.
+     * This is the duplicated code as in mono-service
+     * @param op the {@link CryptoUpdateTransactionBody}
+     * @param keySize the size of the key
+     * @return the calculated base size
+     */
     private static long baseSizeOf(final CryptoUpdateTransactionBody op, final long keySize) {
         return BASIC_ENTITY_ID_SIZE
                 + op.memoOrElse("").getBytes(StandardCharsets.UTF_8).length
@@ -331,18 +338,39 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
                 + keySize;
     }
 
+    /**
+     * This method calculates the bytes for the CryptoUpdate transaction auto-renew information.
+     * This is the duplicated code as in mono-service
+     * @param account the {@link Account} to be updated
+     * @return the calculated bytes
+     */
     private static long cryptoAutoRenewRb(final Account account) {
         return CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr()
-                + currentNonBaseRb(account)
+                + currentNonBaseBytes(account)
                 + account.numberAssociations() * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr();
     }
 
-    private static int currentNonBaseRb(final Account account) {
+    /**
+     * This method calculates the bytes for the CryptoUpdate transaction related to memo and keys.
+     * This is the duplicated code as in mono-service
+     * @param account the {@link Account} to be updated
+     * @return the calculated bytes
+     */
+    private static int currentNonBaseBytes(final Account account) {
         return account.memo().getBytes(StandardCharsets.UTF_8).length
                 + getAccountKeyStorageSize(fromPbj(account.keyOrElse(Key.DEFAULT)))
                 + (account.maxAutoAssociations() == 0 ? 0 : INT_SIZE);
     }
 
+    /**
+     * This method calculates the fees for the CryptoUpdate transaction.
+     * This can also be used for lazy account creation logic in AutoAccountCreator class in future PRs
+     * @param body the {@link TransactionBody}
+     * @param feeCalculator the {@link FeeCalculator}
+     * @param accountStore the {@link ReadableAccountStore}
+     * @param configuration the {@link Configuration}
+     * @return the calculated fees
+     */
     public static Fees cryptoUpdateFees(
             final TransactionBody body,
             final FeeCalculator feeCalculator,
