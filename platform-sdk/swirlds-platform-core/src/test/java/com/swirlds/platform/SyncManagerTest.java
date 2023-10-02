@@ -34,7 +34,6 @@ import static org.mockito.Mockito.when;
 import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
-import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
@@ -130,7 +129,7 @@ public class SyncManagerTest {
             final EventConfig eventConfig = configuration.getConfigData(EventConfig.class);
             eventQueue = new DummyEventQueue(hashgraph);
             syncManager = new SyncManagerImpl(
-                    new NoOpMetrics(),
+                    platformContext,
                     eventQueue,
                     connectionGraph,
                     selfId,
