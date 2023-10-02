@@ -22,8 +22,8 @@ import static contract.CreatesXTestConstants.FIXED_FEE;
 import static contract.CreatesXTestConstants.FRACTIONAL_FEE;
 import static contract.CreatesXTestConstants.HEDERA_TOKEN_STRUCT;
 import static contract.CreatesXTestConstants.INITIAL_TOTAL_SUPPLY;
-import static contract.CreatesXTestConstants.NAME;
 import static contract.CreatesXTestConstants.MEMO;
+import static contract.CreatesXTestConstants.NAME;
 import static contract.CreatesXTestConstants.SYMBOL;
 import static contract.XTestConstants.OWNER_ADDRESS;
 import static contract.XTestConstants.OWNER_ID;
@@ -53,10 +53,7 @@ public class CreatesXTest extends AbstractContractXTest {
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN
-                        .encodeCallWithArgs(
-                                HEDERA_TOKEN_STRUCT,
-                                INITIAL_TOTAL_SUPPLY,
-                                DECIMALS)
+                        .encodeCallWithArgs(HEDERA_TOKEN_STRUCT, INITIAL_TOTAL_SUPPLY, DECIMALS)
                         .array()),
                 assertSuccess());
 
