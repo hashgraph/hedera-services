@@ -191,16 +191,20 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         for (final var customFee : requireCollectorAutoAssociation) {
             // This should exist as it is validated in validateSemantics
             final var collector = accountStore.get(customFee.feeCollectorAccountIdOrThrow());
+            if (treasury.accountId().equals(collector.accountId())) {
+                continue;
+            }
 
             // Ensure no duplicate relations are created
             final var existingTokenRel = tokenRelStore.get(collector.accountId(), newToken.tokenId());
-            if (existingTokenRel == null) {
-                // Validate if token relation can be created between collector and new token
-                // If this succeeds, create and link token relation.
-                tokenCreateValidator.validateAssociation(
-                        entitiesConfig, tokensConfig, collector, newToken, tokenRelStore);
-                createAndLinkTokenRels(collector, List.of(newToken), accountStore, tokenRelStore);
+            if (existingTokenRel != null) {
+                continue;
             }
+
+            // Validate if token relation can be created between collector and new token
+            // If this succeeds, create and link token relation.
+            tokenCreateValidator.validateAssociation(entitiesConfig, tokensConfig, collector, newToken, tokenRelStore);
+            createAndLinkTokenRels(collector, List.of(newToken), accountStore, tokenRelStore);
         }
         final var recordBuilder = context.recordBuilder(TokenCreateRecordBuilder.class);
         final var newRelation = tokenRelStore.get(newToken.treasuryAccountId(), newToken.tokenId());
@@ -292,7 +296,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
 
         // validate auto-renew account exists
         if (resolvedExpiryMeta.hasAutoRenewAccountId()) {
-            TokenHandlerHelper.getIfUsable(
+            TokenHandlerHelper.getIfUsableForAutoRenew(
                     resolvedExpiryMeta.autoRenewAccountId(),
                     accountStore,
                     context.expiryValidator(),
@@ -326,7 +330,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
                 addAccount(context, collector, alwaysAdd);
             } else if (customFee.hasFractionalFee()) {
                 context.requireKeyOrThrow(collector, INVALID_CUSTOM_FEE_COLLECTOR);
-            } else {
+            } else if (customFee.hasRoyaltyFee()) {
                 // TODO: Need to validate if this is actually needed
                 final var royaltyFee = customFee.royaltyFeeOrThrow();
                 var alwaysAdd = false;

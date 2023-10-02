@@ -272,7 +272,8 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                     Fraction.newBuilder().numerator(1).denominator(2).build())
             .fallbackFee(hbarFixedFee)
             .build();
-    protected List<CustomFee> customFees = List.of(withFixedFee(hbarFixedFee), withFractionalFee(fractionalFee));
+    protected CustomFee customFractionalFee = withFractionalFee(fractionalFee);
+    protected List<CustomFee> customFees = List.of(withFixedFee(hbarFixedFee), customFractionalFee);
 
     /* ---------- Misc ---------- */
     protected final Timestamp consensusTimestamp =

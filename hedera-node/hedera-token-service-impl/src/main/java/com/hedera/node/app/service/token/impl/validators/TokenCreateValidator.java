@@ -105,7 +105,7 @@ public class TokenCreateValidator {
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final TokenCreateTransactionBody op,
             @NonNull final TokensConfig config) {
-        TokenHandlerHelper.getIfUsable(
+        TokenHandlerHelper.getIfUsableWithTreasury(
                 op.treasuryOrElse(AccountID.DEFAULT),
                 accountStore,
                 context.expiryValidator(),

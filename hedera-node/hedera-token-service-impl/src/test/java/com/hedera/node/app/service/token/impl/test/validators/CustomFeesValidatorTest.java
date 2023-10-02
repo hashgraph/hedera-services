@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.token.impl.test.validators;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
@@ -323,7 +324,7 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
     void validateCustomFeeForCreation() {
         final var requireAutoAssociation = subject.validateForCreation(
                 fungibleToken, readableAccountStore, readableTokenRelStore, writableTokenStore, customFees);
-        assertThat(requireAutoAssociation).hasSize(1).contains(withFractionalFee(fractionalFee));
+        assertThat(requireAutoAssociation).contains(customFractionalFee);
     }
 
     @Test
@@ -579,8 +580,8 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
                         List.of(CustomFee.newBuilder()
                                 .feeCollectorAccountId(AccountID.newBuilder().accountNum(accountNum.longValue()))
                                 .build())))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Unexpected value for custom fee type: UNSET");
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(CUSTOM_FEE_NOT_FULLY_SPECIFIED));
     }
 
     private List<CustomFee> setFeeCollector(List<CustomFee> original, AccountID feeCollector) {
