@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_WAS_DELETED;
@@ -60,6 +61,8 @@ import com.hedera.node.app.service.token.impl.handlers.TokenUnfreezeAccountHandl
 import com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils;
 import com.hedera.node.app.spi.fixtures.Assertions;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.validation.EntityType;
+import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -138,11 +141,15 @@ class TokenUnfreezeAccountHandlerTest {
         @Mock
         private WritableTokenRelationStore tokenRelStore;
 
+        @Mock
+        private ExpiryValidator expiryValidator;
+
         @BeforeEach
         void setup() {
             given(context.readableStore(ReadableTokenStore.class)).willReturn(tokenStore);
             given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
             given(context.writableStore(WritableTokenRelationStore.class)).willReturn(tokenRelStore);
+            given(context.expiryValidator()).willReturn(expiryValidator);
         }
 
         @SuppressWarnings("DataFlowIssue")
@@ -224,6 +231,8 @@ class TokenUnfreezeAccountHandlerTest {
             given(accountStore.getAccountById(ACCOUNT_13257))
                     .willReturn(Account.newBuilder().accountId(ACCOUNT_13257).build());
             given(tokenRelStore.getForModify(ACCOUNT_13257, token)).willReturn(null);
+            given(expiryValidator.expirationStatus(EntityType.ACCOUNT, false, 0))
+                    .willReturn(OK);
             final var txn = newUnfreezeTxn(token);
             given(context.body()).willReturn(txn);
 
@@ -240,6 +249,8 @@ class TokenUnfreezeAccountHandlerTest {
             given(accountStore.getAccountById(ACCOUNT_13257))
                     .willReturn(Account.newBuilder().accountId(ACCOUNT_13257).build());
             given(tokenStore.get(token)).willReturn(null);
+            given(expiryValidator.expirationStatus(EntityType.ACCOUNT, false, 0))
+                    .willReturn(OK);
             final var txn = newUnfreezeTxn(token);
             given(context.body()).willReturn(txn);
 
@@ -257,6 +268,8 @@ class TokenUnfreezeAccountHandlerTest {
                     .willReturn(Account.newBuilder().accountId(ACCOUNT_13257).build());
             given(tokenStore.get(token))
                     .willReturn(Token.newBuilder().deleted(true).build());
+            given(expiryValidator.expirationStatus(EntityType.ACCOUNT, false, 0))
+                    .willReturn(OK);
             final var txn = newUnfreezeTxn(token);
             given(context.body()).willReturn(txn);
 
@@ -279,6 +292,8 @@ class TokenUnfreezeAccountHandlerTest {
                             .build());
             given(tokenStore.get(token))
                     .willReturn(Token.newBuilder().deleted(false).build());
+            given(expiryValidator.expirationStatus(EntityType.ACCOUNT, false, 0))
+                    .willReturn(OK);
             final var txn = newUnfreezeTxn(token);
             given(context.body()).willReturn(txn);
 
