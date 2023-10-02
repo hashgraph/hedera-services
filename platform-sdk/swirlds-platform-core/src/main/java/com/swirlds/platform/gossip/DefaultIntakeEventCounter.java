@@ -90,8 +90,8 @@ public class DefaultIntakeEventCounter implements IntakeEventCounter {
 
         if (unprocessedEventCounts.get(peer).getAndUpdate(EXIT_INTAKE) == 0) {
             throw new IllegalStateException(
-                    "Event processed from peer, but no known events from that peer were in the intake pipeline."
-                            + "This shouldn't be possible.");
+                    "Event processed from node %s, but no known events from that peer were in the intake pipeline. This shouldn't be possible."
+                            .formatted(peer));
         }
     }
 

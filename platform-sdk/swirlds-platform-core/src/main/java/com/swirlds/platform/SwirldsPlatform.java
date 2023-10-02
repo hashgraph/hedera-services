@@ -122,9 +122,11 @@ import com.swirlds.platform.gossip.DefaultIntakeEventCounter;
 import com.swirlds.platform.gossip.Gossip;
 import com.swirlds.platform.gossip.GossipFactory;
 import com.swirlds.platform.gossip.IntakeEventCounter;
+import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphEventObserver;
+import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.gui.GuiPlatformAccessor;
 import com.swirlds.platform.intake.EventIntakePhase;
 import com.swirlds.platform.internal.EventImpl;
@@ -535,7 +537,13 @@ public class SwirldsPlatform implements Platform, Startable {
         final List<Predicate<EventDescriptor>> isDuplicateChecks = new ArrayList<>();
         isDuplicateChecks.add(d -> shadowGraph.isHashInGraph(d.getHash()));
 
-        final IntakeEventCounter intakeEventCounter = new DefaultIntakeEventCounter(currentAddressBook);
+        final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
+        final IntakeEventCounter intakeEventCounter;
+        if (syncConfig.waitForEventsInIntake()) {
+            intakeEventCounter = new DefaultIntakeEventCounter(currentAddressBook);
+        } else {
+            intakeEventCounter = new NoOpIntakeEventCounter();
+        }
 
         eventLinker = buildEventLinker(time, isDuplicateChecks, intakeEventCounter);
 
@@ -650,7 +658,8 @@ public class SwirldsPlatform implements Platform, Startable {
                 eventLinker,
                 platformStatusManager,
                 this::loadReconnectState,
-                this::clearAllPipelines);
+                this::clearAllPipelines,
+                intakeEventCounter);
 
         if (startedFromGenesis) {
             initialMinimumGenerationNonAncient = 0;
