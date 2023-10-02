@@ -252,10 +252,7 @@ public class TokenCreateWrapper {
     }
 
     public record RoyaltyFeeWrapper(
-            long numerator,
-            long denominator,
-            FixedFeeWrapper fallbackFixedFee,
-            AccountID feeCollector) {
+            long numerator, long denominator, FixedFeeWrapper fallbackFixedFee, AccountID feeCollector) {
         public CustomFee asGrpc() {
             final var royaltyFeeBuilder = RoyaltyFee.newBuilder()
                     .exchangeValueFraction(Fraction.newBuilder()
@@ -264,8 +261,7 @@ public class TokenCreateWrapper {
                             .build());
             if (fallbackFixedFee != null) {
                 validateTrue(
-                        fallbackFixedFee.getFixedFeePayment()
-                                != FixedFeeWrapper.FixedFeePayment.INVALID_PAYMENT,
+                        fallbackFixedFee.getFixedFeePayment() != FixedFeeWrapper.FixedFeePayment.INVALID_PAYMENT,
                         ResponseCodeEnum.FAIL_INVALID);
                 royaltyFeeBuilder.fallbackFee(fallbackFixedFee.asBuilder().build());
             }
