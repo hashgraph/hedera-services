@@ -18,6 +18,7 @@ package com.swirlds.common.merkle.synchronization.streams;
 
 import static com.swirlds.logging.LogMarker.RECONNECT;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 import com.swirlds.common.Releasable;
 import com.swirlds.common.io.SelfSerializable;
@@ -146,7 +147,11 @@ public class AsyncInputStream<T extends SelfSerializable> implements AutoCloseab
 
                 message = messageFactory.get();
                 message.deserialize(inputStream, message.getVersion());
-                receivedMessages.put(message);
+
+                final boolean accepted = receivedMessages.offer(message, pollTimeout.toMillis(), MILLISECONDS);
+                if (!accepted) {
+                    new MerkleSynchronizationException("Timed out waiting to add message to received messages queue");
+                }
             }
         } catch (final IOException e) {
             throw new MerkleSynchronizationException(
