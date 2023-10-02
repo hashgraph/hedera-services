@@ -38,7 +38,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SERIALIZATION_FAILED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.WRONG_CHAIN_ID;
 import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.WEIBARS_TO_TINYBARS;
-import static com.hedera.node.app.service.contract.impl.exec.processors.ProcessorModule.FIRST_USER_ENTITY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.AN_ED25519_KEY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.AUTO_ASSOCIATING_CONTRACTS_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.AUTO_ASSOCIATING_LEDGER_CONFIG;
@@ -219,7 +218,9 @@ class HevmTransactionFactoryTest {
     void fromHapiCreationFailsOnSystemInitcode() {
         assertCreateFailsWith(
                 INVALID_FILE_ID,
-                b -> b.fileID(FileID.newBuilder().fileNum(FIRST_USER_ENTITY - 1).build()));
+                b -> b.fileID(FileID.newBuilder()
+                        .fileNum(DEFAULT_HEDERA_CONFIG.firstUserEntity() - 1)
+                        .build()));
     }
 
     @Test
