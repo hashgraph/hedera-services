@@ -88,6 +88,22 @@ public class CreateDecoder {
         return bodyOf(createToken(tokenCreateWrapper));
     }
 
+    /**
+     * Decodes a call to {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN} into a synthetic {@link TransactionBody}.
+     *
+     * @param encoded the encoded call
+     * @return the synthetic transaction body
+     */
+    public TransactionBody decodeCreateNonFungibleWithCustomFees(
+            @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
+        final var call = CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES.decodeCall(encoded);
+        // @TODO to be updated
+        final TokenCreateWrapper tokenCreateWrapper =
+                getTokenCreateWrapperNonFungible(call.get(0), false, addressIdConverter);
+        // @TODO to be implemented
+        return bodyOf(createToken(tokenCreateWrapper));
+    }
+
     private TransactionBody bodyOf(@NonNull final TokenCreateTransactionBody.Builder tokenCreate) {
         return TransactionBody.newBuilder().tokenCreation(tokenCreate).build();
     }

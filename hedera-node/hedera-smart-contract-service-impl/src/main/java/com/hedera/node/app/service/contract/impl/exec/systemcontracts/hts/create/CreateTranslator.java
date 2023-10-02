@@ -20,6 +20,7 @@ import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.ARRAY_BR
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FIXED_FEE;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FRACTIONAL_FEE;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.HEDERA_TOKEN;
+import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.ROYALTY_FEE;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.HEDERA_TOKEN_STRUCT;
 
 import com.esaulpaugh.headlong.abi.Function;
@@ -51,6 +52,16 @@ public class CreateTranslator extends AbstractHtsCallTranslator {
     public static final Function CREATE_NON_FUNGIBLE_TOKEN =
             new Function("createNonFungibleToken(" + HEDERA_TOKEN_STRUCT + ")", ReturnTypes.INT);
 
+    public static final Function CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES =
+            new Function("createNonFungibleTokenWithCustomFees(" + HEDERA_TOKEN_STRUCT
+                    + ","
+                    + FIXED_FEE
+                    + ARRAY_BRACKETS
+                    + ","
+                    + ROYALTY_FEE
+                    + ARRAY_BRACKETS
+                    + ")");
+
     private final CreateDecoder decoder;
 
     @Inject
@@ -63,7 +74,9 @@ public class CreateTranslator extends AbstractHtsCallTranslator {
     public boolean matches(@NonNull HtsCallAttempt attempt) {
         return Arrays.equals(attempt.selector(), CreateTranslator.CREATE_FUNGIBLE_TOKEN.selector())
                 || Arrays.equals(attempt.selector(), CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES.selector())
-                || Arrays.equals(attempt.selector(), CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN.selector());
+                || Arrays.equals(attempt.selector(), CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN.selector())
+                || Arrays.equals(
+                        attempt.selector(), CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES.selector());
     }
 
     @Override
@@ -83,7 +96,8 @@ public class CreateTranslator extends AbstractHtsCallTranslator {
             return decoder.decodeCreateFungibleTokenWithCustomFees(attempt.inputBytes(), attempt.addressIdConverter());
         } else if (Arrays.equals(attempt.selector(), CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN.selector())) {
             return decoder.decodeCreateNonFungible(attempt.inputBytes(), attempt.addressIdConverter());
+        } else {
+            return decoder.decodeCreateNonFungibleWithCustomFees(attempt.inputBytes(), attempt.addressIdConverter());
         }
-        throw new AssertionError("Add more cases");
     }
 }
