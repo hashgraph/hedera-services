@@ -118,8 +118,10 @@ import com.swirlds.platform.event.validation.StaticValidators;
 import com.swirlds.platform.event.validation.TransactionSizeValidator;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.eventhandling.PreConsensusEventHandler;
+import com.swirlds.platform.gossip.DefaultIntakeEventCounter;
 import com.swirlds.platform.gossip.Gossip;
 import com.swirlds.platform.gossip.GossipFactory;
+import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphEventObserver;
@@ -533,7 +535,9 @@ public class SwirldsPlatform implements Platform, Startable {
         final List<Predicate<EventDescriptor>> isDuplicateChecks = new ArrayList<>();
         isDuplicateChecks.add(d -> shadowGraph.isHashInGraph(d.getHash()));
 
-        eventLinker = buildEventLinker(time, isDuplicateChecks);
+        final IntakeEventCounter intakeEventCounter = new DefaultIntakeEventCounter(currentAddressBook);
+
+        eventLinker = buildEventLinker(time, isDuplicateChecks, intakeEventCounter);
 
         final PhaseTimer<EventIntakePhase> eventIntakePhaseTimer = new PhaseTimerBuilder<>(
                         platformContext, time, "platform", EventIntakePhase.class)
@@ -552,7 +556,8 @@ public class SwirldsPlatform implements Platform, Startable {
                 eventObserverDispatcher,
                 eventIntakePhaseTimer,
                 shadowGraph,
-                preConsensusEventHandler::preconsensusEvent);
+                preConsensusEventHandler::preconsensusEvent,
+                intakeEventCounter);
 
         final EventCreator eventCreator = buildEventCreator(eventIntake);
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
@@ -575,8 +580,8 @@ public class SwirldsPlatform implements Platform, Startable {
         final GossipEventValidators eventValidators = new GossipEventValidators(validators);
 
         // validates events received from gossip
-        final EventValidator eventValidator =
-                new EventValidator(eventValidators, eventIntake::addUnlinkedEvent, eventIntakePhaseTimer);
+        final EventValidator eventValidator = new EventValidator(
+                eventValidators, eventIntake::addUnlinkedEvent, eventIntakePhaseTimer, intakeEventCounter);
 
         eventTaskDispatcher = new EventTaskDispatcher(
                 time, eventValidator, eventCreator, eventIntake::addUnlinkedEvent, eventIntakeMetrics);
@@ -996,8 +1001,13 @@ public class SwirldsPlatform implements Platform, Startable {
      */
     @NonNull
     private EventLinker buildEventLinker(
-            @NonNull final Time time, @NonNull final List<Predicate<EventDescriptor>> isDuplicateChecks) {
+            @NonNull final Time time,
+            @NonNull final List<Predicate<EventDescriptor>> isDuplicateChecks,
+            @NonNull final IntakeEventCounter intakeEventCounter) {
+
         Objects.requireNonNull(isDuplicateChecks);
+        Objects.requireNonNull(intakeEventCounter);
+
         final ParentFinder parentFinder = new ParentFinder(shadowGraph::hashgraphEvent);
         final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
         final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
@@ -1006,7 +1016,8 @@ public class SwirldsPlatform implements Platform, Startable {
             final OrphanBufferingLinker orphanBuffer = new OrphanBufferingLinker(
                     platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
                     parentFinder,
-                    chatterConfig.futureGenerationLimit());
+                    chatterConfig.futureGenerationLimit(),
+                    intakeEventCounter);
             metrics.getOrCreate(
                     new FunctionGauge.Config<>("intake", "numOrphans", Integer.class, orphanBuffer::getNumOrphans)
                             .withDescription("the number of events without parents buffered")

@@ -18,29 +18,23 @@ package com.swirlds.platform.event;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.BaseEvent;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.IntUnaryOperator;
 
 /**
  * A class used to hold information about an event transferred through gossip
  */
 public class GossipEvent implements EventIntakeTask, BaseEvent, ChatterEvent {
     private static final long CLASS_ID = 0xfe16b46795bfb8dcL;
-
-    /**
-     * Lambda to update the intake counter when an event exits the intake pipeline. The lambda decrements the counter,
-     * but prevents it from going below 0.
-     */
-    private static final IntUnaryOperator EXIT_INTAKE = count -> count > 0 ? count - 1 : 0;
 
     private static final long ROUND_CREATED_UNDEFINED = -1;
     private BaseEventHashedData hashedData;
@@ -50,11 +44,9 @@ public class GossipEvent implements EventIntakeTask, BaseEvent, ChatterEvent {
     private long roundCreated = ROUND_CREATED_UNDEFINED;
 
     /**
-     * A reference to the atomic integer tracking how many events the sender currently has in the intake pipeline.
-     * <p>
-     * If an event wasn't received through gossip, then this will be null.
+     * The id of the node which sent us this event
      */
-    private AtomicInteger intakeCounter;
+    private NodeId senderId;
 
     @SuppressWarnings("unused") // needed for RuntimeConstructable
     public GossipEvent() {}
@@ -67,6 +59,7 @@ public class GossipEvent implements EventIntakeTask, BaseEvent, ChatterEvent {
         this.hashedData = hashedData;
         this.unhashedData = unhashedData;
         this.timeReceived = Instant.now();
+        this.senderId = null;
     }
 
     /**
@@ -158,32 +151,22 @@ public class GossipEvent implements EventIntakeTask, BaseEvent, ChatterEvent {
     }
 
     /**
-     * Perform the necessary actions for this event to be tracked through the intake pipeline.
+     * Get the id of the node which sent us this event
      *
-     * @param intakeCounter the atomic integer tracking the number of events received from this sender which are
-     *                      currently in the intake pipeline
+     * @return the id of the node which sent us this event
      */
-    public void enterIntakePipeline(@NonNull final AtomicInteger intakeCounter) {
-        this.intakeCounter = Objects.requireNonNull(intakeCounter);
-
-        // increment the counter to indicate that this event is now in the intake pipeline
-        intakeCounter.incrementAndGet();
+    @Nullable
+    public NodeId getSenderId() {
+        return senderId;
     }
 
     /**
-     * Declare that this event is exiting the intake pipeline
+     * Set the id of the node which sent us this event
+     *
+     * @param senderId the id of the node which sent us this event
      */
-    public void exitIntakePipeline() {
-        // if the intake counter hasn't been set, then this event wasn't received through gossip
-        if (intakeCounter == null) {
-            return;
-        }
-
-        if (intakeCounter.getAndUpdate(EXIT_INTAKE) == 0) {
-            throw new IllegalStateException(
-                    "Event processed from peer, but no known events from that peer were in the intake pipeline."
-                            + "This shouldn't be possible.");
-        }
+    public void setSenderId(@NonNull final NodeId senderId) {
+        this.senderId = senderId;
     }
 
     /**

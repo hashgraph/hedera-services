@@ -19,7 +19,6 @@ package com.swirlds.platform.gossip;
 import com.swirlds.common.system.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Keeps track of how many events have been received from each peer, but haven't yet made it through the intake
@@ -36,13 +35,18 @@ public interface IntakeEventCounter {
     boolean hasUnprocessedEvents(@NonNull final NodeId peer);
 
     /**
-     * Get the counter tracking the number of events the given peer currently has in the intake pipeline
+     * Indicates that an event from a given peer has entered the intake pipeline
      *
-     * @param peer the peer to get the counter for
-     * @return the counter
+     * @param peer the peer that sent the event
      */
-    @Nullable
-    AtomicInteger getPeerCounter(@NonNull final NodeId peer);
+    void eventEnteredIntakePipeline(@NonNull final NodeId peer);
+
+    /**
+     * Indicates that an event from a given peer has exited the intake pipeline
+     *
+     * @param peer the peer that sent the event
+     */
+    void eventExitedIntakePipeline(@Nullable final NodeId peer);
 
     /**
      * Reset event counts

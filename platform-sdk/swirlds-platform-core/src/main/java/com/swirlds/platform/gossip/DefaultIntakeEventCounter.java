@@ -19,10 +19,12 @@ package com.swirlds.platform.gossip;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.IntUnaryOperator;
 
 /**
  * Default implementation of {@link IntakeEventCounter}.
@@ -31,6 +33,12 @@ import java.util.concurrent.atomic.AtomicInteger;
  * through.
  */
 public class DefaultIntakeEventCounter implements IntakeEventCounter {
+    /**
+     * Lambda to update the intake counter when an event exits the intake pipeline. The lambda decrements the counter,
+     * but prevents it from going below 0.
+     */
+    private static final IntUnaryOperator EXIT_INTAKE = count -> count > 0 ? count - 1 : 0;
+
     /**
      * A map from node id to an atomic integer, which represents the number of events from that peer that have been
      * added to the intake pipeline, but haven't yet made it through.
@@ -63,12 +71,28 @@ public class DefaultIntakeEventCounter implements IntakeEventCounter {
     /**
      * {@inheritDoc}
      */
-    @NonNull
     @Override
-    public AtomicInteger getPeerCounter(@NonNull NodeId peer) {
+    public void eventEnteredIntakePipeline(@NonNull final NodeId peer) {
         Objects.requireNonNull(peer);
 
-        return unprocessedEventCounts.get(peer);
+        unprocessedEventCounts.get(peer).incrementAndGet();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void eventExitedIntakePipeline(@Nullable final NodeId peer) {
+        if (peer == null) {
+            // this will happen if the event wasn't received through normal gossip
+            return;
+        }
+
+        if (unprocessedEventCounts.get(peer).getAndUpdate(EXIT_INTAKE) == 0) {
+            throw new IllegalStateException(
+                    "Event processed from peer, but no known events from that peer were in the intake pipeline."
+                            + "This shouldn't be possible.");
+        }
     }
 
     /**

@@ -33,6 +33,7 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.event.validation.StaticValidators;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
+import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.intake.EventIntakePhase;
 import com.swirlds.platform.internal.ConsensusRound;
@@ -85,20 +86,26 @@ public class EventIntake {
     private final PhaseTimer<EventIntakePhase> phaseTimer;
 
     /**
+     * Tracks the number of events from each peer have been received, but aren't yet through the intake pipeline
+     */
+    private final IntakeEventCounter intakeEventCounter;
+
+    /**
      * Constructor
      *
-     * @param platformContext   the platform context
-     * @param threadManager     creates new threading resources
-     * @param time              provides the wall clock time
-     * @param selfId            the ID of this node
-     * @param eventLinker       links events together, holding orphaned events until their parents are found (if
-     *                          operating with the orphan buffer enabled)
-     * @param consensusSupplier provides the current consensus instance
-     * @param addressBook       the current address book
-     * @param dispatcher        invokes event related callbacks
-     * @param phaseTimer        measures the time spent in each phase of intake
-     * @param shadowGraph       tracks events in the hashgraph
-     * @param prehandleEvent    prehandles transactions in an event
+     * @param platformContext    the platform context
+     * @param threadManager      creates new threading resources
+     * @param time               provides the wall clock time
+     * @param selfId             the ID of this node
+     * @param eventLinker        links events together, holding orphaned events until their parents are found (if
+     *                           operating with the orphan buffer enabled)
+     * @param consensusSupplier  provides the current consensus instance
+     * @param addressBook        the current address book
+     * @param dispatcher         invokes event related callbacks
+     * @param phaseTimer         measures the time spent in each phase of intake
+     * @param shadowGraph        tracks events in the hashgraph
+     * @param prehandleEvent     prehandles transactions in an event
+     * @param intakeEventCounter tracks the number of events from each peer that are currently in the intake pipeline
      */
     public EventIntake(
             @NonNull final PlatformContext platformContext,
@@ -111,7 +118,8 @@ public class EventIntake {
             @NonNull final EventObserverDispatcher dispatcher,
             @NonNull final PhaseTimer<EventIntakePhase> phaseTimer,
             @NonNull final ShadowGraph shadowGraph,
-            @NonNull final Consumer<EventImpl> prehandleEvent) {
+            @NonNull final Consumer<EventImpl> prehandleEvent,
+            @NonNull final IntakeEventCounter intakeEventCounter) {
 
         this.time = Objects.requireNonNull(time);
         this.selfId = Objects.requireNonNull(selfId);
@@ -123,6 +131,7 @@ public class EventIntake {
         this.phaseTimer = Objects.requireNonNull(phaseTimer);
         this.shadowGraph = Objects.requireNonNull(shadowGraph);
         this.prehandleEvent = Objects.requireNonNull(prehandleEvent);
+        this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
 
         final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
         final Supplier<Integer> prehandlePoolSize;
@@ -238,7 +247,7 @@ public class EventIntake {
             }
         } finally {
             phaseTimer.activatePhase(EventIntakePhase.IDLE);
-            event.getBaseEvent().exitIntakePipeline();
+            intakeEventCounter.eventExitedIntakePipeline(event.getBaseEvent().getSenderId());
         }
     }
 

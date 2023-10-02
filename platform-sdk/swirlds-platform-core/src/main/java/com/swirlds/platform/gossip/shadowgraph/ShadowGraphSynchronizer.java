@@ -341,12 +341,7 @@ public class ShadowGraphSynchronizer {
         // the writer will set it to true if writing is aborted
         final AtomicBoolean writeAborted = new AtomicBoolean(false);
         final Integer eventsRead = readWriteParallel(
-                SyncComms.phase3Read(
-                        conn,
-                        eventHandler,
-                        syncMetrics,
-                        eventReadingDone,
-                        intakeEventCounter.getPeerCounter(conn.getOtherId())),
+                SyncComms.phase3Read(conn, eventHandler, syncMetrics, eventReadingDone, intakeEventCounter),
                 SyncComms.phase3Write(conn, sendList, eventReadingDone, writeAborted),
                 conn);
         if (eventsRead < 0 || writeAborted.get()) {

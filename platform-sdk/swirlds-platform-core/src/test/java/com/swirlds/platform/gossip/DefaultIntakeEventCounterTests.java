@@ -49,19 +49,19 @@ class DefaultIntakeEventCounterTests {
         assertFalse(intakeCounter.hasUnprocessedEvents(nodeId1));
         assertFalse(intakeCounter.hasUnprocessedEvents(nodeId1));
 
-        intakeCounter.getPeerCounter(nodeId1).incrementAndGet();
+        intakeCounter.eventEnteredIntakePipeline(nodeId1);
         assertTrue(intakeCounter.hasUnprocessedEvents(nodeId1));
         assertFalse(intakeCounter.hasUnprocessedEvents(nodeId2));
 
-        intakeCounter.getPeerCounter(nodeId1).incrementAndGet();
+        intakeCounter.eventEnteredIntakePipeline(nodeId1);
         assertTrue(intakeCounter.hasUnprocessedEvents(nodeId1));
         assertFalse(intakeCounter.hasUnprocessedEvents(nodeId2));
 
-        intakeCounter.getPeerCounter(nodeId1).decrementAndGet();
+        intakeCounter.eventExitedIntakePipeline(nodeId1);
         assertTrue(intakeCounter.hasUnprocessedEvents(nodeId1));
         assertFalse(intakeCounter.hasUnprocessedEvents(nodeId2));
 
-        intakeCounter.getPeerCounter(nodeId1).decrementAndGet();
+        intakeCounter.eventExitedIntakePipeline(nodeId1);
         assertFalse(intakeCounter.hasUnprocessedEvents(nodeId1));
         assertFalse(intakeCounter.hasUnprocessedEvents(nodeId2));
     }
@@ -69,9 +69,9 @@ class DefaultIntakeEventCounterTests {
     @Test
     @DisplayName("Test reset")
     void reset() {
-        intakeCounter.getPeerCounter(nodeId1).incrementAndGet();
-        intakeCounter.getPeerCounter(nodeId1).incrementAndGet();
-        intakeCounter.getPeerCounter(nodeId2).incrementAndGet();
+        intakeCounter.eventEnteredIntakePipeline(nodeId1);
+        intakeCounter.eventEnteredIntakePipeline(nodeId1);
+        intakeCounter.eventEnteredIntakePipeline(nodeId2);
 
         assertTrue(intakeCounter.hasUnprocessedEvents(nodeId1));
         assertTrue(intakeCounter.hasUnprocessedEvents(nodeId2));
