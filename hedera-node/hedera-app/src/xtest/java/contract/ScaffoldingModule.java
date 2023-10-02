@@ -27,6 +27,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.authorization.AuthorizerImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
+import com.hedera.node.app.fees.NoOpFeeCalculator;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.records.impl.BlockRecordManagerImpl;
@@ -203,6 +204,7 @@ public interface ScaffoldingModule {
                 configuration,
                 recordCache,
                 exchangeRateManager,
+                NoOpFeeCalculator.INSTANCE,
                 payerId);
     }
 
