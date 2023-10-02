@@ -291,8 +291,8 @@ class CryptoTransferHandlerPureChecksTest extends CryptoTransferHandlerTestBase 
         // balance not equal to zero
         final var txn = newCryptoTransfer(TokenTransferList.newBuilder()
                 .token(TOKEN_2468)
-                .transfers(ACCT_3333_PLUS_5.copyBuilder().amount(0).build())
-                // nftTransfers is intentionally empty (will result in a count of zero nft transfers)
+                // transfers and nftTransfers are intentionally empty (will result in a count of zero transfers)
+                .transfers()
                 .nftTransfers()
                 .build());
 
