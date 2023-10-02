@@ -46,7 +46,6 @@ import org.apache.logging.log4j.Logger;
 /**
  * Tests to validate that token balances are correct after token transfers occur.
  */
-@HapiTestSuite
 public class TokenBalanceValidation extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TokenBalanceValidation.class);
     private final Map<AccountNumTokenNum, Long> expectedTokenBalances;

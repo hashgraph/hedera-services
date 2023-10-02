@@ -29,7 +29,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-@HapiTestSuite
 public class RecordStreamValidation extends HapiSuite {
     private static final Logger log = LogManager.getLogger(RecordStreamValidation.class);
 

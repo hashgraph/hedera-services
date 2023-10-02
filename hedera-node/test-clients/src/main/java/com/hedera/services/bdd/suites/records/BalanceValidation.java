@@ -33,7 +33,6 @@ import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-@HapiTestSuite
 public class BalanceValidation extends HapiSuite {
     private static final Logger log = LogManager.getLogger(BalanceValidation.class);
 
