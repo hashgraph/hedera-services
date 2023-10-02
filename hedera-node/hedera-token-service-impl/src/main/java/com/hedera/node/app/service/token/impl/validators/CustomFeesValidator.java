@@ -241,19 +241,7 @@ public class CustomFeesValidator {
 
     private void validateFractionalFeeForCreation(TokenType tokenType, CustomFee fee, Set<CustomFee> fees) {
         validateTrue(isFungibleCommon(tokenType), CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON);
-
-        final var fractionalFee = fee.fractionalFee();
-        final var numerator = fractionalFee.fractionalAmount().numerator();
-        final var denominator = fractionalFee.fractionalAmount().denominator();
-        final var minimumUnitsToCollect = fractionalFee.minimumAmount();
-        final var nominalMax = fractionalFee.maximumAmount();
-        final var maximumUnitsToCollect = nominalMax == 0 ? Long.MAX_VALUE : nominalMax;
-
-        validateTrue(denominator != 0, FRACTION_DIVIDES_BY_ZERO);
-        validateTrue(numerator > 0 && denominator > 0, CUSTOM_FEE_MUST_BE_POSITIVE);
-        validateTrue(minimumUnitsToCollect >= 0 && maximumUnitsToCollect >= 0, CUSTOM_FEE_MUST_BE_POSITIVE);
-        validateTrue(maximumUnitsToCollect >= minimumUnitsToCollect, FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT);
-
+        validateFractionalFee(fee);
         fees.add(fee);
     }
 
@@ -296,7 +284,10 @@ public class CustomFeesValidator {
         final var tokenId = token.tokenId();
         final var relation = tokenRelationStore.get(collectorId, tokenId);
         validateTrue(relation != null, TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR);
+        validateFractionalFee(fee);
+    }
 
+    private void validateFractionalFee(@NonNull CustomFee fee) {
         final var fractionalFee = fee.fractionalFee();
         final var numerator = fractionalFee.fractionalAmount().numerator();
         final var denominator = fractionalFee.fractionalAmount().denominator();
