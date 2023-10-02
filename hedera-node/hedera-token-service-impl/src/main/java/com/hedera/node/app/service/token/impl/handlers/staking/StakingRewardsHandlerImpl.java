@@ -101,6 +101,9 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
      * @param writableStore The store to write to for updated values
      */
     public void adjustStakedToMeForAccountStakees(@NonNull final WritableAccountStore writableStore) {
+        // If there is a FROM_ACCOUNT_ or _TO_ACCOUNT stake change scenario, the set of modified
+        // accounts returned by writableStore.modifiedAccountsInState(); so we only iterate through
+        // the original modified accounts here
         final var modifiedAccounts = new ArrayList<>(writableStore.modifiedAccountsInState());
 
         for (final var id : modifiedAccounts) {
