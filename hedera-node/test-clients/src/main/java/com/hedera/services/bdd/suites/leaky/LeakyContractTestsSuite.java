@@ -191,6 +191,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -298,6 +299,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 shouldReturnNullWhenContractsNoncesExternalizationFlagIsDisabled());
     }
 
+    @HapiTest
     private HapiSpec transferErc20TokenFromErc721TokenFails() {
         return propertyPreservingHapiSpec("transferErc20TokenFromErc721TokenFails")
                 .preserving(HEDERA_ALLOWANCES_IS_ENABLED)
@@ -765,6 +767,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         getAccountBalance(ACCOUNT).hasTokenBalance(VANILLA_TOKEN, 485L));
     }
 
+    @HapiTest
     private HapiSpec transferFailsWithIncorrectAmounts() {
         final var transferTokenWithNegativeAmountTxn = "transferTokenWithNegativeAmountTxn";
         final var contract = TOKEN_TRANSFER_CONTRACT;
@@ -1237,6 +1240,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                 .has(contractWith().balance(10_000L - 10L))));
     }
 
+    @HapiTest
     private HapiSpec maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller() {
         return defaultHapiSpec("MaxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller")
                 .given(
@@ -1454,6 +1458,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         overriding("tokens.maxPerAccount", "" + ADVENTUROUS_NETWORK));
     }
 
+    @HapiTest
     private HapiSpec createMaxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller() {
         return defaultHapiSpec("CreateMaxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller")
                 .given(
@@ -1572,6 +1577,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                 .has(contractWith().propertiesInheritedFrom(contract))));
     }
 
+    @HapiTest
     HapiSpec temporarySStoreRefundTest() {
         final var contract = "TemporarySStoreRefund";
         return defaultHapiSpec("TemporarySStoreRefundTest")
@@ -1622,6 +1628,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 .then(contractUpdate(contract).newMemo("Hi there!").hasKnownStatus(INVALID_CONTRACT_ID));
     }
 
+    @HapiTest
     private HapiSpec canCallPendingContractSafely() {
         final var numSlots = 64L;
         final var createBurstSize = 500;
