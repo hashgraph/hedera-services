@@ -34,6 +34,7 @@ import com.hedera.node.app.service.contract.impl.exec.ContextQueryProcessor;
 import com.hedera.node.app.service.contract.impl.exec.QueryComponent;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCallLocalHandler;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import org.junit.jupiter.api.Test;
@@ -66,6 +67,9 @@ class ContractCallLocalHandlerTest {
 
     @Mock
     private ReadableAccountStore store;
+
+    @Mock
+    private ReadableTokenStore tokenStore;
 
     @Mock
     private Account contract;
@@ -125,14 +129,15 @@ class ContractCallLocalHandlerTest {
     }
 
     @Test
-    void validateFailsIfNoContractTest() {
+    void validateFailsIfNoContractOrTokenTest() {
         // given
         given(context.query()).willReturn(query);
         given(query.contractCallLocalOrThrow()).willReturn(contractCallLocalQuery);
         given(contractCallLocalQuery.contractID()).willReturn(contractID);
         given(context.createStore(ReadableAccountStore.class)).willReturn(store);
         given(store.getContractById(contractID)).willReturn(null);
-
+        given(context.createStore(ReadableTokenStore.class)).willReturn(tokenStore);
+        given(tokenStore.get(any())).willReturn(null);
         // when:
         assertThatThrownBy(() -> subject.validate(context)).isInstanceOf(PreCheckException.class);
     }
