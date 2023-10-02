@@ -52,8 +52,8 @@ public final class EventStreamValidation {
      * <li>all validation performed by {@link PreconsensusEventStreamValidation#validatePreconsensusEventStream(
      *Cryptography, List, Path, int) validatePreconsensusEventStream()}</li>
      * <li>all validation performed by {@link ConsensusEventStreamValidation#validateConsensusEventStream(
-     * Cryptography, List, Path, int) validateConsensusEventStream()}</li>
-     * <li></li>
+     *Cryptography, List, Path, int) validateConsensusEventStream()}</li>
+     * <li>all events in the CES appear in the PCES (for time periods where the PCES is not intentionally deleted)</li>
      * </ul>
      *
      * @param stateDirectory                   the root of the directory tree where state files are saved.

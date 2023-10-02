@@ -53,6 +53,10 @@ public final class ConsensusEventStreamValidation {
 
     private ConsensusEventStreamValidation() {}
 
+    // FUTURE WORK: add the following validation once the consensus event stream is properly aligned with state saving:
+    //  - ensure that there is an event stream file that starts at every state (except for perhaps the last)
+    //  - count the number of events in between states and make sure it aligns with the number of consensus events
+
     /**
      * Validate the consensus event stream. Returns a set containing descriptors for all events that were found in the
      * stream. The following checks are performed:
