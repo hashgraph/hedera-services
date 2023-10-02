@@ -82,9 +82,11 @@ public class CreatesXTest extends AbstractContractXTest {
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN
-                        .encodeCallWithArgs(HEDERA_TOKEN_STRUCT)
+                        .encodeCallWithArgs(HEDERA_TOKEN_STRUCT, 0L, 0)
                         .array()),
                 assertSuccess());
+
+        // should revert when token has no supplyKey
     }
 
     @Override
@@ -104,6 +106,7 @@ public class CreatesXTest extends AbstractContractXTest {
                         .accountId(OWNER_ID)
                         .alias(SENDER_ADDRESS)
                         .smartContract(true)
+                        .key(SENDER_CONTRACT_ID_KEY)
                         .build());
         accounts.put(
                 OWNER_ID,

@@ -31,7 +31,7 @@ public class CreatesXTestConstants {
     static final String SYMBOL = "symbol";
     static final String MEMO = "memo";
     static final long MAX_SUPPLY = 1000L;
-    static final long KEY_TYPE = 1L;
+    static final int KEY_TYPE = 112;
     static final long SECOND = 123L;
     static final long AUTO_RENEW_PERIOD = 2592000L;
 
@@ -48,7 +48,7 @@ public class CreatesXTestConstants {
                 Tuple.of(
                         BigInteger.valueOf(KEY_TYPE),
                         Tuple.of(
-                                true,
+                                false,
                                 RECEIVER_HEADLONG_ADDRESS,
                                 new byte[] {},
                                 new byte[] {},

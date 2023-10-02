@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.creat
 
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateSyntheticTxnFactory.createToken;
 import static com.hedera.node.app.service.contract.impl.exec.utils.IdUtils.asContract;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumericContractId;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.Duration;
@@ -84,12 +85,12 @@ public class CreateDecoder {
             @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
         final var call = CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN.decodeCall(encoded);
         final TokenCreateWrapper tokenCreateWrapper =
-                getTokenCreateWrapperNonFungible(call.get(0), false, addressIdConverter);
+                getTokenCreateWrapperNonFungible(call.get(0), false, call.get(1), call.get(2), addressIdConverter);
         return bodyOf(createToken(tokenCreateWrapper));
     }
 
     /**
-     * Decodes a call to {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN} into a synthetic {@link TransactionBody}.
+     * Decodes a call to {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES} into a synthetic {@link TransactionBody}.
      *
      * @param encoded the encoded call
      * @return the synthetic transaction body
@@ -99,7 +100,7 @@ public class CreateDecoder {
         final var call = CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES.decodeCall(encoded);
         // @TODO to be updated
         final TokenCreateWrapper tokenCreateWrapper =
-                getTokenCreateWrapperNonFungible(call.get(0), false, addressIdConverter);
+                getTokenCreateWrapperNonFungible(call.get(0), false, 0L, 0, addressIdConverter);
         // @TODO to be implemented
         return bodyOf(createToken(tokenCreateWrapper));
     }
@@ -160,9 +161,11 @@ public class CreateDecoder {
     private static TokenCreateWrapper getTokenCreateWrapperNonFungible(
             @NonNull final Tuple tokenCreateStruct,
             final boolean isFungible,
+            final long initSupply,
+            final int decimals,
             @NonNull final AddressIdConverter addressIdConverter) {
-        final var tokenCreateWrapper =
-                getTokenCreateWrapperFungibleWithoutFees(tokenCreateStruct, isFungible, 0L, 0, addressIdConverter);
+        final var tokenCreateWrapper = getTokenCreateWrapperFungibleWithoutFees(
+                tokenCreateStruct, isFungible, initSupply, decimals, addressIdConverter);
         return tokenCreateWrapper;
     }
 
@@ -173,7 +176,7 @@ public class CreateDecoder {
             final var keyType = ((BigInteger) tokenKeyTuple.get(0)).intValue();
             final Tuple keyValueTuple = tokenKeyTuple.get(1);
             final var inheritAccountKey = (Boolean) keyValueTuple.get(0);
-            final var contractId = asContract(addressIdConverter.convert(keyValueTuple.get(1)));
+            final var contractId = asNumericContractId(addressIdConverter.convert(keyValueTuple.get(1)));
             final var ed25519 = (byte[]) keyValueTuple.get(2);
             final var ecdsaSecp256K1 = (byte[]) keyValueTuple.get(3);
             final var delegatableContractId = asContract(addressIdConverter.convert(keyValueTuple.get(4)));

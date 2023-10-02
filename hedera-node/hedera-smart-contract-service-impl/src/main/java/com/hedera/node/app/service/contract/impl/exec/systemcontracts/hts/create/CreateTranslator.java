@@ -50,7 +50,7 @@ public class CreateTranslator extends AbstractHtsCallTranslator {
             ReturnTypes.INT);
 
     public static final Function CREATE_NON_FUNGIBLE_TOKEN =
-            new Function("createNonFungibleToken(" + HEDERA_TOKEN_STRUCT + ")", ReturnTypes.INT);
+            new Function("createNonFungibleToken(" + HEDERA_TOKEN_STRUCT + ",int64,int32)", ReturnTypes.INT);
 
     public static final Function CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES =
             new Function("createNonFungibleTokenWithCustomFees(" + HEDERA_TOKEN_STRUCT

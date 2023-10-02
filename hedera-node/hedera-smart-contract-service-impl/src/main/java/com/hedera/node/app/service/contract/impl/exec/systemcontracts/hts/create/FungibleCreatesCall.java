@@ -23,6 +23,7 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.as
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.token.TokenCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
@@ -32,6 +33,7 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
 
 public class FungibleCreatesCall extends AbstractHtsCall {
 
@@ -62,16 +64,32 @@ public class FungibleCreatesCall extends AbstractHtsCall {
                 .dispatch(syntheticCreate, verificationStrategy, spenderId, CryptoCreateRecordBuilder.class);
         final var customFees =
                 ((TokenCreateTransactionBody) syntheticCreate.data().value()).customFees();
+        final var tokenType =
+                ((TokenCreateTransactionBody) syntheticCreate.data().value()).tokenType();
         if (recordBuilder.status() != ResponseCodeEnum.SUCCESS) {
             return gasOnly(revertResult(recordBuilder.status(), 0L));
         } else {
-            final var encodedOutput = (customFees.size() == 0)
-                    ? CreateTranslator.CREATE_FUNGIBLE_TOKEN
-                            .getOutputs()
-                            .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()))
-                    : CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES
-                            .getOutputs()
-                            .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()));
+            final var isFungible = tokenType == TokenType.FUNGIBLE_COMMON ? true : false;
+            ByteBuffer encodedOutput;
+
+            if (isFungible && customFees.size() == 0) {
+                encodedOutput = CreateTranslator.CREATE_FUNGIBLE_TOKEN
+                        .getOutputs()
+                        .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()));
+            } else if (isFungible && customFees.size() > 0) {
+                encodedOutput = CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES
+                        .getOutputs()
+                        .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()));
+            } else if (customFees.size() == 0) {
+                encodedOutput = CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN
+                        .getOutputs()
+                        .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()));
+            } else {
+                encodedOutput = CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES
+                        .getOutputs()
+                        .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()));
+            }
+
             // @TODO zero should not be hardcoded
             return gasOnly(successResult(encodedOutput, 0L));
         }

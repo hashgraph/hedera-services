@@ -32,7 +32,8 @@ public class CreateSyntheticTxnFactory {
         txnBodyBuilder.name(tokenCreateWrapper.getName());
         txnBodyBuilder.symbol(tokenCreateWrapper.getSymbol());
         txnBodyBuilder.decimals(tokenCreateWrapper.getDecimals());
-        txnBodyBuilder.tokenType(TokenType.FUNGIBLE_COMMON);
+        txnBodyBuilder.tokenType(
+                tokenCreateWrapper.isFungible() ? TokenType.FUNGIBLE_COMMON : TokenType.NON_FUNGIBLE_UNIQUE);
         txnBodyBuilder.supplyType(
                 tokenCreateWrapper.isSupplyTypeFinite() ? TokenSupplyType.FINITE : TokenSupplyType.INFINITE);
         txnBodyBuilder.maxSupply(tokenCreateWrapper.getMaxSupply());
