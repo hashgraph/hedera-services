@@ -67,6 +67,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
 import java.util.LongSummaryStatistics;
 import java.util.Objects;
@@ -1269,7 +1270,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
         }
 
         // iterate over leaf records
-        dirtyLeaves.forEach(leafRecord -> {
+        dirtyLeaves.sorted(Comparator.comparingLong(VirtualLeafRecord::getPath)).forEach(leafRecord -> {
             // update objectKeyToPath
             if (isLongKeyMode) {
                 longKeyToPath.put(((VirtualLongKey) leafRecord.getKey()).getKeyAsLong(), leafRecord.getPath());
