@@ -183,6 +183,9 @@ public class SubmitMessageLoadTest extends LoadTest {
             topicId = String.format(
                     "0.0.%d",
                     TEST_ACCOUNT_STARTS_FROM + settings.getTotalAccounts() + r.nextInt(settings.getTotalTopics()));
+            log.info(" total topics {}", settings.getTotalTopics());
+            log.info(" total accounts {}", settings.getTotalAccounts());
+            log.info(" topicId {}", topicId);
             senderKey = GENESIS;
             submitKey = GENESIS;
         }
