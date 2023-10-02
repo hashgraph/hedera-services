@@ -69,7 +69,6 @@ public final class OnDiskKey<K> implements VirtualKey {
      */
     public OnDiskKey(@NonNull final StateMetadata<K, ?> md) {
         this.md = Objects.requireNonNull(md);
-        Objects.requireNonNull(md.stateDefinition().keyCodec());
     }
 
     /**
