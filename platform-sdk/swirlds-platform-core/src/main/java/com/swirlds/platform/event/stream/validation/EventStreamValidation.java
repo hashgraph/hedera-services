@@ -46,7 +46,15 @@ public final class EventStreamValidation {
     private EventStreamValidation() {}
 
     /**
-     * Validate the CES and PCES files in the given directories.
+     * Validate the CES and PCES files in the given directories. Performs the following validation:
+     *
+     * <ul>
+     * <li>all validation performed by {@link PreconsensusEventStreamValidation#validatePreconsensusEventStream(
+     *Cryptography, List, Path, int) validatePreconsensusEventStream()}</li>
+     * <li>all validation performed by {@link ConsensusEventStreamValidation#validateConsensusEventStream(
+     * Cryptography, List, Path, int) validateConsensusEventStream()}</li>
+     * <li></li>
+     * </ul>
      *
      * @param stateDirectory                   the root of the directory tree where state files are saved.
      * @param consensusEventStreamDirectory    the directory where CES files can be found.

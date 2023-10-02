@@ -32,6 +32,7 @@ import com.swirlds.platform.state.signed.SavedStateMetadata;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -49,7 +50,18 @@ public final class PreconsensusEventStreamValidation {
 
     /**
      * Validate the preconsensus event stream. Returns a set containing descriptors for all events that were found in
-     * the stream.
+     * the stream. The following checks are performed:
+     *
+     * <ul>
+     * <li>that there exists at least one PCES file</li>
+     * <li>that the generations stored by the PCES "cover" all states on disk</li>
+     * <li>that the number of discontinuities in the stream do not exceed a specified maximum</li>
+     * <li>files do not contain events with illegal generations</li>
+     * <li>events are in topological order</li>
+     * <li>events only show up once in a stream (violations are permitted when there are discontinuities)</li>
+     * <li>checks performed by {@link PreconsensusEventFileReader#fileSanityChecks(
+     *boolean, long, long, long, long, Instant, PreconsensusEventFile) fileSanityChecks()}</li>
+     * </ul>
      *
      * @param cryptography             the cryptography object to use for hashing
      * @param states                   metadata for all saved states in the state directory. Most recent state is first
@@ -66,7 +78,11 @@ public final class PreconsensusEventStreamValidation {
             @NonNull final int permittedDiscontinuities)
             throws IOException {
 
-        final Set<EventDescriptor> descriptors = new HashSet<>();
+        // All events in the stream are inserted here
+        final Set<EventDescriptor> allDescriptors = new HashSet<>();
+
+        // This is similar to the allDescriptors set except that it is cleared every time a discontinuity is encountered
+        final Set<EventDescriptor> descriptorsInContiguousStream = new HashSet<>();
 
         // This method already does validation on top level PCES data, no need to repeat that logic.
         final List<PreconsensusEventFile> files = PreconsensusEventFileReader.readFilesFromDisk(streamDirectory, false);
@@ -95,10 +111,11 @@ public final class PreconsensusEventStreamValidation {
                 // events in stream files with different origins may violate topological constraints.
                 previousOrigin = file.getOrigin();
                 parents.clear();
+                descriptorsInContiguousStream.clear();
                 discontinuityCount++;
             }
 
-            validatePreconsensusEventFile(cryptography, file, descriptors, parents);
+            validatePreconsensusEventFile(cryptography, file, allDescriptors, descriptorsInContiguousStream, parents);
         }
 
         if (discontinuityCount > permittedDiscontinuities) {
@@ -120,25 +137,29 @@ public final class PreconsensusEventStreamValidation {
         logger.info(
                 STARTUP.getMarker(),
                 "Preconsensus event stream is valid.  Files contained {} events. Discontinuity count: {}.",
-                descriptors.size(),
+                allDescriptors.size(),
                 discontinuityCount);
 
-        return descriptors;
+        return allDescriptors;
     }
 
     /**
      * Validate the contents of a PCES file and add descriptors of its events to the given set.
      *
-     * @param file        the file to validate
-     * @param descriptors the set to add descriptors to
-     * @param parents     a set of the hashes of all events that have been parent to at least one event in the stream.
-     *                    Once a hash is added to the parent set, we should never encounter an event with that hash. If
-     *                    we do, that means we received a parent event after one of its children.
+     * @param file                             the file to validate
+     * @param allDescriptors                   a set where all events in the stream are put
+     * @param allDescriptorsInContiguousStream all events are put into this set, but the set is cleared when crossing a
+     *                                         discontinuity
+     * @param parents                          a set of the hashes of all events that have been parent to at least one
+     *                                         event in the stream. Once a hash is added to the parent set, we should
+     *                                         never encounter an event with that hash. If we do, that means we received
+     *                                         a parent event after one of its children.
      */
     private static void validatePreconsensusEventFile(
             @NonNull final Cryptography cryptography,
             @NonNull final PreconsensusEventFile file,
-            @NonNull final Set<EventDescriptor> descriptors,
+            @NonNull final Set<EventDescriptor> allDescriptors,
+            @NonNull final Set<EventDescriptor> allDescriptorsInContiguousStream,
             @NonNull final Set<Hash> parents)
             throws IOException {
 
@@ -171,9 +192,15 @@ public final class PreconsensusEventStreamValidation {
             parents.add(event.getHashedData().getSelfParentHash());
             parents.add(event.getHashedData().getOtherParentHash());
 
-            // Add the event to the set of descriptors
+
             event.buildDescriptor();
-            descriptors.add(event.getDescriptor());
+            allDescriptors.add(event.getDescriptor());
+            final boolean alreadyPresent = allDescriptorsInContiguousStream.add(event.getDescriptor());
+
+            if (alreadyPresent) {
+                throw new InvalidStreamException(
+                        "Event " + event.getHashedData().getHash() + " is already present in the stream.");
+            }
         }
     }
 }

@@ -55,7 +55,25 @@ public final class ConsensusEventStreamValidation {
 
     /**
      * Validate the consensus event stream. Returns a set containing descriptors for all events that were found in the
-     * stream.
+     * stream. The following checks are performed:
+     *
+     * <ul>
+     * <li>ignore incomplete files (either where closing hash or signature file is missing).</li>
+     * <li>event files should not be empty</li>
+     * <li>recompute and validate the running hash of each file</li>
+     * <li>events in each file must be in consensus order</li>
+     * <li>timestamp must always increase from one file to another</li>
+     * <li>no events in a file should have a smaller timestamp than specified by the name of the file</li>
+     * <li>within a file, there should be no missing events</li>
+     * <li>contiguous files should form a hash chain</li>
+     * <li>contiguous files should increase in timestamp</li>
+     * <li>if two files are contiguous, the last event in the first file should be the event
+     *     right before the first event in the second file</li>
+     * <li>if two files are contiguous, the first file should not have any events that
+     *     should belong to the second file</li>
+     * <li>the total number of discontinuities should not exceed a provided threshold</li>
+     *
+     * </ul>
      *
      * @param cryptography             the cryptography object to use for hashing
      * @param states                   metadata for all saved states in the state directory.
