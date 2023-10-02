@@ -43,8 +43,10 @@ public class TokenCreateWrapper {
     private final List<TokenKeyWrapper> tokenKeys;
     private final TokenExpiryWrapper expiry;
 
-    private List<TokenCreateWrapper.FixedFeeWrapper> fixedFees;
-    private List<TokenCreateWrapper.FractionalFeeWrapper> fractionalFees;
+    private List<FixedFeeWrapper> fixedFees;
+    private List<FractionalFeeWrapper> fractionalFees;
+
+    private List<RoyaltyFeeWrapper> royaltyFees;
 
     public TokenCreateWrapper(
             final boolean isFungible,
@@ -71,6 +73,9 @@ public class TokenCreateWrapper {
         this.isFreezeDefault = isFreezeDefault;
         this.tokenKeys = tokenKeys;
         this.expiry = tokenExpiry;
+        this.fixedFees = List.of();
+        this.fractionalFees = List.of();
+        this.royaltyFees = List.of();
     }
 
     public boolean isFungible() {
@@ -121,20 +126,28 @@ public class TokenCreateWrapper {
         return expiry;
     }
 
-    public List<TokenCreateWrapper.FixedFeeWrapper> getFixedFees() {
+    public List<FixedFeeWrapper> getFixedFees() {
         return fixedFees;
     }
 
-    public List<TokenCreateWrapper.FractionalFeeWrapper> getFractionalFees() {
+    public List<FractionalFeeWrapper> getFractionalFees() {
         return fractionalFees;
     }
 
-    public void setFixedFees(final List<TokenCreateWrapper.FixedFeeWrapper> fixedFees) {
+    public List<RoyaltyFeeWrapper> getRoyaltyFees() {
+        return royaltyFees;
+    }
+
+    public void setFixedFees(final List<FixedFeeWrapper> fixedFees) {
         this.fixedFees = fixedFees;
     }
 
-    public void setFractionalFees(final List<TokenCreateWrapper.FractionalFeeWrapper> fractionalFees) {
+    public void setFractionalFees(final List<FractionalFeeWrapper> fractionalFees) {
         this.fractionalFees = fractionalFees;
+    }
+
+    public void setRoyaltyFees(final List<RoyaltyFeeWrapper> royaltyFees) {
+        this.royaltyFees = royaltyFees;
     }
 
     public static final class FixedFeeWrapper {
@@ -151,7 +164,7 @@ public class TokenCreateWrapper {
         private final boolean useCurrentTokenForPayment;
         private final AccountID feeCollector;
 
-        private final TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment fixedFeePayment;
+        private final FixedFeeWrapper.FixedFeePayment fixedFeePayment;
 
         public FixedFeeWrapper(
                 final long amount,
@@ -167,19 +180,19 @@ public class TokenCreateWrapper {
             this.fixedFeePayment = setFixedFeePaymentType();
         }
 
-        private TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment setFixedFeePaymentType() {
+        private FixedFeeWrapper.FixedFeePayment setFixedFeePaymentType() {
             if (tokenID != null) {
                 return !useHbarsForPayment && !useCurrentTokenForPayment
-                        ? TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.USE_EXISTING_FUNGIBLE_TOKEN
-                        : TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.INVALID_PAYMENT;
+                        ? FixedFeeWrapper.FixedFeePayment.USE_EXISTING_FUNGIBLE_TOKEN
+                        : FixedFeeWrapper.FixedFeePayment.INVALID_PAYMENT;
             } else if (useCurrentTokenForPayment) {
                 return !useHbarsForPayment
-                        ? TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.USE_CURRENTLY_CREATED_TOKEN
-                        : TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.INVALID_PAYMENT;
+                        ? FixedFeeWrapper.FixedFeePayment.USE_CURRENTLY_CREATED_TOKEN
+                        : FixedFeeWrapper.FixedFeePayment.INVALID_PAYMENT;
             } else {
                 return useHbarsForPayment
-                        ? TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.USE_HBAR
-                        : TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.INVALID_PAYMENT;
+                        ? FixedFeeWrapper.FixedFeePayment.USE_HBAR
+                        : FixedFeeWrapper.FixedFeePayment.INVALID_PAYMENT;
             }
         }
 
@@ -200,7 +213,7 @@ public class TokenCreateWrapper {
             };
         }
 
-        public TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment getFixedFeePayment() {
+        public FixedFeeWrapper.FixedFeePayment getFixedFeePayment() {
             return this.fixedFeePayment;
         }
 
@@ -241,7 +254,7 @@ public class TokenCreateWrapper {
     public record RoyaltyFeeWrapper(
             long numerator,
             long denominator,
-            TokenCreateWrapper.FixedFeeWrapper fallbackFixedFee,
+            FixedFeeWrapper fallbackFixedFee,
             AccountID feeCollector) {
         public CustomFee asGrpc() {
             final var royaltyFeeBuilder = RoyaltyFee.newBuilder()
@@ -252,7 +265,7 @@ public class TokenCreateWrapper {
             if (fallbackFixedFee != null) {
                 validateTrue(
                         fallbackFixedFee.getFixedFeePayment()
-                                != TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.INVALID_PAYMENT,
+                                != FixedFeeWrapper.FixedFeePayment.INVALID_PAYMENT,
                         ResponseCodeEnum.FAIL_INVALID);
                 royaltyFeeBuilder.fallbackFee(fallbackFixedFee.asBuilder().build());
             }
