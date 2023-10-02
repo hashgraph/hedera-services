@@ -221,32 +221,6 @@ class SyncProtocolTests {
     }
 
     @Test
-    @DisplayName("Protocol doesn't initiate if there is no reason to, even if there isn't a reason not to")
-    void noReasonToInitiate() {
-        // peer isn't in critical quorum
-        Mockito.when(criticalQuorum.isInCriticalQuorum(any())).thenReturn(false);
-
-        // peer 6 isn't needed for fallen behind
-        final SyncProtocol protocol = new SyncProtocol(
-                platformContext,
-                new NodeId(6),
-                shadowGraphSynchronizer,
-                fallenBehindManager,
-                permitProvider,
-                criticalQuorum,
-                peerAgnosticSyncChecks,
-                sleepAfterSync,
-                syncMetrics,
-                time);
-
-        assertEquals(2, permitProvider.getNumAvailable());
-        // With the critical quorum disabled, this should now initiate
-        // Once critical quorum is deleted, this test can be deleted.
-        assertTrue(protocol.shouldInitiate());
-        assertEquals(1, permitProvider.getNumAvailable());
-    }
-
-    @Test
     @DisplayName("Protocol initiates if peer is needed for fallen behind")
     void initiateForFallenBehind() {
         // peer isn't in critical quorum
