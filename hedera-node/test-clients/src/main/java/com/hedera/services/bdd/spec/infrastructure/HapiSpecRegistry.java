@@ -561,7 +561,7 @@ public class HapiSpecRegistry {
     }
 
     public void saveAccountId(String name, AccountID id) {
-        log.error("Saving account id {} for name {}", id, name);
+        log.info("Saving account id {} for name {}", id, name);
         put(name, id);
         put(asAccountString(id), name);
     }
@@ -689,7 +689,7 @@ public class HapiSpecRegistry {
     }
 
     public void saveTopicId(String name, TopicID id) {
-        log.error("Saving topic {} with id {}", name, id);
+        log.info("Saving topic {} with id {}", name, id);
         put(name, id);
         put(HapiPropertySource.asTopicString(id), name);
     }
@@ -707,7 +707,7 @@ public class HapiSpecRegistry {
     }
 
     public void saveFileId(String name, FileID id) {
-        log.error("Saving file {} with id {}", name, id);
+        log.info("Saving file {} with id {}", name, id);
         put(name, id);
     }
 
