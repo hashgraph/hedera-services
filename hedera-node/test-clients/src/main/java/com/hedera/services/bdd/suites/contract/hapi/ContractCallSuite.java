@@ -2312,14 +2312,12 @@ public class ContractCallSuite extends HapiSuite {
                 .then(
                         getTxnRecord(failingCall)
                                 .exposingTo(failureRecord -> parentConsTime.set(failureRecord.getConsensusTimestamp())),
-                                                sourcing(() -> childRecordsCheck(
-                                                        failingCall,
-                                                        CONTRACT_REVERT_EXECUTED,
-                                                        recordWith()
-                                                                .status(INSUFFICIENT_GAS)
-                                                                .consensusTimeImpliedByNonce(parentConsTime.get(),
-                         1)))
-                        );
+                        sourcing(() -> childRecordsCheck(
+                                failingCall,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(INSUFFICIENT_GAS)
+                                        .consensusTimeImpliedByNonce(parentConsTime.get(), 1))));
     }
 
     private String getNestedContractAddress(final String contract, final HapiSpec spec) {
