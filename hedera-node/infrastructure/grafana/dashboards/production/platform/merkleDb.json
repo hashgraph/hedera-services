@@ -682,6 +682,102 @@
       ],
       "title": "Offheap usage, Mb",
       "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "grafanacloud-prom"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "axisShow": false,
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "mbytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 37
+      },
+      "id": 6,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "grafanacloud-prom"
+          },
+          "editorMode": "code",
+          "expr": "merkle_db_ds_offheap_dataSourceMb_accountStore{environment=\"$Environment\", node_id=\"$NodeID\"} + merkle_db_ds_offheap_dataSourceMb_fileStore{environment=\"$Environment\", node_id=\"$NodeID\"} + merkle_db_ds_offheap_dataSourceMb_tokenRelStore{environment=\"$Environment\", node_id=\"$NodeID\"} + merkle_db_ds_offheap_dataSourceMb_smartContractIterableKvStore{environment=\"$Environment\", node_id=\"$NodeID\"}",
+          "instant": false,
+          "legendFormat": "Total",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Offheap usage total, Mb",
+      "type": "timeseries"
     }
   ],
   "refresh": "",
@@ -695,8 +791,8 @@
       {
         "current": {
           "selected": false,
-          "text": "performance4",
-          "value": "performance4"
+          "text": "performance",
+          "value": "performance"
         },
         "datasource": {
           "type": "prometheus",
@@ -750,7 +846,7 @@
       },
       {
         "current": {
-          "selected": false,
+          "selected": true,
           "text": "accountStore",
           "value": "accountStore"
         },
@@ -761,7 +857,7 @@
         "definition": "metrics(virtual_map_vmap_size_.*)",
         "hide": 0,
         "includeAll": false,
-        "label": "VirtualMap",
+        "label": "Virtual Map",
         "multi": false,
         "name": "Store",
         "options": [],
@@ -786,6 +882,6 @@
   "timezone": "",
   "title": "MerkleDb",
   "uid": "f57651cc-ee35-48d7-bbea-8908f07e3db4",
-  "version": 61,
+  "version": 68,
   "weekStart": ""
 }
