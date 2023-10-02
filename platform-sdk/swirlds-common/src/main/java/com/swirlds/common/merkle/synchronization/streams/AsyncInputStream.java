@@ -18,7 +18,6 @@ package com.swirlds.common.merkle.synchronization.streams;
 
 import static com.swirlds.logging.LogMarker.RECONNECT;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 import com.swirlds.common.Releasable;
 import com.swirlds.common.io.SelfSerializable;
