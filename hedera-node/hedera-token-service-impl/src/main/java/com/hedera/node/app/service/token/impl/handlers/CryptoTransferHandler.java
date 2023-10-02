@@ -36,7 +36,6 @@ import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.NftTransfer;
-import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
@@ -54,8 +53,6 @@ import com.hedera.node.app.service.token.impl.handlers.transfer.ReplaceAliasesWi
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferStep;
 import com.hedera.node.app.service.token.impl.validators.CryptoTransferValidator;
-import com.hedera.node.app.spi.fees.FeeContext;
-import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -405,59 +402,5 @@ public class CryptoTransferHandler implements TransactionHandler {
             }
         }
         return false;
-    }
-
-    @NonNull
-    @Override
-    public Fees calculateFees(@NonNull final FeeContext feeContext) {
-        requireNonNull(feeContext);
-        final var body = feeContext.body();
-
-        var totalTokensInvolved = 0;
-        var totalTokenTransfers = 0;
-        var numNftOwnershipChanges = 0;
-        final var op = body.cryptoTransferOrThrow();
-        for (final var tokenTransfers : op.tokenTransfersOrElse(emptyList())) {
-            totalTokensInvolved++;
-            totalTokenTransfers += tokenTransfers.transfers().size();
-            numNftOwnershipChanges += tokenTransfers.nftTransfers().size();
-        }
-
-        final int tokenMultiplier = 1;
-
-        //        /* BPT calculations shouldn't include any custom fee payment usage */
-        //        int totalXfers = op.transfersOrElse(TransferList.DEFAULT).accountAmountsOrElse(emptyList()).size();
-        //        int weightedTokensInvolved = tokenMultiplier * totalTokensInvolved;
-        //        int weightedTokenXfers = tokenMultiplier * totalTokenTransfers;
-        //        long incBpt = weightedTokensInvolved * LONG_BASIC_ENTITY_ID_SIZE;
-        //        incBpt += (weightedTokenXfers + totalXfers) * LONG_ACCOUNT_AMOUNT_BYTES;
-        //        incBpt += TOKEN_ENTITY_SIZES.bytesUsedForUniqueTokenTransfers(numNftOwnershipChanges);
-        //
-        //
-        //        var customFeeTokenTransfers = 0;
-        //        var customFeeHbarTransfers = 0;
-        //        final Set<EntityId> involvedTokens = new HashSet<>();
-        //        final var
-        //        for (final var assessedFeeWrapper : impliedTransfers.getAssessedCustomFeeWrappers()) {
-        //            if (assessedFeeWrapper.isForHbar()) {
-        //                customFeeHbarTransfers++;
-        //            } else {
-        //                customFeeTokenTransfers++;
-        //                involvedTokens.add(assessedFeeWrapper.token());
-        //            }
-        //        }
-        //
-        //        totalXfers += xferMeta.getCustomFeeHbarTransfers();
-        //        weightedTokenXfers += tokenMultiplier * xferMeta.getCustomFeeTokenTransfers();
-        //        weightedTokensInvolved += tokenMultiplier * xferMeta.getCustomFeeTokensInvolved();
-        //        long incRb = totalXfers * LONG_ACCOUNT_AMOUNT_BYTES;
-        //        incRb += TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(
-        //                weightedTokensInvolved, weightedTokenXfers, xferMeta.getNumNftOwnershipChanges());
-        //
-        return feeContext
-                .feeCalculator(SubType.DEFAULT)
-                //                .addBytesPerTransaction(incBpt)
-                //                .addRamByteSeconds(incRb * USAGE_PROPERTIES.legacyReceiptStorageSecs())
-                .calculate();
     }
 }

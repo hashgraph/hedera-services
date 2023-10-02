@@ -21,6 +21,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND
 import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic.AUTO_MEMO;
 import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic.LAZY_MEMO;
 import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.node.app.service.token.impl.handlers.CryptoCreateHandler.cryptoCreateFees;
+import static com.hedera.node.app.service.token.impl.handlers.CryptoUpdateHandler.cryptoUpdateFees;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.AliasUtils.asKeyFromAlias;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl.isOfEvmAddressSize;
 import static com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator.IMMUTABILITY_SENTINEL_KEY;
@@ -33,24 +35,22 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.Transaction;
-import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.node.app.service.mono.utils.EntityIdUtils;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import org.apache.logging.log4j.LogManager;
@@ -60,10 +60,6 @@ public class AutoAccountCreator {
     private static final Logger log = LogManager.getLogger(AutoAccountCreator.class);
     private WritableAccountStore accountStore;
     private HandleContext handleContext;
-    // checks tokenAliasMap if the change consists an alias that is already used in previous
-    // iteration of the token transfer list. This map is used to count number of
-    // maxAutoAssociations needed on auto created account
-    protected final Map<ProtoBytes, Set<TokenID>> tokenAliasMap = new HashMap<>();
     private static final CryptoUpdateTransactionBody.Builder UPDATE_TXN_BODY_BUILDER =
             CryptoUpdateTransactionBody.newBuilder()
                     .key(Key.newBuilder().ecdsaSecp256k1(Bytes.EMPTY).build());
@@ -156,10 +152,19 @@ public class AutoAccountCreator {
         final var payerAccount = accountStore.get(topLevelPayer);
         validateTrue(payerAccount != null, PAYER_ACCOUNT_NOT_FOUND);
         final var txn = Transaction.newBuilder().body(syntheticCreation.build()).build();
-        //        final var fees = handleContext.feeCalculator().computePayment(txn, payerAccount.key());
-        //        return fees.serviceFee() + fees.networkFee() + fees.nodeFee();
-        // TODO : need to use fee calculator
-        return 100;
+        Fees fees = new Fees(0, 0, 0);
+        if (syntheticCreation.build().hasCryptoCreateAccount()) {
+            fees = cryptoCreateFees(
+                    syntheticCreation.build().cryptoCreateAccountOrThrow(),
+                    handleContext.feeCalculator(SubType.DEFAULT));
+        } else if (syntheticCreation.build().hasCryptoUpdateAccount()) {
+            fees = cryptoUpdateFees(
+                    syntheticCreation.build(),
+                    handleContext.feeCalculator(SubType.DEFAULT),
+                    handleContext.readableStore(ReadableAccountStore.class),
+                    handleContext.configuration());
+        }
+        return fees.serviceFee() + fees.networkFee() + fees.nodeFee();
     }
 
     /**

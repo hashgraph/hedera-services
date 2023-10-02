@@ -52,6 +52,7 @@ import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;
+import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.info.NetworkInfo;
@@ -67,6 +68,7 @@ import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.data.TokensConfig;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.charset.StandardCharsets;
 import javax.inject.Inject;
@@ -314,10 +316,41 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
         // Variable bytes plus two additional longs for balance and auto-renew period; plus a boolean for receiver sig
         // required.
         final var body = feeContext.body();
-        final var op = body.cryptoUpdateAccountOrThrow();
         final var accountStore = feeContext.readableStore(ReadableAccountStore.class);
+        return cryptoUpdateFees(
+                body, feeContext.feeCalculator(SubType.DEFAULT), accountStore, feeContext.configuration());
+    }
+
+    private static long baseSizeOf(final CryptoUpdateTransactionBody op, final long keySize) {
+        return BASIC_ENTITY_ID_SIZE
+                + op.memoOrElse("").getBytes(StandardCharsets.UTF_8).length
+                + (op.hasExpirationTime() ? LONG_SIZE : 0L)
+                + (op.hasAutoRenewPeriod() ? LONG_SIZE : 0L)
+                + (op.hasProxyAccountID() ? BASIC_ENTITY_ID_SIZE : 0L)
+                + (op.hasMaxAutomaticTokenAssociations() ? INT_SIZE : 0L)
+                + keySize;
+    }
+
+    private static long cryptoAutoRenewRb(final Account account) {
+        return CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr()
+                + currentNonBaseRb(account)
+                + account.numberAssociations() * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr();
+    }
+
+    private static int currentNonBaseRb(final Account account) {
+        return account.memo().getBytes(StandardCharsets.UTF_8).length
+                + getAccountKeyStorageSize(fromPbj(account.keyOrElse(Key.DEFAULT)))
+                + (account.maxAutoAssociations() == 0 ? 0 : INT_SIZE);
+    }
+
+    public static Fees cryptoUpdateFees(
+            final TransactionBody body,
+            final FeeCalculator feeCalculator,
+            final ReadableAccountStore accountStore,
+            final Configuration configuration) {
+        final var op = body.cryptoUpdateAccountOrThrow();
         final var account = accountStore.getAccountById(op.accountIDToUpdateOrThrow());
-        final var autoRenewconfig = feeContext.configuration().getConfigData(AutoRenewConfig.class);
+        final var autoRenewconfig = configuration.getConfigData(AutoRenewConfig.class);
         final var explicitAutoAssocSlotLifetime = autoRenewconfig.expireAccounts() ? 0L : THREE_MONTHS_IN_SECONDS;
 
         final var keySize = op.hasKey() ? getAccountKeyStorageSize(fromPbj(op.key())) : 0L;
@@ -347,32 +380,9 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
                 Math.max(explicitAutoAssocSlotLifetime, oldLifetime),
                 newSlotsUsage,
                 Math.max(explicitAutoAssocSlotLifetime, newLifetime));
-        return feeContext
-                .feeCalculator(SubType.DEFAULT)
+        return feeCalculator
                 .addBytesPerTransaction(baseSize)
                 .addRamByteSeconds((rbsDelta + slotRbsDelta) > 0 ? rbsDelta + slotRbsDelta : 0)
                 .calculate();
-    }
-
-    private long baseSizeOf(final CryptoUpdateTransactionBody op, final long keySize) {
-        return BASIC_ENTITY_ID_SIZE
-                + op.memoOrElse("").getBytes(StandardCharsets.UTF_8).length
-                + (op.hasExpirationTime() ? LONG_SIZE : 0L)
-                + (op.hasAutoRenewPeriod() ? LONG_SIZE : 0L)
-                + (op.hasProxyAccountID() ? BASIC_ENTITY_ID_SIZE : 0L)
-                + (op.hasMaxAutomaticTokenAssociations() ? INT_SIZE : 0L)
-                + keySize;
-    }
-
-    private long cryptoAutoRenewRb(final Account account) {
-        return CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr()
-                + currentNonBaseRb(account)
-                + account.numberAssociations() * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr();
-    }
-
-    private int currentNonBaseRb(final Account account) {
-        return account.memo().getBytes(StandardCharsets.UTF_8).length
-                + getAccountKeyStorageSize(fromPbj(account.keyOrElse(Key.DEFAULT)))
-                + (account.maxAutoAssociations() == 0 ? 0 : INT_SIZE);
     }
 }

@@ -22,6 +22,7 @@ import static com.hedera.node.app.service.token.impl.handlers.transfer.AliasUtil
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.AutoCreationConfig;
@@ -35,9 +36,9 @@ import java.util.Map;
  * The context of a token transfer. This This is used to pass information between the steps of the transfer.
  */
 public class TransferContextImpl implements TransferContext {
-    private final WritableAccountStore accountStore;
+    private final ReadableAccountStore accountStore;
     private final AutoAccountCreator autoAccountCreator;
-    private final HandleContext context;
+    private final HandleContext handleContext;
     private int numAutoCreations;
     private int numLazyCreations;
     private final Map<Bytes, AccountID> resolutions = new HashMap<>();
@@ -46,7 +47,7 @@ public class TransferContextImpl implements TransferContext {
     private final TokensConfig tokensConfig;
 
     public TransferContextImpl(final HandleContext context) {
-        this.context = context;
+        this.handleContext = context;
         this.accountStore = context.writableStore(WritableAccountStore.class);
         this.autoAccountCreator = new AutoAccountCreator(context);
         this.autoCreationConfig = context.configuration().getConfigData(AutoCreationConfig.class);
@@ -56,7 +57,7 @@ public class TransferContextImpl implements TransferContext {
 
     @Override
     public AccountID getFromAlias(final AccountID aliasedId) {
-        final var account = accountStore.get(aliasedId);
+        final var account = accountStore.getAccountById(aliasedId);
 
         if (account != null) {
             final var id = account.accountId();
@@ -88,7 +89,7 @@ public class TransferContextImpl implements TransferContext {
 
     @Override
     public HandleContext getHandleContext() {
-        return context;
+        return handleContext;
     }
 
     @Override
