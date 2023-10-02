@@ -28,6 +28,7 @@ import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SubType;
@@ -47,11 +48,13 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.Arrays;
 
 /**
  * This class contains all workflow-related functionality regarding {@link HederaFunctionality#FILE_UPDATE}.
@@ -145,9 +148,36 @@ public class FileUpdateHandler implements TransactionHandler {
         final var file = feeContext
                 .readableStore(ReadableFileStore.class)
                 .getFileLeaf(op.fileUpdateOrThrow().fileIDOrThrow());
+
+        final AccountsConfig accountsConfig = feeContext.configuration().getConfigData(AccountsConfig.class);
+        final AccountID payerId = op.transactionID().accountID();
+
+        if (isSpecialAccount(payerId, accountsConfig)) {
+            return Fees.FREE;
+        }
+
         return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> {
             return new FileUpdateResourceUsage(fileOpsUsage).usageGiven(fromPbj(op), sigValueObj, fromPbj(file));
         });
+    }
+
+    private boolean isSpecialAccount(@NonNull final AccountID accountID, @NonNull final AccountsConfig accountsConfig) {
+        long[] specialAccounts = {
+                accountsConfig.addressBookAdmin(),
+                accountsConfig.feeSchedulesAdmin(),
+                accountsConfig.exchangeRatesAdmin(),
+                accountsConfig.freezeAdmin(),
+                accountsConfig.treasury(),
+                accountsConfig.systemAdmin(),
+
+                accountsConfig.lastThrottleExempt(),
+                accountsConfig.nodeRewardAccount(),
+                accountsConfig.stakingRewardAccount(),
+                accountsConfig.systemDeleteAdmin(),
+                accountsConfig.systemUndeleteAdmin(),
+        };
+        Arrays.sort(specialAccounts);
+        return Arrays.binarySearch(specialAccounts, accountID.accountNumOrThrow()) >= 0;
     }
 
     private void handleUpdateUpgradeFile(FileUpdateTransactionBody fileUpdate, HandleContext handleContext) {
