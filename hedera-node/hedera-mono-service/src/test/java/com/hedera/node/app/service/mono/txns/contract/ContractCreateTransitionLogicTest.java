@@ -1204,6 +1204,26 @@ class ContractCreateTransitionLogicTest {
     }
 
     @Test
+    void rejectsSystemFileInitcode() {
+        givenValidTxnCtx();
+        final var fileId = FileID.newBuilder().setFileNum(159).build();
+        given(accessor.getTxn())
+                .willReturn(contractCreateTxn.toBuilder()
+                        .setContractCreateInstance(contractCreateTxn.getContractCreateInstance().toBuilder()
+                                .setFileID(fileId))
+                        .build());
+        given(txnCtx.activePayer()).willReturn(ourAccount());
+        given(txnCtx.accessor()).willReturn(accessor);
+        given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
+
+        // when:
+        Exception exception = assertThrows(InvalidTransactionException.class, () -> subject.doStateTransition());
+
+        // then:
+        assertEquals("INVALID_FILE_ID", exception.getMessage());
+    }
+
+    @Test
     void rejectSerializationFailed() {
         Key key = Key.getDefaultInstance();
         var op = ContractCreateTransactionBody.newBuilder()

@@ -21,6 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.FILE_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.populateEthTxData;
+import static com.hedera.node.app.service.contract.impl.exec.processors.ProcessorModule.NUM_SYSTEM_ACCOUNTS;
 import static com.hedera.node.app.service.contract.impl.hevm.HydratedEthTxData.failureFrom;
 import static com.hedera.node.app.service.contract.impl.hevm.HydratedEthTxData.successFrom;
 
@@ -60,7 +61,11 @@ public class EthereumCallDataHydration {
             return failureFrom(INVALID_ETHEREUM_TRANSACTION);
         }
         if (requiresHydration(body, ethTxData)) {
-            final var maybeCallDataFile = fileStore.getFileLeaf(body.callDataOrThrow());
+            final var callDataFileId = body.callDataOrThrow();
+            if (callDataFileId.fileNum() <= NUM_SYSTEM_ACCOUNTS) {
+                return failureFrom(INVALID_FILE_ID);
+            }
+            final var maybeCallDataFile = fileStore.getFileLeaf(callDataFileId);
             if (maybeCallDataFile == null) {
                 return failureFrom(INVALID_FILE_ID);
             }
