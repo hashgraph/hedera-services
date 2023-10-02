@@ -16,7 +16,11 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_ALLOWANCES;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_DELEGATING_SPENDER;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -60,12 +64,14 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
 
     private CryptoApproveAllowanceHandler subject;
 
+    @Override
     @BeforeEach
     public void setUp() {
         super.setUp();
         refreshWritableStores();
         final var validator = new ApproveAllowanceValidator();
         givenStoresAndConfig(handleContext);
+        given(handleContext.payer()).willReturn(payerId);
 
         subject = new CryptoApproveAllowanceHandler(validator);
     }
