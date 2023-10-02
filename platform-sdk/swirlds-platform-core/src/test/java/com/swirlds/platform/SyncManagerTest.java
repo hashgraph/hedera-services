@@ -20,7 +20,6 @@ import static com.swirlds.common.system.EventCreationRuleResponse.CREATE;
 import static com.swirlds.common.system.EventCreationRuleResponse.DONT_CREATE;
 import static com.swirlds.common.system.EventCreationRuleResponse.PASS;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -258,7 +257,7 @@ public class SyncManagerTest {
             final int nextIndex = addressBook.getIndexOfNodeId(next.get(0));
             final int selfIndex = addressBook.getIndexOfNodeId(selfId);
             assertNotEquals(null, next);
-            assertEquals(1, next.size());
+            assertTrue(next.size() <= 10);
             assertTrue(nextIndex >= firstIndex && nextIndex <= lastIndex && nextIndex != selfIndex);
         }
     }

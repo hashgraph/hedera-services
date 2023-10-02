@@ -240,8 +240,10 @@ class SyncProtocolTests {
                 time);
 
         assertEquals(2, permitProvider.getNumAvailable());
-        assertFalse(protocol.shouldInitiate());
-        assertEquals(2, permitProvider.getNumAvailable());
+        // With the critical quorum disabled, this should now initiate
+        // Once critical quorum is deleted, this test can be deleted.
+        assertTrue(protocol.shouldInitiate());
+        assertEquals(1, permitProvider.getNumAvailable());
     }
 
     @Test
