@@ -147,6 +147,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                         getTokenNftInfo(nft, 3L).hasNoSpender());
     }
 
+    @HapiTest
     private HapiSpec duplicateEntriesDoesntThrow() {
         final String owner = "owner";
         final String spender = "spender";
@@ -279,6 +280,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                         .hasAnswerOnlyPrecheck(ACCOUNT_DELETED));
     }
 
+    @HapiTest
     private HapiSpec feesAsExpected() {
         final String owner = "owner";
         final String spender = "spender";
