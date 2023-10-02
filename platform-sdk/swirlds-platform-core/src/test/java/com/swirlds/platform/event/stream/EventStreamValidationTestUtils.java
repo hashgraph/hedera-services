@@ -1,9 +1,13 @@
 package com.swirlds.platform.event.stream;
 
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.gossip.Gossip;
+import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
@@ -32,23 +36,33 @@ class EventStreamValidationTestUtils {
      * Generate a series of on-disk states.
      *
      * @param random          a random number generator
-     * @param path            the path to the directory where the states should be saved
      * @param requestedStates describes the states to be generated
+     * @return the generated states
      */
-    void generateStates(
+    @NonNull
+    List<SignedState> generateStates(
             @NonNull final Random random,
-            @NonNull final Path path,
             @NonNull List<RequestedState> requestedStates) {
 
-        for (final RequestedState requestedState : requestedStates) {
+        final List<SignedState> states = new ArrayList<>(requestedStates.size());
 
+        for (final RequestedState requestedState : requestedStates) {
+            // TODO
         }
+
+        return states;
+    }
+
+    record PreconsensusEventFileToWrite(
+            long minimumGeneration,
+            long maximumGeneration,
+            long timestamp,
+            long origin,
+            @NonNull List<GossipEvent> events) {
 
     }
 
-    void generatePreconsensusEventStream(
-            @NonNull final Random random,
-            @NonNull final Path path) {
+    void generatePreconsensusEventStream(@NonNull final Random random) {
 
     }
 
