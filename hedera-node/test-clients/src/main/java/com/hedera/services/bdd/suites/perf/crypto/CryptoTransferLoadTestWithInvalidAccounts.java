@@ -60,7 +60,6 @@ public final class CryptoTransferLoadTestWithInvalidAccounts extends LoadTest {
                     .fee(100_000_000L)
                     .hasKnownStatusFrom(INVALID_ACCOUNT_ID)
                     .hasRetryPrecheckFrom(BUSY, PLATFORM_TRANSACTION_NOT_CREATED)
-                    .deferStatusResolution()
         };
 
         return defaultHapiSpec("RunCryptoTransfers")
