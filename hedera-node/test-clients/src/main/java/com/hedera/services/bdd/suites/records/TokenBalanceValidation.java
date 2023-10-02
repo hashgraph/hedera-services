@@ -29,7 +29,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.junit.utils.AccountClassifier;
 import com.hedera.services.bdd.junit.validators.AccountNumTokenNum;
 import com.hedera.services.bdd.spec.HapiSpec;

@@ -20,7 +20,6 @@ import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.verifyRecordStreams;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;

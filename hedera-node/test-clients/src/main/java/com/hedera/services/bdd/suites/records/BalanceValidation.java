@@ -22,7 +22,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.junit.utils.AccountClassifier;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;

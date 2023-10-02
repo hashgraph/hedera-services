@@ -34,7 +34,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.swirlds.common.utility.CommonUtils;
