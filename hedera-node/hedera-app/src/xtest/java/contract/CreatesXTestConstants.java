@@ -35,6 +35,12 @@ public class CreatesXTestConstants {
     static final long SECOND = 123L;
     static final long AUTO_RENEW_PERIOD = 2592000L;
 
+    static final Tuple TOKEN_KEY = Tuple.of(
+            BigInteger.valueOf(KEY_TYPE),
+            Tuple.of(false, RECEIVER_HEADLONG_ADDRESS, new byte[] {}, new byte[] {}, RECEIVER_HEADLONG_ADDRESS));
+
+    static final Tuple EXPIRY = Tuple.of(SECOND, OWNER_HEADLONG_ADDRESS, AUTO_RENEW_PERIOD);
+
     static final Tuple HEDERA_TOKEN_STRUCT = Tuple.of(
             NAME,
             SYMBOL,
@@ -44,18 +50,9 @@ public class CreatesXTestConstants {
             MAX_SUPPLY,
             false,
             // TokenKey
-            new Tuple[] {
-                Tuple.of(
-                        BigInteger.valueOf(KEY_TYPE),
-                        Tuple.of(
-                                false,
-                                RECEIVER_HEADLONG_ADDRESS,
-                                new byte[] {},
-                                new byte[] {},
-                                RECEIVER_HEADLONG_ADDRESS))
-            },
+            new Tuple[] {TOKEN_KEY},
             // Expiry
-            Tuple.of(SECOND, OWNER_HEADLONG_ADDRESS, AUTO_RENEW_PERIOD));
+            EXPIRY);
 
     static final Tuple FIXED_FEE = Tuple.of(100L, ERC20_TOKEN_ADDRESS, false, false, OWNER_HEADLONG_ADDRESS);
     static final Tuple FRACTIONAL_FEE = Tuple.of(100L, 100L, 100L, 100L, true, OWNER_HEADLONG_ADDRESS);
