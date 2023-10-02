@@ -43,6 +43,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Objects;
 import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -166,10 +167,12 @@ public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager 
         final var congestionLevelStartsState =
                 states.<CongestionLevelStarts>getSingleton(CongestionThrottleService.CONGESTION_LEVEL_STARTS_STATE_KEY);
         final var genericCongestionStarts = Arrays.stream(multiplierSources.genericCongestionStarts())
-                .map(inst -> inst == null ? null : new Timestamp(inst.getEpochSecond(), inst.getNano()))
+                .filter(Objects::nonNull)
+                .map(inst -> new Timestamp(inst.getEpochSecond(), inst.getNano()))
                 .toList();
         final var gasCongestionStarts = Arrays.stream(multiplierSources.gasCongestionStarts())
-                .map(inst -> inst == null ? null : new Timestamp(inst.getEpochSecond(), inst.getNano()))
+                .filter(Objects::nonNull)
+                .map(inst -> new Timestamp(inst.getEpochSecond(), inst.getNano()))
                 .toList();
 
         final var congestionLevelStarts = CongestionLevelStarts.newBuilder()

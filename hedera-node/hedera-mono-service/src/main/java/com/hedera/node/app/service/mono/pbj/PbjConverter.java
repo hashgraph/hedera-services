@@ -58,6 +58,7 @@ import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
+import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
@@ -71,7 +72,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.security.InvalidKeyException;
-import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -1550,8 +1550,7 @@ public final class PbjConverter {
         if (lastDecisionTime == null) {
             return new DeterministicThrottle.UsageSnapshot(snapshot.used(), null);
         } else {
-            return new DeterministicThrottle.UsageSnapshot(
-                    snapshot.used(), Instant.ofEpochSecond(lastDecisionTime.seconds(), lastDecisionTime.nanos()));
+            return new DeterministicThrottle.UsageSnapshot(snapshot.used(), HapiUtils.asInstant(lastDecisionTime));
         }
     }
 
@@ -1560,8 +1559,7 @@ public final class PbjConverter {
         if (lastDecisionTime == null) {
             return new ThrottleUsageSnapshot(snapshot.used(), null);
         } else {
-            return new ThrottleUsageSnapshot(
-                    snapshot.used(), new Timestamp(lastDecisionTime.getEpochSecond(), lastDecisionTime.getNano()));
+            return new ThrottleUsageSnapshot(snapshot.used(), HapiUtils.asTimestamp(lastDecisionTime));
         }
     }
 }
