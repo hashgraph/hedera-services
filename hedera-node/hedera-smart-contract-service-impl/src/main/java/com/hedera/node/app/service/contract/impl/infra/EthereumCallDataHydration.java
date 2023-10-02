@@ -21,7 +21,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.FILE_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.populateEthTxData;
-import static com.hedera.node.app.service.contract.impl.exec.processors.ProcessorModule.NUM_SYSTEM_ACCOUNTS;
 import static com.hedera.node.app.service.contract.impl.hevm.HydratedEthTxData.failureFrom;
 import static com.hedera.node.app.service.contract.impl.hevm.HydratedEthTxData.successFrom;
 
@@ -52,17 +51,20 @@ public class EthereumCallDataHydration {
      *
      * @param body the {@link EthereumTransactionBody} to hydrate
      * @param fileStore the {@link ReadableFileStore} to hydrate from (if needed)
+     * @param firstUserEntityNum the first user entity number
      * @return the final {@link EthTxData}
      */
     public HydratedEthTxData tryToHydrate(
-            @NonNull final EthereumTransactionBody body, @NonNull final ReadableFileStore fileStore) {
+            @NonNull final EthereumTransactionBody body,
+            @NonNull final ReadableFileStore fileStore,
+            long firstUserEntityNum) {
         final var ethTxData = populateEthTxData(body.ethereumData().toByteArray());
         if (ethTxData == null) {
             return failureFrom(INVALID_ETHEREUM_TRANSACTION);
         }
         if (requiresHydration(body, ethTxData)) {
             final var callDataFileId = body.callDataOrThrow();
-            if (callDataFileId.fileNum() <= NUM_SYSTEM_ACCOUNTS) {
+            if (callDataFileId.fileNum() < firstUserEntityNum) {
                 return failureFrom(INVALID_FILE_ID);
             }
             final var maybeCallDataFile = fileStore.getFileLeaf(callDataFileId);

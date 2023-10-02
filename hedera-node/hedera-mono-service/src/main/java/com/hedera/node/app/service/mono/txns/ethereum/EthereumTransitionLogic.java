@@ -19,7 +19,7 @@ package com.hedera.node.app.service.mono.txns.ethereum;
 import static com.hedera.node.app.hapi.utils.ByteStringUtils.wrapUnsafely;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
-import static com.hedera.node.app.service.mono.config.HederaNumbers.NUM_RESERVED_SYSTEM_ENTITIES;
+import static com.hedera.node.app.service.mono.config.HederaNumbers.FIRST_USER_ENTITY;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.ETHEREUM_NONCE;
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -132,7 +132,7 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
     @Override
     public ResponseCodeEnum validateSemantics(final TxnAccessor accessor) {
         final var ethTx = accessor.getTxn().getEthereumTransaction();
-        if (ethTx.hasCallData() && ethTx.getCallData().getFileNum() <= NUM_RESERVED_SYSTEM_ENTITIES) {
+        if (ethTx.hasCallData() && ethTx.getCallData().getFileNum() < FIRST_USER_ENTITY) {
             return INVALID_FILE_ID;
         }
         if (ethTx.getMaxGasAllowance() < 0) {

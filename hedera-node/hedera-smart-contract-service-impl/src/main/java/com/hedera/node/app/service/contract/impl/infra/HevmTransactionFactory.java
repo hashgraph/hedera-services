@@ -32,7 +32,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_
 import static com.hedera.hapi.node.base.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SERIALIZATION_FAILED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.WRONG_CHAIN_ID;
-import static com.hedera.node.app.service.contract.impl.exec.processors.ProcessorModule.NUM_SYSTEM_ACCOUNTS;
 import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction.NOT_APPLICABLE;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asChainIdBytes;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthEthTxCreation;
@@ -66,6 +65,7 @@ import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.data.ContractsConfig;
+import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -80,6 +80,7 @@ public class HevmTransactionFactory {
 
     private final NetworkInfo networkInfo;
     private final LedgerConfig ledgerConfig;
+    private final HederaConfig hederaConfig;
     private final GasCalculator gasCalculator;
     private final StakingConfig stakingConfig;
     private final ContractsConfig contractsConfig;
@@ -95,6 +96,7 @@ public class HevmTransactionFactory {
     public HevmTransactionFactory(
             @NonNull final NetworkInfo networkInfo,
             @NonNull final LedgerConfig ledgerConfig,
+            @NonNull final HederaConfig hederaConfig,
             @NonNull final GasCalculator gasCalculator,
             @NonNull final StakingConfig stakingConfig,
             @NonNull final ContractsConfig contractsConfig,
@@ -111,6 +113,7 @@ public class HevmTransactionFactory {
         this.networkInfo = requireNonNull(networkInfo);
         this.accountStore = requireNonNull(accountStore);
         this.ledgerConfig = requireNonNull(ledgerConfig);
+        this.hederaConfig = requireNonNull(hederaConfig);
         this.stakingConfig = requireNonNull(stakingConfig);
         this.contractsConfig = requireNonNull(contractsConfig);
         this.tokenServiceApi = requireNonNull(tokenServiceApi);
@@ -242,7 +245,9 @@ public class HevmTransactionFactory {
     }
 
     private void assertValidCreation(@NonNull final ContractCreateTransactionBody body) {
-        validateTrue(body.fileIDOrElse(FileID.DEFAULT).fileNum() > NUM_SYSTEM_ACCOUNTS, INVALID_FILE_ID);
+        if (body.hasFileID()) {
+            validateTrue(body.fileIDOrThrow().fileNum() >= hederaConfig.firstUserEntity(), INVALID_FILE_ID);
+        }
         final var autoRenewPeriod = body.autoRenewPeriodOrElse(Duration.DEFAULT).seconds();
         validateTrue(autoRenewPeriod >= 1, INVALID_RENEWAL_PERIOD);
         attributeValidator.validateAutoRenewPeriod(autoRenewPeriod);

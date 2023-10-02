@@ -55,7 +55,7 @@ class EthereumCallDataHydrationTest {
     void failsWithInvalidEthTxWithInvalidData() {
         final var ethTxn =
                 EthereumTransactionBody.newBuilder().ethereumData(Bytes.EMPTY).build();
-        final var result = subject.tryToHydrate(ethTxn, fileStore);
+        final var result = subject.tryToHydrate(ethTxn, fileStore, 1001L);
         assertFalse(result.isAvailable());
         assertEquals(INVALID_ETHEREUM_TRANSACTION, result.status());
     }
@@ -65,7 +65,7 @@ class EthereumCallDataHydrationTest {
         final var ethTxn = EthereumTransactionBody.newBuilder()
                 .ethereumData(ETH_WITH_TO_ADDRESS)
                 .build();
-        assertEquals(successFrom(ETH_DATA_WITH_TO_ADDRESS), subject.tryToHydrate(ethTxn, fileStore));
+        assertEquals(successFrom(ETH_DATA_WITH_TO_ADDRESS), subject.tryToHydrate(ethTxn, fileStore, 1001L));
         verifyNoInteractions(fileStore);
     }
 
@@ -75,7 +75,7 @@ class EthereumCallDataHydrationTest {
                 .ethereumData(ETH_WITH_CALL_DATA)
                 .callData(ETH_CALLDATA_FILE_ID)
                 .build();
-        assertEquals(successFrom(ETH_DATA_WITH_CALL_DATA), subject.tryToHydrate(ethTxn, fileStore));
+        assertEquals(successFrom(ETH_DATA_WITH_CALL_DATA), subject.tryToHydrate(ethTxn, fileStore, 1001L));
         verifyNoInteractions(fileStore);
     }
 
@@ -85,7 +85,7 @@ class EthereumCallDataHydrationTest {
                 .ethereumData(ETH_WITH_TO_ADDRESS)
                 .callData(FileID.newBuilder().fileNum(ProcessorModule.NUM_SYSTEM_ACCOUNTS))
                 .build();
-        final var result = subject.tryToHydrate(ethTxn, fileStore);
+        final var result = subject.tryToHydrate(ethTxn, fileStore, 1001L);
         assertFalse(result.isAvailable());
         assertEquals(INVALID_FILE_ID, result.status());
         verifyNoInteractions(fileStore);
@@ -97,7 +97,7 @@ class EthereumCallDataHydrationTest {
                 .ethereumData(ETH_WITH_TO_ADDRESS)
                 .callData(ETH_CALLDATA_FILE_ID)
                 .build();
-        final var result = subject.tryToHydrate(ethTxn, fileStore);
+        final var result = subject.tryToHydrate(ethTxn, fileStore, 1001L);
         assertFalse(result.isAvailable());
         assertEquals(INVALID_FILE_ID, result.status());
     }
@@ -110,7 +110,7 @@ class EthereumCallDataHydrationTest {
                 .ethereumData(ETH_WITH_TO_ADDRESS)
                 .callData(ETH_CALLDATA_FILE_ID)
                 .build();
-        final var result = subject.tryToHydrate(ethTxn, fileStore);
+        final var result = subject.tryToHydrate(ethTxn, fileStore, 1001L);
         assertFalse(result.isAvailable());
         assertEquals(FILE_DELETED, result.status());
     }
@@ -123,7 +123,7 @@ class EthereumCallDataHydrationTest {
                 .ethereumData(ETH_WITH_TO_ADDRESS)
                 .callData(ETH_CALLDATA_FILE_ID)
                 .build();
-        final var result = subject.tryToHydrate(ethTxn, fileStore);
+        final var result = subject.tryToHydrate(ethTxn, fileStore, 1001L);
         assertFalse(result.isAvailable());
         assertEquals(INVALID_FILE_ID, result.status());
     }
@@ -136,7 +136,7 @@ class EthereumCallDataHydrationTest {
                 .ethereumData(ETH_WITH_TO_ADDRESS)
                 .callData(ETH_CALLDATA_FILE_ID)
                 .build();
-        final var result = subject.tryToHydrate(ethTxn, fileStore);
+        final var result = subject.tryToHydrate(ethTxn, fileStore, 1001L);
         assertFalse(result.isAvailable());
         assertEquals(CONTRACT_FILE_EMPTY, result.status());
     }
@@ -152,7 +152,7 @@ class EthereumCallDataHydrationTest {
                 .ethereumData(ETH_WITH_TO_ADDRESS)
                 .callData(ETH_CALLDATA_FILE_ID)
                 .build();
-        final var result = subject.tryToHydrate(ethTxn, fileStore);
+        final var result = subject.tryToHydrate(ethTxn, fileStore, 1001L);
         assertTrue(result.isAvailable());
         assertEquals(expectedData, result.ethTxData());
     }

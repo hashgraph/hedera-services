@@ -1250,6 +1250,8 @@ class ContractCreateTransitionLogicTest {
     void throwsErrorOnInvalidBytecode() {
         given(hfs.cat(any())).willReturn(new byte[] {1, 2, 3, '\n'});
         given(transactionBody.getConstructorParameters()).willReturn(ByteString.EMPTY);
+        given(transactionBody.getFileID())
+                .willReturn(FileID.newBuilder().setFileNum(1234L).build());
         // when:
         Exception exception = assertThrows(
                 InvalidTransactionException.class, () -> subject.prepareCodeWithConstructorArguments(transactionBody));
@@ -1259,6 +1261,8 @@ class ContractCreateTransitionLogicTest {
 
     @Test
     void throwsErrorOnUnfetchableBytecode() {
+        given(transactionBody.getFileID())
+                .willReturn(FileID.newBuilder().setFileNum(1234L).build());
         given(hfs.cat(any()))
                 .willThrow(new IllegalArgumentException(TieredHederaFs.IllegalArgumentType.DELETED_FILE.toString()));
         assertFailsWith(() -> subject.prepareCodeWithConstructorArguments(transactionBody), FILE_DELETED);

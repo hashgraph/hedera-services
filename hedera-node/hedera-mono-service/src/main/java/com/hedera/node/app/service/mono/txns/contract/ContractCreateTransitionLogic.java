@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.mono.txns.contract;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
-import static com.hedera.node.app.service.mono.config.HederaNumbers.NUM_RESERVED_SYSTEM_ENTITIES;
+import static com.hedera.node.app.service.mono.config.HederaNumbers.FIRST_USER_ENTITY;
 import static com.hedera.node.app.service.mono.ledger.accounts.ContractCustomizer.fromHapiCreation;
 import static com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer.hasStakedId;
 import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
@@ -352,7 +352,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
             return Bytes.wrap(ByteStringUtils.unwrapUnsafelyIfPossible(op.getInitcode()));
         } else {
             final var bytecodeSrc = op.getFileID();
-            validateFalse(bytecodeSrc.getFileNum() <= NUM_RESERVED_SYSTEM_ENTITIES, INVALID_FILE_ID);
+            validateFalse(bytecodeSrc.getFileNum() < FIRST_USER_ENTITY, INVALID_FILE_ID);
             final byte[] bytecode;
             try {
                 bytecode = hfs.cat(bytecodeSrc);
