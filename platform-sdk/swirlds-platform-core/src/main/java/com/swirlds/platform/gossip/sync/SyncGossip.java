@@ -101,7 +101,7 @@ public class SyncGossip extends AbstractGossip {
     private final InterruptableConsumer<EventIntakeTask> eventIntakeLambda;
 
     /**
-     * Monitor's progress of events from each peer through the intake pipeline
+     * Keeps track of the number of events in the intake pipeline from each peer
      */
     private final IntakeEventCounter intakeEventCounter;
 
