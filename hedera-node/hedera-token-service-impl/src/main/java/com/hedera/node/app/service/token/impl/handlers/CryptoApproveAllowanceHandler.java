@@ -508,7 +508,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
         return feeContext
                 .feeCalculator(SubType.DEFAULT)
                 .addBytesPerTransaction(bytesUsedInTxn(op))
-                .addRamByteSeconds(adjustedBytes * lifeTime)
+                .addRamByteSeconds(adjustedBytes > 0 ? (adjustedBytes * lifeTime) : 0)
                 .calculate();
     }
 
