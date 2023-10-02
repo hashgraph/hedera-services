@@ -271,7 +271,7 @@ public class CustomFeeAssessmentStep {
             for (final var aa : ftTransfers) {
                 final var adjustment = aa.amount();
 
-                boolean isFungible = token.tokenType().equals(FUNGIBLE_COMMON);
+                final boolean isFungible = token.tokenType().equals(FUNGIBLE_COMMON);
                 validateFalse(
                         !isFungible && adjustment != 0, ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON);
 

@@ -283,17 +283,4 @@ public class CustomFeesValidator {
             }
         }
     }
-
-//    private void validateFractionalFeeForCreation(
-//            @NonNull final TokenType tokenType,
-//            @NonNull final CustomFee fee,
-//            @NonNull final Set<CustomFee> feesWithCollectorsToAutoAssociate) {
-//        validateTrue(isFungibleCommon(tokenType), CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON);
-//
-//        final var fractionalFee = fee.fractionalFeeOrThrow();
-//        if (fractionalFee.hasFractionalAmount()) {
-//            final var copy = fee.copyBuilder();
-//            feesWithCollectorsToAutoAssociate.add(copy.build());
-//        }
-//    }
 }
