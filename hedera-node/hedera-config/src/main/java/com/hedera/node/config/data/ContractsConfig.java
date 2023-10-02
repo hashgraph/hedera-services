@@ -51,7 +51,7 @@ public record ContractsConfig(
         @ConfigProperty(defaultValue = "5000000") @NetworkProperty long maxNumber,
         // CHAINID returns 295 (0x0127) for mainnet, 296 (0x0128) for testnet, and 297 (0x0129) for previewnet.
         // c.f. https://hips.hedera.com/hip/hip-26 for reference
-        @ConfigProperty(defaultValue = "298") @NetworkProperty int chainId,
+        @ConfigProperty(defaultValue = "295") @NetworkProperty int chainId,
         @ConfigProperty(defaultValue = "CONTRACT_STATE_CHANGE,CONTRACT_BYTECODE,CONTRACT_ACTION") @NetworkProperty
                 Set<SidecarType> sidecars,
         @ConfigProperty(defaultValue = "false") @NetworkProperty boolean sidecarValidationEnabled,
