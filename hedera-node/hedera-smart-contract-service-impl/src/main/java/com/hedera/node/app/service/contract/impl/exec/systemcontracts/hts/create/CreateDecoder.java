@@ -60,6 +60,12 @@ public class CreateDecoder {
         return bodyOf(createToken(tokenCreateWrapper));
     }
 
+    /**
+     * Decodes a call to {@link CreateTranslator#CREATE_FUNGIBLE_WITH_CUSTOM_FEES} into a synthetic {@link TransactionBody}.
+     *
+     * @param encoded the encoded call
+     * @return the synthetic transaction body
+     */
     public TransactionBody decodeCreateFungibleTokenWithCustomFees(
             @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
         final var call = CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES.decodeCall(encoded);
@@ -68,6 +74,12 @@ public class CreateDecoder {
         return bodyOf(createToken(tokenCreateWrapper));
     }
 
+    /**
+     * Decodes a call to {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN} into a synthetic {@link TransactionBody}.
+     *
+     * @param encoded the encoded call
+     * @return the synthetic transaction body
+     */
     public TransactionBody decodeCreateNonFungible(
             @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
         final var call = CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN.decodeCall(encoded);
