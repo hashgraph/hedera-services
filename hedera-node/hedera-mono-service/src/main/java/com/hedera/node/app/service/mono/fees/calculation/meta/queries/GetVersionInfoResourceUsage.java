@@ -41,13 +41,4 @@ public final class GetVersionInfoResourceUsage implements QueryResourceUsageEsti
     public FeeData usageGiven(final Query query, final StateView view, final Map<String, Object> ignoreCtx) {
         return FixedUsageEstimates.getVersionInfoUsage();
     }
-
-    /**
-     * This method is used to calculate the fee for the {@code NetworkGetVersionInfo}
-     * query in modularized code only.
-     * @return the fee for the query
-     */
-    public static FeeData usageGiven() {
-        return FixedUsageEstimates.getVersionInfoUsage();
-    }
 }
