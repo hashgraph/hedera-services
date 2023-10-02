@@ -1479,6 +1479,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         resetToDefault(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT1));
     }
 
+    @HapiTest
     private HapiSpec createMinChargeIsTXGasUsedByContractCreate() {
         return defaultHapiSpec("CreateMinChargeIsTXGasUsedByContractCreate")
                 .given(
@@ -2075,6 +2076,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                 .has(accountDetailsWith().tokenAllowancesCount(0)));
     }
 
+    @HapiTest
     private HapiSpec whitelistNegativeCases() {
         final AtomicLong unlistedCalleeMirrorNum = new AtomicLong();
         final AtomicLong whitelistedCalleeMirrorNum = new AtomicLong();
@@ -2149,6 +2151,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                 .has(accountDetailsWith().tokenAllowancesCount(0)));
     }
 
+    @HapiTest
     private HapiSpec contractCreateNoncesExternalizationHappyPath() {
         final var contract = "NoncesExternalization";
         final var contractCreateTxn = "contractCreateTxn";
