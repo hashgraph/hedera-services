@@ -37,7 +37,14 @@ public class DefaultIntakeEventCounter implements IntakeEventCounter {
      * Lambda to update the intake counter when an event exits the intake pipeline. The lambda decrements the counter,
      * but prevents it from going below 0.
      */
-    private static final IntUnaryOperator EXIT_INTAKE = count -> count > 0 ? count - 1 : 0;
+    private static final IntUnaryOperator EXIT_INTAKE = count -> {
+        if (count > 0) {
+            return count - 1;
+        } else {
+            throw new IllegalStateException(
+                    "Event processed from peer, but no events from that peer were in the intake pipeline. This shouldn't be possible.");
+        }
+    };
 
     /**
      * A map from node id to an atomic integer, which represents the number of events from that peer that have been
@@ -88,11 +95,7 @@ public class DefaultIntakeEventCounter implements IntakeEventCounter {
             return;
         }
 
-        if (unprocessedEventCounts.get(peer).getAndUpdate(EXIT_INTAKE) == 0) {
-            throw new IllegalStateException(
-                    "Event processed from node %s, but no known events from that peer were in the intake pipeline. This shouldn't be possible."
-                            .formatted(peer));
-        }
+        unprocessedEventCounts.get(peer).getAndUpdate(EXIT_INTAKE);
     }
 
     /**
