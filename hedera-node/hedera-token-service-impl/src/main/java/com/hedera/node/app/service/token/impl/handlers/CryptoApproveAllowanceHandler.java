@@ -579,6 +579,11 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
         return counter;
     }
 
+    /**
+     * Counts the number of serials in the list of nft allowances. It doesn't consider duplicates.
+     * @param nftAllowancesList the list of nft allowances
+     * @return the number of serials
+     */
     private int countSerials(final List<NftAllowance> nftAllowancesList) {
         int totalSerials = 0;
         for (var allowance : nftAllowancesList) {

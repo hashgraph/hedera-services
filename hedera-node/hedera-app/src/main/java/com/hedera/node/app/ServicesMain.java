@@ -49,7 +49,7 @@ public class ServicesMain implements SwirldMain {
     public ServicesMain() {
         final var configProvider = new ConfigProviderImpl(false);
         final var hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
-        if (hederaConfig.workflowsEnabled().isEmpty()) {
+        if (false) {
             logger.info("No workflows enabled, using mono-service");
             delegate = new MonoServicesMain();
         } else {
