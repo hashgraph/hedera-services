@@ -17,11 +17,16 @@
 package contract;
 
 import static contract.AssociationsXTestConstants.A_TOKEN_ID;
-import static contract.XTestConstants.ERC20_TOKEN_ADDRESS;
+import static contract.CreatesXTestConstants.DECIMALS;
+import static contract.CreatesXTestConstants.FIXED_FEE;
+import static contract.CreatesXTestConstants.FRACTIONAL_FEE;
+import static contract.CreatesXTestConstants.HEDERA_TOKEN_STRUCT;
+import static contract.CreatesXTestConstants.INITIAL_TOTAL_SUPPLY;
+import static contract.CreatesXTestConstants.NAME;
+import static contract.CreatesXTestConstants.MEMO;
+import static contract.CreatesXTestConstants.SYMBOL;
 import static contract.XTestConstants.OWNER_ADDRESS;
-import static contract.XTestConstants.OWNER_HEADLONG_ADDRESS;
 import static contract.XTestConstants.OWNER_ID;
-import static contract.XTestConstants.RECEIVER_HEADLONG_ADDRESS;
 import static contract.XTestConstants.SENDER_ADDRESS;
 import static contract.XTestConstants.SENDER_BESU_ADDRESS;
 import static contract.XTestConstants.SENDER_CONTRACT_ID_KEY;
@@ -36,22 +41,11 @@ import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator;
-import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.tuweni.bytes.Bytes;
 
 public class CreatesXTest extends AbstractContractXTest {
-
-    private static final long INITIAL_TOTAL_SUPPLY = 10L;
-    private static final int DECIMALS = 8;
-    private static final String NAME = "name";
-    private static final String SYMBOL = "symbol";
-    private static final String MEMO = "memo";
-    private static final long MAX_SUPPLY = 1000L;
-    private static final long KEY_TYPE = 1L;
-    private static final long SECOND = 123L;
-    private static final long AUTO_RENEW_PERIOD = 2592000L;
 
     @Override
     protected void doScenarioOperations() {
@@ -60,27 +54,7 @@ public class CreatesXTest extends AbstractContractXTest {
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN
                         .encodeCallWithArgs(
-                                Tuple.of(
-                                        NAME,
-                                        SYMBOL,
-                                        OWNER_HEADLONG_ADDRESS,
-                                        MEMO,
-                                        true,
-                                        MAX_SUPPLY,
-                                        false,
-                                        // TokenKey
-                                        new Tuple[] {
-                                            Tuple.of(
-                                                    BigInteger.valueOf(KEY_TYPE),
-                                                    Tuple.of(
-                                                            true,
-                                                            RECEIVER_HEADLONG_ADDRESS,
-                                                            new byte[] {},
-                                                            new byte[] {},
-                                                            RECEIVER_HEADLONG_ADDRESS))
-                                        },
-                                        // Expiry
-                                        Tuple.of(SECOND, OWNER_HEADLONG_ADDRESS, AUTO_RENEW_PERIOD)),
+                                HEDERA_TOKEN_STRUCT,
                                 INITIAL_TOTAL_SUPPLY,
                                 DECIMALS)
                         .array()),
@@ -97,24 +71,13 @@ public class CreatesXTest extends AbstractContractXTest {
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES
                         .encodeCallWithArgs(
-                                Tuple.of(
-                                        NAME,
-                                        SYMBOL,
-                                        OWNER_HEADLONG_ADDRESS,
-                                        MEMO,
-                                        true,
-                                        MAX_SUPPLY,
-                                        false,
-                                        // TokenKey
-                                        new Tuple[] {},
-                                        // Expiry
-                                        Tuple.of(SECOND, OWNER_HEADLONG_ADDRESS, AUTO_RENEW_PERIOD)),
+                                HEDERA_TOKEN_STRUCT,
                                 INITIAL_TOTAL_SUPPLY,
                                 DECIMALS,
                                 // FixedFee
-                                new Tuple[] {Tuple.of(100L, ERC20_TOKEN_ADDRESS, false, false, OWNER_HEADLONG_ADDRESS)},
+                                new Tuple[] {FIXED_FEE},
                                 // FractionalFee
-                                new Tuple[] {Tuple.of(100L, 100L, 100L, 100L, true, OWNER_HEADLONG_ADDRESS)})
+                                new Tuple[] {FRACTIONAL_FEE})
                         .array()),
                 assertSuccess());
 
@@ -122,28 +85,7 @@ public class CreatesXTest extends AbstractContractXTest {
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN
-                        .encodeCallWithArgs(
-                                Tuple.of(
-                                        NAME,
-                                        SYMBOL,
-                                        OWNER_HEADLONG_ADDRESS,
-                                        MEMO,
-                                        true,
-                                        MAX_SUPPLY,
-                                        false,
-                                        // TokenKey
-                                        new Tuple[]{
-                                                Tuple.of(
-                                                        BigInteger.valueOf(KEY_TYPE),
-                                                        Tuple.of(
-                                                                true,
-                                                                RECEIVER_HEADLONG_ADDRESS,
-                                                                new byte[]{},
-                                                                new byte[]{},
-                                                                RECEIVER_HEADLONG_ADDRESS))
-                                        },
-                                        // Expiry
-                                        Tuple.of(SECOND, OWNER_HEADLONG_ADDRESS, AUTO_RENEW_PERIOD)))
+                        .encodeCallWithArgs(HEDERA_TOKEN_STRUCT)
                         .array()),
                 assertSuccess());
     }
