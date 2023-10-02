@@ -52,9 +52,9 @@ import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.Arrays;
 
 /**
  * This class contains all workflow-related functionality regarding {@link HederaFunctionality#FILE_UPDATE}.
@@ -163,18 +163,17 @@ public class FileUpdateHandler implements TransactionHandler {
 
     private boolean isSpecialAccount(@NonNull final AccountID accountID, @NonNull final AccountsConfig accountsConfig) {
         long[] specialAccounts = {
-                accountsConfig.addressBookAdmin(),
-                accountsConfig.feeSchedulesAdmin(),
-                accountsConfig.exchangeRatesAdmin(),
-                accountsConfig.freezeAdmin(),
-                accountsConfig.treasury(),
-                accountsConfig.systemAdmin(),
-
-                accountsConfig.lastThrottleExempt(),
-                accountsConfig.nodeRewardAccount(),
-                accountsConfig.stakingRewardAccount(),
-                accountsConfig.systemDeleteAdmin(),
-                accountsConfig.systemUndeleteAdmin(),
+            accountsConfig.addressBookAdmin(),
+            accountsConfig.feeSchedulesAdmin(),
+            accountsConfig.exchangeRatesAdmin(),
+            accountsConfig.freezeAdmin(),
+            accountsConfig.treasury(),
+            accountsConfig.systemAdmin(),
+            accountsConfig.lastThrottleExempt(),
+            accountsConfig.nodeRewardAccount(),
+            accountsConfig.stakingRewardAccount(),
+            accountsConfig.systemDeleteAdmin(),
+            accountsConfig.systemUndeleteAdmin(),
         };
         Arrays.sort(specialAccounts);
         return Arrays.binarySearch(specialAccounts, accountID.accountNumOrThrow()) >= 0;

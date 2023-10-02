@@ -99,7 +99,6 @@ public class PrivilegedOpsSuite extends HapiSuite {
             .mapToObj(i -> getTopicInfo("misc").nodePayment(100L).payingWith(payer))
             .toArray(HapiSpecOperation[]::new);
 
-    // passes
     @HapiTest
     private HapiSpec freezeAdminPrivilegesAsExpected() {
         return defaultHapiSpec("freezeAdminPrivilegesAsExpected")
@@ -143,7 +142,6 @@ public class PrivilegedOpsSuite extends HapiSuite {
                         fileAppend(UPDATE_ZIP_FILE).fee(0L).payingWith(GENESIS).content(new byte[0]));
     }
 
-    @HapiTest
     private HapiSpec systemAccountUpdatePrivilegesAsExpected() {
         final var tmpTreasury = "tmpTreasury";
         return defaultHapiSpec("systemAccountUpdatePrivilegesAsExpected")
@@ -239,8 +237,6 @@ public class PrivilegedOpsSuite extends HapiSuite {
                                 .contents(defaultThrottles)));
     }
 
-    // passes
-    // takes 5 minutes
     @HapiTest
     private HapiSpec superusersAreNeverThrottledOnHcsTxns() {
         return defaultHapiSpec("superusersAreNeverThrottledOnHcsTxns")
@@ -259,7 +255,6 @@ public class PrivilegedOpsSuite extends HapiSuite {
                                 .contents(defaultThrottles)));
     }
 
-    // passes
     @HapiTest
     private HapiSpec superusersAreNeverThrottledOnMiscQueries() {
         return defaultHapiSpec("superusersAreNeverThrottledOnMiscQueries")
@@ -278,7 +273,6 @@ public class PrivilegedOpsSuite extends HapiSuite {
                                 .contents(defaultThrottles)));
     }
 
-    // passes
     @HapiTest
     private HapiSpec superusersAreNeverThrottledOnHcsQueries() {
         return defaultHapiSpec("superusersAreNeverThrottledOnHcsQueries")
