@@ -34,7 +34,7 @@ import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.delete.DeleteCall;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
-import com.hedera.node.app.service.token.records.TokenDeleteRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import java.math.BigInteger;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -52,7 +52,7 @@ class DeleteCallTest extends HtsCallTestBase {
     private AddressIdConverter addressIdConverter;
 
     @Mock
-    private TokenDeleteRecordBuilder recordBuilder;
+    private SingleTransactionRecordBuilder recordBuilder;
 
     private DeleteCall subject;
 
@@ -90,7 +90,7 @@ class DeleteCallTest extends HtsCallTestBase {
                         any(TransactionBody.class),
                         eq(verificationStrategy),
                         eq(A_NEW_ACCOUNT_ID),
-                        eq(TokenDeleteRecordBuilder.class)))
+                        eq(SingleTransactionRecordBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
     }
