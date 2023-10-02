@@ -33,6 +33,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import javax.inject.Singleton;
@@ -132,16 +133,18 @@ public class GenesisRecordsConsensusHook implements GenesisRecordsBuilder, Conse
             @NonNull final TokenContext context,
             @Nullable final String recordMemo,
             @Nullable final Long overrideAutoRenewPeriod) {
-        for (Map.Entry<Account, CryptoCreateTransactionBody.Builder> entry : map.entrySet()) {
+        final var orderedAccts = map.keySet().stream()
+                .sorted(Comparator.comparingLong(acct -> acct.accountId().accountNum()))
+                .toList();
+        for (final Account key : orderedAccts) {
             final var recordBuilder = context.addPrecedingChildRecordBuilder(GenesisAccountRecordBuilder.class);
-
-            final var accountId = requireNonNull(entry.getKey().accountId());
+            final var accountId = requireNonNull(key.accountId());
             recordBuilder.accountID(accountId);
             if (recordMemo != null) {
                 recordBuilder.memo(recordMemo);
             }
 
-            var txnBody = entry.getValue();
+            var txnBody = map.get(key);
             if (overrideAutoRenewPeriod != null) {
                 txnBody.autoRenewPeriod(Duration.newBuilder().seconds(overrideAutoRenewPeriod));
             }
@@ -149,7 +152,7 @@ public class GenesisRecordsConsensusHook implements GenesisRecordsBuilder, Conse
                     Transaction.newBuilder().body(TransactionBody.newBuilder().cryptoCreateAccount(txnBody));
             recordBuilder.transaction(txnBuilder.build());
 
-            log.info("Queued synthetic CryptoCreate for {} account {}", recordMemo, accountId);
+            log.debug("Queued synthetic CryptoCreate for {} account {}", recordMemo, accountId);
         }
     }
 }

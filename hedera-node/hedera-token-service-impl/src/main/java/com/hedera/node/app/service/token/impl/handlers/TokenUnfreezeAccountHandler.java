@@ -20,11 +20,13 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.TokenUnfreezeAccountTransactionBody;
@@ -33,6 +35,9 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -77,7 +82,8 @@ public class TokenUnfreezeAccountHandler implements TransactionHandler {
         final var accountStore = context.readableStore(ReadableAccountStore.class);
         final var tokenStore = context.readableStore(ReadableTokenStore.class);
         final var tokenRelStore = context.writableStore(WritableTokenRelationStore.class);
-        final var tokenRel = validateSemantics(op, accountStore, tokenStore, tokenRelStore);
+        final var expiryValidator = context.expiryValidator();
+        final var tokenRel = validateSemantics(op, accountStore, tokenStore, tokenRelStore, expiryValidator);
 
         final var copyBuilder = tokenRel.copyBuilder();
         copyBuilder.frozen(false);
@@ -109,7 +115,8 @@ public class TokenUnfreezeAccountHandler implements TransactionHandler {
             @NonNull final TokenUnfreezeAccountTransactionBody op,
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final ReadableTokenStore tokenStore,
-            @NonNull final WritableTokenRelationStore tokenRelStore)
+            @NonNull final WritableTokenRelationStore tokenRelStore,
+            @NonNull final ExpiryValidator expiryValidator)
             throws HandleException {
         // Check that the token meta exists
         final var tokenId = op.tokenOrElse(TokenID.DEFAULT);
@@ -121,8 +128,8 @@ public class TokenUnfreezeAccountHandler implements TransactionHandler {
 
         // Check that the account exists
         final var accountId = op.accountOrElse(AccountID.DEFAULT);
-        final var account = accountStore.getAccountById(accountId);
-        validateTrue(account != null, INVALID_ACCOUNT_ID);
+        final var account =
+                TokenHandlerHelper.getIfUsable(accountId, accountStore, expiryValidator, INVALID_ACCOUNT_ID);
 
         // Check that token exists
         TokenHandlerHelper.getIfUsable(tokenId, tokenStore);
@@ -133,5 +140,15 @@ public class TokenUnfreezeAccountHandler implements TransactionHandler {
 
         // Return the token relation
         return tokenRel;
+    }
+
+    @NonNull
+    @Override
+    public Fees calculateFees(@NonNull final FeeContext feeContext) {
+        final var meta = TOKEN_OPS_USAGE_UTILS.tokenUnfreezeUsageFrom();
+        return feeContext
+                .feeCalculator(SubType.DEFAULT)
+                .addBytesPerTransaction(meta.getBpt())
+                .calculate();
     }
 }

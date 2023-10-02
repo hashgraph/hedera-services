@@ -18,17 +18,26 @@ package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.txnEstimateFactory;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
+import com.hedera.node.app.service.mono.fees.calculation.token.txns.TokenGrantKycResourceUsage;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -44,10 +53,9 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class TokenGrantKycToAccountHandler implements TransactionHandler {
+
     @Inject
-    public TokenGrantKycToAccountHandler() {
-        // Exists for injection
-    }
+    public TokenGrantKycToAccountHandler() {}
 
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
@@ -95,7 +103,10 @@ public class TokenGrantKycToAccountHandler implements TransactionHandler {
 
         final var targetTokenId = op.tokenOrThrow();
         final var targetAccountId = op.accountOrThrow();
-        final var tokenRelation = validateSemantics(targetAccountId, targetTokenId, tokenRelStore, tokenStore);
+        final var accountStore = handleContext.readableStore(ReadableAccountStore.class);
+        final var expiryValidator = handleContext.expiryValidator();
+        final var tokenRelation = validateSemantics(
+                targetAccountId, targetTokenId, tokenRelStore, accountStore, expiryValidator, tokenStore);
 
         final var tokenRelBuilder = tokenRelation.copyBuilder();
         tokenRelBuilder.kycGranted(true);
@@ -112,12 +123,30 @@ public class TokenGrantKycToAccountHandler implements TransactionHandler {
             @NonNull final AccountID accountId,
             @NonNull final TokenID tokenId,
             @NonNull final WritableTokenRelationStore tokenRelStore,
+            @NonNull final ReadableAccountStore accountStore,
+            @NonNull final ExpiryValidator expiryValidator,
             @NonNull final ReadableTokenStore tokenStore)
             throws HandleException {
+        final var account =
+                TokenHandlerHelper.getIfUsable(accountId, accountStore, expiryValidator, INVALID_ACCOUNT_ID);
         final var token = TokenHandlerHelper.getIfUsable(tokenId, tokenStore);
-        final var tokenRel = tokenRelStore.getForModify(accountId, tokenId);
-        validateTrue(tokenRel != null, INVALID_TOKEN_ID);
+        final var tokenRel = TokenHandlerHelper.getIfUsable(accountId, tokenId, tokenRelStore);
 
         return tokenRel;
+    }
+
+    @NonNull
+    @Override
+    public Fees calculateFees(@NonNull final FeeContext feeContext) {
+        requireNonNull(feeContext);
+        final var op = feeContext.body();
+
+        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> {
+            try {
+                return new TokenGrantKycResourceUsage(txnEstimateFactory).usageGiven(fromPbj(op), sigValueObj, null);
+            } catch (InvalidTxBodyException e) {
+                throw new HandleException(INVALID_TRANSACTION_BODY);
+            }
+        });
     }
 }

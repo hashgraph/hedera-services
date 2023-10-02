@@ -1270,7 +1270,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
         }
 
         // iterate over leaf records
-        dirtyLeaves.sorted(Comparator.comparingLong(VirtualLeafRecord::getPath)).forEach(leafRecord -> {
+        dirtyLeaves.sorted(Comparator.comparingLong(VirtualLeafRecord::getPath)).forEachOrdered(leafRecord -> {
             // update objectKeyToPath
             if (isLongKeyMode) {
                 longKeyToPath.put(((VirtualLongKey) leafRecord.getKey()).getKeyAsLong(), leafRecord.getPath());

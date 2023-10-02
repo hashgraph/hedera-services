@@ -37,12 +37,15 @@ import com.hedera.hapi.node.token.CryptoGetInfoQuery;
 import com.hedera.hapi.node.token.CryptoGetInfoResponse;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
+import com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage;
+import com.hedera.node.app.service.mono.fees.calculation.crypto.queries.GetAccountInfoResourceUsage;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.api.AccountSummariesApi;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
@@ -60,9 +63,11 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
+    private final CryptoOpsUsage cryptoOpsUsage;
 
     @Inject
-    public CryptoGetAccountInfoHandler() {
+    public CryptoGetAccountInfoHandler(final CryptoOpsUsage cryptoOpsUsage) {
+        this.cryptoOpsUsage = cryptoOpsUsage;
         // Dagger2
     }
 
@@ -170,5 +175,19 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
                     stakingInfoStore));
             return Optional.of(info.build());
         }
+    }
+
+    @NonNull
+    @Override
+    public Fees computeFees(@NonNull final QueryContext queryContext) {
+        final var query = queryContext.query();
+        final var accountStore = queryContext.createStore(ReadableAccountStore.class);
+        final var op = query.cryptoGetInfoOrThrow();
+        final var accountId = op.accountIDOrThrow();
+        final var account = accountStore.getAccountById(accountId);
+
+        return queryContext.feeCalculator().legacyCalculate(sigValueObj -> new GetAccountInfoResourceUsage(
+                        cryptoOpsUsage, null, null, null)
+                .usageGiven(query, account));
     }
 }
