@@ -45,6 +45,9 @@ public class GossipEvent implements EventIntakeTask, BaseEvent, ChatterEvent {
 
     /**
      * The id of the node which sent us this event
+     * <p>
+     * The sender ID of an event should not be serialized when an event is serialized, and it should not affect the
+     * hash of the event in any way.
      */
     private NodeId senderId;
 
