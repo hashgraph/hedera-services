@@ -72,8 +72,11 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
 
             for (final var aa : xfers.transfersOrElse(emptyList())) {
                 final var accountId = aa.accountID();
-                validateAndBuildAutoAssociation(
-                        accountId, tokenId, token, accountStore, tokenRelStore, handleContext, newAssociations);
+                final TokenAssociation newAssociation = validateAndBuildAutoAssociation(
+                        accountId, tokenId, token, accountStore, tokenRelStore, handleContext);
+                if (newAssociation != null) {
+                    newAssociations.add(newAssociation);
+                }
             }
 
             for (final var aa : xfers.nftTransfersOrElse(emptyList())) {
@@ -91,8 +94,11 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
                     validateTrue(token.treasuryAccountId().equals(senderId), SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
                 }
 
-                validateAndBuildAutoAssociation(
-                        receiverId, tokenId, token, accountStore, tokenRelStore, handleContext, newAssociations);
+                final TokenAssociation newAssociation = validateAndBuildAutoAssociation(
+                        receiverId, tokenId, token, accountStore, tokenRelStore, handleContext);
+                if (newAssociation != null) {
+                    newAssociations.add(newAssociation);
+                }
             }
         }
 
@@ -111,16 +117,14 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
      * @param accountStore      The account store
      * @param tokenRelStore     The token relation store
      * @param handleContext     The context
-     * @param newAssociations   The list of new associations to be created after all validations
      */
-    private void validateAndBuildAutoAssociation(
+    private TokenAssociation validateAndBuildAutoAssociation(
             @NonNull final AccountID accountId,
             @NonNull final TokenID tokenId,
             @NonNull final Token token,
             @NonNull final WritableAccountStore accountStore,
             @NonNull final WritableTokenRelationStore tokenRelStore,
-            @NonNull final HandleContext handleContext,
-            @NonNull final List<TokenAssociation> newAssociations) {
+            @NonNull final HandleContext handleContext) {
         final var account = getIfUsable(accountId, accountStore, handleContext.expiryValidator(), INVALID_ACCOUNT_ID);
         final var tokenRel = tokenRelStore.get(accountId, tokenId);
 
@@ -128,11 +132,11 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
             validateFalse(token.hasKycKey(), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
             validateFalse(token.accountsFrozenByDefault(), ACCOUNT_FROZEN_FOR_TOKEN);
             final var newRelation = autoAssociate(account, token, accountStore, tokenRelStore, handleContext);
-            TokenAssociation newAssociation = asTokenAssociation(newRelation.tokenId(), newRelation.accountId());
-            newAssociations.add(newAssociation);
+            return asTokenAssociation(newRelation.tokenId(), newRelation.accountId());
         } else {
             validateTrue(tokenRel != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
             validateFalse(tokenRel.frozen(), ACCOUNT_FROZEN_FOR_TOKEN);
+            return null;
         }
     }
 }
