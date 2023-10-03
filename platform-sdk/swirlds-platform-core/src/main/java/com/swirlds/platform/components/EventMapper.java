@@ -23,7 +23,6 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.event.EventConstants;
-import com.swirlds.platform.event.SelfEventStorage;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.EventAddedObserver;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -39,7 +38,7 @@ import java.util.stream.Collectors;
  * recent event added and will not check the ordering of these events. If a fork exists, it will track whichever fork is
  * added last.
  */
-public class EventMapper implements EventAddedObserver, SelfEventStorage, Clearable {
+public class EventMapper implements EventAddedObserver, Clearable {
     private static final EventMapping DEFAULT_RETURN = new EventMapping(null);
     /**
      * Contains the most recent event added from each node, with information about its descendants
@@ -112,23 +111,6 @@ public class EventMapper implements EventAddedObserver, SelfEventStorage, Cleara
     @Nullable
     public synchronized EventImpl getMostRecentEvent(@Nullable final NodeId nodeId) {
         return mappings.getOrDefault(nodeId, DEFAULT_RETURN).getEvent();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @Nullable
-    public synchronized EventImpl getMostRecentSelfEvent() {
-        return getMostRecentEvent(selfId);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public synchronized void setMostRecentSelfEvent(final EventImpl selfEvent) {
-        // does nothing, self events will be added through the eventAdded() method
     }
 
     /**

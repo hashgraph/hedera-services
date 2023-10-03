@@ -19,14 +19,10 @@ package com.swirlds.platform.test.event.creation;
 import com.swirlds.common.system.EventCreationRule;
 import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.platform.components.EventCreationRules;
-import com.swirlds.platform.event.creation.LoggingEventCreationRules;
 import com.swirlds.platform.event.creation.ParentBasedCreationRule;
-import com.swirlds.platform.event.creation.StaticCreationRules;
-import com.swirlds.platform.internal.EventImpl;
 import java.util.List;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 class EventCreationRulesTest {
     private static final EventCreationRule PASS_1 = () -> EventCreationRuleResponse.PASS;
@@ -47,7 +43,6 @@ class EventCreationRulesTest {
             final List<ParentBasedCreationRule> parentRules,
             final EventCreationRuleResponse expectedResponse) {
         check(new EventCreationRules(basicRules, parentRules), expectedResponse);
-        check(LoggingEventCreationRules.create(basicRules, parentRules), expectedResponse);
     }
 
     private static void check(
@@ -74,13 +69,5 @@ class EventCreationRulesTest {
     @Test
     void dontCreate() {
         check(List.of(PASS_1, PASS_1, DONT_1), List.of(DONT_2, PASS_2), EventCreationRuleResponse.DONT_CREATE);
-    }
-
-    @Test
-    void nullOtherParent() {
-        Assertions.assertEquals(EventCreationRuleResponse.DONT_CREATE, StaticCreationRules.nullOtherParent(null, null));
-        Assertions.assertEquals(
-                EventCreationRuleResponse.PASS,
-                StaticCreationRules.nullOtherParent(null, Mockito.mock(EventImpl.class)));
     }
 }
