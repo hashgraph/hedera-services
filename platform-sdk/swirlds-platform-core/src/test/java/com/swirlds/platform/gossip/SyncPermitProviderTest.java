@@ -14,41 +14,44 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.threading;
+package com.swirlds.platform.gossip;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 
-import com.swirlds.common.threading.locks.locked.MaybeLocked;
+import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.address.AddressBook;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
+import java.util.Set;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 class SyncPermitProviderTest {
+    private final NodeId nodeId = new NodeId(0);
+
     @Test
     @DisplayName("Permits are acquired and released properly")
     void testPermitRelease() {
         final int numPermits = 3;
-        final SyncPermitProvider syncPermitProvider = new SyncPermitProvider(numPermits);
+        final SyncPermitProvider syncPermitProvider =
+                new SyncPermitProvider(numPermits, Mockito.mock(IntakeEventCounter.class));
 
         assertEquals(numPermits, syncPermitProvider.getNumAvailable(), "all permits should be available");
 
-        try (final MaybeLocked maybeLocked = syncPermitProvider.tryAcquire()) {
-            assertTrue(maybeLocked.isLockAcquired(), "first acquire should succeed");
-            assertEquals(
-                    numPermits - 1,
-                    syncPermitProvider.getNumAvailable(),
-                    "one less permit should be available when a permit is acquired");
-        }
+        assertTrue(syncPermitProvider.tryAcquire(nodeId), "first acquire should succeed");
+        assertEquals(
+                numPermits - 1,
+                syncPermitProvider.getNumAvailable(),
+                "one less permit should be available when a permit is acquired");
+
+        syncPermitProvider.returnPermit();
 
         assertEquals(
                 numPermits,
@@ -60,17 +63,14 @@ class SyncPermitProviderTest {
     @DisplayName("Once all permits are acquired, further attempts to acquire fail")
     void testAllPermitsAcquired() {
         final int numPermits = 9;
-        final SyncPermitProvider syncPermitProvider = new SyncPermitProvider(numPermits);
+        final SyncPermitProvider syncPermitProvider =
+                new SyncPermitProvider(numPermits, Mockito.mock(IntakeEventCounter.class));
 
         assertEquals(numPermits, syncPermitProvider.getNumAvailable(), "all permits should be available");
 
-        final List<MaybeLocked> permits = new ArrayList<>(numPermits);
-
         // Acquire all the permits
         for (int i = 0; i < numPermits; i++) {
-            final MaybeLocked maybeLocked = syncPermitProvider.tryAcquire();
-            permits.add(maybeLocked);
-            assertTrue(maybeLocked.isLockAcquired(), "first acquire should succeed");
+            assertTrue(syncPermitProvider.tryAcquire(nodeId), "acquiring permit should succeed");
             assertEquals(
                     numPermits - i - 1,
                     syncPermitProvider.getNumAvailable(),
@@ -78,13 +78,11 @@ class SyncPermitProviderTest {
         }
 
         // Attempts to acquire more permits should fail
-        final MaybeLocked shouldNotAcquire = syncPermitProvider.tryAcquire();
-        assertFalse(shouldNotAcquire.isLockAcquired(), "no further permits should be able to be acquired");
+        assertFalse(syncPermitProvider.tryAcquire(nodeId), "no further permits should be able to be acquired");
 
         // Releasing permits should result in more permits being available
         for (int i = 0; i < numPermits; i++) {
-            final MaybeLocked maybeLocked = permits.get(i);
-            maybeLocked.close();
+            syncPermitProvider.returnPermit();
             assertEquals(
                     i + 1,
                     syncPermitProvider.getNumAvailable(),
@@ -96,25 +94,21 @@ class SyncPermitProviderTest {
     @DisplayName("waitForAllSyncsToFinish blocks until all permits are released")
     void testWaitForAllSyncsToFinish() {
         final int numPermits = 3;
-        final SyncPermitProvider syncPermitProvider = new SyncPermitProvider(numPermits);
+        final SyncPermitProvider syncPermitProvider =
+                new SyncPermitProvider(numPermits, Mockito.mock(IntakeEventCounter.class));
 
-        final List<MaybeLocked> permits = new ArrayList<>(numPermits);
         // Acquire all the permits
         for (int i = 0; i < numPermits; i++) {
-            final MaybeLocked maybeLocked = syncPermitProvider.tryAcquire();
-            permits.add(maybeLocked);
-            assertTrue(maybeLocked.isLockAcquired());
+            assertTrue(syncPermitProvider.tryAcquire(nodeId));
         }
 
         // Attempts to acquire more permits should fail
-        final MaybeLocked shouldNotAcquire = syncPermitProvider.tryAcquire();
-        assertFalse(shouldNotAcquire.isLockAcquired(), "no further permits should be able to be acquired");
+        assertFalse(syncPermitProvider.tryAcquire(nodeId), "no further permits should be able to be acquired");
 
         final AtomicBoolean waitComplete = new AtomicBoolean(false);
 
         // Have a separate thread wait for syncs to finish
-        final ExecutorService executorService = Executors.newSingleThreadExecutor();
-        final Future<Void> future = executorService.submit(() -> {
+        Executors.newSingleThreadExecutor().submit(() -> {
             syncPermitProvider.waitForAllSyncsToFinish();
             waitComplete.set(true);
             return null;
@@ -129,12 +123,45 @@ class SyncPermitProviderTest {
 
         assertFalse(waitComplete.get(), "waitForAllSyncsToFinish should not return until all permits are released");
 
-        // close the permits that have already been acquired, so waitForAllSyncsToFinish will return
-        permits.forEach(MaybeLocked::close);
+        for (int i = 0; i < numPermits; i++) {
+            syncPermitProvider.returnPermit();
+        }
 
         assertEventuallyTrue(
                 waitComplete::get,
                 Duration.ofMillis(1000),
                 "waitForAllSyncsToFinish should return after all permits are released");
+    }
+
+    @Test
+    @DisplayName("tryAcquire with unprocessed events")
+    void testAcquireWithUnprocessedEvents() {
+        final NodeId otherNodeId = new NodeId(1);
+
+        final AddressBook addressBook = mock(AddressBook.class);
+        Mockito.when(addressBook.getNodeIdSet()).thenReturn(Set.of(nodeId, otherNodeId));
+        final DefaultIntakeEventCounter intakeEventCounter = new DefaultIntakeEventCounter(addressBook);
+
+        final int numPermits = 3;
+        final SyncPermitProvider syncPermitProvider = new SyncPermitProvider(numPermits, intakeEventCounter);
+
+        assertTrue(syncPermitProvider.tryAcquire(nodeId), "nothing should prevent a permit from being acquired");
+
+        intakeEventCounter.eventEnteredIntakePipeline(nodeId);
+
+        // returning the permit is fine
+        syncPermitProvider.returnPermit();
+
+        assertFalse(
+                syncPermitProvider.tryAcquire(nodeId),
+                "permit should not be able to be acquired with unprocessed event in intake pipeline");
+
+        intakeEventCounter.eventExitedIntakePipeline(nodeId);
+        // an event in the pipeline for a different node shouldn't have any effect
+        intakeEventCounter.eventEnteredIntakePipeline(otherNodeId);
+
+        assertTrue(
+                syncPermitProvider.tryAcquire(nodeId),
+                "permit should be able to be acquired after event is through intake pipeline");
     }
 }
