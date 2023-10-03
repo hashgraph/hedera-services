@@ -316,7 +316,7 @@ class IngestCheckerTest extends AppTestBase {
         @DisplayName("When the transaction is throttled, the transaction should be rejected")
         void testThrottleFails() {
             // Given a throttle on CONSENSUS_CREATE_TOPIC transactions (i.e. it is time to throttle)
-            when(throttleAccumulator.shouldThrottle(txBody)).thenReturn(true);
+            when(throttleAccumulator.shouldThrottle(eq(txBody))).thenReturn(true);
 
             // When the transaction is submitted
             assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))
@@ -328,7 +328,7 @@ class IngestCheckerTest extends AppTestBase {
         @DisplayName("If some random exception is thrown from ThrottleAccumulator, the exception is bubbled up")
         void randomException() {
             // Given a ThrottleAccumulator that will throw a RuntimeException
-            when(throttleAccumulator.shouldThrottle(txBody))
+            when(throttleAccumulator.shouldThrottle(eq(txBody)))
                     .thenThrow(new RuntimeException("shouldThrottle exception"));
 
             // When the transaction is submitted, then the exception is bubbled up
