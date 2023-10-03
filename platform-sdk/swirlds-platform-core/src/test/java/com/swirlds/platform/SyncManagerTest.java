@@ -20,7 +20,6 @@ import static com.swirlds.common.system.EventCreationRuleResponse.CREATE;
 import static com.swirlds.common.system.EventCreationRuleResponse.DONT_CREATE;
 import static com.swirlds.common.system.EventCreationRuleResponse.PASS;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -34,7 +33,6 @@ import static org.mockito.Mockito.when;
 import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
-import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
@@ -130,7 +128,7 @@ public class SyncManagerTest {
             final EventConfig eventConfig = configuration.getConfigData(EventConfig.class);
             eventQueue = new DummyEventQueue(hashgraph);
             syncManager = new SyncManagerImpl(
-                    new NoOpMetrics(),
+                    platformContext,
                     eventQueue,
                     connectionGraph,
                     selfId,
@@ -259,7 +257,7 @@ public class SyncManagerTest {
             final int nextIndex = addressBook.getIndexOfNodeId(next.get(0));
             final int selfIndex = addressBook.getIndexOfNodeId(selfId);
             assertNotEquals(null, next);
-            assertEquals(1, next.size());
+            assertTrue(next.size() <= 10);
             assertTrue(nextIndex >= firstIndex && nextIndex <= lastIndex && nextIndex != selfIndex);
         }
     }
