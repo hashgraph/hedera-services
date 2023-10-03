@@ -17,6 +17,8 @@
 package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.LONG_SIZE;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.NFT_DELETE_ALLOWANCE_SIZE;
 import static com.hedera.node.app.service.token.impl.validators.AllowanceValidator.isValidOwner;
 import static com.hedera.node.app.service.token.impl.validators.ApproveAllowanceValidator.getEffectiveOwner;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -26,6 +28,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.NftRemoveAllowance;
@@ -35,6 +38,8 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.validators.DeleteAllowanceValidator;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.*;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -185,5 +190,25 @@ public class CryptoDeleteAllowanceHandler implements TransactionHandler {
         final var nftAllowances = op.nftAllowancesOrElse(emptyList());
 
         deleteAllowanceValidator.validate(context, nftAllowances, payerAccount, accountStore);
+    }
+
+    @NonNull
+    @Override
+    public Fees calculateFees(@NonNull final FeeContext feeContext) {
+        final var body = feeContext.body();
+        final var op = body.cryptoDeleteAllowanceOrThrow();
+        return feeContext
+                .feeCalculator(SubType.DEFAULT)
+                .addBytesPerTransaction(op.nftAllowances().size() * NFT_DELETE_ALLOWANCE_SIZE
+                        + countNftDeleteSerials(op.nftAllowances()) * LONG_SIZE)
+                .calculate();
+    }
+
+    private int countNftDeleteSerials(final List<NftRemoveAllowance> nftAllowancesList) {
+        int totalSerials = 0;
+        for (var allowance : nftAllowancesList) {
+            totalSerials += allowance.serialNumbers().size();
+        }
+        return totalSerials;
     }
 }
