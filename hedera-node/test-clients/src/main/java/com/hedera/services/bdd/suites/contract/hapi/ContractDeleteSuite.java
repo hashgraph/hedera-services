@@ -108,7 +108,6 @@ public class ContractDeleteSuite extends HapiSuite {
                 cannotUseMoreThanChildContractLimit());
     }
 
-    @HapiTest
     private HapiSpec cannotUseMoreThanChildContractLimit() {
         final var illegalNumChildren =
                 HapiSpecSetup.getDefaultNodeProps().getInteger("consensus.handle.maxFollowingRecords") + 1;
@@ -157,7 +156,6 @@ public class ContractDeleteSuite extends HapiSuite {
                                 .hasChildRecords());
     }
 
-    @HapiTest
     private HapiSpec cannotSendValueToTokenAccount() {
         final var multiKey = "multiKey";
         final var nonFungibleToken = "NFT";
