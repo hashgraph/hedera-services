@@ -261,8 +261,8 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public List<ContractID> createdContractIds() {
-        Long payerAccountID = context.payer().accountNum();
-        Long fundingAccountID = ledgerConfig.fundingAccount();
+        final Long payerAccountID = context.payer().accountNum();
+        final Long fundingAccountID = ledgerConfig.fundingAccount();
         final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
         // TODO - add a newContractIds() method to TokenServiceApi instead
         return tokenServiceApi.modifiedAccountIds().stream()
