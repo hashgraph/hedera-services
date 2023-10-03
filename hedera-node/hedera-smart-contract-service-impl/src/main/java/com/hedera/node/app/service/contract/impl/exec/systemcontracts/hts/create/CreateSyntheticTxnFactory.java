@@ -94,7 +94,11 @@ public class CreateSyntheticTxnFactory {
                     .map(TokenCreateWrapper.FractionalFeeWrapper::asGrpc)
                     .toList());
         }
-
+        if (tokenCreateWrapper.getFractionalFees() != null) {
+            txnBodyBuilder.customFees(tokenCreateWrapper.getRoyaltyFees().stream()
+                    .map(TokenCreateWrapper.RoyaltyFeeWrapper::asGrpc)
+                    .toList());
+        }
         return txnBodyBuilder;
     }
 }

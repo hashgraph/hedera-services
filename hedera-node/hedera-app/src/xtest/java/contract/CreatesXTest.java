@@ -16,30 +16,32 @@
 
 package contract;
 
-import static contract.AssociationsXTestConstants.A_TOKEN_ID;
 import static contract.CreatesXTestConstants.DECIMALS;
 import static contract.CreatesXTestConstants.FIXED_FEE;
 import static contract.CreatesXTestConstants.FRACTIONAL_FEE;
 import static contract.CreatesXTestConstants.HEDERA_TOKEN_STRUCT;
 import static contract.CreatesXTestConstants.INITIAL_TOTAL_SUPPLY;
-import static contract.CreatesXTestConstants.MEMO;
-import static contract.CreatesXTestConstants.NAME;
-import static contract.CreatesXTestConstants.SYMBOL;
+import static contract.CreatesXTestConstants.ROYALTY_FEE;
+import static contract.XTestConstants.AN_ED25519_KEY;
+import static contract.XTestConstants.ERC20_TOKEN_ID;
 import static contract.XTestConstants.OWNER_ADDRESS;
 import static contract.XTestConstants.OWNER_ID;
 import static contract.XTestConstants.SENDER_ADDRESS;
 import static contract.XTestConstants.SENDER_BESU_ADDRESS;
 import static contract.XTestConstants.SENDER_CONTRACT_ID_KEY;
 import static contract.XTestConstants.SENDER_ID;
+import static contract.XTestConstants.addErc20Relation;
 import static contract.XTestConstants.assertSuccess;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
+import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator;
 import java.util.HashMap;
 import java.util.Map;
@@ -87,6 +89,14 @@ public class CreatesXTest extends AbstractContractXTest {
                 assertSuccess());
 
         // should revert when token has no supplyKey
+
+        // should successfully create fungible token with custom fees
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES
+                        .encodeCallWithArgs(HEDERA_TOKEN_STRUCT, new Tuple[] {FIXED_FEE}, new Tuple[] {ROYALTY_FEE})
+                        .array()),
+                assertSuccess());
     }
 
     @Override
@@ -95,6 +105,13 @@ public class CreatesXTest extends AbstractContractXTest {
         aliases.put(ProtoBytes.newBuilder().value(SENDER_ADDRESS).build(), SENDER_ID);
         aliases.put(ProtoBytes.newBuilder().value(OWNER_ADDRESS).build(), OWNER_ID);
         return aliases;
+    }
+
+    @Override
+    protected Map<EntityIDPair, TokenRelation> initialTokenRelationships() {
+        final var tokenRelationships = new HashMap<EntityIDPair, TokenRelation>();
+        addErc20Relation(tokenRelationships, OWNER_ID, 800L);
+        return tokenRelationships;
     }
 
     @Override
@@ -122,15 +139,13 @@ public class CreatesXTest extends AbstractContractXTest {
     protected Map<TokenID, Token> initialTokens() {
         final var tokens = new HashMap<TokenID, Token>();
         tokens.put(
-                A_TOKEN_ID,
+                ERC20_TOKEN_ID,
                 Token.newBuilder()
-                        .name(NAME)
-                        .symbol(SYMBOL)
+                        .tokenId(ERC20_TOKEN_ID)
                         .treasuryAccountId(OWNER_ID)
-                        .memo(MEMO)
                         .tokenType(TokenType.FUNGIBLE_COMMON)
-                        .maxSupply(10L)
-                        .totalSupply(10L)
+                        .supplyKey(AN_ED25519_KEY)
+                        .totalSupply(800L)
                         .build());
         return tokens;
     }

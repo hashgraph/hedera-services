@@ -56,4 +56,6 @@ public class CreatesXTestConstants {
 
     static final Tuple FIXED_FEE = Tuple.of(100L, ERC20_TOKEN_ADDRESS, false, false, OWNER_HEADLONG_ADDRESS);
     static final Tuple FRACTIONAL_FEE = Tuple.of(100L, 100L, 100L, 100L, true, OWNER_HEADLONG_ADDRESS);
+
+    static final Tuple ROYALTY_FEE = Tuple.of(10L, 10L, 1L, ERC20_TOKEN_ADDRESS, false, OWNER_HEADLONG_ADDRESS);
 }

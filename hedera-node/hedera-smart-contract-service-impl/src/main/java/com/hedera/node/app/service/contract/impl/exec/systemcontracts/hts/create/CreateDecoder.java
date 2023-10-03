@@ -29,6 +29,7 @@ import com.hedera.node.app.service.contract.impl.exec.utils.KeyValueWrapper;
 import com.hedera.node.app.service.contract.impl.exec.utils.TokenCreateWrapper;
 import com.hedera.node.app.service.contract.impl.exec.utils.TokenCreateWrapper.FixedFeeWrapper;
 import com.hedera.node.app.service.contract.impl.exec.utils.TokenCreateWrapper.FractionalFeeWrapper;
+import com.hedera.node.app.service.contract.impl.exec.utils.TokenCreateWrapper.RoyaltyFeeWrapper;
 import com.hedera.node.app.service.contract.impl.exec.utils.TokenExpiryWrapper;
 import com.hedera.node.app.service.contract.impl.exec.utils.TokenKeyWrapper;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
@@ -98,10 +99,8 @@ public class CreateDecoder {
     public TransactionBody decodeCreateNonFungibleWithCustomFees(
             @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
         final var call = CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES.decodeCall(encoded);
-        // @TODO to be updated
-        final TokenCreateWrapper tokenCreateWrapper =
-                getTokenCreateWrapperNonFungible(call.get(0), false, 0L, 0, addressIdConverter);
-        // @TODO to be implemented
+        final TokenCreateWrapper tokenCreateWrapper = getTokenCreateWrapperNonFungibleWithCustomFees(
+                call.get(0), false, call.get(1), call.get(2), addressIdConverter);
         return bodyOf(createToken(tokenCreateWrapper));
     }
 
@@ -169,6 +168,21 @@ public class CreateDecoder {
         return tokenCreateWrapper;
     }
 
+    private static TokenCreateWrapper getTokenCreateWrapperNonFungibleWithCustomFees(
+            @NonNull final Tuple tokenCreateStruct,
+            final boolean isFungible,
+            @NonNull final Tuple[] fixedFeesTuple,
+            @NonNull final Tuple[] royaltyFeesTuple,
+            @NonNull final AddressIdConverter addressIdConverter) {
+        final var fixedFees = decodeFixedFees(fixedFeesTuple, addressIdConverter);
+        final var royaltyFees = decodeRoyaltyFees(royaltyFeesTuple, addressIdConverter);
+        final var tokenCreateWrapper =
+                getTokenCreateWrapperFungibleWithoutFees(tokenCreateStruct, isFungible, 0L, 0, addressIdConverter);
+        tokenCreateWrapper.setFixedFees(fixedFees);
+        tokenCreateWrapper.setRoyaltyFees(royaltyFees);
+        return tokenCreateWrapper;
+    }
+
     private static List<TokenKeyWrapper> decodeTokenKeys(
             @NonNull final Tuple[] tokenKeysTuples, @NonNull final AddressIdConverter addressIdConverter) {
         final List<TokenKeyWrapper> tokenKeys = new ArrayList<>(tokenKeysTuples.length);
@@ -209,7 +223,7 @@ public class CreateDecoder {
         final List<FixedFeeWrapper> fixedFees = new ArrayList<>(fixedFeesTuples.length);
         for (final var fixedFeeTuple : fixedFeesTuples) {
             final var amount = (long) fixedFeeTuple.get(0);
-            final var tokenId = ConversionUtils.asTokenId((fixedFeeTuple.get(1)));
+            final var tokenId = ConversionUtils.asTokenId(fixedFeeTuple.get(1));
             final var useHbarsForPayment = (Boolean) fixedFeeTuple.get(2);
             final var useCurrentTokenForPayment = (Boolean) fixedFeeTuple.get(3);
             final var feeCollector = addressIdConverter.convert(fixedFeeTuple.get(4));
@@ -242,5 +256,34 @@ public class CreateDecoder {
                     feeCollector.accountNum() != 0 ? feeCollector : null));
         }
         return fractionalFees;
+    }
+
+    public static List<RoyaltyFeeWrapper> decodeRoyaltyFees(
+            @NonNull final Tuple[] royaltyFeesTuples, @NonNull final AddressIdConverter addressIdConverter) {
+        final List<RoyaltyFeeWrapper> decodedRoyaltyFees = new ArrayList<>(royaltyFeesTuples.length);
+        for (final var royaltyFeeTuple : royaltyFeesTuples) {
+            final var numerator = (long) royaltyFeeTuple.get(0);
+            final var denominator = (long) royaltyFeeTuple.get(1);
+
+            // When at least 1 of the following 3 values is different from its default value,
+            // we treat it as though the user has tried to specify a fallbackFixedFee
+            final var fixedFeeAmount = (long) royaltyFeeTuple.get(2);
+            final var fixedFeeTokenId = ConversionUtils.asTokenId(royaltyFeeTuple.get(3));
+            final var fixedFeeUseHbars = (Boolean) royaltyFeeTuple.get(4);
+            TokenCreateWrapper.FixedFeeWrapper fixedFee = null;
+            if (fixedFeeAmount != 0 || fixedFeeTokenId.tokenNum() != 0 || Boolean.TRUE.equals(fixedFeeUseHbars)) {
+                fixedFee = new TokenCreateWrapper.FixedFeeWrapper(
+                        fixedFeeAmount,
+                        fixedFeeTokenId.tokenNum() != 0 ? fixedFeeTokenId : null,
+                        fixedFeeUseHbars,
+                        false,
+                        null);
+            }
+
+            final var feeCollector = addressIdConverter.convert(royaltyFeeTuple.get(5));
+            decodedRoyaltyFees.add(new RoyaltyFeeWrapper(
+                    numerator, denominator, fixedFee, feeCollector.accountNum() != 0 ? feeCollector : null));
+        }
+        return decodedRoyaltyFees;
     }
 }
