@@ -21,6 +21,7 @@ import static contract.CreatesXTestConstants.FIXED_FEE;
 import static contract.CreatesXTestConstants.FRACTIONAL_FEE;
 import static contract.CreatesXTestConstants.HEDERA_TOKEN_STRUCT;
 import static contract.CreatesXTestConstants.INITIAL_TOTAL_SUPPLY;
+import static contract.CreatesXTestConstants.NEXT_ENTITY_NUM;
 import static contract.CreatesXTestConstants.ROYALTY_FEE;
 import static contract.XTestConstants.AN_ED25519_KEY;
 import static contract.XTestConstants.ERC20_TOKEN_ID;
@@ -97,6 +98,11 @@ public class CreatesXTest extends AbstractContractXTest {
                         .encodeCallWithArgs(HEDERA_TOKEN_STRUCT, new Tuple[] {FIXED_FEE}, new Tuple[] {ROYALTY_FEE})
                         .array()),
                 assertSuccess());
+    }
+
+    @Override
+    protected long initialEntityNum() {
+        return NEXT_ENTITY_NUM - 1;
     }
 
     @Override

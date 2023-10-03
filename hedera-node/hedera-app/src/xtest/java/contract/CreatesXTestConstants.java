@@ -24,7 +24,7 @@ import com.esaulpaugh.headlong.abi.Tuple;
 import java.math.BigInteger;
 
 public class CreatesXTestConstants {
-
+    static final long NEXT_ENTITY_NUM = 1004L;
     static final long INITIAL_TOTAL_SUPPLY = 10L;
     static final int DECIMALS = 8;
     static final String NAME = "name";
