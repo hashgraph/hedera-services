@@ -21,6 +21,7 @@ import static com.hedera.services.cli.utils.ThingsToStrings.squashLinesToEscapes
 import static com.hedera.services.cli.utils.ThingsToStrings.toStringOfByteArray;
 import static com.hedera.services.cli.utils.ThingsToStrings.toStructureSummaryOfJKey;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static java.util.Objects.nonNull;
 
 import com.hedera.node.app.service.mono.files.HFileMeta;
 import com.hedera.node.app.service.mono.files.MetadataMapFactory;
@@ -242,7 +243,7 @@ public class DumpFilesSubcommand {
                 allFiles.values().stream().filter(HederaFile::isActive).count();
         final var nActiveDataFilesWithMetadata = allFiles.values().stream()
                 .filter(HederaFile::isActive)
-                .filter(hf -> null != hf.metadata())
+                .filter(hf -> nonNull(hf.metadata()))
                 .count();
         final var nActiveDataFilesMissingMetadata = nActiveDataFiles - nActiveDataFilesWithMetadata;
 
@@ -250,7 +251,7 @@ public class DumpFilesSubcommand {
                 .filter(hf -> hf.fileStore() == FileStore.SPECIAL)
                 .count();
         final var nSystemFiles = allFiles.values().stream()
-                .filter(hf -> hf.systemFileType() != null)
+                .filter(hf -> nonNull(hf.systemFileType()))
                 .count();
 
         Function<VirtualBlobKey.Type, String> wereNull = t -> {
