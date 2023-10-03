@@ -27,7 +27,6 @@ import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.status.PlatformStatusManager;
 import com.swirlds.common.threading.framework.QueueThread;
-import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.Crypto;
@@ -35,8 +34,9 @@ import com.swirlds.platform.FreezeManager;
 import com.swirlds.platform.StartUpEventFrozenManager;
 import com.swirlds.platform.components.EventMapper;
 import com.swirlds.platform.components.state.StateManagementComponent;
-import com.swirlds.platform.event.EventIntakeTask;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.EventLinker;
+import com.swirlds.platform.event.validation.EventValidator;
 import com.swirlds.platform.gossip.chatter.ChatterGossip;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
@@ -84,10 +84,8 @@ public final class GossipFactory {
      * @param freezeManager                 handles freezes
      * @param startUpEventFrozenManager     prevents event creation during startup
      * @param swirldStateManager            manages the mutable state
-     * @param startedFromGenesis            true if this node started from a genesis state
      * @param stateManagementComponent      manages the lifecycle of the state
-     * @param eventIntakeLambda             a method that is called when something needs to be added to the event intake
-     *                                      queue
+     * @param eventValidator                validates events, and passes valid events further along the intake pipeline
      * @param eventObserverDispatcher       the object used to wire event intake
      * @param eventMapper                   a data structure used to track the most recent event from each node
      * @param eventIntakeMetrics            metrics for event intake
@@ -111,13 +109,12 @@ public final class GossipFactory {
             @NonNull final ShadowGraph shadowGraph,
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
             @NonNull final AtomicReference<Consensus> consensusRef,
-            @NonNull final QueueThread<EventIntakeTask> intakeQueue,
+            @NonNull final QueueThread<GossipEvent> intakeQueue,
             @NonNull final FreezeManager freezeManager,
             @NonNull final StartUpEventFrozenManager startUpEventFrozenManager,
             @NonNull final SwirldStateManager swirldStateManager,
-            final boolean startedFromGenesis,
             @NonNull final StateManagementComponent stateManagementComponent,
-            @NonNull final InterruptableConsumer<EventIntakeTask> eventIntakeLambda,
+            @NonNull final EventValidator eventValidator,
             @NonNull final EventObserverDispatcher eventObserverDispatcher,
             @NonNull final EventMapper eventMapper,
             @NonNull final EventIntakeMetrics eventIntakeMetrics,
@@ -143,7 +140,7 @@ public final class GossipFactory {
         Objects.requireNonNull(startUpEventFrozenManager);
         Objects.requireNonNull(swirldStateManager);
         Objects.requireNonNull(stateManagementComponent);
-        Objects.requireNonNull(eventIntakeLambda);
+        Objects.requireNonNull(eventValidator);
         Objects.requireNonNull(eventObserverDispatcher);
         Objects.requireNonNull(eventMapper);
         Objects.requireNonNull(eventIntakeMetrics);
@@ -174,9 +171,8 @@ public final class GossipFactory {
                     freezeManager,
                     startUpEventFrozenManager,
                     swirldStateManager,
-                    startedFromGenesis,
                     stateManagementComponent,
-                    eventIntakeLambda,
+                    eventValidator,
                     eventObserverDispatcher,
                     eventMapper,
                     eventIntakeMetrics,
@@ -202,7 +198,6 @@ public final class GossipFactory {
                         startUpEventFrozenManager,
                         swirldStateManager,
                         stateManagementComponent,
-                        eventIntakeLambda,
                         eventObserverDispatcher,
                         eventMapper,
                         eventIntakeMetrics,
@@ -230,7 +225,6 @@ public final class GossipFactory {
                         startUpEventFrozenManager,
                         swirldStateManager,
                         stateManagementComponent,
-                        eventIntakeLambda,
                         eventObserverDispatcher,
                         eventMapper,
                         eventIntakeMetrics,

@@ -23,10 +23,10 @@ import static org.mockito.Mockito.mock;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.platform.Consensus;
-import com.swirlds.platform.event.EventIntakeTask;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphInsertionException;
@@ -51,11 +51,11 @@ import java.util.function.Predicate;
  */
 public class SyncNode {
 
-    private final BlockingQueue<EventIntakeTask> receivedEventQueue;
+    private final BlockingQueue<GossipEvent> receivedEventQueue;
     private final List<IndexedEvent> generatedEvents;
     private final List<IndexedEvent> discardedEvents;
 
-    private final List<EventIntakeTask> receivedEvents;
+    private final List<GossipEvent> receivedEvents;
 
     private final NodeId nodeId;
 
@@ -223,8 +223,7 @@ public class SyncNode {
                 numNodes,
                 mock(SyncMetrics.class),
                 this::getConsensus,
-                r -> {},
-                eventHandler,
+                mock(QueueThread.class),
                 syncManager,
                 executor,
                 sendRecInitBytes,
@@ -265,16 +264,12 @@ public class SyncNode {
         return syncManager;
     }
 
-    public List<EventIntakeTask> getReceivedEvents() {
+    public List<GossipEvent> getReceivedEvents() {
         return receivedEvents;
     }
 
     public List<IndexedEvent> getGeneratedEvents() {
         return generatedEvents;
-    }
-
-    public List<IndexedEvent> getDiscardedEvents() {
-        return discardedEvents;
     }
 
     public void setSaveGeneratedEvents(final boolean saveGeneratedEvents) {

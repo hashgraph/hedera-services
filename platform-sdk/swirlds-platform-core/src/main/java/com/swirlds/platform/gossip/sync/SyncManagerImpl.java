@@ -28,7 +28,7 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.components.EventCreationRules;
-import com.swirlds.platform.event.EventIntakeTask;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.gossip.shadowgraph.SyncResult;
 import com.swirlds.platform.gossip.shadowgraph.SyncUtils;
@@ -59,7 +59,7 @@ public class SyncManagerImpl implements SyncManager, FallenBehindManager {
     private final EventConfig eventConfig;
 
     /** the event intake queue */
-    private final BlockingQueue<EventIntakeTask> intakeQueue;
+    private final BlockingQueue<GossipEvent> intakeQueue;
     /** This object holds data on how nodes are connected to each other. */
     private final RandomGraph connectionGraph;
     /** The id of this node */
@@ -91,7 +91,7 @@ public class SyncManagerImpl implements SyncManager, FallenBehindManager {
      */
     public SyncManagerImpl(
             @NonNull final PlatformContext platformContext,
-            @NonNull final BlockingQueue<EventIntakeTask> intakeQueue,
+            @NonNull final BlockingQueue<GossipEvent> intakeQueue,
             @NonNull final RandomGraph connectionGraph,
             @NonNull final NodeId selfId,
             @NonNull final EventCreationRules eventCreationRules,

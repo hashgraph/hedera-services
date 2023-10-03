@@ -75,11 +75,8 @@ import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.LoggingClearables;
 import com.swirlds.logging.LogMarker;
-import com.swirlds.platform.components.EventCreationRules;
-import com.swirlds.platform.components.EventCreator;
 import com.swirlds.platform.components.EventIntake;
 import com.swirlds.platform.components.EventMapper;
-import com.swirlds.platform.components.EventTaskDispatcher;
 import com.swirlds.platform.components.appcomm.AppCommunicationComponent;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.components.transaction.system.ConsensusSystemTransactionManager;
@@ -93,8 +90,8 @@ import com.swirlds.platform.dispatch.triggers.flow.DiskStateLoadedTrigger;
 import com.swirlds.platform.dispatch.triggers.flow.ReconnectStateLoadedTrigger;
 import com.swirlds.platform.event.EventCounter;
 import com.swirlds.platform.event.EventDescriptor;
-import com.swirlds.platform.event.EventIntakeTask;
 import com.swirlds.platform.event.EventUtils;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.linking.OrphanBufferingLinker;
@@ -213,10 +210,15 @@ public class SwirldsPlatform implements Platform, Startable {
     private final long initialMinimumGenerationNonAncient;
 
     private final StateManagementComponent stateManagementComponent;
-    private final EventTaskDispatcher eventTaskDispatcher;
-    private final QueueThread<EventIntakeTask> intakeQueue;
+    private final QueueThread<GossipEvent> intakeQueue;
     private final QueueThread<ReservedSignedState> stateHashSignQueue;
     private final EventLinker eventLinker;
+
+    /**
+     * Validates events, and passes valid events further down the pipeline.
+     */
+    private final EventValidator eventValidator;
+
     /** Stores and processes consensus events including sending them to {@link SwirldStateManager} for handling */
     private final ConsensusRoundHandler consensusRoundHandler;
     /** Handles all interaction with {@link SwirldState} */
@@ -370,7 +372,7 @@ public class SwirldsPlatform implements Platform, Startable {
 
         this.consensusMetrics = new ConsensusMetricsImpl(this.selfId, metrics);
 
-        final EventIntakeMetrics eventIntakeMetrics = new EventIntakeMetrics(metrics, time, selfId);
+        final EventIntakeMetrics eventIntakeMetrics = new EventIntakeMetrics(metrics, selfId);
         final SyncMetrics syncMetrics = new SyncMetrics(metrics);
         RuntimeMetrics.setup(metrics);
 
@@ -553,7 +555,6 @@ public class SwirldsPlatform implements Platform, Startable {
                 shadowGraph,
                 preConsensusEventHandler::preconsensusEvent);
 
-        final EventCreator eventCreator = buildEventCreator(eventIntake);
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
 
         final List<GossipEventValidator> validators = new ArrayList<>();
@@ -569,23 +570,15 @@ public class SwirldsPlatform implements Platform, Startable {
             validators.add(new SignatureValidator(
                     previousAddressBook, currentAddressBook, appVersion, CryptoStatic::verifySignature, time));
         }
+
         final GossipEventValidators eventValidators = new GossipEventValidators(validators);
+        eventValidator = new EventValidator(eventValidators, eventIntake::addUnlinkedEvent, eventIntakePhaseTimer);
 
-        // validates events received from gossip
-        final EventValidator eventValidator =
-                new EventValidator(eventValidators, eventIntake::addUnlinkedEvent, eventIntakePhaseTimer);
-
-        eventTaskDispatcher = new EventTaskDispatcher(
-                time, eventValidator, eventCreator, eventIntake::addUnlinkedEvent, eventIntakeMetrics);
-
-        intakeQueue = components.add(new QueueThreadConfiguration<EventIntakeTask>(threadManager)
+        intakeQueue = components.add(new QueueThreadConfiguration<GossipEvent>(threadManager)
                 .setNodeId(selfId)
                 .setComponent(PLATFORM_THREAD_POOL_NAME)
                 .setThreadName("event-intake")
-                // There is a circular dependency between the intake queue and gossip,
-                // which the handler lambda sidesteps (since the lambda is not invoked
-                // until after all things have been constructed).
-                .setHandler(e -> getGossip().getEventIntakeLambda().accept(e))
+                .setHandler(eventValidator::validateEvent)
                 .setCapacity(eventConfig.eventIntakeQueueSize())
                 .setLogAfterPauseDuration(threadConfig.logStackTracePauseDuration())
                 .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics).enableMaxSizeMetric())
@@ -632,9 +625,8 @@ public class SwirldsPlatform implements Platform, Startable {
                 freezeManager,
                 startUpEventFrozenManager,
                 swirldStateManager,
-                startedFromGenesis,
                 stateManagementComponent,
-                eventTaskDispatcher::dispatchTask,
+                eventValidator,
                 eventObserverDispatcher,
                 eventMapper,
                 eventIntakeMetrics,
@@ -704,13 +696,6 @@ public class SwirldsPlatform implements Platform, Startable {
      */
     private void clearAllPipelines() {
         clearAllPipelines.clear();
-    }
-
-    /**
-     * Get the gossip engine. This method exists to break a circular dependency.
-     */
-    private Gossip getGossip() {
-        return gossip;
     }
 
     /**
@@ -961,34 +946,6 @@ public class SwirldsPlatform implements Platform, Startable {
     }
 
     /**
-     * Build the event creator.
-     */
-    @Nullable
-    private EventCreator buildEventCreator(@NonNull final EventIntake eventIntake) {
-        Objects.requireNonNull(eventIntake);
-        final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
-        if (chatterConfig.useChatter()) {
-            // chatter has a separate event creator in a different thread. having 2 event creators creates the risk
-            // of forking, so a NPE is preferable to a fork
-            return null;
-        } else {
-            return new EventCreator(
-                    platformContext,
-                    this.appVersion,
-                    selfId,
-                    PlatformConstructor.platformSigner(crypto.getKeysAndCerts()),
-                    consensusRef::get,
-                    swirldStateManager.getTransactionPool(),
-                    eventIntake::addEvent,
-                    eventMapper,
-                    eventMapper,
-                    swirldStateManager.getTransactionPool(),
-                    freezeManager::isFreezeStarted,
-                    new EventCreationRules(List.of()));
-        }
-    }
-
-    /**
      * Build the event linker.
      */
     @NonNull
@@ -1111,7 +1068,7 @@ public class SwirldsPlatform implements Platform, Startable {
                     Time.getCurrent(),
                     preconsensusEventFileManager,
                     preconsensusEventWriter,
-                    eventTaskDispatcher,
+                    eventValidator,
                     intakeQueue,
                     consensusRoundHandler,
                     stateHashSignQueue,

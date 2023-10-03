@@ -45,10 +45,9 @@ import com.swirlds.platform.StartUpEventFrozenManager;
 import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.components.EventCreationRules;
 import com.swirlds.platform.components.EventMapper;
-import com.swirlds.platform.components.EventTaskCreator;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.config.ThreadConfig;
-import com.swirlds.platform.event.EventIntakeTask;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.sync.SyncManagerImpl;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
 import com.swirlds.platform.metrics.ReconnectMetrics;
@@ -74,7 +73,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
@@ -96,7 +94,6 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
     protected final CriticalQuorum criticalQuorum;
     protected final NetworkMetrics networkMetrics;
     protected final SyncMetrics syncMetrics;
-    protected final EventTaskCreator eventTaskCreator;
     protected final ReconnectHelper reconnectHelper;
     protected final StaticConnectionManagers connectionManagers;
     protected final FallenBehindManagerImpl fallenBehindManager;
@@ -147,7 +144,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
             @NonNull final SoftwareVersion appVersion,
-            @NonNull final QueueThread<EventIntakeTask> intakeQueue,
+            @NonNull final QueueThread<GossipEvent> intakeQueue,
             @NonNull final FreezeManager freezeManager,
             @NonNull final StartUpEventFrozenManager startUpEventFrozenManager,
             @NonNull final SwirldStateManager swirldStateManager,
@@ -222,16 +219,6 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
                 addressBook,
                 fallenBehindManager,
                 platformContext.getConfiguration().getConfigData(EventConfig.class));
-
-        eventTaskCreator = new EventTaskCreator(
-                eventMapper,
-                addressBook,
-                selfId,
-                eventIntakeMetrics,
-                intakeQueue,
-                platformContext.getConfiguration().getConfigData(EventConfig.class),
-                syncManager,
-                ThreadLocalRandom::current);
 
         final ReconnectConfig reconnectConfig =
                 platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
