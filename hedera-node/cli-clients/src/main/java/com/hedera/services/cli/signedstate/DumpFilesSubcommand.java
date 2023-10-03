@@ -499,7 +499,7 @@ public class DumpFilesSubcommand {
 
         final var r = new HashMap<Integer, HederaFile>();
         final int HIGHEST_NON_USER_ACCOUNT = 1000;
-        for (int id = 0; id < HIGHEST_NON_USER_ACCOUNT; id++) {
+        for (int id = 0; id <= HIGHEST_NON_USER_ACCOUNT; id++) {
             final var fileId = FileID.newBuilder().setFileNum(id).build();
             if (specialFileStore.contains(fileId)) {
                 final var contents = specialFileStore.get(fileId);
@@ -513,6 +513,10 @@ public class DumpFilesSubcommand {
         return Pair.of(fileSummary, r);
     }
 
+    /** Merge two (or more) maps.
+     *
+     * (Seems like it should be provided by the `Map` class, but maybe not.)
+     */
     @SafeVarargs
     @NonNull
     static <K, V> Map<K, V> merge(@NonNull final BinaryOperator<V> mergeFunction, @NonNull final Map<K, V>... maps) {
@@ -521,6 +525,10 @@ public class DumpFilesSubcommand {
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, mergeFunction));
     }
 
+    /** Pick `a` or `b` arbitrarily.
+     *
+     *  Not usually a good idea, but in this case it is really never called, as it a merge function for disjoint sets
+     */
     <T> T arb(@NonNull final T a, @NonNull final T b) {
         final var choice = new Random().nextBoolean();
         return choice ? a : b;
