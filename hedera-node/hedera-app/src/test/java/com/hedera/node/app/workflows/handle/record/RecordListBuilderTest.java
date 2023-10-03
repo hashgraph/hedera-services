@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThatException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import java.time.Instant;
@@ -140,7 +141,7 @@ class RecordListBuilderTest {
         // when
         final var child1 = recordListBuilder.addChild(CONFIGURATION);
         final var child2 = recordListBuilder.addChild(CONFIGURATION);
-        assertThatThrownBy(() -> recordListBuilder.addChild(config)).isInstanceOf(IndexOutOfBoundsException.class);
+        assertThatThrownBy(() -> recordListBuilder.addChild(config)).isInstanceOf(HandleException.class);
 
         // then
         assertThat(base.consensusNow()).isEqualTo(CONSENSUS_NOW);
@@ -253,8 +254,7 @@ class RecordListBuilderTest {
         // when
         final var child1 = recordListBuilder.addRemovableChild(CONFIGURATION);
         final var child2 = recordListBuilder.addRemovableChild(CONFIGURATION);
-        assertThatThrownBy(() -> recordListBuilder.addRemovableChild(config))
-                .isInstanceOf(IndexOutOfBoundsException.class);
+        assertThatThrownBy(() -> recordListBuilder.addRemovableChild(config)).isInstanceOf(HandleException.class);
 
         // then
         assertThat(base.consensusNow()).isEqualTo(CONSENSUS_NOW);

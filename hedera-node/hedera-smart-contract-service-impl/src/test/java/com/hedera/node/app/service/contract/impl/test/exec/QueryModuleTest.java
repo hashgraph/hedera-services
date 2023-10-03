@@ -72,7 +72,7 @@ class QueryModuleTest {
 
     @Test
     void createsEvmActionTracer() {
-        assertInstanceOf(EvmActionTracer.class, provideActionSidecarContentTracer());
+        assertInstanceOf(EvmActionTracer.class, provideActionSidecarContentTracer(config));
     }
 
     @Test

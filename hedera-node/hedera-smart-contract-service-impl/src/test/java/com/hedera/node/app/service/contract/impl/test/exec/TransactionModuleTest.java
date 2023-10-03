@@ -43,6 +43,7 @@ import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.swirlds.config.api.Configuration;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -81,9 +82,12 @@ class TransactionModuleTest {
     @Mock
     private HandleContext context;
 
+    @Mock
+    private Configuration configuration;
+
     @Test
     void createsEvmActionTracer() {
-        assertInstanceOf(EvmActionTracer.class, provideActionSidecarContentTracer());
+        assertInstanceOf(EvmActionTracer.class, provideActionSidecarContentTracer(configuration));
     }
 
     @Test
