@@ -18,11 +18,14 @@ package com.swirlds.platform.event;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.BaseEvent;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Objects;
@@ -32,12 +35,21 @@ import java.util.Objects;
  */
 public class GossipEvent implements BaseEvent, ChatterEvent {
     private static final long CLASS_ID = 0xfe16b46795bfb8dcL;
+
     private static final long ROUND_CREATED_UNDEFINED = -1;
     private BaseEventHashedData hashedData;
     private BaseEventUnhashedData unhashedData;
     private EventDescriptor descriptor;
     private Instant timeReceived;
     private long roundCreated = ROUND_CREATED_UNDEFINED;
+
+    /**
+     * The id of the node which sent us this event
+     * <p>
+     * The sender ID of an event should not be serialized when an event is serialized, and it should not affect the
+     * hash of the event in any way.
+     */
+    private NodeId senderId;
 
     @SuppressWarnings("unused") // needed for RuntimeConstructable
     public GossipEvent() {}
@@ -50,6 +62,7 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
         this.hashedData = hashedData;
         this.unhashedData = unhashedData;
         this.timeReceived = Instant.now();
+        this.senderId = null;
     }
 
     /**
@@ -138,6 +151,25 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
 
     public void setRoundCreated(final long roundCreated) {
         this.roundCreated = roundCreated;
+    }
+
+    /**
+     * Get the id of the node which sent us this event
+     *
+     * @return the id of the node which sent us this event
+     */
+    @Nullable
+    public NodeId getSenderId() {
+        return senderId;
+    }
+
+    /**
+     * Set the id of the node which sent us this event
+     *
+     * @param senderId the id of the node which sent us this event
+     */
+    public void setSenderId(@NonNull final NodeId senderId) {
+        this.senderId = senderId;
     }
 
     /**

@@ -28,6 +28,7 @@ import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphInsertionException;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
@@ -225,6 +226,7 @@ public class SyncNode {
                 this::getConsensus,
                 mock(QueueThread.class),
                 syncManager,
+                mock(IntakeEventCounter.class),
                 executor,
                 sendRecInitBytes,
                 () -> {});

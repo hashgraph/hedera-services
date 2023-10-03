@@ -94,6 +94,7 @@ public final class GossipFactory {
      * @param platformStatusManager         the platform status manager
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
      * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
+     * @param intakeEventCounter            keeps track of the number of events in the intake pipeline from each peer
      * @return the gossip engine
      */
     public static Gossip buildGossip(
@@ -122,7 +123,8 @@ public final class GossipFactory {
             @NonNull final EventLinker eventLinker,
             @NonNull final PlatformStatusManager platformStatusManager,
             @NonNull final Consumer<SignedState> loadReconnectState,
-            @NonNull final Runnable clearAllPipelinesForReconnect) {
+            @NonNull final Runnable clearAllPipelinesForReconnect,
+            @NonNull final IntakeEventCounter intakeEventCounter) {
 
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(threadManager);
@@ -149,6 +151,7 @@ public final class GossipFactory {
         Objects.requireNonNull(platformStatusManager);
         Objects.requireNonNull(loadReconnectState);
         Objects.requireNonNull(clearAllPipelinesForReconnect);
+        Objects.requireNonNull(intakeEventCounter);
 
         final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
 
@@ -232,7 +235,8 @@ public final class GossipFactory {
                         eventLinker,
                         platformStatusManager,
                         loadReconnectState,
-                        clearAllPipelinesForReconnect);
+                        clearAllPipelinesForReconnect,
+                        intakeEventCounter);
             }
         }
     }
