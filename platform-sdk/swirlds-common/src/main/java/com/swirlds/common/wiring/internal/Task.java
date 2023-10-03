@@ -1,66 +1,54 @@
 package com.swirlds.common.wiring.internal;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
-import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.ForkJoinTask;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A unit of work that is handled by a wire.
  */
-final class Task implements Runnable {
+final class Task extends ForkJoinTask<Void> {
 
-    // True if this task has already been scheduled
-    private final AtomicBoolean scheduled = new AtomicBoolean(false);
-    private final AtomicBoolean done = new AtomicBoolean(false);
-    // If set, then this task will notify it when it is complete so this one can be scheduled
-    private final AtomicReference<Task> dependent = new AtomicReference<>(null);
+    // Output task
+    private Task out;
+    // Input count
+    private final AtomicInteger count;
     // The thing to run when the task is ready
-    private final Runnable runnable;
-    private final Executor executor;
+    private Runnable runnable;
 
     /**
-     * Constructor.
-     *
-     * @param executor   where the task will be executed
-     * @param dependency a task that must be completed before this task is started
-     * @param runnable   the operation to perform
+     * Constructors.
      */
-    public Task(
-            @NonNull final Executor executor,
-            @Nullable final Task dependency,
-            @NonNull final Runnable runnable) {
+    public Task() {
+        this(false);
+    }
 
-        this.executor = Objects.requireNonNull(executor);
+    public Task(boolean initial) {
+        count = new AtomicInteger(initial ? 1 : 2);
+    }
+
+    @Override
+    public Void getRawResult() {
+        return null;
+    }
+
+    @Override
+    protected void setRawResult(Void value) {
+    }
+
+    /**
+     * Send data
+     */
+    public void send(@NonNull Task out, @NonNull Runnable runnable) {
+        this.out = Objects.requireNonNull(out);
         this.runnable = Objects.requireNonNull(runnable);
-        if (dependency != null) {
-            dependency.setDependent(this);
-        } else {
-            markReady();
-        }
+        send();
     }
 
-    /**
-     * Set the dependant task.
-     *
-     * @param dependent a dependant task
-     */
-    private void setDependent(@NonNull final Task dependent) {
-        this.dependent.set(dependent);
-        if (this.done.get()) {
-            dependent.markReady();
-        }
-    }
-
-    /**
-     * Called by a task I depend on, when it is ready to go.
-     */
-    private void markReady() {
-        // Just fire it off once.
-        if (scheduled.compareAndSet(false, true)) {
-            executor.execute(this);
+    private void send() {
+        if (count.decrementAndGet() == 0) {
+            fork();
         }
     }
 
@@ -68,14 +56,10 @@ final class Task implements Runnable {
      * Execute the task.
      */
     @Override
-    public void run() {
+    public boolean exec() {
         // Delegate
-        this.runnable.run();
-        this.done.set(true);
-        // Notify any tasks that depend on this one that they can now run
-        final Task dep = dependent.get();
-        if (dep != null) {
-            dep.markReady();
-        }
+        runnable.run();
+        out.send();
+        return true;
     }
 }

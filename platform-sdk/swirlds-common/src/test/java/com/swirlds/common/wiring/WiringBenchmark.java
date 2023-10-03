@@ -46,7 +46,7 @@ class WiringBenchmark {
         gossip.stop();
 
         // Validate that all events have been seen by orphanBuffer
-        long timeout = System.currentTimeMillis() + 1000;
+        final long timeout = System.currentTimeMillis() + 1000;
         boolean success = false;
         while (System.currentTimeMillis() < timeout) {
             if (orphanBuffer.getCheckSum() == gossip.getCheckSum()) {
@@ -55,5 +55,9 @@ class WiringBenchmark {
             }
         }
         assertTrue(success);
+    }
+
+    public static void main(String[] args) throws Exception {
+        new WiringBenchmark().basicBenchmark();
     }
 }

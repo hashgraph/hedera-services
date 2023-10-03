@@ -15,7 +15,7 @@ public class TopologicalEventSorter implements Consumer<Event> {
 
     @Override
     public void accept(Event event) {
-        long number = event.number();
+        final long number = event.number();
         checkSum += number + 1;     // make 0 contribute to the sum
         if (number % PRINT_FREQUENCY == 0) {
             long curTimestamp = System.currentTimeMillis();
