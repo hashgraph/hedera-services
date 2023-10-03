@@ -142,7 +142,6 @@ class QueryWorkflowImplTest extends AppTestBase {
     @Mock(strictness = LENIENT)
     private HapiThrottling hapiThrottling;
 
-
     private VersionedConfiguration configuration;
     private Query query;
     private Transaction payment;
@@ -302,7 +301,6 @@ class QueryWorkflowImplTest extends AppTestBase {
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
-                        throttleAccumulator,
                         submissionManager,
                         queryChecker,
                         ingestChecker,
@@ -344,20 +342,19 @@ class QueryWorkflowImplTest extends AppTestBase {
                         hapiThrottling))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
-            stateAccessor,
-            throttleAccumulator,
-            submissionManager,
-            queryChecker,
-            ingestChecker,
-            dispatcher,
-            queryParser,
-            configProvider,
-            recordCache,
-            null,
-            exchangeRateManager,
-            feeManager,
-            hapiThrottling))
-            .isInstanceOf(NullPointerException.class);
+                        stateAccessor,
+                        submissionManager,
+                        queryChecker,
+                        ingestChecker,
+                        dispatcher,
+                        queryParser,
+                        configProvider,
+                        recordCache,
+                        null,
+                        exchangeRateManager,
+                        feeManager,
+                        hapiThrottling))
+                .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
                         submissionManager,
@@ -383,6 +380,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                         recordCache,
                         authorizer,
                         exchangeRateManager,
+                        feeManager,
                         null))
                 .isInstanceOf(NullPointerException.class);
     }

@@ -120,7 +120,6 @@ public class SystemFileUpdateFacility {
                 configProvider.update(FileUtilities.getFileContent(state, fileID));
                 generalThrottleAccumulator.applyGasConfig();
 
-
                 // Updating the multiplier source to use the new gas throttle
                 // values that are coming from the network properties
                 monoMultiplierSources.resetExpectations();

@@ -55,7 +55,8 @@ import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.throttle.CongestionThrottleService;
-import com.hedera.node.app.throttle.HandleThrottleAccumulator;
+import com.hedera.node.app.throttle.GeneralThrottleAccumulator;
+import com.hedera.node.app.throttle.HapiThrottling;
 import com.hedera.node.app.throttle.ThrottleManager;
 import com.hedera.node.app.throttle.impl.NetworkUtilizationManagerImpl;
 import com.hedera.node.app.version.HederaSoftwareVersion;
@@ -171,7 +172,7 @@ public final class Hedera implements SwirldMain {
      */
     private PlatformStatus platformStatus = PlatformStatus.STARTING_UP;
 
-    private HandleThrottleAccumulator handleThrottling;
+    private GeneralThrottleAccumulator generalThrottleAccumulator;
     private MonoMultiplierSources monoMultiplierSources;
 
     /*==================================================================================================================
@@ -668,7 +669,7 @@ public final class Hedera implements SwirldMain {
         logger.info("Initializing ThrottleManager");
         this.throttleManager = new ThrottleManager();
 
-        this.handleThrottling = new HandleThrottleAccumulator(configProvider);
+        this.generalThrottleAccumulator = new GeneralThrottleAccumulator(configProvider);
         this.monoMultiplierSources = createMultiplierSources();
 
         logger.info("Initializing ExchangeRateManager");
@@ -702,7 +703,7 @@ public final class Hedera implements SwirldMain {
                         .getConfiguration()
                         .getConfigData(FeesConfig.class)
                         .percentCongestionMultipliers(),
-                () -> handleThrottling.activeThrottlesFor(CRYPTO_TRANSFER));
+                () -> generalThrottleAccumulator.activeThrottlesFor(CRYPTO_TRANSFER));
         final var gasFeeMultiplier = new ThrottleMultiplierSource(
                 "EVM gas/sec",
                 "gas/sec",
@@ -716,7 +717,7 @@ public final class Hedera implements SwirldMain {
                         .getConfiguration()
                         .getConfigData(FeesConfig.class)
                         .percentCongestionMultipliers(),
-                () -> List.of(handleThrottling.gasLimitThrottle()));
+                () -> List.of(generalThrottleAccumulator.gasLimitThrottle()));
 
         return new MonoMultiplierSources(genericFeeMultiplier, gasFeeMultiplier);
     }
@@ -749,7 +750,7 @@ public final class Hedera implements SwirldMain {
         logger.info("Initializing ThrottleManager");
         this.throttleManager = new ThrottleManager();
 
-        this.handleThrottling = new HandleThrottleAccumulator(configProvider);
+        this.generalThrottleAccumulator = new GeneralThrottleAccumulator(configProvider);
         this.monoMultiplierSources = createMultiplierSources();
 
         logger.info("Initializing ExchangeRateManager");
@@ -804,9 +805,10 @@ public final class Hedera implements SwirldMain {
                             throttleManager,
                             exchangeRateManager,
                             monoMultiplierSources,
-                            handleThrottling))
+                            generalThrottleAccumulator))
                     .networkUtilizationManager(
-                            new NetworkUtilizationManagerImpl(handleThrottling, monoMultiplierSources))
+                            new NetworkUtilizationManagerImpl(generalThrottleAccumulator, monoMultiplierSources))
+                    .hapiThrottling(new HapiThrottling(generalThrottleAccumulator))
                     .self(SelfNodeInfoImpl.of(nodeAddress, version))
                     .platform(platform)
                     .maxSignedTxnSize(MAX_SIGNED_TXN_SIZE)
@@ -871,8 +873,9 @@ public final class Hedera implements SwirldMain {
             daggerApp.throttleManager().update(fileData);
 
             // Initializing handle throttling
-            this.handleThrottling.rebuildFor(daggerApp.throttleManager().throttleDefinitions());
-            this.handleThrottling.applyGasConfig();
+            this.generalThrottleAccumulator.rebuildFor(
+                    daggerApp.throttleManager().throttleDefinitions());
+            this.generalThrottleAccumulator.applyGasConfig();
 
             // Updating the multiplier source to use the new throttle definitions
             this.monoMultiplierSources.resetExpectations();

@@ -57,6 +57,7 @@ import com.hedera.node.config.data.TokensConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -66,39 +67,49 @@ import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
-import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * Keeps track of the amount of usage of different TPS throttle categories and gas, and returns whether a given
+ * transaction or query should be throttled based on that.
+ * Meant to be used in single-threaded context only as part of the {@link com.hedera.node.app.workflows.handle.HandleWorkflow}.
+ */
 @Singleton
 public class GeneralThrottleAccumulator {
 
     private static final Logger log = LogManager.getLogger(GeneralThrottleAccumulator.class);
-    private static final Set<HederaFunctionality> CONSENSUS_THROTTLED_FUNCTIONS =
+    private static final Set<HederaFunctionality> GAS_THROTTLED_FUNCTIONS =
             EnumSet.of(CONTRACT_CALL_LOCAL, CONTRACT_CALL, CONTRACT_CREATE, ETHEREUM_TRANSACTION);
     private static final int CAPACITY_SPLIT = 1;
     private final ConfigProvider configProvider;
-    private final ThrottleManager throttleManager;
     private EnumMap<HederaFunctionality, ThrottleReqsManager> functionReqs = new EnumMap<>(HederaFunctionality.class);
     private static final int UNKNOWN_NUM_IMPLICIT_CREATIONS = -1;
     private boolean lastTxnWasGasThrottled;
     private GasLimitDeterministicThrottle gasThrottle;
     private List<DeterministicThrottle> activeThrottles = Collections.emptyList();
 
-    @Inject
-    public GeneralThrottleAccumulator(
-            @NonNull final ConfigProvider configProvider, @NonNull ThrottleManager throttleManager) {
+    public GeneralThrottleAccumulator(@NonNull final ConfigProvider configProvider) {
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
-        this.throttleManager = requireNonNull(throttleManager, "throttleManager must not be null");
-        this.rebuildFor(this.throttleManager.throttleDefinitions());
     }
 
-    public boolean shouldThrottle(@NonNull TransactionInfo txnInfo, Instant t, HederaState state) {
+    /*
+     * Updates the throttle requirements for the given transaction and returns whether the transaction should be throttled.
+     *
+     * @param txnInfo the transaction to update the throttle requirements for
+     * @param consensusTime the consensus time of the transaction
+     * @param state the current state of the node
+     * @return whether the transaction should be throttled
+     */
+    public boolean shouldThrottle(
+            @NonNull final TransactionInfo txnInfo,
+            @NonNull final Instant consensusTime,
+            @NonNull final HederaState state) {
         resetLastAllowedUse();
         lastTxnWasGasThrottled = false;
-        if (shouldThrottleTxn(txnInfo, t, state)) {
+        if (shouldThrottleTxn(txnInfo, consensusTime, state)) {
             reclaimLastAllowedUse();
             return true;
         }
@@ -106,23 +117,19 @@ public class GeneralThrottleAccumulator {
         return false;
     }
 
-    public boolean shouldThrottleQuery(HederaFunctionality queryFunction, Instant now, Query query) {
+    /*
+     * Updates the throttle requirements for the given query and returns whether the query should be throttled.
+     *
+     * @param queryFunction the functionality of the query
+     * @param now the time at which the query is being processed
+     * @param query the query to update the throttle requirements for
+     * @return whether the query should be throttled
+     */
+    public boolean shouldThrottleQuery(
+            @NonNull final HederaFunctionality queryFunction, @NonNull final Instant now, @NonNull final Query query) {
         final var configuration = configProvider.getConfiguration();
         final var shouldThrottleByGas =
                 configuration.getConfigData(ContractsConfig.class).throttleThrottleByGas();
-
-        // Note that by payer exempt from throttling we mean just that those transactions will not be throttled,
-        // such payer accounts neither impact the throttles nor are they impacted by them
-        // In the current mono-service implementation we have the same behavior, additionally it is
-        // possible that transaction can also be exempt from affecting congestion levels separate from throttle
-        // exemption
-        // but this is only possible for the case of triggered transactions which is not yet implemented (see
-        // MonoMultiplierSources.java)
-        final var payer = query.accountDetails().accountId();
-        final var isPayerThrottleExempt = throttleExempt(payer, configuration);
-        if (isPayerThrottleExempt) {
-            return false;
-        }
 
         resetLastAllowedUse();
         if (isGasThrottled(queryFunction)
@@ -132,8 +139,8 @@ public class GeneralThrottleAccumulator {
             reclaimLastAllowedUse();
             return true;
         }
-        ThrottleReqsManager manager;
-        if ((manager = functionReqs.get(queryFunction)) == null) {
+        final var manager = functionReqs.get(queryFunction);
+        if (manager == null) {
             reclaimLastAllowedUse();
             return true;
         }
@@ -144,32 +151,69 @@ public class GeneralThrottleAccumulator {
         return false;
     }
 
-    public void leakUnusedGasPreviouslyReserved(long value) {
+    /*
+     * Leaks the gas amount previously reserved for the given transaction.
+     *
+     * @param txnInfo the transaction to leak the gas for
+     * @param value the amount of gas to leak
+     *
+     */
+    public void leakUnusedGasPreviouslyReserved(@NonNull final TransactionInfo txnInfo, final long value) {
+        final var configuration = configProvider.getConfiguration();
+        if (throttleExempt(txnInfo.payerID(), configuration)) {
+            return;
+        }
+
         gasThrottle.leakUnusedGasPreviouslyReserved(value);
     }
 
+    /*
+     * Gets the current list of active throttles.
+     *
+     * @return the current list of active throttles
+     */
+    @NonNull
     public List<DeterministicThrottle> allActiveThrottles() {
         return activeThrottles;
     }
 
-    public List<DeterministicThrottle> activeThrottlesFor(HederaFunctionality function) {
-        ThrottleReqsManager manager;
-        if ((manager = functionReqs.get(function)) == null) {
+    /*
+     * Gets the current list of active throttles for the given functionality.
+     *
+     * @param function the functionality to get the active throttles for
+     * @return the current list of active throttles for the given functionality
+     */
+    @NonNull
+    public List<DeterministicThrottle> activeThrottlesFor(@NonNull final HederaFunctionality function) {
+        final var manager = functionReqs.get(function);
+        if (manager == null) {
             return Collections.emptyList();
+        } else {
+            return manager.managedThrottles();
         }
-        return manager.managedThrottles();
     }
 
+    /*
+     * Indicates whether the last transaction was throttled by gas.
+     *
+     * @return whether the last transaction was throttled by gas
+     */
     public boolean wasLastTxnGasThrottled() {
         return lastTxnWasGasThrottled;
     }
 
-    public static boolean isGasThrottled(final HederaFunctionality function) {
-        return CONSENSUS_THROTTLED_FUNCTIONS.contains(function);
+    /*
+     * Checks if the given functionality should be throttled by gas.
+     *
+     * @param function the functionality to check
+     * @return whether the given functionality should be throttled by gas
+     */
+    public static boolean isGasThrottled(@NonNull final HederaFunctionality function) {
+        return GAS_THROTTLED_FUNCTIONS.contains(function);
     }
 
     private boolean shouldThrottleTxn(
-            @NonNull final TransactionInfo txnInfo, final Instant now, final HederaState state) {
+            @NonNull final TransactionInfo txnInfo, @NonNull final Instant now, @NonNull final HederaState state) {
         final var function = txnInfo.functionality();
         final var configuration = configProvider.getConfiguration();
 
@@ -180,22 +224,10 @@ public class GeneralThrottleAccumulator {
         // exemption
         // but this is only possible for the case of triggered transactions which is not yet implemented (see
         // MonoMultiplierSources.java)
-        final var payer = txnInfo.txBody().transactionID().accountID();
-        final var isPayerThrottleExempt = throttleExempt(payer, configuration);
+        final var isPayerThrottleExempt = throttleExempt(txnInfo.payerID(), configuration);
         if (isPayerThrottleExempt) {
             return false;
         }
-
-        // TODO: probably not best to recreate the gasThrottle for every txn, we can do it similar to mono which is when
-        // the config is updated
-        long capacity;
-        final var contractsConfig = configuration.getConfigData(ContractsConfig.class);
-        if (contractsConfig.throttleThrottleByGas() && contractsConfig.maxGasPerSec() == 0) {
-            log.warn("Consensus gas throttling enabled, but limited to 0 gas/sec");
-        }
-
-        capacity = contractsConfig.maxGasPerSec();
-        gasThrottle = new GasLimitDeterministicThrottle(capacity);
 
         // TODO: in mono we pass: () -> getSpanMapAccessor().getEthTxDataMeta(this) as 3rd param to
         // getGasLimitForContractTx as third param, should we do something similar here?
@@ -205,8 +237,8 @@ public class GeneralThrottleAccumulator {
             return true;
         }
 
-        ThrottleReqsManager manager;
-        if ((manager = functionReqs.get(function)) == null) {
+        final var manager = functionReqs.get(function);
+        if (manager == null) {
             return true;
         }
 
@@ -226,7 +258,8 @@ public class GeneralThrottleAccumulator {
         };
     }
 
-    private boolean throttleExempt(@NonNull AccountID accountID, Configuration configuration) {
+    public static boolean throttleExempt(
+            @NonNull final AccountID accountID, @NonNull final Configuration configuration) {
         final var maxThrottleExemptNum =
                 configuration.getConfigData(AccountsConfig.class).lastThrottleExempt();
         final var accountNum = accountID.accountNum();
@@ -247,7 +280,8 @@ public class GeneralThrottleAccumulator {
         }
     }
 
-    private long getGasLimitForContractTx(final TransactionBody txn, final HederaFunctionality function) {
+    private long getGasLimitForContractTx(
+            @NonNull final TransactionBody txn, @NonNull final HederaFunctionality function) {
         return switch (function) {
             case CONTRACT_CREATE -> txn.contractCreateInstance().gas();
             case CONTRACT_CALL -> txn.contractCall().gas();
@@ -259,7 +293,10 @@ public class GeneralThrottleAccumulator {
     }
 
     private boolean isGasExhausted(
-            final HederaFunctionality function, final Instant now, long txGasLimit, Configuration configuration) {
+            @NonNull final HederaFunctionality function,
+            @NonNull final Instant now,
+            final long txGasLimit,
+            @NonNull final Configuration configuration) {
         final var shouldThrottleByGas =
                 configuration.getConfigData(ContractsConfig.class).throttleThrottleByGas();
         return shouldThrottleByGas
@@ -268,10 +305,10 @@ public class GeneralThrottleAccumulator {
     }
 
     private boolean shouldThrottleMint(
-            ThrottleReqsManager manager,
-            @NonNull TokenMintTransactionBody op,
-            Instant now,
-            Configuration configuration) {
+            @NonNull final ThrottleReqsManager manager,
+            @NonNull final TokenMintTransactionBody op,
+            @NonNull final Instant now,
+            @NonNull final Configuration configuration) {
         final var numNfts = op.metadata().size();
         if (numNfts == 0) {
             return !manager.allReqsMetAt(now);
@@ -283,10 +320,10 @@ public class GeneralThrottleAccumulator {
     }
 
     private boolean shouldThrottleCryptoTransfer(
-            ThrottleReqsManager manager,
-            Instant now,
-            @NonNull Configuration configuration,
-            int implicitCreationsCount) {
+            @NonNull final ThrottleReqsManager manager,
+            @NonNull final Instant now,
+            @NonNull final Configuration configuration,
+            final int implicitCreationsCount) {
         final var isAutoCreationEnabled =
                 configuration.getConfigData(AutoCreationConfig.class).enabled();
         final var isLazyCreationEnabled =
@@ -299,10 +336,10 @@ public class GeneralThrottleAccumulator {
     }
 
     private boolean shouldThrottleEthTxn(
-            ThrottleReqsManager manager,
-            Instant now,
-            @NonNull Configuration configuration,
-            int implicitCreationsCount) {
+            @NonNull final ThrottleReqsManager manager,
+            @NonNull final Instant now,
+            @NonNull final Configuration configuration,
+            final int implicitCreationsCount) {
         final var isAutoCreationEnabled =
                 configuration.getConfigData(AutoCreationConfig.class).enabled();
         final var isLazyCreationEnabled =
@@ -314,7 +351,8 @@ public class GeneralThrottleAccumulator {
         }
     }
 
-    private int getImplicitCreationsCount(@NonNull TransactionBody txnBody, ReadableAccountStore accountStore) {
+    private int getImplicitCreationsCount(
+            @NonNull final TransactionBody txnBody, @NonNull final ReadableAccountStore accountStore) {
         var implicitCreationsCount = 0;
         if (txnBody.hasEthereumTransaction()) {
             final var ethTxData = populateEthTxData(
@@ -329,6 +367,10 @@ public class GeneralThrottleAccumulator {
             }
         } else {
             final var cryptoTransferBody = txnBody.cryptoTransfer();
+            if (cryptoTransferBody == null) {
+                return 0;
+            }
+
             implicitCreationsCount += hbarAdjustsImplicitCreationsCount(accountStore, cryptoTransferBody);
             implicitCreationsCount += tokenAdjustsImplicitCreationsCount(accountStore, cryptoTransferBody);
         }
@@ -337,7 +379,13 @@ public class GeneralThrottleAccumulator {
     }
 
     private int hbarAdjustsImplicitCreationsCount(
-            final ReadableAccountStore accountStore, @NonNull CryptoTransferTransactionBody cryptoTransferBody) {
+            @NonNull final ReadableAccountStore accountStore,
+            @NonNull final CryptoTransferTransactionBody cryptoTransferBody) {
+        if (cryptoTransferBody.transfers() == null
+                || cryptoTransferBody.transfers().accountAmounts() == null) {
+            return 0;
+        }
+
         var implicitCreationsCount = 0;
         for (var adjust : cryptoTransferBody.transfers().accountAmounts()) {
             if (!isKnownAlias(adjust.accountID(), accountStore) && containsImplicitCreations(adjust)) {
@@ -349,7 +397,12 @@ public class GeneralThrottleAccumulator {
     }
 
     private int tokenAdjustsImplicitCreationsCount(
-            final ReadableAccountStore accountStore, @NonNull CryptoTransferTransactionBody cryptoTransferBody) {
+            @NonNull final ReadableAccountStore accountStore,
+            @NonNull final CryptoTransferTransactionBody cryptoTransferBody) {
+        if (cryptoTransferBody.tokenTransfers() == null) {
+            return 0;
+        }
+
         var implicitCreationsCount = 0;
         for (var tokenAdjust : cryptoTransferBody.tokenTransfers()) {
             for (final var adjust : tokenAdjust.transfers()) {
@@ -368,7 +421,7 @@ public class GeneralThrottleAccumulator {
         return implicitCreationsCount;
     }
 
-    private boolean isKnownAlias(final AccountID idOrAlias, final ReadableAccountStore accountStore) {
+    private boolean isKnownAlias(@NonNull final AccountID idOrAlias, @NonNull final ReadableAccountStore accountStore) {
         if (isAlias(idOrAlias)) {
             final var alias = idOrAlias.alias();
             if (isOfEvmAddressSize(alias)) {
@@ -384,7 +437,7 @@ public class GeneralThrottleAccumulator {
         return true;
     }
 
-    private boolean containsImplicitCreations(@NonNull AccountAmount adjust) {
+    private boolean containsImplicitCreations(@NonNull final AccountAmount adjust) {
         return containsImplicitCreations(adjust.amount(), adjust.accountID().alias());
     }
 
@@ -393,7 +446,7 @@ public class GeneralThrottleAccumulator {
                 change.serialNumber(), change.receiverAccountID().alias());
     }
 
-    private boolean containsImplicitCreations(final long assetChange, final Bytes alias) {
+    private boolean containsImplicitCreations(final long assetChange, @NonNull final Bytes alias) {
         if (assetChange > 0) {
             if (isSerializedProtoKey(alias)) {
                 return true;
@@ -406,18 +459,23 @@ public class GeneralThrottleAccumulator {
     }
 
     private boolean shouldThrottleBasedOnImplicitCreations(
-            final ThrottleReqsManager manager, final int implicitCreationsCount, final Instant now) {
+            @NonNull final ThrottleReqsManager manager, final int implicitCreationsCount, @NonNull final Instant now) {
         return (implicitCreationsCount == 0)
                 ? !manager.allReqsMetAt(now)
                 : shouldThrottleImplicitCreations(implicitCreationsCount, now);
     }
 
-    private boolean shouldThrottleImplicitCreations(final int n, final Instant now) {
+    private boolean shouldThrottleImplicitCreations(final int n, @NonNull final Instant now) {
         final var manager = functionReqs.get(CRYPTO_CREATE);
         return manager == null || !manager.allReqsMetAt(now, n, ONE_TO_ONE);
     }
 
-    public void rebuildFor(@NonNull ThrottleDefinitions defs) {
+    /*
+     * Rebuilds the throttle requirements based on the given throttle definitions.
+     *
+     * @param defs the throttle definitions to rebuild the throttle requirements based on
+     */
+    public void rebuildFor(@NonNull final ThrottleDefinitions defs) {
         List<DeterministicThrottle> newActiveThrottles = new ArrayList<>();
         EnumMap<HederaFunctionality, List<Pair<DeterministicThrottle, Integer>>> reqLists =
                 new EnumMap<>(HederaFunctionality.class);
@@ -451,14 +509,36 @@ public class GeneralThrottleAccumulator {
         logResolvedDefinitions(CAPACITY_SPLIT);
     }
 
+    /*
+     * Rebuilds the gas throttle based on the current configuration.
+     */
+    public void applyGasConfig() {
+        final var configuration = configProvider.getConfiguration();
+        final var contractsConfig = configuration.getConfigData(ContractsConfig.class);
+        if (contractsConfig.throttleThrottleByGas() && contractsConfig.maxGasPerSec() == 0) {
+            log.warn("Consensus gas throttling enabled, but limited to 0 gas/sec");
+            return;
+        }
+
+        final long capacity = contractsConfig.maxGasPerSec();
+        gasThrottle = new GasLimitDeterministicThrottle(capacity);
+
+        log.info(
+                "Resolved consensus gas throttle -\n {} gas/sec (throttling {})",
+                gasThrottle.capacity(),
+                (contractsConfig.throttleThrottleByGas() ? "ON" : "OFF"));
+    }
+
+    @NonNull
     private ThrottleGroup<HederaFunctionality> hapiGroupFromPbj(
-            com.hedera.hapi.node.transaction.ThrottleGroup pbjThrottleGroup) {
+            @NonNull final com.hedera.hapi.node.transaction.ThrottleGroup pbjThrottleGroup) {
         return new ThrottleGroup<>(pbjThrottleGroup.milliOpsPerSec(), pbjThrottleGroup.operations());
     }
 
-    private void logResolvedDefinitions(int capacitySplit) {
-        var sb = new StringBuilder(
-                "Resolved handle throttles (after splitting capacity " + capacitySplit + " ways) - \n");
+    private void logResolvedDefinitions(final int capacitySplit) {
+        var sb = new StringBuilder("Resolved handle throttles (after splitting capacity ")
+                .append(capacitySplit)
+                .append(" ways) - \n");
         functionReqs.entrySet().stream()
                 .sorted(Comparator.comparing(entry -> entry.getKey().toString()))
                 .forEach(entry -> {
@@ -475,13 +555,11 @@ public class GeneralThrottleAccumulator {
         log.info("{}", () -> sb.toString().trim());
     }
 
+    /*
+     * Gets the gas throttle.
+     */
+    @Nullable
     public GasLimitDeterministicThrottle gasLimitThrottle() {
         return gasThrottle;
     }
-
-    // TODO: do we need to throttle queries in handle throttle?
-    //    @Override
-    //    public boolean shouldThrottleQuery(@NonNull HederaFunctionality functionality, @NonNull Query query) {
-    //        return false;
-    //    }
 }

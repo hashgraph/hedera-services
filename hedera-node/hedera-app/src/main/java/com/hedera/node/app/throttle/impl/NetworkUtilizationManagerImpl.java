@@ -36,7 +36,7 @@ import com.hedera.node.app.service.mono.fees.congestion.MultiplierSources;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.CongestionThrottleService;
-import com.hedera.node.app.throttle.HandleThrottleAccumulator;
+import com.hedera.node.app.throttle.GeneralThrottleAccumulator;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -49,19 +49,19 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Implementation of {@link NetworkUtilizationManager}  that delegates to injected {@link HandleThrottleAccumulator} and {@link
+ * Implementation of {@link NetworkUtilizationManager}  that delegates to injected {@link GeneralThrottleAccumulator} and {@link
  * MultiplierSources}.
  */
 public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager {
     private static final Logger log = LogManager.getLogger(NetworkUtilizationManagerImpl.class);
 
-    private final HandleThrottleAccumulator handleThrottling;
+    private final GeneralThrottleAccumulator handleThrottling;
 
     private final MonoMultiplierSources multiplierSources;
 
     @Inject
     public NetworkUtilizationManagerImpl(
-            @NonNull final HandleThrottleAccumulator handleThrottling,
+            @NonNull final GeneralThrottleAccumulator handleThrottling,
             @NonNull final MonoMultiplierSources multiplierSources) {
         this.handleThrottling = requireNonNull(handleThrottling, "handleThrottling must not be null");
         this.multiplierSources = requireNonNull(multiplierSources, "multiplierSources must not be null");

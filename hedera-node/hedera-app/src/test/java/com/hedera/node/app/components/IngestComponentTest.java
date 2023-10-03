@@ -34,7 +34,8 @@ import com.hedera.node.app.info.SelfNodeInfoImpl;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.service.mono.fees.congestion.ThrottleMultiplierSource;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
-import com.hedera.node.app.throttle.HandleThrottleAccumulator;
+import com.hedera.node.app.throttle.GeneralThrottleAccumulator;
+import com.hedera.node.app.throttle.HapiThrottling;
 import com.hedera.node.app.throttle.ThrottleManager;
 import com.hedera.node.app.throttle.impl.NetworkUtilizationManagerImpl;
 import com.hedera.node.app.version.HederaSoftwareVersion;
@@ -70,6 +71,9 @@ class IngestComponentTest {
     @Mock
     private Metrics metrics;
 
+    @Mock
+    private HapiThrottling hapiThrottling;
+
     private HederaInjectionComponent app;
 
     @BeforeEach
@@ -92,7 +96,7 @@ class IngestComponentTest {
                         SemanticVersion.newBuilder().major(2).build()));
 
         final var configProvider = new ConfigProviderImpl(false);
-        final var handleThrottling = new HandleThrottleAccumulator(configProvider);
+        final var handleThrottling = new GeneralThrottleAccumulator(configProvider);
         final var monoMultiplierSources = new MonoMultiplierSources(
                 new ThrottleMultiplierSource(null, null, null, null, null, null, null),
                 new ThrottleMultiplierSource(null, null, null, null, null, null, null));
@@ -117,6 +121,7 @@ class IngestComponentTest {
                 .instantSource(InstantSource.system())
                 .exchangeRateManager(exchangeRateManager)
                 .genesisRecordsConsensusHook(mock(GenesisRecordsConsensusHook.class))
+                .hapiThrottling(hapiThrottling)
                 .build();
 
         final var state = new FakeHederaState();

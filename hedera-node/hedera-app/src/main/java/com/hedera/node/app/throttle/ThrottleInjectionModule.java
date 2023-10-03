@@ -16,60 +16,7 @@
 
 package com.hedera.node.app.throttle;
 
-import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
-
-import com.hedera.node.app.fees.congestion.MonoMultiplierSources;
-import com.hedera.node.app.service.mono.fees.congestion.ThrottleMultiplierSource;
-import com.hedera.node.app.throttle.impl.NetworkUtilizationManagerImpl;
-import com.hedera.node.config.ConfigProvider;
-import com.hedera.node.config.data.FeesConfig;
 import dagger.Module;
-import dagger.Provides;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.List;
-import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 @Module
-public interface ThrottleInjectionModule {
-    Logger log = LogManager.getLogger(ThrottleInjectionModule.class);
-
-    /** Provides an implementation of the {@link com.hedera.node.app.throttle.NetworkUtilizationManager}. */
-    @Provides
-    @Singleton
-    public static NetworkUtilizationManager provideNetworkUtilizationManager(
-            @NonNull final GeneralThrottleAccumulator handleThrottling, @NonNull ConfigProvider configProvider) {
-        final var genericFeeMultiplier = new ThrottleMultiplierSource(
-                "logical TPS",
-                "TPS",
-                "CryptoTransfer throughput",
-                log,
-                () -> configProvider
-                        .getConfiguration()
-                        .getConfigData(FeesConfig.class)
-                        .minCongestionPeriod(),
-                () -> configProvider
-                        .getConfiguration()
-                        .getConfigData(FeesConfig.class)
-                        .percentCongestionMultipliers(),
-                () -> handleThrottling.activeThrottlesFor(CRYPTO_TRANSFER));
-        final var gasFeeMultiplier = new ThrottleMultiplierSource(
-                "EVM gas/sec",
-                "gas/sec",
-                "EVM utilization",
-                log,
-                () -> configProvider
-                        .getConfiguration()
-                        .getConfigData(FeesConfig.class)
-                        .minCongestionPeriod(),
-                () -> configProvider
-                        .getConfiguration()
-                        .getConfigData(FeesConfig.class)
-                        .percentCongestionMultipliers(),
-                () -> List.of(handleThrottling.gasLimitThrottle()));
-
-        final var monoMultiplierSources = new MonoMultiplierSources(genericFeeMultiplier, gasFeeMultiplier);
-        return new NetworkUtilizationManagerImpl(handleThrottling, monoMultiplierSources);
-    }
-}
+public interface ThrottleInjectionModule {}

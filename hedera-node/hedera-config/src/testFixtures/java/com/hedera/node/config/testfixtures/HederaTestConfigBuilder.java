@@ -188,7 +188,6 @@ public final class HederaTestConfigBuilder {
                 .withConverter(new LegacyContractIdActivationsConverter())
                 .withConverter(new MapAccessTypeConverter())
                 .withConverter(new RecomputeTypeConverter())
-                .withConverter(new ScaleFactorConverter())
                 .withConverter(new AccountIDConverter())
                 .withConverter(new ContractIDConverter())
                 .withConverter(new FileIDConverter())
