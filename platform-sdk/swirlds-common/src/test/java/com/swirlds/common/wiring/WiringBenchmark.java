@@ -2,6 +2,7 @@ package com.swirlds.common.wiring;
 
 import static java.util.concurrent.ForkJoinPool.defaultForkJoinWorkerThreadFactory;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.wiring.components.EventPool;
 import com.swirlds.common.wiring.components.EventVerifier;
@@ -38,11 +39,21 @@ class WiringBenchmark {
                         .withConcurrency(true)
                         .build());
 
-        // Create a user thread for running "gossip". It will continue to generate events at a given rate until
-        // we interrupt that thread to let it know it should stop.
+        // Create a user thread for running "gossip". It will continue to generate events until explicitly stopped.
         System.out.println("Starting gossip");
         gossip.start();
-
         SECONDS.sleep(120);
+        gossip.stop();
+
+        // Validate that all events have been seen by orphanBuffer
+        long timeout = System.currentTimeMillis() + 1000;
+        boolean success = false;
+        while (System.currentTimeMillis() < timeout) {
+            if (orphanBuffer.getCheckSum() == gossip.getCheckSum()) {
+                success = true;
+                break;
+            }
+        }
+        assertTrue(success);
     }
 }

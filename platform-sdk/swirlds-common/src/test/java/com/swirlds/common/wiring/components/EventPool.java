@@ -13,7 +13,7 @@ public final class EventPool {
         }
     }
 
-    public synchronized Event checkout(int number) {
+    public Event checkout(long number) {
         try {
             Event event = pool.take();
             event.reset(number);
