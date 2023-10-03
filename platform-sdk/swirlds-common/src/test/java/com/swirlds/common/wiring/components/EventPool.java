@@ -1,29 +1,29 @@
 package com.swirlds.common.wiring.components;
 
-import java.util.Stack;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 
 public final class EventPool {
-    private final Stack<Event> pool = new Stack<>();
+    private static final int CAPACITY = 10000;
+    private final BlockingQueue<Event> pool = new ArrayBlockingQueue<>(CAPACITY);
 
     public EventPool() {
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < CAPACITY; i++) {
             pool.add(new Event());
         }
     }
 
     public synchronized Event checkout(int number) {
-        if (pool.isEmpty()) {
-            final var event = new Event();
+        try {
+            Event event = pool.take();
             event.reset(number);
             return event;
-        } else {
-            final var event = pool.pop();
-            event.reset(number);
-            return event;
+        } catch (InterruptedException iex) {
+            throw new RuntimeException(iex);
         }
     }
 
     public void checkin(Event event) {
-        pool.push(event);
+        pool.add(event);
     }
 }
