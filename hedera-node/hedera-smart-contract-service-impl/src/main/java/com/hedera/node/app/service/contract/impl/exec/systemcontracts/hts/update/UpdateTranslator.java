@@ -22,6 +22,7 @@ import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.EXPIRY_V
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.TOKEN_KEY;
 
 import com.esaulpaugh.headlong.abi.Function;
+import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
@@ -72,18 +73,17 @@ public class UpdateTranslator extends AbstractHtsCallTranslator {
     }
 
     private TransactionBody nominalBodyFor(@NonNull final HtsCallAttempt attempt) {
+        final Tuple call;
         if (Arrays.equals(attempt.selector(), TOKEN_UPDATE_INFO_FUNCTION.selector())) {
-            final var call = UpdateTranslator.TOKEN_UPDATE_INFO_FUNCTION.decodeCall(
+            call = UpdateTranslator.TOKEN_UPDATE_INFO_FUNCTION.decodeCall(
                     attempt.input().toArrayUnsafe());
-            return decoder.decodeUpdateToken(call, attempt.addressIdConverter());
         } else if (Arrays.equals(attempt.selector(), TOKEN_UPDATE_INFO_FUNCTION_V2.selector())) {
-            final var call = UpdateTranslator.TOKEN_UPDATE_INFO_FUNCTION_V2.decodeCall(
+            call = UpdateTranslator.TOKEN_UPDATE_INFO_FUNCTION_V2.decodeCall(
                     attempt.input().toArrayUnsafe());
-            return decoder.decodeUpdateToken(call, attempt.addressIdConverter());
         } else {
-            final var call = UpdateTranslator.TOKEN_UPDATE_INFO_FUNCTION_V3.decodeCall(
+            call = UpdateTranslator.TOKEN_UPDATE_INFO_FUNCTION_V3.decodeCall(
                     attempt.input().toArrayUnsafe());
-            return decoder.decodeUpdateToken(call, attempt.addressIdConverter());
         }
+        return decoder.decodeUpdateToken(call, attempt.addressIdConverter());
     }
 }

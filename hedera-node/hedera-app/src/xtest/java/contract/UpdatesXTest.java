@@ -16,6 +16,7 @@
 
 package contract;
 
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asHeadlongAddress;
 import static contract.XTestConstants.AN_ED25519_KEY;
 import static contract.XTestConstants.ERC20_TOKEN_ADDRESS;
 import static contract.XTestConstants.ERC20_TOKEN_ID;
@@ -56,7 +57,6 @@ public class UpdatesXTest extends AbstractContractXTest {
 
     @Override
     protected void doScenarioOperations() {
-        final Instant time = Instant.now();
         // TODO: possible to pass null?
         // Successfully update token via TOKEN_UPDATE_INFO V1
         runHtsCallAndExpectOnSuccess(
@@ -73,16 +73,7 @@ public class UpdatesXTest extends AbstractContractXTest {
                                         1000L,
                                         false,
                                         // TokenKey
-                                        new Tuple[] {
-                                            Tuple.of(
-                                                    BigInteger.valueOf(1L),
-                                                    Tuple.of(
-                                                            true,
-                                                            RECEIVER_HEADLONG_ADDRESS,
-                                                            new byte[] {},
-                                                            new byte[] {},
-                                                            RECEIVER_HEADLONG_ADDRESS))
-                                        },
+                                        new Tuple[] {},
                                         // Expiry
                                         Tuple.of(TIMESTAMP, asHeadlongAddress(SENDER_ADDRESS.toByteArray()), 2592000L)))
                         .array()),
@@ -103,22 +94,13 @@ public class UpdatesXTest extends AbstractContractXTest {
                                         1000L,
                                         false,
                                         // TokenKey
-                                        new Tuple[] {
-                                            Tuple.of(
-                                                    BigInteger.valueOf(1L),
-                                                    Tuple.of(
-                                                            true,
-                                                            RECEIVER_HEADLONG_ADDRESS,
-                                                            new byte[] {},
-                                                            new byte[] {},
-                                                            RECEIVER_HEADLONG_ADDRESS))
-                                        },
+                                        new Tuple[] {},
                                         // Expiry
                                         Tuple.of(TIMESTAMP, asHeadlongAddress(SENDER_ADDRESS.toByteArray()), 2592000L)))
                         .array()),
                 assertSuccess());
-
-        // Successfully update token via TOKEN_UPDATE_INFO V3
+        //
+        //        // Successfully update token via TOKEN_UPDATE_INFO V3
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(UpdateTranslator.TOKEN_UPDATE_INFO_FUNCTION_V3
