@@ -90,6 +90,7 @@ public class AutoAccountCreator {
 
         final TransactionBody.Builder syntheticCreation;
         String memo;
+        byte[] evmAddress = null;
 
         final var isAliasEVMAddress = EntityIdUtils.isOfEvmAddressSize(alias);
         if (isAliasEVMAddress) {
@@ -97,7 +98,12 @@ public class AutoAccountCreator {
             memo = LAZY_MEMO;
         } else {
             final var key = asKeyFromAlias(alias);
-            syntheticCreation = createAccount(alias, key, 0L, maxAutoAssociations);
+            if (key.hasEcdsaSecp256k1()) {
+                evmAddress = tryAddressRecovery(key, EthSigsUtils::recoverAddressFromPubKey);
+                syntheticCreation = createAccount(Bytes.wrap(evmAddress), key, 0L, maxAutoAssociations);
+            } else {
+                syntheticCreation = createAccount(alias, key, 0L, maxAutoAssociations);
+            }
             memo = AUTO_MEMO;
         }
 
@@ -125,7 +131,7 @@ public class AutoAccountCreator {
         if (!isAliasEVMAddress) {
             final var key = asKeyFromAlias(alias);
             if (key.hasEcdsaSecp256k1()) {
-                final var evmAddress = tryAddressRecovery(key, EthSigsUtils::recoverAddressFromPubKey);
+                evmAddress = tryAddressRecovery(key, EthSigsUtils::recoverAddressFromPubKey);
                 if (evmAddress != null) {
                     childRecord.evmAddress(Bytes.wrap(evmAddress));
                 }
@@ -133,7 +139,7 @@ public class AutoAccountCreator {
         }
         childRecord.transactionFee(fee);
 
-        final var createdAccountId = accountStore.getAccountIDByAlias(alias);
+        final var createdAccountId = accountStore.getAccountIDByAlias(evmAddress == null ? alias : Bytes.wrap(evmAddress));
         validateTrue(createdAccountId != null, FAIL_INVALID);
         return createdAccountId;
     }
