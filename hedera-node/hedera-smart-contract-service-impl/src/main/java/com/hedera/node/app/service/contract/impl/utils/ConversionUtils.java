@@ -16,15 +16,20 @@
 
 package com.hedera.node.app.service.contract.impl.utils;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.processors.ProcessorModule.EVM_ADDRESS_SIZE;
 import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
+import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.NON_CANONICAL_REFERENCE_NUMBER;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.ContractLoginfo;
 import com.hedera.hapi.node.state.token.Account;
@@ -35,6 +40,7 @@ import com.hedera.hapi.streams.StorageChange;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
+import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
@@ -62,6 +68,49 @@ public class ConversionUtils {
 
     private ConversionUtils() {
         throw new UnsupportedOperationException("Utility Class");
+    }
+
+    /**
+     * Given a list of {@link com.esaulpaugh.headlong.abi.Address}, returns their implied token ids.
+     *
+     * @param tokenAddresses the {@link com.esaulpaugh.headlong.abi.Address}es
+     * @return the implied token ids
+     */
+    public static TokenID[] asTokenIds(@NonNull final com.esaulpaugh.headlong.abi.Address... tokenAddresses) {
+        requireNonNull(tokenAddresses);
+        final TokenID[] tokens = new TokenID[tokenAddresses.length];
+        for (int i = 0; i < tokens.length; i++) {
+            tokens[i] = asTokenId(tokenAddresses[i]);
+        }
+        return tokens;
+    }
+
+    /**
+     * Given a numeric {@link AccountID}, returns its equivalent contract id.
+     *
+     * @param accountId the numeric {@link AccountID}
+     * @return the equivalent account id
+     */
+    public static ContractID asNumericContractId(@NonNull final AccountID accountId) {
+        return ContractID.newBuilder()
+                .contractNum(accountId.accountNumOrThrow())
+                .build();
+    }
+
+    /**
+     * Given a {@link com.esaulpaugh.headlong.abi.Address}, returns its implied token id.
+     *
+     * <p><b>IMPORTANT:</b> Mono-service ignores the shard and realm, c.f. De
+     * codingFacade#convertAddressBytesToTokenID(), so we continue to do that here; might
+     * want to revisit this later
+     *
+     * @param address the {@link com.esaulpaugh.headlong.abi.Address}
+     * @return the implied token id
+     */
+    public static TokenID asTokenId(@NonNull final com.esaulpaugh.headlong.abi.Address address) {
+        return TokenID.newBuilder()
+                .tokenNum(numberOfLongZero(explicitFromHeadlong(address)))
+                .build();
     }
 
     /**
@@ -102,17 +151,6 @@ public class ConversionUtils {
     }
 
     /**
-     * Given a headlong address, converts it to a Besu {@link Address}.
-     *
-     * @param address the headlong address
-     * @return the Besu {@link Address}
-     */
-    public static Address fromHeadlongAddress(@NonNull final com.esaulpaugh.headlong.abi.Address address) {
-        requireNonNull(address);
-        return Address.fromHexString(address.toString());
-    }
-
-    /**
      * Given a {@link BigInteger}, returns either its long value or zero if it is out-of-range.
      *
      * @param value the {@link BigInteger}
@@ -134,7 +172,7 @@ public class ConversionUtils {
      */
     public static com.esaulpaugh.headlong.abi.Address headlongAddressOf(@NonNull final Account account) {
         requireNonNull(account);
-        return toHeadlongAddress(explicitAddressOf(account));
+        return asHeadlongAddress(explicitAddressOf(account));
     }
 
     /**
@@ -143,7 +181,7 @@ public class ConversionUtils {
      * @param explicit the explicit address
      * @return the headlong address
      */
-    public static com.esaulpaugh.headlong.abi.Address toHeadlongAddress(@NonNull final byte[] explicit) {
+    public static com.esaulpaugh.headlong.abi.Address asHeadlongAddress(@NonNull final byte[] explicit) {
         requireNonNull(explicit);
         final var integralAddress = Bytes.wrap(explicit).toUnsignedBigInteger();
         return com.esaulpaugh.headlong.abi.Address.wrap(
@@ -284,14 +322,14 @@ public class ConversionUtils {
     /**
      * Given an EVM address (possibly long-zero), returns the number of the corresponding Hedera entity
      * within the given {@link HandleHederaNativeOperations}; or {@link HederaNativeOperations#MISSING_ENTITY_NUMBER}
-     * if either the address does not correspond to a known Hedera entity, or references that entity by
-     * its "non-priority" long-zero address.
+     * if the address does not correspond to a known Hedera entity; or {@link HederaNativeOperations#NON_CANONICAL_REFERENCE_NUMBER}
+     * if the address references an account by its "non-priority" long-zero address.
      *
      * @param address       the EVM address
      * @param nativeOperations the {@link HandleHederaNativeOperations} to use for resolving aliases
      * @return the number of the corresponding Hedera entity, if it exists and has this priority address
      */
-    public static long maybeMissingNumberOfEvmReference(
+    public static long accountNumberForEvmReference(
             @NonNull final com.esaulpaugh.headlong.abi.Address address,
             @NonNull final HederaNativeOperations nativeOperations) {
         final var explicit = explicitFromHeadlong(address);
@@ -300,8 +338,10 @@ public class ConversionUtils {
             return MISSING_ENTITY_NUMBER;
         } else {
             final var account = nativeOperations.getAccount(number);
-            if (account == null || !Arrays.equals(explicit, explicitAddressOf(account))) {
+            if (account == null) {
                 return MISSING_ENTITY_NUMBER;
+            } else if (!Arrays.equals(explicit, explicitAddressOf(account))) {
+                return NON_CANONICAL_REFERENCE_NUMBER;
             }
             return number;
         }
@@ -392,6 +432,17 @@ public class ConversionUtils {
             throw new IllegalArgumentException("Cannot extract id number from address " + address);
         }
         return ContractID.newBuilder().contractNum(numberOfLongZero(address)).build();
+    }
+
+    /**
+     * Throws a {@link HandleException} if the given status is not {@link ResponseCodeEnum#SUCCESS}.
+     *
+     * @param status the status
+     */
+    public static void throwIfUnsuccessful(@NonNull final ResponseCodeEnum status) {
+        if (status != SUCCESS) {
+            throw new HandleException(status);
+        }
     }
 
     /**
@@ -494,7 +545,13 @@ public class ConversionUtils {
         }
     }
 
-    private static boolean isLongZeroAddress(final byte[] explicit) {
+    /**
+     * Given an explicit 20-byte array, returns whether it is a long-zero address.
+     *
+     * @param explicit the explicit 20-byte array
+     * @return whether it is a long-zero address
+     */
+    public static boolean isLongZeroAddress(final byte[] explicit) {
         for (int i = 0; i < NUM_LONG_ZEROS; i++) {
             if (explicit[i] != 0) {
                 return false;
@@ -503,8 +560,32 @@ public class ConversionUtils {
         return true;
     }
 
-    private static byte[] explicitFromHeadlong(@NonNull final com.esaulpaugh.headlong.abi.Address address) {
+    /**
+     * Given a headlong address, returns its explicit 20-byte array.
+     *
+     * @param address the headlong address
+     * @return its explicit 20-byte array
+     */
+    public static byte[] explicitFromHeadlong(@NonNull final com.esaulpaugh.headlong.abi.Address address) {
         return unhex(address.toString().substring(2));
+    }
+
+    /**
+     * Given an explicit 20-byte addresss, returns its long value.
+     *
+     * @param explicit the explicit 20-byte address
+     * @return its long value
+     */
+    public static long numberOfLongZero(@NonNull final byte[] explicit) {
+        return longFrom(
+                explicit[12],
+                explicit[13],
+                explicit[14],
+                explicit[15],
+                explicit[16],
+                explicit[17],
+                explicit[18],
+                explicit[19]);
     }
 
     // too many arguments
@@ -563,5 +644,16 @@ public class ConversionUtils {
         return account.alias().length() == EVM_ADDRESS_SIZE
                 ? account.alias().toByteArray()
                 : asEvmAddress(account.accountIdOrThrow().accountNumOrThrow());
+    }
+
+    /**
+     * Given a headlong address, converts it to a Besu {@link Address}.
+     *
+     * @param address the headlong address
+     * @return the Besu {@link Address}
+     */
+    public static Address fromHeadlongAddress(@NonNull final com.esaulpaugh.headlong.abi.Address address) {
+        requireNonNull(address);
+        return Address.fromHexString(address.toString());
     }
 }

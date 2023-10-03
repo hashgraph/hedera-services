@@ -39,8 +39,8 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.F
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.NonFungibleTokenInfoPrecompile.decodeGetNonFungibleTokenInfo;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenInfoPrecompile.decodeGetTokenInfo;
 import static org.hyperledger.besu.datatypes.Address.BLS12_G1ADD;
-import static org.hyperledger.besu.datatypes.Address.BLS12_G1MUL;
-import static org.hyperledger.besu.datatypes.Address.BLS12_G1MULTIEXP;
+import static org.hyperledger.besu.datatypes.Address.KZG_POINT_EVAL;
+import static org.hyperledger.besu.datatypes.Address.PARENT_BEACON_BLOCK_ROOT_REGISTRY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -246,7 +246,7 @@ class GetTokenInfoPrecompilesTest {
 
     // Info objects
     private final NftID nftID = NftID.newBuilder()
-            .setTokenId(tokenMerkleId)
+            .setTokenID(tokenMerkleId)
             .setSerialNumber(serialNumber)
             .build();
     private TokenInfo.Builder tokenInfo;
@@ -300,7 +300,7 @@ class GetTokenInfoPrecompilesTest {
         nonFungibleTokenInfo = TokenNftInfo.newBuilder()
                 .setLedgerId(fromString("0x03"))
                 .setNftID(NftID.newBuilder()
-                        .setTokenId(tokenMerkleId)
+                        .setTokenID(tokenMerkleId)
                         .setSerialNumber(serialNumber)
                         .build())
                 .setAccountID(payer)
@@ -510,7 +510,7 @@ class GetTokenInfoPrecompilesTest {
         given(wrappedLedgers.evmNftInfo(
                         NftID.newBuilder()
                                 .setSerialNumber(serialNumber)
-                                .setTokenId(tokenMerkleId)
+                                .setTokenID(tokenMerkleId)
                                 .build(),
                         networkInfo.ledgerId()))
                 .willReturn(Optional.of(evmNftInfo));
@@ -664,7 +664,7 @@ class GetTokenInfoPrecompilesTest {
                 .willReturn(Optional.of(evmTokenInfo));
         given(wrappedLedgers.evmNftInfo(
                         NftID.newBuilder()
-                                .setTokenId(tokenMerkleId)
+                                .setTokenID(tokenMerkleId)
                                 .setSerialNumber(serialNumber)
                                 .build(),
                         networkInfo.ledgerId()))
@@ -712,7 +712,7 @@ class GetTokenInfoPrecompilesTest {
                 .willReturn(Optional.of(evmTokenInfo));
         given(wrappedLedgers.evmNftInfo(
                         NftID.newBuilder()
-                                .setTokenId(tokenMerkleId)
+                                .setTokenID(tokenMerkleId)
                                 .setSerialNumber(serialNumber)
                                 .build(),
                         networkInfo.ledgerId()))
@@ -952,7 +952,7 @@ class GetTokenInfoPrecompilesTest {
     void decodeGetTokenInfoAsExpected() {
         tokenInfoPrecompile.when(() -> decodeGetTokenInfo(GET_TOKEN_INFO_INPUT)).thenCallRealMethod();
         entityIdUtils
-                .when(() -> EntityIdUtils.tokenIdFromEvmAddress(BLS12_G1ADD.toArray()))
+                .when(() -> EntityIdUtils.tokenIdFromEvmAddress(KZG_POINT_EVAL.toArray()))
                 .thenCallRealMethod();
         final var decodedInput = decodeGetTokenInfo(GET_TOKEN_INFO_INPUT);
 
@@ -966,7 +966,7 @@ class GetTokenInfoPrecompilesTest {
                 .when(() -> decodeGetFungibleTokenInfo(GET_FUNGIBLE_TOKEN_INFO_INPUT))
                 .thenCallRealMethod();
         entityIdUtils
-                .when(() -> EntityIdUtils.tokenIdFromEvmAddress(BLS12_G1MUL.toArray()))
+                .when(() -> EntityIdUtils.tokenIdFromEvmAddress(PARENT_BEACON_BLOCK_ROOT_REGISTRY.toArray()))
                 .thenCallRealMethod();
         final var decodedInput = decodeGetFungibleTokenInfo(GET_FUNGIBLE_TOKEN_INFO_INPUT);
 
@@ -980,7 +980,7 @@ class GetTokenInfoPrecompilesTest {
                 .when(() -> decodeGetNonFungibleTokenInfo(GET_NON_FUNGIBLE_TOKEN_INFO_INPUT))
                 .thenCallRealMethod();
         entityIdUtils
-                .when(() -> EntityIdUtils.tokenIdFromEvmAddress(BLS12_G1MULTIEXP.toArray()))
+                .when(() -> EntityIdUtils.tokenIdFromEvmAddress(BLS12_G1ADD.toArray()))
                 .thenCallRealMethod();
         final var decodedInput = decodeGetNonFungibleTokenInfo(GET_NON_FUNGIBLE_TOKEN_INFO_INPUT);
 

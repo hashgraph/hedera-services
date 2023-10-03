@@ -35,8 +35,10 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.ResponseType;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.SignatureMap;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TopicID;
@@ -44,6 +46,7 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.network.NetworkGetExecutionTimeQuery;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshot;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.FixedFee;
@@ -51,8 +54,11 @@ import com.hedera.hapi.node.transaction.FractionalFee;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.RoyaltyFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.node.transaction.TransactionRecord;
+import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
+import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
@@ -192,6 +198,21 @@ public final class PbjConverter {
         }
     }
 
+    public static @NonNull com.hederahashgraph.api.proto.java.TransactionRecord fromPbj(@NonNull TransactionRecord tx) {
+        requireNonNull(tx);
+        try {
+            final var bytes = asBytes(TransactionRecord.PROTOBUF, tx);
+            return com.hederahashgraph.api.proto.java.TransactionRecord.parseFrom(bytes);
+        } catch (InvalidProtocolBufferException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static @NonNull com.hederahashgraph.api.proto.java.SubType fromPbj(@NonNull SubType subType) {
+        requireNonNull(subType);
+        return com.hederahashgraph.api.proto.java.SubType.valueOf(subType.name());
+    }
+
     public static @NonNull com.hederahashgraph.api.proto.java.AccountAmount fromPbj(@NonNull AccountAmount a) {
         requireNonNull(a);
         try {
@@ -294,6 +315,7 @@ public final class PbjConverter {
             case TokenUpdate -> HederaFunctionality.TOKEN_UPDATE;
             case TransactionGetReceipt -> HederaFunctionality.TRANSACTION_GET_RECEIPT;
             case TransactionGetRecord -> HederaFunctionality.TRANSACTION_GET_RECORD;
+            case TransactionGetFastRecord -> HederaFunctionality.TRANSACTION_GET_FAST_RECORD;
             case UncheckedSubmit -> HederaFunctionality.UNCHECKED_SUBMIT;
             case UtilPrng -> HederaFunctionality.UTIL_PRNG;
             case UNRECOGNIZED -> throw new RuntimeException("Unknown function UNRECOGNIZED");
@@ -391,6 +413,8 @@ public final class PbjConverter {
             case TRANSACTION_GET_RECEIPT -> com.hederahashgraph.api.proto.java.HederaFunctionality
                     .TransactionGetReceipt;
             case TRANSACTION_GET_RECORD -> com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetRecord;
+            case TRANSACTION_GET_FAST_RECORD -> com.hederahashgraph.api.proto.java.HederaFunctionality
+                    .TransactionGetFastRecord;
             case UNCHECKED_SUBMIT -> com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
             case UTIL_PRNG -> com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
         };
@@ -1349,6 +1373,21 @@ public final class PbjConverter {
         }
     }
 
+    /**
+     * Tries to convert a PBJ {@link ResponseType} to a {@link com.hederahashgraph.api.proto.java.ResponseType}
+     * @param responseType the PBJ {@link ResponseType} to convert
+     * @return the converted {@link com.hederahashgraph.api.proto.java.ResponseType} if valid
+     */
+    public static @NonNull com.hederahashgraph.api.proto.java.ResponseType fromPbjResponseType(
+            @NonNull final ResponseType responseType) {
+        return switch (requireNonNull(responseType)) {
+            case ANSWER_ONLY -> com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
+            case ANSWER_STATE_PROOF -> com.hederahashgraph.api.proto.java.ResponseType.ANSWER_STATE_PROOF;
+            case COST_ANSWER -> com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
+            case COST_ANSWER_STATE_PROOF -> com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER_STATE_PROOF;
+        };
+    }
+
     public static @NonNull Optional<SchedulableTransactionBody> toPbj(
             @Nullable final com.hederahashgraph.api.proto.java.SchedulableTransactionBody schedulableTransactionBody) {
         if (schedulableTransactionBody == null) {
@@ -1474,9 +1513,10 @@ public final class PbjConverter {
     public static com.hederahashgraph.api.proto.java.File fromPbj(@Nullable File file) {
         var builder = com.hederahashgraph.api.proto.java.File.newBuilder();
         if (file != null) {
-            builder.setFileId(fromPbj(file.fileId()));
+            builder.setFileId(fromPbj(file.fileIdOrThrow()));
             builder.setExpirationSecond(file.expirationSecond());
-            builder.setKeys(pbjToProto(file.keys(), KeyList.class, com.hederahashgraph.api.proto.java.KeyList.class));
+            builder.setKeys(pbjToProto(
+                    file.keysOrElse(KeyList.DEFAULT), KeyList.class, com.hederahashgraph.api.proto.java.KeyList.class));
             builder.setContents(ByteString.copyFrom(file.contents().toByteArray()));
             builder.setMemo(file.memo());
             builder.setDeleted(file.deleted());
@@ -1503,5 +1543,23 @@ public final class PbjConverter {
     public static NetworkGetExecutionTimeQuery toPbj(
             com.hederahashgraph.api.proto.java.NetworkGetExecutionTimeQuery query) {
         return protoToPbj(query, NetworkGetExecutionTimeQuery.class);
+    }
+
+    public static DeterministicThrottle.UsageSnapshot fromPbj(ThrottleUsageSnapshot snapshot) {
+        final var lastDecisionTime = snapshot.lastDecisionTime();
+        if (lastDecisionTime == null) {
+            return new DeterministicThrottle.UsageSnapshot(snapshot.used(), null);
+        } else {
+            return new DeterministicThrottle.UsageSnapshot(snapshot.used(), HapiUtils.asInstant(lastDecisionTime));
+        }
+    }
+
+    public static ThrottleUsageSnapshot toPbj(DeterministicThrottle.UsageSnapshot snapshot) {
+        final var lastDecisionTime = snapshot.lastDecisionTime();
+        if (lastDecisionTime == null) {
+            return new ThrottleUsageSnapshot(snapshot.used(), null);
+        } else {
+            return new ThrottleUsageSnapshot(snapshot.used(), HapiUtils.asTimestamp(lastDecisionTime));
+        }
     }
 }

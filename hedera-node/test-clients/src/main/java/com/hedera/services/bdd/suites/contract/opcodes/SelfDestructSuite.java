@@ -33,6 +33,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -71,6 +72,7 @@ public class SelfDestructSuite extends HapiSuite {
         return true;
     }
 
+    @HapiTest
     private HapiSpec hscsEvm008SelfDestructInConstructorWorks() {
         final var contract = "FactorySelfDestructConstructor";
         final var nextAccount = "civilian";
@@ -95,6 +97,7 @@ public class SelfDestructSuite extends HapiSuite {
                         }));
     }
 
+    @HapiTest
     private HapiSpec hscsEvm008SelfDestructWhenCalling() {
         return defaultHapiSpec("hscsEvm008SelfDestructWhenCalling")
                 .given(
@@ -111,6 +114,7 @@ public class SelfDestructSuite extends HapiSuite {
                                 .has(contractWith().isDeleted()));
     }
 
+    @HapiTest
     private HapiSpec selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn() {
         final AtomicLong beneficiaryId = new AtomicLong();
         return defaultHapiSpec("selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn")

@@ -27,3 +27,11 @@ testModuleInfo {
     requires("org.mockito.junit.jupiter")
     runtimeOnly("org.mockito.inline")
 }
+
+tasks.shadowJar {
+    manifest {
+        attributes("Main-Class" to "com.swirlds.cli.PlatformCli", "Multi-Release" to "true")
+    }
+}
+
+tasks.assemble { dependsOn(tasks.shadowJar) }

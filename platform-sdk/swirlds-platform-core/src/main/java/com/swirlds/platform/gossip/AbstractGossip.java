@@ -212,7 +212,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
         fallenBehindManager = buildFallenBehindManager();
 
         syncManager = new SyncManagerImpl(
-                platformContext.getMetrics(),
+                platformContext,
                 intakeQueue,
                 topology.getConnectionGraph(),
                 selfId,
@@ -235,12 +235,12 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
 
         final ReconnectConfig reconnectConfig =
                 platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
-        reconnectThrottle = new ReconnectThrottle(reconnectConfig);
+        reconnectThrottle = new ReconnectThrottle(reconnectConfig, time);
 
         networkMetrics = new NetworkMetrics(platformContext.getMetrics(), selfId, addressBook);
         platformContext.getMetrics().addUpdater(networkMetrics::update);
 
-        reconnectMetrics = new ReconnectMetrics(platformContext.getMetrics());
+        reconnectMetrics = new ReconnectMetrics(platformContext.getMetrics(), addressBook);
 
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
         reconnectHelper = new ReconnectHelper(

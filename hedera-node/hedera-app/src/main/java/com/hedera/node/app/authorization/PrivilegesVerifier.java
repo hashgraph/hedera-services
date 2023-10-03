@@ -16,10 +16,10 @@
 
 package com.hedera.node.app.authorization;
 
-import static com.hedera.node.app.spi.authorization.Authorizer.SystemPrivilege.AUTHORIZED;
-import static com.hedera.node.app.spi.authorization.Authorizer.SystemPrivilege.IMPERMISSIBLE;
-import static com.hedera.node.app.spi.authorization.Authorizer.SystemPrivilege.UNAUTHORIZED;
-import static com.hedera.node.app.spi.authorization.Authorizer.SystemPrivilege.UNNECESSARY;
+import static com.hedera.node.app.spi.authorization.SystemPrivilege.AUTHORIZED;
+import static com.hedera.node.app.spi.authorization.SystemPrivilege.IMPERMISSIBLE;
+import static com.hedera.node.app.spi.authorization.SystemPrivilege.UNAUTHORIZED;
+import static com.hedera.node.app.spi.authorization.SystemPrivilege.UNNECESSARY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -28,7 +28,7 @@ import com.hedera.hapi.node.file.SystemDeleteTransactionBody;
 import com.hedera.hapi.node.file.SystemUndeleteTransactionBody;
 import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.spi.authorization.Authorizer.SystemPrivilege;
+import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.FilesConfig;

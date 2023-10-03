@@ -81,18 +81,15 @@ fun include(name: String, path: String) {
 
 // The HAPI API version to use for Protobuf sources. This can be a tag or branch
 // name from the hedera-protobufs GIT repo.
-val hapiProtoVersion = "0.40.0-blocks-state-SNAPSHOT"
-val hapiProtoBranchOrTag = "add-throttle-and-congestion-types" // hapiProtoVersion
+val hapiProtoVersion = "0.43.0-rc-SNAPSHOT"
+val hapiProtoBranchOrTag = "add-pbj-types-for-state"
 
 gitRepositories {
     checkoutsDirectory.set(File(rootDir, "hapi"))
     // check branch in repo for updates every second
     refreshIntervalMillis.set(1000)
     include("hedera-protobufs") {
-        uri.set(
-            "https://github.com/LimeChain/hedera-protobufs.git"
-        ) // TODO: Temporary override for Limechain fork, revert when
-        // https://github.com/hashgraph/hedera-protobufs/pull/304 is merged
+        uri.set("https://github.com/hashgraph/hedera-protobufs.git")
         // HAPI repo version
         tag.set(hapiProtoBranchOrTag)
         // do not load project from repo

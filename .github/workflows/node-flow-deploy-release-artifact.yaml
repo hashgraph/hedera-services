@@ -16,28 +16,6 @@
 
 name: "ZXF: Deploy Production Release"
 on:
-  workflow_dispatch:
-    inputs:
-      dry-run-enabled:
-        description: "Perform Dry Run"
-        type: boolean
-        required: false
-        default: false
-      java-version:
-        description: "Java JDK Version:"
-        type: string
-        required: false
-        default: "17.0.8"
-      java-distribution:
-        description: "Java JDK Distribution:"
-        type: string
-        required: false
-        default: "temurin"
-      gradle-version:
-        description: "Gradle Version:"
-        type: string
-        required: false
-        default: "wrapper"
   push:
     branches:
       - develop
@@ -92,6 +70,7 @@ jobs:
       version-policy: specified
       new-version: ${{ needs.prepare-tag-release.outputs.version }}
       trigger-env-deploy: none
+      sdk-release-profile: ${{ needs.prepare-tag-release.outputs.prerelease == 'true' && 'PrereleaseChannel' || 'MavenCentral' }}
     secrets:
       access-token: ${{ secrets.GITHUB_TOKEN }}
       bucket-name: ${{ secrets.RELEASE_ARTIFACT_BUCKET_NAME }}
@@ -99,6 +78,11 @@ jobs:
       svcs-ossrh-password: ${{ secrets.SVCS_OSSRH_PASSWORD }}
       svcs-gpg-key-contents: ${{ secrets.SVCS_GPG_KEY_CONTENTS }}
       svcs-gpg-key-passphrase: ${{ secrets.SVCS_GPG_KEY_PASSPHRASE }}
+      sdk-ossrh-username: ${{ secrets.PLATFORM_OSSRH_USERNAME }}
+      sdk-ossrh-password: ${{ secrets.PLATFORM_OSSRH_PASSWORD }}
+      sdk-gpg-key-contents: ${{ secrets.PLATFORM_GPG_KEY_CONTENTS }}
+      sdk-gpg-key-passphrase: ${{ secrets.PLATFORM_GPG_KEY_PASSPHRASE }}
+      slack-webhook-url: ${{ secrets.PLATFORM_SLACK_RELEASE_WEBHOOK }}
       jenkins-integration-url: ${{ secrets.RELEASE_JENKINS_INTEGRATION_URL }}
 
   release-branch:
@@ -108,6 +92,7 @@ jobs:
     with:
       version-policy: branch-commit
       trigger-env-deploy: integration
+      sdk-release-profile: DevelopCommit
     secrets:
       access-token: ${{ secrets.GITHUB_TOKEN }}
       bucket-name: ${{ secrets.RELEASE_ARTIFACT_BUCKET_NAME }}
@@ -115,4 +100,9 @@ jobs:
       svcs-ossrh-password: ${{ secrets.SVCS_OSSRH_PASSWORD }}
       svcs-gpg-key-contents: ${{ secrets.SVCS_GPG_KEY_CONTENTS }}
       svcs-gpg-key-passphrase: ${{ secrets.SVCS_GPG_KEY_PASSPHRASE }}
+      sdk-ossrh-username: ${{ secrets.PLATFORM_OSSRH_USERNAME }}
+      sdk-ossrh-password: ${{ secrets.PLATFORM_OSSRH_PASSWORD }}
+      sdk-gpg-key-contents: ${{ secrets.PLATFORM_GPG_KEY_CONTENTS }}
+      sdk-gpg-key-passphrase: ${{ secrets.PLATFORM_GPG_KEY_PASSPHRASE }}
+      slack-webhook-url: ${{ secrets.PLATFORM_SLACK_RELEASE_WEBHOOK }}
       jenkins-integration-url: ${{ secrets.RELEASE_JENKINS_INTEGRATION_URL }}

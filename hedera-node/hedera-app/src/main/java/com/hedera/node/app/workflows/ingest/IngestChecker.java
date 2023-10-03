@@ -36,6 +36,7 @@ import com.hedera.node.app.info.CurrentPlatformStatus;
 import com.hedera.node.app.signature.ExpandedSignaturePair;
 import com.hedera.node.app.signature.SignatureExpander;
 import com.hedera.node.app.signature.SignatureVerifier;
+import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.DeduplicationCache;
@@ -46,6 +47,7 @@ import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.HashSet;
@@ -71,6 +73,7 @@ public final class IngestChecker {
     private final TransactionDispatcher dispatcher;
     private final FeeManager feeManager;
     private final AccountID nodeAccount;
+    private final Authorizer authorizer;
     private final HapiThrottling hapiThrottling;
 
     /**
@@ -98,6 +101,7 @@ public final class IngestChecker {
             @NonNull final DeduplicationCache deduplicationCache,
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final FeeManager feeManager,
+            @NonNull final Authorizer authorizer,
             @NonNull final HapiThrottling hapiThrottling) {
         this.nodeAccount = requireNonNull(nodeAccount, "nodeAccount must not be null");
         this.currentPlatformStatus = requireNonNull(currentPlatformStatus, "currentPlatformStatus must not be null");
@@ -108,6 +112,7 @@ public final class IngestChecker {
         this.deduplicationCache = requireNonNull(deduplicationCache, "deduplicationCache must not be null");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
         this.feeManager = requireNonNull(feeManager, "feeManager must not be null");
+        this.authorizer = requireNonNull(authorizer, "authorizer must not be null");
         this.hapiThrottling = requireNonNull(hapiThrottling);
     }
 
@@ -125,11 +130,14 @@ public final class IngestChecker {
     /**
      * Runs all the ingest checks on a {@link Transaction}
      *
+     * @param state the {@link HederaState} to use
      * @param tx the {@link Transaction} to check
+     * @param configuration the {@link Configuration} to use
      * @return the {@link TransactionInfo} with the extracted information
      * @throws PreCheckException if a check fails
      */
-    public TransactionInfo runAllChecks(@NonNull final HederaState state, @NonNull final Transaction tx)
+    public TransactionInfo runAllChecks(
+            @NonNull final HederaState state, @NonNull final Transaction tx, @NonNull final Configuration configuration)
             throws PreCheckException {
         // During ingest we approximate consensus time with wall clock time
         final var consensusTime = Instant.now();
@@ -175,13 +183,14 @@ public final class IngestChecker {
             throw new PreCheckException(UNAUTHORIZED);
         }
 
-        // 6. Check account balance
-        final FeeContext feeContext = new FeeContextImpl(consensusTime, txInfo, payerKey, feeManager, storeFactory);
-        final var fees = dispatcher.dispatchComputeFees(feeContext);
-        solvencyPreCheck.checkSolvency(txInfo, payer, fees.totalWithoutServiceFee());
-
-        // 7. Verify payer's signatures
+        // 6. Verify payer's signatures
         verifyPayerSignature(txInfo, payerKey);
+
+        // 7. Check payer solvency
+        final FeeContext feeContext =
+                new FeeContextImpl(consensusTime, txInfo, payerKey, feeManager, storeFactory, configuration);
+        final var fees = dispatcher.dispatchComputeFees(feeContext);
+        solvencyPreCheck.checkSolvency(txInfo, payer, fees);
 
         return txInfo;
     }

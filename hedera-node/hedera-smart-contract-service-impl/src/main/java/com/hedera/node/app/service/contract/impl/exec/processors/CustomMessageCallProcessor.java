@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.processors;
 
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_VALUE_TRANSFER;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_FEE_SUBMITTED;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.alreadyHalted;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.isDelegateCall;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.transfersValue;
@@ -221,7 +221,7 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
         if (precompiles.get(codeAddress) == null) {
             doHalt(frame, PRECOMPILE_ERROR, operationTracer);
         } else if (transfersValue(frame)) {
-            doHalt(frame, INVALID_VALUE_TRANSFER, operationTracer);
+            doHalt(frame, INVALID_FEE_SUBMITTED, operationTracer);
         }
     }
 

@@ -80,7 +80,7 @@ public class CryptoDeleteSuite extends HapiSuite {
                 canQueryForRecordsWithDeletedPayers());
     }
 
-    // @HapiTest, node fee need to be implemented before running this test
+    // @HapiTest  recheck after calculateFees() is implemented, balance is not correct yet.
     private HapiSpec deletedAccountCannotBePayer() {
         // Account Names
         String SUBMITTING_NODE_ACCOUNT = "0.0.3";
@@ -193,6 +193,7 @@ public class CryptoDeleteSuite extends HapiSuite {
                         .hasKnownStatus(ACCOUNT_DELETED));
     }
 
+    @HapiTest
     private HapiSpec cannotDeleteAccountWithSameBeneficiary() {
         return defaultHapiSpec("CannotDeleteAccountWithSameBeneficiary")
                 .given(cryptoCreate(ACCOUNT_TO_BE_DELETED))

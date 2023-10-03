@@ -200,6 +200,8 @@ public class TokenCreateSpecs extends HapiSuite {
                                         selfDenominatedFixedCollector,
                                         otherSelfDenominatedFixedCollector)
                                 .via(creationTxn),
+                        // TODO: Here it throws that we expect INVALID_TREASURY_ACCOUNT_FOR_TOKEN but it was OK.
+                        // When I change it to expect OK it now returns PLATFORM_NOT_ACTIVE
                         tokenCreate(notToBeToken)
                                 .treasury(tbd)
                                 .hasKnownStatus(INVALID_TREASURY_ACCOUNT_FOR_TOKEN)
@@ -259,6 +261,7 @@ public class TokenCreateSpecs extends HapiSuite {
                 .then(getTokenInfo(SENTINEL_VALUE).hasCostAnswerPrecheck(INVALID_TOKEN_ID));
     }
 
+    @HapiTest
     public HapiSpec cannotCreateWithExcessiveLifetime() {
         final var smallBuffer = 12_345L;
         final var okExpiry = defaultMaxLifetime + Instant.now().getEpochSecond() - smallBuffer;
@@ -286,6 +289,9 @@ public class TokenCreateSpecs extends HapiSuite {
                                 .signedBy(GENESIS)
                                 .autoRenewAccount("1.2.3")
                                 .hasKnownStatus(INVALID_AUTORENEW_ACCOUNT),
+                        // TODO: for some reason setting the autoRenewPeriod does not change the value. We always get
+                        // the default value(7776000). Not sure why
+                        // Other then that the validation itself seems to be in place.
                         tokenCreate(PRIMARY)
                                 .autoRenewAccount(AUTO_RENEW)
                                 .autoRenewPeriod(Long.MAX_VALUE)
@@ -320,6 +326,7 @@ public class TokenCreateSpecs extends HapiSuite {
                 .then(getTokenInfo(PRIMARY).logged().hasRegisteredId(PRIMARY).hasName(saltedName));
     }
 
+    @HapiTest
     public HapiSpec creationWithoutKYCSetsCorrectStatus() {
         String saltedName = salted(PRIMARY);
         return defaultHapiSpec("CreationWithoutKYCSetsCorrectStatus")
@@ -329,6 +336,7 @@ public class TokenCreateSpecs extends HapiSuite {
                         .hasToken(relationshipWith(PRIMARY).kyc(TokenKycStatus.KycNotApplicable)));
     }
 
+    @HapiTest
     public HapiSpec baseCreationsHaveExpectedPrices() {
         final var civilian = "NonExemptPayer";
 
@@ -414,6 +422,7 @@ public class TokenCreateSpecs extends HapiSuite {
         return tokenSubType + "Txn";
     }
 
+    @HapiTest
     public HapiSpec creationHappyPath() {
         String memo = "JUMP";
         String saltedName = salted(PRIMARY);
@@ -539,6 +548,7 @@ public class TokenCreateSpecs extends HapiSuite {
                         getTokenInfo(PRIMARY).logged().hasRegisteredId(PRIMARY).hasValidExpiry());
     }
 
+    @HapiTest
     public HapiSpec creationValidatesExpiry() {
         return defaultHapiSpec("CreationValidatesExpiry")
                 .given()
@@ -546,6 +556,7 @@ public class TokenCreateSpecs extends HapiSuite {
                 .then(tokenCreate(PRIMARY).expiry(1000).hasPrecheck(INVALID_EXPIRATION_TIME));
     }
 
+    @HapiTest
     public HapiSpec creationValidatesFreezeDefaultWithNoFreezeKey() {
         return defaultHapiSpec("CreationValidatesFreezeDefaultWithNoFreezeKey")
                 .given()
@@ -553,6 +564,7 @@ public class TokenCreateSpecs extends HapiSuite {
                 .then(tokenCreate(PRIMARY).freezeDefault(true).hasPrecheck(TOKEN_HAS_NO_FREEZE_KEY));
     }
 
+    @HapiTest
     public HapiSpec creationValidatesMemo() {
         return defaultHapiSpec("CreationValidatesMemo")
                 .given()
@@ -560,6 +572,7 @@ public class TokenCreateSpecs extends HapiSuite {
                 .then(tokenCreate(PRIMARY).entityMemo("N\u0000!!!").hasPrecheck(INVALID_ZERO_BYTE_IN_STRING));
     }
 
+    @HapiTest
     public HapiSpec creationValidatesNonFungiblePrechecks() {
         return defaultHapiSpec("CreationValidatesNonFungiblePrechecks")
                 .given()
@@ -582,6 +595,7 @@ public class TokenCreateSpecs extends HapiSuite {
                                 .hasPrecheck(INVALID_TOKEN_DECIMALS));
     }
 
+    @HapiTest
     public HapiSpec creationValidatesMaxSupply() {
         return defaultHapiSpec("CreationValidatesMaxSupply")
                 .given()
@@ -777,6 +791,7 @@ public class TokenCreateSpecs extends HapiSuite {
                                 tokenCollector)));
     }
 
+    @HapiTest
     private HapiSpec feeCollectorSigningReqsWorkForTokenCreate() {
         return defaultHapiSpec("feeCollectorSigningReqsWorkForTokenCreate")
                 .given(
@@ -836,6 +851,7 @@ public class TokenCreateSpecs extends HapiSuite {
                         getAccountInfo(htsCollector).hasNoTokenRelationship(token));
     }
 
+    @HapiTest
     public HapiSpec creationValidatesName() {
         AtomicInteger maxUtf8Bytes = new AtomicInteger();
 
@@ -855,6 +871,7 @@ public class TokenCreateSpecs extends HapiSuite {
                                 .hasPrecheck(TOKEN_NAME_TOO_LONG)));
     }
 
+    @HapiTest
     public HapiSpec creationValidatesSymbol() {
         AtomicInteger maxUtf8Bytes = new AtomicInteger();
 
@@ -915,6 +932,7 @@ public class TokenCreateSpecs extends HapiSuite {
                         .hasKnownStatus(SUCCESS));
     }
 
+    @HapiTest
     public HapiSpec creationValidatesTreasuryAccount() {
         return defaultHapiSpec("CreationValidatesTreasuryAccount")
                 .given(cryptoCreate(TOKEN_TREASURY).balance(0L))
@@ -924,6 +942,7 @@ public class TokenCreateSpecs extends HapiSuite {
                         .hasKnownStatus(INVALID_TREASURY_ACCOUNT_FOR_TOKEN));
     }
 
+    @HapiTest
     public HapiSpec initialSupplyMustBeSane() {
         return defaultHapiSpec("InitialSupplyMustBeSane")
                 .given()
@@ -953,6 +972,7 @@ public class TokenCreateSpecs extends HapiSuite {
                 .then(getAccountBalance(TOKEN_TREASURY).hasTinyBars(1L).hasTokenBalance(token, initialSupply));
     }
 
+    @HapiTest
     private HapiSpec prechecksWork() {
         return defaultHapiSpec("PrechecksWork")
                 .given(

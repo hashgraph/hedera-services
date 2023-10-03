@@ -18,8 +18,8 @@ plugins {
     id("com.hedera.hashgraph.versions")
 }
 
-val besuNativeVersion = "0.6.1"
-val besuVersion = "23.1.2"
+val besuNativeVersion = "0.8.2"
+val besuVersion = "23.7.2"
 val bouncycastleVersion = "1.70"
 val daggerVersion = "2.42"
 val eclipseCollectionsVersion = "10.4.0"
@@ -89,7 +89,7 @@ moduleInfo {
     version("org.eclipse.collections.api", eclipseCollectionsVersion)
     version("org.eclipse.collections.impl", eclipseCollectionsVersion)
     version("org.hamcrest", "2.2")
-    version("org.hyperledger.besu.crypto", besuVersion)
+    version("org.hyperledger.besu.internal.crypto", besuVersion)
     version("org.hyperledger.besu.datatypes", besuVersion)
     version("org.hyperledger.besu.evm", besuVersion)
     version("org.hyperledger.besu.secp256k1", besuNativeVersion)

@@ -72,6 +72,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
     private static final TokenID TOKEN_9191 = asToken(9191);
     private Configuration config;
 
+    @Override
     @BeforeEach
     public void setUp() {
         super.setUp();
@@ -79,7 +80,6 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         given(handleContext.recordBuilder(CryptoTransferRecordBuilder.class)).willReturn(transferRecordBuilder);
     }
 
-    @SuppressWarnings("DataFlowIssue")
     @Test
     void handleNullArgs() {
         Assertions.assertThatThrownBy(() -> subject.handle(null)).isInstanceOf(NullPointerException.class);
@@ -235,7 +235,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         givenStoresAndConfig(handleContext);
 
         given(handleContext.dispatchRemovableChildTransaction(
-                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class)))
+                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(payerId)))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
@@ -265,7 +265,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         givenStoresAndConfig(handleContext);
 
         given(handleContext.dispatchRemovableChildTransaction(
-                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class)))
+                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(payerId)))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
@@ -278,6 +278,11 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
                             account.copyBuilder().accountId(tokenReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(edKeyAlias, asAccount(tokenReceiver));
+                    writableTokenRelStore.put(fungibleTokenRelation
+                            .copyBuilder()
+                            .kycGranted(true)
+                            .accountId(tokenReceiverId)
+                            .build());
                     return cryptoCreateRecordBuilder.accountID(asAccount(tokenReceiver));
                 });
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
@@ -336,7 +341,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         givenStoresAndConfig(handleContext);
 
         given(handleContext.dispatchRemovableChildTransaction(
-                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class)))
+                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(payerId)))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
@@ -382,7 +387,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         givenStoresAndConfig(handleContext);
 
         given(handleContext.dispatchRemovableChildTransaction(
-                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class)))
+                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(payerId)))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();

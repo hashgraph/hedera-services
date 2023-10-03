@@ -30,6 +30,8 @@ public final class SemanticVersionConverter implements ConfigConverter<SemanticV
     /** Arbitrary limit to prevent stack overflow when parsing unrealistically long versions. */
     private static final int MAX_VERSION_LENGTH = 100;
     /** From <a href="https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string"></a> */
+    // suppress the warning that the regular expression is too complicated
+    @SuppressWarnings({"java:S5843", "java:S5998"})
     private static final Pattern SEMVER_SPEC_REGEX = Pattern.compile(
             "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)"
                     + "(?:\\."

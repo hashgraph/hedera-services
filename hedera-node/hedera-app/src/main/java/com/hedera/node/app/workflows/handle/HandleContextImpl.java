@@ -25,7 +25,6 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.SignedTransaction;
@@ -37,9 +36,12 @@ import com.hedera.node.app.fees.NoOpFeeAccumulator;
 import com.hedera.node.app.fees.NoOpFeeCalculator;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.WritableEntityIdStore;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.UnknownHederaFunctionality;
+import com.hedera.node.app.spi.authorization.Authorizer;
+import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.FeeCalculator;
@@ -57,7 +59,6 @@ import com.hedera.node.app.spi.workflows.TransactionKeys;
 import com.hedera.node.app.spi.workflows.VerificationAssistant;
 import com.hedera.node.app.state.WrappedHederaState;
 import com.hedera.node.app.workflows.TransactionChecker;
-import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
@@ -88,6 +89,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     private static final Logger logger = LogManager.getLogger(HandleContextImpl.class);
 
     private final TransactionBody txBody;
+    private final HederaFunctionality functionality;
     private final AccountID payer;
     private final Key payerKey;
     private final NetworkInfo networkInfo;
@@ -109,6 +111,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     private final FeeManager feeManager;
     private final Instant userTransactionConsensusTime;
     private final ExchangeRateManager exchangeRateManager;
+    private final Authorizer authorizer;
 
     private ReadableStoreFactory readableStoreFactory;
     private AttributeValidator attributeValidator;
@@ -119,7 +122,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
      * Constructs a {@link HandleContextImpl}.
      *
      * @param txBody                The {@link TransactionBody} of the transaction
-     * @param txInfo                The {@link TransactionInfo} of the transaction
+     * @param functionality         The {@link HederaFunctionality} of the transaction
+     * @param signatureMapSize      The size of the {@link com.hedera.hapi.node.base.SignatureMap} of the transaction
      * @param payer                 The {@link AccountID} of the payer
      * @param payerKey              The {@link Key} of the payer
      * @param networkInfo           The {@link NetworkInfo} of the network
@@ -135,10 +139,12 @@ public class HandleContextImpl implements HandleContext, FeeContext {
      * @param feeManager            The {@link FeeManager} used to convert usage into fees
      * @param exchangeRateManager   The {@link ExchangeRateManager} used to obtain exchange rate information
      * @param userTransactionConsensusTime The consensus time of the user transaction, not any child transactions
+     * @param authorizer            The {@link Authorizer} used to authorize the transaction
      */
     public HandleContextImpl(
             @NonNull final TransactionBody txBody,
-            @Nullable final TransactionInfo txInfo,
+            @NonNull final HederaFunctionality functionality,
+            final int signatureMapSize,
             @NonNull final AccountID payer,
             @Nullable final Key payerKey,
             @NonNull final NetworkInfo networkInfo,
@@ -155,8 +161,10 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             @NonNull final RecordCache recordCache,
             @NonNull final FeeManager feeManager,
             @NonNull final ExchangeRateManager exchangeRateManager,
-            @NonNull final Instant userTransactionConsensusTime) {
+            @NonNull final Instant userTransactionConsensusTime,
+            @NonNull final Authorizer authorizer) {
         this.txBody = requireNonNull(txBody, "txBody must not be null");
+        this.functionality = requireNonNull(functionality, "functionality must not be null");
         this.payer = requireNonNull(payer, "payer must not be null");
         this.payerKey = payerKey;
         this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
@@ -174,17 +182,24 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         this.feeManager = requireNonNull(feeManager, "feeManager must not be null");
         this.userTransactionConsensusTime =
                 requireNonNull(userTransactionConsensusTime, "userTransactionConsensusTime must not be null");
+        this.authorizer = requireNonNull(authorizer, "authorizer must not be null");
 
         final var serviceScope = serviceScopeLookup.getServiceName(txBody);
         this.writableStoreFactory = new WritableStoreFactory(stack, serviceScope);
         this.serviceApiFactory = new ServiceApiFactory(stack, configuration);
 
-        if (txInfo == null || payerKey == null) {
+        if (payerKey == null) {
             this.feeCalculatorCreator = ignore -> NoOpFeeCalculator.INSTANCE;
             this.feeAccumulator = NoOpFeeAccumulator.INSTANCE;
         } else {
             this.feeCalculatorCreator = subType -> feeManager.createFeeCalculator(
-                    txInfo, payerKey, verifier.numSignaturesVerified(), userTransactionConsensusTime, subType);
+                    txBody,
+                    payerKey,
+                    functionality,
+                    verifier.numSignaturesVerified(),
+                    signatureMapSize,
+                    userTransactionConsensusTime,
+                    subType);
             final var tokenApi = serviceApiFactory.getApi(TokenServiceApi.class);
             this.feeAccumulator = new FeeAccumulatorImpl(tokenApi, recordBuilder);
         }
@@ -326,6 +341,16 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         return verifier.verificationFor(evmAlias);
     }
 
+    @Override
+    public boolean isSuperUser() {
+        return authorizer.isSuperUser(payer);
+    }
+
+    @Override
+    public SystemPrivilege hasPrivilegedAuthorization() {
+        return authorizer.hasPrivilegedAuthorization(payer, functionality, txBody);
+    }
+
     private ReadableStoreFactory readableStoreFactory() {
         if (readableStoreFactory == null) {
             readableStoreFactory = new ReadableStoreFactory(stack);
@@ -385,7 +410,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     public <T> T dispatchPrecedingTransaction(
             @NonNull final TransactionBody txBody,
             @NonNull final Class<T> recordBuilderClass,
-            @NonNull final Predicate<Key> callback) {
+            @NonNull final Predicate<Key> callback,
+            @NonNull final AccountID syntheticPayer) {
         requireNonNull(txBody, "txBody must not be null");
         requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
         requireNonNull(callback, "callback must not be null");
@@ -404,7 +430,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
 
         // run the transaction
         final var precedingRecordBuilder = recordListBuilder.addPreceding(configuration());
-        dispatchSyntheticTxn(txBody, PRECEDING, precedingRecordBuilder, callback);
+        dispatchSyntheticTxn(syntheticPayer, txBody, PRECEDING, precedingRecordBuilder, callback);
 
         return castRecordBuilder(precedingRecordBuilder, recordBuilderClass);
     }
@@ -414,9 +440,10 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     public <T> T dispatchChildTransaction(
             @NonNull final TransactionBody txBody,
             @NonNull final Class<T> recordBuilderClass,
-            @NonNull final Predicate<Key> callback) {
+            @NonNull final Predicate<Key> callback,
+            @NonNull final AccountID syntheticPayer) {
         final var childRecordBuilder = recordListBuilder.addChild(configuration());
-        return doDispatchChildTransaction(txBody, childRecordBuilder, recordBuilderClass, callback);
+        return doDispatchChildTransaction(syntheticPayer, txBody, childRecordBuilder, recordBuilderClass, callback);
     }
 
     @NonNull
@@ -424,13 +451,15 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     public <T> T dispatchRemovableChildTransaction(
             @NonNull final TransactionBody txBody,
             @NonNull final Class<T> recordBuilderClass,
-            @NonNull final Predicate<Key> callback) {
+            @NonNull final Predicate<Key> callback,
+            @NonNull final AccountID payer) {
         final var childRecordBuilder = recordListBuilder.addRemovableChild(configuration());
-        return doDispatchChildTransaction(txBody, childRecordBuilder, recordBuilderClass, callback);
+        return doDispatchChildTransaction(payer, txBody, childRecordBuilder, recordBuilderClass, callback);
     }
 
     @NonNull
     private <T> T doDispatchChildTransaction(
+            @NonNull final AccountID syntheticPayer,
             @NonNull final TransactionBody txBody,
             @NonNull final SingleTransactionRecordBuilderImpl childRecordBuilder,
             @NonNull final Class<T> recordBuilderClass,
@@ -444,12 +473,13 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         }
 
         // run the child-transaction
-        dispatchSyntheticTxn(txBody, CHILD, childRecordBuilder, callback);
+        dispatchSyntheticTxn(syntheticPayer, txBody, CHILD, childRecordBuilder, callback);
 
         return castRecordBuilder(childRecordBuilder, recordBuilderClass);
     }
 
     private void dispatchSyntheticTxn(
+            @NonNull final AccountID syntheticPayer,
             @NonNull final TransactionBody txBody,
             @NonNull final TransactionCategory childCategory,
             @NonNull final SingleTransactionRecordBuilderImpl childRecordBuilder,
@@ -494,15 +524,23 @@ public class HandleContextImpl implements HandleContext, FeeContext {
 
         final var childVerifier = new DelegateHandleContextVerifier(callback);
 
-        TransactionInfo txInfo = null;
+        Key childPayerKey = null;
         if (transactionID != null) {
-            txInfo = new TransactionInfo(transaction, txBody, SignatureMap.DEFAULT, bodyBytes, function);
+            final var accountStore = readableStoreFactory().getStore(ReadableAccountStore.class);
+            try {
+                childPayerKey =
+                        accountStore.getAccountById(transactionID.accountID()).key();
+            } catch (NullPointerException ex) {
+                childRecordBuilder.status(ResponseCodeEnum.INVALID_TRANSACTION_ID);
+                return;
+            }
         }
         final var childContext = new HandleContextImpl(
                 txBody,
-                txInfo,
-                payer,
-                payerKey,
+                function,
+                0,
+                syntheticPayer,
+                childPayerKey,
                 networkInfo,
                 childCategory,
                 childRecordBuilder,
@@ -517,7 +555,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 recordCache,
                 feeManager,
                 exchangeRateManager,
-                userTransactionConsensusTime);
+                userTransactionConsensusTime,
+                authorizer);
 
         try {
             dispatcher.dispatchHandle(childContext);

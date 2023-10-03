@@ -21,11 +21,13 @@ import static com.hedera.hapi.node.base.HederaFunctionality.NETWORK_GET_EXECUTIO
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER_STATE_PROOF;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ResponseHeader;
 import com.hedera.hapi.node.base.ResponseType;
@@ -34,6 +36,7 @@ import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.ExchangeRateManager;
+import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.UnknownHederaFunctionality;
@@ -59,6 +62,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.function.Function;
@@ -87,6 +91,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
     private final RecordCache recordCache;
     private final Authorizer authorizer;
     private final ExchangeRateManager exchangeRateManager;
+    private final FeeManager feeManager;
     private final HapiThrottling hapiThrottling;
 
     /**
@@ -103,6 +108,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
      * @param recordCache the {@link RecordCache}
      * @param authorizer the {@link Authorizer} to check permissions and special privileges
      * @param exchangeRateManager the {@link ExchangeRateManager} to get the {@link ExchangeRateInfo}
+     * @param feeManager the {@link FeeManager} to calculate the fees
      * @param hapiThrottling the {@link HapiThrottling} that checks transaction should be throttled
      * @throws NullPointerException if one of the arguments is {@code null}
      */
@@ -118,6 +124,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             @NonNull final RecordCache recordCache,
             @NonNull final Authorizer authorizer,
             @NonNull final ExchangeRateManager exchangeRateManager,
+            @NonNull final FeeManager feeManager,
             @NonNull final HapiThrottling hapiThrottling) {
         this.stateAccessor = requireNonNull(stateAccessor, "stateAccessor must not be null");
         this.submissionManager = requireNonNull(submissionManager, "submissionManager must not be null");
@@ -129,13 +136,17 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         this.recordCache = requireNonNull(recordCache, "recordCache must not be null");
         this.exchangeRateManager = requireNonNull(exchangeRateManager, "exchangeRateManager must not be null");
         this.authorizer = requireNonNull(authorizer, "authorizer must not be null");
-        this.hapiThrottling = requireNonNull(hapiThrottling);
+        this.feeManager = requireNonNull(feeManager, "feeManager must not be null");
+        this.hapiThrottling = requireNonNull(hapiThrottling, "hapiThrottling must not be null");
     }
 
     @Override
     public void handleQuery(@NonNull final Bytes requestBuffer, @NonNull final BufferedData responseBuffer) {
         requireNonNull(requestBuffer);
         requireNonNull(responseBuffer);
+
+        // We use wall-clock time when calculating fees
+        final var consensusTime = Instant.now();
 
         // 1. Parse and check header
         final Query query = parseQuery(requestBuffer);
@@ -144,15 +155,14 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         final var function = functionOf(query);
 
         final var handler = dispatcher.getHandler(query);
-        final var queryHeader = handler.extractHeader(query);
+        var queryHeader = handler.extractHeader(query);
         if (queryHeader == null) {
-            throw new StatusRuntimeException(Status.INVALID_ARGUMENT);
+            queryHeader = QueryHeader.DEFAULT;
         }
         final ResponseType responseType = queryHeader.responseType();
         logger.debug("Started answering a {} query of type {}", function, responseType);
 
         Response response;
-        long fee = 0L;
         try (final var wrappedState = stateAccessor.apply(responseType)) {
             // 2. Do some general pre-checks
             ingestChecker.checkNodeState();
@@ -169,14 +179,16 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             final var state = wrappedState.get();
             final var storeFactory = new ReadableStoreFactory(state);
             final var paymentRequired = handler.requiresNodePayment(responseType);
+            final var feeCalculator = feeManager.createFeeCalculator(function, consensusTime);
             final QueryContext context;
             Transaction allegedPayment = null;
             TransactionBody txBody = null;
             if (paymentRequired) {
                 allegedPayment = queryHeader.paymentOrThrow();
+                final var configuration = configProvider.getConfiguration();
 
                 // 4.i Ingest checks
-                final var transactionInfo = ingestChecker.runAllChecks(state, allegedPayment);
+                final var transactionInfo = ingestChecker.runAllChecks(state, allegedPayment, configuration);
                 txBody = transactionInfo.txBody();
 
                 // get payer
@@ -185,9 +197,10 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                         state,
                         storeFactory,
                         query,
-                        configProvider.getConfiguration(),
+                        configuration,
                         recordCache,
                         exchangeRateManager,
+                        feeCalculator,
                         payerID);
 
                 // A super-user does not have to pay for a query and has all permissions
@@ -199,12 +212,22 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                     // 4.iii Check permissions
                     queryChecker.checkPermissions(payerID, function);
 
+                    // Get the payer
+                    final var accountStore = storeFactory.getStore(ReadableAccountStore.class);
+                    final var payer = accountStore.getAccountById(payerID);
+                    if (payer == null) {
+                        // This should never happen, because the account is checked in the pure checks
+                        throw new PreCheckException(PAYER_ACCOUNT_NOT_FOUND);
+                    }
+
                     // 4.iv Calculate costs
-                    fee = handler.computeFees(context).totalFee();
+                    final var queryFees = handler.computeFees(context).totalFee();
+                    final var txFees = queryChecker.estimateTxFees(
+                            storeFactory, consensusTime, transactionInfo, payer.keyOrThrow(), configuration);
+                    final var totalFees = Math.addExact(queryFees, txFees);
 
                     // 4.v Check account balances
-                    final var accountStore = storeFactory.getStore(ReadableAccountStore.class);
-                    queryChecker.validateAccountBalances(accountStore, transactionInfo, fee);
+                    queryChecker.validateAccountBalances(accountStore, transactionInfo, payer, totalFees);
 
                     // 4.vi Submit payment to platform
                     final var txBytes = Transaction.PROTOBUF.toBytes(allegedPayment);
@@ -221,6 +244,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                         configProvider.getConfiguration(),
                         recordCache,
                         exchangeRateManager,
+                        feeCalculator,
                         null);
             }
 
@@ -229,20 +253,20 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
 
             if (handler.needsAnswerOnlyCost(responseType)) {
                 // 6.i Estimate costs
-                fee = handler.computeFees(context).totalFee();
+                final var queryFees = handler.computeFees(context).totalFee();
 
-                final var header = createResponseHeader(responseType, OK, fee);
+                final var header = createResponseHeader(responseType, OK, queryFees);
                 response = handler.createEmptyResponse(header);
             } else {
                 // 6.ii Find response
-                final var header = createResponseHeader(responseType, OK, fee);
+                final var header = createResponseHeader(responseType, OK, 0L);
                 response = handler.findResponse(context, header);
             }
         } catch (InsufficientBalanceException e) {
             final var header = createResponseHeader(responseType, e.responseCode(), e.getEstimatedFee());
             response = handler.createEmptyResponse(header);
         } catch (PreCheckException e) {
-            final var header = createResponseHeader(responseType, e.responseCode(), fee);
+            final var header = createResponseHeader(responseType, e.responseCode(), 0L);
             response = handler.createEmptyResponse(header);
         }
 
