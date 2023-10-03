@@ -18,17 +18,16 @@ public class Gossip {
         this.eventPool = eventPool;
     }
 
-    public void start(int eventsPerSecond) {
+    public void start() {
         // I'm testing at such high event rates that I cannot just test the above events per second directly. So I'm
         // going to take whatever eventsPerSecond is, split it into 1000 pieces, and for each piece loop and create
         // as many events as necessary to fill that millisecond.
         final var singleThreadExecutor = Executors.newSingleThreadScheduledExecutor();
-        singleThreadExecutor.scheduleAtFixedRate(() -> generateEvents(eventsPerSecond / 1000), 0, 1, TimeUnit.MILLISECONDS);
+        singleThreadExecutor.submit(this::generateEvents);
     }
 
-    private void generateEvents(int numEventsToGenerate) {
-        numEventsToGenerate = Math.max(1, numEventsToGenerate);
-        for (int i = 0; i < numEventsToGenerate; i++) {
+    private void generateEvents() {
+        for (;;) {
             final var event = eventPool.checkout(eventNumber.getAndIncrement());
             toEventVerifier.accept(event);
         }

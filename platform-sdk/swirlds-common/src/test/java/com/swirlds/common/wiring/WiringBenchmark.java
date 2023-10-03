@@ -13,8 +13,7 @@ import org.junit.jupiter.api.Test;
 class WiringBenchmark {
 
     @Test
-    public void basicBenchmark() throws InterruptedException {
-        final int eventsPerSecond = 450_000;
+    void basicBenchmark() throws InterruptedException {
 
         // We will use this executor for starting all threads. Maybe we should only use it for temporary threads?
         final ForkJoinPool executor = new ForkJoinPool(
@@ -29,7 +28,7 @@ class WiringBenchmark {
 
         final EventPool eventPool = new EventPool();
 
-        final TopologicalEventSorter orphanBuffer = new TopologicalEventSorter(eventPool, eventsPerSecond);
+        final TopologicalEventSorter orphanBuffer = new TopologicalEventSorter(eventPool);
         final EventVerifier verifier = new EventVerifier(
                 Wire.builder(executor, orphanBuffer)
                         .withConcurrency(false)
@@ -42,8 +41,8 @@ class WiringBenchmark {
         // Create a user thread for running "gossip". It will continue to generate events at a given rate until
         // we interrupt that thread to let it know it should stop.
         System.out.println("Starting gossip");
-        gossip.start(eventsPerSecond);
+        gossip.start();
 
-        SECONDS.sleep(10);
+        SECONDS.sleep(120);
     }
 }
