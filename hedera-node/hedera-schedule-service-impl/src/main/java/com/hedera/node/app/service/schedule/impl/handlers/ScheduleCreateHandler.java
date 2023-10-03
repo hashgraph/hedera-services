@@ -69,7 +69,7 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
     private void checkSchedulableWhitelist(
             @NonNull final ScheduleCreateTransactionBody scheduleCreate, @NonNull final SchedulingConfig config)
             throws PreCheckException {
-        final Set<HederaFunctionality> whitelist = config.whitelist().funtionalitySet();
+        final Set<HederaFunctionality> whitelist = config.whitelist().functionalitySet();
         // spotless is forced wrapping of fluent expressions at 73 characters.
         final DataOneOfType transactionType =
                 scheduleCreate.scheduledTransactionBody().data().kind();

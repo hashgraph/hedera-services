@@ -192,8 +192,10 @@ public class AdjustmentUtils {
         final var hbarAdjustments = result.getHbarAdjustments();
         final var collector = hbarFee.feeCollectorAccountId();
         final var fixedSpec = hbarFee.fixedFee();
-        final var amount = fixedSpec.amount();
-        hbarAdjustments.merge(sender, -amount, Long::sum);
-        hbarAdjustments.merge(collector, amount, Long::sum);
+        if (fixedSpec != null) {
+            final var amount = fixedSpec.amount();
+            hbarAdjustments.merge(sender, -amount, Long::sum);
+            hbarAdjustments.merge(collector, amount, Long::sum);
+        }
     }
 }
