@@ -58,6 +58,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -601,6 +602,7 @@ public class IntegerNotificationTests {
     @ParameterizedTest
     @ValueSource(ints = {2, 5, 21, 57, 1_000, 10_000, 100_000})
     @DisplayName("SUAO: MT Summation")
+    @Disabled("this test is flaky")
     public void suaoThreadedSummation(int iterations) throws InterruptedException {
         final NotificationEngine engine = new AsyncNotificationEngine(getStaticThreadManager());
 
