@@ -85,7 +85,7 @@ public class PrivilegesVerifier {
                     payerId, txBody.fileAppendOrThrow().fileIDOrThrow().fileNum());
             case CONTRACT_UPDATE -> checkFileChange(
                     payerId,
-                    txBody.contractUpdateInstanceOrThrow().contractIDOrThrow().contractNumOrThrow());
+                    txBody.contractUpdateInstanceOrThrow().contractIDOrThrow().contractNumOrElse(0L));
 
                 // Authorization for crypto updates
             case CRYPTO_UPDATE -> checkCryptoUpdate(payerId, txBody.cryptoUpdateAccountOrThrow());
@@ -96,7 +96,7 @@ public class PrivilegesVerifier {
             case CRYPTO_DELETE -> checkEntityDelete(
                     txBody.cryptoDeleteOrThrow().deleteAccountIDOrThrow().accountNumOrThrow());
             case CONTRACT_DELETE -> checkEntityDelete(
-                    txBody.contractDeleteInstanceOrThrow().contractIDOrThrow().contractNumOrThrow());
+                    txBody.contractDeleteInstanceOrThrow().contractIDOrThrow().contractNumOrElse(0L));
 
             default -> SystemPrivilege.UNNECESSARY;
         };

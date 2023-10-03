@@ -114,7 +114,12 @@ public class CryptoCreateValidator {
         }
         validateTrue(op.alias().length() == EVM_ADDRESS_SIZE, INVALID_ALIAS_KEY);
         validateFalse(isMirror(op.alias()), INVALID_ALIAS_KEY);
-        validateTrue(readableAccountStore.getAccountIDByAlias(op.alias()) == null, ALIAS_ALREADY_ASSIGNED);
+
+        //find account by alias and check if it was deleted
+        var accountId = readableAccountStore.getAccountIDByAlias(op.alias());
+        var account = accountId != null ? readableAccountStore.getAccountById(accountId) : null;
+        var isDeleted = account == null || account.deleted();
+        validateTrue(accountId == null || isDeleted, ALIAS_ALREADY_ASSIGNED);
     }
 
     private boolean canSkipNormalKeyValidation(@NonNull final Key key, final boolean isInternalDispatch) {
