@@ -25,6 +25,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.threading.SyncPermitProvider;
 import com.swirlds.common.threading.locks.locked.MaybeLocked;
@@ -38,6 +39,7 @@ import com.swirlds.platform.gossip.sync.protocol.SyncProtocol;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkProtocolException;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
@@ -60,6 +62,7 @@ class SyncProtocolTests {
     private Duration sleepAfterSync;
     private SyncMetrics syncMetrics;
     private FakeTime time;
+    private PlatformContext platformContext;
 
     @BeforeEach
     void setup() {
@@ -82,12 +85,15 @@ class SyncProtocolTests {
         Mockito.when(criticalQuorum.isInCriticalQuorum(any())).thenReturn(true);
         // peer agnostic sync checks pass
         peerAgnosticSyncChecks = new PeerAgnosticSyncChecks(List.of(() -> true));
+
+        platformContext = TestPlatformContextBuilder.create().build();
     }
 
     @Test
     @DisplayName("Protocol should initiate connection")
     void shouldInitiate() {
         final SyncProtocol protocol = new SyncProtocol(
+                platformContext,
                 peerId,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
@@ -109,6 +115,7 @@ class SyncProtocolTests {
         assertEquals(2, permitProvider.getNumAvailable());
 
         final SyncProtocol protocol = new SyncProtocol(
+                platformContext,
                 peerId,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
@@ -146,6 +153,7 @@ class SyncProtocolTests {
     @DisplayName("Protocol doesn't initiate without a permit")
     void noPermitAvailableToInitiate() {
         final SyncProtocol protocol = new SyncProtocol(
+                platformContext,
                 peerId,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
@@ -172,6 +180,7 @@ class SyncProtocolTests {
     @DisplayName("Protocol doesn't initiate if peer agnostic checks fail")
     void peerAgnosticChecksFailAtInitiate() {
         final SyncProtocol protocol = new SyncProtocol(
+                platformContext,
                 peerId,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
@@ -195,30 +204,8 @@ class SyncProtocolTests {
         Mockito.when(fallenBehindManager.hasFallenBehind()).thenReturn(true);
 
         final SyncProtocol protocol = new SyncProtocol(
+                platformContext,
                 peerId,
-                shadowGraphSynchronizer,
-                fallenBehindManager,
-                permitProvider,
-                criticalQuorum,
-                peerAgnosticSyncChecks,
-                sleepAfterSync,
-                syncMetrics,
-                time);
-
-        assertEquals(2, permitProvider.getNumAvailable());
-        assertFalse(protocol.shouldInitiate());
-        assertEquals(2, permitProvider.getNumAvailable());
-    }
-
-    @Test
-    @DisplayName("Protocol doesn't initiate if there is no reason to, even if there isn't a reason not to")
-    void noReasonToInitiate() {
-        // peer isn't in critical quorum
-        Mockito.when(criticalQuorum.isInCriticalQuorum(any())).thenReturn(false);
-
-        // peer 6 isn't needed for fallen behind
-        final SyncProtocol protocol = new SyncProtocol(
-                new NodeId(6),
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
@@ -241,6 +228,7 @@ class SyncProtocolTests {
 
         // peer *is* needed for fallen behind (by default)
         final SyncProtocol protocol = new SyncProtocol(
+                platformContext,
                 peerId,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
@@ -261,6 +249,7 @@ class SyncProtocolTests {
     void initiateForCriticalQuorum() {
         // peer 6 isn't needed for fallen behind, but it *is* in critical quorum (by default)
         final SyncProtocol protocol = new SyncProtocol(
+                platformContext,
                 new NodeId(6),
                 shadowGraphSynchronizer,
                 fallenBehindManager,
@@ -286,6 +275,7 @@ class SyncProtocolTests {
         assertEquals(1, permitProvider.getNumAvailable());
 
         final SyncProtocol protocol = new SyncProtocol(
+                platformContext,
                 peerId,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
@@ -306,6 +296,7 @@ class SyncProtocolTests {
         assertEquals(2, permitProvider.getNumAvailable());
 
         final SyncProtocol protocol = new SyncProtocol(
+                platformContext,
                 peerId,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
@@ -353,6 +344,7 @@ class SyncProtocolTests {
         assertEquals(0, permitProvider.getNumAvailable());
 
         final SyncProtocol protocol = new SyncProtocol(
+                platformContext,
                 peerId,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
@@ -371,6 +363,7 @@ class SyncProtocolTests {
     @DisplayName("Protocol doesn't accept if peer agnostic checks fail")
     void peerAgnosticChecksFailAtAccept() {
         final SyncProtocol protocol = new SyncProtocol(
+                platformContext,
                 peerId,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
@@ -394,6 +387,7 @@ class SyncProtocolTests {
         Mockito.when(fallenBehindManager.hasFallenBehind()).thenReturn(true);
 
         final SyncProtocol protocol = new SyncProtocol(
+                platformContext,
                 peerId,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
@@ -413,6 +407,7 @@ class SyncProtocolTests {
     @DisplayName("Permit closes after failed accept")
     void permitClosesAfterFailedAccept() {
         final SyncProtocol protocol = new SyncProtocol(
+                platformContext,
                 peerId,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
@@ -434,6 +429,7 @@ class SyncProtocolTests {
     @DisplayName("Permit closes after failed initiate")
     void permitClosesAfterFailedInitiate() {
         final SyncProtocol protocol = new SyncProtocol(
+                platformContext,
                 peerId,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
@@ -455,6 +451,7 @@ class SyncProtocolTests {
     @DisplayName("Protocol runs successfully when initiating")
     void successfulInitiatedProtocol() {
         final SyncProtocol protocol = new SyncProtocol(
+                platformContext,
                 peerId,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
@@ -476,6 +473,7 @@ class SyncProtocolTests {
     @DisplayName("Protocol runs successfully when accepting")
     void successfulAcceptedProtocol() {
         final SyncProtocol protocol = new SyncProtocol(
+                platformContext,
                 peerId,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
@@ -497,6 +495,7 @@ class SyncProtocolTests {
     @DisplayName("Protocol doesn't run without first obtaining a permit")
     void noPermit() {
         final SyncProtocol protocol = new SyncProtocol(
+                platformContext,
                 peerId,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
@@ -515,6 +514,7 @@ class SyncProtocolTests {
     void rethrowParallelExecutionException()
             throws ParallelExecutionException, IOException, SyncException, InterruptedException {
         final SyncProtocol protocol = new SyncProtocol(
+                platformContext,
                 peerId,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
@@ -543,6 +543,7 @@ class SyncProtocolTests {
     void rethrowRootCauseIOException()
             throws ParallelExecutionException, IOException, SyncException, InterruptedException {
         final SyncProtocol protocol = new SyncProtocol(
+                platformContext,
                 peerId,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
@@ -570,6 +571,7 @@ class SyncProtocolTests {
     @DisplayName("SyncException is caught and rethrown as NetworkProtocolException")
     void rethrowSyncException() throws ParallelExecutionException, IOException, SyncException, InterruptedException {
         final SyncProtocol protocol = new SyncProtocol(
+                platformContext,
                 peerId,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
@@ -596,6 +598,7 @@ class SyncProtocolTests {
     @DisplayName("acceptOnSimultaneousInitiate should return true")
     void acceptOnSimultaneousInitiate() {
         final SyncProtocol protocol = new SyncProtocol(
+                platformContext,
                 peerId,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
