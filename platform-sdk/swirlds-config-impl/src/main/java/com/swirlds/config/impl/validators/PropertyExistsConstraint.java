@@ -16,10 +16,10 @@
 
 package com.swirlds.config.impl.validators;
 
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.validation.ConfigPropertyConstraint;
 import com.swirlds.config.api.validation.ConfigViolation;
 import com.swirlds.config.api.validation.PropertyMetadata;
+import java.util.Objects;
 
 /**
  * Implementation of {@link ConfigPropertyConstraint} that results in a violation of the property is not defined.
@@ -34,7 +34,7 @@ public class PropertyExistsConstraint<T> implements ConfigPropertyConstraint<T> 
      */
     @Override
     public ConfigViolation check(final PropertyMetadata<T> metadata) {
-        CommonUtils.throwArgNull(metadata, "metadata");
+        Objects.requireNonNull(metadata, "metadata must not be null");
         if (metadata.exists()) {
             return null;
         }
