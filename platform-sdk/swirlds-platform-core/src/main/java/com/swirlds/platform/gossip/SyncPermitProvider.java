@@ -64,9 +64,10 @@ public class SyncPermitProvider {
     /**
      * Attempts to acquire a sync permit. This method returns immediately and never blocks, even if no permit is
      * available.
+     * <p>
+     * If this method returns true, then the caller must call {@link #returnPermit()} when it is done with the permit.
      *
-     * @return an autocloseable instance that tells the caller if the permit has been acquired and will automatically
-     * release the permit when used in a try-with-resources block
+     * @return true if a permit was successfully acquired, otherwise false.
      */
     public boolean tryAcquire(@NonNull final NodeId peerId) {
         return !intakeEventCounter.hasUnprocessedEvents(peerId) && syncPermits.tryAcquire();
