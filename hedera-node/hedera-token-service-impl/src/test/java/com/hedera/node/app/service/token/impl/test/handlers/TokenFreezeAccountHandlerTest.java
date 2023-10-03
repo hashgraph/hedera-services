@@ -209,7 +209,7 @@ class TokenFreezeAccountHandlerTest {
         void tokenPaused() throws HandleException {
             final var token = toPbj(KNOWN_TOKEN_WITH_FREEZE);
             given(readableTokenStore.get(token))
-                    .willReturn(Token.newBuilder().paused(true).build());
+                    .willReturn(Token.newBuilder().tokenId(token).paused(true).build());
             final var txn = newFreezeTxn(token);
             given(context.body()).willReturn(txn);
 
@@ -223,7 +223,7 @@ class TokenFreezeAccountHandlerTest {
         void tokenDeleted() throws HandleException {
             final var token = toPbj(KNOWN_TOKEN_WITH_FREEZE);
             given(readableTokenStore.get(token))
-                    .willReturn(Token.newBuilder().deleted(true).build());
+                    .willReturn(Token.newBuilder().tokenId(token).deleted(true).build());
             final var txn = newFreezeTxn(token);
             given(context.body()).willReturn(txn);
 
@@ -252,7 +252,10 @@ class TokenFreezeAccountHandlerTest {
         void accountNotFound() {
             final var token = toPbj(KNOWN_TOKEN_WITH_FREEZE);
             given(readableTokenStore.get(token))
-                    .willReturn(Token.newBuilder().tokenId(token).build());
+                    .willReturn(Token.newBuilder()
+                            .tokenId(token)
+                            .freezeKey(FIRST_TOKEN_SENDER_KT.asPbjKey())
+                            .build());
             given(readableTokenStore.getTokenMeta(token)).willReturn(tokenMetaWithFreezeKey());
             given(readableAccountStore.getAccountById(ACCOUNT_13257)).willReturn(null);
             final var txn = newFreezeTxn(token);

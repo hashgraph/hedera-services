@@ -122,7 +122,7 @@ public class TokenFreezeAccountHandler implements TransactionHandler {
         // Check that the token exists
         final var tokenId = op.tokenOrElse(TokenID.DEFAULT);
 
-        // Validate token is paused or deleted
+        // Validate token is not paused or deleted
         TokenHandlerHelper.getIfUsable(tokenId, tokenStore);
 
         final var tokenMeta = tokenStore.getTokenMeta(tokenId);

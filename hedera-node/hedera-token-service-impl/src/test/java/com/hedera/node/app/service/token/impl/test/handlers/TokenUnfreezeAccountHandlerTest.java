@@ -32,6 +32,7 @@ import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.res
 import static com.hedera.test.factories.scenarios.TokenUnfreezeScenarios.UNFREEZE_WITH_INVALID_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenUnfreezeScenarios.UNFREEZE_WITH_MISSING_FREEZE_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenUnfreezeScenarios.VALID_UNFREEZE_WITH_EXTANT_TOKEN;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.FIRST_TOKEN_SENDER_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_NO_SPECIAL_KEYS;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_FREEZE;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.SECOND_TOKEN_SENDER_KT;
@@ -282,7 +283,11 @@ class TokenUnfreezeAccountHandlerTest {
         void tokenPaused() throws HandleException {
             final var token = toPbj(KNOWN_TOKEN_WITH_FREEZE);
             given(tokenStore.get(token))
-                    .willReturn(Token.newBuilder().paused(true).build());
+                    .willReturn(Token.newBuilder()
+                            .tokenId(token)
+                            .freezeKey(FIRST_TOKEN_SENDER_KT.asPbjKey())
+                            .paused(true)
+                            .build());
             final var txn = newUnfreezeTxn(token);
             given(context.body()).willReturn(txn);
 
