@@ -44,11 +44,14 @@ import com.hedera.hapi.node.token.GrantedNftAllowance;
 import com.hedera.hapi.node.token.GrantedTokenAllowance;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
+import com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage;
+import com.hedera.node.app.service.mono.fees.calculation.crypto.queries.GetAccountDetailsResourceUsage;
 import com.hedera.node.app.service.networkadmin.impl.utils.NetworkAdminServiceUtil;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.ReadableTokenStore.TokenMetadata;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
@@ -67,10 +70,11 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
+    private final CryptoOpsUsage cryptoOpsUsage;
 
     @Inject
-    public NetworkGetAccountDetailsHandler() {
-        // exists for injection
+    public NetworkGetAccountDetailsHandler(final CryptoOpsUsage cryptoOpsUsage) {
+        this.cryptoOpsUsage = cryptoOpsUsage;
     }
 
     @Override
@@ -94,7 +98,9 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
         final GetAccountDetailsQuery op = context.query().accountDetailsOrThrow();
 
         // The Account ID must be specified
-        if (!op.hasAccountId()) throw new PreCheckException(INVALID_ACCOUNT_ID);
+        if (!op.hasAccountId()) {
+            throw new PreCheckException(INVALID_ACCOUNT_ID);
+        }
 
         // The account must exist for that transaction ID
         final var accountStore = context.createStore(ReadableAccountStore.class);
@@ -284,5 +290,19 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
             return cryptoAllowances;
         }
         return Collections.emptyList();
+    }
+
+    @NonNull
+    @Override
+    public Fees computeFees(@NonNull final QueryContext queryContext) {
+        final var query = queryContext.query();
+        final var accountStore = queryContext.createStore(ReadableAccountStore.class);
+        final var op = query.accountDetailsOrThrow();
+        final var accountId = op.accountIdOrThrow();
+        final var account = accountStore.getAccountById(accountId);
+
+        return queryContext.feeCalculator().legacyCalculate(sigValueObj -> new GetAccountDetailsResourceUsage(
+                        cryptoOpsUsage, null, null)
+                .usageGiven(query, account));
     }
 }
