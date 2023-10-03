@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.networkadmin.impl.test.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -132,6 +133,21 @@ class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
         given(context.query()).willReturn(query);
 
         assertThrowsPreCheck(() -> networkGetAccountDetailsHandler.validate(context), INVALID_ACCOUNT_ID);
+    }
+
+    @Test
+    void validatesQueryWhenDeletedAccount() {
+        givenValidAccount(true, Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
+        refreshStoresWithEntitiesOnlyInReadable();
+        final var data = GetAccountDetailsQuery.newBuilder()
+                .header(QueryHeader.newBuilder().build())
+                .accountId(accountId)
+                .build();
+        final var query = Query.newBuilder().accountDetails(data).build();
+        given(context.query()).willReturn(query);
+        given(context.createStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
+
+        assertThrowsPreCheck(() -> networkGetAccountDetailsHandler.validate(context), ACCOUNT_DELETED);
     }
 
     @Test

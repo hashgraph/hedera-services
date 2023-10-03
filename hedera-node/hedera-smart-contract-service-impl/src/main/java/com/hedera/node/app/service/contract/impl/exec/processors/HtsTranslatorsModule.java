@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.contract.impl.exec.processors;
 
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsCallTranslator;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.burn.BurnTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.associations.AssociationsTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.balanceof.BalanceOfTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator;
