@@ -378,6 +378,7 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
             final Configuration configuration) {
         final var op = body.cryptoUpdateAccountOrThrow();
         final var account = accountStore.getAccountById(op.accountIDToUpdateOrThrow());
+        validateTrue(account != null, INVALID_ACCOUNT_ID);
         final var autoRenewconfig = configuration.getConfigData(AutoRenewConfig.class);
         final var explicitAutoAssocSlotLifetime = autoRenewconfig.expireAccounts() ? 0L : THREE_MONTHS_IN_SECONDS;
 

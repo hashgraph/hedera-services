@@ -59,11 +59,13 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.HederaConfig;
+import com.swirlds.base.utility.Pair;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -556,11 +558,11 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
     private int getChangedCryptoKeys(
             final List<CryptoAllowance> newAllowances, final List<AccountCryptoAllowance> existingAllowances) {
         int counter = 0;
+        final var existingSpenders = existingAllowances.stream()
+                .map(AccountCryptoAllowance::spenderId)
+                .collect(Collectors.toSet());
         for (var key : newAllowances) {
-            for (int i = 0; i < existingAllowances.size(); i++) {
-                if (existingAllowances.get(i).spenderId().equals(key.spender())) {
-                    break;
-                }
+            if (!existingSpenders.contains(key.spender())) {
                 counter++;
             }
         }
@@ -576,12 +578,11 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
     private int getChangedTokenKeys(
             final List<TokenAllowance> newAllowances, final List<AccountFungibleTokenAllowance> existingAllowances) {
         int counter = 0;
+        final var existingKeys = existingAllowances.stream()
+                .map(key -> Pair.of(key.tokenId(), key.spenderId()))
+                .collect(Collectors.toSet());
         for (final var key : newAllowances) {
-            for (final var existingAllowance : existingAllowances) {
-                if (existingAllowance.spenderId().equals(key.spender())
-                        && existingAllowance.tokenId().equals(key.tokenId())) {
-                    break;
-                }
+            if (!existingKeys.contains(Pair.of(key.tokenId(), key.spender()))) {
                 counter++;
             }
         }
@@ -597,12 +598,11 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
     private int getChangedNftKeys(
             final List<NftAllowance> newAllowances, final List<AccountApprovalForAllAllowance> existingAllowances) {
         int counter = 0;
+        final var existingKeys = existingAllowances.stream()
+                .map(key -> Pair.of(key.tokenId(), key.spenderId()))
+                .collect(Collectors.toSet());
         for (final var key : newAllowances) {
-            for (final var existingAllowance : existingAllowances) {
-                if (existingAllowance.spenderId().equals(key.spender())
-                        && existingAllowance.tokenId().equals(key.tokenId())) {
-                    break;
-                }
+            if (!existingKeys.contains(Pair.of(key.tokenId(), key.spender()))) {
                 counter++;
             }
         }
