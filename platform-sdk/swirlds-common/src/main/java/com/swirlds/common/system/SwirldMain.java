@@ -17,7 +17,6 @@
 package com.swirlds.common.system;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 
 /**
@@ -29,12 +28,12 @@ public interface SwirldMain extends Runnable {
     /**
      * Get configuration types to be registered.
      *
-     * @return a list of configuration types, ignored if null is returned
+     * @return a list of configuration types
      */
-    @Nullable
+    @NonNull
     default List<Class<? extends Record>> getConfigDataTypes() {
         // override if needed
-        return null;
+        return List.of();
     }
 
     /**

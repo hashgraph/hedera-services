@@ -156,8 +156,8 @@ public class InProcessHapiTestNode implements HapiTestNode {
                     .withValue("paths.logPath", path("log4j2.xml"))
                     .withValue("emergencyRecoveryFileLoadDir", path("data/saved"))
                     .withValue("state.savedStateDirectory", path("data/saved"))
-                    .withValue("loadKeysFromPfxFiles", false)
-                    .withValue("grpc.port", grpcPort);
+                    .withValue("loadKeysFromPfxFiles", "false")
+                    .withValue("grpc.port", Integer.toString(grpcPort));
 
             builder.withConfigurationBuilder(configBuilder)
                     .withSettingsPath(Path.of(path("settings.txt")))

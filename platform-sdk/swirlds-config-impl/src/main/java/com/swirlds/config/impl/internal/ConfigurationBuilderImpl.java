@@ -16,6 +16,8 @@
 
 package com.swirlds.config.impl.internal;
 
+import static com.swirlds.common.config.sources.ConfigSourceOrdinalConstants.PLATFORM_BUILDER_ORDINAL;
+
 import com.swirlds.common.config.sources.SimpleConfigSource;
 import com.swirlds.common.threading.locks.AutoClosableLock;
 import com.swirlds.common.threading.locks.Locks;
@@ -74,7 +76,7 @@ final class ConfigurationBuilderImpl implements ConfigurationBuilder {
     private final AtomicBoolean initialized = new AtomicBoolean();
 
     /**
-     * Key-value pairs specified by {@link #withValue(String, Object)}.
+     * Key-value pairs specified by {@link #withValue(String, String)}.
      */
     private final Map<String, String> properties = new HashMap<>();
 
@@ -97,7 +99,7 @@ final class ConfigurationBuilderImpl implements ConfigurationBuilder {
                 throw new IllegalStateException("Configuration already initialized");
             }
             if (!properties.isEmpty()) {
-                withSource(new SimpleConfigSource(properties));
+                withSource(new SimpleConfigSource(properties).withOrdinal(PLATFORM_BUILDER_ORDINAL));
             }
             configSourceService.init();
             converterService.init();
@@ -205,10 +207,10 @@ final class ConfigurationBuilderImpl implements ConfigurationBuilder {
      * @return the {@link ConfigurationBuilder} instance (for fluent API)
      */
     @NonNull
-    public ConfigurationBuilder withValue(@NonNull final String propertyName, @NonNull final Object value) {
+    public ConfigurationBuilder withValue(@NonNull final String propertyName, @NonNull final String value) {
         Objects.requireNonNull(propertyName, "propertyName must not be null");
         Objects.requireNonNull(value, "value must not be null");
-        properties.put(propertyName, value.toString());
+        properties.put(propertyName, value);
         return this;
     }
 }

@@ -26,7 +26,6 @@ import static com.swirlds.platform.gui.internal.BrowserWindowManager.setStateHie
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.showBrowserWindow;
 import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
-import static com.swirlds.platform.util.BootstrapUtils.loadPathsConfig;
 import static com.swirlds.platform.util.BootstrapUtils.loadSwirldMains;
 import static com.swirlds.platform.util.BootstrapUtils.setupBrowserWindow;
 
@@ -145,9 +144,6 @@ public class Browser {
             throws Exception {
         Objects.requireNonNull(commandLineArgs);
 
-        // This contains the default PathsConfigs values, since the overrides haven't been loaded in yet
-        final PathsConfig pathsConfig = loadPathsConfig();
-
         // Load config.txt file, parse application jar file name, main class name, address book, and parameters
         final ApplicationDefinition appDefinition =
                 ApplicationDefinitionLoader.loadDefault(getAbsolutePath("./config.txt"));
@@ -175,10 +171,8 @@ public class Browser {
 
             final ConfigurationBuilder configBuilder = ConfigurationBuilder.create();
             final List<Class<? extends Record>> configTypes = appMain.getConfigDataTypes();
-            if (configTypes != null) {
-                for (final Class<? extends Record> configType : configTypes) {
-                    configBuilder.withConfigDataType(configType);
-                }
+            for (final Class<? extends Record> configType : configTypes) {
+                configBuilder.withConfigDataType(configType);
             }
 
             final PlatformBuilder builder = new PlatformBuilder(

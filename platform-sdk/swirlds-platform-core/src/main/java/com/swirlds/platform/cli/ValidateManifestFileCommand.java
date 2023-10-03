@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.cli;
 
-import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
-
 import com.swirlds.cli.PlatformCli;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
@@ -54,8 +52,7 @@ public class ValidateManifestFileCommand extends AbstractCommand {
 
     @Override
     public @NonNull Integer call() throws IOException {
-        final Configuration configuration =
-                DefaultConfiguration.buildBasicConfiguration(getAbsolutePath("settings.txt"));
+        final Configuration configuration = DefaultConfiguration.buildBasicConfiguration();
         final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
 
         EmergencyRecoveryFile.read(stateConfig, dir, true);

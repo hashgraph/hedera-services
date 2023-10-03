@@ -47,6 +47,7 @@ public class LegacyFileConfigSource extends AbstractConfigSource {
 
     /**
      * Creates an instance that provides the config properties from the legacy settings.txt file
+     *
      * @param settingsPath the path to the settings.txt file
      * @return config source for the settings.txt file
      * @throws IOException if settings.txt can not be loaded
@@ -76,6 +77,7 @@ public class LegacyFileConfigSource extends AbstractConfigSource {
      */
     public LegacyFileConfigSource(final Path filePath, final int ordinal) throws IOException {
         this.filePath = Objects.requireNonNull(filePath, "filePath must not be null");
+
         this.ordinal = ordinal;
         this.internalProperties = Collections.unmodifiableMap(loadSettings(filePath.toFile()));
     }

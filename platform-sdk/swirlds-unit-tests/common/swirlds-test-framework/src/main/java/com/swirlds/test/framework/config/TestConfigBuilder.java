@@ -18,6 +18,7 @@ package com.swirlds.test.framework.config;
 
 import com.swirlds.common.config.ConfigUtils;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
+import com.swirlds.common.config.sources.SimpleConfigSource;
 import com.swirlds.common.threading.locks.AutoClosableLock;
 import com.swirlds.common.threading.locks.Locks;
 import com.swirlds.common.threading.locks.locked.Locked;
@@ -92,17 +93,75 @@ public class TestConfigBuilder {
      * @return the {@link TestConfigBuilder} instance (for fluent API)
      */
     @NonNull
+    public TestConfigBuilder withValue(@NonNull final String propertyName, @Nullable final String value) {
+        return withSource(new SimpleConfigSource(propertyName, value));
+    }
+
+    /**
+     * Sets the value for the config.
+     *
+     * @param propertyName name of the property
+     * @param value        the value
+     * @return the {@link TestConfigBuilder} instance (for fluent API)
+     */
+    @NonNull
+    public TestConfigBuilder withValue(@NonNull final String propertyName, final int value) {
+        return withSource(new SimpleConfigSource(propertyName, value));
+    }
+
+    /**
+     * Sets the value for the config.
+     *
+     * @param propertyName name of the property
+     * @param value        the value
+     * @return the {@link TestConfigBuilder} instance (for fluent API)
+     */
+    @NonNull
+    public TestConfigBuilder withValue(@NonNull final String propertyName, final double value) {
+        return withSource(new SimpleConfigSource(propertyName, value));
+    }
+
+    /**
+     * Sets the value for the config.
+     *
+     * @param propertyName name of the property
+     * @param value        the value
+     * @return the {@link TestConfigBuilder} instance (for fluent API)
+     */
+    @NonNull
+    public TestConfigBuilder withValue(@NonNull final String propertyName, final long value) {
+        return withSource(new SimpleConfigSource(propertyName, value));
+    }
+
+    /**
+     * Sets the value for the config.
+     *
+     * @param propertyName name of the property
+     * @param value        the value
+     * @return the {@link TestConfigBuilder} instance (for fluent API)
+     */
+    @NonNull
+    public TestConfigBuilder withValue(@NonNull final String propertyName, final boolean value) {
+        return withSource(new SimpleConfigSource(propertyName, value));
+    }
+
+    /**
+     * Sets the value for the config.
+     *
+     * @param propertyName name of the property
+     * @param value        the value
+     * @return the {@link TestConfigBuilder} instance (for fluent API)
+     */
+    @NonNull
     public TestConfigBuilder withValue(@NonNull final String propertyName, @NonNull final Object value) {
-        Objects.requireNonNull(propertyName, "propertyName must not be null");
         Objects.requireNonNull(value, "value must not be null");
-        builder.withValue(propertyName, value);
-        return this;
+        return withSource(new SimpleConfigSource(propertyName, value.toString()));
     }
 
     /**
      * This method returns the {@link Configuration} instance. If the method is called for the first time the
      * {@link Configuration} instance will be created. All values that have been set (see
-     * {@link #withValue(String, Object)}) method will be part of the config. Next to this the config will support all
+     * {@link #withValue(String, int)}) methods will be part of the config. Next to this the config will support all
      * config data record types (see {@link ConfigData}) that are on the classpath.
      *
      * @return the created configuration

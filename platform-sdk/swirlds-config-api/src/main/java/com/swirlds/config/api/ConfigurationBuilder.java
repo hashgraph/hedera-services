@@ -127,7 +127,7 @@ public interface ConfigurationBuilder {
      * @return the {@link ConfigurationBuilder} instance (for fluent API)
      */
     @NonNull
-    ConfigurationBuilder withValue(@NonNull final String propertyName, @NonNull final Object value);
+    ConfigurationBuilder withValue(@NonNull final String propertyName, @NonNull final String value);
 
     /**
      * Creates a {@link Configuration} instance based on this builder.

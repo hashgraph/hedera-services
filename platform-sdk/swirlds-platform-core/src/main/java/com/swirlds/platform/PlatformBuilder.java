@@ -19,36 +19,28 @@ package com.swirlds.platform;
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static com.swirlds.logging.LogMarker.STARTUP;
+import static com.swirlds.platform.StaticPlatformBuilder.doStaticSetup;
+import static com.swirlds.platform.StaticPlatformBuilder.getGlobalMetrics;
+import static com.swirlds.platform.StaticPlatformBuilder.getMetricsProvider;
 import static com.swirlds.platform.crypto.CryptoSetup.initNodeSecurity;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getPlatforms;
 import static com.swirlds.platform.state.signed.StartupStateUtils.getInitialState;
 import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
-import static com.swirlds.platform.util.BootstrapUtils.startJVMPauseDetectorThread;
-import static com.swirlds.platform.util.BootstrapUtils.startThreadDumpGenerator;
-import static com.swirlds.platform.util.BootstrapUtils.writeSettingsUsed;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.ConfigUtils;
-import com.swirlds.common.config.PathsConfig;
 import com.swirlds.common.config.StateConfig;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.utility.RecycleBinImpl;
-import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.metrics.platform.DefaultMetricsProvider;
-import com.swirlds.common.startup.Log4jSetup;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
-import com.swirlds.logging.payloads.NodeStartPayload;
 import com.swirlds.platform.config.internal.PlatformConfigUtils;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
@@ -62,7 +54,6 @@ import com.swirlds.platform.util.BootstrapUtils;
 import com.swirlds.platform.util.MetricsDocUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -79,16 +70,6 @@ public final class PlatformBuilder {
 
     private static final Logger logger = LogManager.getLogger(PlatformBuilder.class);
 
-    private static final String SWIRLDS_PACKAGE = "com.swirlds";
-
-    // @formatter:off
-    private static final String STARTUP_MESSAGE =
-            """
-              //////////////////////
-             // Node is Starting //
-            //////////////////////""";
-    // @formatter:on
-
     private final String appName;
     private final SoftwareVersion softwareVersion;
     private final Supplier<SwirldState> genesisStateBuilder;
@@ -97,15 +78,7 @@ public final class PlatformBuilder {
 
     private ConfigurationBuilder configurationBuilder;
 
-    /**
-     * Static stateful variables are evil, but this one is required until we can refactor all the other places that use
-     * them.
-     */
-    private static boolean staticSetupCompleted = false;
-
-    private static DefaultMetricsProvider metricsProvider;
-
-    private static Metrics globalMetrics;
+    private static final String SWIRLDS_PACKAGE = "com.swirlds";
 
     /**
      * The path to config.txt.
@@ -163,11 +136,7 @@ public final class PlatformBuilder {
      */
     public PlatformBuilder withSettingsPath(@NonNull final Path path) {
         Objects.requireNonNull(path);
-        final Path absolutePath = getAbsolutePath(path);
-        if (!Files.exists(absolutePath)) {
-            throw new IllegalArgumentException("File " + absolutePath + " does not exist");
-        }
-        this.settingsPath = absolutePath;
+        this.settingsPath = getAbsolutePath(path);
         return this;
     }
 
@@ -180,67 +149,8 @@ public final class PlatformBuilder {
      */
     public PlatformBuilder withConfigPath(@NonNull final Path path) {
         Objects.requireNonNull(path);
-        final Path absolutePath = getAbsolutePath(path);
-        if (!Files.exists(absolutePath)) {
-            throw new IllegalArgumentException("File " + absolutePath + " does not exist");
-        }
-        this.configPath = absolutePath;
+        this.configPath = getAbsolutePath(path);
         return this;
-    }
-
-    /**
-     * Build a platform but do not start it.
-     *
-     * @return a new platform instance
-     */
-    public SwirldsPlatform build() {
-        return build(false);
-    }
-
-    /**
-     * Setup static utilities. If running multiple platforms in the same JVM, this should be called when constructing
-     * the first platform only.
-     *
-     * @param configuration the configuration for this node
-     * @return true if this is the first time this method has been called, false otherwise
-     */
-    private boolean setupStaticUtilities(@NonNull final Configuration configuration) {
-        if (staticSetupCompleted) {
-            // Only setup static utilities once
-            return false;
-        }
-        staticSetupCompleted = true;
-
-        ConfigurationHolder.getInstance().setConfiguration(configuration);
-
-        // Setup logging, using the configuration to tell us the location of the log4j2.xml
-        final PathsConfig pathsConfig = configuration.getConfigData(PathsConfig.class);
-        final Path log4jPath = pathsConfig.getLogPath();
-        try {
-            Log4jSetup.startLoggingFramework(log4jPath).await();
-        } catch (final InterruptedException e) {
-            CommonUtils.tellUserConsole("Interrupted while waiting for log4j to initialize");
-            Thread.currentThread().interrupt();
-        }
-
-        // Now that we have a logger, we can start using it for further messages
-        logger.info(STARTUP.getMarker(), "\n\n" + STARTUP_MESSAGE + "\n");
-        logger.debug(STARTUP.getMarker(), () -> new NodeStartPayload().toString());
-
-        BootstrapUtils.performHealthChecks(configPath, configuration);
-        writeSettingsUsed(configuration);
-
-        metricsProvider = new DefaultMetricsProvider(configuration);
-        globalMetrics = metricsProvider.createGlobalMetrics();
-        CryptoMetrics.registerMetrics(globalMetrics);
-
-        // Initialize the thread dump generator, if enabled via settings
-        startThreadDumpGenerator(configuration);
-
-        // Initialize JVMPauseDetectorThread, if enabled via settings
-        startJVMPauseDetectorThread(configuration);
-
-        return true;
     }
 
     /**
@@ -252,13 +162,6 @@ public final class PlatformBuilder {
     private Configuration buildConfiguration() {
         if (configurationBuilder == null) {
             configurationBuilder = ConfigurationBuilder.create();
-        }
-
-        if (!Files.exists(configPath)) {
-            throw new IllegalStateException("File " + configPath + " does not exist");
-        }
-        if (!Files.exists(settingsPath)) {
-            throw new IllegalStateException("File " + settingsPath + " does not exist");
         }
 
         ConfigUtils.scanAndRegisterAllConfigTypes(configurationBuilder, Set.of(SWIRLDS_PACKAGE));
@@ -282,22 +185,21 @@ public final class PlatformBuilder {
     }
 
     /**
-     * Build a platform.
+     * Build a platform. Platform is not started.
      *
-     * @param start if true then start the platform
      * @return a new platform instance
      */
-    public SwirldsPlatform build(final boolean start) {
+    public SwirldsPlatform build() {
         final Configuration configuration = buildConfiguration();
 
-        final boolean firstTimeSetup = setupStaticUtilities(configuration);
+        final boolean firstTimeSetup = doStaticSetup(configuration, configPath);
 
         final AddressBook configAddressBook = loadConfigAddressBook();
 
         checkNodesToRun(List.of(selfId));
 
         final Map<NodeId, Crypto> crypto = initNodeSecurity(configAddressBook, configuration);
-        final PlatformContext platformContext = new DefaultPlatformContext(selfId, metricsProvider, configuration);
+        final PlatformContext platformContext = new DefaultPlatformContext(selfId, getMetricsProvider(), configuration);
 
         // the AddressBook is not changed after this point, so we calculate the hash now
         platformContext.getCryptography().digestSync(configAddressBook);
@@ -358,16 +260,11 @@ public final class PlatformBuilder {
                     emergencyRecoveryManager);
 
             if (firstTimeSetup) {
-                MetricsDocUtils.writeMetricsDocumentToFile(globalMetrics, getPlatforms(), configuration);
-                metricsProvider.start();
-            }
-
-            if (start) {
-                platform.start();
+                MetricsDocUtils.writeMetricsDocumentToFile(getGlobalMetrics(), getPlatforms(), configuration);
+                getMetricsProvider().start();
             }
 
             return platform;
-
         } catch (final SignedStateLoadingException e) {
             throw new RuntimeException("unable to load state from disk", e);
         }
