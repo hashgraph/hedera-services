@@ -192,7 +192,7 @@ public class ConsensusHashManager {
         Objects.requireNonNull(signatureTransaction);
 
         if (!Objects.equals(signatureTransaction.getEpochHash(), currentEpochHash)) {
-            //this is a signature from a different epoch, ignore it
+            // this is a signature from a different epoch, ignore it
             return;
         }
 
