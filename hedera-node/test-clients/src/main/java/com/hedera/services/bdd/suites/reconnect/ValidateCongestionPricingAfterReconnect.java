@@ -89,7 +89,6 @@ public class ValidateCongestionPricingAfterReconnect extends HapiSuite {
         return customHapiSpec("ValidateCongestionPricing")
                 .withProperties(Map.of("txn.start.offset.secs", "-5"))
                 .given(
-                        sleepFor(Duration.ofSeconds(25).toMillis()),
                         cryptoCreate(civilianAccount).payingWith(GENESIS).balance(ONE_MILLION_HBARS),
                         uploadInitCode(oneContract),
                         contractCreate(oneContract).payingWith(GENESIS).logging(),
