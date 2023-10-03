@@ -80,6 +80,8 @@ class XTestConstants {
             .build();
     static final Bytes SENDER_ADDRESS =
             com.hedera.pbj.runtime.io.buffer.Bytes.fromHex("f91e624b8b8ea7244e8159ba7c0deeea2b6be990");
+    static final com.esaulpaugh.headlong.abi.Address SENDER_HEADLONG_ADDRESS =
+            asHeadlongAddress(SENDER_ADDRESS.toByteArray());
     static final Address SENDER_BESU_ADDRESS = pbjToBesuAddress(SENDER_ADDRESS);
     static final AccountID RECEIVER_ID =
             AccountID.newBuilder().accountNum(987654321L).build();

@@ -293,6 +293,7 @@ public class SyncGossip extends AbstractGossip {
                                             platformContext.getConfiguration(),
                                             time),
                                     new SyncProtocol(
+                                            platformContext,
                                             otherId,
                                             syncShadowgraphSynchronizer,
                                             fallenBehindManager,
