@@ -69,6 +69,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.config.data.FeesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LazyCreationConfig;
 import com.hedera.node.config.data.LedgerConfig;
@@ -420,9 +421,8 @@ public class CryptoTransferHandler implements TransactionHandler {
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
         final var body = feeContext.body();
         final var op = body.cryptoTransferOrThrow();
-        final var accountStore = feeContext.readableStore(ReadableAccountStore.class);
         final var config = feeContext.configuration();
-        final var tokenMultiplier = 1;
+        final var tokenMultiplier = config.getConfigData(FeesConfig.class).tokenTransferUsageMultiplier();
 
         /* BPT calculations shouldn't include any custom fee payment usage */
         int totalXfers = op.transfersOrElse(TransferList.DEFAULT)
