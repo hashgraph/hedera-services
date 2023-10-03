@@ -49,6 +49,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.mint.MintTranslator;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import java.math.BigInteger;
@@ -106,13 +107,16 @@ public class MintsXTest extends AbstractContractXTest {
                         .array()),
                 assertSuccess());
 
-        // should revert when token has no supplyKey
-        runHtsCallAndExpectRevert(
+        // should fail when token has no supplyKey
+        runHtsCallAndExpectOnSuccess(
                 OWNER_BESU_ADDRESS,
                 Bytes.wrap(MintTranslator.MINT
                         .encodeCallWithArgs(A_TOKEN_ADDRESS, BigInteger.valueOf(MINT_AMOUNT), new byte[][] {})
                         .array()),
-                TOKEN_HAS_NO_SUPPLY_KEY);
+                output -> assertEquals(
+                        Bytes.wrap(
+                                ReturnTypes.encodedRc(TOKEN_HAS_NO_SUPPLY_KEY).array()),
+                        output));
     }
 
     @Override
