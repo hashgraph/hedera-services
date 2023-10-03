@@ -17,15 +17,18 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.delete;
 
 import com.esaulpaugh.headlong.abi.Function;
-import com.esaulpaugh.headlong.abi.Tuple;
+import com.hedera.hapi.node.token.TokenDeleteTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
 import javax.inject.Inject;
-import org.hyperledger.besu.datatypes.Address;
 
 public class DeleteTranslator extends AbstractHtsCallTranslator {
     public static final Function DELETE_TOKEN = new Function("deleteToken(address)", ReturnTypes.INT);
@@ -41,18 +44,17 @@ public class DeleteTranslator extends AbstractHtsCallTranslator {
     }
 
     @Override
-    public DeleteCall callFrom(@NonNull HtsCallAttempt attempt) {
-        final Tuple call = DELETE_TOKEN.decodeCall(attempt.input().toArrayUnsafe());
-        final var token = attempt.linkedToken(Address.fromHexString(call.get(0).toString()));
-        if (token == null) {
-            return null;
-        } else {
-            return new DeleteCall(
-                    attempt.enhancement(),
-                    ConversionUtils.asTokenId(call.get(0)),
-                    attempt.defaultVerificationStrategy(),
-                    attempt.senderAddress(),
-                    attempt.addressIdConverter());
-        }
+    public HtsCall callFrom(@NonNull HtsCallAttempt attempt) {
+        return new DispatchForResponseCodeHtsCall<>(
+                attempt, bodyForClassic(attempt), SingleTransactionRecordBuilder.class);
+    }
+
+    private TransactionBody bodyForClassic(@NonNull final HtsCallAttempt attempt) {
+        final var call = DELETE_TOKEN.decodeCall(attempt.inputBytes());
+        final var token = ConversionUtils.asTokenId(call.get(0));
+        return TransactionBody.newBuilder()
+                .tokenDeletion(
+                        TokenDeleteTransactionBody.newBuilder().token(token).build())
+                .build();
     }
 }

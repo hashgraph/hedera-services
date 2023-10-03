@@ -16,11 +16,20 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.delete;
 
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_ACCOUNT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
+import com.esaulpaugh.headlong.abi.Tuple;
+import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.delete.DeleteTranslator;
+import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,10 +37,18 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class DeleteTranslatorTest {
-
+class DeleteTranslatorTest {
     @Mock
     private HtsCallAttempt attempt;
+
+    @Mock
+    private HederaWorldUpdater.Enhancement enhancement;
+
+    @Mock
+    private AddressIdConverter addressIdConverter;
+
+    @Mock
+    private VerificationStrategy verificationStrategy;
 
     private DeleteTranslator subject;
 
@@ -45,5 +62,20 @@ public class DeleteTranslatorTest {
         given(attempt.selector()).willReturn(DeleteTranslator.DELETE_TOKEN.selector());
         final var matches = subject.matches(attempt);
         assertThat(matches).isTrue();
+    }
+
+    @Test
+    void callFromDeleteTest() {
+        Tuple tuple = new Tuple(NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS);
+        byte[] inputBytes = Bytes.wrapByteBuffer(DeleteTranslator.DELETE_TOKEN.encodeCall(tuple))
+                .toArray();
+        given(attempt.inputBytes()).willReturn(inputBytes);
+        given(attempt.enhancement()).willReturn(enhancement);
+        given(attempt.addressIdConverter()).willReturn(addressIdConverter);
+        given(addressIdConverter.convertSender(any())).willReturn(NON_SYSTEM_ACCOUNT_ID);
+        given(attempt.defaultVerificationStrategy()).willReturn(verificationStrategy);
+
+        final var call = subject.callFrom(attempt);
+        assertThat(call).isInstanceOf(DispatchForResponseCodeHtsCall.class);
     }
 }

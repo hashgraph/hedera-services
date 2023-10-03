@@ -68,13 +68,14 @@ public class DeleteXTest extends AbstractContractXTest {
                 output -> assertEquals(
                         Bytes.wrap(ReturnTypes.encodedRc(TOKEN_WAS_DELETED).array()), output));
 
-        // Revert if token has no admin key
-        runHtsCallAndExpectRevert(
+        // Fail if token has no admin key
+        runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(DeleteTranslator.DELETE_TOKEN
                         .encodeCallWithArgs(ERC721_TOKEN_ADDRESS)
                         .array()),
-                TOKEN_IS_IMMUTABLE);
+                output -> assertEquals(
+                        Bytes.wrap(ReturnTypes.encodedRc(TOKEN_IS_IMMUTABLE).array()), output));
     }
 
     @Override
