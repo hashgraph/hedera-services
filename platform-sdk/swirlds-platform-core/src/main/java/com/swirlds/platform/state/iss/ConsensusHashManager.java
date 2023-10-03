@@ -62,7 +62,7 @@ public class ConsensusHashManager {
      * The address book of this network.
      */
     private final AddressBook addressBook;
-
+    /** The current epoch hash */
     private final Hash currentEpochHash;
 
     /**
