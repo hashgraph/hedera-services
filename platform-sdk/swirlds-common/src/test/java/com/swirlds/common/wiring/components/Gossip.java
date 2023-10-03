@@ -1,8 +1,6 @@
 package com.swirlds.common.wiring.components;
 
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 /**
@@ -11,7 +9,9 @@ import java.util.function.Consumer;
 public class Gossip {
     private final EventPool eventPool;
     private final Consumer<Event> toEventVerifier;
-    private final AtomicInteger eventNumber = new AtomicInteger(0);
+    private final AtomicLong eventNumber = new AtomicLong();
+    private volatile boolean stopped = false;
+    private volatile long checkSum;
 
     public Gossip(EventPool eventPool, Consumer<Event> toEventVerifier) {
         this.toEventVerifier = toEventVerifier;
@@ -19,17 +19,25 @@ public class Gossip {
     }
 
     public void start() {
-        // I'm testing at such high event rates that I cannot just test the above events per second directly. So I'm
-        // going to take whatever eventsPerSecond is, split it into 1000 pieces, and for each piece loop and create
-        // as many events as necessary to fill that millisecond.
-        final var singleThreadExecutor = Executors.newSingleThreadScheduledExecutor();
-        singleThreadExecutor.submit(this::generateEvents);
+        eventNumber.set(0);
+        checkSum = 0;
+        new Thread(this::generateEvents).start();
     }
 
     private void generateEvents() {
-        for (;;) {
+        while (!stopped) {
             final var event = eventPool.checkout(eventNumber.getAndIncrement());
             toEventVerifier.accept(event);
         }
+        long lastNumber = eventNumber.get();
+        checkSum = lastNumber * (lastNumber + 1) / 2;
+    }
+
+    public void stop() {
+        stopped = true;
+    }
+
+    public long getCheckSum() {
+        return checkSum;
     }
 }
