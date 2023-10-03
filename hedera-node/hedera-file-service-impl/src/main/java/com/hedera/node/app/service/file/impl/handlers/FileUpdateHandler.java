@@ -40,6 +40,7 @@ import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
 import com.hedera.node.app.service.mono.fees.calculation.file.txns.FileUpdateResourceUsage;
+import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.AttributeValidator;
@@ -48,11 +49,9 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -149,34 +148,20 @@ public class FileUpdateHandler implements TransactionHandler {
                 .readableStore(ReadableFileStore.class)
                 .getFileLeaf(op.fileUpdateOrThrow().fileIDOrThrow());
 
-        final AccountsConfig accountsConfig = feeContext.configuration().getConfigData(AccountsConfig.class);
         final AccountID payerId = op.transactionID().accountID();
 
-        if (isSpecialAccount(payerId, accountsConfig)) {
+        final SystemPrivilege privilege =
+                feeContext.authorizer().hasPrivilegedAuthorization(payerId, HederaFunctionality.FILE_UPDATE, op);
+
+        // Even if the privilege is UNAUTHORIZED or IMPERMISSIBLE continue with a free fee
+        // The appropriate error is thrown at a later stage of the workflow
+        if (privilege != SystemPrivilege.UNNECESSARY) {
             return Fees.FREE;
         }
 
         return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> {
             return new FileUpdateResourceUsage(fileOpsUsage).usageGiven(fromPbj(op), sigValueObj, fromPbj(file));
         });
-    }
-
-    private boolean isSpecialAccount(@NonNull final AccountID accountID, @NonNull final AccountsConfig accountsConfig) {
-        long[] specialAccounts = {
-            accountsConfig.addressBookAdmin(),
-            accountsConfig.feeSchedulesAdmin(),
-            accountsConfig.exchangeRatesAdmin(),
-            accountsConfig.freezeAdmin(),
-            accountsConfig.treasury(),
-            accountsConfig.systemAdmin(),
-            accountsConfig.lastThrottleExempt(),
-            accountsConfig.nodeRewardAccount(),
-            accountsConfig.stakingRewardAccount(),
-            accountsConfig.systemDeleteAdmin(),
-            accountsConfig.systemUndeleteAdmin(),
-        };
-        Arrays.sort(specialAccounts);
-        return Arrays.binarySearch(specialAccounts, accountID.accountNumOrThrow()) >= 0;
     }
 
     private void handleUpdateUpgradeFile(FileUpdateTransactionBody fileUpdate, HandleContext handleContext) {
