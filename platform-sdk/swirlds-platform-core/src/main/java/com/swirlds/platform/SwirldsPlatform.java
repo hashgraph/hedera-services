@@ -166,7 +166,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -566,11 +565,9 @@ public class SwirldsPlatform implements Platform, Startable {
         validators.add(new TransactionSizeValidator(transactionConfig.maxTransactionBytesPerEvent()));
         // some events in the PCES might have been created by nodes that are no longer in the current
         // address book but are in the previous one, so we need both for signature validation
-        final List<AddressBook> validationAddressBooks = Stream.of(previousAddressBook, currentAddressBook)
-                .filter(Objects::nonNull)
-                .toList();
         if (basicConfig.verifyEventSigs()) {
-            validators.add(new SignatureValidator(validationAddressBooks, CryptoStatic::verifySignature));
+            validators.add(new SignatureValidator(
+                    previousAddressBook, currentAddressBook, appVersion, CryptoStatic::verifySignature, time));
         }
         final GossipEventValidators eventValidators = new GossipEventValidators(validators);
 

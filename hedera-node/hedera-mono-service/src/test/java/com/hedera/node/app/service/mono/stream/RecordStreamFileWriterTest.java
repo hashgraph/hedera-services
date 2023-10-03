@@ -457,7 +457,6 @@ class RecordStreamFileWriterTest {
 
         // assert block number
         assertEquals(expectedBlock, recordStreamFile.getBlockNumber());
-        assertTrue(logCaptor.debugLogs().contains("closeCurrentAndSign :: write block number " + expectedBlock));
 
         // assert sidecar metadata
         final var firstTxnTimestamp = blockRSOs.get(0).getTimestamp();
@@ -630,9 +629,6 @@ class RecordStreamFileWriterTest {
             subject.clear();
 
             // then
-            assertThat(
-                    logCaptor.warnLogs(),
-                    contains(Matchers.startsWith("RecordStreamFileWriter::clear Exception in closing dosMeta")));
             assertTrue(logCaptor.debugLogs().contains("RecordStreamFileWriter::clear executed."));
         }
     }
@@ -657,6 +653,7 @@ class RecordStreamFileWriterTest {
     void writingBlockNumberToMetadataIOEExceptionIsCaughtAndLoggedProperlyAndThreadInterrupted() {
         // given
         given(streamType.getFileHeader()).willReturn(FILE_HEADER_VALUES);
+        given(signer.sign(any())).willReturn(new Signature(RSA, new byte[0]));
         final var firstTransactionInstant =
                 LocalDateTime.of(2022, 5, 24, 11, 2, 55).toInstant(ZoneOffset.UTC);
 
@@ -668,11 +665,7 @@ class RecordStreamFileWriterTest {
         }
 
         // then
-        assertTrue(Thread.currentThread().isInterrupted());
-        assertThat(
-                logCaptor.warnLogs(),
-                contains(Matchers.startsWith("closeCurrentAndSign :: IOException when serializing endRunningHash"
-                        + " and block number into metadata")));
+        assertThat(logCaptor.errorLogs(), contains(Matchers.startsWith("Failed to write metadata digest contents")));
     }
 
     @Test
@@ -840,28 +833,6 @@ class RecordStreamFileWriterTest {
         assertThat(
                 logCaptor.errorLogs(),
                 contains(Matchers.startsWith("closeCurrentAndSign ::  :: Fail to " + "generate signature file for")));
-    }
-
-    @Test
-    void interruptAndLogWhenWritingStartRunningHashToMetadataStreamThrowsIOException() {
-        // given
-        given(streamType.getFileHeader()).willReturn(FILE_HEADER_VALUES);
-        final var firstTransactionInstant =
-                LocalDateTime.of(2022, 5, 24, 11, 2, 55).toInstant(ZoneOffset.UTC);
-
-        // when
-        try (MockedConstruction<SerializableDataOutputStream> ignored = Mockito.mockConstruction(
-                SerializableDataOutputStream.class,
-                (mock, context) -> doThrow(IOException.class).when(mock).write(any()))) {
-            generateNRecordStreamObjectsForBlockMStartingFromT(1, 1, firstTransactionInstant, Collections.emptyList())
-                    .forEach(subject::addObject);
-        }
-
-        // then
-        assertTrue(Thread.currentThread().isInterrupted());
-        assertThat(
-                logCaptor.errorLogs(),
-                contains(Matchers.startsWith("beginNew :: Got IOException when writing startRunningHash to")));
     }
 
     @Test
