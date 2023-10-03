@@ -16,11 +16,13 @@
 
 package com.hedera.node.app.service.networkadmin.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -96,8 +98,9 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
 
         // The account must exist for that transaction ID
         final var accountStore = context.createStore(ReadableAccountStore.class);
-        final var accountMetadata = accountStore.getAccountById(op.accountIdOrThrow());
-        mustExist(accountMetadata, INVALID_ACCOUNT_ID);
+        final var account = accountStore.getAccountById(op.accountIdOrThrow());
+        mustExist(account, INVALID_ACCOUNT_ID);
+        validateTruePreCheck(!account.deleted(), ACCOUNT_DELETED);
     }
 
     @Override
