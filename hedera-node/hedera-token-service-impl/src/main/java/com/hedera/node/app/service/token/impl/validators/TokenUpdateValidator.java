@@ -88,11 +88,13 @@ public class TokenUpdateValidator {
                     new ExpiryMeta(token.expirationSecond(), token.autoRenewSeconds(), token.autoRenewAccountId()));
         }
         final var resolvedExpiryMeta = resolveExpiry(token, op, context.expiryValidator());
-        validateNewAndExistingAutoRenewAccount(
-                resolvedExpiryMeta.autoRenewAccountId(),
-                token.autoRenewAccountId(),
-                readableAccountStore,
-                context.expiryValidator());
+        if (op.hasAutoRenewAccount()) {
+            validateNewAndExistingAutoRenewAccount(
+                    resolvedExpiryMeta.autoRenewAccountId(),
+                    token.autoRenewAccountId(),
+                    readableAccountStore,
+                    context.expiryValidator());
+        }
         return new ValidationResult(token, resolvedExpiryMeta);
     }
 

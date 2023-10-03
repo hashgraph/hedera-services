@@ -21,8 +21,8 @@ import static com.swirlds.logging.LogMarker.FREEZE;
 import static com.swirlds.logging.LogMarker.SYNC;
 
 import com.swirlds.common.config.EventConfig;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.FunctionGauge;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
@@ -32,6 +32,7 @@ import com.swirlds.platform.event.EventIntakeTask;
 import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.gossip.shadowgraph.SyncResult;
 import com.swirlds.platform.gossip.shadowgraph.SyncUtils;
+import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.network.RandomGraph;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.LinkedList;
@@ -67,6 +68,8 @@ public class SyncManagerImpl implements SyncManager, FallenBehindManager {
     private final EventCreationRules eventCreationRules;
     /** Tracks recent events */
     private final CriticalQuorum criticalQuorum;
+
+    private final boolean useCriticalQuorum;
     /** The initial address book */
     private final AddressBook addressBook;
 
@@ -80,14 +83,14 @@ public class SyncManagerImpl implements SyncManager, FallenBehindManager {
     /**
      * Creates a new SyncManager
      *
-     * @param metrics            the metrics engine
+     * @param platformContext    the platform context
      * @param intakeQueue        the event intake queue
      * @param connectionGraph    The platforms connection graph.
      * @param selfId             The ID of the platform.
      * @param eventCreationRules Contains a list of rules for checking whether this node should create an event or not
      */
     public SyncManagerImpl(
-            @NonNull final Metrics metrics,
+            @NonNull final PlatformContext platformContext,
             @NonNull final BlockingQueue<EventIntakeTask> intakeQueue,
             @NonNull final RandomGraph connectionGraph,
             @NonNull final NodeId selfId,
@@ -108,13 +111,25 @@ public class SyncManagerImpl implements SyncManager, FallenBehindManager {
         this.fallenBehindManager = Objects.requireNonNull(fallenBehindManager);
         this.eventConfig = Objects.requireNonNull(eventConfig);
 
-        metrics.getOrCreate(
-                new FunctionGauge.Config<>(INTERNAL_CATEGORY, "hasFallenBehind", Object.class, this::hasFallenBehind)
+        useCriticalQuorum = platformContext
+                .getConfiguration()
+                .getConfigData(SyncConfig.class)
+                .criticalQuorumEnabled();
+
+        platformContext
+                .getMetrics()
+                .getOrCreate(new FunctionGauge.Config<>(
+                                INTERNAL_CATEGORY, "hasFallenBehind", Object.class, this::hasFallenBehind)
                         .withDescription("has this node fallen behind?"));
-        metrics.getOrCreate(new FunctionGauge.Config<>(
-                        INTERNAL_CATEGORY, "numReportFallenBehind", Integer.class, this::numReportedFallenBehind)
-                .withDescription("the number of nodes that have fallen behind")
-                .withUnit("count"));
+        platformContext
+                .getMetrics()
+                .getOrCreate(new FunctionGauge.Config<>(
+                                INTERNAL_CATEGORY,
+                                "numReportFallenBehind",
+                                Integer.class,
+                                this::numReportedFallenBehind)
+                        .withDescription("the number of nodes that have fallen behind")
+                        .withUnit("count"));
     }
 
     /**
@@ -184,9 +199,13 @@ public class SyncManagerImpl implements SyncManager, FallenBehindManager {
                 continue;
             }
 
-            // we try to call a neighbor in the bottom 1/3 by number of events created in the latest round, if
-            // we fail to find one after 10 tries, we just call the last neighbor we find
-            if (criticalQuorum.isInCriticalQuorum(neighborId) || i == MAXIMUM_NEIGHBORS_TO_QUERY - 1) {
+            if (useCriticalQuorum) {
+                // we try to call a neighbor in the bottom 1/3 by number of events created in the latest round, if
+                // we fail to find one after 10 tries, we just call the last neighbor we find
+                if (criticalQuorum.isInCriticalQuorum(neighborId) || i == MAXIMUM_NEIGHBORS_TO_QUERY - 1) {
+                    list.add(neighborId);
+                }
+            } else {
                 list.add(neighborId);
             }
         }
@@ -240,6 +259,9 @@ public class SyncManagerImpl implements SyncManager, FallenBehindManager {
         }
 
         // check 3: if neither node is part of the superMinority in the latest round, don't create an event
+        // Note: although this code has not yet been deleted, non-tipset event creation is no longer supported.
+        //       Therefore, there is no need to update this code to not use the critical quorum when the
+        //       setting sync.criticalQuorumEnabled is false.
         if (!criticalQuorum.isInCriticalQuorum(info.getOtherId()) && !criticalQuorum.isInCriticalQuorum(selfId)) {
             return false;
         }

@@ -64,7 +64,7 @@ public class ThrottleReqsManager {
         return usages;
     }
 
-    List<DeterministicThrottle> managedThrottles() {
+    public List<DeterministicThrottle> managedThrottles() {
         return allReqs.stream().map(Pair::getLeft).toList();
     }
 
