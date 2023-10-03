@@ -40,9 +40,8 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.HashSet;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import javax.inject.Inject;
 
 /**
@@ -68,7 +67,7 @@ public class CustomFeesValidator {
      * @param customFees The custom fees to validate.
      * @return The set of custom fees that need to auto associate collector accounts.
      */
-    public Set<CustomFee> validateForCreation(
+    public List<CustomFee> validateForCreation(
             @NonNull final Token createdToken,
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final ReadableTokenRelationStore tokenRelationStore,
@@ -84,7 +83,7 @@ public class CustomFeesValidator {
         // In that scenario, the created token should be used as the denominating token.
         // This is a valid scenario for fungible common tokens.
         // For these custom fees we need to associate the collector with the token.
-        final Set<CustomFee> fees = new HashSet<>();
+        final List<CustomFee> fees = new ArrayList<>();
         final var tokenType = createdToken.tokenType();
         for (final var fee : customFees) {
             final var collector = accountStore.getAccountById(fee.feeCollectorAccountIdOrElse(AccountID.DEFAULT));
@@ -219,7 +218,7 @@ public class CustomFeesValidator {
             @NonNull final Token createdToken,
             @NonNull final ReadableTokenRelationStore tokenRelationStore,
             @NonNull final WritableTokenStore tokenStore,
-            @NonNull final Set<CustomFee> feesWithCollectorsToAutoAssociate) {
+            @NonNull final List<CustomFee> feesWithCollectorsToAutoAssociate) {
         final var fixedFee = fee.fixedFeeOrThrow();
 
         validateTrue(fixedFee.amount() > 0, CUSTOM_FEE_MUST_BE_POSITIVE);
@@ -240,7 +239,7 @@ public class CustomFeesValidator {
         }
     }
 
-    private void validateFractionalFeeForCreation(TokenType tokenType, CustomFee fee, Set<CustomFee> fees) {
+    private void validateFractionalFeeForCreation(TokenType tokenType, CustomFee fee, List<CustomFee> fees) {
         validateTrue(isFungibleCommon(tokenType), CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON);
 
         final var fractionalFee = fee.fractionalFee();
@@ -263,7 +262,7 @@ public class CustomFeesValidator {
             @NonNull final CustomFee fee,
             @NonNull final ReadableTokenRelationStore tokenRelationStore,
             @NonNull final WritableTokenStore tokenStore,
-            @NonNull final Set<CustomFee> fees) {
+            @NonNull final List<CustomFee> fees) {
         validateTrue(isNonFungibleUnique(tokenType), CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE);
         final var royaltyFee = fee.royaltyFeeOrThrow();
 
