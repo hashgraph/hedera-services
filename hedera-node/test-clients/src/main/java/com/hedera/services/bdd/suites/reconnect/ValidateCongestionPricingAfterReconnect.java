@@ -140,7 +140,7 @@ public class ValidateCongestionPricingAfterReconnect extends HapiSuite {
                         // then we can send more transactions. Otherwise, transactions may be
                         // pending for too long
                         // and we will get UNKNOWN status
-                        sleepFor(30000),
+                        sleepFor(80000),
                         blockingOrder(IntStream.range(0, 110)
                                 .mapToObj(i -> new HapiSpecOperation[] {
                                     usableTxnIdNamed("uncheckedTxn2" + i).payerId(civilianAccount),
