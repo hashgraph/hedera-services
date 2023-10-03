@@ -320,7 +320,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
      * @param tokenId the token number
      */
     private void updateTokenAllowance(
-            final ArrayList<AccountFungibleTokenAllowance> mutableAllowances,
+                final ArrayList<AccountFungibleTokenAllowance> mutableAllowances,
             final long amount,
             final AccountID spenderId,
             final TokenID tokenId) {
@@ -457,10 +457,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
             final TokenID tokenId) {
         for (int i = 0; i < ownerAllowances.size(); i++) {
             final var allowance = ownerAllowances.get(i);
-            if (allowance.tokenId() != null
-                    && allowance.spenderId() != null
-                    && allowance.spenderId().equals(spenderId)
-                    && allowance.tokenId().equals(tokenId)) {
+            if (allowance.spenderId().equals(spenderId) && allowance.tokenId().equals(tokenId)) {
                 return i;
             }
         }
