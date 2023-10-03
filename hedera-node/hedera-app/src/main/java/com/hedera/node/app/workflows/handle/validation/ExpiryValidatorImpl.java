@@ -93,8 +93,8 @@ public class ExpiryValidatorImpl implements ExpiryValidator {
 
         var resolvedExpiry = currentMeta.expiry();
         if (updateMeta.hasExplicitExpiry()) {
-            validateFalse(updateMeta.expiry() < currentMeta.expiry(), EXPIRATION_REDUCTION_NOT_ALLOWED);
             context.attributeValidator().validateExpiry(updateMeta.expiry());
+            validateFalse(updateMeta.expiry() < currentMeta.expiry(), EXPIRATION_REDUCTION_NOT_ALLOWED);
             resolvedExpiry = updateMeta.expiry();
         }
 
@@ -171,7 +171,7 @@ public class ExpiryValidatorImpl implements ExpiryValidator {
         final var accountStore = context.readableStore(ReadableAccountStore.class);
         try {
             final var account = accountStore.getAccountById(accountID);
-            if (account == null) {
+            if (account == null || account.deleted()) {
                 throw new HandleException(INVALID_AUTORENEW_ACCOUNT);
             }
         } catch (final InvalidTransactionException e) {
