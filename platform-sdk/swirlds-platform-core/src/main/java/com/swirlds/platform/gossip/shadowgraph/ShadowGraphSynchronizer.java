@@ -26,6 +26,7 @@ import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.FallenBehindManager;
+import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.SyncException;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.internal.EventImpl;
@@ -76,6 +77,13 @@ public class ShadowGraphSynchronizer {
     private final Consumer<GossipEvent> eventHandler;
     /** manages sync related decisions */
     private final FallenBehindManager fallenBehindManager;
+
+    /**
+     * Keeps track of how many events from each peer have been received, but haven't yet made it through the intake
+     * pipeline
+     */
+    private final IntakeEventCounter intakeEventCounter;
+
     /** executes tasks in parallel */
     private final ParallelExecutor executor;
     /** if set to true, send and receive initial negotiation bytes at the start of the sync */
@@ -92,15 +100,18 @@ public class ShadowGraphSynchronizer {
             final Consumer<SyncResult> syncDone,
             final Consumer<GossipEvent> eventHandler,
             final FallenBehindManager fallenBehindManager,
+            @NonNull final IntakeEventCounter intakeEventCounter,
             final ParallelExecutor executor,
             final boolean sendRecInitBytes,
             final InterruptableRunnable executePreFetchTips) {
+
         this.shadowGraph = shadowGraph;
         this.numberOfNodes = numberOfNodes;
         this.syncMetrics = syncMetrics;
         this.generationsSupplier = generationsSupplier;
         this.syncDone = syncDone;
         this.fallenBehindManager = fallenBehindManager;
+        this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
         this.executor = executor;
         this.sendRecInitBytes = sendRecInitBytes;
         this.executePreFetchTips = executePreFetchTips;
@@ -330,7 +341,7 @@ public class ShadowGraphSynchronizer {
         // the writer will set it to true if writing is aborted
         final AtomicBoolean writeAborted = new AtomicBoolean(false);
         final Integer eventsRead = readWriteParallel(
-                SyncComms.phase3Read(conn, eventHandler, syncMetrics, eventReadingDone),
+                SyncComms.phase3Read(conn, eventHandler, syncMetrics, eventReadingDone, intakeEventCounter),
                 SyncComms.phase3Write(conn, sendList, eventReadingDone, writeAborted),
                 conn);
         if (eventsRead < 0 || writeAborted.get()) {

@@ -21,8 +21,12 @@ import static com.hedera.node.app.service.token.impl.validators.AllowanceValidat
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
@@ -32,6 +36,7 @@ import com.hedera.hapi.node.token.NftRemoveAllowance;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.DeleteAllowanceValidator;
+import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -49,10 +54,15 @@ class DeleteAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
     @Mock(strictness = LENIENT)
     private HandleContext handleContext;
 
+    @Mock(strictness = LENIENT)
+    private ExpiryValidator expiryValidator;
+
     @BeforeEach
     public void setUp() {
         super.setUp();
         givenStoresAndConfig(handleContext);
+        given(handleContext.expiryValidator()).willReturn(expiryValidator);
+        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
         subject = new DeleteAllowanceValidator();
     }
 
@@ -108,7 +118,8 @@ class DeleteAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
         final var nftAllowances = txn.cryptoDeleteAllowance().nftAllowancesOrElse(emptyList());
         assertThatNoException()
                 .isThrownBy(() -> subject.validate(handleContext, nftAllowances, account, readableAccountStore));
-        assertThat(getEffectiveOwner(null, account, readableAccountStore)).isEqualTo(account);
+        assertThat(getEffectiveOwner(null, account, readableAccountStore, mock(ExpiryValidator.class)))
+                .isEqualTo(account);
     }
 
     @Test
