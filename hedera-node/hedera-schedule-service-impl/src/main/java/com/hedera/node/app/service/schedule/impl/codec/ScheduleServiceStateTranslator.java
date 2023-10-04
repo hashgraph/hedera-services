@@ -61,9 +61,8 @@ public final class ScheduleServiceStateTranslator {
         }
 
         if (virtualValue.getKey() != null) {
-            scheduleBuilder.scheduleId(ScheduleID.newBuilder()
-                    .scheduleNum(virtualValue.getKey().getKeyAsLong())
-                    .build());
+            scheduleBuilder.scheduleId(
+                    ScheduleID.newBuilder().scheduleNum(virtualValue.getKey().getKeyAsLong()));
         }
 
         final EntityId scheduleAccount = virtualValue.schedulingAccount();
@@ -71,8 +70,7 @@ public final class ScheduleServiceStateTranslator {
             scheduleBuilder.schedulerAccountId(AccountID.newBuilder()
                     .accountNum(scheduleAccount.num())
                     .realmNum(scheduleAccount.realm())
-                    .shardNum(scheduleAccount.shard())
-                    .build());
+                    .shardNum(scheduleAccount.shard()));
         }
 
         final EntityId payerAccount = virtualValue.payer();
@@ -80,8 +78,7 @@ public final class ScheduleServiceStateTranslator {
             scheduleBuilder.payerAccountId(AccountID.newBuilder()
                     .accountNum(payerAccount.num())
                     .realmNum(payerAccount.realm())
-                    .shardNum(payerAccount.shard())
-                    .build());
+                    .shardNum(payerAccount.shard()));
         }
 
         final Optional<JKey> adminKey = virtualValue.adminKey();
@@ -91,10 +88,8 @@ public final class ScheduleServiceStateTranslator {
 
         final RichInstant validStart = virtualValue.schedulingTXValidStart();
         if (validStart != null) {
-            scheduleBuilder.scheduleValidStart(Timestamp.newBuilder()
-                    .seconds(validStart.getSeconds())
-                    .nanos(validStart.getNanos())
-                    .build());
+            scheduleBuilder.scheduleValidStart(
+                    Timestamp.newBuilder().seconds(validStart.getSeconds()).nanos(validStart.getNanos()));
         }
 
         final RichInstant expirationTime = virtualValue.expirationTimeProvided();
@@ -126,10 +121,12 @@ public final class ScheduleServiceStateTranslator {
         if (keys != null && !keys.isEmpty()) {
             final List<Key> keyList = new ArrayList<>();
             for (final byte[] key : keys) {
+                final Bytes keyBytes = Bytes.wrap(key);
+                final Key.Builder keyBuilder = Key.newBuilder();
                 if (key.length == ED25519_KEY_LENGTH) {
-                    keyList.add(Key.newBuilder().ed25519(Bytes.wrap(key)).build());
+                    keyList.add(keyBuilder.ed25519(keyBytes).build());
                 } else {
-                    keyList.add(Key.newBuilder().ecdsaSecp256k1(Bytes.wrap(key)).build());
+                    keyList.add(keyBuilder.ecdsaSecp256k1(keyBytes).build());
                 }
             }
             scheduleBuilder.signatories(keyList);

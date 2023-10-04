@@ -22,6 +22,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.balanc
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.burn.BurnTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.decimals.DecimalsTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.delete.DeleteTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.freeze.FreezeUnfreezeTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.getapproved.GetApprovedTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantrevokekyc.GrantRevokeKycTranslator;
@@ -202,6 +203,13 @@ public interface HtsTranslatorsModule {
     @Singleton
     @IntoSet
     static HtsCallTranslator provideFreezeUnfreezeTranslator(@NonNull final FreezeUnfreezeTranslator translator) {
+        return translator;
+    }
+
+    @Provides
+    @Singleton
+    @IntoSet
+    static HtsCallTranslator provideDeleteTranslator(@NonNull final DeleteTranslator translator) {
         return translator;
     }
 }
