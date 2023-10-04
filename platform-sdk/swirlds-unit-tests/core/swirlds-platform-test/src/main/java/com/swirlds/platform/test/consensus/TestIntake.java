@@ -21,7 +21,6 @@ import static org.mockito.Mockito.mock;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.config.ConsensusConfig;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.extensions.PhaseTimer;
 import com.swirlds.common.system.NodeId;
@@ -75,7 +74,7 @@ public class TestIntake implements LoadableFromSignedState {
      * See {@link #TestIntake(AddressBook, Time, ConsensusConfig)}
      */
     public TestIntake(@NonNull final AddressBook ab, @NonNull final Time time) {
-        this(ab, time, ConfigurationHolder.getConfigData(ConsensusConfig.class));
+        this(ab, time, new TestConfigBuilder().getOrCreateConfig().getConfigData(ConsensusConfig.class));
     }
 
     /**
@@ -99,8 +98,8 @@ public class TestIntake implements LoadableFromSignedState {
         shadowGraph = new ShadowGraph(mock(SyncMetrics.class));
         final ParentFinder parentFinder = new ParentFinder(shadowGraph::hashgraphEvent);
 
-        final EventLinker linker = new OrphanBufferingLinker(
-                mock(ConsensusConfig.class), parentFinder, 100000, mock(IntakeEventCounter.class));
+        final EventLinker linker =
+                new OrphanBufferingLinker(consensusConfig, parentFinder, 100000, mock(IntakeEventCounter.class));
 
         final EventObserverDispatcher dispatcher =
                 new EventObserverDispatcher(new ShadowGraphEventObserver(shadowGraph), output);
