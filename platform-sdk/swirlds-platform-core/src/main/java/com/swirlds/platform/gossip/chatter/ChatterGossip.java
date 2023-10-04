@@ -70,6 +70,7 @@ import com.swirlds.platform.event.intake.ChatterEventMapper;
 import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.gossip.AbstractGossip;
 import com.swirlds.platform.gossip.FallenBehindManagerImpl;
+import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
 import com.swirlds.platform.gossip.ProtocolConfig;
 import com.swirlds.platform.gossip.chatter.communication.ChatterProtocol;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
@@ -242,6 +243,7 @@ public class ChatterGossip extends AbstractGossip {
                     sr -> {},
                     eventTaskCreator::addEvent,
                     syncManager,
+                    new NoOpIntakeEventCounter(),
                     shadowgraphExecutor,
                     false,
                     () -> {

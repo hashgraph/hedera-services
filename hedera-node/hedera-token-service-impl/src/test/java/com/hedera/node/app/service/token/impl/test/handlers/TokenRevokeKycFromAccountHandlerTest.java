@@ -20,7 +20,9 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.protoToPbj;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.AdapterUtils.txnFrom;
 import static com.hedera.node.app.service.token.impl.test.util.MetaAssertion.basicContextAssertions;
@@ -242,6 +244,46 @@ class TokenRevokeKycFromAccountHandlerTest {
             assertThatThrownBy(() -> subject.handle(handleContext))
                     .isInstanceOf(HandleException.class)
                     .has(responseCode(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT));
+
+            verify(tokenRelStore, never()).put(any(TokenRelation.class));
+        }
+
+        @Test
+        @DisplayName("When the token is paused, tokenRevokeKycOrThrow throws an exception")
+        void tokenIsPaused() {
+            given(readableAccountStore.getAccountById(ACCOUNT_100))
+                    .willReturn(Account.newBuilder().accountId(ACCOUNT_100).build());
+            given(readableTokenStore.get(TOKEN_10))
+                    .willReturn(newToken10.copyBuilder().paused(true).build());
+            given(expiryValidator.expirationStatus(EntityType.ACCOUNT, false, 0))
+                    .willReturn(OK);
+
+            final var txnBody = newTxnBody();
+            given(handleContext.body()).willReturn(txnBody);
+
+            assertThatThrownBy(() -> subject.handle(handleContext))
+                    .isInstanceOf(HandleException.class)
+                    .has(responseCode(TOKEN_IS_PAUSED));
+
+            verify(tokenRelStore, never()).put(any(TokenRelation.class));
+        }
+
+        @Test
+        @DisplayName("When the token is deleted, tokenRevokeKycOrThrow throws an exception")
+        void tokenIsDeleted() {
+            given(readableAccountStore.getAccountById(ACCOUNT_100))
+                    .willReturn(Account.newBuilder().accountId(ACCOUNT_100).build());
+            given(readableTokenStore.get(TOKEN_10))
+                    .willReturn(newToken10.copyBuilder().deleted(true).build());
+            given(expiryValidator.expirationStatus(EntityType.ACCOUNT, false, 0))
+                    .willReturn(OK);
+
+            final var txnBody = newTxnBody();
+            given(handleContext.body()).willReturn(txnBody);
+
+            assertThatThrownBy(() -> subject.handle(handleContext))
+                    .isInstanceOf(HandleException.class)
+                    .has(responseCode(TOKEN_WAS_DELETED));
 
             verify(tokenRelStore, never()).put(any(TokenRelation.class));
         }

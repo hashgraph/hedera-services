@@ -20,6 +20,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.workflows.TransactionInfo;
@@ -42,6 +43,7 @@ public class FeeContextImpl implements FeeContext {
     private final FeeManager feeManager;
     private final ReadableStoreFactory storeFactory;
     private final Configuration configuration;
+    private final Authorizer authorizer;
 
     /**
      * Constructor of {@code FeeContextImpl}
@@ -58,13 +60,15 @@ public class FeeContextImpl implements FeeContext {
             @NonNull final Key payerKey,
             @NonNull final FeeManager feeManager,
             @NonNull final ReadableStoreFactory storeFactory,
-            @NonNull final Configuration configuration) {
+            @NonNull final Configuration configuration,
+            @NonNull final Authorizer authorizer) {
         this.consensusTime = consensusTime;
         this.txInfo = txInfo;
         this.payerKey = payerKey;
         this.feeManager = feeManager;
         this.storeFactory = storeFactory;
         this.configuration = configuration;
+        this.authorizer = authorizer;
     }
 
     @NonNull
@@ -99,5 +103,11 @@ public class FeeContextImpl implements FeeContext {
     @NonNull
     public Configuration configuration() {
         return configuration;
+    }
+
+    @Override
+    @NonNull
+    public Authorizer authorizer() {
+        return authorizer;
     }
 }

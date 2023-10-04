@@ -59,7 +59,6 @@ import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
-import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -177,7 +176,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
             final Token newToken,
             final WritableAccountStore accountStore,
             @NonNull final WritableTokenRelationStore tokenRelStore,
-            final Set<CustomFee> requireCollectorAutoAssociation) {
+            final List<CustomFee> requireCollectorAutoAssociation) {
         final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
         final var entitiesConfig = context.configuration().getConfigData(EntitiesConfig.class);
 
@@ -194,6 +193,13 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
             if (treasury.accountId().equals(collector.accountId())) {
                 continue;
             }
+
+            // Ensure no duplicate relations are created
+            final var existingTokenRel = tokenRelStore.get(collector.accountId(), newToken.tokenId());
+            if (existingTokenRel != null) {
+                continue;
+            }
+
             // Validate if token relation can be created between collector and new token
             // If this succeeds, create and link token relation.
             tokenCreateValidator.validateAssociation(entitiesConfig, tokensConfig, collector, newToken, tokenRelStore);

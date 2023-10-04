@@ -212,7 +212,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
         fallenBehindManager = buildFallenBehindManager();
 
         syncManager = new SyncManagerImpl(
-                platformContext.getMetrics(),
+                platformContext,
                 intakeQueue,
                 topology.getConnectionGraph(),
                 selfId,
