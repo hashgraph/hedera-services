@@ -55,6 +55,7 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
         associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
         transferContext = new TransferContextImpl(handleContext);
+        writableTokenStore.put(givenValidFungibleToken(ownerId, false, false, false, false, false));
     }
 
     @Test

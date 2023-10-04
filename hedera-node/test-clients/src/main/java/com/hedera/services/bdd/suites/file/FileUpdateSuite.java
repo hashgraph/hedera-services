@@ -182,6 +182,7 @@ public class FileUpdateSuite extends HapiSuite {
                 messageSubmissionSizeChange());
     }
 
+    @HapiTest
     private HapiSpec associateHasExpectedSemantics() {
         return defaultHapiSpec("AssociateHasExpectedSemantics")
                 .given(flattened((Object[]) TokenAssociationSpecs.basicKeysAndTokens()))
@@ -344,6 +345,7 @@ public class FileUpdateSuite extends HapiSuite {
                         .hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE));
     }
 
+    @HapiTest
     private HapiSpec maxRefundIsEnforced() {
         return propertyPreservingHapiSpec("MaxRefundIsEnforced")
                 .preserving(MAX_REFUND_GAS_PROP)
@@ -495,6 +497,7 @@ public class FileUpdateSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     public HapiSpec chainIdChangesDynamically() {
         final var chainIdUser = "ChainIdUser";
         final var otherChainId = 0xABCDL;

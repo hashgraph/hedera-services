@@ -80,6 +80,7 @@ public class TokenHandlerHelper {
      * @param accountId the ID of the account to get
      * @param accountStore the {@link ReadableTokenStore} to use for account retrieval
      * @param expiryValidator the {@link ExpiryValidator} to determine if the account is expired
+     * @param errorIfNotUsable the {@link ResponseCodeEnum} to use if the account is not found/usable
      * @throws HandleException if any of the account conditions are not met
      */
     @NonNull
@@ -131,7 +132,7 @@ public class TokenHandlerHelper {
     }
 
     @NonNull
-    private static Account getIfUsable(
+    public static Account getIfUsable(
             @NonNull final AccountID accountId,
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final ExpiryValidator expiryValidator,
@@ -141,6 +142,7 @@ public class TokenHandlerHelper {
         requireNonNull(accountStore);
         requireNonNull(expiryValidator);
         requireNonNull(errorIfNotUsable);
+        requireNonNull(errorOnAccountDeleted);
 
         final var acct = accountStore.getAccountById(accountId);
         validateTrue(acct != null, errorIfNotUsable);
