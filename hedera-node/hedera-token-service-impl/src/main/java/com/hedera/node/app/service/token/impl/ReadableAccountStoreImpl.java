@@ -32,7 +32,6 @@ import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
-import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -148,11 +147,10 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
             return maybeDirectReference;
         } else {
             try {
-                final var protoKey = Key.PROTOBUF.parseStrict(BufferedData.wrap(alias.toByteArray()));
+                final var protoKey = Key.PROTOBUF.parseStrict(alias.toReadableSequentialData());
                 if (protoKey.hasEcdsaSecp256k1()) {
-                    final var evmAddress = recoverAddressFromPubKey(
-                            protoKey.ecdsaSecp256k1OrThrow().toByteArray());
-                    return evmAddress.length > 0 ? aliases.get(new ProtoBytes(Bytes.wrap(evmAddress))) : null;
+                    final var evmAddress = recoverAddressFromPubKey(protoKey.ecdsaSecp256k1OrThrow());
+                    return evmAddress.length() > 0 ? aliases.get(new ProtoBytes(evmAddress)) : null;
                 } else {
                     return null;
                 }
