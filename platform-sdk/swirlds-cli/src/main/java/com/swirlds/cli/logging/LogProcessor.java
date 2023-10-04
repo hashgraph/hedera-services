@@ -59,24 +59,27 @@ public class LogProcessor {
     private static Map<NodeId, Path> findLogFiles(@NonNull final Path inputDirectory) throws IOException {
         final Map<NodeId, Path> logFilesByNode = new HashMap<>();
 
-        try (final Stream<Path> stream = Files.walk(inputDirectory)) {
-            stream.forEach(path -> {
-                if (path.getFileName().toString().equals("swirlds.log")) {
-                    final String parentDirectoryName =
-                            path.getParent().getFileName().toString();
+        // look for node directories in the inputDirectory. if you find a node directory, look for a swirlds.log file
+        // in that directory. if you find one, add it to the map.
+        try (final Stream<Path> nodeDirectories = Files.list(inputDirectory).filter(Files::isDirectory)) {
+            // look for swirlds.log files in each subdirectory
+            nodeDirectories.forEach(subdirectory -> {
+                final String subdirectoryName = subdirectory.getFileName().toString();
 
-                    final Matcher logLineMatcher =
-                            Pattern.compile("node0*(\\d+)").matcher(parentDirectoryName);
+                final Matcher nodeDirectoryMatcher =
+                        Pattern.compile("node0*(\\d+)").matcher(subdirectoryName);
 
-                    if (!logLineMatcher.matches()) {
-                        throw new IllegalArgumentException(
-                                "swirlds.log parent directory name doesn't match expected format: "
-                                        + parentDirectoryName);
-                    }
+                // ignore subdirectories that don't match the node directory pattern
+                if (!nodeDirectoryMatcher.matches()) {
+                    return;
+                }
 
-                    logFilesByNode.put(new NodeId(Integer.parseInt(logLineMatcher.group(1))), path);
+                final Path logFile = subdirectory.resolve("swirlds.log");
+                if (Files.exists(logFile)) {
+                    final NodeId nodeId = new NodeId(Integer.parseInt(subdirectoryName.substring(4)));
+                    logFilesByNode.put(nodeId, logFile);
 
-                    logger.info(LogMarker.CLI.getMarker(), "Found log file: {}", path);
+                    logger.info(LogMarker.CLI.getMarker(), "Found log file: {}", logFile);
                 }
             });
         }

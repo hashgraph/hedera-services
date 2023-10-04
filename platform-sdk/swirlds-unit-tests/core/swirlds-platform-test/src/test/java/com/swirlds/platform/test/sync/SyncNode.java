@@ -28,6 +28,7 @@ import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.event.EventIntakeTask;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphInsertionException;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
@@ -61,6 +62,7 @@ public class SyncNode {
 
     private final int numNodes;
     private final EventEmitter<?> eventEmitter;
+    private int eventsEmitted = 0;
     private final TestingSyncManager syncManager;
     private final ShadowGraph shadowGraph;
     private final Consensus consensus;
@@ -155,6 +157,8 @@ public class SyncNode {
                     "SyncNode.setEventGenerator(ShuffledEventGenerator) must be called prior to generateAndAdd"
                             + "(int)");
         }
+        eventsEmitted += numEvents;
+        eventEmitter.setCheckpoint(eventsEmitted);
         final List<IndexedEvent> newEvents = eventEmitter.emitEvents(numEvents);
 
         for (final IndexedEvent newEvent : newEvents) {
@@ -223,6 +227,7 @@ public class SyncNode {
                 r -> {},
                 eventHandler,
                 syncManager,
+                mock(IntakeEventCounter.class),
                 executor,
                 sendRecInitBytes,
                 () -> {});

@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.records;
 
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
@@ -23,7 +24,7 @@ import java.util.List;
  * A {@code RecordBuilder} specialization for tracking the side effects of a {@code CryptoCreate}
  * transaction.
  */
-public interface TokenMintRecordBuilder {
+public interface TokenMintRecordBuilder extends SingleTransactionRecordBuilder {
     /**
      * Tracks creation of a new account by number. Even if someday we support creating multiple
      * accounts within a smart contract call, we will still only need to track one created account
@@ -34,4 +35,16 @@ public interface TokenMintRecordBuilder {
      */
     @NonNull
     TokenMintRecordBuilder serialNumbers(@NonNull List<Long> serialNumbers);
+
+    /**
+     * Sets the new total supply of a token
+     * @param newTotalSupply the new total supply of a token
+     */
+    TokenMintRecordBuilder newTotalSupply(final long newTotalSupply);
+
+    /**
+     * Gets the new total supply of a token
+     * @return new total supply of a token
+     */
+    long getNewTotalSupply();
 }

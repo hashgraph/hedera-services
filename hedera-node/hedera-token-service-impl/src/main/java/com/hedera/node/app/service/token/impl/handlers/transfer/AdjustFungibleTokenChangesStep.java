@@ -90,6 +90,11 @@ public class AdjustFungibleTokenChangesStep extends BaseTokenHandler implements 
                 getIfUsable(accountId, accountStore, handleContext.expiryValidator(), INVALID_ACCOUNT_ID);
                 final var pair = new EntityIDPair(accountId, tokenId);
 
+                // Validate freeze status and kyc granted
+                final var accountID = aa.accountIDOrThrow();
+                final var tokenRel = getIfUsable(accountID, tokenId, tokenRelStore);
+                validateNotFrozenAndKycOnRelation(tokenRel);
+
                 // Add the amount to the aggregatedFungibleTokenChanges map.
                 // If the (accountId, tokenId) pair doesn't exist in the map, add it.
                 // Else, update the aggregated transfer amount

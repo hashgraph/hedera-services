@@ -36,7 +36,7 @@ public final class SmartContractServiceDefinition implements RpcServiceDefinitio
             new RpcMethodDefinition<>("createContract", Transaction.class, TransactionResponse.class),
             new RpcMethodDefinition<>("updateContract", Transaction.class, TransactionResponse.class),
             new RpcMethodDefinition<>("contractCallMethod", Transaction.class, TransactionResponse.class),
-            new RpcMethodDefinition<>("contractCallLocalMethod", Transaction.class, TransactionResponse.class),
+            new RpcMethodDefinition<>("contractCallLocalMethod", Query.class, Response.class),
             new RpcMethodDefinition<>("deleteContract", Transaction.class, TransactionResponse.class),
             new RpcMethodDefinition<>("systemDelete", Transaction.class, TransactionResponse.class),
             new RpcMethodDefinition<>("systemUndelete", Transaction.class, TransactionResponse.class),

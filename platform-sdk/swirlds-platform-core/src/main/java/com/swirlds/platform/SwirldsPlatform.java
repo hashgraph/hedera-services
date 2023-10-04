@@ -43,6 +43,8 @@ import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.metrics.extensions.PhaseTimer;
+import com.swirlds.common.metrics.extensions.PhaseTimerBuilder;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.common.notification.listeners.ReconnectCompleteNotification;
@@ -116,13 +118,17 @@ import com.swirlds.platform.event.validation.StaticValidators;
 import com.swirlds.platform.event.validation.TransactionSizeValidator;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.eventhandling.PreConsensusEventHandler;
+import com.swirlds.platform.gossip.DefaultIntakeEventCounter;
 import com.swirlds.platform.gossip.Gossip;
 import com.swirlds.platform.gossip.GossipFactory;
+import com.swirlds.platform.gossip.IntakeEventCounter;
+import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphEventObserver;
+import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.gui.GuiPlatformAccessor;
-import com.swirlds.platform.intake.IntakeCycleStats;
+import com.swirlds.platform.intake.EventIntakePhase;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.AddedEventMetrics;
 import com.swirlds.platform.metrics.ConsensusHandlingMetrics;
@@ -164,7 +170,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -369,7 +374,7 @@ public class SwirldsPlatform implements Platform, Startable {
 
         this.consensusMetrics = new ConsensusMetricsImpl(this.selfId, metrics);
 
-        final EventIntakeMetrics eventIntakeMetrics = new EventIntakeMetrics(metrics, time);
+        final EventIntakeMetrics eventIntakeMetrics = new EventIntakeMetrics(metrics, time, selfId);
         final SyncMetrics syncMetrics = new SyncMetrics(metrics);
         RuntimeMetrics.setup(metrics);
 
@@ -531,9 +536,21 @@ public class SwirldsPlatform implements Platform, Startable {
         final List<Predicate<EventDescriptor>> isDuplicateChecks = new ArrayList<>();
         isDuplicateChecks.add(d -> shadowGraph.isHashInGraph(d.getHash()));
 
-        eventLinker = buildEventLinker(time, isDuplicateChecks);
+        final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
+        final IntakeEventCounter intakeEventCounter;
+        if (syncConfig.waitForEventsInIntake()) {
+            intakeEventCounter = new DefaultIntakeEventCounter(currentAddressBook);
+        } else {
+            intakeEventCounter = new NoOpIntakeEventCounter();
+        }
 
-        final IntakeCycleStats intakeCycleStats = new IntakeCycleStats(time, metrics);
+        eventLinker = buildEventLinker(time, isDuplicateChecks, intakeEventCounter);
+
+        final PhaseTimer<EventIntakePhase> eventIntakePhaseTimer = new PhaseTimerBuilder<>(
+                        platformContext, time, "platform", EventIntakePhase.class)
+                .setInitialPhase(EventIntakePhase.IDLE)
+                .enableFractionalMetrics()
+                .build();
 
         final EventIntake eventIntake = new EventIntake(
                 platformContext,
@@ -544,9 +561,10 @@ public class SwirldsPlatform implements Platform, Startable {
                 consensusRef::get,
                 currentAddressBook,
                 eventObserverDispatcher,
-                intakeCycleStats,
+                eventIntakePhaseTimer,
                 shadowGraph,
-                preConsensusEventHandler::preconsensusEvent);
+                preConsensusEventHandler::preconsensusEvent,
+                intakeEventCounter);
 
         final EventCreator eventCreator = buildEventCreator(eventIntake);
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
@@ -560,24 +578,18 @@ public class SwirldsPlatform implements Platform, Startable {
         validators.add(new TransactionSizeValidator(transactionConfig.maxTransactionBytesPerEvent()));
         // some events in the PCES might have been created by nodes that are no longer in the current
         // address book but are in the previous one, so we need both for signature validation
-        final List<AddressBook> validationAddressBooks = Stream.of(previousAddressBook, currentAddressBook)
-                .filter(Objects::nonNull)
-                .toList();
         if (basicConfig.verifyEventSigs()) {
-            validators.add(new SignatureValidator(validationAddressBooks, CryptoStatic::verifySignature));
+            validators.add(new SignatureValidator(
+                    previousAddressBook, currentAddressBook, appVersion, CryptoStatic::verifySignature, time));
         }
         final GossipEventValidators eventValidators = new GossipEventValidators(validators);
 
         // validates events received from gossip
-        final EventValidator eventValidator = new EventValidator(eventValidators, eventIntake::addUnlinkedEvent);
+        final EventValidator eventValidator = new EventValidator(
+                eventValidators, eventIntake::addUnlinkedEvent, eventIntakePhaseTimer, intakeEventCounter);
 
         eventTaskDispatcher = new EventTaskDispatcher(
-                time,
-                eventValidator,
-                eventCreator,
-                eventIntake::addUnlinkedEvent,
-                eventIntakeMetrics,
-                intakeCycleStats);
+                time, eventValidator, eventCreator, eventIntake::addUnlinkedEvent, eventIntakeMetrics);
 
         intakeQueue = components.add(new QueueThreadConfiguration<EventIntakeTask>(threadManager)
                 .setNodeId(selfId)
@@ -589,9 +601,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 .setHandler(e -> getGossip().getEventIntakeLambda().accept(e))
                 .setCapacity(eventConfig.eventIntakeQueueSize())
                 .setLogAfterPauseDuration(threadConfig.logStackTracePauseDuration())
-                .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics)
-                        .enableMaxSizeMetric()
-                        .enableBusyTimeMetric())
+                .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics).enableMaxSizeMetric())
                 .build());
 
         tipsetEventCreator = buildTipsetEventCreationManager(
@@ -645,7 +655,8 @@ public class SwirldsPlatform implements Platform, Startable {
                 eventLinker,
                 platformStatusManager,
                 this::loadReconnectState,
-                this::clearAllPipelines);
+                this::clearAllPipelines,
+                intakeEventCounter);
 
         if (startedFromGenesis) {
             initialMinimumGenerationNonAncient = 0;
@@ -996,8 +1007,13 @@ public class SwirldsPlatform implements Platform, Startable {
      */
     @NonNull
     private EventLinker buildEventLinker(
-            @NonNull final Time time, @NonNull final List<Predicate<EventDescriptor>> isDuplicateChecks) {
+            @NonNull final Time time,
+            @NonNull final List<Predicate<EventDescriptor>> isDuplicateChecks,
+            @NonNull final IntakeEventCounter intakeEventCounter) {
+
         Objects.requireNonNull(isDuplicateChecks);
+        Objects.requireNonNull(intakeEventCounter);
+
         final ParentFinder parentFinder = new ParentFinder(shadowGraph::hashgraphEvent);
         final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
         final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
@@ -1006,7 +1022,8 @@ public class SwirldsPlatform implements Platform, Startable {
             final OrphanBufferingLinker orphanBuffer = new OrphanBufferingLinker(
                     platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
                     parentFinder,
-                    chatterConfig.futureGenerationLimit());
+                    chatterConfig.futureGenerationLimit(),
+                    intakeEventCounter);
             metrics.getOrCreate(
                     new FunctionGauge.Config<>("intake", "numOrphans", Integer.class, orphanBuffer::getNumOrphans)
                             .withDescription("the number of events without parents buffered")
@@ -1027,8 +1044,8 @@ public class SwirldsPlatform implements Platform, Startable {
     /**
      * Build the preconsensus event file manager.
      *
-     * @param startingRound            the round number of the initial state being loaded into the system
-     * @param softwareUpgrade          whether or not this node is starting up after a software upgrade
+     * @param startingRound   the round number of the initial state being loaded into the system
+     * @param softwareUpgrade whether or not this node is starting up after a software upgrade
      */
     @NonNull
     private PreconsensusEventFileManager buildPreconsensusEventFileManager(

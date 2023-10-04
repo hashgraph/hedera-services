@@ -272,7 +272,8 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                     Fraction.newBuilder().numerator(1).denominator(2).build())
             .fallbackFee(hbarFixedFee)
             .build();
-    protected List<CustomFee> customFees = List.of(withFixedFee(hbarFixedFee), withFractionalFee(fractionalFee));
+    protected CustomFee customFractionalFee = withFractionalFee(fractionalFee);
+    protected List<CustomFee> customFees = List.of(withFixedFee(hbarFixedFee), customFractionalFee);
 
     /* ---------- Misc ---------- */
     protected final Timestamp consensusTimestamp =
@@ -708,7 +709,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                         .amount(40)
                         .build()))
                 .build();
-        nonFungibleToken = givenValidNonFungibleToken();
+        nonFungibleToken = givenValidNonFungibleToken(true);
         nftSl1 = givenNft(nftIdSl1);
         nftSl2 = givenNft(nftIdSl2);
     }
@@ -753,7 +754,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     }
 
     protected Token givenValidFungibleToken(AccountID autoRenewAccountId) {
-        return givenValidFungibleToken(autoRenewAccountId, false, false, false, false);
+        return givenValidFungibleToken(autoRenewAccountId, false, false, false, false, true);
     }
 
     protected Token givenValidFungibleToken(
@@ -761,7 +762,8 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
             boolean deleted,
             boolean paused,
             boolean accountsFrozenByDefault,
-            boolean accountsKycGrantedByDefault) {
+            boolean accountsKycGrantedByDefault,
+            boolean hasKyc) {
         return new Token(
                 fungibleTokenId,
                 tokenName,
@@ -770,7 +772,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 1000,
                 treasuryId,
                 adminKey,
-                kycKey,
+                hasKyc ? kycKey : null,
                 freezeKey,
                 wipeKey,
                 supplyKey,
@@ -791,13 +793,14 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 customFees);
     }
 
-    protected Token givenValidNonFungibleToken() {
+    protected Token givenValidNonFungibleToken(boolean hasKyc) {
         return fungibleToken
                 .copyBuilder()
                 .tokenId(nonFungibleTokenId)
                 .treasuryAccountId(treasuryId)
                 .customFees(List.of(withRoyaltyFee(royaltyFee)))
                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                .kycKey(hasKyc ? kycKey : null)
                 .build();
     }
 
