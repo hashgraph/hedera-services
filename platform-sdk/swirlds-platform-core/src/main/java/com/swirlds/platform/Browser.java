@@ -146,7 +146,7 @@ public class Browser {
 
         // Load config.txt file, parse application jar file name, main class name, address book, and parameters
         final ApplicationDefinition appDefinition =
-                ApplicationDefinitionLoader.loadDefault(getAbsolutePath("./config.txt"));
+                ApplicationDefinitionLoader.loadDefault(getAbsolutePath("config.txt"));
 
         // Determine which nodes to run locally
         final List<NodeId> nodesToRun =
@@ -217,13 +217,6 @@ public class Browser {
     private static void startPlatforms(
             @NonNull final List<SwirldsPlatform> platforms, @NonNull final Map<NodeId, SwirldMain> appMains) {
 
-        if (platforms.size() == 1) {
-            // Single platform, start it in the current thread
-            startPlatform(platforms.get(0), appMains.get(platforms.get(0).getSelfId()));
-            return;
-        }
-
-        // We are starting multiple platforms, start them in separate threads.
         final List<Thread> startThreads = new ArrayList<>();
         for (final SwirldsPlatform platform : platforms) {
             final Thread thread = new ThreadConfiguration(getStaticThreadManager())

@@ -49,11 +49,6 @@ public final class ConfigSourceOrdinalConstants {
     public static final int LEGACY_PROPERTY_FILE_ORDINAL_FOR_CONFIG = LEGACY_PROPERTY_FILE_ORDINAL + 20;
 
     /**
-     * Ordinal for configuration passed to the platform builder via withConfig().
-     */
-    public static final int PLATFORM_BUILDER_ORDINAL = 50;
-
-    /**
      * Ordinal for default values.
      */
     static final int PROGRAMMATIC_VALUES_ORDINAL = 10;

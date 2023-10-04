@@ -16,8 +16,6 @@
 
 package com.swirlds.config.impl.internal;
 
-import static com.swirlds.common.config.sources.ConfigSourceOrdinalConstants.PLATFORM_BUILDER_ORDINAL;
-
 import com.swirlds.common.config.sources.SimpleConfigSource;
 import com.swirlds.common.threading.locks.AutoClosableLock;
 import com.swirlds.common.threading.locks.Locks;
@@ -99,7 +97,7 @@ final class ConfigurationBuilderImpl implements ConfigurationBuilder {
                 throw new IllegalStateException("Configuration already initialized");
             }
             if (!properties.isEmpty()) {
-                withSource(new SimpleConfigSource(properties).withOrdinal(PLATFORM_BUILDER_ORDINAL));
+                withSource(new SimpleConfigSource(properties).withOrdinal(CUSTOM_PROPERTY_ORDINAL));
             }
             configSourceService.init();
             converterService.init();

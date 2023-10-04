@@ -50,7 +50,7 @@ public class DefaultConfiguration {
 
     /**
      * Build a basic configuration with the default configuration sources and paths. Reads configuration form
-     * "./settings.txt". Registers the configuration to the {@link ConfigurationHolder}.
+     * "settings.txt". Registers the configuration to the {@link ConfigurationHolder}.
      *
      * @return the configuration object
      * @throws IOException if there is an error reading the configuration files

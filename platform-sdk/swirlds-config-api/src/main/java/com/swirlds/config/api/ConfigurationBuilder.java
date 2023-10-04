@@ -23,13 +23,18 @@ import com.swirlds.config.api.validation.ConfigValidator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * The {@link ConfigurationBuilder} is the main entry point to the config api since it is used to create a {@link
- * Configuration} instance. A new builder can be created by calling {@link #create()} and must be used to setup a
+ * The {@link ConfigurationBuilder} is the main entry point to the config api since it is used to create a
+ * {@link Configuration} instance. A new builder can be created by calling {@link #create()} and must be used to setup a
  * configuration by adding {@link ConfigSource}, {@link ConfigConverter}, {@link ConfigValidator} or config data type
  * (see {@link ConfigData}) instance. By calling {@link #build()} a new {@link Configuration} instance will be created
  * based on the defined setup.
  */
 public interface ConfigurationBuilder {
+
+    /**
+     * The ordinal of properties specified via {@link #withValue(String, String)}.
+     */
+    int CUSTOM_PROPERTY_ORDINAL = 50;
 
     /**
      * Adds a config source (see {@link ConfigSource}). If this method is called after the config has been created (see
@@ -120,10 +125,11 @@ public interface ConfigurationBuilder {
     ConfigurationBuilder withConfigDataTypes(@NonNull Class<? extends Record>... types) throws IllegalStateException;
 
     /**
-     * Sets the value for the config.
+     * Adds a property. In the created {@link Configuration} the property will be defined by an internal config source
+     * that has the defined ordinal of {@link #CUSTOM_PROPERTY_ORDINAL}.
      *
      * @param propertyName name of the property
-     * @param value        the value
+     * @param value        the value of the property
      * @return the {@link ConfigurationBuilder} instance (for fluent API)
      */
     @NonNull
