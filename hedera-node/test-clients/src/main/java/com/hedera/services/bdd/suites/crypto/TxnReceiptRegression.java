@@ -121,8 +121,8 @@ public class TxnReceiptRegression extends HapiSuite {
                 .given()
                 .when()
                 .then(withOpContext((spec, ctxLog) -> {
-                    final HapiGetReceipt op = getReceipt(spec.txns().defaultTransactionID())
-                            .hasAnswerOnlyPrecheck(INVALID_TRANSACTION_ID);
+                    final HapiGetReceipt op =
+                            getReceipt(spec.txns().defaultTransactionID()).hasAnswerOnlyPrecheck(RECEIPT_NOT_FOUND);
                     CustomSpecAssert.allRunFor(spec, op);
                 }));
     }

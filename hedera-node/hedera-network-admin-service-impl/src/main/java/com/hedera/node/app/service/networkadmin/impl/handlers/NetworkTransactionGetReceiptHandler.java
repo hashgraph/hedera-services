@@ -78,7 +78,7 @@ public class NetworkTransactionGetReceiptHandler extends FreeQueryHandler {
         // The receipt must exist for that transaction ID
         final var recordCache = context.recordCache();
         final var receipt = recordCache.getReceipt(op.transactionIDOrThrow());
-        mustExist(receipt, INVALID_TRANSACTION_ID);
+        mustExist(receipt, RECEIPT_NOT_FOUND);
     }
 
     @Override
