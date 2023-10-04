@@ -81,8 +81,8 @@ public class CreateTranslator extends AbstractHtsCallTranslator {
     }
 
     @Override
-    public FungibleCreatesCall callFrom(@NonNull HtsCallAttempt attempt) {
-        return new FungibleCreatesCall(
+    public ClassicCreatesCall callFrom(@NonNull HtsCallAttempt attempt) {
+        return new ClassicCreatesCall(
                 attempt.enhancement(),
                 nominalBodyFor(attempt),
                 attempt.defaultVerificationStrategy(),

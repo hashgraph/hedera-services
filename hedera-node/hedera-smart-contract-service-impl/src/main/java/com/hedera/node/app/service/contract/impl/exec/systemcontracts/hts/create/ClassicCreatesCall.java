@@ -35,7 +35,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 
-public class FungibleCreatesCall extends AbstractHtsCall {
+public class ClassicCreatesCall extends AbstractHtsCall {
 
     @NonNull
     final TransactionBody syntheticCreate;
@@ -44,7 +44,7 @@ public class FungibleCreatesCall extends AbstractHtsCall {
     private final VerificationStrategy verificationStrategy;
     private final org.hyperledger.besu.datatypes.Address spender;
 
-    public FungibleCreatesCall(
+    public ClassicCreatesCall(
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             @NonNull final TransactionBody syntheticCreate,
             @NonNull final VerificationStrategy verificationStrategy,

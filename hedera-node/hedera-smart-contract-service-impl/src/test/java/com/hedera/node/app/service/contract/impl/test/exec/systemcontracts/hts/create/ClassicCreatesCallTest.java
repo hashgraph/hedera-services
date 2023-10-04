@@ -32,8 +32,8 @@ import com.hedera.hapi.node.token.TokenCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.ClassicCreatesCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.FungibleCreatesCall;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import java.math.BigInteger;
@@ -42,7 +42,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
-public class CreatesCallTest extends HtsCallTestBase {
+public class ClassicCreatesCallTest extends HtsCallTestBase {
     private static final org.hyperledger.besu.datatypes.Address FRAME_SENDER_ADDRESS = EIP_1014_ADDRESS;
 
     @Mock
@@ -58,7 +58,7 @@ public class CreatesCallTest extends HtsCallTestBase {
             .tokenCreation(TokenCreateTransactionBody.DEFAULT)
             .build();
 
-    private FungibleCreatesCall subject;
+    private ClassicCreatesCall subject;
 
     @Test
     void createFungibleTokenHappyPath() {
@@ -132,7 +132,7 @@ public class CreatesCallTest extends HtsCallTestBase {
     }
 
     private void commonGivens() {
-        subject = new FungibleCreatesCall(
+        subject = new ClassicCreatesCall(
                 mockEnhancement(),
                 PRETEND_CREATE_TOKEN,
                 verificationStrategy,
