@@ -61,7 +61,7 @@ public class ThrottleDefValidationSuite extends HapiSuite {
         });
     }
 
-    // @HapiTest failing due to charging fees not calculated properly
+    @HapiTest
     private HapiSpec updateWithMissingTokenMintFails() {
         var missingMintThrottles = protoDefsFromResource("testSystemFiles/throttles-sans-mint.json");
 
@@ -91,7 +91,7 @@ public class ThrottleDefValidationSuite extends HapiSuite {
                                         Map.of("fees.percentCongestionMultipliers", DEFAULT_CONGESTION_MULTIPLIERS)));
     }
 
-    // @HapiTest failing due to charging fees not calculated properly
+    @HapiTest
     private HapiSpec throttleUpdateWithZeroGroupOpsPerSecFails() {
         var zeroOpsPerSecThrottles = protoDefsFromResource("testSystemFiles/zero-ops-group.json");
 
@@ -104,7 +104,7 @@ public class ThrottleDefValidationSuite extends HapiSuite {
                         .hasKnownStatus(THROTTLE_GROUP_HAS_ZERO_OPS_PER_SEC));
     }
 
-    // @HapiTest failing due to charging fees not calculated properly
+    @HapiTest
     private HapiSpec throttleUpdateRejectsMultiGroupAssignment() {
         var multiGroupThrottles = protoDefsFromResource("testSystemFiles/duplicated-operation.json");
 
