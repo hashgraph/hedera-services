@@ -131,7 +131,8 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         final var accountStore = context.writableStore(WritableAccountStore.class);
         final var tokenRelStore = context.writableStore(WritableTokenRelationStore.class);
         final var tokenStore = context.writableStore(WritableTokenStore.class);
-        final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
+        final var config = context.configuration();
+        final var tokensConfig = config.getConfigData(TokensConfig.class);
 
         // If the operation has treasury change, then we need to check if the new treasury is valid
         // and if the treasury is not already associated with the token, see if it has auto associations
@@ -147,7 +148,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
             // If there is no treasury relationship, then we need to create one if auto associations are available.
             // If not fail
             if (newTreasuryRel == null) {
-                final var newRelation = autoAssociate(newTreasuryAccount, token, accountStore, tokenRelStore, context);
+                final var newRelation = autoAssociate(newTreasuryAccount, token, accountStore, tokenRelStore, config);
                 recordBuilder.addAutomaticTokenAssociation(
                         asTokenAssociation(newRelation.tokenId(), newRelation.accountId()));
             }

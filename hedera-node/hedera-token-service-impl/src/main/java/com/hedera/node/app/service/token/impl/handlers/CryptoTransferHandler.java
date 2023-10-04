@@ -225,6 +225,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         final var customFeeAssessedOps = customFeeStep.assessCustomFees(transferContext);
 
         for (final var txn : customFeeAssessedOps) {
+            steps.add(new AssociateTokenRecipientsStep(txn));
             // Step 3: Charge hbar transfers and also ones with isApproval. Modify the allowances map on account
             final var assessHbarTransfers = new AdjustHbarChangesStep(txn, topLevelPayer);
             steps.add(assessHbarTransfers);

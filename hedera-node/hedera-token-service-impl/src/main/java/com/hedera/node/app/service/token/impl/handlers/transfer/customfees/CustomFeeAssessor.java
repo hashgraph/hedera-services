@@ -18,7 +18,6 @@ package com.hedera.node.app.service.token.impl.handlers.transfer.customfees;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Collections.emptyList;
@@ -26,7 +25,9 @@ import static java.util.Collections.emptyList;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
+import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -35,7 +36,7 @@ import javax.inject.Singleton;
  * Assesses custom fees for a given crypto transfer transaction.
  */
 @Singleton
-public class CustomFeeAssessor {
+public class CustomFeeAssessor extends BaseTokenHandler {
     private final CustomFixedFeeAssessor fixedFeeAssessor;
     private final CustomFractionalFeeAssessor fractionalFeeAssessor;
     private final CustomRoyaltyFeeAssessor royaltyFeeAssessor;
@@ -66,10 +67,11 @@ public class CustomFeeAssessor {
             final int maxTransfersSize,
             final AccountID receiver,
             final AssessmentResult result,
-            final ReadableTokenRelationStore tokenRelStore) {
+            final ReadableTokenRelationStore tokenRelStore,
+            final ReadableAccountStore accountStore) {
         fixedFeeAssessor.assessFixedFees(feeMeta, sender, result);
 
-        validateBalanceChanges(result, maxTransfersSize, tokenRelStore);
+        validateBalanceChanges(result, maxTransfersSize, tokenRelStore, accountStore);
 
         // A FUNGIBLE_COMMON token can have fractional fees but not royalty fees.
         // A NON_FUNGIBLE_UNIQUE token can have royalty fees but not fractional fees.
@@ -79,11 +81,14 @@ public class CustomFeeAssessor {
         } else {
             royaltyFeeAssessor.assessRoyaltyFees(feeMeta, sender, receiver, result);
         }
-        validateBalanceChanges(result, maxTransfersSize, tokenRelStore);
+        validateBalanceChanges(result, maxTransfersSize, tokenRelStore, accountStore);
     }
 
     private void validateBalanceChanges(
-            final AssessmentResult result, final int maxTransfersSize, final ReadableTokenRelationStore tokenRelStore) {
+            final AssessmentResult result,
+            final int maxTransfersSize,
+            final ReadableTokenRelationStore tokenRelStore,
+            final ReadableAccountStore accountStore) {
         var inputFungibleTransfers = 0;
         var newFungibleTransfers = 0;
         for (final var entry : result.getMutableInputTokenAdjustments().entrySet()) {
@@ -96,10 +101,11 @@ public class CustomFeeAssessor {
                 final Long htsBalanceChange = entryTx.getValue();
                 if (htsBalanceChange < 0) {
                     final var tokenRel = tokenRelStore.get(entryTx.getKey(), entry.getKey());
-                    validateTrue(tokenRel != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
-                    validateTrue(
-                            tokenRel.balance() + htsBalanceChange >= 0,
-                            INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
+                    if (tokenRel != null) {
+                        validateTrue(
+                                tokenRel.balance() + htsBalanceChange >= 0,
+                                INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
+                    }
                 }
             }
         }

@@ -33,6 +33,7 @@ import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.transfer.customfees.AssessmentResult;
@@ -94,8 +95,9 @@ public class CustomFeeAssessmentStep {
 
         final var tokenStore = feeContext.readableStore(ReadableTokenStore.class);
         final var tokenRelStore = feeContext.readableStore(ReadableTokenRelationStore.class);
+        final var accountStore = feeContext.readableStore(ReadableAccountStore.class);
         final var config = feeContext.configuration();
-        final var result = assessFees(tokenStore, tokenRelStore, config);
+        final var result = assessFees(tokenStore, tokenRelStore, accountStore, config);
         return result.assessedCustomFees();
     }
 
@@ -115,9 +117,10 @@ public class CustomFeeAssessmentStep {
         final var handleContext = transferContext.getHandleContext();
         final var tokenStore = handleContext.readableStore(ReadableTokenStore.class);
         final var tokenRelStore = handleContext.readableStore(ReadableTokenRelationStore.class);
+        final var accountStore = handleContext.readableStore(ReadableAccountStore.class);
         final var config = handleContext.configuration();
         final var recordBuilder = handleContext.recordBuilder(CryptoTransferRecordBuilder.class);
-        final var result = assessFees(tokenStore, tokenRelStore, config);
+        final var result = assessFees(tokenStore, tokenRelStore, accountStore, config);
 
         recordBuilder.assessedCustomFees(result.assessedCustomFees());
         customFeeAssessor.resetInitialNftChanges();
@@ -139,6 +142,7 @@ public class CustomFeeAssessmentStep {
     public CustomFeeAssessmentResult assessFees(
             @NonNull final ReadableTokenStore tokenStore,
             @NonNull final ReadableTokenRelationStore tokenRelStore,
+            @NonNull final ReadableAccountStore accountStore,
             @NonNull final Configuration config) {
         final var ledgerConfig = config.getConfigData(LedgerConfig.class);
         final var tokensConfig = config.getConfigData(TokensConfig.class);
@@ -159,9 +163,8 @@ public class CustomFeeAssessmentStep {
         do {
             validateTrue(levelNum <= maxCustomFeeDepth, CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH);
             // The result after each assessment
-            final var result =
-                    assessCustomFeesFrom(hbarTransfers, tokenTransfers, tokenStore, tokenRelStore, maxTransfersAllowed);
-
+            final var result = assessCustomFeesFrom(
+                    hbarTransfers, tokenTransfers, tokenStore, tokenRelStore, accountStore, maxTransfersAllowed);
             // when there are adjustments made to given transaction, need to re-build the transaction
             final var modifiedInputBody = changedInputTxn(txnToAssess, result);
             assessedTxns.add(modifiedInputBody);
@@ -302,6 +305,7 @@ public class CustomFeeAssessmentStep {
             @NonNull final List<TokenTransferList> tokenTransfers,
             @NonNull final ReadableTokenStore tokenStore,
             @NonNull final ReadableTokenRelationStore tokenRelStore,
+            @NonNull final ReadableAccountStore accountStore,
             final int maxTransfersSize) {
         final var result = new AssessmentResult(tokenTransfers, hbarTransfers);
 
@@ -330,13 +334,14 @@ public class CustomFeeAssessmentStep {
                     if (feeMeta.treasuryId().equals(sender)) {
                         continue;
                     }
-                    customFeeAssessor.assess(sender, feeMeta, maxTransfersSize, null, result, tokenRelStore);
+                    customFeeAssessor.assess(
+                            sender, feeMeta, maxTransfersSize, null, result, tokenRelStore, accountStore);
                 }
             }
 
             for (final var nftTransfer : nftTransfers) {
                 if (feeMeta.treasuryId().equals(nftTransfer.senderAccountID())) {
-                    break;
+                    continue;
                 }
                 customFeeAssessor.assess(
                         nftTransfer.senderAccountID(),
@@ -344,7 +349,8 @@ public class CustomFeeAssessmentStep {
                         maxTransfersSize,
                         nftTransfer.receiverAccountID(),
                         result,
-                        tokenRelStore);
+                        tokenRelStore,
+                        accountStore);
             }
         }
         return result;
