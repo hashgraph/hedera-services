@@ -29,7 +29,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECEIPT_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -109,7 +108,7 @@ public class TxnRecordRegression extends HapiSuite {
                         cryptoCreate("misc").via("success"),
                         usableTxnIdNamed("rightAccountWrongId").payerId("misc"))
                 .when()
-                .then(getTxnRecord("rightAccountWrongId").hasCostAnswerPrecheck(INVALID_TRANSACTION_ID));
+                .then(getTxnRecord("rightAccountWrongId").hasCostAnswerPrecheck(RECORD_NOT_FOUND));
     }
 
     private HapiSpec recordUnavailableBeforeConsensus() {
