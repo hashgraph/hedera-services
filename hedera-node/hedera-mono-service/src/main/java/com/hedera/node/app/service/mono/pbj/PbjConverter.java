@@ -1505,7 +1505,7 @@ public final class PbjConverter {
         if (fixedFee != null) {
             builder.setAmount(fixedFee.amount());
             if (fixedFee.hasDenominatingTokenId()) {
-                builder.setDenominatingTokenId(fromPbj(fixedFee.denominatingTokenIdOrThrow()));
+                builder.setDenominatingTokenId(fromPbj(fixedFee.denominatingTokenId()));
             }
         }
         return builder.build();

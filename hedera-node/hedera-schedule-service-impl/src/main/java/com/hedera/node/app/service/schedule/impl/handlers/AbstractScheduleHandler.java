@@ -23,9 +23,11 @@ import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.schedule.Schedule;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.schedule.ReadableScheduleStore;
 import com.hedera.node.app.service.schedule.ScheduleRecordBuilder;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -43,6 +45,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -83,6 +86,9 @@ abstract class AbstractScheduleHandler {
             final Set<Key> scheduledRequiredKeys = getKeySetFromTransactionKeys(keyStructure);
             final Set<Key> currentSignatories = setOfKeys(scheduleInState.signatories());
             scheduledRequiredKeys.removeAll(currentSignatories);
+            // Ensure the payer is required, some rare corner cases may not require it otherwise.
+            final Key payerKey = getKeyForAccount(context, payer);
+            if (payerKey != null) scheduledRequiredKeys.add(payerKey);
             final Set<Key> remainingRequiredKeys = scheduledRequiredKeys.parallelStream()
                     .map(new ValidatedKeysMapping(context, currentSignatories))
                     .flatMap(Set::stream)
@@ -93,6 +99,13 @@ abstract class AbstractScheduleHandler {
         } catch (final PreCheckException translated) {
             throw new HandleException(translated.responseCode());
         }
+    }
+
+    @Nullable
+    protected Key getKeyForAccount(@NonNull final HandleContext context, @NonNull final AccountID accountToQuery) {
+        final ReadableAccountStore accountStore = context.readableStore(ReadableAccountStore.class);
+        final Account accountData = accountStore.getAccountById(accountToQuery);
+        return (accountData != null && accountData.key() != null) ? accountData.key() : null;
     }
 
     /**
@@ -228,9 +241,7 @@ abstract class AbstractScheduleHandler {
             @NonNull final ResponseCodeEnum validationResult,
             final boolean isLongTermEnabled) {
         if (canExecute(remainingSignatories, isLongTermEnabled, validationResult, scheduleToExecute)) {
-            // @note we don't care about the "remaining" keys in this case, just need to set signatories
-            //     so that the child transaction has those as "valid" keys.
-            final var assistant = new ScheduleVerificationAssistant(validSignatories, new HashSet<>());
+            final Predicate<Key> assistant = new DispatchPredicate(validSignatories);
             final TransactionBody childTransaction = HandlerUtility.childAsOrdinary(scheduleToExecute);
             final ScheduleRecordBuilder recordBuilder =
                     context.dispatchChildTransaction(childTransaction, ScheduleRecordBuilder.class, assistant);

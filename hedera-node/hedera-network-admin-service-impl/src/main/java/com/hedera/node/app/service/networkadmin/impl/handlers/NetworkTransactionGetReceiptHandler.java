@@ -71,12 +71,14 @@ public class NetworkTransactionGetReceiptHandler extends FreeQueryHandler {
         final var op = context.query().transactionGetReceiptOrThrow();
 
         // The transaction ID must be specified
-        if (!op.hasTransactionID()) throw new PreCheckException(INVALID_TRANSACTION_ID);
+        if (!op.hasTransactionID() || !op.transactionID().hasAccountID()) {
+            throw new PreCheckException(INVALID_TRANSACTION_ID);
+        }
 
         // The receipt must exist for that transaction ID
         final var recordCache = context.recordCache();
         final var receipt = recordCache.getReceipt(op.transactionIDOrThrow());
-        mustExist(receipt, INVALID_TRANSACTION_ID);
+        mustExist(receipt, RECEIPT_NOT_FOUND);
     }
 
     @Override
@@ -117,12 +119,14 @@ public class NetworkTransactionGetReceiptHandler extends FreeQueryHandler {
         return Response.newBuilder().transactionGetReceipt(responseBuilder).build();
     }
 
-    private List<TransactionReceipt> transformedChildrenOf(TransactionID transactionID, RecordCache recordCache) {
+    private List<TransactionReceipt> transformedChildrenOf(
+            final TransactionID transactionID, final RecordCache recordCache) {
         final List<TransactionReceipt> children = new ArrayList<>();
         // In a transaction id if nonce is 0 it is a parent and if we have any other number it is a child
         for (int nonce = 1; ; nonce++) {
-            var childTransactionId = transactionID.copyBuilder().nonce(nonce).build();
-            var maybeChildRecord = recordCache.getRecord(childTransactionId);
+            final var childTransactionId =
+                    transactionID.copyBuilder().nonce(nonce).build();
+            final var maybeChildRecord = recordCache.getRecord(childTransactionId);
             if (maybeChildRecord == null) {
                 break;
             } else {

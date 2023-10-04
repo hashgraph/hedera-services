@@ -153,6 +153,7 @@ public abstract class AbstractContractXTest {
         assertExpectedBytecodes(finalBytecodes());
         assertExpectedStorage(finalStorage(), finalAccounts());
         assertExpectedTokenRelations(finalTokenRelations());
+        assertExpectedTokens(finalTokens());
     }
 
     protected long initialEntityNum() {
@@ -196,6 +197,8 @@ public abstract class AbstractContractXTest {
     protected void assertExpectedAliases(@NonNull ReadableKVState<ProtoBytes, AccountID> aliases) {}
 
     protected void assertExpectedTokenRelations(@NonNull ReadableKVState<EntityIDPair, TokenRelation> tokenRels) {}
+
+    protected void assertExpectedTokens(@NonNull ReadableKVState<TokenID, Token> tokens) {}
 
     protected void assertExpectedAccounts(@NonNull ReadableKVState<AccountID, Account> accounts) {}
 
@@ -455,6 +458,13 @@ public abstract class AbstractContractXTest {
                 .hederaState()
                 .createReadableStates(TokenServiceImpl.NAME)
                 .get(TokenServiceImpl.TOKEN_RELS_KEY);
+    }
+
+    private ReadableKVState<TokenID, Token> finalTokens() {
+        return scaffoldingComponent
+                .hederaState()
+                .createReadableStates(TokenServiceImpl.NAME)
+                .get(TokenServiceImpl.TOKENS_KEY);
     }
 
     private Consumer<HtsCall.PricedResult> resultOnlyAssertion(
