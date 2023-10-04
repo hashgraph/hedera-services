@@ -67,6 +67,7 @@ import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.IntSupplier;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
@@ -83,7 +84,7 @@ public class ThrottleAccumulator {
     private static final Logger log = LogManager.getLogger(ThrottleAccumulator.class);
     private static final Set<HederaFunctionality> GAS_THROTTLED_FUNCTIONS =
             EnumSet.of(CONTRACT_CALL_LOCAL, CONTRACT_CALL, CONTRACT_CREATE, ETHEREUM_TRANSACTION);
-    private static final int CAPACITY_SPLIT = 1;
+    private int capacitySplit;
     private final ConfigProvider configProvider;
     private EnumMap<HederaFunctionality, ThrottleReqsManager> functionReqs = new EnumMap<>(HederaFunctionality.class);
     private static final int UNKNOWN_NUM_IMPLICIT_CREATIONS = -1;
@@ -91,8 +92,10 @@ public class ThrottleAccumulator {
     private GasLimitDeterministicThrottle gasThrottle;
     private List<DeterministicThrottle> activeThrottles = Collections.emptyList();
 
-    public ThrottleAccumulator(@NonNull final ConfigProvider configProvider) {
+    public ThrottleAccumulator(
+            @NonNull final IntSupplier capacitySplitSource, @NonNull final ConfigProvider configProvider) {
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
+        this.capacitySplit = capacitySplitSource.getAsInt();
     }
 
     /*
@@ -488,7 +491,7 @@ public class ThrottleAccumulator {
                         bucket.throttleGroups().stream()
                                 .map(this::hapiGroupFromPbj)
                                 .toList());
-                var mapping = utilThrottleBucket.asThrottleMapping(CAPACITY_SPLIT);
+                var mapping = utilThrottleBucket.asThrottleMapping(capacitySplit);
                 var throttle = mapping.getLeft();
                 var reqs = mapping.getRight();
                 for (var req : reqs) {
@@ -506,7 +509,7 @@ public class ThrottleAccumulator {
         functionReqs = newFunctionReqs;
         activeThrottles = newActiveThrottles;
 
-        logResolvedDefinitions(CAPACITY_SPLIT);
+        logResolvedDefinitions(capacitySplit);
     }
 
     /*

@@ -96,7 +96,8 @@ class IngestComponentTest {
                         SemanticVersion.newBuilder().major(2).build()));
 
         final var configProvider = new ConfigProviderImpl(false);
-        final var handleThrottling = new ThrottleAccumulator(configProvider);
+        final var handleThrottling = new ThrottleAccumulator(() -> 1, configProvider);
+        final var synchronizedThrottleAccumulator = new ThrottleAccumulator(() -> 5, configProvider);
         final var monoMultiplierSources = new MonoMultiplierSources(
                 new ThrottleMultiplierSource(null, null, null, null, null, null, null),
                 new ThrottleMultiplierSource(null, null, null, null, null, null, null));
@@ -111,7 +112,12 @@ class IngestComponentTest {
                 .bootstrapProps(new BootstrapProperties())
                 .configuration(configProvider)
                 .systemFileUpdateFacility(new SystemFileUpdateFacility(
-                        configProvider, throttleManager, exchangeRateManager, monoMultiplierSources, handleThrottling))
+                        configProvider,
+                        throttleManager,
+                        exchangeRateManager,
+                        monoMultiplierSources,
+                        handleThrottling,
+                        synchronizedThrottleAccumulator))
                 .networkUtilizationManager(new NetworkUtilizationManagerImpl(handleThrottling, monoMultiplierSources))
                 .throttleManager(throttleManager)
                 .self(selfNodeInfo)
@@ -121,7 +127,7 @@ class IngestComponentTest {
                 .instantSource(InstantSource.system())
                 .exchangeRateManager(exchangeRateManager)
                 .genesisRecordsConsensusHook(mock(GenesisRecordsConsensusHook.class))
-                .synchronizedThrottleAccumulator(synchronizedThrottleAccumulator)
+                .synchronizedThrottleAccumulator(this.synchronizedThrottleAccumulator)
                 .build();
 
         final var state = new FakeHederaState();

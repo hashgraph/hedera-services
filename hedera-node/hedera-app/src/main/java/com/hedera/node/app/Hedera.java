@@ -173,6 +173,7 @@ public final class Hedera implements SwirldMain {
     private PlatformStatus platformStatus = PlatformStatus.STARTING_UP;
 
     private ThrottleAccumulator throttleAccumulator;
+    private ThrottleAccumulator synchronizedThrottleAccumulator;
     private MonoMultiplierSources monoMultiplierSources;
 
     /*==================================================================================================================
@@ -669,7 +670,9 @@ public final class Hedera implements SwirldMain {
         logger.info("Initializing ThrottleManager");
         this.throttleManager = new ThrottleManager();
 
-        this.throttleAccumulator = new ThrottleAccumulator(configProvider);
+        this.throttleAccumulator = new ThrottleAccumulator(() -> 1, configProvider);
+        this.synchronizedThrottleAccumulator =
+                new ThrottleAccumulator(() -> platform.getAddressBook().getSize(), configProvider);
         this.monoMultiplierSources = createMultiplierSources();
 
         logger.info("Initializing ExchangeRateManager");
@@ -750,7 +753,9 @@ public final class Hedera implements SwirldMain {
         logger.info("Initializing ThrottleManager");
         this.throttleManager = new ThrottleManager();
 
-        this.throttleAccumulator = new ThrottleAccumulator(configProvider);
+        this.throttleAccumulator = new ThrottleAccumulator(() -> 1, configProvider);
+        this.synchronizedThrottleAccumulator =
+                new ThrottleAccumulator(() -> platform.getAddressBook().getSize(), configProvider);
         this.monoMultiplierSources = createMultiplierSources();
 
         logger.info("Initializing ExchangeRateManager");
@@ -805,10 +810,12 @@ public final class Hedera implements SwirldMain {
                             throttleManager,
                             exchangeRateManager,
                             monoMultiplierSources,
-                            throttleAccumulator))
+                            throttleAccumulator,
+                            synchronizedThrottleAccumulator))
                     .networkUtilizationManager(
                             new NetworkUtilizationManagerImpl(throttleAccumulator, monoMultiplierSources))
-                    .synchronizedThrottleAccumulator(new SynchronizedThrottleAccumulator(throttleAccumulator))
+                    .synchronizedThrottleAccumulator(
+                            new SynchronizedThrottleAccumulator(synchronizedThrottleAccumulator))
                     .self(SelfNodeInfoImpl.of(nodeAddress, version))
                     .platform(platform)
                     .maxSignedTxnSize(MAX_SIGNED_TXN_SIZE)
@@ -875,6 +882,9 @@ public final class Hedera implements SwirldMain {
             // Initializing handle throttling
             this.throttleAccumulator.rebuildFor(daggerApp.throttleManager().throttleDefinitions());
             this.throttleAccumulator.applyGasConfig();
+            this.synchronizedThrottleAccumulator.rebuildFor(
+                    daggerApp.throttleManager().throttleDefinitions());
+            this.synchronizedThrottleAccumulator.applyGasConfig();
 
             // Updating the multiplier source to use the new throttle definitions
             this.monoMultiplierSources.resetExpectations();
