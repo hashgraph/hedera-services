@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create;
 
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateSyntheticTxnFactory.createToken;
-import static com.hedera.node.app.service.contract.impl.exec.utils.IdUtils.asContract;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumericContractId;
 
 import com.esaulpaugh.headlong.abi.Tuple;
@@ -193,7 +192,7 @@ public class CreateDecoder {
             final var contractId = asNumericContractId(addressIdConverter.convert(keyValueTuple.get(1)));
             final var ed25519 = (byte[]) keyValueTuple.get(2);
             final var ecdsaSecp256K1 = (byte[]) keyValueTuple.get(3);
-            final var delegatableContractId = asContract(addressIdConverter.convert(keyValueTuple.get(4)));
+            final var delegatableContractId = asNumericContractId(addressIdConverter.convert(keyValueTuple.get(4)));
 
             tokenKeys.add(new TokenKeyWrapper(
                     keyType,
