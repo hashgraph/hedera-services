@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.swirlds.common.wiring;
 
 import com.swirlds.common.wiring.internal.ConcurrentWire;
@@ -33,9 +49,7 @@ public class WireBuilder<T> {
      * @param executor the executor that the wire will use to run tasks
      * @param consumer tasks are passed to this consumer
      */
-    WireBuilder(
-            @NonNull final Executor executor,
-            @NonNull final Consumer<T> consumer) {
+    WireBuilder(@NonNull final Executor executor, @NonNull final Consumer<T> consumer) {
         this.executor = Objects.requireNonNull(executor);
         this.consumer = Objects.requireNonNull(consumer);
     }
@@ -52,7 +66,6 @@ public class WireBuilder<T> {
         return this;
     }
 
-
     /**
      * Set the capacity of the wire. Wires that are "full" will apply back pressure. Default is
      * {@link #UNLIMITED_CAPACITY}.
@@ -66,7 +79,6 @@ public class WireBuilder<T> {
         return this;
     }
 
-
     /**
      * Build the wire.
      *
@@ -77,6 +89,6 @@ public class WireBuilder<T> {
         if (concurrent) {
             return new ConcurrentWire<>(executor, consumer);
         }
-        return new SequentialWire<>(executor, consumer);
+        return new SequentialWire<>(consumer);
     }
 }

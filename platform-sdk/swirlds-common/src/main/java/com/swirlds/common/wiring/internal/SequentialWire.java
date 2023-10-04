@@ -1,8 +1,24 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.swirlds.common.wiring.internal;
 
 import com.swirlds.common.wiring.Wire;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.concurrent.Executor;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
@@ -13,12 +29,16 @@ import java.util.function.Consumer;
  */
 public class SequentialWire<T> implements Wire<T> {
     private final Consumer<T> consumer;
-    private final AtomicReference<Task> lastTask = new AtomicReference<>(new Task(true));
+    private final AtomicReference<Task<T>> lastTask;
 
-    public SequentialWire(
-            @NonNull final Executor executor,
-            @NonNull final Consumer<T> consumer) {
-        this.consumer = consumer;
+    /**
+     * Constructor.
+     *
+     * @param consumer all data on this wire is passed to this consumer in sequential order
+     */
+    public SequentialWire(@NonNull final Consumer<T> consumer) {
+        this.consumer = Objects.requireNonNull(consumer);
+        lastTask = new AtomicReference<>(new Task<>(consumer, true));
     }
 
     /**
@@ -31,11 +51,11 @@ public class SequentialWire<T> implements Wire<T> {
         // guaranteed to be executed one at a time on the target processor. We do this by forming a dependency graph
         // from task to task, such that each task depends on the previous task.
 
-        final Task nextTask = new Task();
-        Task curTask;
+        final Task<T> nextTask = new Task<>(consumer, false);
+        Task<T> currentTask;
         do {
-            curTask = lastTask.get();
-        } while (!lastTask.compareAndSet(curTask, nextTask));
-        curTask.send(nextTask, () -> consumer.accept(t));
+            currentTask = lastTask.get();
+        } while (!lastTask.compareAndSet(currentTask, nextTask));
+        currentTask.provideObjectForConsumer(t, nextTask);
     }
 }
