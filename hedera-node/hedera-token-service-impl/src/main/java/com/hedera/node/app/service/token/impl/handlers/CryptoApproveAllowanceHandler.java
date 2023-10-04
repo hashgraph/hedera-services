@@ -419,7 +419,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
             final var nft = uniqueTokenStore.get(tokenId, serialNum);
             final var token = tokenStore.get(tokenId);
 
-            AccountID accountOwner = owner.accountId();
+            final AccountID accountOwner = owner.accountId();
             validateTrue(isValidOwner(nft, accountOwner, token), SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
             final var copy = nft.copyBuilder().spenderId(spenderId).build();
             uniqueTokenStore.put(copy);
@@ -457,7 +457,10 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
             final TokenID tokenId) {
         for (int i = 0; i < ownerAllowances.size(); i++) {
             final var allowance = ownerAllowances.get(i);
-            if (allowance.spenderId() == spenderId && allowance.tokenId() == tokenId) {
+            if (allowance.tokenId() != null
+                    && allowance.spenderId() != null
+                    && allowance.spenderId().equals(spenderId)
+                    && allowance.tokenId().equals(tokenId)) {
                 return i;
             }
         }

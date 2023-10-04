@@ -264,6 +264,12 @@ public class HandleContextImpl implements HandleContext, FeeContext {
 
     @Override
     @NonNull
+    public Authorizer authorizer() {
+        return authorizer;
+    }
+
+    @Override
+    @NonNull
     public BlockRecordInfo blockRecordInfo() {
         return blockRecordInfo;
     }
