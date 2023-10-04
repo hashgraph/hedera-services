@@ -303,6 +303,7 @@ public class TokenTransactSpecs extends HapiSuite {
                 getTxnRecord(txn).assertingKnownEffectivePayers());
     }
 
+    @HapiTest
     public HapiSpec autoAssociationWithFrozenByDefaultTokenHasNoSideEffectsOrHistory() {
         final var beneficiary = BENEFICIARY;
         final var uniqueToken = UNIQUE;
@@ -351,6 +352,7 @@ public class TokenTransactSpecs extends HapiSuite {
                         cryptoTransfer(moving(500, otherFungibleToken).between(beneficiary, TOKEN_TREASURY)));
     }
 
+    @HapiTest
     public HapiSpec autoAssociationWithKycTokenHasNoSideEffectsOrHistory() {
         final var beneficiary = BENEFICIARY;
         final var uniqueToken = UNIQUE;
@@ -398,6 +400,7 @@ public class TokenTransactSpecs extends HapiSuite {
                         cryptoTransfer(moving(500, otherFungibleToken).between(beneficiary, TOKEN_TREASURY)));
     }
 
+    @HapiTest
     public HapiSpec failedAutoAssociationHasNoSideEffectsOrHistoryForUnrelatedProblem() {
         final var beneficiary = BENEFICIARY;
         final var unluckyBeneficiary = "unluckyBeneficiary";
@@ -855,6 +858,7 @@ public class TokenTransactSpecs extends HapiSuite {
                                 .hasKnownStatus(INSUFFICIENT_ACCOUNT_BALANCE));
     }
 
+    @HapiTest
     public HapiSpec accountsMustBeExplicitlyUnfrozenOnlyIfDefaultFreezeIsTrue() {
         return defaultHapiSpec("AccountsMustBeExplicitlyUnfrozenOnlyIfDefaultFreezeIsTrue")
                 .given(
@@ -927,6 +931,7 @@ public class TokenTransactSpecs extends HapiSuite {
                                 .payingWith(PAYER));
     }
 
+    @HapiTest
     public HapiSpec senderSigsAreValid() {
         return defaultHapiSpec("SenderSigsAreValid")
                 .given(
@@ -1257,6 +1262,7 @@ public class TokenTransactSpecs extends HapiSuite {
                         .hasKnownStatus(TOKEN_WAS_DELETED));
     }
 
+    @HapiTest
     public HapiSpec fixedHbarCaseStudy() {
         final var alice = "Alice";
         final var bob = "Bob";
@@ -1588,6 +1594,7 @@ public class TokenTransactSpecs extends HapiSuite {
                                 .hasTokenBalance(tokenWithFractionalFee, Long.MAX_VALUE - 1_000L + 1L));
     }
 
+    @HapiTest
     public HapiSpec multipleRoyaltyFallbackCaseStudy() {
         final var zephyr = "zephyr";
         final var amelie = AMELIE;
@@ -1651,6 +1658,7 @@ public class TokenTransactSpecs extends HapiSuite {
                         getTxnRecord(txnFromZephyr).logged());
     }
 
+    @HapiTest
     public HapiSpec respondsCorrectlyWhenNonFungibleTokenWithRoyaltyUsedInTransferList() {
         final var supplyKey = "misc";
         final var nonfungible = "nonfungible";
@@ -1679,6 +1687,7 @@ public class TokenTransactSpecs extends HapiSuite {
                         .hasKnownStatus(ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON));
     }
 
+    @HapiTest
     public HapiSpec royaltyAndFractionalTogetherCaseStudy() {
         final var alice = "alice";
         final var amelie = AMELIE;
@@ -1732,6 +1741,7 @@ public class TokenTransactSpecs extends HapiSuite {
                 .then(getTxnRecord(txnFromAmelie).logged());
     }
 
+    @HapiTest
     public HapiSpec normalRoyaltyCaseStudy() {
         final var alice = "alice";
         final var amelie = AMELIE;
@@ -1949,6 +1959,7 @@ public class TokenTransactSpecs extends HapiSuite {
                         getTokenNftInfo(artToken, 1L).hasAccountID(harry));
     }
 
+    @HapiTest
     public HapiSpec treasuriesAreExemptFromAllCustomFees() {
         final var edgar = EDGAR;
         final var feeToken = "FeeToken";
@@ -2029,6 +2040,7 @@ public class TokenTransactSpecs extends HapiSuite {
                                 .hasTokenBalance(feeToken, 1_000L - 50L));
     }
 
+    @HapiTest
     public HapiSpec collectorsAreExemptFromTheirOwnFeesButNotOthers() {
         final var edgar = EDGAR;
         final var topLevelToken = "TopLevelToken";
@@ -2168,6 +2180,7 @@ public class TokenTransactSpecs extends HapiSuite {
                                 .logged());
     }
 
+    @HapiTest
     public HapiSpec collectorIsChargedRoyaltyFeeUnlessExempt() {
         return defaultHapiSpec("CollectorIsChargedRoyaltyFeeUnlessExempt")
                 .given(

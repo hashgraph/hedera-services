@@ -660,7 +660,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                 .then();
     }
 
-    //    @HapiTest
+    @HapiTest
     private HapiSpec noOwnerDefaultsToPayer() {
         return defaultHapiSpec("noOwnerDefaultsToPayer")
                 .given(
