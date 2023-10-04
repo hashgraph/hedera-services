@@ -691,33 +691,33 @@ public final class Hedera implements SwirldMain {
 
     private MonoMultiplierSources createMultiplierSources() {
         final var genericFeeMultiplier = new ThrottleMultiplierSource(
-            "logical TPS",
-            "TPS",
-            "CryptoTransfer throughput",
-            logger,
-            () -> configProvider
-                .getConfiguration()
-                .getConfigData(FeesConfig.class)
-                .minCongestionPeriod(),
-            () -> configProvider
-                .getConfiguration()
-                .getConfigData(FeesConfig.class)
-                .percentCongestionMultipliers(),
-            () -> throttleAccumulator.activeThrottlesFor(CRYPTO_TRANSFER));
+                "logical TPS",
+                "TPS",
+                "CryptoTransfer throughput",
+                logger,
+                () -> configProvider
+                        .getConfiguration()
+                        .getConfigData(FeesConfig.class)
+                        .minCongestionPeriod(),
+                () -> configProvider
+                        .getConfiguration()
+                        .getConfigData(FeesConfig.class)
+                        .percentCongestionMultipliers(),
+                () -> throttleAccumulator.activeThrottlesFor(CRYPTO_TRANSFER));
         final var gasFeeMultiplier = new ThrottleMultiplierSource(
-            "EVM gas/sec",
-            "gas/sec",
-            "EVM utilization",
-            logger,
-            () -> configProvider
-                .getConfiguration()
-                .getConfigData(FeesConfig.class)
-                .minCongestionPeriod(),
-            () -> configProvider
-                .getConfiguration()
-                .getConfigData(FeesConfig.class)
-                .percentCongestionMultipliers(),
-            () -> List.of(throttleAccumulator.gasLimitThrottle()));
+                "EVM gas/sec",
+                "gas/sec",
+                "EVM utilization",
+                logger,
+                () -> configProvider
+                        .getConfiguration()
+                        .getConfigData(FeesConfig.class)
+                        .minCongestionPeriod(),
+                () -> configProvider
+                        .getConfiguration()
+                        .getConfigData(FeesConfig.class)
+                        .percentCongestionMultipliers(),
+                () -> List.of(throttleAccumulator.gasLimitThrottle()));
 
         return new MonoMultiplierSources(genericFeeMultiplier, gasFeeMultiplier);
     }
@@ -796,19 +796,19 @@ public final class Hedera implements SwirldMain {
             final var nodeAddress = platform.getAddressBook().getAddress(selfId);
             // Fully qualified so as to not confuse javadoc
             daggerApp = com.hedera.node.app.DaggerHederaInjectionComponent.builder()
-                .initTrigger(trigger)
-                .configuration(configProvider)
-                .throttleManager(throttleManager)
-                .exchangeRateManager(exchangeRateManager)
-                .systemFileUpdateFacility(new SystemFileUpdateFacility(
-                    configProvider,
-                    throttleManager,
-                    exchangeRateManager,
-                    monoMultiplierSources,
-                    throttleAccumulator))
-                .networkUtilizationManager(
-                    new NetworkUtilizationManagerImpl(throttleAccumulator, monoMultiplierSources))
-                .synchronizedThrottleAccumulator(new SynchronizedThrottleAccumulator(throttleAccumulator))
+                    .initTrigger(trigger)
+                    .configuration(configProvider)
+                    .throttleManager(throttleManager)
+                    .exchangeRateManager(exchangeRateManager)
+                    .systemFileUpdateFacility(new SystemFileUpdateFacility(
+                            configProvider,
+                            throttleManager,
+                            exchangeRateManager,
+                            monoMultiplierSources,
+                            throttleAccumulator))
+                    .networkUtilizationManager(
+                            new NetworkUtilizationManagerImpl(throttleAccumulator, monoMultiplierSources))
+                    .synchronizedThrottleAccumulator(new SynchronizedThrottleAccumulator(throttleAccumulator))
                     .self(SelfNodeInfoImpl.of(nodeAddress, version))
                     .platform(platform)
                     .maxSignedTxnSize(MAX_SIGNED_TXN_SIZE)

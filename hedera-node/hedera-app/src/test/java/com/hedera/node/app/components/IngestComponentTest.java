@@ -98,30 +98,30 @@ class IngestComponentTest {
         final var configProvider = new ConfigProviderImpl(false);
         final var handleThrottling = new ThrottleAccumulator(configProvider);
         final var monoMultiplierSources = new MonoMultiplierSources(
-            new ThrottleMultiplierSource(null, null, null, null, null, null, null),
-            new ThrottleMultiplierSource(null, null, null, null, null, null, null));
+                new ThrottleMultiplierSource(null, null, null, null, null, null, null),
+                new ThrottleMultiplierSource(null, null, null, null, null, null, null));
 
         final var exchangeRateManager = new ExchangeRateManager(configProvider);
 
         final var throttleManager = new ThrottleManager();
         app = DaggerHederaInjectionComponent.builder()
-            .initTrigger(InitTrigger.GENESIS)
-            .platform(platform)
-            .crypto(CryptographyHolder.get())
-            .bootstrapProps(new BootstrapProperties())
-            .configuration(configProvider)
-            .systemFileUpdateFacility(new SystemFileUpdateFacility(
-                configProvider, throttleManager, exchangeRateManager, monoMultiplierSources, handleThrottling))
-            .networkUtilizationManager(new NetworkUtilizationManagerImpl(handleThrottling, monoMultiplierSources))
-            .throttleManager(throttleManager)
-            .self(selfNodeInfo)
-            .maxSignedTxnSize(1024)
-            .currentPlatformStatus(() -> PlatformStatus.ACTIVE)
-            .servicesRegistry(Set::of)
-            .instantSource(InstantSource.system())
-            .exchangeRateManager(exchangeRateManager)
-            .genesisRecordsConsensusHook(mock(GenesisRecordsConsensusHook.class))
-            .synchronizedThrottleAccumulator(synchronizedThrottleAccumulator)
+                .initTrigger(InitTrigger.GENESIS)
+                .platform(platform)
+                .crypto(CryptographyHolder.get())
+                .bootstrapProps(new BootstrapProperties())
+                .configuration(configProvider)
+                .systemFileUpdateFacility(new SystemFileUpdateFacility(
+                        configProvider, throttleManager, exchangeRateManager, monoMultiplierSources, handleThrottling))
+                .networkUtilizationManager(new NetworkUtilizationManagerImpl(handleThrottling, monoMultiplierSources))
+                .throttleManager(throttleManager)
+                .self(selfNodeInfo)
+                .maxSignedTxnSize(1024)
+                .currentPlatformStatus(() -> PlatformStatus.ACTIVE)
+                .servicesRegistry(Set::of)
+                .instantSource(InstantSource.system())
+                .exchangeRateManager(exchangeRateManager)
+                .genesisRecordsConsensusHook(mock(GenesisRecordsConsensusHook.class))
+                .synchronizedThrottleAccumulator(synchronizedThrottleAccumulator)
                 .build();
 
         final var state = new FakeHederaState();
