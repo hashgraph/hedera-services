@@ -36,6 +36,7 @@ import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.utility.RecycleBinImpl;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
@@ -189,7 +190,7 @@ public final class PlatformBuilder {
      *
      * @return a new platform instance
      */
-    public SwirldsPlatform build() {
+    public Platform build() {
         final Configuration configuration = buildConfiguration();
 
         final boolean firstTimeSetup = doStaticSetup(configuration, configPath);

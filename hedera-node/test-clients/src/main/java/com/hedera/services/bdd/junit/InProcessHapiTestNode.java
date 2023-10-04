@@ -22,9 +22,9 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import com.hedera.node.app.Hedera;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.Platform;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.PlatformBuilder;
-import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.util.BootstrapUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
@@ -163,7 +163,7 @@ public class InProcessHapiTestNode implements HapiTestNode {
                     .withSettingsPath(Path.of(path("settings.txt")))
                     .withConfigPath(Path.of(path("config.txt")));
 
-            final SwirldsPlatform platform = builder.build();
+            final Platform platform = builder.build();
             hedera.init(platform, new NodeId(nodeId));
             platform.start();
             hedera.run();

@@ -182,7 +182,7 @@ public class Browser {
                     appMain::newState,
                     nodeId);
 
-            final SwirldsPlatform platform =
+            final SwirldsPlatform platform = (SwirldsPlatform)
                     builder.withConfigurationBuilder(configBuilder).build();
             platforms.put(nodeId, platform);
 

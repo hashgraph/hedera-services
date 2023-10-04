@@ -25,7 +25,6 @@ import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.platform.PlatformBuilder;
-import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.util.BootstrapUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.LogManager;
@@ -98,7 +97,7 @@ public class ServicesMain implements SwirldMain {
         final PlatformBuilder builder = new PlatformBuilder(
                 Hedera.APP_NAME, Hedera.SWIRLD_NAME, hedera.getSoftwareVersion(), hedera::newState, selfId);
 
-        final SwirldsPlatform platform = builder.build();
+        final Platform platform = builder.build();
         hedera.init(platform, selfId);
         platform.start();
         hedera.run();
