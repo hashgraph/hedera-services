@@ -38,11 +38,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class IsKycCallTest extends HtsCallTestBase {
-    private IsKycCall subject;
-
     @Test
     void returnsIsKycForPresentToken() {
-        subject = new IsKycCall(mockEnhancement(), FUNGIBLE_TOKEN, FUNGIBLE_TOKEN_HEADLONG_ADDRESS);
+        final var subject = new IsKycCall(mockEnhancement(), FUNGIBLE_TOKEN, FUNGIBLE_TOKEN_HEADLONG_ADDRESS);
 
         final MockedStatic<ConversionUtils> conversionUtilsMockStatic = mockStatic(ConversionUtils.class);
         conversionUtilsMockStatic
@@ -63,7 +61,7 @@ class IsKycCallTest extends HtsCallTestBase {
 
     @Test
     void returnsIsKycForMissingToken() {
-        subject = new IsKycCall(mockEnhancement(), null, FUNGIBLE_TOKEN_HEADLONG_ADDRESS);
+        final var subject = new IsKycCall(mockEnhancement(), null, FUNGIBLE_TOKEN_HEADLONG_ADDRESS);
 
         final MockedStatic<ConversionUtils> conversionUtilsMockStatic = mockStatic(ConversionUtils.class);
         conversionUtilsMockStatic
@@ -84,7 +82,7 @@ class IsKycCallTest extends HtsCallTestBase {
 
     @Test
     void returnsIsFrozenForMissingAccount() {
-        subject = new IsKycCall(mockEnhancement(), FUNGIBLE_TOKEN, FUNGIBLE_TOKEN_HEADLONG_ADDRESS);
+        final var subject = new IsKycCall(mockEnhancement(), FUNGIBLE_TOKEN, FUNGIBLE_TOKEN_HEADLONG_ADDRESS);
 
         final MockedStatic<ConversionUtils> conversionUtilsMockStatic = mockStatic(ConversionUtils.class);
         conversionUtilsMockStatic

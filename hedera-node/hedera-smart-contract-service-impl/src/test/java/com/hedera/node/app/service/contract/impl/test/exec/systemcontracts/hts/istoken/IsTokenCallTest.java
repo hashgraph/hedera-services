@@ -34,7 +34,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class IsTokenCallTest extends HtsCallTestBase {
     @Test
     void returnsIsTokenForPresentToken() {
-        var subject = new IsTokenCall(mockEnhancement(), FUNGIBLE_TOKEN);
+        final var subject = new IsTokenCall(mockEnhancement(), FUNGIBLE_TOKEN);
 
         final var result = subject.execute().fullResult().result();
 
@@ -49,7 +49,7 @@ class IsTokenCallTest extends HtsCallTestBase {
 
     @Test
     void returnsIsTokenForMissingToken() {
-        var subject = new IsTokenCall(mockEnhancement(), null);
+        final var subject = new IsTokenCall(mockEnhancement(), null);
 
         final var result = subject.execute().fullResult().result();
 
