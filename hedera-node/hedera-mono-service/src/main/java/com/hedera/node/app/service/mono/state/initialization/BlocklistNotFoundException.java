@@ -14,8 +14,12 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.exec.systemcontracts.burn;
+package com.hedera.node.app.service.mono.state.initialization;
 
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
+import java.io.IOException;
 
-public interface BurnCall extends HtsCall {}
+public class BlocklistNotFoundException extends IOException {
+    public BlocklistNotFoundException(String message, Throwable cause) {
+        super(message, cause);
+    }
+}

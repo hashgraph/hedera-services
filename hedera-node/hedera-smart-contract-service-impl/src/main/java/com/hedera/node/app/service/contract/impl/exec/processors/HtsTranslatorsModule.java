@@ -17,11 +17,12 @@
 package com.hedera.node.app.service.contract.impl.exec.processors;
 
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsCallTranslator;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.burn.BurnTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.allowance.GetAllowanceTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.associations.AssociationsTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.balanceof.BalanceOfTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.burn.BurnTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.decimals.DecimalsTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.freeze.FreezeUnfreezeTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.getapproved.GetApprovedTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantrevokekyc.GrantRevokeKycTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.isapprovedforall.IsApprovedForAllTranslator;
@@ -29,6 +30,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.mint.M
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.name.NameTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ownerof.OwnerOfTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.pauses.PausesTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.setapproval.SetApprovalForAllTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.symbol.SymbolTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokenuri.TokenUriTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.totalsupply.TotalSupplyTranslator;
@@ -143,6 +145,13 @@ public interface HtsTranslatorsModule {
     @Provides
     @Singleton
     @IntoSet
+    static HtsCallTranslator provideSetApprovalForAllTranslator(@NonNull final SetApprovalForAllTranslator translator) {
+        return translator;
+    }
+
+    @Provides
+    @Singleton
+    @IntoSet
     static HtsCallTranslator provideDecimalsTranslator(@NonNull final DecimalsTranslator translator) {
         return translator;
     }
@@ -186,6 +195,13 @@ public interface HtsTranslatorsModule {
     @Singleton
     @IntoSet
     static HtsCallTranslator provideWipeTranslator(@NonNull final WipeTranslator translator) {
+        return translator;
+    }
+
+    @Provides
+    @Singleton
+    @IntoSet
+    static HtsCallTranslator provideFreezeUnfreezeTranslator(@NonNull final FreezeUnfreezeTranslator translator) {
         return translator;
     }
 }
