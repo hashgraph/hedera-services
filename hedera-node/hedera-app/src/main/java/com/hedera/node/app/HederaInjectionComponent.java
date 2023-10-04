@@ -44,7 +44,6 @@ import com.hedera.node.app.state.LedgerValidator;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.throttle.HapiThrottling;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
-import com.hedera.node.app.throttle.ThrottleInjectionModule;
 import com.hedera.node.app.throttle.ThrottleManager;
 import com.hedera.node.app.workflows.WorkflowsInjectionModule;
 import com.hedera.node.app.workflows.handle.DualStateUpdateFacility;
@@ -81,7 +80,6 @@ import javax.inject.Singleton;
             AuthorizerInjectionModule.class,
             InfoInjectionModule.class,
             BlockRecordInjectionModule.class,
-            ThrottleInjectionModule.class,
             PlatformModule.class
         })
 public interface HederaInjectionComponent {
