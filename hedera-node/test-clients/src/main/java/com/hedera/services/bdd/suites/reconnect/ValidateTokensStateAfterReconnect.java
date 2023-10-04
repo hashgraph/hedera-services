@@ -133,7 +133,6 @@ public class ValidateTokensStateAfterReconnect extends HapiSuite {
                         getTokenInfo(tokenToBeQueried),
                         getTokenInfo(anotherToken),
                         /* end token operations */
-                        sleepFor(Duration.ofSeconds(1).toMillis()),
 
                         getAccountBalance(GENESIS).setNode(reconnectingNode).unavailableNode())
                 .then(

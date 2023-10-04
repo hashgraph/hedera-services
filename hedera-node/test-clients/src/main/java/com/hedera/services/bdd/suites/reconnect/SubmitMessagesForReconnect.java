@@ -48,7 +48,6 @@ public class SubmitMessagesForReconnect extends HapiSuite {
 
     private static HapiSpecOperation submitToTestTopic(PerfTestLoadSettings settings) {
         String topicToSubmit = String.format("0.0.%d", settings.getTestTopicId());
-        log.info("Submitting messages to topic {}", topicToSubmit);
         return submitMessageTo(topicToSubmit)
                 .message(randomUtf8Bytes(100))
                 .noLogging()
