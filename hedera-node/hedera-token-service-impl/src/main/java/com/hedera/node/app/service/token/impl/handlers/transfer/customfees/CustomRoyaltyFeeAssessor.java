@@ -134,7 +134,7 @@ public class CustomRoyaltyFeeAssessor {
                 adjustHbarFees(result, account, fee);
             } else {
                 // exchange is for token
-                adjustHtsFees(result, account, feeCollector, feeMeta, amount, denom);
+                adjustHtsFees(result, account, feeCollector, feeMeta, royalty, denom);
             }
             /* Note that this account has now paid all royalties for this NFT type */
             result.addToRoyaltiesPaid(Pair.of(account, denom));
