@@ -66,10 +66,9 @@ class SynchronizedThrottleAccumulatorTest {
         final var query = mock(Query.class);
 
         // when
-        subject.shouldThrottleQuery(query, HederaFunctionality.CONTRACT_CREATE);
+        subject.shouldThrottle(HederaFunctionality.CONTRACT_CREATE, query);
 
         // then
-        verify(throttleAccumulator, times(1))
-                .shouldThrottleQuery(eq(HederaFunctionality.CONTRACT_CREATE), any(), eq(query));
+        verify(throttleAccumulator, times(1)).shouldThrottle(eq(HederaFunctionality.CONTRACT_CREATE), any(), eq(query));
     }
 }

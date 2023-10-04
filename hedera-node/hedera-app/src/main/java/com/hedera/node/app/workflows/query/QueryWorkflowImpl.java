@@ -172,8 +172,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             }
 
             // 3. Check query throttles
-            if (synchronizedThrottleAccumulator.shouldThrottleQuery(
-                    query, HederaFunctionality.fromProtobufOrdinal(function.protoOrdinal()))) {
+            if (synchronizedThrottleAccumulator.shouldThrottle(function, query)) {
                 throw new PreCheckException(BUSY);
             }
 

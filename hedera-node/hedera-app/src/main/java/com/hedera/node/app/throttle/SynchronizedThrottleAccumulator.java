@@ -26,6 +26,11 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import javax.inject.Inject;
 
+/**
+ * Keeps track of the amount of usage of different TPS throttle categories and gas, and returns whether a given
+ * transaction or query should be throttled based on that.
+ * Meant to be used in multithreaded context
+ */
 public class SynchronizedThrottleAccumulator {
 
     private final ThrottleAccumulator throttleAccumulator;
@@ -35,11 +40,27 @@ public class SynchronizedThrottleAccumulator {
         this.throttleAccumulator = requireNonNull(throttleAccumulator, "throttleAccumulator must not be null");
     }
 
+    /*
+     * Updates the throttle requirements for the given transaction and returns whether the transaction
+     * should be throttled for the current time(Instant.now).
+     *
+     * @param txnInfo the transaction to update the throttle requirements for
+     * @param state the current state of the node
+     * @return whether the transaction should be throttled
+     */
     public synchronized boolean shouldThrottle(@NonNull TransactionInfo txnInfo, HederaState state) {
         return throttleAccumulator.shouldThrottle(txnInfo, Instant.now(), state);
     }
 
-    public synchronized boolean shouldThrottleQuery(Query query, HederaFunctionality queryFunction) {
-        return throttleAccumulator.shouldThrottleQuery(queryFunction, Instant.now(), query);
+    /*
+     * Updates the throttle requirements for the given query and returns whether the query should be throttled for the
+     * current time(Instant.now).
+     *
+     * @param queryFunction the functionality of the query
+     * @param query the query to update the throttle requirements for
+     * @return whether the query should be throttled
+     */
+    public synchronized boolean shouldThrottle(HederaFunctionality queryFunction, Query query) {
+        return throttleAccumulator.shouldThrottle(queryFunction, Instant.now(), query);
     }
 }

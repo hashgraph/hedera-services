@@ -125,7 +125,7 @@ public class ThrottleAccumulator {
      * @param query the query to update the throttle requirements for
      * @return whether the query should be throttled
      */
-    public boolean shouldThrottleQuery(
+    public boolean shouldThrottle(
             @NonNull final HederaFunctionality queryFunction, @NonNull final Instant now, @NonNull final Query query) {
         final var configuration = configProvider.getConfiguration();
         final var shouldThrottleByGas =

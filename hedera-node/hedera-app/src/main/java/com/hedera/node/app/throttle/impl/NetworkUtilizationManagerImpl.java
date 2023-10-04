@@ -55,15 +55,15 @@ import org.apache.logging.log4j.Logger;
 public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager {
     private static final Logger log = LogManager.getLogger(NetworkUtilizationManagerImpl.class);
 
-    private final ThrottleAccumulator handleThrottling;
+    private final ThrottleAccumulator throttleAccumulator;
 
     private final MonoMultiplierSources multiplierSources;
 
     @Inject
     public NetworkUtilizationManagerImpl(
-            @NonNull final ThrottleAccumulator handleThrottling,
+            @NonNull final ThrottleAccumulator throttleAccumulator,
             @NonNull final MonoMultiplierSources multiplierSources) {
-        this.handleThrottling = requireNonNull(handleThrottling, "handleThrottling must not be null");
+        this.throttleAccumulator = requireNonNull(throttleAccumulator, "throttleAccumulator must not be null");
         this.multiplierSources = requireNonNull(multiplierSources, "multiplierSources must not be null");
     }
 
@@ -72,7 +72,7 @@ public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager 
             @NonNull final TransactionInfo txnInfo,
             @NonNull final Instant consensusTime,
             @NonNull final HederaState state) {
-        handleThrottling.shouldThrottle(txnInfo, consensusTime, state);
+        throttleAccumulator.shouldThrottle(txnInfo, consensusTime, state);
         multiplierSources.updateMultiplier(consensusTime);
     }
 
@@ -95,7 +95,7 @@ public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager 
 
     @Override
     public void resetFrom(@NonNull final HederaState state) {
-        final var activeThrottles = handleThrottling.allActiveThrottles();
+        final var activeThrottles = throttleAccumulator.allActiveThrottles();
         final var states = state.createReadableStates(CongestionThrottleService.NAME);
         final var throttleSnapshots = states.<ThrottleUsageSnapshots>getSingleton(
                         CongestionThrottleService.THROTTLE_USAGE_SNAPSHOTS_STATE_KEY)
@@ -115,7 +115,7 @@ public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager 
 
         safeResetThrottles(activeThrottles, usageSnapshots, "handle");
 
-        final var activeGasThrottle = handleThrottling.gasLimitThrottle();
+        final var activeGasThrottle = throttleAccumulator.gasLimitThrottle();
         final var currGasThrottleUsageSnapshot = activeGasThrottle.usageSnapshot();
         try {
             final var gasThrottleUsageSnapshot = fromPbj(throttleSnapshots.gasThrottle());
@@ -152,14 +152,14 @@ public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager 
         final var states = state.createWritableStates(CongestionThrottleService.NAME);
         final var throttleSnapshotsState = states.<ThrottleUsageSnapshots>getSingleton(
                 CongestionThrottleService.THROTTLE_USAGE_SNAPSHOTS_STATE_KEY);
-        final var tpsThrottleUsageSnapshots = handleThrottling.allActiveThrottles().stream()
+        final var tpsThrottleUsageSnapshots = throttleAccumulator.allActiveThrottles().stream()
                 .map(DeterministicThrottle::usageSnapshot)
                 .map(PbjConverter::toPbj)
                 .toList();
 
         final var throttleUsageSnapshots = ThrottleUsageSnapshots.newBuilder()
                 .tpsThrottles(tpsThrottleUsageSnapshots)
-                .gasThrottle(toPbj(handleThrottling.gasLimitThrottle().usageSnapshot()))
+                .gasThrottle(toPbj(throttleAccumulator.gasLimitThrottle().usageSnapshot()))
                 .build();
 
         throttleSnapshotsState.put(throttleUsageSnapshots);
@@ -185,11 +185,11 @@ public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager 
 
     @Override
     public boolean wasLastTxnGasThrottled() {
-        return handleThrottling.wasLastTxnGasThrottled();
+        return throttleAccumulator.wasLastTxnGasThrottled();
     }
 
     @Override
     public void leakUnusedGasPreviouslyReserved(@NonNull final TransactionInfo txnInfo, long value) {
-        handleThrottling.leakUnusedGasPreviouslyReserved(txnInfo, value);
+        throttleAccumulator.leakUnusedGasPreviouslyReserved(txnInfo, value);
     }
 }
